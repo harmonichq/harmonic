@@ -5,7 +5,7 @@
 import data from './__fixtures__/ui-fixtures.json';
 import { resolveSource } from './provenance.js';
 
-export type Format = 'round' | 'clock';
+export type Format = 'round' | 'fixed2' | 'clock';
 export type Sourced<T> = { readonly value: T; readonly source: string; readonly format?: Format };
 
 export const fixtures = data;

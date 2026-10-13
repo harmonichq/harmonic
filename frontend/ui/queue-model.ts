@@ -46,6 +46,8 @@ export type SettingData = {
   hi: Sourced<number>;
   days: Sourced<number>;
   nights: { rate: Sourced<number> }[];
+  /** The roster's own path, so the chart can name the nights beyond its axis. */
+  roster: string;
   /** The slot's change was detected and has matured into a Trial. */
   trial: boolean;
 };
@@ -107,14 +109,16 @@ export function basalSetting(name: QueueStore, startMin: number): SettingData {
     start: sourced(`${rowPath}.span.start_min`, 'clock'),
     end: sourced(`${rowPath}.span.end_min`, 'clock'),
     // §4.2: every number but the time block is the analyze slot's, the same
-    // slot whose nights the chart plots, so the count and the dots agree.
-    current: sourced(`${slotPath}.current`),
-    suggested: sourced(`${slotPath}.recommended`),
-    estimate: sourced(`${slotPath}.estimate.value`),
-    lo: sourced(`${slotPath}.estimate.lo`),
-    hi: sourced(`${slotPath}.estimate.hi`),
+    // slot whose nights the chart plots, so the count and the dots agree. The
+    // engine serves no pump increment, so every U/h value prints at 2 decimals.
+    current: sourced(`${slotPath}.current`, 'fixed2'),
+    suggested: sourced(`${slotPath}.recommended`, 'fixed2'),
+    estimate: sourced(`${slotPath}.estimate.value`, 'fixed2'),
+    lo: sourced(`${slotPath}.estimate.lo`, 'fixed2'),
+    hi: sourced(`${slotPath}.estimate.hi`, 'fixed2'),
     days: sourced(`${slotPath}.days`),
     nights: roster.map((_, i) => ({ rate: sourced(`${slotPath}.evidence.night_roster.${i}.delivered_rate`) })),
+    roster: `${slotPath}.evidence.night_roster`,
     trial: s.trials.trials.some((t) => t.parameter === 'basal_rate' && t.slot === label && t.state === 'complete'),
   };
 }

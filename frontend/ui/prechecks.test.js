@@ -6,7 +6,8 @@ import { precheckProblems } from './prechecks.js';
 
 const sources = {
   fixtures: { outcomes: { 14: { window_days: 14 } }, prompts: [{ answer: null }, { answer: 'yes' }],
-    pattern: { n: 6, wilson: { lo: 0.1477 } }, span: { start_min: 180 } },
+    pattern: { n: 6, wilson: { lo: 0.1477 } }, span: { start_min: 180 },
+    slot: { current: 0.9, nights: [{ rate: 0.171 }, { rate: 0.52 }, { rate: 0.85 }] } },
   allowed: new Set(['pin', 'queue', 'd', 'snooze']),
 };
 const clean = {
@@ -61,4 +62,11 @@ test('(e) an axis tick may be a plain number, and only that', () => {
   assert.deepEqual(run({ texts: [{ text: '0.45', source: null, axis: true }] }), []);
   assert.match(run({ texts: [{ text: '0.45 d', source: null, axis: true }] })[0], /^\(e\) "0.45 d" names no fixture field/);
   assert.match(run({ texts: [{ text: '0.45', source: null }] })[0], /^\(e\) "0.45" names no fixture field/);
+});
+
+test('(e) a fixed-precision value and a bounded count resolve like any other field', () => {
+  assert.deepEqual(run({ texts: [{ text: '0.90', source: 'slot.current', format: 'fixed2' }] }), []);
+  assert.match(run({ texts: [{ text: '0.9', source: 'slot.current', format: 'fixed2' }] })[0], /^\(e\) "0.9" is not slot\.current as fixed2 \(0\.90\)/);
+  assert.deepEqual(run({ texts: [{ text: '2', source: 'slot.nights[rate<0.6].length' }] }), []);
+  assert.deepEqual(run({ texts: [{ text: '1', source: 'slot.nights[rate>0.6].length' }] }), []);
 });

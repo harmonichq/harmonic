@@ -17,7 +17,7 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   args: (() => {
-    const { nights, current, estimate, lo, hi, units } = settingState('setting_trial');
-    return { nights, current, estimate, lo, hi, units };
+    const { nights, roster, current, estimate, lo, hi, units } = settingState('setting_trial');
+    return { nights, roster, current, estimate, lo, hi, units };
   })(),
 };

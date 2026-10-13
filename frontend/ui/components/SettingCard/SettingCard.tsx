@@ -27,7 +27,7 @@ export function SettingCard({ data, onChanges }: SettingCardProps) {
         <span className="ui-scard__units">{data.units}</span>
       </div>
       <div className="ui-scard__chart">
-        <EvidenceChart nights={data.nights} current={data.current} estimate={data.estimate}
+        <EvidenceChart nights={data.nights} roster={data.roster} current={data.current} estimate={data.estimate}
           lo={data.lo} hi={data.hi} units={data.units} />
       </div>
       <div className="ui-scard__facts">

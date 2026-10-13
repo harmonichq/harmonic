@@ -12,7 +12,6 @@
   letter-spacing: var(--ui-track-caps);
   text-transform: uppercase;
   white-space: nowrap;
-  gap: 4px;
 }
 
 .ui-pill--wide { color: var(--wk-ink-body); }
@@ -20,7 +19,3 @@
 .ui-pill--better { color: var(--wk-status-favorable); }
 .ui-pill--worse { color: var(--wk-status-adverse); }
 
-/* Kind labels (Pattern, Setting) carry a glyph, so they take the larger 24 px
-   kind-label size with a 16 px glyph; the word-only state pills stay 20 px. */
-.ui-pill--pattern,
-.ui-pill--setting { height: 24px; padding: 0 8px 0 6px; gap: 6px; color: var(--wk-ink-body); }

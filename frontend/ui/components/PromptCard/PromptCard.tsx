@@ -1,12 +1,15 @@
 // PromptCard (§4.2): one low prompt. One line names it — Low, its date and
 // time, its reading in its glucose zone's tone — then the readings around it as
 // a full-width sparkline over the 70 line, the low ringed at its time. Under
-// the caption "Carbs" sit the answers at equal widths: Yes · No · False low,
-// and on desktop a fourth, Not sure, where the phone swipes instead. The
-// engine's question and context sentences are never shown.
+// the caption "Carbs" the answers are one joined group, one question with its
+// choices at equal widths on a sunken track, as the segmented control draws a
+// choice: Yes · No · False low, and on desktop a fourth, Not sure, where the
+// phone swipes instead. The engine's question and context sentences are never
+// shown.
 //
-// Yes records at once: its button carries the ✓ (and "Recorded" for a screen
-// reader), and the optional grams field opens focused beside Next. Mid-swipe,
+// Yes records at once: it becomes the selected segment, raised with a ✓ in the
+// accent (and "Recorded" for a screen reader), and the optional grams field
+// opens focused beside Next. Mid-swipe,
 // the card slides aside over the Not sure reveal. The "n / N" count belongs to
 // the Prompts screen's header, not to this card.
 import type { PromptData } from '../../day-model';
@@ -27,6 +30,7 @@ export type PromptCardProps = {
   width?: number;
 };
 
+const ANSWERS = ['Yes', 'No', 'False low', 'Not sure'] as const;
 const HEIGHT = 96;
 const AXIS = 16;
 
@@ -82,11 +86,18 @@ export function PromptCard({ data, recorded = false, swiping = false, layout = '
       </p>
       <Sparkline data={data} width={width} />
       <span className="ui-caption ui-prompt__caption">Carbs</span>
-      <div className="ui-prompt__answers">
-        <Button kind="answer" label="Yes" recorded={recorded} />
-        <Button kind="answer" label="No" />
-        <Button kind="answer" label="False low" />
-        {layout === 'desktop' && <Button kind="answer" label="Not sure" />}
+      <div className="ui-prompt__answers" role="group" aria-label="Carbs">
+        {(layout === 'desktop' ? ANSWERS : ANSWERS.slice(0, 3)).map((answer) => {
+          const selected = recorded && answer === 'Yes';
+          return (
+            <button key={answer} type="button" className="ui-prompt__answer" data-role="answer"
+              aria-pressed={selected}>
+              {selected && <span className="ui-prompt__check" aria-hidden="true">✓</span>}
+              {answer}
+              {selected && <span className="ui-sr">Recorded</span>}
+            </button>
+          );
+        })}
       </div>
       {recorded && (
         <div className="ui-prompt__grams">

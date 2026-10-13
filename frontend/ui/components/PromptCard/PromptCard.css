@@ -39,7 +39,52 @@
 }
 
 .ui-prompt__caption { margin-top: 20px; }
-.ui-prompt__answers { display: flex; gap: 8px; margin-top: 8px; }
+/* One answer group: a sunken track of equal segments, the segmented control's
+   family at the 44 px a touch answer needs; the recorded one raised. */
+.ui-prompt__answers {
+  box-sizing: border-box;
+  display: flex;
+  gap: 2px;
+  margin-top: 8px;
+  padding: 2px;
+  border: 1px solid var(--wk-rule);
+  border-radius: var(--wk-radius);
+  background: var(--wk-surface-sunken);
+}
+.ui-prompt__answer {
+  flex: 1 1 0;
+  min-width: 0;
+  height: var(--ui-size-answer);
+  margin: 0;
+  padding: 0 4px;
+  border: 0;
+  border-radius: calc(var(--wk-radius) - 1px);
+  background: transparent;
+  color: var(--wk-ink-body);
+  font: var(--ui-weight-regular) var(--ui-type-body) / 1 var(--ui-font);
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+/* A hairline between segments, as a segmented control divides its choices;
+   none beside the raised one. */
+.ui-prompt__answer { position: relative; }
+.ui-prompt__answer + .ui-prompt__answer::before {
+  content: '';
+  position: absolute;
+  top: 12px;
+  bottom: 12px;
+  left: -1px;
+  width: 1px;
+  background: var(--wk-rule);
+}
+.ui-prompt__answer[aria-pressed='true']::before,
+.ui-prompt__answer[aria-pressed='true'] + .ui-prompt__answer::before { display: none; }
+.ui-prompt__answer:active { background: var(--wk-surface); }
+.ui-prompt__answer[aria-pressed='true'] { background: var(--wk-surface-rail); color: var(--primary); }
+.ui-prompt__answer:focus { outline: none; }
+.ui-prompt__answer:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
+.ui-prompt__check { margin-right: 6px; }
 
 /* After Yes: the optional grams field, and Next to move on. */
 .ui-prompt__grams {

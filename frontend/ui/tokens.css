@@ -1,0 +1,35 @@
+/* The component library's tokens (#483). One source: the colours, grounds,
+   inks, rules and radius are the app's own material, imported as-is, and
+   Inter is the same vendored sheet the desk loads. Nothing below re-declares
+   a colour.
+
+   What is added here is the redesign lock's scale (docs/design/
+   recommendations-redesign.md §2.1 and §4.1): the five type steps and the
+   one size per control role. Components read these names, never a literal. */
+@import '../material.css';
+@import '../fonts/inter.css';
+
+:root {
+  --ui-font: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  /* §4.1 type: 34 figure · 22 title · 17 body · 13 label · 11 caption. */
+  --ui-type-figure: 34px;
+  --ui-type-title: 22px;
+  --ui-type-body: 17px;
+  --ui-type-label: 13px;
+  --ui-type-caption: 11px;
+  --ui-weight-regular: 400;
+  --ui-weight-strong: 600;
+  --ui-track-caps: .06em;
+
+  /* §4.1 size per role, one each. */
+  --ui-size-primary: 50px;
+  --ui-size-secondary: 32px;
+  --ui-size-text: 32px;
+  --ui-size-icon: 44px;
+  --ui-size-glyph: 20px;
+  --ui-size-segment: 28px;
+  --ui-size-nav: 44px;
+  --ui-size-pill: 20px;
+  --ui-size-badge: 16px;
+}

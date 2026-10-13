@@ -1,0 +1,3 @@
+/* The preview ground. material.css lights the desk's body with a wash; the
+   redesign's canvas is flat (§2.1 Canvas), so the story body is too. */
+body { background: var(--wk-canvas); }

@@ -73,6 +73,13 @@ frontend/** {.html,.js,.mjs,.ts,.css,.svg,.json}
 # the extension set above and should not be widened for one file.
 frontend/fonts/OFL.txt
 
+# --- The component library (#483, ADR 481). It ships with the desk's source
+# root: it is the source the redesigned screens are composed from. The rule
+# above already clears its .js/.ts/.css/.json/.mjs files; its React sources and
+# stories are .tsx, which that rule does not clear. Its built Storybook and its
+# per-story screenshots are untracked build output, never candidates here.
+frontend/ui/** {.tsx}
+
 # --- The public "why" (§0.2 [R5]) ---------------------------------------
 openspec/specs/** {.md}
 

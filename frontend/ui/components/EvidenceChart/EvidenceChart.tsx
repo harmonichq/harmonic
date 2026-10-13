@@ -6,7 +6,10 @@
 // dot per night at its rate; nights at one rate stack, wrapping into further
 // columns rather than outgrowing the chart. A night beyond the axis is not
 // dropped: the edge it lies past carries their count ("‹ 1"), and it still
-// counts in the card's total. Current (dashed, top row) and Estimate (solid,
+// counts in the card's total; the count sits above the axis end, lifted clear of
+// any stack beneath it. The axis runs the full width, flush with the card's text
+// column: the end tick labels anchor inward and the unit follows the last one.
+// Current (dashed, top row) and Estimate (solid,
 // second row) are full-height marks labelled with their word and value; the
 // engine's range is a faint band behind them. Left to right is rate, never
 // time.
@@ -34,8 +37,7 @@ const PLOT_TOP = 2 * LABEL_ROW + 8;
 const PLOT_HEIGHT = MAX_ROWS * PITCH + 4;
 const AXIS_Y = PLOT_TOP + PLOT_HEIGHT;
 const HEIGHT = AXIS_Y + 22;
-const EDGE = 26;        // room each side for an edge count
-const UNIT_GUTTER = 46; // room for the unit clear of the last tick's label
+const EDGE_LABEL = 26;  // an edge count's width, "‹ 12" at 13 px
 const LABEL_CHAR = 7.4; // a 13 px Inter character, generously
 const STEPS = [0.01, 0.02, 0.025, 0.05, 0.1, 0.2, 0.25, 0.5, 1];
 
@@ -84,8 +86,8 @@ export function EvidenceChart({ nights, roster, current, estimate, lo, hi, units
   const scale = ticks(Math.max(0, low - pad), high + pad);
   const first = scale.values[0];
   const last = scale.values[scale.values.length - 1];
-  const left = EDGE;
-  const right = width - Math.max(EDGE, UNIT_GUTTER);
+  const left = 0;
+  const right = width;
   const x = (rate: number) => left + (right - left) * ((rate - first) / (last - first));
 
   const inside = nights.map((night) => night.rate.value).filter((rate) => rate >= first && rate <= last);
@@ -111,6 +113,12 @@ export function EvidenceChart({ nights, roster, current, estimate, lo, hi, units
     }
   }
 
+  // An edge count's baseline: above the axis, or above the tallest dot it covers.
+  const edgeY = (from: number, to: number) => Math.min(AXIS_Y - 6, ...dots
+    .filter((dot) => dot.cx + DOT / 2 >= from && dot.cx - DOT / 2 <= to)
+    .map((dot) => dot.cy - DOT / 2 - 4));
+  const lastIndex = scale.values.length - 1;
+
   return (
     <svg width={width} height={HEIGHT} viewBox={`0 0 ${width} ${HEIGHT}`} className="ui-evidence">
       {lo.value !== hi.value && (
@@ -127,26 +135,27 @@ export function EvidenceChart({ nights, roster, current, estimate, lo, hi, units
         {dots.map((dot, i) => <circle key={i} cx={dot.cx} cy={dot.cy} r={DOT / 2} className="ui-evidence__night" />)}
       </g>
       {below > 0 && (
-        <text x={2} y={AXIS_Y - 6} className="ui-evidence__edge">
+        <text x={0} y={edgeY(0, EDGE_LABEL)} className="ui-evidence__edge">
           ‹ <tspan data-source={`${roster}[delivered_rate<${first}].length`}>{below}</tspan>
         </text>
       )}
       {above > 0 && (
-        <text x={width - 2} y={AXIS_Y - 6} textAnchor="end" className="ui-evidence__edge">
+        <text x={width} y={edgeY(width - EDGE_LABEL, width)} textAnchor="end" className="ui-evidence__edge">
           <tspan data-source={`${roster}[delivered_rate>${last}].length`}>{above}</tspan> ›
         </text>
       )}
       <g data-axis="">
         <line x1={left} x2={right} y1={AXIS_Y} y2={AXIS_Y} className="ui-evidence__axis" />
-        {scale.values.map((value) => (
+        {scale.values.map((value, i) => (
           <g key={value}>
             <line x1={x(value)} x2={x(value)} y1={AXIS_Y} y2={AXIS_Y + 4} className="ui-evidence__axis" />
-            <text x={x(value)} y={AXIS_Y + 17} textAnchor="middle" className="ui-evidence__tick">
+            <text x={x(value)} y={AXIS_Y + 17} textAnchor={i === 0 ? 'start' : i === lastIndex ? 'end' : 'middle'}
+              className="ui-evidence__tick">
               {value.toFixed(scale.decimals)}
+              {i === lastIndex && <tspan className="ui-evidence__unit"> {units}</tspan>}
             </text>
           </g>
         ))}
-        <text x={width} y={AXIS_Y + 17} textAnchor="end" className="ui-evidence__unit">{units}</text>
       </g>
     </svg>
   );

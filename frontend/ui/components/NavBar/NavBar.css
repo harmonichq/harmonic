@@ -1,0 +1,92 @@
+.ui-nav {
+  box-sizing: border-box;
+  display: flex;
+  background: var(--wk-surface-sunken);
+}
+
+/* Phone: the bottom tab bar, over the home-indicator inset. */
+.ui-nav--tabbar {
+  height: 84px;
+  padding: 6px 8px 34px;
+  border-top: 1px solid var(--wk-rule);
+}
+.ui-nav--tabbar .ui-nav__item { flex: 1; }
+
+/* Tablet and desktop: the left rail, same items, same order. */
+.ui-nav--rail {
+  width: 88px;
+  height: 100%;
+  padding: 32px 8px;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  border-right: 1px solid var(--wk-rule);
+}
+.ui-nav--rail .ui-nav__item { width: 72px; }
+
+.ui-nav__item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  height: var(--ui-size-nav);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--wk-radius);
+  background: none;
+  color: var(--wk-ink-meta);
+  font: var(--ui-weight-regular) var(--ui-type-caption) / 1.2 var(--ui-font);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Selected: ink, weight, and a mark above the icon, so the state carries a
+   position as well as a colour. */
+.ui-nav__item[aria-current='page'] {
+  color: var(--wk-ink);
+  font-weight: var(--ui-weight-strong);
+}
+.ui-nav__item[aria-current='page']::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: 50%;
+  width: 20px;
+  height: 2px;
+  margin-left: -10px;
+  background: var(--wk-ink);
+}
+
+.ui-nav__item:focus { outline: none; }
+.ui-nav__item:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
+
+.ui-badge {
+  position: absolute;
+  top: -2px;
+  left: calc(50% + 4px);
+  box-sizing: border-box;
+  height: var(--ui-size-badge);
+  border-radius: calc(var(--ui-size-badge) / 2);
+  font: var(--ui-weight-strong) var(--ui-type-caption) / 1 var(--ui-font);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.ui-badge--count {
+  min-width: var(--ui-size-badge);
+  padding: 0 4px;
+  border: 1px solid var(--wk-rule);
+  background: var(--wk-surface-rail);
+  color: var(--wk-ink);
+  font-weight: var(--ui-weight-regular);
+}
+.ui-badge--alert {
+  width: var(--ui-size-badge);
+  background: var(--warn);
+  color: var(--on-primary);
+}

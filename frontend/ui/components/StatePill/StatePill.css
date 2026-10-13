@@ -1,0 +1,21 @@
+.ui-pill {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  height: var(--ui-size-pill);
+  padding: 0 6px;
+  border: 1px solid var(--wk-rule);
+  border-radius: var(--wk-radius);
+  color: var(--wk-ink-meta);
+  font: var(--ui-weight-strong) var(--ui-type-caption) / 1 var(--ui-font);
+  letter-spacing: var(--ui-track-caps);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.ui-pill--wide { color: var(--wk-ink-body); }
+.ui-pill--maturing { color: var(--warn); }
+.ui-pill--better,
+.ui-pill--recorded { color: var(--in-range); }
+.ui-pill--worse { color: var(--danger); }

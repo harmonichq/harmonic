@@ -21,18 +21,25 @@ export const targetRange = () => ({
 // --- DayChart ----------------------------------------------------------------
 
 /** A bolus is a meal bolus when it carries carbs, else a correction (the
- *  timeline serves no other type); logged carbs are the manual carb log. */
+ *  timeline serves no other type); logged carbs are the manual carb log; a site
+ *  change is the pump's own event. */
 export type DayEvent =
   | { kind: 'meal' | 'correction'; minute: number; time: Sourced<string>; insulin: Sourced<number>;
       carbs: Sourced<number> | null }
-  | { kind: 'carbs'; minute: number; time: Sourced<string>; grams: Sourced<number> };
+  | { kind: 'carbs'; minute: number; time: Sourced<string>; grams: Sourced<number> }
+  | { kind: 'site'; minute: number; time: Sourced<string> };
+
+// The pump event the glossary names, and the only one this timeline draws.
+const SITE_CHANGE = 'Site/Cartridge Change';
 
 export type DayChartData = {
   low: Sourced<number>;
   high: Sourced<number>;
   cgm: { minute: number; bg: number }[];
   basal: { minute: number; duration: number; delivered: number; programmed: number }[];
-  /** Boluses and logged carbs, in time order. */
+  /** The pump's sleep schedule over this day, in minutes, clipped to it. */
+  sleep: { from: number; to: number }[];
+  /** Boluses, logged carbs and site changes, in time order. */
   events: DayEvent[];
 };
 
@@ -56,12 +63,18 @@ export function dayChart(state: DayState): DayChartData {
     return { kind: 'carbs', minute: minuteOf(entry.t), time: sourced(`${path}.t`, 'time'),
       grams: sourced(`${path}.grams`, 'round') };
   });
+  const sites: DayEvent[] = timeline.pump_events.flatMap((event, i) => event.event_type === SITE_CHANGE
+    ? [{ kind: 'site' as const, minute: minuteOf(event.t), time: sourced<string>(`${root}.timeline.pump_events.${i}.t`, 'time') }]
+    : []);
+  const dayStart = `${iso} 00:00:00`;
+  const clip = (t: string) => (t < dayStart ? 0 : t.slice(0, 10) > iso ? 1440 : minuteOf(t));
   return {
     ...targetRange(),
     cgm: timeline.cgm.map((reading) => ({ minute: minuteOf(reading.t), bg: reading.bg })),
     basal: timeline.basal.map((row) => ({ minute: minuteOf(row.t), duration: row.duration_mins,
       delivered: row.basal_rate, programmed: row.profile_basal_rate })),
-    events: [...boluses, ...logged].sort((a, b) => a.minute - b.minute),
+    sleep: timeline.sleep_windows.map((w) => ({ from: clip(w.start), to: clip(w.end) })).filter((w) => w.to > w.from),
+    events: [...boluses, ...logged, ...sites].sort((a, b) => a.minute - b.minute),
   };
 }
 

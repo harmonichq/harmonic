@@ -3,12 +3,10 @@ import { dayChart } from '../../day-model';
 import { DayChart } from './DayChart';
 
 // One story per state (§4.2 DayChart), each a day of the simulated wearer
-// picked by rule: the latest day with readings and no logged carbs, the
-// latest of the days with the most logged carbs, and the first day after the
-// history ends. Desktop draws the logged-carbs day across the wide pane.
-//
-// The timeline's sleep windows and pump events are not drawn: the glossary
-// names neither sleep nor this wearer's only pump event (a site change).
+// picked by rule: the latest day with readings, a site change and no logged
+// carbs, the latest of the days with the most logged carbs, and the first day
+// after the history ends. Every day with readings shows the sleep schedule.
+// Desktop draws the logged-carbs day across the wide pane.
 const meta = {
   title: 'DayChart',
   component: DayChart,

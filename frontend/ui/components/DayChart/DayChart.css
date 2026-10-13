@@ -31,6 +31,12 @@
 .ui-daychart__meal { fill: var(--wk-ink-body); }
 .ui-daychart__correction { fill: var(--wk-canvas); stroke: var(--wk-ink-body); stroke-width: 1.2; }
 .ui-daychart__carbs { fill: var(--wk-canvas); stroke: var(--wk-ink); stroke-width: 2; }
+.ui-daychart__site { fill: var(--wk-canvas); stroke: var(--wk-ink-body); stroke-width: 1.5; stroke-linejoin: round; }
+
+/* Sleep: a neutral bar in the strip and a faint wash through the lanes, so it
+   never reads as a glucose tone. */
+.ui-daychart__sleep { fill: var(--wk-ink-meta); fill-opacity: .45; }
+.ui-daychart__sleep-wash { fill: var(--wk-ink); fill-opacity: .035; }
 
 .ui-daychart__basal { fill: var(--wk-ink-meta); fill-opacity: .4; }
 .ui-daychart__profile { fill: none; stroke: var(--wk-ink-body); stroke-width: 1.2; stroke-dasharray: 3 2; }

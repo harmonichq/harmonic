@@ -5908,11 +5908,11 @@
         "slot": 2
       },
       {
-        "annotation": "lows keep happening overnight, so the rate steps down toward the measured rate (20% at most)",
-        "asserts_move": true,
+        "annotation": "lows keep happening overnight, but the measured range still includes the set rate, so it stays as it is",
+        "asserts_move": false,
         "current": 0.6,
         "days": 30,
-        "direction": "lower",
+        "direction": null,
         "estimate": {
           "confidence": 0.8,
           "hi": 0.66,
@@ -8435,20 +8435,12 @@
           "roster_glucose_mean": 117.7
         },
         "guidance": {
-          "action": {
-            "direction": "lower",
-            "end_min": 210,
-            "kind": "setting_instruction",
-            "parameter": "basal_rate",
-            "recommended": 0.54,
-            "start_min": 180,
-            "units": "U/h"
-          },
+          "action": null,
           "seriousness": "recurring_low"
         },
         "label": "03:00",
-        "recommended": 0.54,
-        "safety_status": "lower (recurring lows)",
+        "recommended": 0.6,
+        "safety_status": "held (recurring-low gate)",
         "slot": 6
       },
       {

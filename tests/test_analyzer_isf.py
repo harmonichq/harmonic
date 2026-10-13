@@ -31,19 +31,38 @@ ISF_36 = [(0, 36.0), (300, 36.0), (540, 36.0), (720, 36.0)]
 
 class IsfAssertsMoveTest(unittest.TestCase):
     def test_requires_current_direction_and_a_real_recommendation(self):
+        below = Estimate(30.0, 28.0, 32.0, 200)   # range rules 42 out
         cases = [
-            (None, "strengthen", 40.0, False, "no programmed value"),
-            (42.0, None, 40.0, False, "no direction"),
-            (42.0, "weaken", None, False, "direction only"),
-            (42.0, "strengthen", None, False, "held without recommendation"),
-            (42.0, "strengthen", 42.0, False, "rounded no-op"),
-            (42.0, "strengthen", 40.0, True, "strengthen move"),
-            (42.0, "weaken", 47.0, True, "sized weaken move"),
+            (None, "strengthen", 40.0, below, False, "no programmed value"),
+            (42.0, None, 40.0, below, False, "no direction"),
+            (42.0, "weaken", None, below, False, "direction only"),
+            (42.0, "strengthen", None, below, False, "held without recommendation"),
+            (42.0, "strengthen", 42.0, below, False, "rounded no-op"),
+            (42.0, "strengthen", 40.0, below, True, "strengthen move"),
+            (42.0, "weaken", 47.0, Estimate(50.0, 45.0, 55.0, 200), True,
+             "sized weaken move"),
         ]
-        for current, direction, recommended, expected, label in cases:
+        for current, direction, recommended, estimate, expected, label in cases:
             with self.subTest(label=label):
                 self.assertIs(
-                    isf_asserts_move(current, direction, recommended), expected
+                    isf_asserts_move(current, direction, recommended, estimate),
+                    expected,
+                )
+
+    def test_range_must_exclude_the_programmed_value_closed_bounds(self):
+        # #489: a sized move whose own range still contains the programmed value
+        # is held. The bounds are closed, so a bound equal to it is inside.
+        cases = [
+            (Estimate(39.0, 36.0, 43.0, 200), False, "range spans current"),
+            (Estimate(38.0, 36.0, 42.0, 200), False, "upper bound equals current"),
+            (Estimate(44.0, 42.0, 46.0, 200), False, "lower bound equals current"),
+            (Estimate(38.0, 36.0, 41.99, 200), True, "range just below current"),
+            (Estimate(None, None, None, 0), False, "no range"),
+        ]
+        for estimate, expected, label in cases:
+            with self.subTest(label=label):
+                self.assertIs(
+                    isf_asserts_move(42.0, "strengthen", 40.0, estimate), expected
                 )
 
 
@@ -513,6 +532,33 @@ class LowsOwnDirectionTest(unittest.TestCase):
             "start_min": 0, "end_min": 1440, "direction": "strengthen",
             "units": "mg/dL/U", "recommended": 30.0,
         })
+
+    def test_sustained_strengthen_whose_range_spans_current_is_held(self):
+        # #489: the nights read more sensitive and the signal held twice, which
+        # would size a 36 -> 35.6 strengthen, but the fasting range still
+        # contains the set 36. The read holds like every other correction-factor
+        # hold: the measured number and range stay, no direction, nothing staged
+        # and nothing priced.
+        from ciq_autotune.analyzers.tuning_priority import isf_lever
+        bolus, basal, cgm, windows = self._nights(34.5, rng_seed=3)
+        rows = analyze_isf(
+            bolus, basal, cgm, ISF_36, rest_windows=windows, window_days=30,
+            prior_strengthen_signal=True,
+        )
+        seg = rows[0]
+
+        self.assertTrue(seg.evidence["strengthen_signal"])
+        self.assertLess(seg.evidence["night_median"], 36.0)
+        self.assertIsNotNone(seg.estimate.value)
+        self.assertLessEqual(seg.estimate.lo, 36.0)
+        self.assertGreaterEqual(seg.estimate.hi, 36.0)
+        self.assertFalse(seg.estimate.wide)
+        self.assertIsNone(seg.evidence["direction"])
+        self.assertIsNone(seg.recommended)
+        self.assertIs(seg.asserts_move, False)
+        self.assertIsNone(seg.guidance["action"])
+        self.assertIn("measured range still includes it", seg.annotation)
+        self.assertEqual(isf_lever(rows).priority, 0)
 
     def test_rounded_strengthen_no_op_cannot_stage(self):
         bolus, basal, cgm, windows = self._nights(36.85)

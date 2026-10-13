@@ -74,10 +74,16 @@ def _ch(*, night_median=None, fits=None, corr_low_days=0, rescue_days=0,
 
 def basal_annotations() -> dict:
     """Every basal status's sentence, keyed by the status string the API emits,
-    plus the recurring-lows hold sentence a gated slot serves (ADR 465)."""
+    plus the recurring-lows hold sentence a gated slot serves (ADR 465) and the
+    range hold sentence a supported slot serves when its range contains the set
+    rate (#489)."""
     sentences = {status.value: _annotation_for(status) for status in Status}
     sentences[f"{Status.HARM_GATED.value} (recurring hold)"] = _annotation_for(
         Status.HARM_GATED, recurring_hold=True)
+    sentences[f"{Status.INSUFFICIENT.value} (range hold)"] = _annotation_for(
+        Status.INSUFFICIENT, range_hold=True)
+    sentences[f"{Status.HARM_GATED.value} (range hold)"] = _annotation_for(
+        Status.HARM_GATED, range_hold=True)
     return sentences
 
 

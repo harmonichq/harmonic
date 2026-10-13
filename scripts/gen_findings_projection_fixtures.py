@@ -148,7 +148,7 @@ def _slot(index, *, current, value=None, lo=None, hi=None, n=0, supported=0,
     evidence = {"points": points}
     if recurring_lows:
         recommended, status = apply_harm(current, recommended, status, _SAFETY,
-                                         nudge=True, median=value)
+                                         nudge=True, median=value, estimate=estimate)
         evidence["harm"] = {"gated": True, "nudged": True, "band_nights": 2}
         evidence["harm_band_source_nights"] = 20
     return SlotEstimate(
@@ -287,7 +287,7 @@ def isf_rows():
                 "priced_target": priced_target,
             },
         },
-        asserts_move=isf_asserts_move(36.0, direction, recommended),
+        asserts_move=isf_asserts_move(36.0, direction, recommended, estimate),
     )]
 
 

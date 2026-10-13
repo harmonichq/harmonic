@@ -184,6 +184,31 @@ class BlockEligibilityTest(unittest.TestCase):
         self.assertFalse(b.evidence["eligibility"]["band_excludes_programmed"])
         self.assertFalse(b.asserts_move)
 
+    def _alternating(self, doses):
+        events = [meal(d, 9, 60, doses[d % 2], ratio=5.0) for d in range(12)]
+        return by_id(blocks_for(self.SEGMENTS, events)[0])[0]
+
+    def test_a_sized_move_whose_band_spans_programmed_is_held(self):
+        # #489: twelve runs, an on-regime pool and a real move toward 4.9, but the
+        # meals scatter either side of 5.0, so the served band still contains it.
+        b = self._alternating([14.5, 10.5])
+        e = b.evidence["eligibility"]
+        self.assertTrue(all(e[k] for k in ("runs_floor_met", "regime_supported",
+                                           "names_a_move")))
+        self.assertLess(b.estimate.lo, 5.0)
+        self.assertGreater(b.estimate.hi, 5.0)
+        self.assertFalse(e["band_excludes_programmed"])
+        self.assertFalse(b.asserts_move)
+        self.assertIsNone(b.guidance["action"])
+        self.assertIsNotNone(b.recommended)
+
+    def test_a_band_bound_equal_to_programmed_is_inside(self):
+        # Closed bounds: the band's upper end lands exactly on the programmed 5.0.
+        b = self._alternating([14.0, 11.0])
+        self.assertEqual(b.estimate.hi, 5.0)
+        self.assertFalse(b.evidence["eligibility"]["band_excludes_programmed"])
+        self.assertFalse(b.asserts_move)
+
 
 class RegimeBracketTest(unittest.TestCase):
     """Gate 3 — the compare-side hold that decays as post-change meals accrue (#518)."""

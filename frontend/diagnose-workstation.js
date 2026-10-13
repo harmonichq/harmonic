@@ -870,15 +870,13 @@ function renderHighCarbStage(host, caseFile, range) {
  * in the same place on a block.
  *
  * spec: { head, headQual, verdict, unit, value, current, estimate, recommended,
- *         recommendedQual, scopeSay, currentNoun, moveWord, intervalSay, support,
+ *         recommendedQual, scopeSay, currentNoun, moveWord, support,
  *         sentence, canStage, isStaged, replaces, footNote, onStage }
  *
  * `value` spells one number; it defaults to the panel's own rounding. A setting
  * whose value carries its unit (the correction factor, ADR 451) passes its own
  * and no `unit`, so no qualifier repeats a unit. `replaces` names the change
  * staged for another setting that a press would replace, or is null (ADR 459).
- * `intervalSay` replaces the interval sentence's second half when something
- * other than the steady nights owns the move (ADR 466).
  */
 function renderParamLevel(host, spec) {
   const e = spec.estimate;
@@ -887,8 +885,9 @@ function renderParamLevel(host, spec) {
   /* Does the interval reach the figure already in the pump? Then the data is
      compatible with changing nothing, and that has to be said in words — two
      numbers side by side leave the reader to notice it. The second half says
-     what that means for the move; a caller whose move the interval does not own
-     names its owner instead (ADR 466). */
+     what that means for the move. No served move reaches here any more: every
+     setting's staging predicate requires its range to exclude the figure in
+     the pump (ADR 489), so this reads on held settings only. */
   const spansCurrent = e.lo != null && e.hi != null
     && e.lo <= spec.current && spec.current <= e.hi;
   /* A recommendation normally sits between the figure you run and the figure the
@@ -920,8 +919,7 @@ function renderParamLevel(host, spec) {
       <span>${e.wide ? '(wide)' : ''}</span></div>
     ${spansCurrent ? `<div class="hedge">That interval reaches the ${spec.currentNoun} you
       already run (${value(e.lo)}–${value(e.hi)} includes ${value(spec.current)}), so <b>it includes no
-      change at all</b>. ${spec.intervalSay
-        || `A ${spec.moveWord} is consistent with this data, not established by it.`}</div>` : ''}
+      change at all</b>. A ${spec.moveWord} is consistent with this data, not established by it.</div>` : ''}
     ${between ? '' : `<div class="hedge">The recommended ${value(spec.recommended)} does not sit
       between the ${value(spec.current)} you run now and the ${value(e.value)} the data estimates, so
       <b>something outside the estimate set it</b>: ${spec.sentence}</div>`}
@@ -1048,13 +1046,6 @@ export function renderSlotLevel(host, cell, staged, windowDays, supportFloor, on
       : 'no direction asserted, so nothing is recommended',
     currentNoun: 'rate',
     moveWord: /raise/i.test(s.safety_status || '') ? 'raise' : 'move',
-    /* ADR 466: a recurring-lows lower moves whatever its interval, so the
-       interval sentence names the lows as the step's owner. Read from the served
-       status string alone, as the lane key is (#433). */
-    intervalSay: s.safety_status === 'lower (recurring lows)'
-      ? 'The steady nights alone do not establish this step down. It comes from the '
-        + 'overnight lows listed below.'
-      : null,
     support: `${e.n} night${e.n === 1 ? '' : 's'} of steady data <span>·</span> ${windowDays} d basal run`,
     sentence: canStage
       ? (s.annotation || '').replace(/,?\s*capped to one ≤?20% step from current/i, '')

@@ -4357,15 +4357,18 @@ export const C4_STORIES = {
       assert.equal(panel.stage, 0, 'S190 the held slot must offer no Stage change button');
     }, 'S190 the held 03:00 panel names the recurring lows and stages nothing');
   },
-  // #466: a recurring-lows slot says the overnight lows own its move and lists
-  // them. Leg 1 opens basal-recurring-low-spread's 03:00 lower, whose interval
-  // reaches the setting; leg 2 opens basal-recurring-low-within-floor's held
-  // 03:00 (ADR 465). Each leg runs; the story fails once, naming each failed leg.
+  // #466: a recurring-lows slot counts its lows and lists them. Leg 1 opens
+  // basal-recurring-low-spread's 03:00, whose range contains the setting, so the
+  // lows hold it (#489, amended 2026-10-13); leg 2 opens
+  // basal-recurring-low-within-floor's held 03:00 (ADR 465); leg 3 opens
+  // basal-recurring-low-lower's 03:00 lower. Each leg runs; the story fails
+  // once, naming each failed leg.
   async S191(page, ctx) {
     const failures = [];
     for (const [leg, run] of [
-      ['leg 1 · the spread lower', recurringLowsLower466],
+      ['leg 1 · the range-held spread', recurringLowsRangeHold489],
       ['leg 2 · the held slot', () => ctx.withCase('basal-recurring-low-within-floor', recurringLowsHold466)],
+      ['leg 3 · the recurring-lows lower', () => ctx.withCase('basal-recurring-low-lower', recurringLowsLower466)],
     ]) {
       try {
         await run(page, ctx);
@@ -4651,16 +4654,13 @@ const readLows466 = page => page.evaluate(() => ({
   }),
 }));
 
-// #466 leg 1: the spread lower names the lows as its step's owner, prints the
-// served count and bar, lists both lows, labels its roster, and its first low
-// opens Day on that low's date.
+// #466 leg 3: the recurring-lows lower prints the served count and bar, lists
+// both lows, labels its roster, and its first low opens Day on that low's date.
 async function recurringLowsLower466(page) {
   const harm = await openSlot0300466(page);
   await waitForReplayAssertion(async seen => {
     const panel = seen(await page.evaluate(readSlotPanel));
-    assert.ok(panel.text.includes('The steady nights alone do not establish this step down. It comes from the '
-      + 'overnight lows listed below.'), 'S191 the interval sentence must name the overnight lows as the owner');
-    assert.ok(!panel.text.includes('not established by it'), 'S191 the panel must not read "not established by it"');
+    assert.equal(panel.stage, 1, 'S191 the recurring-lows lower must offer its Stage change');
     const lows = seen(await readLows466(page));
     assert.equal(lows.count, lowsCountLine466(harm), 'S191 the count line must print the served count and bar');
     assert.deepEqual(lows.rows, harm.lows.map(lowRowText466), 'S191 each low row must print its served date, time and glucose');
@@ -4670,7 +4670,7 @@ async function recurringLowsLower466(page) {
     // A row's own 1 px border may sit between the two edges; N1's drift was tens of pixels.
     assert.ok(lows.header.every(([, offset]) => offset != null && Math.abs(offset) <= 2),
       `S191 each header name's widest line must end at its value's right edge; offsets ${JSON.stringify(lows.header)}`);
-  }, 'S191 the spread lower explains its step and lists its lows');
+  }, 'S191 the recurring-lows lower stages and lists its lows');
   const iso = harm.lows[0].t.slice(0, 10);
   await page.locator('#level .low-row').first().click();
   await page.locator('.gf-stage-day').waitFor({ timeout: 30000 });
@@ -4678,6 +4678,25 @@ async function recurringLowsLower466(page) {
     assert.equal(seen(await page.locator(`.gf-nav-col[data-pick="${iso}"]`).getAttribute('aria-pressed')), 'true',
       `S191 pressing the first low must open Day on ${iso}`);
   }, 'S191 the first low opens its day');
+}
+
+// #489 leg 1: the spread nights' range contains the setting, so the lows hold
+// 03:00. Its panel prints the served hold sentence and the interval hedge, lists
+// its lows under the count line and offers nothing to stage.
+async function recurringLowsRangeHold489(page) {
+  const harm = await openSlot0300466(page);
+  const slot = (await read(page, '/api/analyze')).basal.find(row => row.label === '03:00');
+  assert.equal(slot.safety_status, 'held (recurring-low gate)', 'S191 premise: the spread 03:00 is held');
+  await waitForReplayAssertion(async seen => {
+    const panel = seen(await page.evaluate(readSlotPanel));
+    assert.equal(panel.stage, 0, 'S191 the range-held slot must offer no Stage change button');
+    assert.ok(panel.text.includes(slot.annotation), 'S191 the panel must print the served hold sentence');
+    assert.ok(panel.text.includes('not established by it'), 'S191 the panel must keep the interval hedge');
+    assert.ok(!panel.text.includes('do not establish this step down'), 'S191 no step down is owned by the lows');
+    const lows = seen(await readLows466(page));
+    assert.equal(lows.count, lowsCountLine466(harm), 'S191 the range-held slot must print the count line');
+    assert.deepEqual(lows.rows, harm.lows.map(lowRowText466), 'S191 the range-held slot must list its lows');
+  }, 'S191 the range-held slot says so, lists its lows and stages nothing');
 }
 
 // #466 leg 2: the held within-threshold slot lists its lows under the count

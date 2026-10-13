@@ -6690,3 +6690,52 @@ To run the new stories alone, set `ONLY=S197,S198,S199,S200,S201,S202,S203,S204,
 Each binds to `ic-block-evidence` through the replay's case map. Raw output
 lands under `openspec/changes/carb-ratio-block-evidence/evidence/` (its README
 names the files).
+
+## #489 amendment — 2026-10-13, issue #489
+
+ADR 489 (`openspec/changes/recommendations-redesign/design.md`) makes every
+setting's staging predicate require that its own range exclude the value
+programmed now. A recurring-lows lower is no exception any more, so ADR 466's
+spread store, whose range (0.45–0.66) contains its programmed 0.60, now serves
+03:00 as "held (recurring-low gate)" with the sentence "lows keep happening
+overnight, but the measured range still includes the set rate, so it stays as
+it is". S191 is amended below. No story is added or retired, and the pinned
+inventory in `acceptance.py` `inventory()` is unchanged. Browser execution
+belongs to the coordinator at 1280x720 and 1440x900. No `★ FROZEN` block and no
+header inventory line is edited here.
+
+Sanction: Connor Griffin, 2026-10-13, on the redesign's Basal 05:00 (a
+recurring-lows lower whose range contains its setting): "It probably just
+shouldn't be in the queue at all." The sentence's words, keeping the story's
+store and moving its lower leg to `basal-recurring-low-lower` are ADR 489's
+autonomous decisions.
+
+Safe start is unchanged: AGENTS.md's QA copy-then-serve command over the case
+stores `scripts/gen_qa_e2e_db.py --case` emits for
+`basal-recurring-low-spread`, `basal-recurring-low-within-floor` and
+`basal-recurring-low-lower`.
+
+Changed shipped behavior:
+
+- **A move needs its range to rule out the setting.** A basal slot, carb-ratio
+  block or correction factor whose served range includes the value programmed
+  now holds: it stages nothing, moves no pump profile, ranks nothing and
+  admits no Pattern. Its estimate and range still print.
+- **The recurring-lows interval sentence is retired.** "The steady nights alone
+  do not establish this step down. It comes from the overnight lows listed
+  below." printed only on a recurring-lows lower whose interval reached the
+  setting, which no served row can be any more. Every panel whose interval
+  reaches the setting now reads the one hedge, "A move is consistent with this
+  data, not established by it."
+
+Amended S191 · 2026-10-13 · #489 sanction (Connor Griffin · 2026-10-13 · "It probably just shouldn't be in the queue at all."): Leg 1, on basal-recurring-low-spread, the held 03:00 panel prints the served hold sentence and the interval hedge, never "do not establish this step down", lists its lows under the count line and offers no Stage change. Leg 2 is unchanged. Leg 3, on basal-recurring-low-lower, the 03:00 recurring-lows lower offers its Stage change, prints the served count and bar, lists both lows with their served dates, times and glucose, shows its roster header over its own values, and pressing the first low opens Day on that low's date. The story runs each leg and fails once, naming each failed leg.
+
+Additional handler inventory for this amendment:
+
+| Handler / registration | Source | Story |
+|---|---|---|
+| Range hold of a supported basal move | ciq_autotune/safety.py cap | backend tests, QA `basal-range-hold` |
+| Range hold of a recurring-lows lower | ciq_autotune/safety.py apply_harm | S191 |
+| Basal range hold sentences | ciq_autotune/analyzers/basal.py _annotation_for, analyze_basal | S191 |
+| Correction-factor range hold | ciq_autotune/analyzers/isf.py isf_asserts_move, analyze_isf | backend tests, QA `isf-range-hold` |
+| Recurring-lows interval sentence | retired (diagnose-workstation.js renderSlotLevel) | S191 |

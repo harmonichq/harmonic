@@ -43,6 +43,12 @@ test('(c) a button off its role height, or with no role, fails', () => {
   assert.match(run({ buttons: [{ role: 'answer', height: 32, label: 'Pin' }] })[0], /^\(c\) answer .* 32px, not 44px/);
 });
 
+test('a Glossary definition may hold a sentence, words and numbers; its term may not', () => {
+  const definition = { text: 'Remove from the Queue for 14 days.', source: null, glossary: true };
+  assert.deepEqual(run({ texts: [definition] }), []);
+  assert.match(run({ texts: [{ ...definition, glossary: false }] })[0], /^\(a\)/);
+});
+
 test('(d) two primary-filled controls fail', () => {
   assert.deepEqual(run({ primaries: 2 }), ['(d) 2 primary-filled controls']);
 });
@@ -76,6 +82,7 @@ test('(e) a difference, one decimal and a day of the month resolve like any othe
   assert.deepEqual(check([{ text: '4', source: 'day.iso', format: 'day' }]), []);
   assert.deepEqual(check([{ text: '4 May', source: 'day.iso', format: 'date' }]), []);
   assert.deepEqual(check([{ text: '13:27', source: 'day.t', format: 'time' }]), []);
+  assert.deepEqual(check([{ text: '18 May', source: 'day.t', format: 'until' }]), []);
   assert.match(check([{ text: '1.7', source: 'm.tbr_lvl2 − m.tbr_lvl1', format: 'fixed1' }])[0],
     /^\(e\) "1.7" is not m\.tbr_lvl2 − m\.tbr_lvl1 as fixed1 \(-1\.7\)/);
 });

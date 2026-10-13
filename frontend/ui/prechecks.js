@@ -12,6 +12,10 @@
 //       thresholds a band or a metric is named by ("<54", "54–69", "Below 70",
 //       "10–90%"). A plain number, clock, range or bound inside [data-axis] is
 //       exempt, and nothing else there is.
+//
+// A Glossary definition (inside `.glossary`) is the one place a sentence may
+// appear (§2.3 ban 1), so (a), (b) and (e) skip its text; its term, outside
+// `.glossary`, is still checked.
 import { formatValue, resolveSource } from './provenance.js';
 
 // §4.1, one height per role; a list row is a 48 px minimum.
@@ -23,13 +27,14 @@ const SENTENCE = /[A-Za-z][^.!?]*[.!?](\s|$)/;
 const SCALE = /^[<>]?\d+(\.\d+)?([–:]\d+)?%?$/;
 
 /**
- * @param {{texts: {text: string, source: string|null, format?: string|null, axis?: boolean}[], names: string[],
+ * @param {{texts: {text: string, source: string|null, format?: string|null, axis?: boolean, glossary?: boolean}[], names: string[],
  *          buttons: {role: string|null, height: number, label: string}[], primaries: number}} shown
  * @param {{fixtures: object, allowed: Set<string>}} sources
  * @returns {string[]} one line per violation; empty when the story passes
  */
-export function precheckProblems({ texts, names, buttons, primaries }, { fixtures, allowed }) {
+export function precheckProblems({ texts: shown, names, buttons, primaries }, { fixtures, allowed }) {
   const found = [];
+  const texts = shown.filter((text) => !text.glossary);
   for (const { text } of texts) {
     if (text.includes('?') || SENTENCE.test(text)) found.push(`(a) sentence or question: "${text}"`);
   }

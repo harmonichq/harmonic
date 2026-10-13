@@ -18,6 +18,12 @@
 //   (e) every visible number sits in a [data-source] whose fixture field it equals
 // The rules themselves are frontend/ui/prechecks.js; this file gathers what
 // they read from each rendered story.
+//
+// A story with a play function (Storybook tags it "play-fn") is checked after
+// its play has run: the page traps the preview's channel before Storybook
+// starts, so a play or story exception is caught however early it fires, and
+// the render must settle as "completed". A play that throws, or a render that
+// errors or never settles, fails that story's test.
 import { createServer } from 'node:http';
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs';
@@ -87,7 +93,7 @@ function inspect() {
     if (!text || !element.checkVisibility({ visibilityProperty: true })) continue;
     const sourced = element.closest('[data-source]');
     texts.push({ text, source: sourced?.dataset.source ?? null, format: sourced?.dataset.format ?? null,
-      axis: Boolean(element.closest('[data-axis]')) });
+      axis: Boolean(element.closest('[data-axis]')), glossary: Boolean(element.closest('.glossary')) });
   }
   const names = [...shot.querySelectorAll('[aria-label]')].map((element) => element.getAttribute('aria-label'));
   const buttons = [...shot.querySelectorAll('button')].map((button) => ({
@@ -114,15 +120,43 @@ if (stories.length === 0) {
   process.exit(1);
 }
 
+const plays = stories.filter((entry) => entry.tags?.includes('play-fn')).length;
+console.log(`${stories.length} stories, ${plays} with a play function`);
+
 const server = await serve();
 const origin = `http://127.0.0.1:${server.address().port}`;
 const browser = await chromium().launch();
 
+// Before Storybook loads: catch the channel as it is assigned and record every
+// exception a story or its play function reports on it.
+function trapChannel() {
+  window.__uiStoryErrors = [];
+  let channel;
+  Object.defineProperty(window, '__STORYBOOK_ADDONS_CHANNEL__', {
+    configurable: true,
+    get: () => channel,
+    set: (value) => {
+      channel = value;
+      for (const event of ['playFunctionThrewException', 'storyThrewException', 'storyErrored']) {
+        value.on(event, (error) => window.__uiStoryErrors.push(`${event}: ${error?.message ?? error?.title ?? JSON.stringify(error)}`));
+      }
+    },
+  });
+}
+
 async function render(page, id) {
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
+  await page.addInitScript(trapChannel);
   await page.goto(`${origin}/iframe.html?id=${id}&viewMode=story`);
   await page.waitForSelector('[data-shot]');
+  const phase = await page.waitForFunction(() => {
+    const done = ['completed', 'errored', 'aborted'];
+    const current = window.__STORYBOOK_PREVIEW__?.currentRender?.phase;
+    return done.includes(current) ? current : null;
+  }, null, { timeout: 15000 }).then((handle) => handle.jsonValue());
+  if (phase !== 'completed') errors.push(`the story's render ended ${phase}`);
+  errors.push(...await page.evaluate(() => window.__uiStoryErrors));
   await page.evaluate(() => document.fonts.ready);
   return errors;
 }

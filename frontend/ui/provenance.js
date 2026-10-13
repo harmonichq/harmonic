@@ -9,7 +9,8 @@
 // number, `fixed1` or `fixed2` to one or two decimals, `clock` as minutes since
 // midnight in HH:MM, `day` as the day of the month of a YYYY-MM-DD date,
 // `date` as the day and month of a served date or time ("19 May"), `time` as
-// the HH:MM of a served "YYYY-MM-DD HH:MM:SS" time.
+// the HH:MM of a served "YYYY-MM-DD HH:MM:SS" time, `until` as the date
+// fourteen days after a served time (§1.5 Snooze: "for 14 days").
 // "Range 1–4 of 6" prints round(wilson.lo × n) and round(wilson.hi × n); the
 // 54–69 band prints tbr_lvl1 − tbr_lvl2 as fixed1.
 //
@@ -62,6 +63,7 @@ export function resolveSource(root, source) {
   return value;
 }
 
+const SNOOZE_DAYS = 14;
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 export function formatValue(value, format) {
@@ -72,6 +74,10 @@ export function formatValue(value, format) {
   if (format === 'day') return String(Number(value.slice(8, 10)));
   if (format === 'date') return `${Number(value.slice(8, 10))} ${MONTHS[Number(value.slice(5, 7)) - 1]}`;
   if (format === 'time') return value.slice(11, 16);
+  if (format === 'until') {
+    const day = new Date(Date.UTC(Number(value.slice(0, 4)), Number(value.slice(5, 7)) - 1, Number(value.slice(8, 10)) + SNOOZE_DAYS));
+    return `${day.getUTCDate()} ${MONTHS[day.getUTCMonth()]}`;
+  }
   if (format === 'clock') {
     const pad = (part) => String(part).padStart(2, '0');
     return `${pad(Math.floor(value / 60))}:${pad(value % 60)}`;

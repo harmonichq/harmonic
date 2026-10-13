@@ -56,7 +56,11 @@ Two committed outputs, one generator, one ``--check``:
   ``/api/pump-settings`` for the wearer and for the unsynced store (no
   profile). ``snooze`` is a pattern the pinned store's person snoozes through
   ``PUT /api/guidance/preferences``, with the decision time the engine serves.
-  ``glossary`` is §1.5's rows, for the Glossary page.
+  ``glossary`` is §1.5's rows, for the Glossary page. For the Queue screen,
+  each store's candidates carry their rank, admission and snooze; the pinned
+  store's Queue is read again after its snooze (``wearer-pinned-snoozed``);
+  ``wearer-first-days-snoozed`` is the first days with everything snoozed (an
+  empty Queue); and the unsynced store records its guidance disposition.
 
   ``status.failed`` adds one invented failed sync attempt, through
   ``Store.record_fetch_result``, so the Settings alert has a served
@@ -125,6 +129,8 @@ MARK_FIELDS = ("current", "estimate")
 # §4.2 GlucoseProfile's insufficient-data label, quoted there; "data" is not yet
 # in glossary §1.5.
 STATE_LABELS = ("No data",)
+# §1.3 Queue's empty-state label, "0 patterns".
+QUEUE_LABELS = ("patterns",)
 # §4.2 DayTile: "a weekday and date". The weekday abbreviations are not yet in
 # glossary §1.5.
 WEEKDAYS = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
@@ -256,10 +262,15 @@ def fixtures() -> dict:
         changes["wearer-pinned"] = _changes_store(pinned)
         snooze = _snooze(pinned, pinned_pattern=next(
             f["pattern_key"] for f in changes["wearer-pinned"]["focuses"] if f["status"] == "active"))
+        queue["wearer-pinned-snoozed"] = _queue_store(pinned)
 
         _, first_days = _wearer(scratch, "wearer-first-days", trial=False, days=FIRST_DAYS)
         overview["wearer-first-days"] = {"time_of_day": _time_of_day(first_days)}
         changes["wearer-first-days"] = _changes_store(first_days)
+        # Everything the first days admit, snoozed: an empty Queue whose
+        # Snoozed list holds them all (§1.3 Queue empty, Queue · Snoozed).
+        _snooze_all(first_days)
+        queue["wearer-first-days-snoozed"] = _queue_store(first_days)
 
         _, maturing = _wearer(scratch, "wearer-trial-maturing", trial=True,
                               days=ui_patient.TRIAL_DAY + MATURING_DAYS)
@@ -277,7 +288,8 @@ def fixtures() -> dict:
         with Store.open(str(unsynced)):
             pass
         unsynced_client = _serve(unsynced)
-        overview["wearer-unsynced"] = {"outcomes": _outcomes(unsynced_client)}
+        overview["wearer-unsynced"] = {"outcomes": _outcomes(unsynced_client),
+                                       "guidance": {"disposition": _get(unsynced_client, "/api/guidance")["disposition"]}}
         settings["pump_settings"]["wearer-unsynced"] = _pump_settings(unsynced_client)
     return {
         "_generated_by": GENERATED_BY,
@@ -364,6 +376,16 @@ def _snooze(client: TestClient, *, pinned_pattern: str) -> dict:
     after = next(c for c in _get(client, "/api/guidance")["candidates"] if c["subject"] == candidate["subject"])
     return {"subject": after["subject"], "title": after["title"],
             "set_aside": after["preference"]["set_aside"], "decided_at": after["decision"]["decided_at"]}
+
+
+def _snooze_all(client: TestClient) -> None:
+    """The person snoozes every candidate the Queue holds."""
+    answer = _get(client, "/api/guidance")
+    for candidate in answer["candidates"]:
+        if candidate["admitted"] and not candidate["preference"]["set_aside"]:
+            client.put(f"/api/guidance/preferences/{candidate['subject']}",
+                       json={"generation": answer["analysis_generation"]}).raise_for_status()
+            answer = _get(client, "/api/guidance")
 
 
 def glossary() -> list[dict]:
@@ -538,23 +560,33 @@ def _queue_store(client: TestClient) -> dict:
     analyze = _get(client, "/api/analyze")
     trials = _get(client, "/api/verify/trials")
     focus = _get(client, "/api/focus")
+    # A pattern that collapses to its one member is served as that member's
+    # habit row ("finding:<lever>"), which the Queue reads it through.
+    collapsed = {f"finding:{p['action'].split(':', 1)[1]}" for p in findings["outcome_patterns"]
+                 if p.get("collapse") == "collapse_to_member" and p.get("action")}
     return {
         "findings": {
             "outcome_patterns": [
                 {**{field: p[field] for field in ("key", "subject", "title", "k", "n", "wilson")},
-                 "wide": p.get("wide")}
+                 "wide": p.get("wide"), "collapse": p.get("collapse"), "action": p.get("action")}
                 for p in findings["outcome_patterns"]
             ],
             "rows": [
                 {field: r.get(field) for field in ROW_FIELDS}
                 for r in findings["rows"]
-                if r["kind"] == "pattern" or r.get("claimed_by")
+                if r["kind"] == "pattern" or r.get("claimed_by") or r["id"] in collapsed
                 or (r["kind"] == "setting" and r.get("parameter") == "basal_rate" and r.get("members"))
             ],
         },
         "guidance": {
             "candidates": [
-                {"subject": c["subject"], "kind": c["kind"], "title": c["title"], "units": c["units"]}
+                {"subject": c["subject"], "kind": c["kind"], "title": c["title"], "units": c["units"],
+                 "priority": c["priority"], "admitted": c["admitted"],
+                 "set_aside": c["preference"]["set_aside"],
+                 "decided_at": (c.get("decision") or {}).get("decided_at"),
+                 # The Queue's order rule (the brief's Queue section): admitted
+                 # and not set aside, ranked by priority.
+                 "queued": c["admitted"] and not c["preference"]["set_aside"]}
                 for c in guidance["candidates"]
             ],
         },
@@ -693,6 +725,7 @@ def allowlist(data: dict) -> dict:
         "units §4.2": list(UNITS),
         "connectives §4.2": list(CONNECTIVES),
         "state labels §4.2": list(STATE_LABELS),
+        "Queue labels §1.3": list(QUEUE_LABELS),
         "weekdays §4.2": list(WEEKDAYS),
         "months §1.1": list(MONTHS),
         "labels §1.2–§4.2": list(CHANGE_DAY_LABELS),

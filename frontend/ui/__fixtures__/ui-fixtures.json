@@ -14919,6 +14919,9 @@
       }
     },
     "wearer-unsynced": {
+      "guidance": {
+        "disposition": "unavailable"
+      },
       "outcomes": {
         "14": {
           "coverage": {
@@ -15566,6 +15569,8 @@
       "findings": {
         "outcome_patterns": [
           {
+            "action": "habit:carb_undercount",
+            "collapse": "remain_pattern",
             "k": 38,
             "key": "highs_after_meals",
             "n": 137,
@@ -15578,6 +15583,8 @@
             }
           },
           {
+            "action": "habit:meal_over_delivery",
+            "collapse": "remain_pattern",
             "k": 4,
             "key": "lows_after_meals",
             "n": 137,
@@ -15590,6 +15597,8 @@
             }
           },
           {
+            "action": "habit:over_treated_low",
+            "collapse": "collapse_to_member",
             "k": 6,
             "key": "highs_after_treating_lows",
             "n": 40,
@@ -15602,6 +15611,8 @@
             }
           },
           {
+            "action": null,
+            "collapse": "remain_pattern",
             "k": 1,
             "key": "lows_after_correcting_highs",
             "n": 40,
@@ -15614,6 +15625,8 @@
             }
           },
           {
+            "action": "basal_rate",
+            "collapse": "remain_pattern",
             "k": 3,
             "key": "overnight_lows_no_iob",
             "n": 30,
@@ -15817,6 +15830,29 @@
           },
           {
             "chips": [
+              "highs"
+            ],
+            "claimed_by": null,
+            "count_sentences": [
+              {
+                "count": 6,
+                "denominator": 40,
+                "noun": "lows",
+                "outcome": "rebounded high",
+                "sentence": "6 of 40 lows rebounded high"
+              }
+            ],
+            "fold_sentences": null,
+            "id": "finding:over_treated_low",
+            "kind": "habit",
+            "lever": "over_treated_low",
+            "members": null,
+            "parameter": null,
+            "span": null,
+            "title": "Over-treated low"
+          },
+          {
+            "chips": [
               "lows"
             ],
             "claimed_by": null,
@@ -15986,55 +16022,100 @@
       "guidance": {
         "candidates": [
           {
+            "admitted": true,
+            "decided_at": null,
             "kind": "setting",
+            "priority": 13,
+            "queued": true,
+            "set_aside": false,
             "subject": "setting:basal_rate",
             "title": "Basal",
             "units": "U/h"
           },
           {
+            "admitted": false,
+            "decided_at": null,
             "kind": "setting",
+            "priority": 0,
+            "queued": false,
+            "set_aside": false,
             "subject": "setting:carb_ratio",
             "title": "Carb ratio",
             "units": "g/U"
           },
           {
+            "admitted": false,
+            "decided_at": null,
             "kind": "setting",
+            "priority": 0,
+            "queued": false,
+            "set_aside": false,
             "subject": "setting:isf",
             "title": "Correction factor",
             "units": "mg/dL/U"
           },
           {
+            "admitted": false,
+            "decided_at": null,
             "kind": "habit",
+            "priority": 14,
+            "queued": false,
+            "set_aside": false,
             "subject": "habit:meal_bolus_short",
             "title": "Meal bolus fell short",
             "units": null
           },
           {
+            "admitted": true,
+            "decided_at": null,
             "kind": "pattern",
+            "priority": 35,
+            "queued": true,
+            "set_aside": false,
             "subject": "pattern:highs_after_meals",
             "title": "Highs after meals",
             "units": null
           },
           {
+            "admitted": true,
+            "decided_at": null,
             "kind": "pattern",
+            "priority": 7,
+            "queued": true,
+            "set_aside": false,
             "subject": "pattern:lows_after_meals",
             "title": "Lows after meals",
             "units": null
           },
           {
+            "admitted": true,
+            "decided_at": null,
             "kind": "pattern",
+            "priority": 31,
+            "queued": true,
+            "set_aside": false,
             "subject": "pattern:highs_after_treating_lows",
             "title": "Highs after treating lows",
             "units": null
           },
           {
+            "admitted": false,
+            "decided_at": null,
             "kind": "pattern",
+            "priority": 0,
+            "queued": false,
+            "set_aside": false,
             "subject": "pattern:lows_after_correcting_highs",
             "title": "Lows after correcting highs",
             "units": null
           },
           {
+            "admitted": true,
+            "decided_at": null,
             "kind": "pattern",
+            "priority": 13,
+            "queued": true,
+            "set_aside": false,
             "subject": "pattern:overnight_lows_no_iob",
             "title": "Overnight lows with no insulin on board",
             "units": null
@@ -16128,6 +16209,380 @@
             "state": "complete"
           }
         ]
+      }
+    },
+    "wearer-first-days-snoozed": {
+      "analyze": {
+        "basal": []
+      },
+      "findings": {
+        "outcome_patterns": [
+          {
+            "action": "habit:carb_undercount",
+            "collapse": "remain_pattern",
+            "k": 8,
+            "key": "highs_after_meals",
+            "n": 28,
+            "subject": "pattern:highs_after_meals",
+            "title": "Highs after meals",
+            "wide": false,
+            "wilson": {
+              "hi": 0.4046,
+              "lo": 0.1906
+            }
+          },
+          {
+            "action": "habit:meal_over_delivery",
+            "collapse": "remain_pattern",
+            "k": 2,
+            "key": "lows_after_meals",
+            "n": 28,
+            "subject": "pattern:lows_after_meals",
+            "title": "Lows after meals",
+            "wide": true,
+            "wilson": {
+              "hi": 0.1603,
+              "lo": 0.0301
+            }
+          },
+          {
+            "action": "habit:over_treated_low",
+            "collapse": "collapse_to_member",
+            "k": 2,
+            "key": "highs_after_treating_lows",
+            "n": 4,
+            "subject": "pattern:highs_after_treating_lows",
+            "title": "Highs after treating lows",
+            "wide": false,
+            "wilson": {
+              "hi": 0.7698,
+              "lo": 0.2302
+            }
+          },
+          {
+            "action": null,
+            "collapse": "remain_pattern",
+            "k": 0,
+            "key": "lows_after_correcting_highs",
+            "n": 4,
+            "subject": "pattern:lows_after_correcting_highs",
+            "title": "Lows after correcting highs",
+            "wide": false,
+            "wilson": {
+              "hi": 0.2911,
+              "lo": 0.0
+            }
+          },
+          {
+            "action": null,
+            "collapse": "remain_pattern",
+            "k": 0,
+            "key": "overnight_lows_no_iob",
+            "n": 5,
+            "subject": "pattern:overnight_lows_no_iob",
+            "title": "Overnight lows with no insulin on board",
+            "wide": false,
+            "wilson": {
+              "hi": 0.2473,
+              "lo": 0.0
+            }
+          }
+        ],
+        "rows": [
+          {
+            "chips": [
+              "highs"
+            ],
+            "claimed_by": null,
+            "count_sentences": [
+              {
+                "count": 2,
+                "denominator": 4,
+                "noun": "lows",
+                "outcome": "rebounded high",
+                "sentence": "2 of 4 lows rebounded high"
+              }
+            ],
+            "fold_sentences": null,
+            "id": "finding:over_treated_low",
+            "kind": "habit",
+            "lever": "over_treated_low",
+            "members": null,
+            "parameter": null,
+            "span": null,
+            "title": "Over-treated low"
+          },
+          {
+            "chips": [
+              "highs",
+              "meals"
+            ],
+            "claimed_by": null,
+            "count_sentences": [
+              {
+                "count": 8,
+                "denominator": 28,
+                "noun": "meals",
+                "outcome": "ran high",
+                "sentence": "8 of 28 meals ran high"
+              }
+            ],
+            "fold_sentences": null,
+            "id": "pattern:highs_after_meals",
+            "kind": "pattern",
+            "lever": null,
+            "members": null,
+            "parameter": null,
+            "span": null,
+            "title": "Highs after meals"
+          },
+          {
+            "chips": [
+              "highs",
+              "meals",
+              "corrections"
+            ],
+            "claimed_by": "pattern:highs_after_meals",
+            "count_sentences": [
+              {
+                "count": 4,
+                "denominator": 11,
+                "noun": "correction clusters",
+                "outcome": "followed an undercounted meal",
+                "sentence": "4 of 11 correction clusters followed an undercounted meal"
+              },
+              {
+                "count": 8,
+                "denominator": 28,
+                "noun": "meals",
+                "outcome": "ran high",
+                "sentence": "8 of 28 meals ran high"
+              }
+            ],
+            "fold_sentences": [
+              {
+                "count": 8,
+                "denominator": 28,
+                "noun": "meals",
+                "outcome": "ran high",
+                "scope": "pattern",
+                "sentence": "8 of 28 meals ran high"
+              },
+              {
+                "count": 4,
+                "denominator": 11,
+                "noun": "correction clusters",
+                "outcome": "followed an undercounted meal",
+                "scope": "outside",
+                "sentence": "4 of 11 correction clusters followed an undercounted meal"
+              }
+            ],
+            "id": "finding:carb_undercount",
+            "kind": "habit",
+            "lever": "carb_undercount",
+            "members": null,
+            "parameter": null,
+            "span": null,
+            "title": "Carb undercount"
+          },
+          {
+            "chips": [
+              "lows",
+              "meals"
+            ],
+            "claimed_by": null,
+            "count_sentences": [
+              {
+                "count": 2,
+                "denominator": 28,
+                "noun": "meals",
+                "outcome": "ran low",
+                "sentence": "2 of 28 meals ran low"
+              }
+            ],
+            "fold_sentences": null,
+            "id": "pattern:lows_after_meals",
+            "kind": "pattern",
+            "lever": null,
+            "members": null,
+            "parameter": null,
+            "span": null,
+            "title": "Lows after meals"
+          },
+          {
+            "chips": [
+              "lows",
+              "meals"
+            ],
+            "claimed_by": "pattern:lows_after_meals",
+            "count_sentences": [
+              {
+                "count": 2,
+                "denominator": 28,
+                "noun": "meals",
+                "outcome": "ran low",
+                "sentence": "2 of 28 meals ran low"
+              }
+            ],
+            "fold_sentences": [
+              {
+                "count": 2,
+                "denominator": 28,
+                "noun": "meals",
+                "outcome": "ran low",
+                "scope": "pattern",
+                "sentence": "2 of 28 meals ran low"
+              }
+            ],
+            "id": "finding:meal_over_delivery",
+            "kind": "habit",
+            "lever": "meal_over_delivery",
+            "members": null,
+            "parameter": null,
+            "span": null,
+            "title": "Meal over-delivery"
+          },
+          {
+            "chips": [
+              "lows",
+              "corrections"
+            ],
+            "claimed_by": null,
+            "count_sentences": null,
+            "fold_sentences": null,
+            "id": "pattern:lows_after_correcting_highs",
+            "kind": "pattern",
+            "lever": null,
+            "members": null,
+            "parameter": null,
+            "span": null,
+            "title": "Lows after correcting highs"
+          },
+          {
+            "chips": [
+              "lows"
+            ],
+            "claimed_by": null,
+            "count_sentences": null,
+            "fold_sentences": null,
+            "id": "pattern:overnight_lows_no_iob",
+            "kind": "pattern",
+            "lever": null,
+            "members": null,
+            "parameter": null,
+            "span": null,
+            "title": "Overnight lows with no insulin on board"
+          }
+        ]
+      },
+      "focus": {
+        "focuses": []
+      },
+      "guidance": {
+        "candidates": [
+          {
+            "admitted": false,
+            "decided_at": null,
+            "kind": "setting",
+            "priority": 0,
+            "queued": false,
+            "set_aside": false,
+            "subject": "setting:basal_rate",
+            "title": "Basal",
+            "units": "U/h"
+          },
+          {
+            "admitted": false,
+            "decided_at": null,
+            "kind": "setting",
+            "priority": 0,
+            "queued": false,
+            "set_aside": false,
+            "subject": "setting:carb_ratio",
+            "title": "Carb ratio",
+            "units": "g/U"
+          },
+          {
+            "admitted": false,
+            "decided_at": null,
+            "kind": "setting",
+            "priority": 0,
+            "queued": false,
+            "set_aside": false,
+            "subject": "setting:isf",
+            "title": "Correction factor",
+            "units": "mg/dL/U"
+          },
+          {
+            "admitted": false,
+            "decided_at": null,
+            "kind": "investigation",
+            "priority": null,
+            "queued": false,
+            "set_aside": false,
+            "subject": "investigation:uncaused_highs",
+            "title": "Highs without a detected cause",
+            "units": null
+          },
+          {
+            "admitted": true,
+            "decided_at": "2025-05-26 01:00:00",
+            "kind": "pattern",
+            "priority": 35,
+            "queued": false,
+            "set_aside": true,
+            "subject": "pattern:highs_after_meals",
+            "title": "Highs after meals",
+            "units": null
+          },
+          {
+            "admitted": true,
+            "decided_at": "2025-05-26 01:00:00",
+            "kind": "pattern",
+            "priority": 5,
+            "queued": false,
+            "set_aside": true,
+            "subject": "pattern:lows_after_meals",
+            "title": "Lows after meals",
+            "units": null
+          },
+          {
+            "admitted": true,
+            "decided_at": "2025-05-26 01:00:00",
+            "kind": "pattern",
+            "priority": 44,
+            "queued": false,
+            "set_aside": true,
+            "subject": "pattern:highs_after_treating_lows",
+            "title": "Highs after treating lows",
+            "units": null
+          },
+          {
+            "admitted": false,
+            "decided_at": null,
+            "kind": "pattern",
+            "priority": 0,
+            "queued": false,
+            "set_aside": false,
+            "subject": "pattern:lows_after_correcting_highs",
+            "title": "Lows after correcting highs",
+            "units": null
+          },
+          {
+            "admitted": false,
+            "decided_at": null,
+            "kind": "pattern",
+            "priority": 0,
+            "queued": false,
+            "set_aside": false,
+            "subject": "pattern:overnight_lows_no_iob",
+            "title": "Overnight lows with no insulin on board",
+            "units": null
+          }
+        ]
+      },
+      "trials": {
+        "trials": []
       }
     },
     "wearer-pinned": {
@@ -17193,6 +17648,8 @@
       "findings": {
         "outcome_patterns": [
           {
+            "action": "habit:carb_undercount",
+            "collapse": "remain_pattern",
             "k": 35,
             "key": "highs_after_meals",
             "n": 137,
@@ -17205,6 +17662,8 @@
             }
           },
           {
+            "action": "habit:meal_over_delivery",
+            "collapse": "remain_pattern",
             "k": 3,
             "key": "lows_after_meals",
             "n": 137,
@@ -17217,6 +17676,8 @@
             }
           },
           {
+            "action": "habit:over_treated_low",
+            "collapse": "collapse_to_member",
             "k": 7,
             "key": "highs_after_treating_lows",
             "n": 41,
@@ -17229,6 +17690,8 @@
             }
           },
           {
+            "action": "habit:correction_on_iob",
+            "collapse": "remain_pattern",
             "k": 2,
             "key": "lows_after_correcting_highs",
             "n": 41,
@@ -17241,6 +17704,8 @@
             }
           },
           {
+            "action": "basal_rate",
+            "collapse": "remain_pattern",
             "k": 7,
             "key": "overnight_lows_no_iob",
             "n": 30,
@@ -17421,6 +17886,36 @@
               "start_min": 300
             },
             "title": "Basal 05:00 to 07:30 · lower"
+          },
+          {
+            "chips": [
+              "highs"
+            ],
+            "claimed_by": null,
+            "count_sentences": [
+              {
+                "count": 1,
+                "denominator": 19,
+                "noun": "highs",
+                "outcome": "followed an over-treated low",
+                "sentence": "1 of 19 highs followed an over-treated low"
+              },
+              {
+                "count": 7,
+                "denominator": 41,
+                "noun": "lows",
+                "outcome": "rebounded high",
+                "sentence": "7 of 41 lows rebounded high"
+              }
+            ],
+            "fold_sentences": null,
+            "id": "finding:over_treated_low",
+            "kind": "habit",
+            "lever": "over_treated_low",
+            "members": null,
+            "parameter": null,
+            "span": null,
+            "title": "Over-treated low"
           },
           {
             "chips": [
@@ -17738,61 +18233,1874 @@
       "guidance": {
         "candidates": [
           {
+            "admitted": true,
+            "decided_at": null,
             "kind": "setting",
+            "priority": 78,
+            "queued": true,
+            "set_aside": false,
             "subject": "setting:basal_rate",
             "title": "Basal",
             "units": "U/h"
           },
           {
+            "admitted": false,
+            "decided_at": null,
             "kind": "setting",
+            "priority": 0,
+            "queued": false,
+            "set_aside": false,
             "subject": "setting:carb_ratio",
             "title": "Carb ratio",
             "units": "g/U"
           },
           {
+            "admitted": false,
+            "decided_at": null,
             "kind": "setting",
+            "priority": 0,
+            "queued": false,
+            "set_aside": false,
             "subject": "setting:isf",
             "title": "Correction factor",
             "units": "mg/dL/U"
           },
           {
+            "admitted": false,
+            "decided_at": null,
             "kind": "habit",
+            "priority": 16,
+            "queued": false,
+            "set_aside": false,
             "subject": "habit:meal_bolus_short",
             "title": "Meal bolus fell short",
             "units": null
           },
           {
+            "admitted": false,
+            "decided_at": null,
             "kind": "investigation",
+            "priority": null,
+            "queued": false,
+            "set_aside": false,
             "subject": "investigation:uncaused_highs",
             "title": "Highs without a detected cause",
             "units": null
           },
           {
+            "admitted": true,
+            "decided_at": null,
             "kind": "pattern",
+            "priority": 33,
+            "queued": true,
+            "set_aside": false,
             "subject": "pattern:highs_after_meals",
             "title": "Highs after meals",
             "units": null
           },
           {
+            "admitted": true,
+            "decided_at": null,
             "kind": "pattern",
+            "priority": 6,
+            "queued": true,
+            "set_aside": false,
             "subject": "pattern:lows_after_meals",
             "title": "Lows after meals",
             "units": null
           },
           {
+            "admitted": true,
+            "decided_at": null,
             "kind": "pattern",
+            "priority": 41,
+            "queued": true,
+            "set_aside": false,
             "subject": "pattern:highs_after_treating_lows",
             "title": "Highs after treating lows",
             "units": null
           },
           {
+            "admitted": true,
+            "decided_at": null,
             "kind": "pattern",
+            "priority": 13,
+            "queued": true,
+            "set_aside": false,
             "subject": "pattern:lows_after_correcting_highs",
             "title": "Lows after correcting highs",
             "units": null
           },
           {
+            "admitted": true,
+            "decided_at": null,
             "kind": "pattern",
+            "priority": 78,
+            "queued": true,
+            "set_aside": false,
+            "subject": "pattern:overnight_lows_no_iob",
+            "title": "Overnight lows with no insulin on board",
+            "units": null
+          }
+        ]
+      },
+      "trials": {
+        "trials": []
+      }
+    },
+    "wearer-pinned-snoozed": {
+      "analyze": {
+        "basal": [
+          {
+            "current": 1.6,
+            "days": 28,
+            "estimate": {
+              "confidence": 0.8,
+              "hi": 1.5875,
+              "lo": 1.0882,
+              "method": "bootstrap-median",
+              "n": 28,
+              "value": 1.372,
+              "wide": false
+            },
+            "evidence": {
+              "night_roster": [
+                {
+                  "date": "2025-04-26",
+                  "delivered_rate": 1.586,
+                  "programmed_rate": 1.6
+                },
+                {
+                  "date": "2025-04-28",
+                  "delivered_rate": 1.9184999999999999,
+                  "programmed_rate": 1.6
+                },
+                {
+                  "date": "2025-04-29",
+                  "delivered_rate": 1.5875,
+                  "programmed_rate": 1.6
+                },
+                {
+                  "date": "2025-04-30",
+                  "delivered_rate": 1.1085,
+                  "programmed_rate": 1.6
+                },
+                {
+                  "date": "2025-05-01",
+                  "delivered_rate": 1.3159999999999998,
+                  "programmed_rate": 1.6
+                },
+                {
+                  "date": "2025-05-02",
+                  "delivered_rate": 0.34,
+                  "programmed_rate": 1.6
+                },
+                {
+                  "date": "2025-05-03",
+                  "delivered_rate": 2.0785,
+                  "programmed_rate": 1.6
+                },
+                {
+                  "date": "2025-05-04",
+                  "delivered_rate": 0.172,
+                  "programmed_rate": 1.6
+                },
+                {
+                  "date": "2025-05-05",
+                  "delivered_rate": 1.348,
+                  "programmed_rate": 1.6
+                },
+                {
+                  "date": "2025-05-06",
+                  "delivered_rate": 2.0140000000000002,
+                  "programmed_rate": 1.6
+                },
+                {
+                  "date": "2025-05-07",
+                  "delivered_rate": 1.939,
+                  "programmed_rate": 1.6
+                },
+                {
+                  "date": "2025-05-08",
+                  "delivered_rate": 2.2295,
+                  "programmed_rate": 1.6
+                },
+                {
+                  "date": "2025-05-09",
+                  "delivered_rate": 0.22,
+                  "programmed_rate": 1.6
+                },
+                {
+                  "date": "2025-05-10",
+                  "delivered_rate": 1.068,
+                  "programmed_rate": 1.6
+                },
+                {
+                  "date": "2025-05-11",
+                  "delivered_rate": 1.632,
+                  "programmed_rate": 1.6
+                },
+                {
+                  "date": "2025-05-12",
+                  "delivered_rate": 1.556,
+                  "programmed_rate": 1.6
+                },
+                {
+                  "date": "2025-05-13",
+                  "delivered_rate": 1.741,
+                  "programmed_rate": 1.6
+                },
+                {
+                  "date": "2025-05-15",
+                  "delivered_rate": 0.8440000000000001,
+                  "programmed_rate": 1.6
+                },
+                {
+                  "date": "2025-05-16",
+                  "delivered_rate": 0.224,
+                  "programmed_rate": 1.6
+                },
+                {
+                  "date": "2025-05-17",
+                  "delivered_rate": 1.396,
+                  "programmed_rate": 1.6
+                },
+                {
+                  "date": "2025-05-18",
+                  "delivered_rate": 0.244,
+                  "programmed_rate": 1.6
+                },
+                {
+                  "date": "2025-05-19",
+                  "delivered_rate": 1.824,
+                  "programmed_rate": 1.6
+                },
+                {
+                  "date": "2025-05-20",
+                  "delivered_rate": 2.0975,
+                  "programmed_rate": 1.6
+                },
+                {
+                  "date": "2025-05-21",
+                  "delivered_rate": 0.5960000000000001,
+                  "programmed_rate": 1.6
+                },
+                {
+                  "date": "2025-05-22",
+                  "delivered_rate": 1.621,
+                  "programmed_rate": 1.6
+                },
+                {
+                  "date": "2025-05-23",
+                  "delivered_rate": 0.616,
+                  "programmed_rate": 1.6
+                },
+                {
+                  "date": "2025-05-24",
+                  "delivered_rate": 0.152,
+                  "programmed_rate": 1.6
+                },
+                {
+                  "date": "2025-05-25",
+                  "delivered_rate": 0.764,
+                  "programmed_rate": 1.6
+                }
+              ]
+            },
+            "label": "03:30",
+            "recommended": 1.372,
+            "slot": 7
+          },
+          {
+            "current": 1.6,
+            "days": 27,
+            "estimate": {
+              "confidence": 0.8,
+              "hi": 1.5,
+              "lo": 0.948,
+              "method": "bootstrap-median",
+              "n": 27,
+              "value": 1.052,
+              "wide": true
+            },
+            "evidence": {
+              "night_roster": [
+                {
+                  "date": "2025-04-26",
+                  "delivered_rate": 0.904,
+                  "programmed_rate": 1.6
+                },
+                {
+                  "date": "2025-04-27",
+                  "delivered_rate": 0.12,
+                  "programmed_rate": 1.6
+                },
+                {
+                  "date": "2025-04-28",
+                  "delivered_rate": 1.709,
+                  "programmed_rate": 1.6
+                },
+                {
+                  "date": "2025-04-29",
+                  "delivered_rate": 0.9480000000000001,
+                  "programmed_rate": 1.6
+                },
+                {
+                  "date": "2025-05-01",
+                  "delivered_rate": 1.3079999999999998,
+                  "programmed_rate": 1.6
+                },
+                {
+                  "date": "2025-05-02",
+                  "delivered_rate": 0.284,
+                  "programmed_rate": 1.6
+                },
+                {
+                  "date": "2025-05-03",
+                  "delivered_rate": 1.9055,
+                  "programmed_rate": 1.6
+                },
+                {
+                  "date": "2025-05-05",
+                  "delivered_rate": 1.016,
+                  "programmed_rate": 1.6
+                },
+                {
+                  "date": "2025-05-06",
+                  "delivered_rate": 2.019,
+                  "programmed_rate": 1.6
+                },
+                {
+                  "date": "2025-05-07",
+                  "delivered_rate": 1.851,
+                  "programmed_rate": 1.6
+                },
+                {
+                  "date": "2025-05-08",
+                  "delivered_rate": 2.181,
+                  "programmed_rate": 1.6
+                },
+                {
+                  "date": "2025-05-10",
+                  "delivered_rate": 1.02,
+                  "programmed_rate": 1.6
+                },
+                {
+                  "date": "2025-05-11",
+                  "delivered_rate": 1.562,
+                  "programmed_rate": 1.6
+                },
+                {
+                  "date": "2025-05-12",
+                  "delivered_rate": 1.6,
+                  "programmed_rate": 1.6
+                },
+                {
+                  "date": "2025-05-13",
+                  "delivered_rate": 1.6760000000000002,
+                  "programmed_rate": 1.6
+                },
+                {
+                  "date": "2025-05-14",
+                  "delivered_rate": 1.944,
+                  "programmed_rate": 1.6
+                },
+                {
+                  "date": "2025-05-15",
+                  "delivered_rate": 0.212,
+                  "programmed_rate": 1.6
+                },
+                {
+                  "date": "2025-05-16",
+                  "delivered_rate": 0.028,
+                  "programmed_rate": 1.6
+                },
+                {
+                  "date": "2025-05-17",
+                  "delivered_rate": 1.052,
+                  "programmed_rate": 1.6
+                },
+                {
+                  "date": "2025-05-18",
+                  "delivered_rate": 0.192,
+                  "programmed_rate": 1.6
+                },
+                {
+                  "date": "2025-05-19",
+                  "delivered_rate": 1.196,
+                  "programmed_rate": 1.6
+                },
+                {
+                  "date": "2025-05-20",
+                  "delivered_rate": 1.821,
+                  "programmed_rate": 1.6
+                },
+                {
+                  "date": "2025-05-21",
+                  "delivered_rate": 0.544,
+                  "programmed_rate": 1.6
+                },
+                {
+                  "date": "2025-05-22",
+                  "delivered_rate": 1.5,
+                  "programmed_rate": 1.6
+                },
+                {
+                  "date": "2025-05-23",
+                  "delivered_rate": 0.428,
+                  "programmed_rate": 1.6
+                },
+                {
+                  "date": "2025-05-24",
+                  "delivered_rate": 0.636,
+                  "programmed_rate": 1.6
+                },
+                {
+                  "date": "2025-05-25",
+                  "delivered_rate": 0.612,
+                  "programmed_rate": 1.6
+                }
+              ]
+            },
+            "label": "04:00",
+            "recommended": 1.28,
+            "slot": 8
+          },
+          {
+            "current": 1.4,
+            "days": 26,
+            "estimate": {
+              "confidence": 0.8,
+              "hi": 0.9743,
+              "lo": 0.5773,
+              "method": "bootstrap-median",
+              "n": 26,
+              "value": 0.717,
+              "wide": true
+            },
+            "evidence": {
+              "night_roster": [
+                {
+                  "date": "2025-04-26",
+                  "delivered_rate": 0.78,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-04-28",
+                  "delivered_rate": 0.99,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-04-29",
+                  "delivered_rate": 0.27,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-04-30",
+                  "delivered_rate": 0.9585,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-01",
+                  "delivered_rate": 1.1265,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-02",
+                  "delivered_rate": 0.41,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-03",
+                  "delivered_rate": 1.4395,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-05",
+                  "delivered_rate": 0.616,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-06",
+                  "delivered_rate": 1.734,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-07",
+                  "delivered_rate": 1.06,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-08",
+                  "delivered_rate": 1.6099999999999999,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-10",
+                  "delivered_rate": 0.2,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-11",
+                  "delivered_rate": 0.654,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-12",
+                  "delivered_rate": 0.045,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-13",
+                  "delivered_rate": 1.1025,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-14",
+                  "delivered_rate": 1.4,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-15",
+                  "delivered_rate": 0.165,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-17",
+                  "delivered_rate": 0.3085,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-18",
+                  "delivered_rate": 0.8395,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-19",
+                  "delivered_rate": 1.025,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-20",
+                  "delivered_rate": 1.277,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-21",
+                  "delivered_rate": 0.364,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-22",
+                  "delivered_rate": 0.5175,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-23",
+                  "delivered_rate": 0.381,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-24",
+                  "delivered_rate": 0.574,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-25",
+                  "delivered_rate": 0.5805,
+                  "programmed_rate": 1.4
+                }
+              ]
+            },
+            "label": "05:00",
+            "recommended": 1.12,
+            "slot": 10
+          },
+          {
+            "current": 1.4,
+            "days": 26,
+            "estimate": {
+              "confidence": 0.8,
+              "hi": 0.7925,
+              "lo": 0.508,
+              "method": "bootstrap-median",
+              "n": 26,
+              "value": 0.6262,
+              "wide": false
+            },
+            "evidence": {
+              "night_roster": [
+                {
+                  "date": "2025-04-26",
+                  "delivered_rate": 1.082,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-04-28",
+                  "delivered_rate": 0.795,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-04-29",
+                  "delivered_rate": 0.515,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-04-30",
+                  "delivered_rate": 0.948,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-01",
+                  "delivered_rate": 1.085,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-02",
+                  "delivered_rate": 0.675,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-03",
+                  "delivered_rate": 1.4024999999999999,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-04",
+                  "delivered_rate": 1.995,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-05",
+                  "delivered_rate": 0.297,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-06",
+                  "delivered_rate": 1.444,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-07",
+                  "delivered_rate": 0.508,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-08",
+                  "delivered_rate": 1.631,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-10",
+                  "delivered_rate": 0.417,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-11",
+                  "delivered_rate": 0.511,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-13",
+                  "delivered_rate": 0.49349999999999994,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-14",
+                  "delivered_rate": 0.738,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-15",
+                  "delivered_rate": 0.14,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-17",
+                  "delivered_rate": 0.165,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-18",
+                  "delivered_rate": 0.5774999999999999,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-19",
+                  "delivered_rate": 0.266,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-20",
+                  "delivered_rate": 1.155,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-21",
+                  "delivered_rate": 0.23399999999999999,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-22",
+                  "delivered_rate": 0.165,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-23",
+                  "delivered_rate": 0.423,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-24",
+                  "delivered_rate": 0.847,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-25",
+                  "delivered_rate": 0.7,
+                  "programmed_rate": 1.4
+                }
+              ]
+            },
+            "label": "05:30",
+            "recommended": 1.12,
+            "slot": 11
+          },
+          {
+            "current": 1.4,
+            "days": 28,
+            "estimate": {
+              "confidence": 0.8,
+              "hi": 0.7065,
+              "lo": 0.437,
+              "method": "bootstrap-median",
+              "n": 28,
+              "value": 0.5317,
+              "wide": true
+            },
+            "evidence": {
+              "night_roster": [
+                {
+                  "date": "2025-04-26",
+                  "delivered_rate": 0.21350000000000002,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-04-27",
+                  "delivered_rate": 1.941,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-04-28",
+                  "delivered_rate": 0.5285,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-04-29",
+                  "delivered_rate": 0.354,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-04-30",
+                  "delivered_rate": 0.36,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-01",
+                  "delivered_rate": 1.0115,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-02",
+                  "delivered_rate": 0.333,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-03",
+                  "delivered_rate": 1.2774999999999999,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-04",
+                  "delivered_rate": 1.9925000000000002,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-05",
+                  "delivered_rate": 0.28400000000000003,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-06",
+                  "delivered_rate": 1.4,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-07",
+                  "delivered_rate": 0.514,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-08",
+                  "delivered_rate": 1.5495,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-10",
+                  "delivered_rate": 0.605,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-11",
+                  "delivered_rate": 0.8325,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-12",
+                  "delivered_rate": 0.27249999999999996,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-13",
+                  "delivered_rate": 0.2515,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-14",
+                  "delivered_rate": 0.437,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-15",
+                  "delivered_rate": 0.347,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-17",
+                  "delivered_rate": 0.353,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-18",
+                  "delivered_rate": 1.106,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-19",
+                  "delivered_rate": 0.5385,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-20",
+                  "delivered_rate": 1.06,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-21",
+                  "delivered_rate": 0.44100000000000006,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-22",
+                  "delivered_rate": 0.535,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-23",
+                  "delivered_rate": 1.0075,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-24",
+                  "delivered_rate": 0.808,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-25",
+                  "delivered_rate": 0.395,
+                  "programmed_rate": 1.4
+                }
+              ]
+            },
+            "label": "06:00",
+            "recommended": 1.12,
+            "slot": 12
+          },
+          {
+            "current": 1.4,
+            "days": 24,
+            "estimate": {
+              "confidence": 0.8,
+              "hi": 1.0183,
+              "lo": 0.7508,
+              "method": "bootstrap-median",
+              "n": 24,
+              "value": 0.9485,
+              "wide": false
+            },
+            "evidence": {
+              "night_roster": [
+                {
+                  "date": "2025-04-26",
+                  "delivered_rate": 0.6539999999999999,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-04-27",
+                  "delivered_rate": 1.881,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-04-28",
+                  "delivered_rate": 0.7985,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-04-29",
+                  "delivered_rate": 1.053,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-01",
+                  "delivered_rate": 1.0285,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-02",
+                  "delivered_rate": 1.123,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-03",
+                  "delivered_rate": 1.4,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-06",
+                  "delivered_rate": 1.2875,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-07",
+                  "delivered_rate": 1.001,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-08",
+                  "delivered_rate": 1.5259999999999998,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-10",
+                  "delivered_rate": 0.6545,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-11",
+                  "delivered_rate": 1.008,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-12",
+                  "delivered_rate": 0.26249999999999996,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-13",
+                  "delivered_rate": 0.9345,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-14",
+                  "delivered_rate": 0.5735,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-17",
+                  "delivered_rate": 0.7030000000000001,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-18",
+                  "delivered_rate": 1.2285,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-19",
+                  "delivered_rate": 0.647,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-20",
+                  "delivered_rate": 0.8125,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-21",
+                  "delivered_rate": 0.49,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-22",
+                  "delivered_rate": 0.556,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-23",
+                  "delivered_rate": 0.9624999999999999,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-24",
+                  "delivered_rate": 1.3599999999999999,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-25",
+                  "delivered_rate": 0.675,
+                  "programmed_rate": 1.4
+                }
+              ]
+            },
+            "label": "06:30",
+            "recommended": 1.12,
+            "slot": 13
+          },
+          {
+            "current": 1.4,
+            "days": 24,
+            "estimate": {
+              "confidence": 0.8,
+              "hi": 1.4,
+              "lo": 1.1992,
+              "method": "bootstrap-median",
+              "n": 24,
+              "value": 1.2933,
+              "wide": false
+            },
+            "evidence": {
+              "night_roster": [
+                {
+                  "date": "2025-04-26",
+                  "delivered_rate": 0.9590000000000001,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-04-27",
+                  "delivered_rate": 1.855,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-04-28",
+                  "delivered_rate": 0.9970000000000001,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-04-29",
+                  "delivered_rate": 1.2945,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-02",
+                  "delivered_rate": 1.365,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-03",
+                  "delivered_rate": 1.4,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-04",
+                  "delivered_rate": 1.4,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-06",
+                  "delivered_rate": 1.4,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-07",
+                  "delivered_rate": 1.2875,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-08",
+                  "delivered_rate": 1.4,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-10",
+                  "delivered_rate": 1.292,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-11",
+                  "delivered_rate": 1.4,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-12",
+                  "delivered_rate": 0.7909999999999999,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-13",
+                  "delivered_rate": 1.075,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-14",
+                  "delivered_rate": 1.1025,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-15",
+                  "delivered_rate": 1.561,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-17",
+                  "delivered_rate": 0.906,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-18",
+                  "delivered_rate": 1.4,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-19",
+                  "delivered_rate": 0.381,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-20",
+                  "delivered_rate": 1.137,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-21",
+                  "delivered_rate": 1.2614999999999998,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-22",
+                  "delivered_rate": 0.9724999999999999,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-23",
+                  "delivered_rate": 1.4,
+                  "programmed_rate": 1.4
+                },
+                {
+                  "date": "2025-05-24",
+                  "delivered_rate": 1.4,
+                  "programmed_rate": 1.4
+                }
+              ]
+            },
+            "label": "07:00",
+            "recommended": 1.293,
+            "slot": 14
+          }
+        ]
+      },
+      "findings": {
+        "outcome_patterns": [
+          {
+            "action": "habit:carb_undercount",
+            "collapse": "remain_pattern",
+            "k": 35,
+            "key": "highs_after_meals",
+            "n": 137,
+            "subject": "pattern:highs_after_meals",
+            "title": "Highs after meals",
+            "wide": false,
+            "wilson": {
+              "hi": 0.3059,
+              "lo": 0.2108
+            }
+          },
+          {
+            "action": "habit:meal_over_delivery",
+            "collapse": "remain_pattern",
+            "k": 3,
+            "key": "lows_after_meals",
+            "n": 137,
+            "subject": "pattern:lows_after_meals",
+            "title": "Lows after meals",
+            "wide": true,
+            "wilson": {
+              "hi": 0.0445,
+              "lo": 0.0107
+            }
+          },
+          {
+            "action": "habit:over_treated_low",
+            "collapse": "collapse_to_member",
+            "k": 7,
+            "key": "highs_after_treating_lows",
+            "n": 41,
+            "subject": "pattern:highs_after_treating_lows",
+            "title": "Highs after treating lows",
+            "wide": false,
+            "wilson": {
+              "hi": 0.2583,
+              "lo": 0.1085
+            }
+          },
+          {
+            "action": "habit:correction_on_iob",
+            "collapse": "remain_pattern",
+            "k": 2,
+            "key": "lows_after_correcting_highs",
+            "n": 41,
+            "subject": "pattern:lows_after_correcting_highs",
+            "title": "Lows after correcting highs",
+            "wide": true,
+            "wilson": {
+              "hi": 0.1119,
+              "lo": 0.0205
+            }
+          },
+          {
+            "action": "basal_rate",
+            "collapse": "remain_pattern",
+            "k": 7,
+            "key": "overnight_lows_no_iob",
+            "n": 30,
+            "subject": "pattern:overnight_lows_no_iob",
+            "title": "Overnight lows with no insulin on board",
+            "wide": false,
+            "wilson": {
+              "hi": 0.3445,
+              "lo": 0.1498
+            }
+          }
+        ],
+        "rows": [
+          {
+            "chips": [
+              "lows"
+            ],
+            "claimed_by": null,
+            "count_sentences": null,
+            "fold_sentences": null,
+            "id": "basal:210-270",
+            "kind": "setting",
+            "lever": null,
+            "members": [
+              {
+                "current": 1.6,
+                "days": 28,
+                "estimate": {
+                  "confidence": 0.8,
+                  "hi": 1.5875,
+                  "lo": 1.0882,
+                  "method": "bootstrap-median",
+                  "n": 28,
+                  "value": 1.372,
+                  "wide": false
+                },
+                "recommended": 1.372,
+                "start_min": 210
+              },
+              {
+                "current": 1.6,
+                "days": 27,
+                "estimate": {
+                  "confidence": 0.8,
+                  "hi": 1.5,
+                  "lo": 0.948,
+                  "method": "bootstrap-median",
+                  "n": 27,
+                  "value": 1.052,
+                  "wide": true
+                },
+                "recommended": 1.28,
+                "start_min": 240
+              }
+            ],
+            "parameter": "basal_rate",
+            "span": {
+              "end_min": 270,
+              "label": "03:30 to 04:30",
+              "start_min": 210
+            },
+            "title": "Basal 03:30 to 04:30 · lower"
+          },
+          {
+            "chips": [
+              "lows"
+            ],
+            "claimed_by": null,
+            "count_sentences": [
+              {
+                "count": 7,
+                "denominator": 30,
+                "noun": "nights",
+                "outcome": "ran low overnight",
+                "sentence": "7 of 30 nights ran low overnight"
+              }
+            ],
+            "fold_sentences": null,
+            "id": "pattern:overnight_lows_no_iob",
+            "kind": "pattern",
+            "lever": null,
+            "members": null,
+            "parameter": null,
+            "span": null,
+            "title": "Overnight lows with no insulin on board"
+          },
+          {
+            "chips": [
+              "lows"
+            ],
+            "claimed_by": null,
+            "count_sentences": null,
+            "fold_sentences": null,
+            "id": "basal:300-450",
+            "kind": "setting",
+            "lever": null,
+            "members": [
+              {
+                "current": 1.4,
+                "days": 26,
+                "estimate": {
+                  "confidence": 0.8,
+                  "hi": 0.9743,
+                  "lo": 0.5773,
+                  "method": "bootstrap-median",
+                  "n": 26,
+                  "value": 0.717,
+                  "wide": true
+                },
+                "recommended": 1.12,
+                "start_min": 300
+              },
+              {
+                "current": 1.4,
+                "days": 26,
+                "estimate": {
+                  "confidence": 0.8,
+                  "hi": 0.7925,
+                  "lo": 0.508,
+                  "method": "bootstrap-median",
+                  "n": 26,
+                  "value": 0.6262,
+                  "wide": false
+                },
+                "recommended": 1.12,
+                "start_min": 330
+              },
+              {
+                "current": 1.4,
+                "days": 28,
+                "estimate": {
+                  "confidence": 0.8,
+                  "hi": 0.7065,
+                  "lo": 0.437,
+                  "method": "bootstrap-median",
+                  "n": 28,
+                  "value": 0.5317,
+                  "wide": true
+                },
+                "recommended": 1.12,
+                "start_min": 360
+              },
+              {
+                "current": 1.4,
+                "days": 24,
+                "estimate": {
+                  "confidence": 0.8,
+                  "hi": 1.0183,
+                  "lo": 0.7508,
+                  "method": "bootstrap-median",
+                  "n": 24,
+                  "value": 0.9485,
+                  "wide": false
+                },
+                "recommended": 1.12,
+                "start_min": 390
+              },
+              {
+                "current": 1.4,
+                "days": 24,
+                "estimate": {
+                  "confidence": 0.8,
+                  "hi": 1.4,
+                  "lo": 1.1992,
+                  "method": "bootstrap-median",
+                  "n": 24,
+                  "value": 1.2933,
+                  "wide": false
+                },
+                "recommended": 1.293,
+                "start_min": 420
+              }
+            ],
+            "parameter": "basal_rate",
+            "span": {
+              "end_min": 450,
+              "label": "05:00 to 07:30",
+              "start_min": 300
+            },
+            "title": "Basal 05:00 to 07:30 · lower"
+          },
+          {
+            "chips": [
+              "highs"
+            ],
+            "claimed_by": null,
+            "count_sentences": [
+              {
+                "count": 1,
+                "denominator": 19,
+                "noun": "highs",
+                "outcome": "followed an over-treated low",
+                "sentence": "1 of 19 highs followed an over-treated low"
+              },
+              {
+                "count": 7,
+                "denominator": 41,
+                "noun": "lows",
+                "outcome": "rebounded high",
+                "sentence": "7 of 41 lows rebounded high"
+              }
+            ],
+            "fold_sentences": null,
+            "id": "finding:over_treated_low",
+            "kind": "habit",
+            "lever": "over_treated_low",
+            "members": null,
+            "parameter": null,
+            "span": null,
+            "title": "Over-treated low"
+          },
+          {
+            "chips": [
+              "highs",
+              "meals"
+            ],
+            "claimed_by": null,
+            "count_sentences": [
+              {
+                "count": 35,
+                "denominator": 137,
+                "noun": "meals",
+                "outcome": "ran high",
+                "sentence": "35 of 137 meals ran high"
+              }
+            ],
+            "fold_sentences": null,
+            "id": "pattern:highs_after_meals",
+            "kind": "pattern",
+            "lever": null,
+            "members": null,
+            "parameter": null,
+            "span": null,
+            "title": "Highs after meals"
+          },
+          {
+            "chips": [
+              "highs",
+              "meals",
+              "corrections"
+            ],
+            "claimed_by": "pattern:highs_after_meals",
+            "count_sentences": [
+              {
+                "count": 8,
+                "denominator": 42,
+                "noun": "correction clusters",
+                "outcome": "followed an undercounted meal",
+                "sentence": "8 of 42 correction clusters followed an undercounted meal"
+              },
+              {
+                "count": 30,
+                "denominator": 137,
+                "noun": "meals",
+                "outcome": "ran high",
+                "sentence": "30 of 137 meals ran high"
+              }
+            ],
+            "fold_sentences": [
+              {
+                "count": 30,
+                "denominator": 137,
+                "noun": "meals",
+                "outcome": "ran high",
+                "scope": "pattern",
+                "sentence": "30 of 137 meals ran high"
+              },
+              {
+                "count": 8,
+                "denominator": 42,
+                "noun": "correction clusters",
+                "outcome": "followed an undercounted meal",
+                "scope": "outside",
+                "sentence": "8 of 42 correction clusters followed an undercounted meal"
+              }
+            ],
+            "id": "finding:carb_undercount",
+            "kind": "habit",
+            "lever": "carb_undercount",
+            "members": null,
+            "parameter": null,
+            "span": null,
+            "title": "Carb undercount"
+          },
+          {
+            "chips": [
+              "highs",
+              "meals"
+            ],
+            "claimed_by": "pattern:highs_after_meals",
+            "count_sentences": [
+              {
+                "count": 13,
+                "denominator": 88,
+                "noun": "sequences",
+                "outcome": "ran less in range",
+                "sentence": "13 of 88 sequences ran less in range"
+              }
+            ],
+            "fold_sentences": [
+              {
+                "count": 13,
+                "denominator": 88,
+                "noun": "sequences",
+                "outcome": "ran less in range",
+                "scope": "outside",
+                "sentence": "13 of 88 sequences ran less in range"
+              }
+            ],
+            "id": "finding:high_carb_sequence",
+            "kind": "habit",
+            "lever": "high_carb_sequence",
+            "members": null,
+            "parameter": null,
+            "span": null,
+            "title": "High-carb sequence"
+          },
+          {
+            "chips": [
+              "highs",
+              "meals"
+            ],
+            "claimed_by": "pattern:highs_after_meals",
+            "count_sentences": [
+              {
+                "count": 6,
+                "denominator": 137,
+                "noun": "meals",
+                "outcome": "needed a correction after",
+                "sentence": "6 of 137 meals needed a correction after"
+              }
+            ],
+            "fold_sentences": [
+              {
+                "count": 2,
+                "denominator": 137,
+                "noun": "meals",
+                "outcome": "needed a correction after",
+                "scope": "pattern",
+                "sentence": "2 of 137 meals needed a correction after"
+              }
+            ],
+            "id": "finding:meal_bolus_short",
+            "kind": "habit",
+            "lever": "meal_bolus_short",
+            "members": null,
+            "parameter": null,
+            "span": null,
+            "title": "Meal bolus fell short"
+          },
+          {
+            "chips": [
+              "highs",
+              "meals",
+              "corrections"
+            ],
+            "claimed_by": "pattern:highs_after_meals",
+            "count_sentences": [
+              {
+                "count": 1,
+                "denominator": 42,
+                "noun": "correction clusters",
+                "outcome": "followed a late bolus",
+                "sentence": "1 of 42 correction clusters followed a late bolus"
+              },
+              {
+                "count": 3,
+                "denominator": 137,
+                "noun": "meals",
+                "outcome": "ran high",
+                "sentence": "3 of 137 meals ran high"
+              }
+            ],
+            "fold_sentences": [
+              {
+                "count": 3,
+                "denominator": 137,
+                "noun": "meals",
+                "outcome": "ran high",
+                "scope": "pattern",
+                "sentence": "3 of 137 meals ran high"
+              },
+              {
+                "count": 1,
+                "denominator": 42,
+                "noun": "correction clusters",
+                "outcome": "followed a late bolus",
+                "scope": "outside",
+                "sentence": "1 of 42 correction clusters followed a late bolus"
+              }
+            ],
+            "id": "finding:late_bolus",
+            "kind": "habit",
+            "lever": "late_bolus",
+            "members": null,
+            "parameter": null,
+            "span": null,
+            "title": "Late bolus"
+          },
+          {
+            "chips": [
+              "lows",
+              "corrections"
+            ],
+            "claimed_by": null,
+            "count_sentences": [
+              {
+                "count": 2,
+                "denominator": 41,
+                "noun": "lows",
+                "outcome": "followed a correction",
+                "sentence": "2 of 41 lows followed a correction"
+              }
+            ],
+            "fold_sentences": null,
+            "id": "pattern:lows_after_correcting_highs",
+            "kind": "pattern",
+            "lever": null,
+            "members": null,
+            "parameter": null,
+            "span": null,
+            "title": "Lows after correcting highs"
+          },
+          {
+            "chips": [
+              "lows"
+            ],
+            "claimed_by": "pattern:lows_after_correcting_highs",
+            "count_sentences": [
+              {
+                "count": 2,
+                "denominator": 41,
+                "noun": "lows",
+                "outcome": "followed a correction on active insulin",
+                "sentence": "2 of 41 lows followed a correction on active insulin"
+              }
+            ],
+            "fold_sentences": [
+              {
+                "count": 2,
+                "denominator": 41,
+                "noun": "lows",
+                "outcome": "followed a correction on active insulin",
+                "scope": "pattern",
+                "sentence": "2 of 41 lows followed a correction on active insulin"
+              }
+            ],
+            "id": "finding:correction_on_iob",
+            "kind": "habit",
+            "lever": "correction_on_iob",
+            "members": null,
+            "parameter": null,
+            "span": null,
+            "title": "Correction on active insulin"
+          },
+          {
+            "chips": [
+              "lows",
+              "meals"
+            ],
+            "claimed_by": null,
+            "count_sentences": [
+              {
+                "count": 3,
+                "denominator": 137,
+                "noun": "meals",
+                "outcome": "ran low",
+                "sentence": "3 of 137 meals ran low"
+              }
+            ],
+            "fold_sentences": null,
+            "id": "pattern:lows_after_meals",
+            "kind": "pattern",
+            "lever": null,
+            "members": null,
+            "parameter": null,
+            "span": null,
+            "title": "Lows after meals"
+          },
+          {
+            "chips": [
+              "lows",
+              "meals"
+            ],
+            "claimed_by": "pattern:lows_after_meals",
+            "count_sentences": [
+              {
+                "count": 3,
+                "denominator": 137,
+                "noun": "meals",
+                "outcome": "ran low",
+                "sentence": "3 of 137 meals ran low"
+              }
+            ],
+            "fold_sentences": [
+              {
+                "count": 3,
+                "denominator": 137,
+                "noun": "meals",
+                "outcome": "ran low",
+                "scope": "pattern",
+                "sentence": "3 of 137 meals ran low"
+              }
+            ],
+            "id": "finding:meal_over_delivery",
+            "kind": "habit",
+            "lever": "meal_over_delivery",
+            "members": null,
+            "parameter": null,
+            "span": null,
+            "title": "Meal over-delivery"
+          }
+        ]
+      },
+      "focus": {
+        "focuses": [
+          {
+            "id": 1,
+            "lever": "carb_undercount",
+            "pattern_key": "highs_after_meals",
+            "status": "active"
+          }
+        ]
+      },
+      "guidance": {
+        "candidates": [
+          {
+            "admitted": true,
+            "decided_at": null,
+            "kind": "setting",
+            "priority": 78,
+            "queued": true,
+            "set_aside": false,
+            "subject": "setting:basal_rate",
+            "title": "Basal",
+            "units": "U/h"
+          },
+          {
+            "admitted": false,
+            "decided_at": null,
+            "kind": "setting",
+            "priority": 0,
+            "queued": false,
+            "set_aside": false,
+            "subject": "setting:carb_ratio",
+            "title": "Carb ratio",
+            "units": "g/U"
+          },
+          {
+            "admitted": false,
+            "decided_at": null,
+            "kind": "setting",
+            "priority": 0,
+            "queued": false,
+            "set_aside": false,
+            "subject": "setting:isf",
+            "title": "Correction factor",
+            "units": "mg/dL/U"
+          },
+          {
+            "admitted": false,
+            "decided_at": null,
+            "kind": "habit",
+            "priority": 16,
+            "queued": false,
+            "set_aside": false,
+            "subject": "habit:meal_bolus_short",
+            "title": "Meal bolus fell short",
+            "units": null
+          },
+          {
+            "admitted": false,
+            "decided_at": null,
+            "kind": "investigation",
+            "priority": null,
+            "queued": false,
+            "set_aside": false,
+            "subject": "investigation:uncaused_highs",
+            "title": "Highs without a detected cause",
+            "units": null
+          },
+          {
+            "admitted": true,
+            "decided_at": null,
+            "kind": "pattern",
+            "priority": 33,
+            "queued": true,
+            "set_aside": false,
+            "subject": "pattern:highs_after_meals",
+            "title": "Highs after meals",
+            "units": null
+          },
+          {
+            "admitted": true,
+            "decided_at": "2025-05-26 01:00:00",
+            "kind": "pattern",
+            "priority": 6,
+            "queued": false,
+            "set_aside": true,
+            "subject": "pattern:lows_after_meals",
+            "title": "Lows after meals",
+            "units": null
+          },
+          {
+            "admitted": true,
+            "decided_at": null,
+            "kind": "pattern",
+            "priority": 41,
+            "queued": true,
+            "set_aside": false,
+            "subject": "pattern:highs_after_treating_lows",
+            "title": "Highs after treating lows",
+            "units": null
+          },
+          {
+            "admitted": true,
+            "decided_at": null,
+            "kind": "pattern",
+            "priority": 13,
+            "queued": true,
+            "set_aside": false,
+            "subject": "pattern:lows_after_correcting_highs",
+            "title": "Lows after correcting highs",
+            "units": null
+          },
+          {
+            "admitted": true,
+            "decided_at": null,
+            "kind": "pattern",
+            "priority": 78,
+            "queued": true,
+            "set_aside": false,
             "subject": "pattern:overnight_lows_no_iob",
             "title": "Overnight lows with no insulin on board",
             "units": null
@@ -18356,6 +20664,8 @@
       "findings": {
         "outcome_patterns": [
           {
+            "action": "habit:high_carb_sequence",
+            "collapse": "remain_pattern",
             "k": 31,
             "key": "highs_after_meals",
             "n": 138,
@@ -18368,6 +20678,8 @@
             }
           },
           {
+            "action": "habit:meal_over_delivery",
+            "collapse": "remain_pattern",
             "k": 6,
             "key": "lows_after_meals",
             "n": 138,
@@ -18380,6 +20692,8 @@
             }
           },
           {
+            "action": "habit:over_treated_low",
+            "collapse": "collapse_to_member",
             "k": 16,
             "key": "highs_after_treating_lows",
             "n": 74,
@@ -18392,6 +20706,8 @@
             }
           },
           {
+            "action": null,
+            "collapse": "remain_pattern",
             "k": 1,
             "key": "lows_after_correcting_highs",
             "n": 74,
@@ -18404,6 +20720,8 @@
             }
           },
           {
+            "action": "basal_rate",
+            "collapse": "remain_pattern",
             "k": 19,
             "key": "overnight_lows_no_iob",
             "n": 30,
@@ -18534,6 +20852,29 @@
             "parameter": null,
             "span": null,
             "title": "Overnight lows with no insulin on board"
+          },
+          {
+            "chips": [
+              "highs"
+            ],
+            "claimed_by": null,
+            "count_sentences": [
+              {
+                "count": 16,
+                "denominator": 74,
+                "noun": "lows",
+                "outcome": "rebounded high",
+                "sentence": "16 of 74 lows rebounded high"
+              }
+            ],
+            "fold_sentences": null,
+            "id": "finding:over_treated_low",
+            "kind": "habit",
+            "lever": "over_treated_low",
+            "members": null,
+            "parameter": null,
+            "span": null,
+            "title": "Over-treated low"
           },
           {
             "chips": [
@@ -18851,61 +21192,111 @@
       "guidance": {
         "candidates": [
           {
+            "admitted": true,
+            "decided_at": null,
             "kind": "setting",
+            "priority": 78,
+            "queued": true,
+            "set_aside": false,
             "subject": "setting:basal_rate",
             "title": "Basal",
             "units": "U/h"
           },
           {
+            "admitted": false,
+            "decided_at": null,
             "kind": "setting",
+            "priority": 0,
+            "queued": false,
+            "set_aside": false,
             "subject": "setting:carb_ratio",
             "title": "Carb ratio",
             "units": "g/U"
           },
           {
+            "admitted": false,
+            "decided_at": null,
             "kind": "setting",
+            "priority": 0,
+            "queued": false,
+            "set_aside": false,
             "subject": "setting:isf",
             "title": "Correction factor",
             "units": "mg/dL/U"
           },
           {
+            "admitted": false,
+            "decided_at": null,
             "kind": "habit",
+            "priority": 12,
+            "queued": false,
+            "set_aside": false,
             "subject": "habit:meal_bolus_short",
             "title": "Meal bolus fell short",
             "units": null
           },
           {
+            "admitted": false,
+            "decided_at": null,
             "kind": "investigation",
+            "priority": null,
+            "queued": false,
+            "set_aside": false,
             "subject": "investigation:uncaused_highs",
             "title": "Highs without a detected cause",
             "units": null
           },
           {
+            "admitted": true,
+            "decided_at": null,
             "kind": "pattern",
+            "priority": 30,
+            "queued": true,
+            "set_aside": false,
             "subject": "pattern:highs_after_meals",
             "title": "Highs after meals",
             "units": null
           },
           {
+            "admitted": true,
+            "decided_at": null,
             "kind": "pattern",
+            "priority": 12,
+            "queued": true,
+            "set_aside": false,
             "subject": "pattern:lows_after_meals",
             "title": "Lows after meals",
             "units": null
           },
           {
+            "admitted": true,
+            "decided_at": null,
             "kind": "pattern",
+            "priority": 34,
+            "queued": true,
+            "set_aside": false,
             "subject": "pattern:highs_after_treating_lows",
             "title": "Highs after treating lows",
             "units": null
           },
           {
+            "admitted": false,
+            "decided_at": null,
             "kind": "pattern",
+            "priority": 0,
+            "queued": false,
+            "set_aside": false,
             "subject": "pattern:lows_after_correcting_highs",
             "title": "Lows after correcting highs",
             "units": null
           },
           {
+            "admitted": true,
+            "decided_at": null,
             "kind": "pattern",
+            "priority": 78,
+            "queued": true,
+            "set_aside": false,
             "subject": "pattern:overnight_lows_no_iob",
             "title": "Overnight lows with no insulin on board",
             "units": null

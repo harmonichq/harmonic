@@ -58,20 +58,27 @@ export function pattern(name: QueueStore, key: string): PatternData {
   const root = `queue.${name}.findings`;
   const s = store(name);
   const id = `pattern:${key}`;
-  const row = s.findings.rows.find((r) => r.id === id);
-  if (!row) throw new Error(`${name} serves no ${id} row`);
-  const rowPath = `${root}.rows[id=${id}].0`;
+  const outcome = s.findings.outcome_patterns.find((p) => p.key === key);
+  // A pattern that collapses to its one member is served as that member's
+  // habit row: the Queue reads it through that row, whose habit is its cause.
+  const member = outcome?.collapse === 'collapse_to_member' && outcome.action
+    ? `finding:${outcome.action.split(':')[1]}` : null;
+  const rowId = member ?? id;
+  const row = s.findings.rows.find((r) => r.id === rowId);
+  if (!row) throw new Error(`${name} serves no ${rowId} row`);
+  const rowPath = `${root}.rows[id=${rowId}].0`;
   const outcomePath = `${root}.outcome_patterns[key=${key}].0`;
   const counted = Boolean(row.count_sentences?.length);
-  const causes = s.findings.rows
-    .filter((r) => r.claimed_by === id)
-    .flatMap((r) => (r.fold_sentences ?? [])
-      .filter((f) => f.scope === 'pattern')
-      .map((f) => ({ title: r.title, count: f.count })))
-    .sort((a, b) => b.count - a.count);
-  const outcome = s.findings.outcome_patterns.find((p) => p.key === key);
+  const causes = member
+    ? [{ title: row.title, count: row.count_sentences![0].count }]
+    : s.findings.rows
+      .filter((r) => r.claimed_by === id)
+      .flatMap((r) => (r.fold_sentences ?? [])
+        .filter((f) => f.scope === 'pattern')
+        .map((f) => ({ title: r.title, count: f.count })))
+      .sort((a, b) => b.count - a.count);
   return {
-    title: row.title,
+    title: outcome?.title ?? row.title,
     tone: row.chips?.includes('highs') ? 'high' : 'low',
     magnitude: counted
       ? {

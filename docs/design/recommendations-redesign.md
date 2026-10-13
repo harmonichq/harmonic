@@ -1,6 +1,6 @@
 # Recommendations redesign
 
-Status: **exploring**. The information architecture is approved (2026-10-12).
+Status: **exploring** (#481). The information architecture is approved (2026-10-12).
 The Lock is approved as a draft and becomes binding when a direction is locked.
 
 This document is the durable record of the redesign. Sections 1–3 are what the

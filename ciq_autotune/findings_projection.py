@@ -225,7 +225,7 @@ class FindingsProjection:
                     continue
                 outcome_patterns.append(deepcopy(prepared) | {
                     field: deepcopy(scoped[field])
-                    for field in ("n", "k", "rate", "wilson", "readiness",
+                    for field in ("n", "k", "rate", "wilson", "wide", "readiness",
                                   "rate_producer", "overlap_counts", "harm_low_overlap")
                     if field in scoped
                 })

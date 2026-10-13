@@ -17,7 +17,7 @@ from hashlib import sha256
 from typing import Iterable
 
 from ...harm import HarmConfig
-from ...uncertainty import wilson
+from ...uncertainty import wilson, wilson_wide
 _GATES = {
     "highs_after_meals": 12,
     "lows_after_meals": 12,
@@ -394,6 +394,8 @@ def build_outcome_patterns(analysis: dict, exposures: dict, scenarios: dict, *,
             "rate_levers": [f"habit:{lever}" for lever in rate_levers], "n": n, "k": k,
             "rate": round(k / n, 4) if n and k <= n else None,
             "wilson": ({"lo": round(bounds[1], 4), "hi": round(bounds[2], 4)} if bounds else None),
+            # A missing range (no opportunities, or inconsistent counts) is as soft as it gets.
+            "wide": wilson_wide(k, n) if bounds else True,
             **({"count_status": count_status} if count_status else {}),
             "rate_producer": producer, "readiness": {
                 field: value for field, value in opportunity_readiness(key, analysis, exposures).items()

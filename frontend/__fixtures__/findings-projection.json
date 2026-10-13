@@ -2071,6 +2071,7 @@
    "settled_price": 21,
    "subject": "pattern:highs_after_meals",
    "title": "Highs after meals",
+   "wide": true,
    "wilson": {
     "hi": 0.2184,
     "lo": 0.0423
@@ -2144,6 +2145,7 @@
    "settled_price": 0,
    "subject": "pattern:lows_after_meals",
    "title": "Lows after meals",
+   "wide": false,
    "wilson": {
     "hi": 0.0759,
     "lo": 0.0
@@ -2208,6 +2210,7 @@
    "settled_price": 28,
    "subject": "pattern:highs_after_treating_lows",
    "title": "Highs after treating lows",
+   "wide": false,
    "wilson": {
     "hi": 0.8518,
     "lo": 0.6102
@@ -2301,6 +2304,7 @@
    "settled_price": 20,
    "subject": "pattern:lows_after_correcting_highs",
    "title": "Lows after correcting highs",
+   "wide": true,
    "wilson": {
     "hi": 0.2785,
     "lo": 0.0747
@@ -2364,6 +2368,7 @@
    "settled_price": 0,
    "subject": "pattern:overnight_lows_no_iob",
    "title": "Overnight lows with no insulin on board",
+   "wide": true,
    "wilson": null
   }
  ],
@@ -2484,6 +2489,7 @@
     "settled_price": 21,
     "subject": "pattern:highs_after_meals",
     "title": "Highs after meals",
+    "wide": false,
     "wilson": {
      "hi": 0.2911,
      "lo": 0.0
@@ -2557,6 +2563,7 @@
     "settled_price": 0,
     "subject": "pattern:lows_after_meals",
     "title": "Lows after meals",
+    "wide": false,
     "wilson": {
      "hi": 0.2911,
      "lo": 0.0
@@ -2621,6 +2628,7 @@
     "settled_price": 28,
     "subject": "pattern:highs_after_treating_lows",
     "title": "Highs after treating lows",
+    "wide": false,
     "wilson": {
      "hi": 0.9618,
      "lo": 0.6604
@@ -2714,6 +2722,7 @@
     "settled_price": 20,
     "subject": "pattern:lows_after_correcting_highs",
     "title": "Lows after correcting highs",
+    "wide": false,
     "wilson": {
      "hi": 0.1703,
      "lo": 0.0
@@ -2836,6 +2845,7 @@
     "settled_price": 21,
     "subject": "pattern:highs_after_meals",
     "title": "Highs after meals",
+    "wide": true,
     "wilson": {
      "hi": 0.6216,
      "lo": 0.0
@@ -2909,6 +2919,7 @@
     "settled_price": 0,
     "subject": "pattern:lows_after_meals",
     "title": "Lows after meals",
+    "wide": true,
     "wilson": {
      "hi": 0.6216,
      "lo": 0.0
@@ -2973,6 +2984,7 @@
     "settled_price": 28,
     "subject": "pattern:highs_after_treating_lows",
     "title": "Highs after treating lows",
+    "wide": true,
     "wilson": {
      "hi": 0.9381,
      "lo": 0.5135
@@ -3066,6 +3078,7 @@
     "settled_price": 20,
     "subject": "pattern:lows_after_correcting_highs",
     "title": "Lows after correcting highs",
+    "wide": false,
     "wilson": {
      "hi": 0.2473,
      "lo": 0.0
@@ -3188,6 +3201,7 @@
     "settled_price": 21,
     "subject": "pattern:highs_after_meals",
     "title": "Highs after meals",
+    "wide": true,
     "wilson": {
      "hi": 0.3777,
      "lo": 0.0438
@@ -3261,6 +3275,7 @@
     "settled_price": 0,
     "subject": "pattern:lows_after_meals",
     "title": "Lows after meals",
+    "wide": false,
     "wilson": {
      "hi": 0.19,
      "lo": 0.0
@@ -3325,6 +3340,7 @@
     "settled_price": 28,
     "subject": "pattern:highs_after_treating_lows",
     "title": "Highs after treating lows",
+    "wide": true,
     "wilson": {
      "hi": 0.8523,
      "lo": 0.4094
@@ -3418,6 +3434,7 @@
     "settled_price": 20,
     "subject": "pattern:lows_after_correcting_highs",
     "title": "Lows after correcting highs",
+    "wide": true,
     "wilson": {
      "hi": 0.4253,
      "lo": 0.0513
@@ -13912,6 +13929,7 @@
      "settled_price": 21,
      "subject": "pattern:highs_after_meals",
      "title": "Highs after meals",
+     "wide": false,
      "wilson": {
       "hi": 0.2911,
       "lo": 0.0
@@ -13985,6 +14003,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_meals",
      "title": "Lows after meals",
+     "wide": false,
      "wilson": {
       "hi": 0.2911,
       "lo": 0.0
@@ -14049,6 +14068,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
+     "wide": false,
      "wilson": {
       "hi": 0.9618,
       "lo": 0.6604
@@ -14142,6 +14162,7 @@
      "settled_price": 20,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
+     "wide": false,
      "wilson": {
       "hi": 0.1703,
       "lo": 0.0
@@ -14445,6 +14466,7 @@
       "settled_price": 21,
       "subject": "pattern:highs_after_meals",
       "title": "Highs after meals",
+      "wide": false,
       "wilson": {
        "hi": 0.2911,
        "lo": 0.0
@@ -14598,6 +14620,7 @@
       "settled_price": 20,
       "subject": "pattern:lows_after_correcting_highs",
       "title": "Lows after correcting highs",
+      "wide": false,
       "wilson": {
        "hi": 0.1703,
        "lo": 0.0
@@ -14723,6 +14746,7 @@
       "settled_price": 0,
       "subject": "pattern:lows_after_meals",
       "title": "Lows after meals",
+      "wide": false,
       "wilson": {
        "hi": 0.2911,
        "lo": 0.0
@@ -15155,6 +15179,7 @@
      "settled_price": 21,
      "subject": "pattern:highs_after_meals",
      "title": "Highs after meals",
+     "wide": true,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -15228,6 +15253,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_meals",
      "title": "Lows after meals",
+     "wide": true,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -15292,6 +15318,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
+     "wide": true,
      "wilson": {
       "hi": 0.9381,
       "lo": 0.5135
@@ -15385,6 +15412,7 @@
      "settled_price": 20,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
+     "wide": false,
      "wilson": {
       "hi": 0.2473,
       "lo": 0.0
@@ -15664,6 +15692,7 @@
       "settled_price": 21,
       "subject": "pattern:highs_after_meals",
       "title": "Highs after meals",
+      "wide": true,
       "wilson": {
        "hi": 0.6216,
        "lo": 0.0
@@ -15817,6 +15846,7 @@
       "settled_price": 20,
       "subject": "pattern:lows_after_correcting_highs",
       "title": "Lows after correcting highs",
+      "wide": false,
       "wilson": {
        "hi": 0.2473,
        "lo": 0.0
@@ -15942,6 +15972,7 @@
       "settled_price": 0,
       "subject": "pattern:lows_after_meals",
       "title": "Lows after meals",
+      "wide": true,
       "wilson": {
        "hi": 0.6216,
        "lo": 0.0
@@ -16300,6 +16331,7 @@
      "settled_price": 21,
      "subject": "pattern:highs_after_meals",
      "title": "Highs after meals",
+     "wide": true,
      "wilson": {
       "hi": 0.3777,
       "lo": 0.0438
@@ -16373,6 +16405,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_meals",
      "title": "Lows after meals",
+     "wide": false,
      "wilson": {
       "hi": 0.19,
       "lo": 0.0
@@ -16437,6 +16470,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
+     "wide": true,
      "wilson": {
       "hi": 0.8523,
       "lo": 0.4094
@@ -16530,6 +16564,7 @@
      "settled_price": 20,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
+     "wide": true,
      "wilson": {
       "hi": 0.4253,
       "lo": 0.0513
@@ -16817,6 +16852,7 @@
       "settled_price": 21,
       "subject": "pattern:highs_after_meals",
       "title": "Highs after meals",
+      "wide": true,
       "wilson": {
        "hi": 0.3777,
        "lo": 0.0438
@@ -17118,6 +17154,7 @@
       "settled_price": 20,
       "subject": "pattern:lows_after_correcting_highs",
       "title": "Lows after correcting highs",
+      "wide": true,
       "wilson": {
        "hi": 0.4253,
        "lo": 0.0513
@@ -17580,6 +17617,7 @@
       "settled_price": 0,
       "subject": "pattern:lows_after_meals",
       "title": "Lows after meals",
+      "wide": false,
       "wilson": {
        "hi": 0.19,
        "lo": 0.0
@@ -18012,6 +18050,7 @@
      "settled_price": 21,
      "subject": "pattern:highs_after_meals",
      "title": "Highs after meals",
+     "wide": true,
      "wilson": {
       "hi": 0.2184,
       "lo": 0.0423
@@ -18085,6 +18124,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_meals",
      "title": "Lows after meals",
+     "wide": false,
      "wilson": {
       "hi": 0.0759,
       "lo": 0.0
@@ -18149,6 +18189,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
+     "wide": false,
      "wilson": {
       "hi": 0.8518,
       "lo": 0.6102
@@ -18242,6 +18283,7 @@
      "settled_price": 20,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
+     "wide": true,
      "wilson": {
       "hi": 0.2785,
       "lo": 0.0747
@@ -18305,6 +18347,7 @@
      "settled_price": 0,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
+     "wide": true,
      "wilson": null
     }
    ],
@@ -18777,6 +18820,7 @@
       "settled_price": 21,
       "subject": "pattern:highs_after_meals",
       "title": "Highs after meals",
+      "wide": true,
       "wilson": {
        "hi": 0.2184,
        "lo": 0.0423
@@ -19182,6 +19226,7 @@
       "settled_price": 20,
       "subject": "pattern:lows_after_correcting_highs",
       "title": "Lows after correcting highs",
+      "wide": true,
       "wilson": {
        "hi": 0.2785,
        "lo": 0.0747
@@ -19788,6 +19833,7 @@
       "settled_price": 0,
       "subject": "pattern:lows_after_meals",
       "title": "Lows after meals",
+      "wide": false,
       "wilson": {
        "hi": 0.0759,
        "lo": 0.0
@@ -19894,6 +19940,7 @@
       "settled_price": 0,
       "subject": "pattern:overnight_lows_no_iob",
       "title": "Overnight lows with no insulin on board",
+      "wide": true,
       "wilson": null
      },
      "pattern_chart": null,
@@ -30554,6 +30601,7 @@
     "settled_price": 66,
     "subject": "pattern:highs_after_meals",
     "title": "Highs after meals",
+    "wide": true,
     "wilson": {
      "hi": 0.6788,
      "lo": 0.1058
@@ -30627,6 +30675,7 @@
     "settled_price": 66,
     "subject": "pattern:lows_after_meals",
     "title": "Lows after meals",
+    "wide": false,
     "wilson": {
      "hi": 0.3538,
      "lo": 0.0
@@ -30691,6 +30740,7 @@
     "settled_price": 28,
     "subject": "pattern:highs_after_treating_lows",
     "title": "Highs after treating lows",
+    "wide": true,
     "wilson": {
      "hi": 0.4865,
      "lo": 0.0619
@@ -30778,6 +30828,7 @@
     "settled_price": 0,
     "subject": "pattern:lows_after_correcting_highs",
     "title": "Lows after correcting highs",
+    "wide": true,
     "wilson": {
      "hi": 0.4865,
      "lo": 0.0619
@@ -30841,6 +30892,7 @@
     "settled_price": 39,
     "subject": "pattern:overnight_lows_no_iob",
     "title": "Overnight lows with no insulin on board",
+    "wide": true,
     "wilson": {
      "hi": 0.2184,
      "lo": 0.0423
@@ -30908,6 +30960,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
+     "wide": true,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -30995,6 +31048,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
+     "wide": true,
      "wilson": {
       "hi": 1.0,
       "lo": 0.3784
@@ -31058,6 +31112,7 @@
      "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
+     "wide": true,
      "wilson": {
       "hi": 0.2184,
       "lo": 0.0423
@@ -31123,6 +31178,7 @@
      "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
+     "wide": true,
      "wilson": {
       "hi": 0.2184,
       "lo": 0.0423
@@ -31188,6 +31244,7 @@
      "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
+     "wide": true,
      "wilson": {
       "hi": 0.2184,
       "lo": 0.0423
@@ -31298,6 +31355,7 @@
      "settled_price": 66,
      "subject": "pattern:highs_after_meals",
      "title": "Highs after meals",
+     "wide": true,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -31371,6 +31429,7 @@
      "settled_price": 66,
      "subject": "pattern:lows_after_meals",
      "title": "Lows after meals",
+     "wide": true,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -31435,6 +31494,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
+     "wide": true,
      "wilson": {
       "hi": 0.4509,
       "lo": 0.0
@@ -31522,6 +31582,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
+     "wide": true,
      "wilson": {
       "hi": 0.4509,
       "lo": 0.0
@@ -31632,6 +31693,7 @@
      "settled_price": 66,
      "subject": "pattern:highs_after_meals",
      "title": "Highs after meals",
+     "wide": true,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -31705,6 +31767,7 @@
      "settled_price": 66,
      "subject": "pattern:lows_after_meals",
      "title": "Lows after meals",
+     "wide": true,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -31769,6 +31832,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
+     "wide": true,
      "wilson": {
       "hi": 0.8358,
       "lo": 0.1642
@@ -31856,6 +31920,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
+     "wide": true,
      "wilson": {
       "hi": 0.4509,
       "lo": 0.0
@@ -31922,6 +31987,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
+     "wide": true,
      "wilson": {
       "hi": 1.0,
       "lo": 0.3784
@@ -32009,6 +32075,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
+     "wide": true,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -32119,6 +32186,7 @@
      "settled_price": 66,
      "subject": "pattern:highs_after_meals",
      "title": "Highs after meals",
+     "wide": true,
      "wilson": {
       "hi": 0.6788,
       "lo": 0.1058
@@ -32192,6 +32260,7 @@
      "settled_price": 66,
      "subject": "pattern:lows_after_meals",
      "title": "Lows after meals",
+     "wide": false,
      "wilson": {
       "hi": 0.3538,
       "lo": 0.0
@@ -32256,6 +32325,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
+     "wide": true,
      "wilson": {
       "hi": 0.4865,
       "lo": 0.0619
@@ -32343,6 +32413,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
+     "wide": true,
      "wilson": {
       "hi": 0.4865,
       "lo": 0.0619
@@ -32406,6 +32477,7 @@
      "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
+     "wide": true,
      "wilson": {
       "hi": 0.2184,
       "lo": 0.0423
@@ -32623,6 +32695,7 @@
      "settled_price": 66,
      "subject": "pattern:highs_after_meals",
      "title": "Highs after meals",
+     "wide": true,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -32696,6 +32769,7 @@
      "settled_price": 66,
      "subject": "pattern:lows_after_meals",
      "title": "Lows after meals",
+     "wide": true,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -32760,6 +32834,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
+     "wide": true,
      "wilson": {
       "hi": 0.8358,
       "lo": 0.1642
@@ -32847,6 +32922,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
+     "wide": true,
      "wilson": {
       "hi": 0.4509,
       "lo": 0.0
@@ -33053,6 +33129,7 @@
       "settled_price": 66,
       "subject": "pattern:highs_after_meals",
       "title": "Highs after meals",
+      "wide": true,
       "wilson": {
        "hi": 0.6216,
        "lo": 0.0
@@ -33186,6 +33263,7 @@
       "settled_price": 66,
       "subject": "pattern:lows_after_meals",
       "title": "Lows after meals",
+      "wide": true,
       "wilson": {
        "hi": 0.6216,
        "lo": 0.0
@@ -33472,6 +33550,7 @@
       "settled_price": 0,
       "subject": "pattern:lows_after_correcting_highs",
       "title": "Lows after correcting highs",
+      "wide": true,
       "wilson": {
        "hi": 0.4509,
        "lo": 0.0
@@ -33828,6 +33907,7 @@
      "settled_price": 66,
      "subject": "pattern:highs_after_meals",
      "title": "Highs after meals",
+     "wide": true,
      "wilson": {
       "hi": 0.6788,
       "lo": 0.1058
@@ -33901,6 +33981,7 @@
      "settled_price": 66,
      "subject": "pattern:lows_after_meals",
      "title": "Lows after meals",
+     "wide": false,
      "wilson": {
       "hi": 0.3538,
       "lo": 0.0
@@ -33965,6 +34046,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
+     "wide": true,
      "wilson": {
       "hi": 0.4865,
       "lo": 0.0619
@@ -34052,6 +34134,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
+     "wide": true,
      "wilson": {
       "hi": 0.4865,
       "lo": 0.0619
@@ -34115,6 +34198,7 @@
      "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
+     "wide": true,
      "wilson": {
       "hi": 0.2184,
       "lo": 0.0423
@@ -34321,6 +34405,7 @@
       "settled_price": 66,
       "subject": "pattern:highs_after_meals",
       "title": "Highs after meals",
+      "wide": true,
       "wilson": {
        "hi": 0.6788,
        "lo": 0.1058
@@ -34630,6 +34715,7 @@
       "settled_price": 66,
       "subject": "pattern:lows_after_meals",
       "title": "Lows after meals",
+      "wide": false,
       "wilson": {
        "hi": 0.3538,
        "lo": 0.0
@@ -34827,6 +34913,7 @@
       "settled_price": 39,
       "subject": "pattern:overnight_lows_no_iob",
       "title": "Overnight lows with no insulin on board",
+      "wide": true,
       "wilson": {
        "hi": 0.2184,
        "lo": 0.0423
@@ -35213,6 +35300,7 @@
       "settled_price": 0,
       "subject": "pattern:lows_after_correcting_highs",
       "title": "Lows after correcting highs",
+      "wide": true,
       "wilson": {
        "hi": 0.4865,
        "lo": 0.0619
@@ -35663,6 +35751,7 @@
      "settled_price": 66,
      "subject": "pattern:highs_after_meals",
      "title": "Highs after meals",
+     "wide": true,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -35736,6 +35825,7 @@
      "settled_price": 66,
      "subject": "pattern:lows_after_meals",
      "title": "Lows after meals",
+     "wide": true,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -35800,6 +35890,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
+     "wide": true,
      "wilson": {
       "hi": 0.4509,
       "lo": 0.0
@@ -35887,6 +35978,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
+     "wide": true,
      "wilson": {
       "hi": 0.4509,
       "lo": 0.0
@@ -36093,6 +36185,7 @@
       "settled_price": 66,
       "subject": "pattern:highs_after_meals",
       "title": "Highs after meals",
+      "wide": true,
       "wilson": {
        "hi": 0.6216,
        "lo": 0.0
@@ -36226,6 +36319,7 @@
       "settled_price": 66,
       "subject": "pattern:lows_after_meals",
       "title": "Lows after meals",
+      "wide": true,
       "wilson": {
        "hi": 0.6216,
        "lo": 0.0
@@ -36414,6 +36508,7 @@
       "settled_price": 0,
       "subject": "pattern:lows_after_correcting_highs",
       "title": "Lows after correcting highs",
+      "wide": true,
       "wilson": {
        "hi": 0.4509,
        "lo": 0.0
@@ -36625,6 +36720,7 @@
      "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
+     "wide": true,
      "wilson": {
       "hi": 0.2184,
       "lo": 0.0423
@@ -36800,6 +36896,7 @@
       "settled_price": 39,
       "subject": "pattern:overnight_lows_no_iob",
       "title": "Overnight lows with no insulin on board",
+      "wide": true,
       "wilson": {
        "hi": 0.2184,
        "lo": 0.0423
@@ -37106,6 +37203,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
+     "wide": true,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -37193,6 +37291,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
+     "wide": true,
      "wilson": {
       "hi": 1.0,
       "lo": 0.3784
@@ -37256,6 +37355,7 @@
      "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
+     "wide": true,
      "wilson": {
       "hi": 0.2184,
       "lo": 0.0423
@@ -37499,6 +37599,7 @@
       "settled_price": 39,
       "subject": "pattern:overnight_lows_no_iob",
       "title": "Overnight lows with no insulin on board",
+      "wide": true,
       "wilson": {
        "hi": 0.2184,
        "lo": 0.0423
@@ -37687,6 +37788,7 @@
       "settled_price": 0,
       "subject": "pattern:lows_after_correcting_highs",
       "title": "Lows after correcting highs",
+      "wide": true,
       "wilson": {
        "hi": 1.0,
        "lo": 0.3784
@@ -37960,6 +38062,7 @@
      "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
+     "wide": true,
      "wilson": {
       "hi": 0.2184,
       "lo": 0.0423
@@ -38059,6 +38162,7 @@
       "settled_price": 39,
       "subject": "pattern:overnight_lows_no_iob",
       "title": "Overnight lows with no insulin on board",
+      "wide": true,
       "wilson": {
        "hi": 0.2184,
        "lo": 0.0423
@@ -38365,6 +38469,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
+     "wide": true,
      "wilson": {
       "hi": 1.0,
       "lo": 0.3784
@@ -38452,6 +38557,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
+     "wide": true,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -38776,6 +38882,7 @@
       "settled_price": 0,
       "subject": "pattern:lows_after_correcting_highs",
       "title": "Lows after correcting highs",
+      "wide": true,
       "wilson": {
        "hi": 0.6216,
        "lo": 0.0
@@ -48091,6 +48198,7 @@
     "settled_price": 66,
     "subject": "pattern:highs_after_meals",
     "title": "Highs after meals",
+    "wide": true,
     "wilson": {
      "hi": 0.6788,
      "lo": 0.1058
@@ -48164,6 +48272,7 @@
     "settled_price": 66,
     "subject": "pattern:lows_after_meals",
     "title": "Lows after meals",
+    "wide": false,
     "wilson": {
      "hi": 0.3538,
      "lo": 0.0
@@ -48228,6 +48337,7 @@
     "settled_price": 28,
     "subject": "pattern:highs_after_treating_lows",
     "title": "Highs after treating lows",
+    "wide": true,
     "wilson": {
      "hi": 0.4865,
      "lo": 0.0619
@@ -48309,6 +48419,7 @@
     "settled_price": 0,
     "subject": "pattern:lows_after_correcting_highs",
     "title": "Lows after correcting highs",
+    "wide": true,
     "wilson": {
      "hi": 0.4865,
      "lo": 0.0619
@@ -48372,6 +48483,7 @@
     "settled_price": 39,
     "subject": "pattern:overnight_lows_no_iob",
     "title": "Overnight lows with no insulin on board",
+    "wide": true,
     "wilson": {
      "hi": 0.2184,
      "lo": 0.0423
@@ -48439,6 +48551,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
+     "wide": true,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -48520,6 +48633,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
+     "wide": true,
      "wilson": {
       "hi": 1.0,
       "lo": 0.3784
@@ -48583,6 +48697,7 @@
      "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
+     "wide": true,
      "wilson": {
       "hi": 0.2184,
       "lo": 0.0423
@@ -48648,6 +48763,7 @@
      "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
+     "wide": true,
      "wilson": {
       "hi": 0.2184,
       "lo": 0.0423
@@ -48713,6 +48829,7 @@
      "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
+     "wide": true,
      "wilson": {
       "hi": 0.2184,
       "lo": 0.0423
@@ -48823,6 +48940,7 @@
      "settled_price": 66,
      "subject": "pattern:highs_after_meals",
      "title": "Highs after meals",
+     "wide": true,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -48896,6 +49014,7 @@
      "settled_price": 66,
      "subject": "pattern:lows_after_meals",
      "title": "Lows after meals",
+     "wide": true,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -48960,6 +49079,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
+     "wide": true,
      "wilson": {
       "hi": 0.4509,
       "lo": 0.0
@@ -49041,6 +49161,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
+     "wide": true,
      "wilson": {
       "hi": 0.4509,
       "lo": 0.0
@@ -49151,6 +49272,7 @@
      "settled_price": 66,
      "subject": "pattern:highs_after_meals",
      "title": "Highs after meals",
+     "wide": true,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -49224,6 +49346,7 @@
      "settled_price": 66,
      "subject": "pattern:lows_after_meals",
      "title": "Lows after meals",
+     "wide": true,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -49288,6 +49411,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
+     "wide": true,
      "wilson": {
       "hi": 0.6788,
       "lo": 0.1058
@@ -49369,6 +49493,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
+     "wide": false,
      "wilson": {
       "hi": 0.3538,
       "lo": 0.0
@@ -49479,6 +49604,7 @@
      "settled_price": 66,
      "subject": "pattern:highs_after_meals",
      "title": "Highs after meals",
+     "wide": true,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -49552,6 +49678,7 @@
      "settled_price": 66,
      "subject": "pattern:lows_after_meals",
      "title": "Lows after meals",
+     "wide": true,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -49616,6 +49743,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
+     "wide": true,
      "wilson": {
       "hi": 0.8358,
       "lo": 0.1642
@@ -49697,6 +49825,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
+     "wide": true,
      "wilson": {
       "hi": 0.4509,
       "lo": 0.0
@@ -49763,6 +49892,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
+     "wide": true,
      "wilson": {
       "hi": 1.0,
       "lo": 0.3784
@@ -49844,6 +49974,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
+     "wide": true,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -49954,6 +50085,7 @@
      "settled_price": 66,
      "subject": "pattern:highs_after_meals",
      "title": "Highs after meals",
+     "wide": true,
      "wilson": {
       "hi": 0.6788,
       "lo": 0.1058
@@ -50027,6 +50159,7 @@
      "settled_price": 66,
      "subject": "pattern:lows_after_meals",
      "title": "Lows after meals",
+     "wide": false,
      "wilson": {
       "hi": 0.3538,
       "lo": 0.0
@@ -50091,6 +50224,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
+     "wide": true,
      "wilson": {
       "hi": 0.4865,
       "lo": 0.0619
@@ -50172,6 +50306,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
+     "wide": true,
      "wilson": {
       "hi": 0.4865,
       "lo": 0.0619
@@ -50235,6 +50370,7 @@
      "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
+     "wide": true,
      "wilson": {
       "hi": 0.2184,
       "lo": 0.0423
@@ -50426,6 +50562,7 @@
      "settled_price": 0,
      "subject": "pattern:highs_after_meals",
      "title": "Highs after meals",
+     "wide": true,
      "wilson": null
     },
     {
@@ -50482,6 +50619,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_meals",
      "title": "Lows after meals",
+     "wide": true,
      "wilson": null
     },
     {
@@ -50530,6 +50668,7 @@
      "settled_price": 0,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
+     "wide": true,
      "wilson": null
     },
     {
@@ -50594,6 +50733,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
+     "wide": true,
      "wilson": null
     },
     {
@@ -50640,6 +50780,7 @@
      "settled_price": 0,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
+     "wide": true,
      "wilson": null
     }
    ],
@@ -50748,6 +50889,7 @@
       "settled_price": 0,
       "subject": "pattern:highs_after_meals",
       "title": "Highs after meals",
+      "wide": true,
       "wilson": null
      },
      "pattern_chart": null,
@@ -50839,6 +50981,7 @@
       "settled_price": 0,
       "subject": "pattern:highs_after_treating_lows",
       "title": "Highs after treating lows",
+      "wide": true,
       "wilson": null
      },
      "pattern_chart": null,
@@ -50947,6 +51090,7 @@
       "settled_price": 0,
       "subject": "pattern:lows_after_correcting_highs",
       "title": "Lows after correcting highs",
+      "wide": true,
       "wilson": null
      },
      "pattern_chart": null,
@@ -51047,6 +51191,7 @@
       "settled_price": 0,
       "subject": "pattern:lows_after_meals",
       "title": "Lows after meals",
+      "wide": true,
       "wilson": null
      },
      "pattern_chart": null,
@@ -51136,6 +51281,7 @@
       "settled_price": 0,
       "subject": "pattern:overnight_lows_no_iob",
       "title": "Overnight lows with no insulin on board",
+      "wide": true,
       "wilson": null
      },
      "pattern_chart": null,
@@ -51318,6 +51464,7 @@
     "settled_price": 0,
     "subject": "pattern:highs_after_meals",
     "title": "Highs after meals",
+    "wide": true,
     "wilson": null
    },
    {
@@ -51374,6 +51521,7 @@
     "settled_price": 0,
     "subject": "pattern:lows_after_meals",
     "title": "Lows after meals",
+    "wide": true,
     "wilson": null
    },
    {
@@ -51422,6 +51570,7 @@
     "settled_price": 0,
     "subject": "pattern:highs_after_treating_lows",
     "title": "Highs after treating lows",
+    "wide": true,
     "wilson": null
    },
    {
@@ -51486,6 +51635,7 @@
     "settled_price": 0,
     "subject": "pattern:lows_after_correcting_highs",
     "title": "Lows after correcting highs",
+    "wide": true,
     "wilson": null
    },
    {
@@ -51532,6 +51682,7 @@
     "settled_price": 0,
     "subject": "pattern:overnight_lows_no_iob",
     "title": "Overnight lows with no insulin on board",
+    "wide": true,
     "wilson": null
    }
   ],
@@ -51615,6 +51766,7 @@
      "settled_price": 0,
      "subject": "pattern:highs_after_meals",
      "title": "Highs after meals",
+     "wide": true,
      "wilson": null
     },
     {
@@ -51671,6 +51823,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_meals",
      "title": "Lows after meals",
+     "wide": true,
      "wilson": null
     },
     {
@@ -51719,6 +51872,7 @@
      "settled_price": 0,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
+     "wide": true,
      "wilson": null
     },
     {
@@ -51783,6 +51937,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
+     "wide": true,
      "wilson": null
     },
     {
@@ -51829,6 +51984,7 @@
      "settled_price": 0,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
+     "wide": true,
      "wilson": null
     }
    ]
@@ -53237,6 +53393,7 @@
     "settled_price": 21,
     "subject": "pattern:highs_after_meals",
     "title": "Highs after meals",
+    "wide": true,
     "wilson": {
      "hi": 0.2184,
      "lo": 0.0423
@@ -54241,6 +54398,7 @@
     "settled_price": 20,
     "subject": "pattern:lows_after_correcting_highs",
     "title": "Lows after correcting highs",
+    "wide": true,
     "wilson": {
      "hi": 0.2785,
      "lo": 0.0747
@@ -54832,6 +54990,7 @@
      "settled_price": 66,
      "subject": "pattern:highs_after_meals",
      "title": "Highs after meals",
+     "wide": true,
      "wilson": {
       "hi": 0.6788,
       "lo": 0.1058
@@ -54905,6 +55064,7 @@
      "settled_price": 66,
      "subject": "pattern:lows_after_meals",
      "title": "Lows after meals",
+     "wide": false,
      "wilson": {
       "hi": 0.3538,
       "lo": 0.0
@@ -54969,6 +55129,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
+     "wide": true,
      "wilson": {
       "hi": 0.4865,
       "lo": 0.0619
@@ -55050,6 +55211,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
+     "wide": true,
      "wilson": {
       "hi": 0.4865,
       "lo": 0.0619
@@ -55113,6 +55275,7 @@
      "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
+     "wide": true,
      "wilson": {
       "hi": 0.2184,
       "lo": 0.0423
@@ -55319,6 +55482,7 @@
       "settled_price": 66,
       "subject": "pattern:highs_after_meals",
       "title": "Highs after meals",
+      "wide": true,
       "wilson": {
        "hi": 0.6788,
        "lo": 0.1058
@@ -55628,6 +55792,7 @@
       "settled_price": 66,
       "subject": "pattern:lows_after_meals",
       "title": "Lows after meals",
+      "wide": false,
       "wilson": {
        "hi": 0.3538,
        "lo": 0.0
@@ -55825,6 +55990,7 @@
       "settled_price": 39,
       "subject": "pattern:overnight_lows_no_iob",
       "title": "Overnight lows with no insulin on board",
+      "wide": true,
       "wilson": {
        "hi": 0.2184,
        "lo": 0.0423
@@ -56148,6 +56314,7 @@
       "settled_price": 0,
       "subject": "pattern:lows_after_correcting_highs",
       "title": "Lows after correcting highs",
+      "wide": true,
       "wilson": {
        "hi": 0.4865,
        "lo": 0.0619
@@ -56543,6 +56710,7 @@
      "settled_price": 66,
      "subject": "pattern:highs_after_meals",
      "title": "Highs after meals",
+     "wide": true,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -56616,6 +56784,7 @@
      "settled_price": 66,
      "subject": "pattern:lows_after_meals",
      "title": "Lows after meals",
+     "wide": true,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -56680,6 +56849,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
+     "wide": true,
      "wilson": {
       "hi": 0.6788,
       "lo": 0.1058
@@ -56761,6 +56931,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
+     "wide": false,
      "wilson": {
       "hi": 0.3538,
       "lo": 0.0
@@ -56967,6 +57138,7 @@
       "settled_price": 66,
       "subject": "pattern:highs_after_meals",
       "title": "Highs after meals",
+      "wide": true,
       "wilson": {
        "hi": 0.6216,
        "lo": 0.0
@@ -57100,6 +57272,7 @@
       "settled_price": 66,
       "subject": "pattern:lows_after_meals",
       "title": "Lows after meals",
+      "wide": true,
       "wilson": {
        "hi": 0.6216,
        "lo": 0.0
@@ -57331,6 +57504,7 @@
       "settled_price": 0,
       "subject": "pattern:lows_after_correcting_highs",
       "title": "Lows after correcting highs",
+      "wide": false,
       "wilson": {
        "hi": 0.3538,
        "lo": 0.0
@@ -57645,6 +57819,7 @@
      "settled_price": 66,
      "subject": "pattern:highs_after_meals",
      "title": "Highs after meals",
+     "wide": true,
      "wilson": {
       "hi": 0.6788,
       "lo": 0.1058
@@ -57718,6 +57893,7 @@
      "settled_price": 66,
      "subject": "pattern:lows_after_meals",
      "title": "Lows after meals",
+     "wide": false,
      "wilson": {
       "hi": 0.3538,
       "lo": 0.0
@@ -57782,6 +57958,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
+     "wide": true,
      "wilson": {
       "hi": 0.4865,
       "lo": 0.0619
@@ -57863,6 +58040,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
+     "wide": true,
      "wilson": {
       "hi": 0.4865,
       "lo": 0.0619
@@ -57926,6 +58104,7 @@
      "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
+     "wide": true,
      "wilson": {
       "hi": 0.2184,
       "lo": 0.0423
@@ -58132,6 +58311,7 @@
       "settled_price": 66,
       "subject": "pattern:highs_after_meals",
       "title": "Highs after meals",
+      "wide": true,
       "wilson": {
        "hi": 0.6788,
        "lo": 0.1058
@@ -58441,6 +58621,7 @@
       "settled_price": 66,
       "subject": "pattern:lows_after_meals",
       "title": "Lows after meals",
+      "wide": false,
       "wilson": {
        "hi": 0.3538,
        "lo": 0.0
@@ -58638,6 +58819,7 @@
       "settled_price": 39,
       "subject": "pattern:overnight_lows_no_iob",
       "title": "Overnight lows with no insulin on board",
+      "wide": true,
       "wilson": {
        "hi": 0.2184,
        "lo": 0.0423
@@ -58961,6 +59143,7 @@
       "settled_price": 0,
       "subject": "pattern:lows_after_correcting_highs",
       "title": "Lows after correcting highs",
+      "wide": true,
       "wilson": {
        "hi": 0.4865,
        "lo": 0.0619
@@ -59415,6 +59598,7 @@
      "settled_price": 66,
      "subject": "pattern:highs_after_meals",
      "title": "Highs after meals",
+     "wide": true,
      "wilson": {
       "hi": 0.6788,
       "lo": 0.1058
@@ -59488,6 +59672,7 @@
      "settled_price": 66,
      "subject": "pattern:lows_after_meals",
      "title": "Lows after meals",
+     "wide": false,
      "wilson": {
       "hi": 0.3538,
       "lo": 0.0
@@ -59552,6 +59737,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
+     "wide": true,
      "wilson": {
       "hi": 0.4865,
       "lo": 0.0619
@@ -59633,6 +59819,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
+     "wide": true,
      "wilson": {
       "hi": 0.4865,
       "lo": 0.0619
@@ -59696,6 +59883,7 @@
      "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
+     "wide": true,
      "wilson": {
       "hi": 0.2184,
       "lo": 0.0423
@@ -59902,6 +60090,7 @@
       "settled_price": 66,
       "subject": "pattern:highs_after_meals",
       "title": "Highs after meals",
+      "wide": true,
       "wilson": {
        "hi": 0.6788,
        "lo": 0.1058
@@ -60211,6 +60400,7 @@
       "settled_price": 66,
       "subject": "pattern:lows_after_meals",
       "title": "Lows after meals",
+      "wide": false,
       "wilson": {
        "hi": 0.3538,
        "lo": 0.0
@@ -60408,6 +60598,7 @@
       "settled_price": 39,
       "subject": "pattern:overnight_lows_no_iob",
       "title": "Overnight lows with no insulin on board",
+      "wide": true,
       "wilson": {
        "hi": 0.2184,
        "lo": 0.0423
@@ -60731,6 +60922,7 @@
       "settled_price": 0,
       "subject": "pattern:lows_after_correcting_highs",
       "title": "Lows after correcting highs",
+      "wide": true,
       "wilson": {
        "hi": 0.4865,
        "lo": 0.0619
@@ -110570,6 +110762,7 @@
     "settled_price",
     "subject",
     "title",
+    "wide",
     "wilson"
    ],
    "habit_threshold",
@@ -110862,6 +111055,7 @@
       "$ref",
       1232
      ],
+     false,
      [
       "$ref",
       1233
@@ -110985,6 +111179,7 @@
       "$ref",
       1245
      ],
+     false,
      [
       "$ref",
       1233
@@ -111063,6 +111258,7 @@
       "$ref",
       1251
      ],
+     true,
      null
     ]
    ],
@@ -111190,6 +111386,7 @@
       "$ref",
       1257
      ],
+     true,
      null
     ]
    ],
@@ -111292,6 +111489,7 @@
       "$ref",
       1266
      ],
+     false,
      {
       "hi": 0.0725,
       "lo": 0.0
@@ -112120,6 +112318,7 @@
       "$ref",
       1232
      ],
+     false,
      [
       "$ref",
       1317
@@ -112175,6 +112374,7 @@
       "$ref",
       1245
      ],
+     false,
      [
       "$ref",
       1317
@@ -120622,6 +120822,7 @@
       "$ref",
       1232
      ],
+     false,
      [
       "$ref",
       1233
@@ -121606,6 +121807,7 @@
       "$ref",
       1232
      ],
+     false,
      [
       "$ref",
       1317
@@ -125198,6 +125400,7 @@
       "$ref",
       1232
      ],
+     false,
      [
       "$ref",
       1233
@@ -125361,6 +125564,7 @@
       "$ref",
       1232
      ],
+     false,
      [
       "$ref",
       1317
@@ -151448,6 +151652,7 @@
       "$ref",
       1232
      ],
+     false,
      [
       "$ref",
       3279
@@ -151503,6 +151708,7 @@
       "$ref",
       1245
      ],
+     false,
      [
       "$ref",
       3279
@@ -151782,6 +151988,7 @@
       "$ref",
       1232
      ],
+     false,
      [
       "$ref",
       3299
@@ -151837,6 +152044,7 @@
       "$ref",
       1245
      ],
+     false,
      [
       "$ref",
       3299
@@ -151890,6 +152098,7 @@
       "$ref",
       1266
      ],
+     false,
      {
       "hi": 0.0554,
       "lo": 0.0
@@ -152342,6 +152551,7 @@
       "$ref",
       1232
      ],
+     false,
      [
       "$ref",
       3325
@@ -152397,6 +152607,7 @@
       "$ref",
       1245
      ],
+     false,
      [
       "$ref",
       3325
@@ -152563,6 +152774,7 @@
       "$ref",
       1232
      ],
+     false,
      [
       "$ref",
       3334
@@ -152618,6 +152830,7 @@
       "$ref",
       1245
      ],
+     false,
      [
       "$ref",
       3334
@@ -164106,6 +164319,7 @@
       "$ref",
       1232
      ],
+     false,
      [
       "$ref",
       3279
@@ -164287,6 +164501,7 @@
       "$ref",
       1232
      ],
+     false,
      [
       "$ref",
       3299
@@ -164834,6 +165049,7 @@
       "$ref",
       1232
      ],
+     false,
      [
       "$ref",
       3325
@@ -165017,6 +165233,7 @@
       "$ref",
       1232
      ],
+     false,
      [
       "$ref",
       3334
@@ -168067,6 +168284,7 @@
       "$ref",
       1232
      ],
+     false,
      [
       "$ref",
       3279
@@ -168234,6 +168452,7 @@
       "$ref",
       1232
      ],
+     false,
      [
       "$ref",
       3299
@@ -168372,6 +168591,7 @@
       "$ref",
       1232
      ],
+     false,
      [
       "$ref",
       3325
@@ -168540,6 +168760,7 @@
       "$ref",
       1232
      ],
+     false,
      [
       "$ref",
       3334
@@ -174555,6 +174776,7 @@
       "$ref",
       1232
      ],
+     false,
      [
       "$ref",
       3279
@@ -174656,6 +174878,7 @@
       "$ref",
       1232
      ],
+     false,
      [
       "$ref",
       3299
@@ -174749,6 +174972,7 @@
       "$ref",
       1232
      ],
+     false,
      [
       "$ref",
       3325
@@ -174810,6 +175034,7 @@
       "$ref",
       1232
      ],
+     false,
      [
       "$ref",
       3334
@@ -175956,6 +176181,7 @@
          "settled_price": 26,
          "subject": "pattern:highs_after_meals",
          "title": "Highs after meals",
+         "wide": false,
          "wilson": {
           "hi": 0.0394,
           "lo": 0.0
@@ -176029,6 +176255,7 @@
          "settled_price": 0,
          "subject": "pattern:lows_after_meals",
          "title": "Lows after meals",
+         "wide": false,
          "wilson": {
           "hi": 0.0394,
           "lo": 0.0
@@ -176080,6 +176307,7 @@
          "settled_price": 0,
          "subject": "pattern:highs_after_treating_lows",
          "title": "Highs after treating lows",
+         "wide": true,
          "wilson": null
         },
         {
@@ -176158,6 +176386,7 @@
          "settled_price": 0,
          "subject": "pattern:lows_after_correcting_highs",
          "title": "Lows after correcting highs",
+         "wide": true,
          "wilson": null
         },
         {
@@ -176218,6 +176447,7 @@
          "settled_price": 0,
          "subject": "pattern:overnight_lows_no_iob",
          "title": "Overnight lows with no insulin on board",
+         "wide": false,
          "wilson": {
           "hi": 0.0725,
           "lo": 0.0
@@ -181839,6 +182069,7 @@
          "settled_price": 28,
          "subject": "pattern:highs_after_meals",
          "title": "Highs after meals",
+         "wide": false,
          "wilson": {
           "hi": 0.0394,
           "lo": 0.0
@@ -181912,6 +182143,7 @@
          "settled_price": 0,
          "subject": "pattern:lows_after_meals",
          "title": "Lows after meals",
+         "wide": false,
          "wilson": {
           "hi": 0.0394,
           "lo": 0.0
@@ -181963,6 +182195,7 @@
          "settled_price": 0,
          "subject": "pattern:highs_after_treating_lows",
          "title": "Highs after treating lows",
+         "wide": true,
          "wilson": null
         },
         {
@@ -182041,6 +182274,7 @@
          "settled_price": 0,
          "subject": "pattern:lows_after_correcting_highs",
          "title": "Lows after correcting highs",
+         "wide": true,
          "wilson": null
         },
         {
@@ -182101,6 +182335,7 @@
          "settled_price": 0,
          "subject": "pattern:overnight_lows_no_iob",
          "title": "Overnight lows with no insulin on board",
+         "wide": false,
          "wilson": {
           "hi": 0.0725,
           "lo": 0.0
@@ -183149,6 +183384,7 @@
          "settled_price": 0,
          "subject": "pattern:highs_after_meals",
          "title": "Highs after meals",
+         "wide": false,
          "wilson": {
           "hi": 0.0394,
           "lo": 0.0
@@ -183222,6 +183458,7 @@
          "settled_price": 0,
          "subject": "pattern:lows_after_meals",
          "title": "Lows after meals",
+         "wide": false,
          "wilson": {
           "hi": 0.0394,
           "lo": 0.0
@@ -183273,6 +183510,7 @@
          "settled_price": 0,
          "subject": "pattern:highs_after_treating_lows",
          "title": "Highs after treating lows",
+         "wide": true,
          "wilson": null
         },
         {
@@ -183351,6 +183589,7 @@
          "settled_price": 0,
          "subject": "pattern:lows_after_correcting_highs",
          "title": "Lows after correcting highs",
+         "wide": true,
          "wilson": null
         },
         {
@@ -183411,6 +183650,7 @@
          "settled_price": 0,
          "subject": "pattern:overnight_lows_no_iob",
          "title": "Overnight lows with no insulin on board",
+         "wide": false,
          "wilson": {
           "hi": 0.0725,
           "lo": 0.0
@@ -184458,6 +184698,7 @@
          "settled_price": 28,
          "subject": "pattern:highs_after_meals",
          "title": "Highs after meals",
+         "wide": false,
          "wilson": {
           "hi": 0.0394,
           "lo": 0.0
@@ -184531,6 +184772,7 @@
          "settled_price": 0,
          "subject": "pattern:lows_after_meals",
          "title": "Lows after meals",
+         "wide": false,
          "wilson": {
           "hi": 0.0394,
           "lo": 0.0
@@ -184582,6 +184824,7 @@
          "settled_price": 0,
          "subject": "pattern:highs_after_treating_lows",
          "title": "Highs after treating lows",
+         "wide": true,
          "wilson": null
         },
         {
@@ -184660,6 +184903,7 @@
          "settled_price": 0,
          "subject": "pattern:lows_after_correcting_highs",
          "title": "Lows after correcting highs",
+         "wide": true,
          "wilson": null
         },
         {
@@ -184720,6 +184964,7 @@
          "settled_price": 0,
          "subject": "pattern:overnight_lows_no_iob",
          "title": "Overnight lows with no insulin on board",
+         "wide": false,
          "wilson": {
           "hi": 0.0725,
           "lo": 0.0
@@ -185639,6 +185884,7 @@
          "settled_price": 28,
          "subject": "pattern:highs_after_meals",
          "title": "Highs after meals",
+         "wide": false,
          "wilson": {
           "hi": 0.0394,
           "lo": 0.0
@@ -185712,6 +185958,7 @@
          "settled_price": 0,
          "subject": "pattern:lows_after_meals",
          "title": "Lows after meals",
+         "wide": false,
          "wilson": {
           "hi": 0.0394,
           "lo": 0.0
@@ -185763,6 +186010,7 @@
          "settled_price": 0,
          "subject": "pattern:highs_after_treating_lows",
          "title": "Highs after treating lows",
+         "wide": true,
          "wilson": null
         },
         {
@@ -185841,6 +186089,7 @@
          "settled_price": 0,
          "subject": "pattern:lows_after_correcting_highs",
          "title": "Lows after correcting highs",
+         "wide": true,
          "wilson": null
         },
         {
@@ -185901,6 +186150,7 @@
          "settled_price": 0,
          "subject": "pattern:overnight_lows_no_iob",
          "title": "Overnight lows with no insulin on board",
+         "wide": false,
          "wilson": {
           "hi": 0.0725,
           "lo": 0.0
@@ -186886,6 +187136,7 @@
          "settled_price": 28,
          "subject": "pattern:highs_after_meals",
          "title": "Highs after meals",
+         "wide": false,
          "wilson": {
           "hi": 0.0394,
           "lo": 0.0
@@ -186959,6 +187210,7 @@
          "settled_price": 0,
          "subject": "pattern:lows_after_meals",
          "title": "Lows after meals",
+         "wide": false,
          "wilson": {
           "hi": 0.0394,
           "lo": 0.0
@@ -187010,6 +187262,7 @@
          "settled_price": 0,
          "subject": "pattern:highs_after_treating_lows",
          "title": "Highs after treating lows",
+         "wide": true,
          "wilson": null
         },
         {
@@ -187088,6 +187341,7 @@
          "settled_price": 0,
          "subject": "pattern:lows_after_correcting_highs",
          "title": "Lows after correcting highs",
+         "wide": true,
          "wilson": null
         },
         {
@@ -187148,6 +187402,7 @@
          "settled_price": 0,
          "subject": "pattern:overnight_lows_no_iob",
          "title": "Overnight lows with no insulin on board",
+         "wide": false,
          "wilson": {
           "hi": 0.0725,
           "lo": 0.0
@@ -190102,6 +190357,7 @@
          "settled_price": 28,
          "subject": "pattern:highs_after_meals",
          "title": "Highs after meals",
+         "wide": false,
          "wilson": {
           "hi": 0.0394,
           "lo": 0.0
@@ -190175,6 +190431,7 @@
          "settled_price": 0,
          "subject": "pattern:lows_after_meals",
          "title": "Lows after meals",
+         "wide": false,
          "wilson": {
           "hi": 0.0394,
           "lo": 0.0
@@ -190226,6 +190483,7 @@
          "settled_price": 0,
          "subject": "pattern:highs_after_treating_lows",
          "title": "Highs after treating lows",
+         "wide": true,
          "wilson": null
         },
         {
@@ -190304,6 +190562,7 @@
          "settled_price": 0,
          "subject": "pattern:lows_after_correcting_highs",
          "title": "Lows after correcting highs",
+         "wide": true,
          "wilson": null
         },
         {
@@ -190364,6 +190623,7 @@
          "settled_price": 0,
          "subject": "pattern:overnight_lows_no_iob",
          "title": "Overnight lows with no insulin on board",
+         "wide": false,
          "wilson": {
           "hi": 0.0725,
           "lo": 0.0
@@ -191340,6 +191600,7 @@
          "settled_price": 0,
          "subject": "pattern:highs_after_meals",
          "title": "Highs after meals",
+         "wide": false,
          "wilson": {
           "hi": 0.0394,
           "lo": 0.0
@@ -191413,6 +191674,7 @@
          "settled_price": 0,
          "subject": "pattern:lows_after_meals",
          "title": "Lows after meals",
+         "wide": false,
          "wilson": {
           "hi": 0.0394,
           "lo": 0.0
@@ -191464,6 +191726,7 @@
          "settled_price": 0,
          "subject": "pattern:highs_after_treating_lows",
          "title": "Highs after treating lows",
+         "wide": true,
          "wilson": null
         },
         {
@@ -191542,6 +191805,7 @@
          "settled_price": 0,
          "subject": "pattern:lows_after_correcting_highs",
          "title": "Lows after correcting highs",
+         "wide": true,
          "wilson": null
         },
         {
@@ -191602,6 +191866,7 @@
          "settled_price": 0,
          "subject": "pattern:overnight_lows_no_iob",
          "title": "Overnight lows with no insulin on board",
+         "wide": false,
          "wilson": {
           "hi": 0.0725,
           "lo": 0.0
@@ -194732,6 +194997,7 @@
          "settled_price": 0,
          "subject": "pattern:highs_after_meals",
          "title": "Highs after meals",
+         "wide": false,
          "wilson": {
           "hi": 0.0394,
           "lo": 0.0
@@ -194805,6 +195071,7 @@
          "settled_price": 0,
          "subject": "pattern:lows_after_meals",
          "title": "Lows after meals",
+         "wide": false,
          "wilson": {
           "hi": 0.0394,
           "lo": 0.0
@@ -194856,6 +195123,7 @@
          "settled_price": 0,
          "subject": "pattern:highs_after_treating_lows",
          "title": "Highs after treating lows",
+         "wide": true,
          "wilson": null
         },
         {
@@ -194934,6 +195202,7 @@
          "settled_price": 0,
          "subject": "pattern:lows_after_correcting_highs",
          "title": "Lows after correcting highs",
+         "wide": true,
          "wilson": null
         },
         {
@@ -194994,6 +195263,7 @@
          "settled_price": 0,
          "subject": "pattern:overnight_lows_no_iob",
          "title": "Overnight lows with no insulin on board",
+         "wide": false,
          "wilson": {
           "hi": 0.0725,
           "lo": 0.0
@@ -197330,6 +197600,7 @@
          "settled_price": 43,
          "subject": "pattern:highs_after_meals",
          "title": "Highs after meals",
+         "wide": false,
          "wilson": {
           "hi": 0.0162,
           "lo": 0.0
@@ -197403,6 +197674,7 @@
          "settled_price": 0,
          "subject": "pattern:lows_after_meals",
          "title": "Lows after meals",
+         "wide": false,
          "wilson": {
           "hi": 0.0162,
           "lo": 0.0
@@ -197454,6 +197726,7 @@
          "settled_price": 0,
          "subject": "pattern:highs_after_treating_lows",
          "title": "Highs after treating lows",
+         "wide": true,
          "wilson": null
         },
         {
@@ -197532,6 +197805,7 @@
          "settled_price": 0,
          "subject": "pattern:lows_after_correcting_highs",
          "title": "Lows after correcting highs",
+         "wide": true,
          "wilson": null
         },
         {
@@ -197592,6 +197866,7 @@
          "settled_price": 0,
          "subject": "pattern:overnight_lows_no_iob",
          "title": "Overnight lows with no insulin on board",
+         "wide": false,
          "wilson": {
           "hi": 0.0554,
           "lo": 0.0
@@ -203906,6 +204181,7 @@
          "settled_price": 45,
          "subject": "pattern:highs_after_meals",
          "title": "Highs after meals",
+         "wide": false,
          "wilson": {
           "hi": 0.0162,
           "lo": 0.0
@@ -203979,6 +204255,7 @@
          "settled_price": 0,
          "subject": "pattern:lows_after_meals",
          "title": "Lows after meals",
+         "wide": false,
          "wilson": {
           "hi": 0.0162,
           "lo": 0.0
@@ -204030,6 +204307,7 @@
          "settled_price": 0,
          "subject": "pattern:highs_after_treating_lows",
          "title": "Highs after treating lows",
+         "wide": true,
          "wilson": null
         },
         {
@@ -204108,6 +204386,7 @@
          "settled_price": 0,
          "subject": "pattern:lows_after_correcting_highs",
          "title": "Lows after correcting highs",
+         "wide": true,
          "wilson": null
         },
         {
@@ -204168,6 +204447,7 @@
          "settled_price": 0,
          "subject": "pattern:overnight_lows_no_iob",
          "title": "Overnight lows with no insulin on board",
+         "wide": false,
          "wilson": {
           "hi": 0.0554,
           "lo": 0.0
@@ -205371,6 +205651,7 @@
          "settled_price": 0,
          "subject": "pattern:highs_after_meals",
          "title": "Highs after meals",
+         "wide": false,
          "wilson": {
           "hi": 0.0162,
           "lo": 0.0
@@ -205444,6 +205725,7 @@
          "settled_price": 0,
          "subject": "pattern:lows_after_meals",
          "title": "Lows after meals",
+         "wide": false,
          "wilson": {
           "hi": 0.0162,
           "lo": 0.0
@@ -205495,6 +205777,7 @@
          "settled_price": 0,
          "subject": "pattern:highs_after_treating_lows",
          "title": "Highs after treating lows",
+         "wide": true,
          "wilson": null
         },
         {
@@ -205573,6 +205856,7 @@
          "settled_price": 0,
          "subject": "pattern:lows_after_correcting_highs",
          "title": "Lows after correcting highs",
+         "wide": true,
          "wilson": null
         },
         {
@@ -205633,6 +205917,7 @@
          "settled_price": 0,
          "subject": "pattern:overnight_lows_no_iob",
          "title": "Overnight lows with no insulin on board",
+         "wide": false,
          "wilson": {
           "hi": 0.0554,
           "lo": 0.0
@@ -206911,6 +207196,7 @@
          "settled_price": 45,
          "subject": "pattern:highs_after_meals",
          "title": "Highs after meals",
+         "wide": false,
          "wilson": {
           "hi": 0.0162,
           "lo": 0.0
@@ -206984,6 +207270,7 @@
          "settled_price": 0,
          "subject": "pattern:lows_after_meals",
          "title": "Lows after meals",
+         "wide": false,
          "wilson": {
           "hi": 0.0162,
           "lo": 0.0
@@ -207035,6 +207322,7 @@
          "settled_price": 0,
          "subject": "pattern:highs_after_treating_lows",
          "title": "Highs after treating lows",
+         "wide": true,
          "wilson": null
         },
         {
@@ -207113,6 +207401,7 @@
          "settled_price": 0,
          "subject": "pattern:lows_after_correcting_highs",
          "title": "Lows after correcting highs",
+         "wide": true,
          "wilson": null
         },
         {
@@ -207173,6 +207462,7 @@
          "settled_price": 0,
          "subject": "pattern:overnight_lows_no_iob",
          "title": "Overnight lows with no insulin on board",
+         "wide": false,
          "wilson": {
           "hi": 0.0554,
           "lo": 0.0
@@ -208120,6 +208410,7 @@
          "settled_price": 45,
          "subject": "pattern:highs_after_meals",
          "title": "Highs after meals",
+         "wide": false,
          "wilson": {
           "hi": 0.0162,
           "lo": 0.0
@@ -208193,6 +208484,7 @@
          "settled_price": 0,
          "subject": "pattern:lows_after_meals",
          "title": "Lows after meals",
+         "wide": false,
          "wilson": {
           "hi": 0.0162,
           "lo": 0.0
@@ -208244,6 +208536,7 @@
          "settled_price": 0,
          "subject": "pattern:highs_after_treating_lows",
          "title": "Highs after treating lows",
+         "wide": true,
          "wilson": null
         },
         {
@@ -208322,6 +208615,7 @@
          "settled_price": 0,
          "subject": "pattern:lows_after_correcting_highs",
          "title": "Lows after correcting highs",
+         "wide": true,
          "wilson": null
         },
         {
@@ -208382,6 +208676,7 @@
          "settled_price": 0,
          "subject": "pattern:overnight_lows_no_iob",
          "title": "Overnight lows with no insulin on board",
+         "wide": false,
          "wilson": {
           "hi": 0.0554,
           "lo": 0.0
@@ -210237,6 +210532,7 @@
          "settled_price": 45,
          "subject": "pattern:highs_after_meals",
          "title": "Highs after meals",
+         "wide": false,
          "wilson": {
           "hi": 0.0162,
           "lo": 0.0
@@ -210310,6 +210606,7 @@
          "settled_price": 0,
          "subject": "pattern:lows_after_meals",
          "title": "Lows after meals",
+         "wide": false,
          "wilson": {
           "hi": 0.0162,
           "lo": 0.0
@@ -210361,6 +210658,7 @@
          "settled_price": 0,
          "subject": "pattern:highs_after_treating_lows",
          "title": "Highs after treating lows",
+         "wide": true,
          "wilson": null
         },
         {
@@ -210439,6 +210737,7 @@
          "settled_price": 0,
          "subject": "pattern:lows_after_correcting_highs",
          "title": "Lows after correcting highs",
+         "wide": true,
          "wilson": null
         },
         {
@@ -210499,6 +210798,7 @@
          "settled_price": 0,
          "subject": "pattern:overnight_lows_no_iob",
          "title": "Overnight lows with no insulin on board",
+         "wide": false,
          "wilson": {
           "hi": 0.0554,
           "lo": 0.0
@@ -213666,6 +213966,7 @@
          "settled_price": 45,
          "subject": "pattern:highs_after_meals",
          "title": "Highs after meals",
+         "wide": false,
          "wilson": {
           "hi": 0.0162,
           "lo": 0.0
@@ -213739,6 +214040,7 @@
          "settled_price": 0,
          "subject": "pattern:lows_after_meals",
          "title": "Lows after meals",
+         "wide": false,
          "wilson": {
           "hi": 0.0162,
           "lo": 0.0
@@ -213790,6 +214092,7 @@
          "settled_price": 0,
          "subject": "pattern:highs_after_treating_lows",
          "title": "Highs after treating lows",
+         "wide": true,
          "wilson": null
         },
         {
@@ -213868,6 +214171,7 @@
          "settled_price": 0,
          "subject": "pattern:lows_after_correcting_highs",
          "title": "Lows after correcting highs",
+         "wide": true,
          "wilson": null
         },
         {
@@ -213928,6 +214232,7 @@
          "settled_price": 0,
          "subject": "pattern:overnight_lows_no_iob",
          "title": "Overnight lows with no insulin on board",
+         "wide": false,
          "wilson": {
           "hi": 0.0554,
           "lo": 0.0
@@ -215516,6 +215821,7 @@
          "settled_price": 0,
          "subject": "pattern:highs_after_meals",
          "title": "Highs after meals",
+         "wide": false,
          "wilson": {
           "hi": 0.0162,
           "lo": 0.0
@@ -215589,6 +215895,7 @@
          "settled_price": 0,
          "subject": "pattern:lows_after_meals",
          "title": "Lows after meals",
+         "wide": false,
          "wilson": {
           "hi": 0.0162,
           "lo": 0.0
@@ -215640,6 +215947,7 @@
          "settled_price": 0,
          "subject": "pattern:highs_after_treating_lows",
          "title": "Highs after treating lows",
+         "wide": true,
          "wilson": null
         },
         {
@@ -215718,6 +216026,7 @@
          "settled_price": 0,
          "subject": "pattern:lows_after_correcting_highs",
          "title": "Lows after correcting highs",
+         "wide": true,
          "wilson": null
         },
         {
@@ -215778,6 +216087,7 @@
          "settled_price": 0,
          "subject": "pattern:overnight_lows_no_iob",
          "title": "Overnight lows with no insulin on board",
+         "wide": false,
          "wilson": {
           "hi": 0.0554,
           "lo": 0.0
@@ -218262,6 +218572,7 @@
          "settled_price": 20,
          "subject": "pattern:highs_after_meals",
          "title": "Highs after meals",
+         "wide": false,
          "wilson": {
           "hi": 0.0162,
           "lo": 0.0
@@ -218335,6 +218646,7 @@
          "settled_price": 0,
          "subject": "pattern:lows_after_meals",
          "title": "Lows after meals",
+         "wide": false,
          "wilson": {
           "hi": 0.0162,
           "lo": 0.0
@@ -218386,6 +218698,7 @@
          "settled_price": 0,
          "subject": "pattern:highs_after_treating_lows",
          "title": "Highs after treating lows",
+         "wide": true,
          "wilson": null
         },
         {
@@ -218464,6 +218777,7 @@
          "settled_price": 0,
          "subject": "pattern:lows_after_correcting_highs",
          "title": "Lows after correcting highs",
+         "wide": true,
          "wilson": null
         },
         {
@@ -218524,6 +218838,7 @@
          "settled_price": 0,
          "subject": "pattern:overnight_lows_no_iob",
          "title": "Overnight lows with no insulin on board",
+         "wide": false,
          "wilson": {
           "hi": 0.0554,
           "lo": 0.0
@@ -221495,6 +221810,7 @@
      "settled_price": 86,
      "subject": "pattern:highs_after_meals",
      "title": "Highs after meals",
+     "wide": true,
      "wilson": {
       "hi": 0.6788,
       "lo": 0.1058
@@ -221568,6 +221884,7 @@
      "settled_price": 86,
      "subject": "pattern:lows_after_meals",
      "title": "Lows after meals",
+     "wide": false,
      "wilson": {
       "hi": 0.3538,
       "lo": 0.0
@@ -221632,6 +221949,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
+     "wide": true,
      "wilson": {
       "hi": 0.4865,
       "lo": 0.0619
@@ -221713,6 +222031,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
+     "wide": true,
      "wilson": {
       "hi": 0.4865,
       "lo": 0.0619
@@ -221776,6 +222095,7 @@
      "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
+     "wide": true,
      "wilson": {
       "hi": 0.2184,
       "lo": 0.0423
@@ -221982,6 +222302,7 @@
       "settled_price": 86,
       "subject": "pattern:highs_after_meals",
       "title": "Highs after meals",
+      "wide": true,
       "wilson": {
        "hi": 0.6788,
        "lo": 0.1058
@@ -222291,6 +222612,7 @@
       "settled_price": 86,
       "subject": "pattern:lows_after_meals",
       "title": "Lows after meals",
+      "wide": false,
       "wilson": {
        "hi": 0.3538,
        "lo": 0.0
@@ -222549,6 +222871,7 @@
       "settled_price": 39,
       "subject": "pattern:overnight_lows_no_iob",
       "title": "Overnight lows with no insulin on board",
+      "wide": true,
       "wilson": {
        "hi": 0.2184,
        "lo": 0.0423
@@ -222872,6 +223195,7 @@
       "settled_price": 0,
       "subject": "pattern:lows_after_correcting_highs",
       "title": "Lows after correcting highs",
+      "wide": true,
       "wilson": {
        "hi": 0.4865,
        "lo": 0.0619
@@ -223324,6 +223648,7 @@
      "settled_price": 66,
      "subject": "pattern:highs_after_meals",
      "title": "Highs after meals",
+     "wide": true,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -223397,6 +223722,7 @@
      "settled_price": 66,
      "subject": "pattern:lows_after_meals",
      "title": "Lows after meals",
+     "wide": true,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -223461,6 +223787,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
+     "wide": true,
      "wilson": {
       "hi": 0.8358,
       "lo": 0.1642
@@ -223542,6 +223869,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
+     "wide": true,
      "wilson": {
       "hi": 0.4509,
       "lo": 0.0
@@ -223748,6 +224076,7 @@
       "settled_price": 66,
       "subject": "pattern:highs_after_meals",
       "title": "Highs after meals",
+      "wide": true,
       "wilson": {
        "hi": 0.6216,
        "lo": 0.0
@@ -223881,6 +224210,7 @@
       "settled_price": 66,
       "subject": "pattern:lows_after_meals",
       "title": "Lows after meals",
+      "wide": true,
       "wilson": {
        "hi": 0.6216,
        "lo": 0.0
@@ -224104,6 +224434,7 @@
       "settled_price": 0,
       "subject": "pattern:lows_after_correcting_highs",
       "title": "Lows after correcting highs",
+      "wide": true,
       "wilson": {
        "hi": 0.4509,
        "lo": 0.0
@@ -224514,6 +224845,7 @@
      "settled_price": 66,
      "subject": "pattern:highs_after_meals",
      "title": "Highs after meals",
+     "wide": true,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -224587,6 +224919,7 @@
      "settled_price": 66,
      "subject": "pattern:lows_after_meals",
      "title": "Lows after meals",
+     "wide": true,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -224651,6 +224984,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
+     "wide": true,
      "wilson": {
       "hi": 0.6788,
       "lo": 0.1058
@@ -224732,6 +225066,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
+     "wide": false,
      "wilson": {
       "hi": 0.3538,
       "lo": 0.0
@@ -224938,6 +225273,7 @@
       "settled_price": 66,
       "subject": "pattern:highs_after_meals",
       "title": "Highs after meals",
+      "wide": true,
       "wilson": {
        "hi": 0.6216,
        "lo": 0.0
@@ -225071,6 +225407,7 @@
       "settled_price": 66,
       "subject": "pattern:lows_after_meals",
       "title": "Lows after meals",
+      "wide": true,
       "wilson": {
        "hi": 0.6216,
        "lo": 0.0
@@ -225302,6 +225639,7 @@
       "settled_price": 0,
       "subject": "pattern:lows_after_correcting_highs",
       "title": "Lows after correcting highs",
+      "wide": false,
       "wilson": {
        "hi": 0.3538,
        "lo": 0.0
@@ -225612,6 +225950,7 @@
      "settled_price": 66,
      "subject": "pattern:highs_after_meals",
      "title": "Highs after meals",
+     "wide": true,
      "wilson": {
       "hi": 0.6788,
       "lo": 0.1058
@@ -225685,6 +226024,7 @@
      "settled_price": 66,
      "subject": "pattern:lows_after_meals",
      "title": "Lows after meals",
+     "wide": false,
      "wilson": {
       "hi": 0.3538,
       "lo": 0.0
@@ -225749,6 +226089,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
+     "wide": true,
      "wilson": {
       "hi": 0.4865,
       "lo": 0.0619
@@ -225830,6 +226171,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
+     "wide": true,
      "wilson": {
       "hi": 0.4865,
       "lo": 0.0619
@@ -225893,6 +226235,7 @@
      "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
+     "wide": true,
      "wilson": {
       "hi": 0.2184,
       "lo": 0.0423
@@ -226099,6 +226442,7 @@
       "settled_price": 66,
       "subject": "pattern:highs_after_meals",
       "title": "Highs after meals",
+      "wide": true,
       "wilson": {
        "hi": 0.6788,
        "lo": 0.1058
@@ -226408,6 +226752,7 @@
       "settled_price": 66,
       "subject": "pattern:lows_after_meals",
       "title": "Lows after meals",
+      "wide": false,
       "wilson": {
        "hi": 0.3538,
        "lo": 0.0
@@ -226605,6 +226950,7 @@
       "settled_price": 39,
       "subject": "pattern:overnight_lows_no_iob",
       "title": "Overnight lows with no insulin on board",
+      "wide": true,
       "wilson": {
        "hi": 0.2184,
        "lo": 0.0423
@@ -226928,6 +227274,7 @@
       "settled_price": 0,
       "subject": "pattern:lows_after_correcting_highs",
       "title": "Lows after correcting highs",
+      "wide": true,
       "wilson": {
        "hi": 0.4865,
        "lo": 0.0619
@@ -227378,6 +227725,7 @@
      "settled_price": 66,
      "subject": "pattern:highs_after_meals",
      "title": "Highs after meals",
+     "wide": true,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -227451,6 +227799,7 @@
      "settled_price": 66,
      "subject": "pattern:lows_after_meals",
      "title": "Lows after meals",
+     "wide": true,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -227515,6 +227864,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
+     "wide": true,
      "wilson": {
       "hi": 0.4509,
       "lo": 0.0
@@ -227596,6 +227946,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
+     "wide": true,
      "wilson": {
       "hi": 0.4509,
       "lo": 0.0
@@ -227802,6 +228153,7 @@
       "settled_price": 66,
       "subject": "pattern:highs_after_meals",
       "title": "Highs after meals",
+      "wide": true,
       "wilson": {
        "hi": 0.6216,
        "lo": 0.0
@@ -227935,6 +228287,7 @@
       "settled_price": 66,
       "subject": "pattern:lows_after_meals",
       "title": "Lows after meals",
+      "wide": true,
       "wilson": {
        "hi": 0.6216,
        "lo": 0.0
@@ -228060,6 +228413,7 @@
       "settled_price": 0,
       "subject": "pattern:lows_after_correcting_highs",
       "title": "Lows after correcting highs",
+      "wide": true,
       "wilson": {
        "hi": 0.4509,
        "lo": 0.0
@@ -228325,6 +228679,7 @@
      "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
+     "wide": true,
      "wilson": {
       "hi": 0.2184,
       "lo": 0.0423
@@ -228500,6 +228855,7 @@
       "settled_price": 39,
       "subject": "pattern:overnight_lows_no_iob",
       "title": "Overnight lows with no insulin on board",
+      "wide": true,
       "wilson": {
        "hi": 0.2184,
        "lo": 0.0423
@@ -228803,6 +229159,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
+     "wide": true,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -228884,6 +229241,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
+     "wide": true,
      "wilson": {
       "hi": 1.0,
       "lo": 0.3784
@@ -228947,6 +229305,7 @@
      "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
+     "wide": true,
      "wilson": {
       "hi": 0.2184,
       "lo": 0.0423
@@ -229190,6 +229549,7 @@
       "settled_price": 39,
       "subject": "pattern:overnight_lows_no_iob",
       "title": "Overnight lows with no insulin on board",
+      "wide": true,
       "wilson": {
        "hi": 0.2184,
        "lo": 0.0423
@@ -229315,6 +229675,7 @@
       "settled_price": 0,
       "subject": "pattern:lows_after_correcting_highs",
       "title": "Lows after correcting highs",
+      "wide": true,
       "wilson": {
        "hi": 1.0,
        "lo": 0.3784
@@ -229642,6 +230003,7 @@
      "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
+     "wide": true,
      "wilson": {
       "hi": 0.2184,
       "lo": 0.0423
@@ -229741,6 +230103,7 @@
       "settled_price": 39,
       "subject": "pattern:overnight_lows_no_iob",
       "title": "Overnight lows with no insulin on board",
+      "wide": true,
       "wilson": {
        "hi": 0.2184,
        "lo": 0.0423
@@ -230044,6 +230407,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
+     "wide": true,
      "wilson": {
       "hi": 1.0,
       "lo": 0.3784
@@ -230125,6 +230489,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
+     "wide": true,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -230386,6 +230751,7 @@
       "settled_price": 0,
       "subject": "pattern:lows_after_correcting_highs",
       "title": "Lows after correcting highs",
+      "wide": true,
       "wilson": {
        "hi": 0.6216,
        "lo": 0.0

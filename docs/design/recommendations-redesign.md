@@ -91,6 +91,8 @@ Desktop has no hover-revealed actions, and every action has a visible control.
 | **Queue** | noun | The ranked list of recommendations. |
 | **Pattern** | noun | A recurring glucose outcome the engine detected, such as highs after meals. |
 | **Setting** | noun | A pump value: basal, correction factor or carb ratio. |
+| **Current** | noun | The setting's programmed value on the pump now. |
+| **Estimate** | noun | The engine's estimate of the value that setting should have, from the evidence nights. |
 | **Pin** | verb | Start a Focus on a Pattern's habit. |
 | **Focus** | noun | A habit you pinned, watched for adherence and outcome. |
 | **Trial** | noun | A pump setting change the app detected, watched against its before period. |

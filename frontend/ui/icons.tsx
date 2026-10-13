@@ -31,15 +31,11 @@ const PATHS = {
       <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
     </>
   ),
-  // A day's events, drawn in their data family's colour by whatever holds them.
+  // A day's events, drawn in neutral ink; shape alone tells the kinds apart.
   // Correction bolus: Feather's "droplet" (MIT licence, feathericons.com).
   correction: <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" />,
-  // Meal bolus: the same drop, smaller, over a plate line (original, after Feather).
-  meal: (
-    <>
-      <path d="M12 2.5l4.24 4.24a6 6 0 1 1-8.48 0z" /><path d="M5 21h14" />
-    </>
-  ),
+  // Meal bolus: the same drop, filled, so it differs from a correction by shape.
+  meal: <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" fill="currentColor" />,
   // Logged carbs: Lucide's "wheat" (ISC licence, lucide.dev).
   carbs: (
     <>

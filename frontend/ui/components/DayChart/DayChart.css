@@ -28,11 +28,12 @@
 .ui-daychart__trace { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
 .ui-daychart__trace--in-range { stroke: var(--glucose-in-range-quiet); }
 
-/* The marks: one glyph per event, its colour from its data family. A halo of
-   the canvas keeps a glyph clear of the grid lines behind it. */
-.ui-daychart__mark--insulin { color: var(--ui-insulin); }
-.ui-daychart__mark--carbs { color: var(--ui-carbs); }
-.ui-daychart__mark--device { color: var(--wk-ink-body); }
+/* The marks: one glyph per event, all in neutral ink; the glyph's shape tells
+   the kinds apart. A halo of the canvas keeps a glyph clear of the grid lines
+   behind it. */
+.ui-daychart__mark { color: var(--wk-ink-body); }
+/* Meals alone take a colour. */
+.ui-daychart__mark--meal, .ui-daychart__grams--meal { color: var(--ui-meal); }
 .ui-daychart__mark svg { overflow: visible; }
 .ui-daychart__halo { fill: var(--wk-canvas); }
 
@@ -41,7 +42,7 @@
 .ui-daychart__sleep { fill: var(--wk-ink-meta); fill-opacity: .45; }
 .ui-daychart__sleep-wash { fill: var(--wk-ink); fill-opacity: .035; }
 
-.ui-daychart__basal { fill: var(--ui-insulin-area); }
+.ui-daychart__basal { fill: var(--wk-ink-meta); fill-opacity: .4; }
 .ui-daychart__profile { fill: none; stroke: var(--wk-ink-body); stroke-width: 1.2; stroke-dasharray: 3 2; }
 
 .ui-daychart__scale {
@@ -83,4 +84,3 @@
 .ui-daychart__kind { color: var(--wk-ink); }
 .ui-daychart__grams,
 .ui-daychart__units { color: var(--wk-ink); text-align: right; }
-.ui-daychart__grams.ui-daychart__mark--carbs { color: var(--ui-carbs); }

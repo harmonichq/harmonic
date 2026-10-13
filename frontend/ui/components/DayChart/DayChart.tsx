@@ -46,15 +46,10 @@ const ROW = 17; // a stacked row in the marks lane
 const ROWS = 2;
 const MARKS_HEIGHT = ROW * ROWS + 2;
 
-type Family = 'insulin' | 'carbs' | 'device';
-const FAMILY: Record<DayEvent['kind'] | 'sleep', Family> = {
-  meal: 'insulin', correction: 'insulin', carbs: 'carbs', site: 'device', sleep: 'device',
-};
-
-/** A day-event glyph from the library's icons, centred on (x, y), in its family's colour. */
+/** A day-event glyph from the library's icons, centred on (x, y): a meal in its colour, the rest neutral. */
 function Glyph({ name, x, y, size = GLYPH }: { name: DayEvent['kind'] | 'sleep'; x: number; y: number; size?: number }) {
   return (
-    <g transform={`translate(${x - size / 2},${y - size / 2})`} className={`ui-daychart__mark ui-daychart__mark--${FAMILY[name]}`}>
+    <g transform={`translate(${x - size / 2},${y - size / 2})`} className={`ui-daychart__mark${name === 'meal' ? ' ui-daychart__mark--meal' : ''}`}>
       <rect width={size} height={size} rx={3} className="ui-daychart__halo" />
       <Icon name={name} size={size} stroke={1.8} />
     </g>
@@ -70,7 +65,7 @@ function Key({ kind, label }: { kind: DayEvent['kind'] | 'sleep' | 'basal' | 'pr
             : <line x1="0" x2="14" y1="5" y2="5" className="ui-daychart__profile" />}
         </svg>
       ) : (
-        <span className={`ui-daychart__key-glyph ui-daychart__mark--${FAMILY[kind]}`}><Icon name={kind} size={14} stroke={1.8} /></span>
+        <span className={`ui-daychart__key-glyph ui-daychart__mark${kind === 'meal' ? ' ui-daychart__mark--meal' : ''}`}><Icon name={kind} size={14} stroke={1.8} /></span>
       )}
       {label}
     </span>
@@ -231,9 +226,9 @@ export function DayChart({ data, width = 358, layout = 'phone' }: DayChartProps)
           {data.events.map((e, i) => (
             <li key={i} className="ui-daychart__event">
               <span className="ui-daychart__time"><Num value={e.time} /></span>
-              <span className={`ui-daychart__glyph ui-daychart__mark--${FAMILY[e.kind]}`} aria-hidden="true"><Icon name={e.kind} size={14} stroke={1.8} /></span>
+              <span className={`ui-daychart__glyph ui-daychart__mark${e.kind === 'meal' ? ' ui-daychart__mark--meal' : ''}`} aria-hidden="true"><Icon name={e.kind} size={14} stroke={1.8} /></span>
               <span className="ui-daychart__kind">{LABELS[e.kind]}</span>
-              <span className="ui-daychart__grams ui-daychart__mark--carbs">
+              <span className={`ui-daychart__grams${e.kind === 'meal' ? ' ui-daychart__grams--meal' : ''}`}>
                 {e.kind === 'carbs' ? <><Num value={e.grams} /> g</> : 'carbs' in e && e.carbs && <><Num value={e.carbs} /> g</>}
               </span>
               <span className="ui-daychart__units">{'insulin' in e && <><Num value={e.insulin} /> U</>}</span>

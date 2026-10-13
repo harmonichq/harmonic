@@ -1,10 +1,10 @@
-// StatePill: one state word (§4.2), 20 px with an uppercase 11 px label. The
-// word is the signal; its tint only repeats it (§2.3 ban 4).
+// StatePill: one state word (§4.2), a borderless tinted tag, 18 px with an
+// uppercase 11 px label, so it never reads as a button. The word is the
+// signal; its tint only repeats it (§2.3 ban 4). An item's kind (Pattern,
+// Setting) is its glyph, not a pill.
 import './StatePill.css';
 
 const LABELS = {
-  pattern: 'Pattern',
-  setting: 'Setting',
   uncertain: 'Uncertain',
   maturing: 'Maturing',
   better: 'Better',

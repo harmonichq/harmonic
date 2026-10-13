@@ -12,8 +12,6 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 const story = (state: PillState): Story => ({ args: { state } });
 
-export const Pattern = story('pattern');
-export const Setting = story('setting');
 export const Uncertain = story('uncertain');
 export const Maturing = story('maturing');
 export const Better = story('better');

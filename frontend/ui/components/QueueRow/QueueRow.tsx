@@ -1,5 +1,6 @@
 // QueueRow (§4.2): a collapsed recommendation. A 44 px column holds the
-// kind's glyph (decorative); the kind's StatePill carries its word. Then the
+// kind's glyph, which is the kind's only mark: it is named "Pattern" or
+// "Setting" for assistive tech, and no kind pill repeats it. Then the
 // title, then one quiet line: the magnitude and the top cause joined by a
 // middle dot ("9 of 71 lows · Carb undercount"), or the magnitude alone when no
 // cause claims it. A setting row's title is its kind word with its time block
@@ -16,11 +17,12 @@ import { Icon } from '../../icons';
 import { Num } from '../../Num';
 import type { Magnitude, SettingData } from '../../queue-model';
 import { Button } from '../Button/Button';
-import { StatePill } from '../StatePill/StatePill';
 import '../../shared.css';
 import './QueueRow.css';
 
 type Layout = 'phone' | 'desktop';
+
+const KIND = { pattern: 'Pattern', setting: 'Setting' } as const;
 
 export type QueueRowProps =
   | { loading: true; layout?: Layout }
@@ -73,7 +75,7 @@ export function QueueRow(props: QueueRowProps) {
   const { title, kind, selected = false, swiping = false, onSelect, snoozed } = props;
   const body = (
     <>
-      <span className="ui-qrow__glyph"><Icon name={kind} /></span>
+      <span className="ui-qrow__glyph" role="img" aria-label={KIND[kind]}><Icon name={kind} /></span>
       <span className="ui-qrow__body">
         <span className="ui-qrow__head">
           <span className="ui-qrow__title">
@@ -82,7 +84,6 @@ export function QueueRow(props: QueueRowProps) {
               <Num value={props.setting.start} />–<Num value={props.setting.end} />
             </span></>}
           </span>
-          <StatePill state={kind} />
           {layout === 'phone' && !snoozed && <span className="ui-qrow__chevron"><Icon name="expand" /></span>}
         </span>
         <span className="ui-qrow__meta"><Meta {...props} /></span>

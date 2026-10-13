@@ -1,22 +1,26 @@
 .ui-pill {
+  --tone: var(--wk-ink-body);
   box-sizing: border-box;
   display: inline-flex;
   align-items: center;
   flex: none;
-  height: var(--ui-size-pill);
+  height: 18px;
   padding: 0 6px;
-  border: 1px solid var(--wk-rule);
-  border-radius: var(--wk-radius);
-  color: var(--wk-ink-meta);
+  border: 0;
+  border-radius: 2px;
+  background: var(--wk-surface-rail);
+  color: var(--tone);
   font: var(--ui-weight-strong) var(--ui-type-caption) / 1 var(--ui-font);
   letter-spacing: var(--ui-track-caps);
   text-transform: uppercase;
   white-space: nowrap;
 }
 
-.ui-pill--uncertain { color: var(--wk-ink-body); }
-.ui-pill--maturing { color: var(--wk-ink-body); }
-.ui-pill--better { color: var(--wk-status-favorable); }
-.ui-pill--worse { color: var(--wk-status-adverse); }
-.ui-pill--focus { color: var(--primary); border-color: var(--primary); }
-
+/* A state with a tone is tinted with it at 15%; Unclear keeps the rail surface. */
+.ui-pill--uncertain, .ui-pill--maturing { --tone: var(--wk-status-incomplete); }
+.ui-pill--better { --tone: var(--wk-status-favorable); }
+.ui-pill--worse { --tone: var(--wk-status-adverse); }
+.ui-pill--focus { --tone: var(--primary); }
+.ui-pill--uncertain, .ui-pill--maturing, .ui-pill--better, .ui-pill--worse, .ui-pill--focus {
+  background: color-mix(in srgb, var(--tone) 15%, transparent);
+}

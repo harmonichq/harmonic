@@ -189,7 +189,7 @@ in §2.
 | Answer button (Prompt) | 44 px, outlined neutral, equal widths. |
 | List row | 48 px minimum, label left, value right, optional ›. |
 | Numeric input | Sized to 3 digits, unit inline, the system numeric keyboard. |
-| State pill | 20 px, uppercase 11 px label. |
+| State pill | Borderless tinted tag: 18 px, 2 px radius, uppercase 11 px label, the state's tone at 15% fill (Unclear on the rail surface). No outline, so it never reads as a button. Item kinds take no pill: the kind glyph carries Pattern vs Setting. |
 | Badge | 16 px; a count pill or an alert "!". |
 | Tab bar item / rail item | 44 px target, icon above label. |
 | Sheet | Bottom-attached, 12 px top radius, grabber. |
@@ -251,6 +251,14 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   like their original rows looked … we have room to show a little bit more in
   that screen." The Snoozed list draws each item with QueueRow's snoozed state
   (glyph, title, kind pill, magnitude and cause), plus Until and Restore.
+- **2026-10-13 — the state pill is a tinted tag, and kinds take no pill.** The
+  operator: "I don't like that the restore button and the pattern pill look
+  extremely similar … that goes for all of them." Of three treatments, the
+  borderless tinted tag was chosen and the leading dot rejected ("I really
+  don't like the dot"); see §2.2 State pill. The Pattern and Setting pills are
+  removed: "we're already indicating patterns vs. settings with a little icon
+  next to the row." The row's kind glyph is named Pattern or Setting for
+  assistive tech, so the kind is still said in words.
 
 ### 2.6 Deferred (not cut)
 Not built in the current screens. The engine still serves what each needs, and
@@ -317,10 +325,11 @@ unless noted. Loading is a skeleton of the component's own shape.
    - States: default; pressed; focused; disabled; busy.
    - Fields: none.
    - Desktop: the same, with a visible focus ring.
-5. **StatePill**: a one-word state.
-   - States: Pattern, Setting, Uncertain, Maturing, Better, Worse, Unclear, Focus.
+5. **StatePill**: a one-word state, as a borderless tinted tag (§2.2).
+   - States: Uncertain, Maturing, Better, Worse, Unclear, Focus. An item's
+     kind is never a pill; its glyph carries it.
    - Words only, at the one pill size; no glyph inside a pill.
-   - Fields: `guidance.candidates[].kind`; `findings.outcome_patterns[].wide` (Uncertain: the pattern's Queue admission does not hold at its low end, ADR 485); the trial and focus lifecycle and result.
+   - Fields: `findings.outcome_patterns[].wide` (Uncertain: the pattern's Queue admission does not hold at its low end, ADR 485); the trial and focus lifecycle and result.
    - Desktop: the same.
 6. **TransientBar**: a label plus one text action, shown above the tab bar.
    - States: "Snoozed · Until <date>" + Undo; "Not saved" + Retry.
@@ -330,7 +339,8 @@ unless noted. Loading is a skeleton of the component's own shape.
 **Queue**
 
 7. **QueueRow**: a collapsed recommendation, with a leading 20 px kind glyph
-   (Pattern: rising dots; Setting: sliders), its title, one magnitude
+   (Pattern: rising dots; Setting: sliders; named "Pattern" / "Setting" for
+   assistive tech, and no kind pill), its title, one magnitude
    ("9 of 71 lows") and a cause label.
    - States: default; selected (desktop); mid-swipe (snooze reveal);
      no cause (label omitted); setting (current → suggested replaces the

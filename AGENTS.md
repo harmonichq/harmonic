@@ -333,6 +333,14 @@ a slot with fewer than eight informative nights gets p = 1.0 on both tails, so
 `Status.INSUFFICIENT` — which keeps the number and its confidence interval
 visible while asserting no direction.
 
+**Every setting kind also holds when its own range contains the current
+value (ADR 489).** `Estimate.excludes(current)` — the served `lo`/`hi`, closed at
+both ends — is one more condition inside each kind's one predicate: basal in
+`cap()` beside the sign verdict and in `apply_harm` for a median-deferred
+recurring-lows cut (a slot with no clean median has no range, so its full step
+stands); carb ratio as `band_excludes_programmed`; ISF in `isf_asserts_move`.
+Never re-check the range in a reader.
+
 `cap()`'s separate `min_directional_days` parameter (default
 `_MIN_DIRECTIONAL_DAYS = 3`) belongs to the **estimate/CI** rule in
 `_insufficient`, which basal does not use; the only non-default caller of it in
@@ -350,8 +358,10 @@ runs.
 **ISF has the same one-predicate staging invariant, but not basal's
 safety machinery.** `analyzers/isf.isf_asserts_move` is evaluated from the final
 post-harm values and stamped onto the analyzer's `SegmentEstimate`. It is true
-only when a current programmed value and a direction both exist and the
-recommendation differs from current. A direction-only weakening, a missing
+only when a current programmed value and a direction both exist, the
+recommendation differs from current, and the fasting range excludes current; a
+sized strengthen it refuses for its range is published as a hold, with no
+direction and no recommendation. A direction-only weakening, a missing
 programmed value, a hold, and a rounded no-op all remain visible but cannot
 stage; the findings projection queue withholds their rank. `isf.py` still
 imports nothing from `safety.py`: its caps are its own

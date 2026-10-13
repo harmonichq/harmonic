@@ -33,7 +33,7 @@ from ciq_autotune.events import BasalEvent, BolusEvent, CgmReading
 from ciq_autotune.harm import HarmArm, HarmConfig, PrintedLow
 from ciq_autotune.model import ModelConfig
 from ciq_autotune.result import IcBlock, SegmentEstimate, SlotEstimate
-from ciq_autotune.safety import Status, cap, SafetyConfig
+from ciq_autotune.safety import Status, cap, SafetyConfig, basal_sign_directions
 from ciq_autotune.uncertainty import Estimate, estimate_median
 
 
@@ -369,6 +369,9 @@ class AnalyzeBasalTest(unittest.TestCase):
     def test_direction_compares_each_night_to_its_as_of_programmed_rate(self):
         # The first six nights ran a lower profile than the last six. Every night
         # delivered 20% above its own programmed basal, so all 12 signs agree.
+        # The setting epoch keeps the older nights out of the estimate (whose
+        # range would otherwise reach today's 0.6, #489) but not out of the sign
+        # pool: against today's rate they would be six ties, below the floor.
         older = [
             night(d, rate=0.6, programmed=0.5) for d in range(1, 7)
         ]
@@ -378,11 +381,75 @@ class AnalyzeBasalTest(unittest.TestCase):
         basal, cgm = combine(*(older + current))
 
         s = slot_at(analyze_basal(
+            basal, cgm, [], [], active_basal=[(0, 0.6)],
+            slot_starts={slot: datetime(2022, 6, 7) for slot in range(48)},
+        ), "03:00")
+
+        self.assertEqual(s.evidence["directional_support_count"], 12)
+        self.assertEqual(s.days, 6)
+        self.assertEqual(s.status, Status.RAISE)
+        self.assertTrue(s.asserts_move)
+
+    # --- #489: a supported direction also needs the range to exclude current ---
+
+    def test_supported_raise_whose_range_spans_current_is_held(self):
+        # Thirteen nights each above their own as-of rate clear the sign test,
+        # but five of them ran under an older 0.45 profile and delivered 0.55,
+        # below today's 0.60, so the served range reaches below it while the
+        # median (0.75) argues a raise. The slot keeps its number and range and
+        # holds everywhere.
+        basal, cgm = combine(*(
+            [night(d, rate=0.55, programmed=0.45) for d in range(1, 6)]
+            + [night(d, rate=0.75, programmed=0.6) for d in range(6, 14)]
+        ))
+        slots = analyze_basal(basal, cgm, [], [], active_basal=[(0, 0.6)])
+        s = slot_at(slots, "03:00")
+
+        self.assertEqual(s.evidence["directional_support_count"], 13)
+        self.assertTrue(all(n["sign"] == 1 for n in s.evidence["night_roster"]))
+        self.assertLess(s.estimate.lo, s.current)
+        self.assertGreater(s.estimate.hi, s.current)
+        self.assertEqual(s.status, Status.INSUFFICIENT)
+        self.assertFalse(s.asserts_move)
+        self.assertIsNotNone(s.recommended)
+        self.assertIn("measured range still includes the set rate", s.annotation)
+        self.assertIsNone(s.guidance["action"])
+        self.assertIsNone(s.to_dict()["direction"])
+        self.assertEqual(_deliverable_rate(s), s.current)
+        self.assertEqual(build_tuning_levers(slots, [], [], slot_minutes=30)[0]
+                         .impact_u_day, 0.0)
+
+    def test_supported_raise_whose_range_excludes_current_stages(self):
+        basal, cgm = combine(*(
+            [night(d, rate=0.70, programmed=0.6) for d in range(1, 12)]
+            + [night(12, rate=0.58, programmed=0.6)]
+        ))
+        slots = analyze_basal(basal, cgm, [], [], active_basal=[(0, 0.6)])
+        s = slot_at(slots, "03:00")
+
+        self.assertGreater(s.estimate.lo, s.current)
+        self.assertTrue(s.asserts_move)
+        self.assertEqual(s.status, Status.RAISE)
+        self.assertEqual(s.guidance["action"]["direction"], "raise")
+        self.assertEqual(_deliverable_rate(s), s.recommended)
+        self.assertGreater(build_tuning_levers(slots, [], [], slot_minutes=30)[0]
+                           .impact_u_day, 0.0)
+
+    def test_range_bound_equal_to_current_is_inside(self):
+        # Closed bounds: twelve informative nights, but a range whose low end
+        # sits exactly on the set rate still contains it, so the slot holds.
+        basal, cgm = combine(*(
+            [night(d, rate=0.6, programmed=0.5) for d in range(1, 7)]
+            + [night(d, rate=0.72, programmed=0.6) for d in range(7, 13)]
+        ))
+        s = slot_at(analyze_basal(
             basal, cgm, [], [], active_basal=[(0, 0.6)]
         ), "03:00")
 
-        self.assertEqual(s.status, Status.RAISE)
-        self.assertTrue(s.asserts_move)
+        self.assertEqual(s.evidence["directional_support_count"], 12)
+        self.assertEqual(s.estimate.lo, s.current)
+        self.assertEqual(s.status, Status.INSUFFICIENT)
+        self.assertFalse(s.asserts_move)
 
     def test_nights_without_an_as_of_programmed_rate_are_unavailable(self):
         basal, cgm = combine(*(

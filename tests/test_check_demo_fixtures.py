@@ -233,9 +233,9 @@ class DiagnoseGeneratorContractTest(unittest.TestCase):
 
         calls = []
 
-        def recording_predicate(current, direction, recommended):
+        def recording_predicate(current, direction, recommended, estimate):
             calls.append((current, direction, recommended))
-            return real_predicate(current, direction, recommended)
+            return real_predicate(current, direction, recommended, estimate)
 
         with tempfile.TemporaryDirectory() as tmp, mock.patch(
             "ciq_autotune.analyzers.isf.isf_asserts_move",

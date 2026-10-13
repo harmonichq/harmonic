@@ -11,7 +11,8 @@
 // column: the end tick labels anchor inward and the unit follows the last one.
 // Current (dashed, top row) and Estimate (solid,
 // second row) are full-height marks labelled with their word and value; the
-// engine's range is a faint band behind them. Left to right is rate, never
+// engine's range is a band behind them in the estimate colour, and the nights
+// inside it draw bright while the rest recede. Left to right is rate, never
 // time.
 import type { Sourced } from '../../fixtures';
 import { formatValue } from '../../provenance.js';
@@ -101,7 +102,12 @@ export function EvidenceChart({ nights, roster, current, estimate, lo, hi, units
     const bin = Math.round(x(rate) / PITCH);
     bins.set(bin, (bins.get(bin) ?? 0) + 1);
   }
-  const dots: { cx: number; cy: number }[] = [];
+  const dots: { cx: number; cy: number; inRange: boolean }[] = [];
+  const binRange = new Map<number, boolean>();
+  for (const rate of inside) {
+    const bin = Math.round(x(rate) / PITCH);
+    binRange.set(bin, (binRange.get(bin) ?? false) || (rate >= lo.value && rate <= hi.value));
+  }
   for (const [bin, count] of bins) {
     const columns = Math.ceil(count / MAX_ROWS);
     for (let i = 0; i < count; i += 1) {
@@ -109,6 +115,7 @@ export function EvidenceChart({ nights, roster, current, estimate, lo, hi, units
       dots.push({
         cx: bin * PITCH + (column - (columns - 1) / 2) * PITCH,
         cy: AXIS_Y - 2 - DOT / 2 - Math.floor(i / columns) * PITCH,
+        inRange: binRange.get(bin)!,
       });
     }
   }
@@ -132,7 +139,8 @@ export function EvidenceChart({ nights, roster, current, estimate, lo, hi, units
       <MarkLabel word="Estimate" value={estimate} x={x(estimate.value)} other={x(current.value)} row={1} width={width}
         className="ui-evidence__estimate-label" />
       <g aria-hidden="true">
-        {dots.map((dot, i) => <circle key={i} cx={dot.cx} cy={dot.cy} r={DOT / 2} className="ui-evidence__night" />)}
+        {dots.map((dot, i) => <circle key={i} cx={dot.cx} cy={dot.cy} r={DOT / 2}
+          className={dot.inRange ? 'ui-evidence__night ui-evidence__night--in' : 'ui-evidence__night'} />)}
       </g>
       {below > 0 && (
         <text x={0} y={edgeY(0, EDGE_LABEL)} className="ui-evidence__edge">

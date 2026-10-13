@@ -36,6 +36,7 @@
   letter-spacing: -.02em;
   font-variant-numeric: tabular-nums;
 }
+.ui-scard__suggested { color: var(--ui-estimate); }
 .ui-scard__current { color: var(--wk-ink-meta); font-weight: var(--ui-weight-regular); }
 .ui-scard__arrow {
   color: var(--wk-ink-meta);

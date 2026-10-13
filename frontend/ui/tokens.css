@@ -49,6 +49,12 @@
   --glucose-in-range: #7ec476;
   --glucose-high: #efcf4c;
   --glucose-very-high: #f08a3c;
+  /* The engine's estimate as data: its figure, mark and range band. One meaning
+     only, cool so it never reads as a glucose band or as the interactive
+     orange. 7.33:1 against --wk-surface. */
+  --ui-estimate: #86b0e0;
+  --ui-estimate-band: color-mix(in srgb, var(--ui-estimate) 16%, transparent);
+
   /* A chart's above-range area: --glucose-high, translucent. */
   --glucose-above-range-tint: color-mix(in srgb, var(--glucose-high) 22%, transparent);
 }

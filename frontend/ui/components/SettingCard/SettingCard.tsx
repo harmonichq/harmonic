@@ -24,7 +24,7 @@ export function SettingCard({ data, onChanges }: SettingCardProps) {
       <div className="ui-scard__figure">
         <span className="ui-scard__current"><Num value={data.current} /></span>
         <span className="ui-scard__arrow" aria-hidden="true">→</span>
-        <span><Num value={data.suggested} /></span>
+        <span className="ui-scard__suggested"><Num value={data.suggested} /></span>
         <span className="ui-scard__units">{data.units}</span>
       </div>
       <div className="ui-scard__chart">

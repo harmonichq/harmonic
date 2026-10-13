@@ -3,9 +3,9 @@
   font-size: var(--ui-type-label);
   font-variant-numeric: tabular-nums;
 }
-.ui-evidence__band { fill: var(--wk-ink); fill-opacity: .07; }
+.ui-evidence__band { fill: var(--ui-estimate-band); }
 .ui-evidence__current { stroke: var(--wk-ink-meta); stroke-width: 1; stroke-dasharray: 3 3; }
-.ui-evidence__estimate { stroke: var(--wk-ink); stroke-width: 1.5; }
+.ui-evidence__estimate { stroke: var(--ui-estimate); stroke-width: 1.5; }
 .ui-evidence__current-label,
 .ui-evidence__estimate-label {
   /* A halo of the card's surface, so no mark line shows through a label. */
@@ -15,9 +15,10 @@
   paint-order: stroke;
 }
 .ui-evidence__current-label { fill: var(--wk-ink-meta); }
-.ui-evidence__estimate-label { fill: var(--wk-ink); font-weight: var(--ui-weight-strong); }
+.ui-evidence__estimate-label { fill: var(--ui-estimate); font-weight: var(--ui-weight-strong); }
 .ui-evidence__word { font-weight: var(--ui-weight-regular); }
-.ui-evidence__night { fill: var(--wk-ink-body); }
+.ui-evidence__night { fill: var(--wk-ink-meta); fill-opacity: .55; }
+.ui-evidence__night--in { fill: var(--wk-ink); fill-opacity: 1; }
 .ui-evidence__axis { stroke: var(--wk-rule); stroke-width: 1; }
 .ui-evidence__tick,
 .ui-evidence__unit,

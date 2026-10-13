@@ -180,14 +180,13 @@ export function ranking(name: QueueStore): QueueItem[] {
 export const queuedCount = (name: QueueStore) => sourced<number>(`queue.${name}.guidance.candidates[queued=true].length`);
 export const snoozedCount = (name: QueueStore) => sourced<number>(`queue.${name}.guidance.candidates[set_aside=true].length`);
 
-export type SnoozedItem = { subject: string; title: string; until: Sourced<string> };
+export type SnoozedItem = QueueItem & { until: Sourced<string> };
 
-/** The Snoozed list: each snoozed candidate, until fourteen days after the
- *  engine's served decision time. */
+/** The Snoozed list: each snoozed candidate as its Queue row reads it, until
+ *  fourteen days after the engine's served decision time. */
 export function snoozed(name: QueueStore): SnoozedItem[] {
   return store(name).guidance.candidates.filter((c) => c.set_aside).map((c) => ({
-    subject: c.subject,
-    title: c.title,
+    ...item(name, c),
     until: sourced<string>(`queue.${name}.guidance.candidates[subject=${c.subject}].0.decided_at`, 'until'),
   }));
 }

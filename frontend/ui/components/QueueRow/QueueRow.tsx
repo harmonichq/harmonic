@@ -8,9 +8,14 @@
 // Phone: a full-width row under a rule, with a ▾ to expand; mid-swipe slides
 // it aside over the Snooze reveal. Desktop: a list row that selects into the
 // detail pane, marked by the surface and a bar at its leading edge.
+//
+// Snoozed (the Snoozed list): the same row, read-only — no chevron, no swipe,
+// no selection — with a last line holding "Until <date>" and Restore.
+import type { Sourced } from '../../fixtures';
 import { Icon } from '../../icons';
 import { Num } from '../../Num';
 import type { Magnitude, SettingData } from '../../queue-model';
+import { Button } from '../Button/Button';
 import { StatePill } from '../StatePill/StatePill';
 import '../../shared.css';
 import './QueueRow.css';
@@ -27,6 +32,8 @@ export type QueueRowProps =
       /** Phone only: the row held mid-swipe over its Snooze reveal. */
       swiping?: boolean;
       onSelect?: () => void;
+      /** A snoozed row: its served Until date, and Restore. */
+      snoozed?: { until: Sourced<string>; onRestore?: () => void };
     } & (
       | { kind: 'pattern'; magnitude: Magnitude; cause?: string }
       | { kind: 'setting'; setting: SettingData }
@@ -63,16 +70,9 @@ export function QueueRow(props: QueueRowProps) {
       </div>
     );
   }
-  const { title, kind, selected = false, swiping = false, onSelect } = props;
-  const row = (
-    <button
-      type="button"
-      className={`ui-qrow ui-qrow--${layout}`}
-      data-role="row"
-      aria-current={layout === 'desktop' && selected ? 'true' : undefined}
-      aria-expanded={layout === 'phone' ? false : undefined}
-      onClick={onSelect}
-    >
+  const { title, kind, selected = false, swiping = false, onSelect, snoozed } = props;
+  const body = (
+    <>
       <span className="ui-qrow__glyph"><Icon name={kind} /></span>
       <span className="ui-qrow__body">
         <span className="ui-qrow__head">
@@ -83,10 +83,29 @@ export function QueueRow(props: QueueRowProps) {
             </span></>}
           </span>
           <StatePill state={kind} />
-          {layout === 'phone' && <span className="ui-qrow__chevron"><Icon name="expand" /></span>}
+          {layout === 'phone' && !snoozed && <span className="ui-qrow__chevron"><Icon name="expand" /></span>}
         </span>
         <span className="ui-qrow__meta"><Meta {...props} /></span>
+        {snoozed && (
+          <span className="ui-qrow__foot">
+            <span className="ui-qrow__until">Until <Num value={snoozed.until} /></span>
+            <Button kind="secondary" label="Restore" onClick={snoozed.onRestore} />
+          </span>
+        )}
       </span>
+    </>
+  );
+  if (snoozed) return <div className={`ui-qrow ui-qrow--${layout} ui-qrow--snoozed`}>{body}</div>;
+  const row = (
+    <button
+      type="button"
+      className={`ui-qrow ui-qrow--${layout}`}
+      data-role="row"
+      aria-current={layout === 'desktop' && selected ? 'true' : undefined}
+      aria-expanded={layout === 'phone' ? false : undefined}
+      onClick={onSelect}
+    >
+      {body}
     </button>
   );
   if (!swiping || layout !== 'phone') return row;

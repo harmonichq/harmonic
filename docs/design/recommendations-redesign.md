@@ -47,7 +47,7 @@ Each row lists a screen's states. Labels only; no state uses prose.
 | Screen | Default | Empty | Loading | Error | Other states |
 |---|---|---|---|---|---|
 | Queue | Ranked cards, top card expanded | "0 patterns" label | Card skeletons | Unavailable + Retry | A card expanded; mid-swipe; just snoozed (bar "Snoozed · Until <date>" + Undo); Snoozed footer when N > 0 |
-| Queue · Snoozed | Rows "Until <date>" + Restore | Not reachable (the footer is hidden at 0) | — | Unavailable + Retry | Restored (row leaves) |
+| Queue · Snoozed | Each snoozed item as its Queue row, plus "Until <date>" + Restore | Not reachable (the footer is hidden at 0) | — | Unavailable + Retry | Restored (row leaves) |
 | Queue · setting detail | current → estimate, range, n, chart | — | Chart skeleton | Unavailable | — |
 | Changes | Active Trial or Focus + last change | "No active change" label | Skeleton | Unavailable + Retry | Maturing; Matured (result pill); **End** (Focus: anytime; Trial: once matured) → confirm sheet → ended |
 | Overview | 14 d selected | "No data" label per window | Skeleton | Unavailable + Retry | 30 d / 90 d selected |
@@ -246,12 +246,22 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   decided the open card fills its pane up to a 720 px reading width, left-aligned
   with the pane's margin, with Snooze in the card's own header row and no
   collapse chevron (the card does not collapse on desktop).
+- **2026-10-13 — a Snoozed item reads as its Queue row.** The operator: "I
+  think the snoozed items can have slightly more detail, kind of looking just
+  like their original rows looked … we have room to show a little bit more in
+  that screen." The Snoozed list draws each item with QueueRow's snoozed state
+  (glyph, title, kind pill, magnitude and cause), plus Until and Restore.
 
 ### 2.6 Deferred (not cut)
 Not built in the current screens. The engine still serves what each needs, and
 nothing is removed from the engine or the fixtures for them.
-- An episodes drill-in from an open Pattern (dated rows, peak ▲ / nadir ▼ →
-  resolution).
+- Pattern evidence drill-in: from an open Pattern, one screen with one
+  aligned-episodes chart (each episode's glucose trace aligned at its trigger —
+  the bolus for meal patterns, the treatment for treated lows, the night for
+  overnight lows — with the median on top) and the dated episode list beneath
+  (peak ▲ / nadir ▼ → resolution); the engine already serves the episodes.
+  Operator, 2026-10-13: wants to see the glucose impact without "too many
+  graphs" — one chart per drill-in.
 - A rank number on collapsed Queue rows.
 - Other statistics on their own labelled lines in the open Pattern
   ("High-carb sequences 9 / 35 less in range · 17–36%").
@@ -324,7 +334,8 @@ unless noted. Loading is a skeleton of the component's own shape.
    ("9 of 71 lows") and a cause label.
    - States: default; selected (desktop); mid-swipe (snooze reveal);
      no cause (label omitted); setting (current → suggested replaces the
-     magnitude); loading.
+     magnitude); snoozed (read-only: no chevron, swipe or selection; a last
+     line "Until <date>" + Restore); loading.
    - Fields: `guidance.candidates[].title, kind, priority, admitted,
      preference`; `findings.outcome_patterns[].k, n` and the noun; the top
      cause lever from `findings.rows[].fold_sentences`.

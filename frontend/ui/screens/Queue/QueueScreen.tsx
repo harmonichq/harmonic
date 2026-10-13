@@ -6,7 +6,8 @@
 // stay rows), with Snooze as an icon button in the card's header (the swipe is
 // its shortcut). A quiet "Snoozed · N" row ends the list when anything is
 // snoozed, and drills down to the Snoozed list (§2.2 Drill-down: "‹ Queue",
-// each row with Until and Restore); back returns with the same item open.
+// each its Queue row with Until and Restore); back returns with the same
+// item open.
 // After a snooze the TransientBar sits above the tab bar with Undo. Desktop:
 // the rail, the ranked list on the left (the selected row marked; the Snoozed
 // list drills down inside this pane and the open item stays), and the open
@@ -54,15 +55,19 @@ export type QueueScreenProps = {
 
 const dayCount = sourced<number>('prompts[answer=null].length');
 
-function Row({ item, layout, selected, swiping, onSelect }: {
-  item: QueueItem; layout: Layout; selected?: boolean; swiping?: boolean; onSelect: () => void;
+function Row({ item, layout, selected, swiping, onSelect, until }: {
+  item: QueueItem; layout: Layout; selected?: boolean; swiping?: boolean; onSelect?: () => void;
+  /** A Snoozed list row: its served Until, with Restore. */
+  until?: Sourced<string>;
 }) {
+  const snoozed = until && { until };
   if (item.kind === 'setting') {
     return <QueueRow kind="setting" title={item.data.title} setting={item.data} layout={layout}
-      selected={selected} swiping={swiping} onSelect={onSelect} />;
+      selected={selected} swiping={swiping} onSelect={onSelect} snoozed={snoozed} />;
   }
   return <QueueRow kind="pattern" title={item.data.title} magnitude={item.data.magnitude!}
-    cause={item.data.causes[0]?.title} layout={layout} selected={selected} swiping={swiping} onSelect={onSelect} />;
+    cause={item.data.causes[0]?.title} layout={layout} selected={selected} swiping={swiping} onSelect={onSelect}
+    snoozed={snoozed} />;
 }
 
 function Card({ item, layout, onSnooze }: { item: QueueItem; layout: Layout; onSnooze: () => void }) {
@@ -120,14 +125,7 @@ export function QueueScreen({
   const list = state === 'loading'
     ? [0, 1, 2, 3].map((i) => <QueueRow key={i} loading layout={layout} />)
     : view === 'snoozed'
-      ? (
-        <ListGroup>
-          {snoozed(shown).map((s) => (
-            <ListRow key={s.subject} label={s.title} value={<>Until <Num value={s.until} /></>}
-              action={{ label: 'Restore' }} />
-          ))}
-        </ListGroup>
-      )
+      ? snoozed(shown).map((s) => <Row key={s.subject} item={s} layout={layout} until={s.until} />)
       : items.length === 0 && state === 'ready'
         ? <p className="ui-queue__empty"><Num value={queuedCount(shown)} /> patterns</p>
         : items.map((item) => (layout === 'phone' && item.subject === current?.subject

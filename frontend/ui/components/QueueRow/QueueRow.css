@@ -81,6 +81,12 @@
 .ui-qrow:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
 
 .ui-qrow--loading { cursor: default; }
+
+/* Snoozed: read-only, with Until and Restore on a last line. */
+.ui-qrow--snoozed { cursor: default; }
+.ui-qrow--phone.ui-qrow--snoozed .ui-qrow__meta { padding-right: 0; }
+.ui-qrow__foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.ui-qrow__until { color: var(--wk-ink-meta); font-size: var(--ui-type-label); font-variant-numeric: tabular-nums; }
 .ui-qrow--loading .ui-qrow__body { gap: 10px; }
 
 /* Mid-swipe: the row slides left over the Snooze reveal. */

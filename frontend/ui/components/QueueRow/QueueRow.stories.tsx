@@ -1,11 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { patternState, settingState } from '../../queue-model';
+import { patternState, settingState, snoozed } from '../../queue-model';
 import { QueueRow, type QueueRowProps } from './QueueRow';
 
 // One story per state (§4.2 QueueRow), each the simulated wearer's own
 // served answer: the multi-cause pattern by default and selected on desktop,
 // the single-cause one mid-swipe, the pattern no cause claims, and the
-// admitted Basal block.
+// admitted Basal block; and a snoozed row, with its Until and Restore.
 const meta = {
   title: 'QueueRow',
   component: QueueRow,
@@ -32,5 +32,17 @@ export const Setting: Story = {
     const setting = settingState('setting');
     return { kind: 'setting', title: setting.title, setting } satisfies QueueRowProps;
   })(),
+};
+export const Snoozed: Story = {
+  args: (() => {
+    const s = snoozed('wearer-pinned-snoozed')[0];
+    if (s.kind !== 'pattern') throw new Error('the snoozed fixture serves a pattern first');
+    return { kind: 'pattern', title: s.data.title, magnitude: s.data.magnitude!,
+      cause: s.data.causes[0]?.title, snoozed: { until: s.until } } satisfies QueueRowProps;
+  })(),
+};
+export const SnoozedDesktop: Story = {
+  args: { ...Snoozed.args, layout: 'desktop' } as QueueRowProps,
+  parameters: { frame: { width: 400, padding: 24 } },
 };
 export const Loading: Story = { args: { loading: true } };

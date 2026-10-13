@@ -90316,6 +90316,7 @@
               "settled_price": 0,
               "subject": "pattern:highs_after_meals",
               "title": "Highs after meals",
+              "wide": true,
               "wilson": {
                 "hi": 0.6216,
                 "lo": 0.0
@@ -90441,6 +90442,7 @@
               "settled_price": 0,
               "subject": "pattern:lows_after_correcting_highs",
               "title": "Lows after correcting highs",
+              "wide": true,
               "wilson": {
                 "hi": 0.4253,
                 "lo": 0.0513
@@ -90697,6 +90699,7 @@
               "settled_price": 0,
               "subject": "pattern:lows_after_meals",
               "title": "Lows after meals",
+              "wide": true,
               "wilson": {
                 "hi": 0.6216,
                 "lo": 0.0
@@ -90803,6 +90806,7 @@
               "settled_price": 0,
               "subject": "pattern:overnight_lows_no_iob",
               "title": "Overnight lows with no insulin on board",
+              "wide": false,
               "wilson": {
                 "hi": 0.0519,
                 "lo": 0.0
@@ -93302,6 +93306,7 @@
           "settled_price": 0,
           "subject": "pattern:highs_after_meals",
           "title": "Highs after meals",
+          "wide": true,
           "wilson": {
             "hi": 0.6216,
             "lo": 0.0
@@ -93427,6 +93432,7 @@
           "settled_price": 0,
           "subject": "pattern:lows_after_correcting_highs",
           "title": "Lows after correcting highs",
+          "wide": true,
           "wilson": {
             "hi": 0.4253,
             "lo": 0.0513
@@ -93683,6 +93689,7 @@
           "settled_price": 0,
           "subject": "pattern:lows_after_meals",
           "title": "Lows after meals",
+          "wide": true,
           "wilson": {
             "hi": 0.6216,
             "lo": 0.0
@@ -93789,6 +93796,7 @@
           "settled_price": 0,
           "subject": "pattern:overnight_lows_no_iob",
           "title": "Overnight lows with no insulin on board",
+          "wide": false,
           "wilson": {
             "hi": 0.0519,
             "lo": 0.0

@@ -406,3 +406,31 @@ class LateBolusOutcomeTest(unittest.TestCase):
 
         self.assertEqual((highs["k"], highs["n"]), (14, 14))
         self.assertTrue(all("late_bolus" in o["attributed_levers"] for o in meals))
+
+
+class PatternIntervalWideTest(unittest.TestCase):
+    """Each Pattern flags its own Wilson range as wide by the shared rule (#481)."""
+
+    @staticmethod
+    def _highs_after_meals(k, n):
+        meals = [{
+            'ep_id': f'meal-{i}', 't': f'2026-08-01 12:{i:02d}:00', 'kind': 'meal',
+            'attributed': i < k, 'attributed_levers': ['carb_undercount'] if i < k else [],
+            'cause_lever': 'carb_undercount' if i < k else None, 'outcome_minute': 13 * 60,
+        } for i in range(n)]
+        exposures = {'exposures': {'meals': {'n': n, 'occurrences': meals}}}
+        roster = build_outcome_patterns({}, exposures, {'patterns': [], 'low_confidence': []})
+        return next(p for p in roster if p['key'] == 'highs_after_meals')
+
+    def test_a_pattern_range_is_wide_on_thin_or_broad_evidence_and_tight_otherwise(self):
+        cases = (
+            (0, 0, True),     # no opportunities: no range at all
+            (2, 2, True),     # under the three-opportunity floor
+            (5, 50, True),    # Wilson half-width well past a quarter of a 10% rate
+            (40, 50, False),  # half-width ~0.07 on an 80% rate
+        )
+        for k, n, wide in cases:
+            with self.subTest(k=k, n=n):
+                pattern = self._highs_after_meals(k, n)
+                self.assertEqual((pattern['k'], pattern['n']), (k, n))
+                self.assertIs(pattern['wide'], wide)

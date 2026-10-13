@@ -5,12 +5,12 @@
 import data from './__fixtures__/ui-fixtures.json';
 import { resolveSource } from './provenance.js';
 
-export type Format = 'round' | 'fixed2' | 'clock';
+export type Format = 'round' | 'fixed1' | 'fixed2' | 'clock' | 'day';
 export type Sourced<T> = { readonly value: T; readonly source: string; readonly format?: Format };
 
 export const fixtures = data;
 
-/** One served field, or several joined by " × " for a derived product. */
+/** One served field, or several joined by " × " or " − " for a derived value. */
 export function sourced<T>(source: string, format?: Format): Sourced<T> {
   return { value: resolveSource(data, source) as T, source, format };
 }

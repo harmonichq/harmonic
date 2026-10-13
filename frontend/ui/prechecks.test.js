@@ -58,10 +58,23 @@ test('(e) a derived or formatted number must equal its formula, as printed', () 
   assert.match(run({ texts: [{ text: '3:00', source: 'span.start_min', format: 'clock' }] })[0], /^\(e\) "3:00"/);
 });
 
-test('(e) an axis tick may be a plain number, and only that', () => {
-  assert.deepEqual(run({ texts: [{ text: '0.45', source: null, axis: true }] }), []);
+test('(e) a scale label may be a plain number, clock, range or bound, and only that', () => {
+  for (const text of ['0.45', '06:00', '54–69', '<54', '>250', '10–90%']) {
+    assert.deepEqual(run({ texts: [{ text, source: null, axis: true }] }), [], text);
+  }
+  assert.match(run({ texts: [{ text: '06:00 d', source: null, axis: true }] })[0], /^\(e\) "06:00 d" names no fixture field/);
   assert.match(run({ texts: [{ text: '0.45 d', source: null, axis: true }] })[0], /^\(e\) "0.45 d" names no fixture field/);
   assert.match(run({ texts: [{ text: '0.45', source: null }] })[0], /^\(e\) "0.45" names no fixture field/);
+});
+
+test('(e) a difference, one decimal and a day of the month resolve like any other formula', () => {
+  const fixtures = { m: { tbr_lvl1: 4.8, tbr_lvl2: 3.1, tir: 75 }, day: { iso: '2025-05-04' } };
+  const check = (texts) => precheckProblems({ ...clean, texts }, { ...sources, fixtures });
+  assert.deepEqual(check([{ text: '1.7', source: 'm.tbr_lvl1 − m.tbr_lvl2', format: 'fixed1' }]), []);
+  assert.deepEqual(check([{ text: '75.0', source: 'm.tir', format: 'fixed1' }]), []);
+  assert.deepEqual(check([{ text: '4', source: 'day.iso', format: 'day' }]), []);
+  assert.match(check([{ text: '1.7', source: 'm.tbr_lvl2 − m.tbr_lvl1', format: 'fixed1' }])[0],
+    /^\(e\) "1.7" is not m\.tbr_lvl2 − m\.tbr_lvl1 as fixed1 \(-1\.7\)/);
 });
 
 test('(e) a fixed-precision value and a bounded count resolve like any other field', () => {

@@ -7,9 +7,11 @@
 //   (c) every button declares its role and is that role's §4.1 height
 //   (d) at most one primary-filled control
 //   (e) every visible number sits in a [data-source] whose fixture field (or
-//       formula over fields, printed in its data-format) it equals. A chart
-//       axis's tick labels are scale, not served values: a plain number inside
-//       [data-axis] is exempt, and nothing else there is.
+//       formula over fields, printed in its data-format) it equals. A chart's
+//       scale labels are not served values: axis ticks, and the fixed glucose
+//       thresholds a band or a metric is named by ("<54", "54–69", "Below 70",
+//       "10–90%"). A plain number, clock, range or bound inside [data-axis] is
+//       exempt, and nothing else there is.
 import { formatValue, resolveSource } from './provenance.js';
 
 // §4.1, one height per role; a list row is a 48 px minimum.
@@ -18,6 +20,7 @@ export const ROLE_MIN_HEIGHTS = { row: 48 };
 
 const WORD = /[A-Za-z][A-Za-z'’-]*/g;
 const SENTENCE = /[A-Za-z][^.!?]*[.!?](\s|$)/;
+const SCALE = /^[<>]?\d+(\.\d+)?([–:]\d+)?%?$/;
 
 /**
  * @param {{texts: {text: string, source: string|null, format?: string|null, axis?: boolean}[], names: string[],
@@ -49,7 +52,7 @@ export function precheckProblems({ texts, names, buttons, primaries }, { fixture
   if (primaries > 1) found.push(`(d) ${primaries} primary-filled controls`);
   for (const { text, source, format, axis } of texts) {
     if (!/\d/.test(text)) continue;
-    if (axis && /^\d+(\.\d+)?$/.test(text)) continue;
+    if (axis && SCALE.test(text)) continue;
     if (!source) {
       found.push(`(e) "${text}" names no fixture field`);
       continue;

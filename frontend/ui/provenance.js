@@ -4,9 +4,12 @@
 // resolves that path against the fixtures and compares it with the text.
 //
 // A derived number names its formula the same way: the source is fields joined
-// by " × " (multiplied), and `data-format` names how the result is printed —
-// `round` to the nearest whole number, `fixed2` to two decimals, `clock` as
-// minutes since midnight in HH:MM. "Range 1–4 of 6" prints round(wilson.lo × n) and round(wilson.hi × n).
+// by " × " (multiplied) or " − " (subtracted), applied left to right, and
+// `data-format` names how the result is printed — `round` to the nearest whole
+// number, `fixed1` or `fixed2` to one or two decimals, `clock` as minutes since
+// midnight in HH:MM, `day` as the day of the month of a YYYY-MM-DD date.
+// "Range 1–4 of 6" prints round(wilson.lo × n) and round(wilson.hi × n); the
+// 54–69 band prints tbr_lvl1 − tbr_lvl2 as fixed1.
 //
 // Grammar: dot-separated keys and array indexes; `length` on an array; and one
 // filter on an array segment: equality, `prompts[answer=null]`, whose value is
@@ -48,15 +51,21 @@ export function resolveField(root, path) {
   return value;
 }
 
+const OPERATORS = { '×': (a, b) => a * b, '−': (a, b) => a - b };
+
 export function resolveSource(root, source) {
-  const values = source.split(' × ').map((path) => resolveField(root, path));
-  return values.length === 1 ? values[0] : values.reduce((product, value) => product * value);
+  const [first, ...rest] = source.split(/ ([×−]) /);
+  let value = resolveField(root, first);
+  for (let i = 0; i < rest.length; i += 2) value = OPERATORS[rest[i]](value, resolveField(root, rest[i + 1]));
+  return value;
 }
 
 export function formatValue(value, format) {
   if (!format) return String(value);
   if (format === 'round') return String(Math.round(value));
+  if (format === 'fixed1') return value.toFixed(1);
   if (format === 'fixed2') return value.toFixed(2);
+  if (format === 'day') return String(Number(value.slice(8, 10)));
   if (format === 'clock') {
     const pad = (part) => String(part).padStart(2, '0');
     return `${pad(Math.floor(value / 60))}:${pad(value % 60)}`;

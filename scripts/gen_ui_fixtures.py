@@ -718,7 +718,7 @@ def allowlist(data: dict) -> dict:
         "tabs §1.1": _table_first_column(_section(text, "### 1.1 Tabs")),
         "engine titles": [c["title"] for c in data["guidance"]["candidates"]]
         + [c["title"] for store in stores for c in store["guidance"]["candidates"]]
-        + [r["title"] for r in rows if r.get("claimed_by")],
+        + [r["title"] for r in rows if r["kind"] == "habit"],  # causes, and a collapsed pattern's member
         "engine nouns": [s["noun"] for s in sentences],
         "engine units": [c["units"] for store in stores for c in store["guidance"]["candidates"]
                          if c["units"]],

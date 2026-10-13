@@ -4,7 +4,7 @@ import type { StorybookConfig } from '@storybook/react-vite';
 // config of its own rather than the desk's vite.config.mjs, whose root, output
 // directory and API proxy belong to the shipped shell.
 const config: StorybookConfig = {
-  stories: ['../*.stories.tsx', '../components/**/*.stories.tsx'],
+  stories: ['../*.stories.tsx', '../components/**/*.stories.tsx', '../screens/**/*.stories.tsx'],
   framework: { name: '@storybook/react-vite', options: {} },
   core: {
     disableTelemetry: true,

@@ -144,3 +144,50 @@ export function settingState(name: SettingState): SettingData {
   const { store, start_min: start } = states[name];
   return basalSetting(store as QueueStore, start);
 }
+
+// --- The Queue screen --------------------------------------------------------
+
+export type QueueItem =
+  | { subject: string; kind: 'pattern'; data: PatternData }
+  | { subject: string; kind: 'setting'; data: SettingData };
+
+type Candidate = (typeof fixtures.queue)[QueueStore]['guidance']['candidates'][number];
+
+function item(name: QueueStore, candidate: Candidate): QueueItem {
+  if (candidate.kind === 'pattern') {
+    return { subject: candidate.subject, kind: 'pattern', data: pattern(name, candidate.subject.split(':')[1]) };
+  }
+  if (candidate.subject === 'setting:basal_rate') {
+    // The basal Setting opens on its admitted block, the earliest in the day.
+    const start = Math.min(...store(name).findings.rows
+      .filter((r) => r.kind === 'setting' && r.members?.length).map((r) => r.span!.start_min));
+    return { subject: candidate.subject, kind: 'setting', data: basalSetting(name, start) };
+  }
+  throw new Error(`no Queue component draws ${candidate.subject}`);
+}
+
+/** The Queue's order (the brief's Queue section): the candidates the engine
+ *  admitted and the person has not snoozed, by priority, highest first, an
+ *  exact tie broken by subject as the engine breaks it. */
+export function ranking(name: QueueStore): QueueItem[] {
+  return store(name).guidance.candidates
+    .filter((c) => c.queued)
+    .sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0) || a.subject.localeCompare(b.subject))
+    .map((c) => item(name, c));
+}
+
+/** How many the Queue holds, and how many are snoozed, as served counts. */
+export const queuedCount = (name: QueueStore) => sourced<number>(`queue.${name}.guidance.candidates[queued=true].length`);
+export const snoozedCount = (name: QueueStore) => sourced<number>(`queue.${name}.guidance.candidates[set_aside=true].length`);
+
+export type SnoozedItem = { subject: string; title: string; until: Sourced<string> };
+
+/** The Snoozed list: each snoozed candidate, until fourteen days after the
+ *  engine's served decision time. */
+export function snoozed(name: QueueStore): SnoozedItem[] {
+  return store(name).guidance.candidates.filter((c) => c.set_aside).map((c) => ({
+    subject: c.subject,
+    title: c.title,
+    until: sourced<string>(`queue.${name}.guidance.candidates[subject=${c.subject}].0.decided_at`, 'until'),
+  }));
+}

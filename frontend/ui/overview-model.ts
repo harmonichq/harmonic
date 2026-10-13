@@ -13,7 +13,9 @@ export const COMPARE_WINDOW: Window = '90';
 
 // --- GlucoseProfile ----------------------------------------------------------
 
-export type ProfileBin = { minute: number; median: number; p10: number; p90: number; supported: boolean };
+export type ProfileBin = {
+  minute: number; median: number; p10: number; p25: number; p75: number; p90: number; supported: boolean;
+};
 
 export type ProfileData = {
   /** `window.data_days`; null when the store has no readings at all. */

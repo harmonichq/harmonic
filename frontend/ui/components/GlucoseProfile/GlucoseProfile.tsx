@@ -1,6 +1,7 @@
 // GlucoseProfile (§4.2): glucose by time of day over the served 30 days.
 //
-// The median is a line; the 10–90% spread is a band, a quiet green in range.
+// The median is a line; around it two nested bands, the 25–75% spread strong
+// and the 10–90% spread faint, as an AGP draws them; both a quiet green in range.
 // Where the band leaves range it is clipped and drawn in that glucose zone's
 // tone and hatching (glucose-zones.tsx) — below 54, below the low target, above
 // the high target, above 250 — so colour marks time out of range. The zones
@@ -60,8 +61,12 @@ export function GlucoseProfile({ data, width = 334 }: GlucoseProfileProps) {
   const y = (bg: number) => PLOT_BOTTOM - (PLOT_BOTTOM - PLOT_TOP) * ((Math.max(bg, FLOOR) - FLOOR) / (top - FLOOR));
   const point = (minute: number, bg: number) => `${x(minute).toFixed(1)},${y(bg).toFixed(1)}`;
   const traces = runs(data.bins);
-  const band = (run: ProfileBin[]) =>
-    `M${run.map((bin) => point(bin.minute, bin.p90)).join('L')}L${[...run].reverse().map((bin) => point(bin.minute, bin.p10)).join('L')}Z`;
+  const band = (run: ProfileBin[], lo: 'p10' | 'p25', hi: 'p75' | 'p90') =>
+    `M${run.map((bin) => point(bin.minute, bin[hi])).join('L')}L${[...run].reverse().map((bin) => point(bin.minute, bin[lo])).join('L')}Z`;
+  const spreads = [
+    { key: 'outer', lo: 'p10', hi: 'p90' },
+    { key: 'inner', lo: 'p25', hi: 'p75' },
+  ] as const;
   const most = Math.max(1, ...data.meals.map((meal) => meal.count));
   const slot = (right - LEFT) * (30 / DAY);
   const yLow = y(data.low.value);
@@ -89,7 +94,15 @@ export function GlucoseProfile({ data, width = 334 }: GlucoseProfileProps) {
             Median
           </span>
           <span className="ui-profile__key">
-            <svg aria-hidden="true" width="14" height="10"><rect width="14" height="10" className="ui-profile__neutral" /></svg>
+            <svg aria-hidden="true" width="14" height="10" className="ui-profile__spread--inner">
+              <rect width="14" height="10" className="ui-profile__neutral" />
+            </svg>
+            <span data-axis="">25–75%</span>
+          </span>
+          <span className="ui-profile__key">
+            <svg aria-hidden="true" width="14" height="10" className="ui-profile__spread--outer">
+              <rect width="14" height="10" className="ui-profile__neutral" />
+            </svg>
             <span data-axis="">10–90%</span>
           </span>
           <span className="ui-profile__key">
@@ -111,16 +124,18 @@ export function GlucoseProfile({ data, width = 334 }: GlucoseProfileProps) {
           ))}
           <ZoneHatches id={id} />
         </defs>
-        <g aria-hidden="true" className="ui-profile__band">
-          {zones.filter((zone) => zone.reached).map((zone) => (
-            <g key={zone.tone} clipPath={`url(#${id}-clip-${zone.tone})`}>
-              {traces.map((run, i) => (
-                <path key={i} d={band(run)}
-                  {...(zone.tone === 'in-range' ? { className: 'ui-profile__neutral' } : zoneArea(id, zone))} />
-              ))}
-            </g>
-          ))}
-        </g>
+        {spreads.map((spread) => (
+          <g key={spread.key} aria-hidden="true" className={`ui-profile__band ui-profile__spread--${spread.key}`}>
+            {zones.filter((zone) => zone.reached).map((zone) => (
+              <g key={zone.tone} clipPath={`url(#${id}-clip-${zone.tone})`}>
+                {traces.map((run, i) => (
+                  <path key={i} d={band(run, spread.lo, spread.hi)}
+                    {...(zone.tone === 'in-range' ? { className: 'ui-profile__neutral' } : zoneArea(id, zone))} />
+                ))}
+              </g>
+            ))}
+          </g>
+        ))}
         <line x1={LEFT} x2={right} y1={yLow} y2={yLow} className="ui-profile__target" />
         <line x1={LEFT} x2={right} y1={yHigh} y2={yHigh} className="ui-profile__target" />
         <line x1={LEFT} x2={right} y1={y(TICK)} y2={y(TICK)} className="ui-profile__tick-line" />

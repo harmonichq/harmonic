@@ -235,7 +235,7 @@ def _time_of_day(client: TestClient) -> dict:
         "target_range": answer["target_range"],
         "pooled": pooled and {
             "bin_minutes": pooled["bin_minutes"],
-            "bins": [{field: b[field] for field in ("minute", "supported", "median", "p10", "p90")}
+            "bins": [{field: b[field] for field in ("minute", "supported", "median", "p10", "p25", "p75", "p90")}
                      for b in pooled["bins"]],
             "meals": [{field: m[field] for field in ("minute", "count")} for m in pooled["meals"]],
         },

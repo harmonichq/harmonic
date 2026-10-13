@@ -12,7 +12,7 @@
 // The prechecks, per story:
 //   (a) no sentence or question in any visible text
 //   (b) every visible word, and every accessible name, is in the allowlist that
-//       scripts/gen_ui_fixtures.py generates from the glossary
+//       frontend/ui/__fixtures__/ui-allowlist.json holds, built from the glossary
 //   (c) every button declares its role and is that role's §4.1 height
 //   (d) at most one primary-filled control
 //   (e) every visible number sits in a [data-source] whose fixture field it equals

@@ -3,9 +3,9 @@
    Inter is the same vendored sheet the desk loads. Nothing below re-declares
    a colour.
 
-   What is added here is the redesign lock's scale (docs/design/
-   recommendations-redesign.md §2.1 and §4.1): the five type steps and the
-   one size per control role. Components read these names, never a literal. */
+   What is added here is the redesign lock's scale (§2.1 and §4.1): the
+   five type steps and the one size per control role. Components read these
+   names, never a literal. */
 @import '../material.css';
 @import '../fonts/inter.css';
 

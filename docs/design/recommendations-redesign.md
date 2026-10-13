@@ -151,7 +151,7 @@ in §2.
 | Glucose 181–250 (library, clinical AGP) | `--glucose-high` | #efcf4c |
 | Glucose >250 (library, clinical AGP) | `--glucose-very-high` | #f08a3c |
 | In range, quiet (library; a day's trace and other large in-range areas) | `--glucose-in-range-quiet` | `--glucose-in-range` mixed 50% with `--wk-ink-body` (oklab) |
-| Meal (library; the meal bolus glyph and its grams, the one coloured day event) | `--ui-meal` | #3cc8c8 |
+| Meal (library; meal bolus and logged-carb glyphs and their grams, the one coloured day-event family) | `--ui-meal` | #3cc8c8 |
 
 - **Glucose bands follow the clinical AGP colours** (the 2019 international
   consensus on time in range, as Dexcom Clarity and LibreView draw them): very

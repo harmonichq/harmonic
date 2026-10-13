@@ -32,7 +32,7 @@
    the kinds apart. A halo of the canvas keeps a glyph clear of the grid lines
    behind it. */
 .ui-daychart__mark { color: var(--wk-ink-body); }
-/* Meals alone take a colour. */
+/* Food alone takes a colour: meal boluses and logged carbs. */
 .ui-daychart__mark--meal, .ui-daychart__grams--meal { color: var(--ui-meal); }
 .ui-daychart__mark svg { overflow: visible; }
 .ui-daychart__halo { fill: var(--wk-canvas); }

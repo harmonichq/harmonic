@@ -1,0 +1,25 @@
+.ui-header {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 44px;
+  font-family: var(--ui-font);
+  font-variant-numeric: tabular-nums;
+}
+.ui-header__title {
+  margin: 0;
+  color: var(--wk-ink);
+  font-size: var(--ui-type-title);
+  font-weight: var(--ui-weight-strong);
+  line-height: 28px;
+}
+.ui-header__date,
+.ui-header__label {
+  color: var(--wk-ink-meta);
+  font-size: var(--ui-type-label);
+}
+.ui-header__control { flex: 0 1 220px; }
+.ui-header__unavailable { display: flex; align-items: center; gap: 4px; }
+.ui-header__unavailable .ui-button--text { margin-right: -8px; }

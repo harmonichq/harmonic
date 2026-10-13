@@ -82,6 +82,10 @@ export function QueueScreen({
   const [view, setView] = useState(initialView);
   const shown = snoozedNow && snooze ? snooze.after : store;
   const items = state === 'ready' ? ranking(shown) : [];
+  // The item a story opens must be in the Queue it opens on.
+  if (open && state === 'ready' && !justSnoozed && !ranking(store).some((i) => i.subject === open)) {
+    throw new Error(`${store} serves no ${open} in its Queue`);
+  }
   const [selected, setSelected] = useState<string | undefined>(open ?? items[0]?.subject);
   const current = items.find((i) => i.subject === selected) ?? items[0];
   const snoozedTotal = snoozedCount(shown);

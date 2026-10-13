@@ -664,16 +664,18 @@ def _blocks(store: dict) -> list[dict]:
 
 
 def states(queue: dict) -> dict:
-    """The store and subject behind each story state, chosen from the served answers."""
+    """The store and subject behind each story state, chosen from the served
+    answers: the wearer's, or else the first other store that serves it."""
+    stores = ("wearer", "wearer-pinned", "wearer-worse")
     patterns = _patterns(queue["wearer"])
-    blocks = [{**b, "store": "wearer"} for b in _blocks(queue["wearer"])]
-    # A block whose Trial has matured: the wearer's, or else the second wearer's.
-    blocks += [{**b, "store": "wearer-worse"} for b in _blocks(queue["wearer-worse"]) if b["trial"]]
+    blocks = [{**b, "store": store} for store in stores for b in _blocks(queue[store])]
 
-    def pattern(store, rule):
-        found = sorted((p for p in (patterns if store == "wearer" else _patterns(queue[store]))
-                        if rule(p)), key=lambda p: -p["count"])
-        return {"store": store, "pattern": found[0]["key"]} if found else None
+    def pattern(rule):
+        for store in stores:
+            found = sorted((p for p in _patterns(queue[store]) if rule(p)), key=lambda p: -p["count"])
+            if found:
+                return {"store": store, "pattern": found[0]["key"]}
+        return None
 
     def block(rule):
         found = [b for b in blocks if rule(b)]
@@ -684,9 +686,9 @@ def states(queue: dict) -> dict:
     uncertain = next((p["key"] for p in queue["wearer"]["findings"]["outcome_patterns"]
                       if p.get("wide") is True and any(q["key"] == p["key"] for q in patterns)), None)
     found = {
-        "multi_cause": pattern("wearer", lambda p: len(p["shares"]) >= 2),
-        "single_cause": pattern("wearer", lambda p: len(p["shares"]) == 1),
-        "no_cause": pattern("wearer", lambda p: not p["shares"] and p["count"] > 0),
+        "multi_cause": pattern(lambda p: len(p["shares"]) >= 2),
+        "single_cause": pattern(lambda p: len(p["shares"]) == 1),
+        "no_cause": pattern(lambda p: not p["shares"] and p["count"] > 0),
         "pinned": {"store": "wearer-pinned", "pattern": pinned} if pinned else None,
         "setting": block(lambda b: b["spread"] and not b["collapsed"] and not b["trial"]),
         "setting_trial": block(lambda b: b["trial"]),

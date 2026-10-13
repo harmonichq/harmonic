@@ -7,7 +7,8 @@ import { QueueScreen, type QueueScreenProps } from './QueueScreen';
 // The Queue screen in each state §1.3 lists, at phone (390) and desktop (1440),
 // every value the simulated wearer's served answer:
 // - Default: the wearer's ranking, its top item open.
-// - Pattern open, and the Setting detail (the basal block).
+// - Pattern open (one with no attributed cause), and the Setting detail (the
+//   basal block), each from the store that serves it.
 // - Just snoozed: the pinned store's person snoozed a pattern; the screen shows
 //   the Queue the engine served after it, the bar's Until, and the Snoozed row.
 // - Snoozed list: the first days with everything snoozed, each with Restore.
@@ -48,8 +49,10 @@ const back = (canvas: ReturnType<typeof within>) =>
   canvas.getByRole('heading', { level: 1, name: 'Snoozed' }).closest('header') as HTMLElement;
 
 const DEFAULT = { store: 'wearer' } as const;
-const PATTERN_OPEN = { store: 'wearer', open: 'pattern:overnight_lows_no_iob' } as const;
-const SETTING_DETAIL = { store: 'wearer', open: 'setting:basal_rate' } as const;
+const PATTERN_OPEN = {
+  store: fixtures.states.no_cause.store, open: `pattern:${fixtures.states.no_cause.pattern}`,
+} as QueueScreenProps;
+const SETTING_DETAIL = { store: fixtures.states.setting.store, open: 'setting:basal_rate' } as QueueScreenProps;
 const JUST_SNOOZED = { store: 'wearer-pinned', snooze, justSnoozed: true } as const;
 const SNOOZED_LIST = { store: 'wearer-first-days-snoozed', view: 'snoozed' } as const;
 const EMPTY = { store: 'wearer-first-days-snoozed' } as const;

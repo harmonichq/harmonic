@@ -6413,7 +6413,7 @@
     "candidates": [
       {
         "kind": "setting",
-        "priority": 13,
+        "priority": 0,
         "subject": "setting:basal_rate",
         "title": "Basal"
       },
@@ -6461,7 +6461,7 @@
       },
       {
         "kind": "pattern",
-        "priority": 13,
+        "priority": 0,
         "subject": "pattern:overnight_lows_no_iob",
         "title": "Overnight lows with no insulin on board"
       }
@@ -15481,173 +15481,7 @@
   "queue": {
     "wearer": {
       "analyze": {
-        "basal": [
-          {
-            "current": 1.4,
-            "days": 29,
-            "estimate": {
-              "confidence": 0.8,
-              "hi": 1.4185,
-              "lo": 1.1125,
-              "method": "bootstrap-median",
-              "n": 29,
-              "value": 1.3055,
-              "wide": false
-            },
-            "evidence": {
-              "night_roster": [
-                {
-                  "date": "2025-04-26",
-                  "delivered_rate": 0.78,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-04-28",
-                  "delivered_rate": 1.539,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-04-29",
-                  "delivered_rate": 1.0365,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-04-30",
-                  "delivered_rate": 1.5,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-01",
-                  "delivered_rate": 1.4935,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-02",
-                  "delivered_rate": 0.5985,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-03",
-                  "delivered_rate": 1.7765,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-04",
-                  "delivered_rate": 0.185,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-05",
-                  "delivered_rate": 1.45,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-06",
-                  "delivered_rate": 1.8119999999999998,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-07",
-                  "delivered_rate": 1.5095,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-08",
-                  "delivered_rate": 1.947,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-09",
-                  "delivered_rate": 1.582,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-10",
-                  "delivered_rate": 1.1124999999999998,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-11",
-                  "delivered_rate": 1.4,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-12",
-                  "delivered_rate": 1.3475000000000001,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-13",
-                  "delivered_rate": 1.4184999999999999,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-14",
-                  "delivered_rate": 0.6475,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-15",
-                  "delivered_rate": 0.5355,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-16",
-                  "delivered_rate": 1.0995,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-17",
-                  "delivered_rate": 1.3054999999999999,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-18",
-                  "delivered_rate": 1.127,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-19",
-                  "delivered_rate": 1.577,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-20",
-                  "delivered_rate": 1.692,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-21",
-                  "delivered_rate": 0.43000000000000005,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-22",
-                  "delivered_rate": 1.263,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-23",
-                  "delivered_rate": 0.5075000000000001,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-24",
-                  "delivered_rate": 0.7835000000000001,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-25",
-                  "delivered_rate": 1.088,
-                  "programmed_rate": 1.4
-                }
-              ]
-            },
-            "label": "05:00",
-            "recommended": 1.306,
-            "slot": 10
-          }
-        ]
+        "basal": []
       },
       "findings": {
         "outcome_patterns": [
@@ -15692,7 +15526,7 @@
             "wide": false
           },
           {
-            "action": "basal_rate",
+            "action": null,
             "collapse": "remain_pattern",
             "k": 3,
             "key": "overnight_lows_no_iob",
@@ -15916,64 +15750,6 @@
           },
           {
             "chips": [
-              "lows"
-            ],
-            "claimed_by": null,
-            "count_sentences": null,
-            "fold_sentences": null,
-            "id": "basal:300-330",
-            "kind": "setting",
-            "lever": null,
-            "members": [
-              {
-                "current": 1.4,
-                "days": 29,
-                "estimate": {
-                  "confidence": 0.8,
-                  "hi": 1.4185,
-                  "lo": 1.1125,
-                  "method": "bootstrap-median",
-                  "n": 29,
-                  "value": 1.3055,
-                  "wide": false
-                },
-                "recommended": 1.306,
-                "start_min": 300
-              }
-            ],
-            "parameter": "basal_rate",
-            "span": {
-              "end_min": 330,
-              "label": "05:00",
-              "start_min": 300
-            },
-            "title": "Basal 05:00 · lower"
-          },
-          {
-            "chips": [
-              "lows"
-            ],
-            "claimed_by": null,
-            "count_sentences": [
-              {
-                "count": 3,
-                "denominator": 30,
-                "noun": "nights",
-                "outcome": "ran low overnight",
-                "sentence": "3 of 30 nights ran low overnight"
-              }
-            ],
-            "fold_sentences": null,
-            "id": "pattern:overnight_lows_no_iob",
-            "kind": "pattern",
-            "lever": null,
-            "members": null,
-            "parameter": null,
-            "span": null,
-            "title": "Overnight lows with no insulin on board"
-          },
-          {
-            "chips": [
               "lows",
               "meals"
             ],
@@ -16076,6 +15852,21 @@
             "parameter": null,
             "span": null,
             "title": "Correction on active insulin"
+          },
+          {
+            "chips": [
+              "lows"
+            ],
+            "claimed_by": null,
+            "count_sentences": null,
+            "fold_sentences": null,
+            "id": "pattern:overnight_lows_no_iob",
+            "kind": "pattern",
+            "lever": null,
+            "members": null,
+            "parameter": null,
+            "span": null,
+            "title": "Overnight lows with no insulin on board"
           }
         ]
       },
@@ -16085,11 +15876,11 @@
       "guidance": {
         "candidates": [
           {
-            "admitted": true,
+            "admitted": false,
             "decided_at": null,
             "kind": "setting",
-            "priority": 13,
-            "queued": true,
+            "priority": 0,
+            "queued": false,
             "set_aside": false,
             "subject": "setting:basal_rate",
             "title": "Basal",
@@ -16173,11 +15964,11 @@
             "units": null
           },
           {
-            "admitted": true,
+            "admitted": false,
             "decided_at": null,
             "kind": "pattern",
-            "priority": 13,
-            "queued": true,
+            "priority": 0,
+            "queued": false,
             "set_aside": false,
             "subject": "pattern:overnight_lows_no_iob",
             "title": "Overnight lows with no insulin on board",
@@ -17545,146 +17336,6 @@
             "label": "06:30",
             "recommended": 1.12,
             "slot": 13
-          },
-          {
-            "current": 1.4,
-            "days": 24,
-            "estimate": {
-              "confidence": 0.8,
-              "hi": 1.4,
-              "lo": 1.1992,
-              "method": "bootstrap-median",
-              "n": 24,
-              "value": 1.2933,
-              "wide": false
-            },
-            "evidence": {
-              "night_roster": [
-                {
-                  "date": "2025-04-26",
-                  "delivered_rate": 0.9590000000000001,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-04-27",
-                  "delivered_rate": 1.855,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-04-28",
-                  "delivered_rate": 0.9970000000000001,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-04-29",
-                  "delivered_rate": 1.2945,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-02",
-                  "delivered_rate": 1.365,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-03",
-                  "delivered_rate": 1.4,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-04",
-                  "delivered_rate": 1.4,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-06",
-                  "delivered_rate": 1.4,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-07",
-                  "delivered_rate": 1.2875,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-08",
-                  "delivered_rate": 1.4,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-10",
-                  "delivered_rate": 1.292,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-11",
-                  "delivered_rate": 1.4,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-12",
-                  "delivered_rate": 0.7909999999999999,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-13",
-                  "delivered_rate": 1.075,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-14",
-                  "delivered_rate": 1.1025,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-15",
-                  "delivered_rate": 1.561,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-17",
-                  "delivered_rate": 0.906,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-18",
-                  "delivered_rate": 1.4,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-19",
-                  "delivered_rate": 0.381,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-20",
-                  "delivered_rate": 1.137,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-21",
-                  "delivered_rate": 1.2614999999999998,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-22",
-                  "delivered_rate": 0.9724999999999999,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-23",
-                  "delivered_rate": 1.4,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-24",
-                  "delivered_rate": 1.4,
-                  "programmed_rate": 1.4
-                }
-              ]
-            },
-            "label": "07:00",
-            "recommended": 1.293,
-            "slot": 14
           }
         ]
       },
@@ -17822,7 +17473,7 @@
             "claimed_by": null,
             "count_sentences": null,
             "fold_sentences": null,
-            "id": "basal:300-450",
+            "id": "basal:300-420",
             "kind": "setting",
             "lever": null,
             "members": [
@@ -17885,30 +17536,15 @@
                 },
                 "recommended": 1.12,
                 "start_min": 390
-              },
-              {
-                "current": 1.4,
-                "days": 24,
-                "estimate": {
-                  "confidence": 0.8,
-                  "hi": 1.4,
-                  "lo": 1.1992,
-                  "method": "bootstrap-median",
-                  "n": 24,
-                  "value": 1.2933,
-                  "wide": false
-                },
-                "recommended": 1.293,
-                "start_min": 420
               }
             ],
             "parameter": "basal_rate",
             "span": {
-              "end_min": 450,
-              "label": "05:00 to 07:30",
+              "end_min": 420,
+              "label": "05:00 to 07:00",
               "start_min": 300
             },
-            "title": "Basal 05:00 to 07:30 · lower"
+            "title": "Basal 05:00 to 07:00 · lower"
           },
           {
             "chips": [
@@ -18259,7 +17895,7 @@
             "admitted": true,
             "decided_at": null,
             "kind": "setting",
-            "priority": 78,
+            "priority": 76,
             "queued": true,
             "set_aside": false,
             "subject": "setting:basal_rate",
@@ -18358,7 +17994,7 @@
             "admitted": true,
             "decided_at": null,
             "kind": "pattern",
-            "priority": 78,
+            "priority": 76,
             "queued": true,
             "set_aside": false,
             "subject": "pattern:overnight_lows_no_iob",
@@ -19288,146 +18924,6 @@
             "label": "06:30",
             "recommended": 1.12,
             "slot": 13
-          },
-          {
-            "current": 1.4,
-            "days": 24,
-            "estimate": {
-              "confidence": 0.8,
-              "hi": 1.4,
-              "lo": 1.1992,
-              "method": "bootstrap-median",
-              "n": 24,
-              "value": 1.2933,
-              "wide": false
-            },
-            "evidence": {
-              "night_roster": [
-                {
-                  "date": "2025-04-26",
-                  "delivered_rate": 0.9590000000000001,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-04-27",
-                  "delivered_rate": 1.855,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-04-28",
-                  "delivered_rate": 0.9970000000000001,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-04-29",
-                  "delivered_rate": 1.2945,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-02",
-                  "delivered_rate": 1.365,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-03",
-                  "delivered_rate": 1.4,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-04",
-                  "delivered_rate": 1.4,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-06",
-                  "delivered_rate": 1.4,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-07",
-                  "delivered_rate": 1.2875,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-08",
-                  "delivered_rate": 1.4,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-10",
-                  "delivered_rate": 1.292,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-11",
-                  "delivered_rate": 1.4,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-12",
-                  "delivered_rate": 0.7909999999999999,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-13",
-                  "delivered_rate": 1.075,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-14",
-                  "delivered_rate": 1.1025,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-15",
-                  "delivered_rate": 1.561,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-17",
-                  "delivered_rate": 0.906,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-18",
-                  "delivered_rate": 1.4,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-19",
-                  "delivered_rate": 0.381,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-20",
-                  "delivered_rate": 1.137,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-21",
-                  "delivered_rate": 1.2614999999999998,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-22",
-                  "delivered_rate": 0.9724999999999999,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-23",
-                  "delivered_rate": 1.4,
-                  "programmed_rate": 1.4
-                },
-                {
-                  "date": "2025-05-24",
-                  "delivered_rate": 1.4,
-                  "programmed_rate": 1.4
-                }
-              ]
-            },
-            "label": "07:00",
-            "recommended": 1.293,
-            "slot": 14
           }
         ]
       },
@@ -19565,7 +19061,7 @@
             "claimed_by": null,
             "count_sentences": null,
             "fold_sentences": null,
-            "id": "basal:300-450",
+            "id": "basal:300-420",
             "kind": "setting",
             "lever": null,
             "members": [
@@ -19628,30 +19124,15 @@
                 },
                 "recommended": 1.12,
                 "start_min": 390
-              },
-              {
-                "current": 1.4,
-                "days": 24,
-                "estimate": {
-                  "confidence": 0.8,
-                  "hi": 1.4,
-                  "lo": 1.1992,
-                  "method": "bootstrap-median",
-                  "n": 24,
-                  "value": 1.2933,
-                  "wide": false
-                },
-                "recommended": 1.293,
-                "start_min": 420
               }
             ],
             "parameter": "basal_rate",
             "span": {
-              "end_min": 450,
-              "label": "05:00 to 07:30",
+              "end_min": 420,
+              "label": "05:00 to 07:00",
               "start_min": 300
             },
-            "title": "Basal 05:00 to 07:30 · lower"
+            "title": "Basal 05:00 to 07:00 · lower"
           },
           {
             "chips": [
@@ -20002,7 +19483,7 @@
             "admitted": true,
             "decided_at": null,
             "kind": "setting",
-            "priority": 78,
+            "priority": 76,
             "queued": true,
             "set_aside": false,
             "subject": "setting:basal_rate",
@@ -20101,7 +19582,7 @@
             "admitted": true,
             "decided_at": null,
             "kind": "pattern",
-            "priority": 78,
+            "priority": 76,
             "queued": true,
             "set_aside": false,
             "subject": "pattern:overnight_lows_no_iob",
@@ -21486,7 +20967,7 @@
     },
     "no_cause": {
       "pattern": "overnight_lows_no_iob",
-      "store": "wearer"
+      "store": "wearer-pinned"
     },
     "pinned": {
       "pattern": "highs_after_meals",
@@ -21494,8 +20975,8 @@
     },
     "range_collapsed": null,
     "setting": {
-      "start_min": 300,
-      "store": "wearer"
+      "start_min": 210,
+      "store": "wearer-pinned"
     },
     "setting_trial": {
       "start_min": 210,

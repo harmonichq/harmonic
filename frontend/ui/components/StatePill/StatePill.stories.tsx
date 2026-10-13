@@ -14,7 +14,7 @@ const story = (state: PillState): Story => ({ args: { state } });
 
 export const Pattern = story('pattern');
 export const Setting = story('setting');
-export const Wide = story('wide');
+export const Uncertain = story('uncertain');
 export const Maturing = story('maturing');
 export const Better = story('better');
 export const Worse = story('worse');

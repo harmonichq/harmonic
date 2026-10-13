@@ -1,9 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { pattern, type QueueStore } from '../../queue-model';
+import { patternState } from '../../queue-model';
 import { CauseWaffle } from './CauseWaffle';
 
-// One story per state (§4.2 CauseWaffle), each a real engine answer from a
-// named QA store: two attributed causes, one cause, and a count no cause claims.
+// One story per state (§4.2 CauseWaffle), each the simulated wearer's own
+// served pattern: two or more attributed causes, one cause, and a count no
+// cause claims.
 const meta = {
   title: 'CauseWaffle',
   component: CauseWaffle,
@@ -14,8 +15,8 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-function story(store: QueueStore, key: string): Story {
-  const data = pattern(store, key);
+function story(name: 'multi_cause' | 'single_cause' | 'no_cause'): Story {
+  const data = patternState(name);
   const magnitude = data.magnitude!;
   return {
     args: {
@@ -25,6 +26,6 @@ function story(store: QueueStore, key: string): Story {
   };
 }
 
-export const MultiCause = story('behavioral-carb-undercount', 'highs_after_meals');
-export const SingleCause = story('behavioral-split-meal', 'highs_after_meals');
-export const NoCause = story('basal-recurring-low-spread', 'overnight_lows_no_iob');
+export const MultiCause = story('multi_cause');
+export const SingleCause = story('single_cause');
+export const NoCause = story('no_cause');

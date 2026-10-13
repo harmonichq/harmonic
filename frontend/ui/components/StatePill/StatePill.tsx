@@ -5,7 +5,7 @@ import './StatePill.css';
 const LABELS = {
   pattern: 'Pattern',
   setting: 'Setting',
-  wide: 'Wide',
+  uncertain: 'Uncertain',
   maturing: 'Maturing',
   better: 'Better',
   worse: 'Worse',

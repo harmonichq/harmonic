@@ -14,7 +14,7 @@
   white-space: nowrap;
 }
 
-.ui-pill--wide { color: var(--wk-ink-body); }
+.ui-pill--uncertain { color: var(--wk-ink-body); }
 .ui-pill--maturing { color: var(--warn); }
 .ui-pill--better { color: var(--wk-status-favorable); }
 .ui-pill--worse { color: var(--wk-status-adverse); }

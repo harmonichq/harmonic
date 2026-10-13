@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { basalSetting, type QueueStore } from '../../queue-model';
+import { settingState } from '../../queue-model';
 import { EvidenceChart } from './EvidenceChart';
 
-// One story per state (§4.2 EvidenceChart), each a real basal slot:
-// - Default: basal-recurring-low-spread 03:00, nights spread from 0.45 to 0.66.
-// - ZeroVariance: the showcase's 03:00, every night at one rate: one stack.
+// The simulated wearer's admitted Basal block (§4.2 EvidenceChart, default).
+// Nights at one identical rate do not arise in the wearer's history, so the
+// zero-variance state has no story; the chart draws it as a single stack.
 const meta = {
   title: 'EvidenceChart',
   component: EvidenceChart,
@@ -14,10 +14,10 @@ const meta = {
 export default meta;
 
 type Story = StoryObj<typeof meta>;
-function story(store: QueueStore, start: number): Story {
-  const { nights, current, estimate, lo, hi, units } = basalSetting(store, start);
-  return { args: { nights, current, estimate, lo, hi, units } };
-}
 
-export const Default = story('basal-recurring-low-spread', 180);
-export const ZeroVariance = story('showcase', 180);
+export const Default: Story = {
+  args: (() => {
+    const { nights, current, estimate, lo, hi, units } = settingState('setting_trial');
+    return { nights, current, estimate, lo, hi, units };
+  })(),
+};

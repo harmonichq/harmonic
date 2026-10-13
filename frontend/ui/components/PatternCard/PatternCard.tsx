@@ -1,7 +1,7 @@
 // PatternCard (§4.2): the open pattern. Its magnitude in figure type, the
 // CauseWaffle, the Range in the magnitude's own units (round(wilson × n) of
-// n), and Pin — or, once pinned, the Focus pill in Pin's place. A Wide range
-// carries the Wide pill. When the engine serves no count for the pattern,
+// n), and Pin — or, once pinned, the Focus pill in Pin's place. A range the
+// engine flags as too broad to rely on carries the Uncertain pill. When the engine serves no count for the pattern,
 // the card shows no magnitude, waffle or range rather than inventing one.
 import { Icon } from '../../icons';
 import { Num } from '../../Num';
@@ -54,7 +54,7 @@ export function PatternCard(props: PatternCardProps) {
           <span className="ui-pcard__range-value">
             <Num value={range.lo} />–<Num value={range.hi} /> of <Num value={range.n} />
           </span>
-          {data.wide && <StatePill state="wide" />}
+          {data.uncertain && <StatePill state="uncertain" />}
         </div>
       )}
       <div className="ui-pcard__action">

@@ -1,7 +1,7 @@
 // The Queue components' data, read from one served store (#483). This is the
 // provenance table in code: every number a Queue component shows is built here
 // as a Sourced value naming its field, and nothing here invents a threshold or
-// a verdict — wide, pinned, matured and the cause shares are all served.
+// a verdict — uncertain, pinned, matured and the cause shares are all served.
 //
 // A store is one entry of `fixtures.queue`; the screens will hand the same
 // answers in from the live API.
@@ -28,7 +28,8 @@ export type PatternData = {
   /** Pattern-scope cause shares, largest first. */
   causes: Cause[];
   range: { lo: Sourced<number>; hi: Sourced<number>; n: Sourced<number> } | null;
-  wide: boolean;
+  /** The engine flags the pattern's own range as too broad to rely on. */
+  uncertain: boolean;
   pinned: boolean;
 };
 
@@ -66,7 +67,7 @@ export function pattern(name: QueueStore, key: string): PatternData {
       .filter((f) => f.scope === 'pattern')
       .map((f) => ({ title: r.title, count: f.count })))
     .sort((a, b) => b.count - a.count);
-  const candidate = s.guidance.candidates.find((c) => c.subject === id);
+  const outcome = s.findings.outcome_patterns.find((p) => p.key === key);
   return {
     title: row.title,
     tone: row.chips?.includes('highs') ? 'high' : 'low',
@@ -85,7 +86,7 @@ export function pattern(name: QueueStore, key: string): PatternData {
           n: sourced(`${outcomePath}.n`),
         }
       : null,
-    wide: candidate?.support.wide === true,
+    uncertain: (outcome?.wide as boolean | null | undefined) === true,
     pinned: s.focus.focuses.some((f) => f.status === 'active' && f.pattern_key === key),
   };
 }
@@ -95,7 +96,6 @@ export function basalSetting(name: QueueStore, startMin: number): SettingData {
   const row = s.findings.rows.find((r) => r.kind === 'setting' && r.span?.start_min === startMin);
   if (!row) throw new Error(`${name} serves no basal block at ${startMin}`);
   const rowPath = `queue.${name}.findings.rows[id=${row.id}].0`;
-  const member = `${rowPath}.members.0`;
   const slot = startMin / 30;
   const slotPath = `queue.${name}.analyze.basal[slot=${slot}].0`;
   const roster = s.analyze.basal.find((b) => b.slot === slot)!.evidence.night_roster;
@@ -106,13 +106,30 @@ export function basalSetting(name: QueueStore, startMin: number): SettingData {
     units: candidate.units!,
     start: sourced(`${rowPath}.span.start_min`, 'clock'),
     end: sourced(`${rowPath}.span.end_min`, 'clock'),
-    current: sourced(`${member}.current`),
-    suggested: sourced(`${member}.recommended`),
-    estimate: sourced(`${member}.estimate.value`),
-    lo: sourced(`${member}.estimate.lo`),
-    hi: sourced(`${member}.estimate.hi`),
-    days: sourced(`${member}.days`),
+    // §4.2: every number but the time block is the analyze slot's, the same
+    // slot whose nights the chart plots, so the count and the dots agree.
+    current: sourced(`${slotPath}.current`),
+    suggested: sourced(`${slotPath}.recommended`),
+    estimate: sourced(`${slotPath}.estimate.value`),
+    lo: sourced(`${slotPath}.estimate.lo`),
+    hi: sourced(`${slotPath}.estimate.hi`),
+    days: sourced(`${slotPath}.days`),
     nights: roster.map((_, i) => ({ rate: sourced(`${slotPath}.evidence.night_roster.${i}.delivered_rate`) })),
     trial: s.trials.trials.some((t) => t.parameter === 'basal_rate' && t.slot === label && t.state === 'complete'),
   };
+}
+
+/** The story states the generator found in the served answers, by name. */
+const states = fixtures.states;
+type PatternState = 'multi_cause' | 'single_cause' | 'no_cause' | 'pinned';
+type SettingState = 'setting' | 'setting_trial';
+
+export function patternState(name: PatternState): PatternData {
+  const { store, pattern: key } = states[name];
+  return pattern(store as QueueStore, key);
+}
+
+export function settingState(name: SettingState): SettingData {
+  const { store, start_min: start } = states[name];
+  return basalSetting(store as QueueStore, start);
 }

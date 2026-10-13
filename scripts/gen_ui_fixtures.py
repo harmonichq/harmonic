@@ -4,20 +4,30 @@
 Two committed outputs, one generator, one ``--check``:
 
 * ``frontend/ui/__fixtures__/ui-fixtures.json`` holds the served answers the
-  stories render. They come from the public HTTP API, in process, over a scratch
-  copy of the synthetic QA showcase (``mockups/qa-e2e.synthetic/harmonic.sqlite``)
-  with the fetch loop off. Nothing is served on a port and nothing is fetched.
-  The one invented input is a failed sync attempt, written into the scratch
-  copy through ``Store.record_fetch_result`` so the Settings alert badge has a
-  served ``last_error`` to read. The showcase itself is never written.
-* Its ``queue`` block holds the Queue components' answers (findings,
-  guidance, analyze, trials, focus), trimmed to the fields they read, from the
-  showcase and from the named QA case stores listed in ``QUEUE_STORES``. Each
-  case store is materialised into a scratch directory by
-  ``scripts/gen_qa_e2e_db.py``'s own ``generate`` and never committed. Every
-  store is chosen for one state a story renders, and ``QUEUE_STORES`` asserts
-  that the engine still serves that state, so a story never shows a state the
-  data no longer has.
+  stories render. Their source is ``scripts/ui_patient.py``: a seeded synthetic
+  Control-IQ wearer whose history is ingested into a scratch SQLite store and
+  read back through the public HTTP API, in process, with the fetch loop off.
+  Nothing is served on a port, nothing is fetched, and no real data is read.
+  Two stores are built from the one wearer:
+
+  - ``wearer`` changes the 03:00 basal on the simulator's Trial day, which the
+    engine detects as a Trial. The person also logs a few treated lows in the
+    manual carb log and answers one prompt, through ``POST /api/carbs`` and
+    ``POST /api/prompts/answer``. Every top-level block (status, prompts,
+    outcomes, guidance) is read from this store.
+  - ``wearer-pinned`` is the same history without the profile change, with a
+    Focus pinned through ``POST /api/focus`` (one change is active at a time,
+    so the Trial and the Focus cannot share a store).
+
+  ``status.failed`` adds one invented failed sync attempt, through
+  ``Store.record_fetch_result``, so the Settings alert has a served
+  ``last_error``. The wall clock every write stamps is pinned to one hour after
+  the wearer's last reading, so the output is byte-reproducible.
+
+  ``states`` names, for each story state, the store and the pattern or basal
+  block that serves it, chosen by rule from what the engine served. A state
+  the stories need that the engine no longer serves fails the generator; a
+  state that does not arise naturally is ``null`` and its story is absent.
 * ``frontend/ui/__fixtures__/ui-allowlist.json`` is every word a story may
   display. It is built from the glossary (§1.5) and the tab names (§1.1) of
   ``docs/design/recommendations-redesign.md``, plus the engine titles, nouns
@@ -31,26 +41,26 @@ Two committed outputs, one generator, one ``--check``:
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import pathlib
 import re
-import shutil
 import sys
 import tempfile
+from datetime import timedelta
+from unittest.mock import patch
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "scripts"))
 
 from fastapi.testclient import TestClient  # noqa: E402
 
+import ui_patient  # noqa: E402
 from ciq_autotune.api import create_app  # noqa: E402
 from ciq_autotune.store import Store  # noqa: E402
+from ciq_autotune.watched_change import reconcile_ingested_follow_up  # noqa: E402
 
-sys.path.insert(0, str(ROOT / "scripts"))
-from gen_qa_e2e_db import generate as generate_case  # noqa: E402
-from qa_e2e_cases import QA_CASES  # noqa: E402
-
-SHOWCASE = ROOT / "mockups" / "qa-e2e.synthetic" / "harmonic.sqlite"
 DESIGN = ROOT / "docs" / "design" / "recommendations-redesign.md"
 OUT_DIR = ROOT / "frontend" / "ui" / "__fixtures__"
 FIXTURES = OUT_DIR / "ui-fixtures.json"
@@ -58,9 +68,13 @@ ALLOWLIST = OUT_DIR / "ui-allowlist.json"
 GENERATED_BY = "scripts/gen_ui_fixtures.py"
 
 WINDOWS = (14, 30, 90)
-# The invented failed attempt: one minute after the showcase's last reading.
-FAILED_ATTEMPT_AT = "2024-07-01 00:00:00"
+# The pinned wall clock: one hour after the wearer's last reading.
+CLOCK = ui_patient.START + timedelta(days=ui_patient.DAYS, hours=1)
 FAILED_ERROR = "synthetic sync failure"
+# The person logs the treated lows of the prompt window (the last week) by
+# hand, all but the most recent few, which stay as prompts.
+PROMPT_WINDOW_DAYS = 7
+UNLOGGED_LOWS = 2
 # §4.2 SegmentedControl: "14 / 30 / 90 d", and QueueRow's magnitude "9 of 71 lows".
 UNITS = ("d",)
 CONNECTIVES = ("of",)
@@ -71,6 +85,22 @@ MARK_FIELDS = ("current", "estimate")
 
 WORD = re.compile(r"[A-Za-z][A-Za-z'’-]*")
 
+# Every module that imported the server's wall clock by name.
+_CLOCK_MODULES = ("analyze", "api", "cli", "credentials", "fetch_loop", "pattern_sweep",
+                  "pending_prompts", "store", "sync", "watched_change")
+
+
+def _clock(after=None):
+    return max(CLOCK, after + timedelta(seconds=1)) if after else CLOCK
+
+
+@contextlib.contextmanager
+def pinned_clock():
+    with contextlib.ExitStack() as stack:
+        for module in _CLOCK_MODULES:
+            stack.enter_context(patch(f"ciq_autotune.{module}.wall_clock_now", _clock))
+        yield
+
 
 def _get(client: TestClient, path: str, **params) -> object:
     response = client.get(path, params=params or None)
@@ -78,29 +108,60 @@ def _get(client: TestClient, path: str, **params) -> object:
     return response.json()
 
 
+def _post(client: TestClient, path: str, payload: dict) -> object:
+    response = client.post(path, json=payload)
+    response.raise_for_status()
+    return response.json()
+
+
+def _wearer(scratch: pathlib.Path, name: str, *, trial: bool):
+    """Ingest the wearer into a scratch store, as a sync would, and serve it."""
+    database = scratch / f"{name}.sqlite"
+    with Store.open(str(database)) as store:
+        history = ui_patient.materialize(store, trial=trial)
+        reconcile_ingested_follow_up(store)
+    client = TestClient(create_app(
+        db_path=str(database), token=None, enable_fetch_loop=False,
+        analysis_incarnation="ui-fixtures",
+    ))
+    # The person's own writes: the week's treated lows logged by hand, bar the
+    # latest few, and one remaining prompt answered.
+    window_start = ui_patient.START + timedelta(days=ui_patient.DAYS - PROMPT_WINDOW_DAYS)
+    logged = [low for low in history.treated_lows if low[0] >= window_start][:-UNLOGGED_LOWS]
+    for at, grams in logged:
+        _post(client, "/api/carbs", {"t": at.strftime("%Y-%m-%d %H:%M:%S"), "grams": grams,
+                                     "certainty": "estimate", "source": "manual"})
+    pending = [p for p in _get(client, "/api/prompts") if p.get("answer") is None]
+    if pending:
+        _post(client, "/api/prompts/answer", {"detector": pending[0]["detector"],
+                                              "anchor_t": pending[0]["anchor_t"], "answer": "no"})
+    return database, client
+
+
 def fixtures() -> dict:
-    """Read every endpoint batch 1 renders, through the public API."""
-    with tempfile.TemporaryDirectory() as scratch:
-        database = pathlib.Path(scratch) / "harmonic.sqlite"
-        shutil.copyfile(SHOWCASE, database)
-        client = TestClient(create_app(
-            db_path=str(database), token=None, enable_fetch_loop=False,
-            analysis_incarnation="ui-fixtures",
-        ))
+    """Build both wearer stores and read every endpoint the stories render."""
+    with pinned_clock(), tempfile.TemporaryDirectory() as scratch:
+        scratch = pathlib.Path(scratch)
+        database, client = _wearer(scratch, "wearer", trial=True)
         status_ok = _get(client, "/api/status")
         outcomes = {str(w): _get(client, "/api/outcomes", window=w) for w in WINDOWS}
         prompts = _get(client, "/api/prompts")
         guidance = _get(client, "/api/guidance")
+        queue = {"wearer": _queue_store(client)}
         with Store.open(str(database)) as store:
-            store.record_fetch_result(attempted_at=FAILED_ATTEMPT_AT, ok=False,
-                                      error=FAILED_ERROR)
+            store.record_fetch_result(attempted_at=CLOCK.strftime("%Y-%m-%d %H:%M:%S"),
+                                      ok=False, error=FAILED_ERROR)
         status_failed = _get(client, "/api/status")
+
+        _, pinned = _wearer(scratch, "wearer-pinned", trial=False)
+        _pin(pinned)
+        queue["wearer-pinned"] = _queue_store(pinned)
     return {
         "_generated_by": GENERATED_BY,
-        "_note": ("Synthetic only: served by the public API, in process, over a "
-                  "scratch copy of the synthetic QA showcase and over named QA "
-                  "case stores generated into scratch. status.failed adds one "
-                  "invented failed sync attempt to the showcase copy."),
+        "_note": ("Synthetic only: a seeded simulated Control-IQ wearer "
+                  "(scripts/ui_patient.py) ingested into scratch stores and served "
+                  "by the public API, in process. status.failed adds one invented "
+                  "failed sync attempt."),
         "status": {"ok": status_ok, "failed": status_failed},
         "prompts": prompts,
         "outcomes": {
@@ -114,76 +175,31 @@ def fixtures() -> dict:
                 for candidate in guidance["candidates"]
             ],
         },
-        "queue": queue_stores(),
+        "queue": queue,
+        "states": states(queue),
     }
 
 
-def _pattern_row(store: dict, key: str) -> dict:
-    return next(r for r in store["findings"]["rows"] if r["id"] == f"pattern:{key}")
+def _pin(client: TestClient) -> None:
+    """Pin a Focus on the first pattern whose habit the engine lets the person pin."""
+    for candidate in _get(client, "/api/guidance")["candidates"]:
+        if candidate["kind"] != "pattern":
+            continue
+        response = client.post("/api/focus", json={
+            "pattern_key": candidate["pattern_key"],
+            "outcome_window": {"start_min": 0, "end_min": 1440},
+        })
+        if response.status_code == 200:
+            return
+    raise SystemExit("the engine lets the wearer pin no pattern")
 
-
-def _shares(store: dict, key: str) -> list[int]:
-    return [s["count"] for r in store["findings"]["rows"] if r.get("claimed_by") == f"pattern:{key}"
-            for s in r["fold_sentences"] or () if s["scope"] == "pattern"]
-
-
-def _wide(store: dict, key: str):
-    return next(c for c in store["guidance"]["candidates"]
-                if c["subject"] == f"pattern:{key}")["support"].get("wide")
-
-
-def _counted(store: dict, key: str) -> bool:
-    return bool(_pattern_row(store, key)["count_sentences"])
-
-
-def _basal_row(store: dict, start: int) -> dict:
-    return next(r for r in store["findings"]["rows"]
-                if r["kind"] == "setting" and r.get("parameter") == "basal_rate"
-                and r["span"]["start_min"] == start)
-
-
-def _nights(store: dict, label: str) -> list[float]:
-    slot = next(b for b in store["analyze"]["basal"] if b["label"] == label)
-    return [night["delivered_rate"] for night in slot["evidence"]["night_roster"]]
-
-
-# Each store backs the story states named beside it; the check is what the
-# engine must still serve for those states to be real.
-QUEUE_STORES = {
-    "showcase": (  # SettingCard range collapsed; EvidenceChart zero variance
-        lambda s: (_basal_row(s, 180)["members"][0]["estimate"]["lo"]
-                   == _basal_row(s, 180)["members"][0]["estimate"]["hi"]
-                   and len(set(_nights(s, "03:00"))) == 1)),
-    "behavioral-carb-undercount": (  # multi-cause (the engine also serves it Wide)
-        lambda s: _counted(s, "highs_after_meals") and len(_shares(s, "highs_after_meals")) >= 2),
-    "behavioral-split-meal": (  # single cause, not Wide
-        lambda s: _counted(s, "highs_after_meals") and len(_shares(s, "highs_after_meals")) == 1
-        and _wide(s, "highs_after_meals") is False),
-    "behavioral-correction-stacking": (  # Wide
-        lambda s: _counted(s, "lows_after_correcting_highs")
-        and _wide(s, "lows_after_correcting_highs") is True),
-    "basal-recurring-low-spread": (  # no attributed cause; SettingCard and EvidenceChart default
-        lambda s: _counted(s, "overnight_lows_no_iob") and not _shares(s, "overnight_lows_no_iob")
-        and _pattern_row(s, "overnight_lows_no_iob")["count_sentences"][0]["count"] > 0
-        and len(set(_nights(s, "03:00"))) > 1),
-    "c3-focus": (  # pinned: an active Focus on the pattern's habit
-        lambda s: any(f["status"] == "active" and f["pattern_key"] == "highs_after_meals"
-                      for f in s["focus"]["focuses"])),
-    "c3-trial": (  # SettingCard matured into a Trial
-        lambda s: any(t["parameter"] == "basal_rate" and t["slot"] == "03:00"
-                      and t["state"] == "complete" for t in s["trials"]["trials"])),
-}
 
 ROW_FIELDS = ("id", "kind", "title", "chips", "claimed_by", "lever", "parameter",
               "count_sentences", "fold_sentences", "span", "members")
 
 
-def _queue_store(database: pathlib.Path) -> dict:
+def _queue_store(client: TestClient) -> dict:
     """The Queue components' answers from one store, trimmed to what they read."""
-    client = TestClient(create_app(
-        db_path=str(database), token=None, enable_fetch_loop=False,
-        analysis_incarnation="ui-fixtures",
-    ))
     findings = _get(client, "/api/diagnose/findings")
     guidance = _get(client, "/api/guidance")
     analyze = _get(client, "/api/analyze")
@@ -192,7 +208,8 @@ def _queue_store(database: pathlib.Path) -> dict:
     return {
         "findings": {
             "outcome_patterns": [
-                {field: p[field] for field in ("key", "subject", "title", "k", "n", "wilson")}
+                {**{field: p[field] for field in ("key", "subject", "title", "k", "n", "wilson")},
+                 "wide": p.get("wide")}
                 for p in findings["outcome_patterns"]
             ],
             "rows": [
@@ -204,8 +221,7 @@ def _queue_store(database: pathlib.Path) -> dict:
         },
         "guidance": {
             "candidates": [
-                {"subject": c["subject"], "kind": c["kind"], "title": c["title"],
-                 "units": c["units"], "support": {"wide": c["support"].get("wide")}}
+                {"subject": c["subject"], "kind": c["kind"], "title": c["title"], "units": c["units"]}
                 for c in guidance["candidates"]
             ],
         },
@@ -236,20 +252,77 @@ def _queue_store(database: pathlib.Path) -> dict:
     }
 
 
-def queue_stores() -> dict:
-    stores = {}
-    with tempfile.TemporaryDirectory() as scratch:
-        for name, holds in QUEUE_STORES.items():
-            database = pathlib.Path(scratch) / f"{name}.sqlite"
-            if name == "showcase":
-                shutil.copyfile(SHOWCASE, database)
-            else:
-                generate_case(database, next(case for case in QA_CASES if case.name == name))
-            store = _queue_store(database)
-            if not holds(store):
-                raise SystemExit(f"QA store {name!r} no longer serves the state its stories render")
-            stores[name] = store
-    return stores
+def _patterns(store: dict) -> list[dict]:
+    """Counted patterns with their pattern-scope cause shares."""
+    out = []
+    for row in store["findings"]["rows"]:
+        if row["kind"] != "pattern" or not row["count_sentences"]:
+            continue
+        shares = [s["count"] for r in store["findings"]["rows"] if r.get("claimed_by") == row["id"]
+                  for s in r["fold_sentences"] or () if s["scope"] == "pattern"]
+        out.append({"key": row["id"].removeprefix("pattern:"),
+                    "count": row["count_sentences"][0]["count"], "shares": shares})
+    return out
+
+
+def _clock_label(minute: int) -> str:
+    return f"{minute // 60:02d}:{minute % 60:02d}"
+
+
+def _blocks(store: dict) -> list[dict]:
+    """Admitted basal blocks: their start, range, nights and whether a Trial matured there."""
+    out = []
+    for row in store["findings"]["rows"]:
+        if row["kind"] != "setting" or not row.get("members"):
+            continue
+        start = row["span"]["start_min"]
+        slot = next(b for b in store["analyze"]["basal"] if b["slot"] * 30 == start)
+        estimate = row["members"][0]["estimate"]
+        out.append({
+            "start": start,
+            "collapsed": estimate["lo"] == estimate["hi"],
+            "spread": len({n["delivered_rate"] for n in slot["evidence"]["night_roster"]}) > 1,
+            "trial": any(t["parameter"] == "basal_rate" and t["slot"] == _clock_label(start)
+                         and t["state"] == "complete" for t in store["trials"]["trials"]),
+        })
+    return out
+
+
+def states(queue: dict) -> dict:
+    """The store and subject behind each story state, chosen from the served answers."""
+    patterns = _patterns(queue["wearer"])
+    blocks = _blocks(queue["wearer"])
+
+    def pattern(store, rule):
+        found = sorted((p for p in (patterns if store == "wearer" else _patterns(queue[store]))
+                        if rule(p)), key=lambda p: -p["count"])
+        return {"store": store, "pattern": found[0]["key"]} if found else None
+
+    def block(rule):
+        found = [b for b in blocks if rule(b)]
+        return {"store": "wearer", "start_min": found[0]["start"]} if found else None
+
+    pinned = next((f["pattern_key"] for f in queue["wearer-pinned"]["focus"]["focuses"]
+                   if f["status"] == "active"), None)
+    uncertain = next((p["key"] for p in queue["wearer"]["findings"]["outcome_patterns"]
+                      if p.get("wide") is True and any(q["key"] == p["key"] for q in patterns)), None)
+    found = {
+        "multi_cause": pattern("wearer", lambda p: len(p["shares"]) >= 2),
+        "single_cause": pattern("wearer", lambda p: len(p["shares"]) == 1),
+        "no_cause": pattern("wearer", lambda p: not p["shares"] and p["count"] > 0),
+        "pinned": {"store": "wearer-pinned", "pattern": pinned} if pinned else None,
+        "setting": block(lambda b: b["spread"] and not b["collapsed"] and not b["trial"]),
+        "setting_trial": block(lambda b: b["trial"]),
+        # Optional: these arise only if the engine serves them naturally.
+        "uncertain": {"store": "wearer", "pattern": uncertain} if uncertain else None,
+        "range_collapsed": block(lambda b: b["collapsed"]),
+        "zero_variance": block(lambda b: not b["spread"]),
+    }
+    required = ("multi_cause", "single_cause", "no_cause", "pinned", "setting", "setting_trial")
+    missing = [name for name in required if found[name] is None]
+    if missing:
+        raise SystemExit(f"the simulated wearer no longer serves: {', '.join(missing)}")
+    return found
 
 
 def _table_first_column(section: str) -> list[str]:

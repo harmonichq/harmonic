@@ -1,15 +1,15 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { pattern, type QueueStore } from '../../queue-model';
+import { patternState } from '../../queue-model';
 import { PatternCard } from './PatternCard';
 
-// One story per state (§4.2 PatternCard), each a real engine answer:
-// - MultiCause: behavioral-carb-undercount. The engine also serves this
-//   pattern Wide, so the card shows it; every multi-cause case does.
-// - SingleCause: behavioral-split-meal (not Wide).
-// - NoCause: basal-recurring-low-spread, overnight lows no cause claims.
-// - Wide: behavioral-correction-stacking.
-// - Pinned: c3-focus, an active Focus on the pattern's habit. That store serves
-//   no count for the pattern, so the card shows no magnitude.
+// One story per state (§4.2 PatternCard), each the simulated wearer's own
+// served answer, picked by the fixture generator:
+// - MultiCause: a counted pattern with two or more attributed causes.
+// - SingleCause: one attributed cause.
+// - NoCause: a counted pattern no cause claims.
+// - Pinned: the pattern a Focus was pinned on through the engine.
+// The Uncertain state waits on the pattern's own `wide` flag, which the
+// backend does not serve yet.
 const meta = {
   title: 'PatternCard',
   component: PatternCard,
@@ -18,11 +18,9 @@ const meta = {
 export default meta;
 
 type Story = StoryObj<typeof meta>;
-const story = (store: QueueStore, key: string): Story => ({ args: { data: pattern(store, key) } });
 
-export const MultiCause = story('behavioral-carb-undercount', 'highs_after_meals');
-export const SingleCause = story('behavioral-split-meal', 'highs_after_meals');
-export const NoCause = story('basal-recurring-low-spread', 'overnight_lows_no_iob');
-export const Wide = story('behavioral-correction-stacking', 'lows_after_correcting_highs');
-export const Pinned = story('c3-focus', 'highs_after_meals');
+export const MultiCause: Story = { args: { data: patternState('multi_cause') } };
+export const SingleCause: Story = { args: { data: patternState('single_cause') } };
+export const NoCause: Story = { args: { data: patternState('no_cause') } };
+export const Pinned: Story = { args: { data: patternState('pinned') } };
 export const Loading: Story = { args: { loading: true } };

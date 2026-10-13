@@ -5,6 +5,8 @@ Status: **exploring** (#481).
 - Direction approved 2026-10-12 (step 1 closed): round 3 on the design canvas,
   https://claude.ai/artifact/KHE7tPovxexxNx1ZQS8zfM, row "Current · round 3".
 - Component inventory (§4) approved 2026-10-12 (step 2 closed).
+- **Queue screen locked 2026-10-13**: Storybook `Screens/Queue` at commit
+  `1bae486d`. The operator: "I'm happy with the queue."
 
 This document is the durable record of the redesign. Sections 1–3 are what the
 build will be checked against once they are approved. The appendix keeps the

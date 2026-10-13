@@ -36,7 +36,9 @@ Two committed outputs, one generator, one ``--check``:
   ``wearer`` with its matured Trial and that Trial's retained comparison;
   ``wearer-ended`` the same store once the person ends that Trial through
   ``POST /api/verify/trials/{id}/finish``; ``wearer-pinned`` with its Focus;
-  ``wearer-first-days`` with no active change; ``wearer-trial-maturing``,
+  ``wearer-ended-pinned``, a Focus pinned after that Trial was ended, so the
+  ended Trial is the last change beside an active one; ``wearer-first-days``
+  with no active change; ``wearer-trial-maturing``,
   the wearer's history cut six days after the Trial day, so the Trial is still
   maturing; and ``wearer-worse``, the second wearer, whose wrong-direction
   Trial matures Worse. The two matured results are checked: the generator
@@ -140,9 +142,9 @@ MONTHS = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", 
 # Plain interface words the Changes and Day components quote from §1.2, §1.3
 # and §4.2, exempt from glossary §1.5 by the 2026-10-13 amendment (§2.5):
 # ChangeCard's "Before/After values" and "Days 0 / 14", the Prompt's "Next" text
-# action, Log carbs' "Time" row (default now) and "Save", and the write-failed
-# "Not saved" with "Retry".
-CHANGE_DAY_LABELS = ("Before", "After", "Days", "Next", "Time", "Now", "Save", "Not saved", "Retry")
+# action, Log carbs' "Time" row (default now) and "Save", the write-failed
+# "Not saved" with "Retry", and "Cancel" beneath End's confirmation (§1.3a).
+CHANGE_DAY_LABELS = ("Before", "After", "Days", "Next", "Time", "Now", "Save", "Not saved", "Retry", "Cancel")
 # The wearer's first days: fewer than the glucose profile's eight supported days.
 FIRST_DAYS = 5
 # A Trial still maturing: the wearer's history cut this many days after the
@@ -271,6 +273,14 @@ def fixtures() -> dict:
         # Snoozed list holds them all (§1.3 Queue empty, Queue · Snoozed).
         _snooze_all(first_days)
         queue["wearer-first-days-snoozed"] = _queue_store(first_days)
+
+        # The Changes screen's last change beside an active one: the wearer
+        # ends the matured Trial, then pins a Focus (one change is active at a
+        # time).
+        _, ended_pinned = _wearer(scratch, "wearer-ended-pinned", trial=True)
+        _end_active_trial(ended_pinned)
+        _pin(ended_pinned)
+        changes["wearer-ended-pinned"] = _changes_store(ended_pinned)
 
         _, maturing = _wearer(scratch, "wearer-trial-maturing", trial=True,
                               days=ui_patient.TRIAL_DAY + MATURING_DAYS)

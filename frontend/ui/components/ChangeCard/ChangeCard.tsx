@@ -14,6 +14,10 @@
 //
 // A Focus: the watched habit as the title, the pattern it was pinned from and
 // the date in meta ink, and End at any time. No active change is a label.
+//
+// `confirm` is what the screen anchors under End once it is pressed: on
+// desktop, the confirmation popover (§1.3a), its arrow on End.
+import type { ReactNode } from 'react';
 import type { ChangeData, FocusData, TrialData } from '../../changes-model';
 import { Num } from '../../Num';
 import { Button } from '../Button/Button';
@@ -21,7 +25,9 @@ import { StatePill } from '../StatePill/StatePill';
 import '../../shared.css';
 import './ChangeCard.css';
 
-export type ChangeCardProps = { data: ChangeData; onEnd?: () => void };
+type Ends = { onEnd?: () => void; confirm?: ReactNode };
+
+export type ChangeCardProps = { data: ChangeData } & Ends;
 
 const METRIC_LABELS = {
   tir: { words: 'In range' },
@@ -39,7 +45,7 @@ function Ticks({ elapsed, required }: { elapsed: number; required: number }) {
   );
 }
 
-function Trial({ data, onEnd }: { data: TrialData; onEnd?: () => void }) {
+function Trial({ data, onEnd, confirm }: { data: TrialData } & Ends) {
   const matured = !data.maturing;
   return (
     <section className="ui-change">
@@ -95,13 +101,13 @@ function Trial({ data, onEnd }: { data: TrialData; onEnd?: () => void }) {
         </table>
       )}
       {data.canEnd && (
-        <div className="ui-change__foot"><Button kind="secondary" label="End" onClick={onEnd} /></div>
+        <div className="ui-change__foot"><Button kind="secondary" label="End" onClick={onEnd} />{confirm}</div>
       )}
     </section>
   );
 }
 
-function Focus({ data, onEnd }: { data: FocusData; onEnd?: () => void }) {
+function Focus({ data, onEnd, confirm }: { data: FocusData } & Ends) {
   return (
     <section className="ui-change">
       <div className="ui-change__head">
@@ -109,13 +115,13 @@ function Focus({ data, onEnd }: { data: FocusData; onEnd?: () => void }) {
       </div>
       <h2 className="ui-change__habit">{data.habit}</h2>
       <p className="ui-change__pattern">{data.pattern} · <Num value={data.pinnedAt} /></p>
-      <div className="ui-change__foot"><Button kind="secondary" label="End" onClick={onEnd} /></div>
+      <div className="ui-change__foot"><Button kind="secondary" label="End" onClick={onEnd} />{confirm}</div>
     </section>
   );
 }
 
-export function ChangeCard({ data, onEnd }: ChangeCardProps) {
-  if (data.kind === 'trial') return <Trial data={data} onEnd={onEnd} />;
-  if (data.kind === 'focus') return <Focus data={data} onEnd={onEnd} />;
+export function ChangeCard({ data, onEnd, confirm }: ChangeCardProps) {
+  if (data.kind === 'trial') return <Trial data={data} onEnd={onEnd} confirm={confirm} />;
+  if (data.kind === 'focus') return <Focus data={data} onEnd={onEnd} confirm={confirm} />;
   return <section className="ui-change ui-change--none"><span className="ui-change__none">No active change</span></section>;
 }

@@ -222,8 +222,8 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
 
 ### 2.5 Amendments
 - **2026-10-13 — plain interface words are not glossary terms.** The labels
-  Before, After, Days, Next, Time, Now, Save, Not saved and Retry, and the
-  month abbreviations of a date, may appear without a §1.5 entry. The operator:
+  Before, After, Days, Next, Time, Now, Save, Not saved, Retry and Cancel, and
+  the month abbreviations of a date, may appear without a §1.5 entry. The operator:
   "I don't think those need to be glossary terms, they're just... words."
   §1.5 now governs domain terms only.
 - **2026-10-13 — Sleep and Site change join the glossary** so the Day chart

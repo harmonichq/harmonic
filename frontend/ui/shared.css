@@ -32,3 +32,56 @@
 /* A chart's box: the full width of its container, which the chart measures
    and lays out to (§2.2 Charts). */
 .ui-chart { width: 100%; min-width: 0; }
+
+/* A sheet (§2.2): attached to the bottom edge, 12 px top radius, a grabber. */
+.ui-sheet {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  padding: 8px 16px 24px;
+  border-radius: 12px 12px 0 0;
+  background: var(--wk-surface);
+  box-shadow: 0 -8px 24px rgb(0 0 0 / .45);
+  color: var(--wk-ink);
+  font-family: var(--ui-font);
+}
+.ui-sheet__grabber {
+  align-self: center;
+  width: 36px;
+  height: 5px;
+  margin-bottom: 12px;
+  border-radius: 3px;
+  background: var(--wk-rule-strong);
+}
+
+/* A popover (§2.2): under its trigger, edge-aligned, the arrow on the
+   trigger; --end puts both at the trigger's trailing edge. */
+.ui-popover {
+  box-sizing: border-box;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 320px;
+  margin-top: 10px;
+  padding: 16px;
+  border: 1px solid var(--wk-rule);
+  border-radius: var(--wk-radius);
+  background: var(--wk-surface);
+  box-shadow: 0 12px 32px rgb(0 0 0 / .5);
+  color: var(--wk-ink);
+  font-family: var(--ui-font);
+}
+.ui-popover::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 24px;
+  width: 10px;
+  height: 10px;
+  border-top: 1px solid var(--wk-rule);
+  border-left: 1px solid var(--wk-rule);
+  background: var(--wk-surface);
+  transform: rotate(45deg);
+}
+.ui-popover--end { align-self: flex-end; }
+.ui-popover--end::before { left: auto; right: 24px; }

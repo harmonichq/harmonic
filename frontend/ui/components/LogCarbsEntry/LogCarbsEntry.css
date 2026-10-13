@@ -2,50 +2,11 @@
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  background: var(--wk-surface);
-  color: var(--wk-ink);
-  font-family: var(--ui-font);
   font-variant-numeric: tabular-nums;
 }
 
-/* Phone: attached to the bottom edge, 12 px top radius and a grabber. */
-.ui-logcarbs--sheet {
-  padding: 8px 16px 24px;
-  border-radius: 12px 12px 0 0;
-  box-shadow: 0 -8px 24px rgb(0 0 0 / .45);
-}
-.ui-logcarbs__grabber {
-  align-self: center;
-  width: 36px;
-  height: 5px;
-  margin-bottom: 12px;
-  border-radius: 3px;
-  background: var(--wk-rule-strong);
-}
-
-/* Desktop: under its trigger, edge-aligned, the arrow on the trigger. */
+/* Phone: a sheet; desktop: a popover under its trigger (shared.css). */
 .ui-logcarbs-anchor { display: flex; flex-direction: column; align-items: flex-start; }
-.ui-logcarbs--popover {
-  position: relative;
-  width: 320px;
-  margin-top: 10px;
-  padding: 16px;
-  border: 1px solid var(--wk-rule);
-  border-radius: var(--wk-radius);
-  box-shadow: 0 12px 32px rgb(0 0 0 / .5);
-}
-.ui-logcarbs--popover::before {
-  content: '';
-  position: absolute;
-  top: -6px;
-  left: 24px;
-  width: 10px;
-  height: 10px;
-  border-top: 1px solid var(--wk-rule);
-  border-left: 1px solid var(--wk-rule);
-  background: var(--wk-surface);
-  transform: rotate(45deg);
-}
 
 .ui-logcarbs__title {
   margin: 0;

@@ -55,8 +55,8 @@ function Entry({ state, grams, onGramsChange, onSave }: Omit<LogCarbsEntryProps,
 export function LogCarbsEntry({ layout = 'phone', ...entry }: LogCarbsEntryProps) {
   if (layout === 'phone') {
     return (
-      <section className="ui-logcarbs ui-logcarbs--sheet" role="dialog" aria-label="Log carbs">
-        <span className="ui-logcarbs__grabber" aria-hidden="true" />
+      <section className="ui-sheet ui-logcarbs" role="dialog" aria-label="Log carbs">
+        <span className="ui-sheet__grabber" aria-hidden="true" />
         <Entry {...entry} />
       </section>
     );
@@ -64,7 +64,7 @@ export function LogCarbsEntry({ layout = 'phone', ...entry }: LogCarbsEntryProps
   return (
     <div className="ui-logcarbs-anchor">
       <Button kind="secondary" label="+ Log carbs" />
-      <section className="ui-logcarbs ui-logcarbs--popover" role="dialog" aria-label="Log carbs">
+      <section className="ui-popover ui-logcarbs" role="dialog" aria-label="Log carbs">
         <Entry {...entry} />
       </section>
     </div>

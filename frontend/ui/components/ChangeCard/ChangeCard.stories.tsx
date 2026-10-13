@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
-import { change } from '../../changes-model';
+import { change, lastChange } from '../../changes-model';
 import { ChangeCard } from './ChangeCard';
 
 // One story per state (§4.2 ChangeCard), each a store of the simulated
@@ -27,7 +27,7 @@ type Story = StoryObj<typeof meta>;
 export const TrialMaturing: Story = { args: { data: change('wearer-trial-maturing') } };
 export const TrialMatured: Story = { args: { data: change('wearer') } };
 export const TrialWorse: Story = { args: { data: change('wearer-worse') } };
-export const TrialEnded: Story = { args: { data: change('wearer-ended') } };
+export const TrialEnded: Story = { args: { data: lastChange('wearer-ended')! } };
 export const FocusActive: Story = { args: { data: change('wearer-pinned') } };
 export const NoActiveChange: Story = { args: { data: change('wearer-first-days') } };
 

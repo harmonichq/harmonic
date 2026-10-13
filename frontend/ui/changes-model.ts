@@ -4,8 +4,8 @@
 // what the engine served, and nothing here invents a verdict.
 //
 // A store is one entry of `fixtures.changes`: its admission names the active
-// change, and its trials hold that Trial (or the Trial just ended) with its
-// comparison.
+// change, and its trials hold that Trial with its comparison, and any Trial the
+// person has ended (the last change).
 import { fixtures, sourced, type Sourced } from './fixtures';
 
 export type ChangesStore = keyof typeof fixtures.changes;
@@ -65,7 +65,7 @@ type TrialRow = {
   parameter: string;
   state: string;
   target_metrics: string[];
-  ending: { kind?: string; assessment?: { outcomes: Outcome[] } };
+  ending: { kind?: string; effective_at?: string; assessment?: { outcomes: Outcome[] } };
   reassessment?: { outcomes: Outcome[] };
 };
 
@@ -83,6 +83,7 @@ function outcomeRows(path: string, rows: readonly Outcome[], targets: readonly s
   });
 }
 
+/** The active change: its Trial or Focus, or none. */
 export function change(name: ChangesStore): ChangeData {
   const store = fixtures.changes[name];
   const root = `changes.${name}`;
@@ -96,10 +97,22 @@ export function change(name: ChangesStore): ChangeData {
       pinnedAt: sourced(`${root}.focuses[id=${focus.id}].0.pinned_at`, 'date'),
     };
   }
-  // The active Trial, or else the Trial this store has just ended.
-  const trials = store.trials as readonly TrialRow[];
-  const trial = trials.find((t) => t.id === admission.active_id) ?? trials.find((t) => t.ending.kind);
-  if (!trial) return { kind: 'none' };
+  const trial = (store.trials as readonly TrialRow[]).find((t) => t.id === admission.active_id);
+  return trial ? trialData(name, trial) : { kind: 'none' };
+}
+
+/** The last finished change: the Trial the person ended most recently, or null. */
+export function lastChange(name: ChangesStore): TrialData | null {
+  const ended = (fixtures.changes[name].trials as readonly TrialRow[])
+    .filter((t) => t.ending.kind)
+    .sort((a, b) => (b.ending.effective_at ?? '').localeCompare(a.ending.effective_at ?? ''));
+  return ended[0] ? trialData(name, ended[0]) : null;
+}
+
+function trialData(name: ChangesStore, trial: TrialRow): TrialData {
+  const store = fixtures.changes[name];
+  const root = `changes.${name}`;
+  const { admission } = store;
   const path = `${root}.trials[id=${trial.id}].0`;
   const ended = trial.ending.assessment ?? null;
   const compared = ended ? { path: `${path}.ending.assessment.outcomes`, rows: ended.outcomes }

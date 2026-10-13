@@ -1,0 +1,90 @@
+import type { Meta, StoryObj } from '@storybook/react-vite';
+import { expect, userEvent, within } from 'storybook/test';
+import { fixtures } from '../../fixtures';
+import { ChangesScreen, type ChangesScreenProps } from './ChangesScreen';
+
+// The Changes screen in each state §1.3 lists, at phone (390) and desktop
+// (1440), every value the simulated wearer's served answer:
+// - Default: a Focus pinned after the person ended a basal Trial, so the
+//   ended Trial is the last change.
+// - Trial maturing (six days in), Trial matured Better with End offered, and
+//   the second wearer's Trial matured Worse.
+// - Ended: the matured Trial once the person ends it: no active change, the
+//   Trial as the last change.
+// - Empty: the first days, with no change at all.
+// - Confirm: End pressed on the matured Trial, the confirmation open.
+// - Loading, and Unavailable (the unsynced store serves guidance unavailable).
+// Two plays per size: End → End ends the Trial and shows what the engine
+// served after it; End → Cancel leaves the Focus as it was.
+const meta: Meta<typeof ChangesScreen> = {
+  title: 'Screens/Changes',
+  component: ChangesScreen,
+};
+export default meta;
+
+type Story = StoryObj<typeof ChangesScreen>;
+
+const FRAMES = {
+  phone: { width: 390, height: 844, padding: 0 },
+  desktop: { width: 1440, height: 900, padding: 0 },
+} as const;
+
+const unavailable = fixtures.overview['wearer-unsynced'].guidance.disposition === 'unavailable';
+
+const story = (layout: 'phone' | 'desktop', args: Omit<ChangesScreenProps, 'layout'>): Story => ({
+  args: { ...args, layout },
+  parameters: { frame: FRAMES[layout] },
+});
+
+const DEFAULT = { store: 'wearer-ended-pinned' } as const;
+const MATURING = { store: 'wearer-trial-maturing' } as const;
+const MATURED = { store: 'wearer', end: { after: 'wearer-ended' } } as const;
+const WORSE = { store: 'wearer-worse' } as const;
+const ENDED = { store: 'wearer-ended' } as const;
+const EMPTY = { store: 'wearer-first-days' } as const;
+const CONFIRM = { store: 'wearer', end: { after: 'wearer-ended' }, confirming: true } as const;
+const LOADING = { store: 'wearer', state: 'loading' } as const;
+const UNAVAILABLE = { store: 'wearer', state: unavailable ? 'unavailable' : 'ready' } as const;
+
+export const DefaultPhone = story('phone', DEFAULT);
+export const DefaultDesktop = story('desktop', DEFAULT);
+export const TrialMaturingPhone = story('phone', MATURING);
+export const TrialMaturingDesktop = story('desktop', MATURING);
+export const TrialMaturedPhone = story('phone', MATURED);
+export const TrialMaturedDesktop = story('desktop', MATURED);
+export const TrialWorsePhone = story('phone', WORSE);
+export const TrialWorseDesktop = story('desktop', WORSE);
+export const EndedPhone = story('phone', ENDED);
+export const EndedDesktop = story('desktop', ENDED);
+export const EmptyPhone = story('phone', EMPTY);
+export const EmptyDesktop = story('desktop', EMPTY);
+export const ConfirmPhone = story('phone', CONFIRM);
+export const ConfirmDesktop = story('desktop', CONFIRM);
+export const LoadingPhone = story('phone', LOADING);
+export const LoadingDesktop = story('desktop', LOADING);
+export const UnavailablePhone = story('phone', UNAVAILABLE);
+export const UnavailableDesktop = story('desktop', UNAVAILABLE);
+
+const endPlay: Story['play'] = async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  await expect(canvas.queryByText('Last change')).toBeNull();
+  await userEvent.click(canvas.getByRole('button', { name: 'End' }));
+  const dialog = within(canvas.getByRole('dialog', { name: 'End' }));
+  await userEvent.click(dialog.getByRole('button', { name: 'End' }));
+  await expect(canvas.queryByRole('dialog')).toBeNull();
+  await expect(canvas.getByText('No active change')).toBeInTheDocument();
+  await expect(canvas.getByRole('heading', { name: 'Last change' })).toBeInTheDocument();
+};
+
+const cancelPlay: Story['play'] = async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  await userEvent.click(canvas.getByRole('button', { name: 'End' }));
+  await userEvent.click(within(canvas.getByRole('dialog', { name: 'End' })).getByRole('button', { name: 'Cancel' }));
+  await expect(canvas.queryByRole('dialog')).toBeNull();
+  await expect(canvas.getByRole('button', { name: 'End' })).toBeInTheDocument();
+};
+
+export const EndTrialPhone: Story = { ...story('phone', MATURED), play: endPlay };
+export const EndTrialDesktop: Story = { ...story('desktop', MATURED), play: endPlay };
+export const CancelEndPhone: Story = { ...story('phone', DEFAULT), play: cancelPlay };
+export const CancelEndDesktop: Story = { ...story('desktop', DEFAULT), play: cancelPlay };

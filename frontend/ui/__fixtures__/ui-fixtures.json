@@ -151,6 +151,89 @@
         }
       ]
     },
+    "wearer-ended-pinned": {
+      "admission": {
+        "active_id": 1,
+        "active_kind": "focus",
+        "can_finish_trial": false,
+        "maturity": null,
+        "state": "available"
+      },
+      "focuses": [
+        {
+          "id": 1,
+          "lever": "carb_undercount",
+          "lever_title": "Carb undercount",
+          "pattern_key": "highs_after_meals",
+          "pinned_at": "2025-05-26 01:00:00",
+          "status": "active",
+          "title": "Highs after meals"
+        }
+      ],
+      "trials": [
+        {
+          "after": 1.0,
+          "before": 1.6,
+          "changed_at": "2025-04-28 04:30:00",
+          "ending": {
+            "assessment": {
+              "outcomes": [
+                {
+                  "after": 100.0,
+                  "assessment": {
+                    "state": "favorable"
+                  },
+                  "before": 91.9,
+                  "key": "tir",
+                  "unit": "%"
+                },
+                {
+                  "after": 0.0,
+                  "assessment": {
+                    "state": "favorable"
+                  },
+                  "before": 8.1,
+                  "key": "tbr",
+                  "unit": "%"
+                },
+                {
+                  "after": 0.0,
+                  "assessment": {
+                    "state": "unclear"
+                  },
+                  "before": 0.0,
+                  "key": "tar",
+                  "unit": "%"
+                },
+                {
+                  "after": 0.0,
+                  "assessment": {
+                    "state": "favorable"
+                  },
+                  "before": 15.09433962264151,
+                  "key": "nights_with_low",
+                  "unit": "%"
+                }
+              ]
+            },
+            "effective_at": "2025-05-26 01:00:00",
+            "kind": "user_finished"
+          },
+          "id": "basal_rate-04-30-20250428043000",
+          "maturing": {
+            "days_elapsed": 15,
+            "days_required": 14,
+            "gap_count": 0
+          },
+          "parameter": "basal_rate",
+          "slot": "04:30",
+          "state": "complete",
+          "target_metrics": [
+            "tbr"
+          ]
+        }
+      ]
+    },
     "wearer-first-days": {
       "admission": {
         "active_id": null,

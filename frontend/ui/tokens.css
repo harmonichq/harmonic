@@ -49,10 +49,16 @@
   --glucose-in-range: #7ec476;
   --glucose-high: #efcf4c;
   --glucose-very-high: #f08a3c;
-  /* The engine's estimate as data: its figure, mark and range band. One meaning
-     only, cool so it never reads as a glucose band or as the interactive
-     orange. 7.33:1 against --wk-surface. */
-  --ui-estimate: #86b0e0;
+  /* The one accent (chosen 2026-10-13 over the app's orange, a cyan and a
+     violet): blue. It overrides material.css's orange here, in the library
+     only, until the build ticket carries it into the app. It marks what you
+     can press (the primary fill, text actions, the focus ring) and what is
+     selected (tab, segment, the Focus pill), and the engine's estimate as data:
+     its figure, mark and range band. 6.75:1 against --wk-surface. */
+  --primary: #7aa8e6;
+  --on-primary: #0d1522;
+  --ring: color-mix(in srgb, var(--primary) 34%, transparent);
+  --ui-estimate: var(--primary);
   --ui-estimate-band: color-mix(in srgb, var(--ui-estimate) 16%, transparent);
 
   /* A chart's above-range area: --glucose-high, translucent. */

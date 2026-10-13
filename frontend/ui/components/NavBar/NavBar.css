@@ -43,10 +43,10 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Selected: ink, weight, and a mark above the icon, so the state carries a
+/* Selected: the accent, weight, and a mark above the icon, so the state carries a
    position as well as a colour. */
 .ui-nav__item[aria-current='page'] {
-  color: var(--wk-ink);
+  color: var(--primary);
   font-weight: var(--ui-weight-strong);
 }
 .ui-nav__item[aria-current='page']::before {
@@ -57,7 +57,7 @@
   width: 20px;
   height: 2px;
   margin-left: -10px;
-  background: var(--wk-ink);
+  background: var(--primary);
 }
 
 .ui-nav__item:focus { outline: none; }

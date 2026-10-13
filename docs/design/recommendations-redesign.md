@@ -131,9 +131,9 @@ Any term not in this table may not appear in the UI.
 | Ink, body | `--wk-ink-body` | #cfc8bd |
 | Ink, meta | `--wk-ink-meta` | #a49c90 |
 | Rule | `--wk-rule` | #3f3833 |
-| Primary (interaction) | `--primary` | #e07f3f |
-| On primary | `--on-primary` | #1b1109 |
-| Focus ring | `--ring` | rgba(210,116,62,.34) |
+| Primary (the one accent: interaction, selection, the engine's estimate) | `--primary` | #7aa8e6 |
+| On primary | `--on-primary` | #0d1522 |
+| Focus ring | `--ring` | `--primary` at 34% |
 | In range | `--in-range` | #86ad78 |
 | High | `--high` | #e2be4c |
 | Low | `--low` | #ec6f55 |

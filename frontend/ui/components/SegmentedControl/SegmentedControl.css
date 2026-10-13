@@ -25,7 +25,7 @@
 
 .ui-segmented__segment[aria-pressed='true'] {
   background: var(--wk-surface-rail);
-  color: var(--wk-ink);
+  color: var(--primary);
   font-weight: var(--ui-weight-strong);
 }
 

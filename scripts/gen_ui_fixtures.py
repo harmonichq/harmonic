@@ -47,10 +47,15 @@ Two committed outputs, one generator, one ``--check``:
   fails if either stops being served. ``wearer-worse`` also has its Queue
   answers in ``queue``.
 
-  ``day`` holds ``/api/timeline`` and ``/api/carbs`` for three of the wearer's
+  ``day`` holds ``/api/timeline`` and ``/api/carbs`` for four of the wearer's
   days, picked by rule: the latest day with readings, a site change and no
-  logged carbs, the latest of the days with the most logged carbs, and the
-  first day after the history ends.
+  logged carbs, the latest of the days with the most logged carbs, the first
+  day after the history ends, and the latest day with readings. ``day.prompts``
+  holds ``/api/prompts`` for the Day screen's Prompts: ``wearer-pending``, read
+  before the person answers the one prompt the top-level ``prompts`` shows
+  answered, and ``wearer-answered``, read after every other read of the wearer
+  once the person answers the rest Yes. With the top-level answer they serve
+  two, one and no unanswered lows.
 
   ``settings`` holds the Settings screens' answers, read from the wearer's
   store after every other read of it: ``/api/credentials`` unset and then set
@@ -148,8 +153,10 @@ MONTHS = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", 
 # and §4.2, exempt from glossary §1.5 by the 2026-10-13 amendment (§2.5):
 # ChangeCard's "Before/After values" and "Days 0 / 14", the Prompt's "Next" text
 # action, Log carbs' "Time" row (default now) and "Save", the write-failed
-# "Not saved" with "Retry", and "Cancel" beneath End's confirmation (§1.3a).
-CHANGE_DAY_LABELS = ("Before", "After", "Days", "Next", "Time", "Now", "Save", "Not saved", "Retry", "Cancel")
+# "Not saved" with "Retry", "Cancel" beneath End's confirmation (§1.3a), and
+# "Previous" and "Next", the names of the Day navigator's ‹ › (§1.4).
+CHANGE_DAY_LABELS = ("Before", "After", "Days", "Next", "Time", "Now", "Save", "Not saved", "Retry", "Cancel",
+                     "Previous")
 # The wearer's first days: fewer than the glucose profile's eight supported days.
 FIRST_DAYS = 5
 # A Trial still maturing: the wearer's history cut this many days after the
@@ -229,8 +236,10 @@ def _serve(database: pathlib.Path) -> TestClient:
     ))
 
 
-def _wearer(scratch: pathlib.Path, name: str, *, trial: bool, days: int = ui_patient.DAYS, **change):
-    """Ingest the wearer into a scratch store, as a sync would, and serve it."""
+def _wearer(scratch: pathlib.Path, name: str, *, trial: bool, days: int = ui_patient.DAYS, answer: bool = True,
+            **change):
+    """Ingest the wearer into a scratch store, as a sync would, and serve it.
+    ``answer=False`` leaves the one prompt the person answers to the caller."""
     database = scratch / f"{name}.sqlite"
     with Store.open(str(database)) as store:
         history = ui_patient.materialize(store, trial=trial, days=days, **change)
@@ -243,18 +252,30 @@ def _wearer(scratch: pathlib.Path, name: str, *, trial: bool, days: int = ui_pat
     for at, grams in logged:
         _post(client, "/api/carbs", {"t": at.strftime("%Y-%m-%d %H:%M:%S"), "grams": grams,
                                      "certainty": "estimate", "source": "manual"})
-    pending = [p for p in _get(client, "/api/prompts") if p.get("answer") is None]
-    if pending:
-        _post(client, "/api/prompts/answer", {"detector": pending[0]["detector"],
-                                              "anchor_t": pending[0]["anchor_t"], "answer": "no"})
+    if answer:
+        _answer_prompts(client, "no", count=1)
     return database, client
+
+
+def _answer_prompts(client: TestClient, answer: str, *, count: int | None = None) -> None:
+    """The person answers the first ``count`` unanswered prompts (all, unset).
+    Yes ("carbs") records carbs of unknown grams at once, as the Prompt's Yes does."""
+    pending = [p for p in _get(client, "/api/prompts") if p.get("answer") is None]
+    entry = {"entry": {"grams": None, "certainty": "unknown"}} if answer == "carbs" else {}
+    for prompt in pending[:count]:
+        _post(client, "/api/prompts/answer", {"detector": prompt["detector"],
+                                              "anchor_t": prompt["anchor_t"], "answer": answer, **entry})
 
 
 def fixtures() -> dict:
     """Build both wearer stores and read every endpoint the stories render."""
     with pinned_clock(), tempfile.TemporaryDirectory() as scratch:
         scratch = pathlib.Path(scratch)
-        database, client = _wearer(scratch, "wearer", trial=True)
+        database, client = _wearer(scratch, "wearer", trial=True, answer=False)
+        # The Day screen's Prompts before the person answers one, as the top-level
+        # `prompts` serves them after it.
+        day_prompts = {"wearer-pending": _get(client, "/api/prompts")}
+        _answer_prompts(client, "no", count=1)
         status_ok = _get(client, "/api/status")
         outcomes = {str(w): _get(client, "/api/outcomes", window=w) for w in WINDOWS}
         prompts = _get(client, "/api/prompts")
@@ -276,6 +297,11 @@ def fixtures() -> dict:
         }}
         day = _days(client, overview["wearer"]["day_navigator"])
         settings = _settings(database, client)
+        # After every other read of the wearer: the person answers the rest Yes,
+        # and Day's Prompts row is gone.
+        _answer_prompts(client, "carbs")
+        day_prompts["wearer-answered"] = _get(client, "/api/prompts")
+        day["prompts"] = _require_lows({**day_prompts, "wearer": prompts})
 
         _, pinned = _wearer(scratch, "wearer-pinned", trial=False)
         _pin(pinned)
@@ -583,8 +609,8 @@ def _end_active_trial(client: TestClient) -> None:
 def _days(client: TestClient, navigator: dict) -> dict:
     """One day's timeline and logged carbs for each Day story, by rule: the
     latest day with readings, a site change and no logged carbs, the latest of
-    the days with the most logged carbs, and the first day after the history
-    ends."""
+    the days with the most logged carbs, the first day after the history ends,
+    and the latest day with readings (the Day screen's default)."""
     logged: dict = {}
     for entry in _get(client, "/api/carbs")["carb_entries"]:
         logged[entry["t"][:10]] = logged.get(entry["t"][:10], 0) + 1
@@ -599,6 +625,7 @@ def _days(client: TestClient, navigator: dict) -> dict:
         "default": next(iso for iso in reversed(with_data) if iso not in logged and site_change(iso)),
         "with_carbs": max((iso for iso in with_data if iso in logged), key=lambda iso: (logged[iso], iso)),
         "no_data": next(d["iso"] for d in navigator["days"] if not d["has_data"] and d["iso"] > with_data[-1]),
+        "latest": with_data[-1],
     }
     days = {}
     for iso in sorted(set(picks.values())):
@@ -619,6 +646,20 @@ def _days(client: TestClient, navigator: dict) -> dict:
                                        for e in carbs["carb_entries"]]},
         }
     return {"states": picks, "days": days}
+
+
+def _require_lows(stores: dict) -> dict:
+    """Day's Prompts: every served prompt is a low (§1.5 Prompt), and the three
+    stores step one answer apart from two unanswered to none, so a prompt's place
+    ("1 / 2") is the difference of two served counts. ``wearer`` is the
+    top-level ``prompts`` and is not repeated."""
+    if any(p["detector"] != "low" for served in stores.values() for p in served):
+        raise SystemExit("the wearer serves a prompt that is not a low")
+    counts = [sum(p["answer"] is None for p in stores[name])
+              for name in ("wearer-pending", "wearer", "wearer-answered")]
+    if counts != [2, 1, 0]:
+        raise SystemExit(f"the Day prompt stores serve {counts} unanswered, not [2, 1, 0]")
+    return {name: served for name, served in stores.items() if name != "wearer"}
 
 
 def _pin(client: TestClient) -> None:

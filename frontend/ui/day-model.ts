@@ -3,10 +3,14 @@
 // Sourced value naming its field; the chart's marks read the same served rows.
 //
 // `fixtures.day` holds the wearer's timeline and logged carbs for the days its
-// generator picked by rule; the prompts are the top-level `prompts`.
+// generator picked by rule; the prompts are the top-level `prompts`, and
+// `day.prompts` the same wearer's before and after the Day screen's answers.
 import { fixtures, sourced, type Sourced } from './fixtures';
+import { MONTHS } from './provenance.js';
 
 export type DayState = keyof typeof fixtures.day.states;
+type ServedDay = typeof fixtures.day.days[keyof typeof fixtures.day.days];
+const servedDays = fixtures.day.days as Record<string, ServedDay>;
 
 /** Minutes since midnight of a served "YYYY-MM-DD HH:MM:SS" time. */
 export const minuteOf = (t: string) => Number(t.slice(11, 13)) * 60 + Number(t.slice(14, 16));
@@ -44,9 +48,14 @@ export type DayChartData = {
 };
 
 export function dayChart(state: DayState): DayChartData {
-  const iso = fixtures.day.states[state];
+  return dayChartOf(fixtures.day.states[state])!;
+}
+
+/** The chart of one served day; null for a day whose timeline is not served. */
+export function dayChartOf(iso: string): DayChartData | null {
   const root = `day.days.${iso}`;
-  const day = (fixtures.day.days as Record<string, typeof fixtures.day.days[keyof typeof fixtures.day.days]>)[iso];
+  const day = servedDays[iso];
+  if (!day) return null;
   const { timeline, carbs } = day;
   const boluses: DayEvent[] = timeline.boluses.map((b, i) => {
     const path = `${root}.timeline.boluses.${i}`;
@@ -78,7 +87,89 @@ export function dayChart(state: DayState): DayChartData {
   };
 }
 
+// --- Day navigator -----------------------------------------------------------
+
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const navigator = () => fixtures.overview.wearer.day_navigator;
+const utc = (iso: string) => new Date(`${iso}T00:00:00Z`);
+const shift = (iso: string, days: number) => {
+  const date = utc(iso);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+};
+
+/** The latest day the navigator serves readings for: Day's default. */
+export function latestDay(): string {
+  const withData = navigator().days.filter((d) => d.has_data);
+  return withData[withData.length - 1].iso;
+}
+
+/** The day as Day's header names it: its weekday and served date ("Sun 25 May"). */
+export function dayDate(iso: string): { weekday: string; date: Sourced<string> } {
+  if (!navigator().days.some((d) => d.iso === iso)) throw new Error(`the day navigator serves no ${iso}`);
+  return {
+    weekday: WEEKDAYS[utc(iso).getUTCDay()],
+    date: sourced(`overview.wearer.day_navigator.days[iso=${iso}].0.iso`, 'date'),
+  };
+}
+
+/** The Monday-to-Sunday week holding a day, when the navigator serves all of it. */
+export function weekOf(iso: string): string[] | null {
+  const monday = shift(iso, -((utc(iso).getUTCDay() + 6) % 7));
+  const week = Array.from({ length: 7 }, (_, i) => shift(monday, i));
+  const served = new Set(navigator().days.map((d) => d.iso));
+  return week.every((d) => served.has(d)) ? week : null;
+}
+
+/** The week before (-1) or after (1) one, when the navigator serves all of it. */
+export const adjacentWeek = (week: string[], direction: 1 | -1) => weekOf(shift(week[0], 7 * direction));
+
+/** The served month's name, as a date prints its month ("May"). */
+export const monthName = () => MONTHS[Number(navigator().month.slice(5, 7)) - 1];
+
+/** The served month as weeks, Monday first; the navigator's week of padding on
+ *  each side fills the first and last rows. */
+export function monthWeeks(): { month: string; weeks: string[][] } {
+  const { month } = navigator();
+  const weeks: string[][] = [];
+  for (let first = `${month}-01`; first.slice(0, 7) <= month;) {
+    const week = weekOf(first);
+    if (!week) throw new Error(`the day navigator does not serve the week of ${first}`);
+    weeks.push(week);
+    first = shift(week[6], 1);
+  }
+  return { month, weeks };
+}
+
 // --- PromptCard --------------------------------------------------------------
+
+/** The wearer's prompts one answer apart: before the person answers any, as
+ *  the top-level `prompts` serves them after one, and after the last. */
+export const PROMPT_STEPS = ['wearer-pending', 'wearer', 'wearer-answered'] as const;
+export type PromptStore = (typeof PROMPT_STEPS)[number];
+
+const promptsPath = (store: PromptStore) => (store === 'wearer' ? 'prompts' : `day.prompts.${store}`);
+const promptsOf = (store: PromptStore) => (store === 'wearer' ? fixtures.prompts : fixtures.day.prompts[store]);
+
+/** The unanswered prompts: the Day badge and Day's Prompts row. */
+export const unanswered = (store: PromptStore) => sourced<number>(`${promptsPath(store)}[answer=null].length`);
+
+/** The store once the first unanswered prompt of `store` is answered. */
+export function afterAnswer(store: PromptStore): PromptStore {
+  const next = PROMPT_STEPS[PROMPT_STEPS.indexOf(store) + 1];
+  if (!next) throw new Error(`${store} serves no unanswered prompt`);
+  return next;
+}
+
+/** "n / N" for the first unanswered prompt of `shown`, stepping through the
+ *  prompts `entry` served: N is entry's count, and n the count entry served
+ *  less the count left once this one is answered. */
+export function promptPlace(entry: PromptStore, shown: PromptStore = entry) {
+  return {
+    count: sourced<number>(`${promptsPath(entry)}[answer=null].length − ${promptsPath(afterAnswer(shown))}[answer=null].length`),
+    total: unanswered(entry),
+  };
+}
 
 export type PromptData = {
   date: Sourced<string>;
@@ -93,13 +184,14 @@ export type PromptData = {
 };
 
 /** The n-th low prompt still unanswered, in served order. */
-export function lowPrompt(n = 0): PromptData {
-  const index = fixtures.prompts
+export function lowPrompt(n = 0, store: PromptStore = 'wearer'): PromptData {
+  const prompts = promptsOf(store);
+  const index = prompts
     .map((prompt, i) => ({ prompt, i }))
     .filter(({ prompt }) => prompt.detector === 'low' && prompt.answer === null)[n]?.i;
-  if (index === undefined) throw new Error(`the wearer serves no unanswered low prompt ${n}`);
-  const prompt = fixtures.prompts[index];
-  const path = `prompts.${index}`;
+  if (index === undefined) throw new Error(`${store} serves no unanswered low prompt ${n}`);
+  const prompt = prompts[index];
+  const path = `${promptsPath(store)}.${index}`;
   const start = minuteOf(prompt.cgm[0].t);
   // The window may cross midnight: minutes keep counting past 1440.
   const at = (t: string) => {
@@ -123,4 +215,9 @@ export function lowPrompt(n = 0): PromptData {
  *  the day the stories show with logged carbs. */
 export function loggedGrams(): Sourced<number> {
   return sourced(`day.days.${fixtures.day.states.with_carbs}.carbs.carb_entries.0.grams`, 'round');
+}
+
+/** A served time for the edited Time row: when the wearer logged that entry. */
+export function loggedTime(): Sourced<string> {
+  return sourced(`day.days.${fixtures.day.states.with_carbs}.carbs.carb_entries.0.t`, 'time');
 }

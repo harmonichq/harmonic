@@ -50,3 +50,12 @@
 .ui-day__clean { color: var(--glucose-in-range); }
 .ui-day__tir { color: var(--wk-ink); font-weight: var(--ui-weight-strong); }
 .ui-day__unit { color: var(--wk-ink-meta); font-weight: var(--ui-weight-regular); }
+
+/* Compact: seven to a row. The weekday over the date; the counts over the
+   in-range %, so every tile in a row keeps the same lines. */
+.ui-day--compact { gap: 6px; padding: 6px 4px; }
+.ui-day--compact .ui-day__head { flex-direction: column; align-items: flex-start; gap: 3px; }
+.ui-day--compact .ui-day__foot { flex-direction: column; align-items: flex-start; gap: 4px; min-height: 30px; }
+.ui-day--compact .ui-day__counts { gap: 4px; }
+.ui-day--compact .ui-day__count { gap: 1px; }
+.ui-day--compact[aria-pressed='true']::before { left: 4px; right: 4px; }

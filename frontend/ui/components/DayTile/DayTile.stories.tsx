@@ -5,6 +5,8 @@ import { DayTile } from './DayTile';
 // §4.2 DayTile, from the simulated wearer's day navigator for its last month:
 // the latest day with lows or highs (default, and selected), the latest day
 // with neither (clean), and the first day after the history ends (no data).
+// Compact is the default and selected days as Day's week strip draws them,
+// one seventh of a phone's row.
 const meta = {
   title: 'DayTile',
   component: DayTile,
@@ -18,3 +20,7 @@ export const Default: Story = { args: { day: dayState('default') } };
 export const Selected: Story = { args: { day: dayState('default'), selected: true } };
 export const Clean: Story = { args: { day: dayState('clean') } };
 export const NoData: Story = { args: { day: dayState('no_data') } };
+export const Compact: Story = { args: { day: dayState('default'), compact: true }, parameters: { frame: { width: 81 } } };
+export const CompactSelected: Story = {
+  args: { day: dayState('default'), compact: true, selected: true }, parameters: { frame: { width: 81 } },
+};

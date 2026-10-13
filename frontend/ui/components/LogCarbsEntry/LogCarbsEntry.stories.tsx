@@ -2,12 +2,13 @@ import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
 import { formatValue } from '../../provenance.js';
-import { loggedGrams } from '../../day-model';
+import { loggedGrams, loggedTime } from '../../day-model';
 import { LogCarbsEntry, type LogCarbsState } from './LogCarbsEntry';
 
 // One story per state (§4.2 LogCarbsEntry) on the phone's bottom sheet: empty,
-// filled, saving and not saved; and the desktop popover under its trigger,
-// filled. A filled amount is one the simulated wearer logged. Two flows run
+// filled, saving, not saved and Time edited; and the desktop popover under its
+// trigger, filled. A filled amount, and an edited time, are one entry the
+// simulated wearer logged. Two flows run
 // as play functions: typing that amount and saving (Save goes busy), and
 // retrying a save that failed.
 const meta = {
@@ -25,6 +26,7 @@ export const Empty = sheet('empty');
 export const Filled = sheet('filled');
 export const Saving = sheet('saving');
 export const NotSaved = sheet('not_saved');
+export const TimeEdited: Story = { args: { state: 'filled', grams: loggedGrams(), time: loggedTime() } };
 export const Desktop: Story = {
   args: { state: 'filled', grams: loggedGrams(), layout: 'desktop' },
   parameters: { frame: { width: 420, padding: 32 } },

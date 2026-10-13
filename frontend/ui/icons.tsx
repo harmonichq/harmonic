@@ -62,6 +62,9 @@ const PATHS = {
   ),
   expand: <path d="M7 10l5 5 5-5" />,
   collapse: <path d="M7 14l5-5 5 5" />,
+  // The Day navigator's ‹ ›: the week (phone) or month (desktop) before and after.
+  previous: <path d="M15 6l-6 6 6 6" />,
+  next: <path d="M9 6l6 6-6 6" />,
   pattern: (
     <>
       <path d="M3 18h18" /><circle cx="6" cy="13" r="1.6" /><circle cx="12" cy="10" r="1.6" /><circle cx="18" cy="7" r="1.6" />

@@ -2,7 +2,10 @@
 // a date ("To 25 May", the data's last day, as content, §1.2), a control, or a
 // labelled action ("+ Log carbs"). An unavailable engine (§1.2) keeps the title
 // and puts the label "Unavailable" and a compact Retry in the slot. The title is
-// the one dominant line; the slot is quieter, on the same line.
+// the one dominant line; the slot is quieter, on the same line. Day names the
+// day it shows beside its title, on the title's baseline ("Day Sun 25 May"),
+// and keeps its slot for "+ Log carbs". A sub-screen that steps through items
+// one at a time counts its place in the slot ("1 / 2").
 //
 // A drill-down sub-screen (§2.2 Drill-down) adds a back control on its own row
 // above the title: "‹" and the parent screen's name, a 44 px target in the
@@ -19,12 +22,15 @@ export type ScreenHeaderProps = {
   layout?: 'phone' | 'desktop';
   /** A drill-down sub-screen: back to the parent screen, named. */
   back?: { label: string; onBack?: () => void };
+  /** The day the screen shows, beside the title: its weekday and served date. */
+  day?: { weekday: string; date: Sourced<string> };
 } & (
   | { trailing?: undefined }
   | { trailing: 'date'; date: Sourced<string> }
   | { trailing: 'action'; label: string; onAction?: () => void }
   | { trailing: 'control'; control: ReactNode }
   | { trailing: 'unavailable'; onRetry?: () => void }
+  | { trailing: 'count'; count: Sourced<number>; total: Sourced<number> }
 );
 
 function Slot(props: ScreenHeaderProps) {
@@ -35,6 +41,8 @@ function Slot(props: ScreenHeaderProps) {
       return <Button kind="secondary" label={props.label} onClick={props.onAction} />;
     case 'control':
       return <div className="ui-header__control">{props.control}</div>;
+    case 'count':
+      return <span className="ui-header__date"><Num value={props.count} /> / <Num value={props.total} /></span>;
     case 'unavailable':
       return (
         <span className="ui-header__unavailable">
@@ -56,7 +64,12 @@ export function ScreenHeader(props: ScreenHeaderProps) {
         </button>
       )}
       <div className="ui-header__bar">
-        <h1 className="ui-header__title">{props.title}</h1>
+        {props.day ? (
+          <span className="ui-header__titles">
+            <h1 className="ui-header__title">{props.title}</h1>
+            <span className="ui-header__date">{props.day.weekday} <Num value={props.day.date} /></span>
+          </span>
+        ) : <h1 className="ui-header__title">{props.title}</h1>}
         <Slot {...props} />
       </div>
     </header>

@@ -7,6 +7,11 @@
 // list-row minimum. Selected adds the surface and a mark above, as the NavBar
 // does, so selection carries a position as well as a colour. A day with no
 // data keeps its weekday, date and band, draws no trace, and cannot be picked.
+//
+// Compact is the same tile where seven share one row (Day's week strip and
+// month grid): the weekday over the date, a shorter sparkline, and the counts
+// over the in-range %.
+import { useId } from 'react';
 import type { DayData } from '../../overview-model';
 import { isClean } from '../../overview-model';
 import { Num } from '../../Num';
@@ -16,21 +21,24 @@ import { glucoseDomain, glucoseFraction, zones } from '../../glucose-zones';
 import '../../shared.css';
 import './DayTile.css';
 
-export type DayTileProps = { day: DayData; selected?: boolean; onSelect?: () => void };
+export type DayTileProps = { day: DayData; selected?: boolean; compact?: boolean; onSelect?: () => void };
 
-const HEIGHT = 72;
+const FULL_HEIGHT = 72;
+const COMPACT_HEIGHT = 32;
 const LOW = 70;
 const HIGH = 180;
 
-export function DayTile({ day, selected = false, onSelect }: DayTileProps) {
+export function DayTile({ day, selected = false, compact = false, onSelect }: DayTileProps) {
   const [box, width] = useWidth<HTMLDivElement>();
+  const height = compact ? COMPACT_HEIGHT : FULL_HEIGHT;
   const domain = glucoseDomain(day.curve.map((p) => p.bg));
-  const y = (bg: number) => HEIGHT * (1 - glucoseFraction(bg, domain));
+  const y = (bg: number) => height * (1 - glucoseFraction(bg, domain));
   const points = day.curve.map((p) => `${(p.x * width).toFixed(1)},${y(p.bg).toFixed(1)}`).join(' ');
   const clean = isClean(day);
-  const id = `ui-day-${day.date.value}`;
+  // Unique per tile: the week strip and the Month sheet can draw the same day.
+  const id = `ui-day-${useId().replace(/:/g, '')}`;
   return (
-    <button type="button" className="ui-day" data-role="row" aria-pressed={selected} disabled={!day.hasData}
+    <button type="button" className={compact ? 'ui-day ui-day--compact' : 'ui-day'} data-role="row" aria-pressed={selected} disabled={!day.hasData}
       onClick={onSelect}>
       <span className="ui-day__head">
         <span className="ui-caption">{day.weekday}</span>
@@ -39,7 +47,7 @@ export function DayTile({ day, selected = false, onSelect }: DayTileProps) {
         </span>
       </span>
       <div ref={box} className="ui-chart">
-      {width > 0 && <svg aria-hidden="true" width={width} height={HEIGHT} viewBox={`0 0 ${width} ${HEIGHT}`} className="ui-day__spark">
+      {width > 0 && <svg aria-hidden="true" width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="ui-day__spark">
         <defs>
           {zones(LOW, HIGH).map((zone) => (
             <clipPath key={zone.tone} id={`${id}-${zone.tone}`}>

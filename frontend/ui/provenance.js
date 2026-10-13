@@ -79,7 +79,7 @@ export function resolveSource(root, source, format) {
 }
 
 const SNOOZE_DAYS = 14;
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+export const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 export function formatValue(value, format) {
   if (!format) return String(value);

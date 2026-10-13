@@ -8,10 +8,14 @@
 // Not saved: the amount stays, the failure is a ⚠ label, and the primary
 // becomes Retry (§1.2).
 //
+// Time edited: the row shows the time chosen instead of Now.
+//
 // Phone: a bottom sheet (12 px top radius, grabber) on the system keyboard,
 // which the story does not draw. Desktop: a popover anchored under its
-// "+ Log carbs" trigger, its arrow on the trigger.
+// "+ Log carbs" trigger, its arrow on the trigger; the trigger opens and closes
+// it, and at a header's trailing edge both align to that edge.
 import type { Sourced } from '../../fixtures';
+import { Num } from '../../Num';
 import { GramsField } from '../../GramsField';
 import { Button } from '../Button/Button';
 import '../../shared.css';
@@ -23,14 +27,24 @@ export type LogCarbsEntryProps = {
   state: LogCarbsState;
   /** The typed amount; absent while empty. */
   grams?: Sourced<number>;
+  /** The time chosen in the Time row; Now when unset. */
+  time?: Sourced<string>;
   layout?: 'phone' | 'desktop';
+  /** Desktop: the popover is open (its trigger always shows). */
+  open?: boolean;
+  /** Desktop: the trigger was pressed. */
+  onToggle?: () => void;
+  /** Desktop: the trigger and popover align to the start or the end edge. */
+  align?: 'start' | 'end';
   /** The typed digits, on each change. */
   onGramsChange?: (text: string) => void;
   /** Save, or Retry after a failed save. */
   onSave?: () => void;
 };
 
-function Entry({ state, grams, onGramsChange, onSave }: Omit<LogCarbsEntryProps, 'layout'>) {
+type EntryProps = Pick<LogCarbsEntryProps, 'state' | 'grams' | 'time' | 'onGramsChange' | 'onSave'>;
+
+function Entry({ state, grams, time, onGramsChange, onSave }: EntryProps) {
   const failed = state === 'not_saved';
   return (
     <>
@@ -41,7 +55,9 @@ function Entry({ state, grams, onGramsChange, onSave }: Omit<LogCarbsEntryProps,
       </div>
       <button type="button" className="ui-logcarbs__time" data-role="row" disabled={state === 'saving'}>
         <span>Time</span>
-        <span className="ui-logcarbs__value">Now<span className="ui-logcarbs__chevron" aria-hidden="true">›</span></span>
+        <span className="ui-logcarbs__value">
+          {time ? <Num value={time} /> : 'Now'}<span className="ui-logcarbs__chevron" aria-hidden="true">›</span>
+        </span>
       </button>
       <div className="ui-logcarbs__foot">
         {failed && <p className="ui-logcarbs__failed"><span aria-hidden="true">⚠</span> Not saved</p>}
@@ -52,7 +68,7 @@ function Entry({ state, grams, onGramsChange, onSave }: Omit<LogCarbsEntryProps,
   );
 }
 
-export function LogCarbsEntry({ layout = 'phone', ...entry }: LogCarbsEntryProps) {
+export function LogCarbsEntry({ layout = 'phone', open = true, onToggle, align = 'start', ...entry }: LogCarbsEntryProps) {
   if (layout === 'phone') {
     return (
       <section className="ui-sheet ui-logcarbs" role="dialog" aria-label="Log carbs">
@@ -62,11 +78,14 @@ export function LogCarbsEntry({ layout = 'phone', ...entry }: LogCarbsEntryProps
     );
   }
   return (
-    <div className="ui-logcarbs-anchor">
-      <Button kind="secondary" label="+ Log carbs" />
-      <section className="ui-popover ui-logcarbs" role="dialog" aria-label="Log carbs">
-        <Entry {...entry} />
-      </section>
+    <div className={`ui-logcarbs-anchor ui-logcarbs-anchor--${align}`}>
+      <Button kind="secondary" label="+ Log carbs" onClick={onToggle} />
+      {open && (
+        <section className={`ui-popover ui-logcarbs${align === 'end' ? ' ui-popover--end' : ''}`} role="dialog"
+          aria-label="Log carbs">
+          <Entry {...entry} />
+        </section>
+      )}
     </div>
   );
 }

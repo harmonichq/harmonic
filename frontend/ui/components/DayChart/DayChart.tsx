@@ -22,7 +22,8 @@
 // flush with the text column, its end labels anchored inward.
 //
 // Below, the day's events in time order: the time, the glyph, the kind, then
-// grams (in the carbs colour) and units in aligned columns. A day without
+// grams (in the carbs colour) and units in aligned columns; on desktop in as
+// many columns, up to three, as the measured width holds. A day without
 // readings keeps its band and axis, says "No data", and lists nothing.
 import type { DayChartData, DayEvent } from '../../day-model';
 import { Num, NumSvg } from '../../Num';
@@ -46,6 +47,7 @@ const GLYPH = 14;
 const ROW = 17; // a stacked row in the marks lane
 const ROWS = 2;
 const MARKS_HEIGHT = ROW * ROWS + 2;
+const EVENT_COLUMN = 300; // desktop: the width one column of the event list needs, with its gap
 
 /** A day-event glyph from the library's icons, centred on (x, y): food (a meal bolus, logged carbs) in its colour, the rest neutral. */
 function Glyph({ name, x, y, size = GLYPH }: { name: DayEvent['kind'] | 'sleep'; x: number; y: number; size?: number }) {
@@ -140,6 +142,7 @@ export function DayChart({ data, layout = 'phone' }: DayChartProps) {
     : '';
 
   const hours = [0, 360, 720, 1080, DAY];
+  const columns = layout === 'desktop' ? Math.max(1, Math.min(3, Math.floor((width + 32) / EVENT_COLUMN))) : 1;
   const yLow = y(data.low.value);
   const yHigh = y(data.high.value);
 
@@ -226,7 +229,7 @@ export function DayChart({ data, layout = 'phone' }: DayChartProps) {
       </svg>}
       </div>
       {data.events.length > 0 && (
-        <ol className="ui-daychart__events" style={{ '--rows': Math.ceil(data.events.length / 3) } as React.CSSProperties}>
+        <ol className="ui-daychart__events" style={{ '--rows': Math.ceil(data.events.length / columns), '--columns': columns } as React.CSSProperties}>
           {data.events.map((e, i) => (
             <li key={i} className="ui-daychart__event">
               <span className="ui-daychart__time"><Num value={e.time} /></span>

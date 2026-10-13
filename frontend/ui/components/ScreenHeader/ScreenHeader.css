@@ -41,6 +41,8 @@
   font-weight: var(--ui-weight-strong);
   line-height: 28px;
 }
+/* The title and the day it shows, on one baseline. */
+.ui-header__titles { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
 .ui-header__date,
 .ui-header__label {
   color: var(--wk-ink-meta);

@@ -22,7 +22,6 @@ from .analyzers.scenario import opportunities
 from .analyzers.scenario_config import ScenarioConfig
 from . import event_comparison, findings_projection, outcomes_trend
 from .rescue_evidence import eligible_carb_entries
-from .analyzers.eating_sequences import build_eating_sequence_report, report_dict
 from .false_low import drop_readings, false_low_span_records, spans_from_records
 from .result_cache import PREPARATION_LEASE_SECONDS
 from .window_membership import WindowQuery
@@ -469,8 +468,13 @@ class PreparedCases:
 
 
 def prepare(store, *, query, version, analysis, exposures, scenarios, selected_id=None,
-            analysis_generation="standalone:0", sequence_report=None):
-    """Materialize queue, opportunities, attribution, and traces in one read snapshot."""
+            analysis_generation="standalone:0"):
+    """Materialize queue, opportunities, attribution, and traces in one read snapshot.
+
+    The eating-sequence report is the one ``exposures`` carries (ADR 488): the
+    sequence evidence a high-carb case serves beside it comes from that same
+    evaluation, so the two cannot count different sequences.
+    """
     store.conn.execute("BEGIN")
     try:
         basal = tuple(store.basal_events())
@@ -488,8 +492,6 @@ def prepare(store, *, query, version, analysis, exposures, scenarios, selected_i
         pattern_exposures, _patterns = outcome_window_population(
             analysis, exposures, scenarios, query,
         )
-        if sequence_report is None:
-            sequence_report = report_dict(build_eating_sequence_report(store, window_days=window_days))
         recurrence = {
             Lever(row["lever"]): (row["confidence"]["k"], row["confidence"]["n"])
             for row in ((projection._scenarios.get("patterns") or [])
@@ -504,7 +506,8 @@ def prepare(store, *, query, version, analysis, exposures, scenarios, selected_i
                          members, associations, provenance, withheld, cgm, basal, bolus, carbs,
                          time.monotonic() + PREPARATION_LEASE_SECONDS,
                          source_window_days=window_days, exposures=deepcopy(exposures),
-                         scenarios=deepcopy(scenarios), sequence_report=deepcopy(sequence_report),
+                         scenarios=deepcopy(scenarios),
+                         sequence_report=deepcopy(exposures["sequence_report"]),
                          pattern_exposures=deepcopy(pattern_exposures),
                          sequence_cgm=tuple(drop_readings(cgm, spans_from_records(
                              false_low_span_records(cgm, prompt_responses)))))
@@ -696,7 +699,15 @@ def wrap(prepared):
         if row.get("register") != "finding":
             rendered.append(deepcopy(row)); continue
         finding_id = row["id"]
-        case = prepared.case(finding_id, "clock", None)
+        try:
+            case = prepared.case(finding_id, "clock", None)
+        except InconsistentProjection:
+            # ADR 488: one case whose retained producers disagree is withheld by
+            # name, never served at either count; the store's other cases stand.
+            withheld.append({"finding_id": finding_id,
+                             "code": "inconsistent_projection",
+                             "message": "Case population is inconsistent."})
+            continue
         if case is None:
             if row.get("kind") == "pattern":
                 rendered.append(deepcopy(row)); continue

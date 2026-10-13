@@ -514,25 +514,6 @@ def build_report(
                               window_end=window_end, config=config).report
 
 
-def build_eating_sequence_report(store, *, window_days: int = 30,
-                                  now: Optional[datetime] = None) -> EatingSequenceReport:
-    """Read the shared Scenario bounds, then delegate to the pure event entry."""
-    basal = store.basal_events()
-    cgm = store.cgm_readings()
-    boluses = store.bolus_events()
-    carb_log = store.carb_entries()
-    times = [event.t for event in basal] + [event.t for event in cgm]
-    end = now or (max(times) if times else None) or datetime.now()
-    start = end - timedelta(days=window_days)
-    return build_report(_slice(boluses, start, end), _slice(cgm, start, end),
-                        _slice(carb_log, start, end),
-                        window_start=start, window_end=end, config=EatingSequenceConfig())
-
-
-def _slice(events: Sequence, start: datetime, end: datetime) -> list:
-    """Return the inclusive source-window slice shared with Scenario semantics."""
-    return [event for event in events if start <= event.t <= end]
-
 
 def build_sequences(
     boluses: Sequence[BolusEvent], *, config: EatingSequenceConfig,

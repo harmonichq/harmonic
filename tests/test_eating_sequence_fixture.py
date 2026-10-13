@@ -6,11 +6,7 @@ from pathlib import Path
 import unittest
 
 from ciq_autotune.analyzers.eating_sequence_config import EatingSequenceConfig
-from ciq_autotune.analyzers.eating_sequences import (
-    build_eating_sequence_report,
-    build_report,
-    report_dict,
-)
+from ciq_autotune.analyzers.eating_sequences import build_report, report_dict
 from tests.eating_sequence_streams import repeat_eating_stream
 
 
@@ -50,20 +46,19 @@ class EatingSequenceFixtureTest(unittest.TestCase):
             for comparison in repeat["comparisons"]
         ))
 
-    def test_served_wrapper_reproduces_the_frozen_fixture(self):
-        """The route builds through the store wrapper; the fixture must pin that path too."""
+    def test_served_report_reproduces_the_frozen_fixture(self):
+        """The case files serve the exposures evaluation's report; the fixture pins it too."""
+        from ciq_autotune.explore_exposures import build_exposures
+        from ciq_autotune.store import Store
+        from tests.test_findings_projection import seed_sequence_store
         root = Path(__file__).resolve().parents[1]
         fixture = json.loads((
             root / "frontend/__fixtures__/eating-sequence-report.json"
         ).read_text())
-        boluses, cgm, carb_log, basal = repeat_eating_stream()
+        boluses, cgm, carb_log, _ = repeat_eating_stream()
 
-        class Store:
-            def basal_events(self): return basal
-            def cgm_readings(self): return cgm
-            def bolus_events(self): return boluses
-            def carb_entries(self): return carb_log
-
-        served = report_dict(build_eating_sequence_report(Store()))
+        with Store.open(":memory:") as store:
+            seed_sequence_store(store, boluses, cgm, carb_log)
+            served = build_exposures(store, window_days=30)["sequence_report"]
         frozen = {key: value for key, value in fixture.items() if not key.startswith("_")}
         self.assertEqual(served, frozen)

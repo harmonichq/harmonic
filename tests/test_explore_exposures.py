@@ -56,7 +56,9 @@ class ExploreExposuresTest(unittest.TestCase):
             with Store.open(db.name) as store:
                 payload = build_exposures(store)
 
-        self.assertEqual(set(payload), {"window", "exposures"})
+        self.assertEqual(set(payload), {"window", "exposures", "sequence_report"})
+        # ADR 488: an empty store still serves its evaluation's (empty) report.
+        self.assertIsNone(payload["sequence_report"]["high_carb_sequence"]["finding"])
         self.assertEqual(set(payload["exposures"]), {
             "lows", "meals", "highs", "correction_clusters",
         })
@@ -287,7 +289,7 @@ class ExploreExposuresRouteTest(unittest.TestCase):
             response = client.get("/api/explore/exposures")
 
         self.assertEqual(response.status_code, 200, response.text)
-        self.assertEqual(set(response.json()), {"window", "exposures"})
+        self.assertEqual(set(response.json()), {"window", "exposures", "sequence_report"})
 
 
 if __name__ == "__main__":

@@ -13,7 +13,7 @@ import type { PromptData } from '../../day-model';
 import { Num, NumSvg } from '../../Num';
 import { GramsField } from '../../GramsField';
 import { formatValue } from '../../provenance.js';
-import { SEVERE_LOW, zones } from '../../glucose-zones';
+import { SEVERE_LOW, glucoseDomain, glucoseFraction, zones } from '../../glucose-zones';
 import { Button } from '../Button/Button';
 import '../../shared.css';
 import './PromptCard.css';
@@ -29,14 +29,12 @@ export type PromptCardProps = {
 
 const HEIGHT = 96;
 const AXIS = 16;
-const FLOOR = 40;
-const CEILING = 250;
 
 function Sparkline({ data, width }: { data: PromptData; width: number }) {
   const span = Math.max(...data.cgm.map((r) => r.minute));
-  const top = Math.max(CEILING, ...data.cgm.map((r) => r.bg + 10));
+  const domain = glucoseDomain(data.cgm.map((r) => r.bg));
   const x = (minute: number) => width * (minute / span);
-  const y = (bg: number) => (HEIGHT - 4) * (1 - (Math.max(bg, FLOOR) - FLOOR) / (top - FLOOR)) + 2;
+  const y = (bg: number) => (HEIGHT - 4) * (1 - glucoseFraction(bg, domain)) + 2;
   const points = data.cgm.map((r) => `${x(r.minute).toFixed(1)},${y(r.bg).toFixed(1)}`).join(' ');
   const yLow = y(data.low.value);
   const id = `ui-prompt-${data.date.source}`.replace(/[^\w-]/g, '-');

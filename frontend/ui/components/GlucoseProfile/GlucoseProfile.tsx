@@ -17,7 +17,7 @@
 import type { ProfileBin, ProfileData } from '../../overview-model';
 import { Num, NumSvg } from '../../Num';
 import { formatValue } from '../../provenance.js';
-import { SEVERE_HIGH, ZoneHatches, zoneArea, zones as glucoseZones } from '../../glucose-zones';
+import { SEVERE_HIGH, ZoneHatches, glucoseDomain, glucoseFraction, zoneArea, zones as glucoseZones } from '../../glucose-zones';
 import '../../shared.css';
 import './GlucoseProfile.css';
 
@@ -28,8 +28,6 @@ const LEFT = 34;
 const RIGHT_PAD = 8;
 const PLOT_TOP = 12;
 const PLOT_BOTTOM = 224;
-const FLOOR = 40;   // mg/dL at the plot's bottom edge
-const CEILING = 300; // at least this much at the top
 const RULE_Y = 230;
 const MEAL_BASE = 254;
 const MEAL_MAX = 18;
@@ -56,9 +54,11 @@ function runs(bins: ProfileBin[]): ProfileBin[][] {
 export function GlucoseProfile({ data, width = 334 }: GlucoseProfileProps) {
   const right = width - RIGHT_PAD;
   const supported = data.bins.filter((bin) => bin.supported);
-  const top = Math.max(CEILING, ...supported.map((bin) => bin.p90 + 10));
+  const domain = glucoseDomain(supported.flatMap((bin) => [bin.p10, bin.p90]));
   const x = (minute: number) => LEFT + (right - LEFT) * (minute / DAY);
-  const y = (bg: number) => PLOT_BOTTOM - (PLOT_BOTTOM - PLOT_TOP) * ((Math.max(bg, FLOOR) - FLOOR) / (top - FLOOR));
+  const y = (bg: number) => PLOT_BOTTOM - (PLOT_BOTTOM - PLOT_TOP) * glucoseFraction(bg, domain);
+  // The 250 tick only where the axis reaches it.
+  const tick = domain.high > TICK;
   const point = (minute: number, bg: number) => `${x(minute).toFixed(1)},${y(bg).toFixed(1)}`;
   const traces = runs(data.bins);
   const band = (run: ProfileBin[], lo: 'p10' | 'p25', hi: 'p75' | 'p90') =>
@@ -138,11 +138,11 @@ export function GlucoseProfile({ data, width = 334 }: GlucoseProfileProps) {
         ))}
         <line x1={LEFT} x2={right} y1={yLow} y2={yLow} className="ui-profile__target" />
         <line x1={LEFT} x2={right} y1={yHigh} y2={yHigh} className="ui-profile__target" />
-        <line x1={LEFT} x2={right} y1={y(TICK)} y2={y(TICK)} className="ui-profile__tick-line" />
+        {tick && <line x1={LEFT} x2={right} y1={y(TICK)} y2={y(TICK)} className="ui-profile__tick-line" />}
         <text x={LEFT - 8} y={yLow + 4} textAnchor="end" className="ui-profile__scale"><NumSvg value={data.low} /></text>
         <text x={LEFT - 8} y={yHigh + 4} textAnchor="end" className="ui-profile__scale"><NumSvg value={data.high} /></text>
         <g data-axis="">
-          <text x={LEFT - 8} y={y(TICK) + 4} textAnchor="end" className="ui-profile__scale">{TICK}</text>
+          {tick && <text x={LEFT - 8} y={y(TICK) + 4} textAnchor="end" className="ui-profile__scale">{TICK}</text>}
           <text x={0} y={PLOT_TOP - 2} className="ui-profile__scale">mg/dL</text>
         </g>
         <g aria-hidden="true">

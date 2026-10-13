@@ -11,20 +11,19 @@ import type { DayData } from '../../overview-model';
 import { isClean } from '../../overview-model';
 import { Num } from '../../Num';
 import { formatValue } from '../../provenance.js';
-import { zones } from '../../glucose-zones';
+import { glucoseDomain, glucoseFraction, zones } from '../../glucose-zones';
 import '../../shared.css';
 import './DayTile.css';
 
 export type DayTileProps = { day: DayData; selected?: boolean; width?: number; onSelect?: () => void };
 
 const HEIGHT = 72;
-const FLOOR = 40;    // mg/dL at the sparkline's bottom
-const CEILING = 400; // and at its top
 const LOW = 70;
 const HIGH = 180;
 
 export function DayTile({ day, selected = false, width = 145, onSelect }: DayTileProps) {
-  const y = (bg: number) => HEIGHT * (1 - (Math.min(Math.max(bg, FLOOR), CEILING) - FLOOR) / (CEILING - FLOOR));
+  const domain = glucoseDomain(day.curve.map((p) => p.bg));
+  const y = (bg: number) => HEIGHT * (1 - glucoseFraction(bg, domain));
   const points = day.curve.map((p) => `${(p.x * width).toFixed(1)},${y(p.bg).toFixed(1)}`).join(' ');
   const clean = isClean(day);
   const id = `ui-day-${day.date.value}`;

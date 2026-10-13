@@ -16,6 +16,25 @@ const HATCHED: Record<Tone, boolean> = {
 
 export type Zone = { tone: Tone; hatched: boolean; from: number; to: number };
 
+/** The least a glucose axis shows, mg/dL: every chart spans at least 50–220. */
+export const DOMAIN_FLOOR = 50;
+export const DOMAIN_CEILING = 220;
+
+/** The one glucose axis rule every chart uses: at least 50–220 mg/dL, widened
+ *  to the data with a 10 mg/dL margin, on round tens. */
+export function glucoseDomain(values: readonly number[]): { low: number; high: number } {
+  if (values.length === 0) return { low: DOMAIN_FLOOR, high: DOMAIN_CEILING };
+  return {
+    low: Math.min(DOMAIN_FLOOR, Math.floor((Math.min(...values) - 10) / 10) * 10),
+    high: Math.max(DOMAIN_CEILING, Math.ceil((Math.max(...values) + 10) / 10) * 10),
+  };
+}
+
+/** A glucose value's place along [0, 1] of its domain, clamped to it. */
+export function glucoseFraction(bg: number, { low, high }: { low: number; high: number }): number {
+  return (Math.min(Math.max(bg, low), high) - low) / (high - low);
+}
+
 /** The five zones, low to high, around a target range of [low, high] mg/dL. */
 export function zones(low: number, high: number): Zone[] {
   const edges: [Tone, number, number][] = [

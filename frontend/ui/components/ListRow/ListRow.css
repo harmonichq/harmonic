@@ -1,0 +1,54 @@
+.ui-list { font-family: var(--ui-font); font-variant-numeric: tabular-nums; }
+.ui-list + .ui-list { margin-top: 24px; }
+.ui-list__caption { margin: 0 0 6px; }
+.ui-list__rows { border-top: 1px solid var(--wk-rule); }
+
+.ui-row {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 48px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid var(--wk-rule);
+  background: none;
+  color: var(--wk-ink);
+  font: var(--ui-weight-regular) var(--ui-type-body) / 22px var(--ui-font);
+  text-align: left;
+}
+.ui-row--open { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.ui-row--open:active { background: var(--wk-surface); }
+.ui-row--open:focus { outline: none; }
+.ui-row--open:focus-visible { outline: 3px solid var(--ring); outline-offset: -3px; }
+
+.ui-row__label { flex: 1 1 auto; min-width: 0; }
+.ui-row__value { flex: none; color: var(--wk-ink-meta); }
+.ui-row__value--alert { color: var(--danger); font-weight: var(--ui-weight-strong); }
+.ui-row__chevron { flex: none; color: var(--wk-ink-meta); font-size: var(--ui-type-title); line-height: 1; }
+
+/* A Glossary term: the term strong, its definition beneath in body ink. */
+.ui-row--term { align-items: flex-start; padding: 12px 0; }
+.ui-row--term .ui-row__label { font-weight: var(--ui-weight-strong); }
+.ui-row__definition {
+  display: block;
+  margin-top: 4px;
+  color: var(--wk-ink-body);
+  font-size: var(--ui-type-label);
+  font-weight: var(--ui-weight-regular);
+  line-height: 18px;
+}
+
+/* Dense: a table row in the group's shared columns. */
+.ui-row--dense {
+  display: grid;
+  grid-template-columns: var(--ui-row-columns);
+  min-height: 36px;
+  font-size: var(--ui-type-label);
+}
+.ui-row__cell { text-align: right; }
+.ui-row__cell:first-child { text-align: left; }
+.ui-row--head { min-height: 40px; align-items: end; padding-bottom: 6px; }
+.ui-row--head .ui-row__cell { color: var(--wk-ink-meta); }

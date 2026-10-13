@@ -1,0 +1,16 @@
+/* Classes more than one Queue component uses. */
+
+/* The caps caption the lock uses for a value's name: "Range", "Cause". */
+.ui-caption {
+  color: var(--wk-ink-meta);
+  font: var(--ui-weight-strong) var(--ui-type-caption) / 1 var(--ui-font);
+  letter-spacing: .07em;
+  text-transform: uppercase;
+}
+
+/* Loading: the card's own shape, in blocks. */
+.ui-skeleton {
+  display: block;
+  border-radius: var(--wk-radius);
+  background: var(--wk-surface-rail);
+}

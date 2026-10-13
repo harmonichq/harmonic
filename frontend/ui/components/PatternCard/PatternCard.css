@@ -1,0 +1,48 @@
+.ui-pcard {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  border-radius: var(--wk-radius);
+  background: var(--wk-surface);
+  color: var(--wk-ink);
+  font-family: var(--ui-font);
+}
+
+.ui-pcard__head { display: flex; align-items: center; gap: 8px; }
+.ui-pcard__title {
+  flex: 1;
+  margin: 0;
+  font-size: var(--ui-type-title);
+  font-weight: var(--ui-weight-strong);
+  letter-spacing: -.01em;
+}
+.ui-pcard__chevron { display: flex; color: var(--wk-ink-meta); }
+
+.ui-pcard__magnitude {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.ui-pcard__figure {
+  font-size: var(--ui-type-figure);
+  font-weight: var(--ui-weight-strong);
+  line-height: 40px;
+  letter-spacing: -.02em;
+}
+.ui-pcard__of { color: var(--wk-ink-body); font-size: var(--ui-type-body); }
+
+.ui-pcard__waffle { margin-top: 16px; }
+
+.ui-pcard__range {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  font-variant-numeric: tabular-nums;
+}
+.ui-pcard__range-value { color: var(--wk-ink-body); font-size: var(--ui-type-label); }
+
+.ui-pcard__action { display: flex; margin-top: 24px; }

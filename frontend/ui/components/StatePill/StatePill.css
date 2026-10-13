@@ -18,4 +18,5 @@
 .ui-pill--maturing { color: var(--warn); }
 .ui-pill--better { color: var(--wk-status-favorable); }
 .ui-pill--worse { color: var(--wk-status-adverse); }
+.ui-pill--focus { color: var(--wk-ink); }
 

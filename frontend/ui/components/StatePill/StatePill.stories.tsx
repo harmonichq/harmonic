@@ -19,3 +19,4 @@ export const Maturing = story('maturing');
 export const Better = story('better');
 export const Worse = story('worse');
 export const Unclear = story('unclear');
+export const Focus = story('focus');

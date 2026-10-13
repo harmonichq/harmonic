@@ -1,0 +1,12 @@
+.ui-evidence { display: block; overflow: visible; font-family: var(--ui-font); }
+.ui-evidence text {
+  font-size: var(--ui-type-caption);
+  font-variant-numeric: tabular-nums;
+}
+.ui-evidence__current { stroke: var(--wk-ink-meta); stroke-width: 1; stroke-dasharray: 3 3; }
+.ui-evidence__suggested { stroke: var(--wk-ink); stroke-width: 1.5; }
+.ui-evidence__current-label { fill: var(--wk-ink-meta); }
+.ui-evidence__suggested-label { fill: var(--wk-ink); font-weight: var(--ui-weight-strong); }
+.ui-evidence__night { fill: var(--wk-ink-body); fill-opacity: .8; }
+.ui-evidence__tick { fill: var(--wk-ink-body); }
+.ui-evidence__value { fill: var(--wk-ink); font-weight: var(--ui-weight-strong); }

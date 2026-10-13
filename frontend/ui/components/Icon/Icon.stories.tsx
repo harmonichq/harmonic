@@ -20,4 +20,4 @@ type Story = StoryObj<typeof Glyphs>;
 
 export const Navigation: Story = { args: { names: ['queue', 'changes', 'overview', 'day', 'settings'] } };
 export const Kinds: Story = { args: { names: ['pattern', 'setting'] } };
-export const Actions: Story = { args: { names: ['snooze'] } };
+export const Actions: Story = { args: { names: ['snooze', 'expand', 'collapse'] } };

@@ -36,6 +36,8 @@ const PATHS = {
       <circle cx="12" cy="13" r="7" /><path d="M12 9.5V13l2.5 1.5" /><path d="M5 4.5L3 6.5" /><path d="M19 4.5l2 2" />
     </>
   ),
+  expand: <path d="M7 10l5 5 5-5" />,
+  collapse: <path d="M7 14l5-5 5 5" />,
   pattern: (
     <>
       <path d="M3 18h18" /><circle cx="6" cy="13" r="1.6" /><circle cx="12" cy="10" r="1.6" /><circle cx="18" cy="7" r="1.6" />

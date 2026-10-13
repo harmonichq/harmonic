@@ -6169,6 +6169,148 @@
       "with_carbs": "2025-05-17"
     }
   },
+  "glossary": [
+    {
+      "kind": "state",
+      "meaning": "A matured change's result against its before period.",
+      "term": "Better / Worse / Unclear"
+    },
+    {
+      "kind": "noun",
+      "meaning": "The habit the engine attributes most of a Pattern's occurrences to.",
+      "term": "Cause"
+    },
+    {
+      "kind": "noun",
+      "meaning": "A Trial or a Focus. One is active at a time.",
+      "term": "Change"
+    },
+    {
+      "kind": "verb",
+      "meaning": "Stop watching the active change.",
+      "term": "End"
+    },
+    {
+      "kind": "noun",
+      "meaning": "A dated event the engine cites as evidence.",
+      "term": "Episode"
+    },
+    {
+      "kind": "noun",
+      "meaning": "A habit you pinned, watched for adherence and outcome.",
+      "term": "Focus"
+    },
+    {
+      "kind": "noun",
+      "meaning": "Glucose by time of day over the last 30 days: the median and the 10th–90th percentile spread.",
+      "term": "Glucose profile"
+    },
+    {
+      "kind": "metric",
+      "meaning": "The standard CGM metrics. Below 54 and Above 250 are shown as subsets of Below 70 and Above 180, never as separate bands of the same total.",
+      "term": "In range, Below 70, Below 54, Above 180, Above 250, Mean, GMI, CV, Pre-meal, Post-meal 2 h"
+    },
+    {
+      "kind": "verb",
+      "meaning": "Record carbs eaten without a bolus.",
+      "term": "Log carbs"
+    },
+    {
+      "kind": "state",
+      "meaning": "A change still collecting its 14 days of after data.",
+      "term": "Maturing"
+    },
+    {
+      "kind": "noun",
+      "meaning": "The middle value of the profile at that time of day.",
+      "term": "Median"
+    },
+    {
+      "kind": "noun",
+      "meaning": "A recurring glucose outcome the engine detected, such as highs after meals.",
+      "term": "Pattern"
+    },
+    {
+      "kind": "verb",
+      "meaning": "Start a Focus on a Pattern's habit.",
+      "term": "Pin"
+    },
+    {
+      "kind": "noun",
+      "meaning": "A question about a low, asking whether carbs were eaten.",
+      "term": "Prompt"
+    },
+    {
+      "kind": "noun",
+      "meaning": "The active pump settings, read-only.",
+      "term": "Pump profile"
+    },
+    {
+      "kind": "noun",
+      "meaning": "The ranked list of recommendations.",
+      "term": "Queue"
+    },
+    {
+      "kind": "noun",
+      "meaning": "The engine's interval for the statistic it sits next to.",
+      "term": "Range"
+    },
+    {
+      "kind": "state",
+      "meaning": "An answer or entry was saved.",
+      "term": "Recorded"
+    },
+    {
+      "kind": "verb",
+      "meaning": "Bring a snoozed item back.",
+      "term": "Restore"
+    },
+    {
+      "kind": "noun",
+      "meaning": "A pump value: basal, correction factor or carb ratio.",
+      "term": "Setting"
+    },
+    {
+      "kind": "noun",
+      "meaning": "A new infusion site and cartridge, as the pump logged it.",
+      "term": "Site change"
+    },
+    {
+      "kind": "noun",
+      "meaning": "The pump's sleep schedule, when Control-IQ runs its tighter overnight target.",
+      "term": "Sleep"
+    },
+    {
+      "kind": "verb",
+      "meaning": "Remove from the Queue for 14 days. It returns early if the evidence changes.",
+      "term": "Snooze"
+    },
+    {
+      "kind": "noun",
+      "meaning": "The vendor account the data syncs from.",
+      "term": "Tandem Source"
+    },
+    {
+      "kind": "noun",
+      "meaning": "A pump setting change the app detected, watched against its before period.",
+      "term": "Trial"
+    },
+    {
+      "kind": "state",
+      "meaning": "The engine flags it as not yet real enough to act on (its `wide` flag). On a Pattern: in the Queue, but the admission behind it does not hold at the low end of its evidence (ADR 485). On any other statistic: the range beside it is too broad to rely on.",
+      "term": "Uncertain"
+    },
+    {
+      "kind": "verb",
+      "meaning": "Reverse the last snooze.",
+      "term": "Undo"
+    },
+    {
+      "kind": "answer",
+      "meaning": "A Prompt's answers. False low marks the reading itself as invalid.",
+      "term": "Yes / No / False low / Not sure"
+    }
+  ],
   "guidance": {
     "candidates": [
       {
@@ -18844,6 +18986,109 @@
         ]
       }
     }
+  },
+  "settings": {
+    "credentials": {
+      "set": {
+        "configured": true,
+        "email": "••••••••",
+        "region": "US"
+      },
+      "unset": {
+        "configured": false,
+        "email": null,
+        "region": null
+      }
+    },
+    "pump_settings": {
+      "wearer": {
+        "configured": true,
+        "fetched_at": "2025-04-28T00:00:00",
+        "profile": {
+          "dia_hours": 5.0,
+          "max_bolus": 15.0,
+          "name": "Synthetic wearer",
+          "segments": [
+            {
+              "basal_rate": 1.0,
+              "carb_ratio": 7.0,
+              "isf": 28,
+              "start_min": 0,
+              "target_bg": 110
+            },
+            {
+              "basal_rate": 1.0,
+              "carb_ratio": 7.0,
+              "isf": 28,
+              "start_min": 120,
+              "target_bg": 110
+            },
+            {
+              "basal_rate": 1.4,
+              "carb_ratio": 7.0,
+              "isf": 28,
+              "start_min": 300,
+              "target_bg": 110
+            },
+            {
+              "basal_rate": 1.2,
+              "carb_ratio": 8.5,
+              "isf": 28,
+              "start_min": 660,
+              "target_bg": 110
+            },
+            {
+              "basal_rate": 1.2,
+              "carb_ratio": 7.0,
+              "isf": 28,
+              "start_min": 840,
+              "target_bg": 110
+            },
+            {
+              "basal_rate": 1.25,
+              "carb_ratio": 7.0,
+              "isf": 28,
+              "start_min": 960,
+              "target_bg": 110
+            },
+            {
+              "basal_rate": 1.05,
+              "carb_ratio": 7.0,
+              "isf": 28,
+              "start_min": 1260,
+              "target_bg": 110
+            }
+          ]
+        }
+      },
+      "wearer-unsynced": {
+        "configured": false
+      }
+    },
+    "status": {
+      "failed": {
+        "data_day_count": 84,
+        "earliest_data_day": "2025-03-03",
+        "last_attempt_at": "2025-05-26 01:20:00",
+        "last_error": "synthetic sync failure",
+        "last_success_at": "2025-05-26 01:10:00",
+        "latest_data_day": "2025-05-25"
+      },
+      "synced": {
+        "data_day_count": 84,
+        "earliest_data_day": "2025-03-03",
+        "last_attempt_at": "2025-05-26 01:10:00",
+        "last_error": null,
+        "last_success_at": "2025-05-26 01:10:00",
+        "latest_data_day": "2025-05-25"
+      }
+    }
+  },
+  "snooze": {
+    "decided_at": "2025-05-26 01:00:00",
+    "set_aside": true,
+    "subject": "pattern:lows_after_meals",
+    "title": "Lows after meals"
   },
   "states": {
     "multi_cause": {

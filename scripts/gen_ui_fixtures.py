@@ -48,6 +48,16 @@ Two committed outputs, one generator, one ``--check``:
   logged carbs, the latest of the days with the most logged carbs, and the
   first day after the history ends.
 
+  ``settings`` holds the Settings screens' answers, read from the wearer's
+  store after every other read of it: ``/api/credentials`` unset and then set
+  with an invented address on a reserved domain (masked before it is written;
+  the ``.env`` fallback is blocked, so no real credential is ever read),
+  ``/api/status`` after a successful sync and after a later failed one, and
+  ``/api/pump-settings`` for the wearer and for the unsynced store (no
+  profile). ``snooze`` is a pattern the pinned store's person snoozes through
+  ``PUT /api/guidance/preferences``, with the decision time the engine serves.
+  ``glossary`` is §1.5's rows, for the Glossary page.
+
   ``status.failed`` adds one invented failed sync attempt, through
   ``Store.record_fetch_result``, so the Settings alert has a served
   ``last_error``. The wall clock every write stamps is pinned to one hour after
@@ -132,6 +142,21 @@ FIRST_DAYS = 5
 # A Trial still maturing: the wearer's history cut this many days after the
 # Trial day, short of the engine's fourteen.
 MATURING_DAYS = 6
+# Settings (§1.2, §1.3, and the Settings section of the brief): the sync rows,
+# the account rows, the pump profile, the screen header's date ("To 30 Sep"),
+# the snooze bar ("Snoozed · Until <date>") and the screen-level "Unavailable".
+# Plain interface words (§2.5), but for DIA, a pump field the brief names.
+SETTINGS_LABELS = ("State", "OK", "Failed", "Last success", "Last attempt", "Error", "Data",
+                   "Email", "Region", "Password", "Set", "Not set", "Update", "Start", "Target",
+                   "Max bolus", "DIA", "No profile", "Unavailable", "Snoozed", "Until", "To")
+# The account the stories show as set: an invented address on a reserved
+# domain, posted through the API and masked before it is written anywhere.
+SYNTHETIC_EMAIL = "wearer@example.invalid"
+MASK = "••••••••"
+# A successful sync after the failed one above, then a later failure: the
+# Tandem Source screen's OK and Failed states.
+SYNC_OK_AT = CLOCK + timedelta(minutes=10)
+SYNC_FAILED_AT = CLOCK + timedelta(minutes=20)
 # The day navigator's month: the month of the wearer's last day.
 NAVIGATOR_MONTH = (ui_patient.START + timedelta(days=ui_patient.DAYS - 1)).strftime("%Y-%m")
 
@@ -167,9 +192,10 @@ def _post(client: TestClient, path: str, payload: dict) -> object:
 
 
 def _serve(database: pathlib.Path) -> TestClient:
+    # The credential key lives beside the scratch store, never in tconnect-data/.
     return TestClient(create_app(
         db_path=str(database), token=None, enable_fetch_loop=False,
-        analysis_incarnation="ui-fixtures",
+        analysis_incarnation="ui-fixtures", key_path=f"{database}.key",
     ))
 
 
@@ -219,12 +245,15 @@ def fixtures() -> dict:
             "day_navigator": _day_navigator(client),
         }}
         day = _days(client, overview["wearer"]["day_navigator"])
+        settings = _settings(database, client)
 
         _, pinned = _wearer(scratch, "wearer-pinned", trial=False)
         _pin(pinned)
         queue["wearer-pinned"] = _queue_store(pinned)
         overview["wearer-pinned"] = {"outcomes": _outcomes(pinned)}
         changes["wearer-pinned"] = _changes_store(pinned)
+        snooze = _snooze(pinned, pinned_pattern=next(
+            f["pattern_key"] for f in changes["wearer-pinned"]["focuses"] if f["status"] == "active"))
 
         _, first_days = _wearer(scratch, "wearer-first-days", trial=False, days=FIRST_DAYS)
         overview["wearer-first-days"] = {"time_of_day": _time_of_day(first_days)}
@@ -245,7 +274,9 @@ def fixtures() -> dict:
         unsynced = scratch / "wearer-unsynced.sqlite"
         with Store.open(str(unsynced)):
             pass
-        overview["wearer-unsynced"] = {"outcomes": _outcomes(_serve(unsynced))}
+        unsynced_client = _serve(unsynced)
+        overview["wearer-unsynced"] = {"outcomes": _outcomes(unsynced_client)}
+        settings["pump_settings"]["wearer-unsynced"] = _pump_settings(unsynced_client)
     return {
         "_generated_by": GENERATED_BY,
         "_note": ("Synthetic only: a seeded simulated Control-IQ wearer "
@@ -265,8 +296,82 @@ def fixtures() -> dict:
         "overview": overview,
         "changes": changes,
         "day": day,
+        "settings": settings,
+        "snooze": snooze,
+        "glossary": glossary(),
         "states": states(queue),
     }
+
+
+def _credentials(client: TestClient) -> dict:
+    """The account rows' answer, the email fully masked. The .env fallback is
+    blocked (as in an api-only install) so no real credential is ever read."""
+    with patch.dict(sys.modules, {"tconnectsync": None}):
+        answer = _get(client, "/api/credentials")
+    return {"configured": answer["configured"], "region": answer["region"],
+            "email": MASK if answer["email"] else None}
+
+
+def _pump_settings(client: TestClient) -> dict:
+    answer = _get(client, "/api/pump-settings")
+    if not answer["configured"]:
+        return {"configured": False}
+    profile = answer["profile"]
+    return {"configured": True, "fetched_at": answer["fetched_at"],
+            "profile": {**{field: profile[field] for field in ("name", "dia_hours", "max_bolus")},
+                        "segments": profile["segments"]}}
+
+
+def _status(answer: dict) -> dict:
+    return {field: answer[field] for field in
+            ("last_attempt_at", "last_success_at", "last_error",
+             "earliest_data_day", "latest_data_day", "data_day_count")}
+
+
+def _settings(database: pathlib.Path, client: TestClient) -> dict:
+    """The Settings screens' answers from the wearer's store, read after every
+    other read of it: the account unset and then set, a sync that succeeds and
+    then a later one that fails, and the pump profile."""
+    unset = _credentials(client)
+    _post(client, "/api/credentials", {"email": SYNTHETIC_EMAIL, "password": "synthetic", "region": "US"})
+    configured = _credentials(client)
+    stamp = "%Y-%m-%d %H:%M:%S"
+    with Store.open(str(database)) as store:
+        store.record_fetch_result(attempted_at=SYNC_OK_AT.strftime(stamp), ok=True)
+    synced = _status(_get(client, "/api/status"))
+    with Store.open(str(database)) as store:
+        store.record_fetch_result(attempted_at=SYNC_FAILED_AT.strftime(stamp), ok=False, error=FAILED_ERROR)
+    failed = _status(_get(client, "/api/status"))
+    return {
+        "credentials": {"unset": unset, "set": configured},
+        "status": {"synced": synced, "failed": failed},
+        "pump_settings": {"wearer": _pump_settings(client)},
+    }
+
+
+def _snooze(client: TestClient, *, pinned_pattern: str) -> dict:
+    """The person snoozes the first admitted pattern other than the one their
+    Focus watches, and the engine serves the decision time the snooze bar dates
+    from."""
+    answer = _get(client, "/api/guidance")
+    candidate = next(c for c in answer["candidates"] if c["kind"] == "pattern" and c["admitted"]
+                     and not c["preference"]["set_aside"] and c["subject"] != f"pattern:{pinned_pattern}")
+    response = client.put(f"/api/guidance/preferences/{candidate['subject']}",
+                          json={"generation": answer["analysis_generation"]})
+    response.raise_for_status()
+    after = next(c for c in _get(client, "/api/guidance")["candidates"] if c["subject"] == candidate["subject"])
+    return {"subject": after["subject"], "title": after["title"],
+            "set_aside": after["preference"]["set_aside"], "decided_at": after["decision"]["decided_at"]}
+
+
+def glossary() -> list[dict]:
+    """§1.5's rows, the Glossary page's terms and their one-line definitions."""
+    rows = []
+    for line in _section(DESIGN.read_text(), "### 1.5 Glossary").splitlines():
+        match = re.match(r"\|\s*\*\*(.+?)\*\*\s*\|\s*(.+?)\s*\|\s*(.+?)\s*\|\s*$", line)
+        if match:
+            rows.append({"term": match.group(1), "kind": match.group(2), "meaning": match.group(3)})
+    return sorted(rows, key=lambda row: row["term"].lower())
 
 
 def _outcome(answer: dict) -> dict:
@@ -589,6 +694,11 @@ def allowlist(data: dict) -> dict:
         "labels §1.2–§4.2": list(CHANGE_DAY_LABELS),
         "engine habit titles": [f["lever_title"] for store in data["changes"].values()
                                 for f in store["focuses"] if f["lever_title"]],
+        "labels Settings": list(SETTINGS_LABELS),
+        "served pump profile names": [p["profile"]["name"] for p in data["settings"]["pump_settings"].values()
+                                      if p["configured"]],
+        "served account regions": [c["region"] for c in data["settings"]["credentials"].values() if c["region"]],
+        "served sync errors": [s["last_error"] for s in data["settings"]["status"].values() if s["last_error"]],
         "chart mark fields": [field for field in MARK_FIELDS
                               if all(field in slot for store in stores
                                      for slot in store["analyze"]["basal"])],
@@ -605,8 +715,9 @@ def allowlist(data: dict) -> dict:
                   "of a magnitude, the served fields the evidence chart's "
                   "marks plot, the glucose profile's \"No data\", the day "
                   "tile's weekdays, the month abbreviations of a date, the "
-                  "Changes and Day labels quoted in §1.2–§4.2 and the "
-                  "engine's habit titles."),
+                  "Changes and Day labels quoted in §1.2–§4.2, the "
+                  "engine's habit titles, the Settings labels, and the "
+                  "served pump profile name, account region and sync error."),
         "words": words,
     }
 

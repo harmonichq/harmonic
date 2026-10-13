@@ -29,8 +29,18 @@ into code.
   1. information architecture and three directions
   2. the component inventory
   3. the library, built one component at a time
-  4. mirroring it into the design canvas, then composing and locking each screen
+  4. composing and locking each screen (see the amendment below)
   5. building the screens against real data
+
+**Amendment, 2026-10-13 (operator).** Step 4 no longer mirrors the library into
+the design canvas. Screens are composed and locked in Storybook, as screen
+stories built from the approved components, at 390 px and 1440 px; each lock is
+recorded in the lock doc with its screenshots. The canvas stays available for
+throwaway sketches of ideas that go beyond the library; a sketch that wins
+becomes a component in Storybook, never a mirrored copy, so `/design-sync` is
+dropped. Why: Storybook already renders the code the app will ship and runs the
+checks, while a mirror is a second copy that has to be re-synced on every
+library change. The operator, on a hybrid approach: "ok".
 
 ## ADR 485 — A Pattern reads Uncertain only when its Queue admission does not hold at the low end
 

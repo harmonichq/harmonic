@@ -77,8 +77,10 @@ function TandemSource({ sync, account }: { sync: SyncState | null; account: Acco
 
 const setting = (parameter: string) =>
   fixtures.queue.wearer.guidance.candidates.find((c) => c.subject === `setting:${parameter}`)!;
-const Head = ({ parameter }: { parameter: string }) => (
-  <span className="ui-caption">{setting(parameter).title}<br /><span style={{ textTransform: 'none' }}>{setting(parameter).units}</span></span>
+// Column headers are the glossary's short forms (Basal, ISF, I:C) over the
+// served units, so a header holds two short lines on a phone.
+const Head = ({ parameter, label }: { parameter: string; label: string }) => (
+  <span className="ui-caption">{label}<br /><span style={{ textTransform: 'none' }}>{setting(parameter).units}</span></span>
 );
 
 function PumpProfile({ store }: { store: 'wearer' | 'wearer-unsynced' }) {
@@ -92,9 +94,9 @@ function PumpProfile({ store }: { store: 'wearer' | 'wearer-unsynced' }) {
         <ListRow label="Max bolus" value={<><Num value={data.maxBolus} /> U</>} />
         <ListRow label="Target" value={<><Num value={data.target} /> mg/dL</>} />
       </ListGroup>
-      <ListGroup columns="56px 1fr 1.4fr 1fr">
-        <ListRowDense header cells={[<span className="ui-caption">Start</span>, <Head parameter="basal_rate" />,
-          <Head parameter="isf" />, <Head parameter="carb_ratio" />]} />
+      <ListGroup columns="56px 1fr 1fr 1fr">
+        <ListRowDense header cells={[<span className="ui-caption">Start</span>, <Head parameter="basal_rate" label="Basal" />,
+          <Head parameter="isf" label="ISF" />, <Head parameter="carb_ratio" label="I:C" />]} />
         {data.segments.map((segment) => (
           <ListRowDense key={segment.start.source} cells={[<Num value={segment.start} />, <Num value={segment.basal} />,
             <Num value={segment.isf} />, <Num value={segment.carbRatio} />]} />

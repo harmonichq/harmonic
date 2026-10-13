@@ -114,6 +114,9 @@ Desktop has no hover-revealed actions, and every action has a visible control.
 | **In range, Below 70, Below 54, Above 180, Above 250, Mean, GMI, CV, Pre-meal, Post-meal 2 h** | metric | The standard CGM metrics. Below 54 and Above 250 are shown as subsets of Below 70 and Above 180, never as separate bands of the same total. |
 | **Tandem Source** | noun | The vendor account the data syncs from. |
 | **Pump profile** | noun | The active pump settings, read-only. |
+| **ISF** | noun | Insulin sensitivity factor, the pump's correction factor: how far one unit of insulin lowers glucose, in mg/dL. |
+| **I:C** | noun | Insulin-to-carb ratio, the pump's carb ratio: the grams of carbs one unit of insulin covers. |
+| **DIA** | noun | Duration of insulin action: how long the pump counts a bolus as still working, in hours. |
 | **Sleep** | noun | The pump's sleep schedule, when Control-IQ runs its tighter overnight target. |
 | **Site change** | noun | A new infusion site and cartridge, as the pump logged it. |
 

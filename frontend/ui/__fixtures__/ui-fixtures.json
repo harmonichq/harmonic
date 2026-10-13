@@ -6186,6 +6186,11 @@
       "term": "Change"
     },
     {
+      "kind": "noun",
+      "meaning": "Duration of insulin action: how long the pump counts a bolus as still working, in hours.",
+      "term": "DIA"
+    },
+    {
       "kind": "verb",
       "meaning": "Stop watching the active change.",
       "term": "End"
@@ -6206,9 +6211,19 @@
       "term": "Glucose profile"
     },
     {
+      "kind": "noun",
+      "meaning": "Insulin-to-carb ratio, the pump's carb ratio: the grams of carbs one unit of insulin covers.",
+      "term": "I:C"
+    },
+    {
       "kind": "metric",
       "meaning": "The standard CGM metrics. Below 54 and Above 250 are shown as subsets of Below 70 and Above 180, never as separate bands of the same total.",
       "term": "In range, Below 70, Below 54, Above 180, Above 250, Mean, GMI, CV, Pre-meal, Post-meal 2 h"
+    },
+    {
+      "kind": "noun",
+      "meaning": "Insulin sensitivity factor, the pump's correction factor: how far one unit of insulin lowers glucose, in mg/dL.",
+      "term": "ISF"
     },
     {
       "kind": "verb",

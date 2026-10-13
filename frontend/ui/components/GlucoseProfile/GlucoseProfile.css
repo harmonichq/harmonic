@@ -30,7 +30,6 @@
    to mark rather than flood; the median rides on it with a halo. */
 .ui-profile__neutral { fill: var(--glucose-in-range); fill-opacity: .24; }
 .ui-profile__band .ui-zone-area { fill-opacity: .85; }
-.ui-profile__swatch { width: 14px; height: 10px; }
 .ui-profile__median { fill: none; stroke: var(--wk-ink); stroke-width: 2; stroke-linejoin: round; }
 .ui-profile__halo { fill: none; stroke: var(--wk-surface); stroke-width: 5; stroke-linejoin: round; }
 .ui-profile__target { stroke: var(--glucose-in-range); stroke-opacity: .8; stroke-width: 1; stroke-dasharray: 3 3; }

@@ -3,10 +3,10 @@
 // The median is a line; the 10–90% spread is a band, a quiet green in range.
 // Where the band leaves range it is clipped and drawn in that glucose zone's
 // tone and hatching (glucose-zones.tsx) — below 54, below the low target, above
-// the high target, above 250 — so colour marks time out of range, and each
-// zone the band reaches gets a legend entry beside its label. The target
-// range's two edges are lines labelled with their served values; 250 is a
-// plain tick. "mg/dL" sits once on the y-axis. Meals are small bars along the
+// the high target, above 250 — so colour marks time out of range. The zones
+// take no legend entry: the target range's two edges are lines labelled with
+// their served values and 250 is a labelled tick, so each colour sits against
+// its number. "mg/dL" sits once on the y-axis. Meals are small bars along the
 // bottom, one per served 30-minute bucket, as tall as its count.
 //
 // Only supported bins are drawn; a run of unsupported bins breaks the line and
@@ -16,23 +16,23 @@
 import type { ProfileBin, ProfileData } from '../../overview-model';
 import { Num, NumSvg } from '../../Num';
 import { formatValue } from '../../provenance.js';
-import { SEVERE_HIGH, SEVERE_LOW, ZoneHatches, ZoneSwatch, zoneArea, zones as glucoseZones } from '../../glucose-zones';
+import { SEVERE_HIGH, ZoneHatches, zoneArea, zones as glucoseZones } from '../../glucose-zones';
 import '../../shared.css';
 import './GlucoseProfile.css';
 
 export type GlucoseProfileProps = { data: ProfileData; width?: number };
 
-const HEIGHT = 290;
+const HEIGHT = 274;
 const LEFT = 34;
 const RIGHT_PAD = 8;
-const PLOT_TOP = 24;
-const PLOT_BOTTOM = 240;
+const PLOT_TOP = 12;
+const PLOT_BOTTOM = 224;
 const FLOOR = 40;   // mg/dL at the plot's bottom edge
 const CEILING = 300; // at least this much at the top
-const RULE_Y = 246;
-const MEAL_BASE = 270;
+const RULE_Y = 230;
+const MEAL_BASE = 254;
 const MEAL_MAX = 18;
-const TIME_Y = 286;
+const TIME_Y = 270;
 const TICK = SEVERE_HIGH;
 const DAY = 1440;
 
@@ -68,17 +68,9 @@ export function GlucoseProfile({ data, width = 334 }: GlucoseProfileProps) {
   const yHigh = y(data.high.value);
   const empty = supported.length === 0;
   const id = `ui-profile-${width}`;
-  // The five zones, top down, each labelled; one enters the legend when the band reaches it.
-  const labels = {
-    'very-high': <span data-axis="">Above {SEVERE_HIGH}</span>,
-    high: <span>Above <Num value={data.high} /></span>,
-    'in-range': <span>In range</span>,
-    low: <span>Below <Num value={data.low} /></span>,
-    'very-low': <span data-axis="">Below {SEVERE_LOW}</span>,
-  };
+  // The five zones, top down; the band is drawn in each zone it reaches.
   const zones = glucoseZones(data.low.value, data.high.value).reverse().map((zone) => ({
     ...zone,
-    label: labels[zone.tone],
     y0: zone.to === Infinity ? 0 : y(zone.to),
     y1: zone.from === -Infinity ? HEIGHT : y(zone.from),
     reached: supported.some((bin) => bin.p90 > zone.from && bin.p10 < zone.to),
@@ -108,12 +100,6 @@ export function GlucoseProfile({ data, width = 334 }: GlucoseProfileProps) {
             </svg>
             Meals
           </span>
-          {zones.filter((zone) => zone.reached && zone.tone !== 'in-range').map((zone) => (
-            <span key={zone.tone} className="ui-profile__key">
-              <ZoneSwatch tone={zone.tone} className="ui-profile__swatch" />
-              {zone.label}
-            </span>
-          ))}
         </div>
       )}
       <svg width={width} height={HEIGHT} viewBox={`0 0 ${width} ${HEIGHT}`} className="ui-profile__chart">
@@ -142,7 +128,7 @@ export function GlucoseProfile({ data, width = 334 }: GlucoseProfileProps) {
         <text x={LEFT - 8} y={yHigh + 4} textAnchor="end" className="ui-profile__scale"><NumSvg value={data.high} /></text>
         <g data-axis="">
           <text x={LEFT - 8} y={y(TICK) + 4} textAnchor="end" className="ui-profile__scale">{TICK}</text>
-          <text x={0} y={PLOT_TOP + 8} className="ui-profile__scale">mg/dL</text>
+          <text x={0} y={PLOT_TOP - 2} className="ui-profile__scale">mg/dL</text>
         </g>
         <g aria-hidden="true">
           {traces.map((run, i) => (

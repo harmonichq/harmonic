@@ -114,6 +114,8 @@ Desktop has no hover-revealed actions, and every action has a visible control.
 | **End** | verb | Stop watching the active change. |
 | **Recorded** | state | An answer or entry was saved. |
 | **In range, Below 70, Below 54, Above 180, Above 250, Mean, GMI, CV, Pre-meal, Post-meal 2 h** | metric | The standard CGM metrics. Below 54 and Above 250 are shown as subsets of Below 70 and Above 180, never as separate bands of the same total. |
+| **No data** | state | No readings exist for that period. |
+| **Mon, Tue, Wed, Thu, Fri, Sat, Sun** | label | Weekday names on day tiles. |
 | **Tandem Source** | noun | The vendor account the data syncs from. |
 | **Pump profile** | noun | The active pump settings, read-only. |
 

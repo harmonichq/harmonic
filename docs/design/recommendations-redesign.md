@@ -100,6 +100,9 @@ Desktop has no hover-revealed actions, and every action has a visible control.
 | **Range** | noun | The engine's interval for the statistic it sits next to. |
 | **Wide** | state | That range is wide; the evidence is thin. |
 | **Episode** | noun | A dated event the engine cites as evidence. |
+| **Cause** | noun | The habit the engine attributes most of a Pattern's occurrences to. |
+| **Glucose profile** | noun | Glucose by time of day over the last 30 days: the median and the 10th–90th percentile spread. |
+| **Median** | noun | The middle value of the profile at that time of day. |
 | **Prompt** | noun | A question about a low, asking whether carbs were eaten. |
 | **Yes / No / False low / Not sure** | answer | A Prompt's answers. False low marks the reading itself as invalid. |
 | **Log carbs** | verb | Record carbs eaten without a bolus. |

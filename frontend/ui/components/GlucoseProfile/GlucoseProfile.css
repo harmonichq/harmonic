@@ -1,0 +1,58 @@
+.ui-profile {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 12px 10px;
+  border-radius: var(--wk-radius);
+  background: var(--wk-surface);
+  font-family: var(--ui-font);
+  font-variant-numeric: tabular-nums;
+}
+
+.ui-profile__head { display: flex; align-items: baseline; gap: 8px; }
+.ui-profile__title { color: var(--wk-ink-body); }
+.ui-profile__days { color: var(--wk-ink-meta); font-size: var(--ui-type-caption); }
+
+.ui-profile__legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  color: var(--wk-ink-meta);
+  font-size: var(--ui-type-caption);
+}
+.ui-profile__key { display: flex; align-items: center; gap: 6px; }
+.ui-profile__key svg { display: block; }
+
+.ui-profile__chart { display: block; overflow: visible; }
+
+.ui-profile__band { fill: var(--wk-ink-body); fill-opacity: .24; }
+.ui-profile__above { fill: var(--high); fill-opacity: .22; }
+.ui-profile__median { fill: none; stroke: var(--wk-ink); stroke-width: 2; stroke-linejoin: round; }
+.ui-profile__target { stroke: var(--in-range); stroke-opacity: .55; stroke-width: 1; stroke-dasharray: 3 3; }
+.ui-profile__tick-line { stroke: var(--wk-rule-strong); stroke-width: 1; }
+.ui-profile__rule { stroke: var(--wk-rule); stroke-width: 1; }
+.ui-profile__meal { fill: var(--wk-ink-meta); fill-opacity: .55; }
+
+.ui-profile__scale { fill: var(--wk-ink-meta); font-size: var(--ui-type-caption); }
+
+.ui-profile__stem { stroke: var(--wk-ink-meta); stroke-width: 1; }
+.ui-profile__peak { fill: var(--wk-ink); stroke: var(--wk-surface); stroke-width: 2; }
+.ui-profile__callout-text {
+  fill: var(--wk-ink);
+  font-size: var(--ui-type-label);
+  font-weight: var(--ui-weight-strong);
+  /* A halo of the card's surface, so the band never shows through the label. */
+  stroke: var(--wk-surface);
+  stroke-width: 5px;
+  stroke-linejoin: round;
+  paint-order: stroke;
+}
+.ui-profile__callout-word {
+  fill: var(--wk-ink-meta);
+  font-size: var(--ui-type-caption);
+  letter-spacing: .07em;
+  text-transform: uppercase;
+}
+
+.ui-profile__empty { fill: var(--wk-ink-meta); font-size: var(--ui-type-label); }

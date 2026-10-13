@@ -10,3 +10,12 @@ export function Num({ value }: { value: Sourced<number> }) {
     </span>
   );
 }
+
+/** The same, inside an SVG <text>. */
+export function NumSvg({ value }: { value: Sourced<number> }) {
+  return (
+    <tspan data-source={value.source} data-format={value.format}>
+      {formatValue(value.value, value.format)}
+    </tspan>
+  );
+}

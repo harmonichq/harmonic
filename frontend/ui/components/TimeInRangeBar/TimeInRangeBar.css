@@ -1,0 +1,39 @@
+.ui-tir {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-family: var(--ui-font);
+  font-variant-numeric: tabular-nums;
+}
+
+.ui-tir__bar { display: flex; gap: 2px; height: 10px; }
+.ui-tir__bar .ui-tir__swatch { flex-basis: 0; min-width: 3px; }
+
+.ui-tir__swatch { display: block; border-radius: 1px; }
+.ui-tir__swatch--low { background: var(--low); }
+.ui-tir__swatch--in-range { background: var(--in-range); }
+.ui-tir__swatch--high { background: var(--high); }
+/* The severe ends: 2 px stripes of the side's colour at 45°, every 4 px. */
+.ui-tir__swatch--hatched {
+  background: repeating-linear-gradient(-45deg, var(--tone) 0 1.4px, transparent 1.4px 2.83px);
+}
+.ui-tir__swatch--hatched.ui-tir__swatch--low { --tone: var(--low); }
+.ui-tir__swatch--hatched.ui-tir__swatch--high { --tone: var(--high); }
+
+.ui-tir__labels { display: flex; justify-content: space-between; }
+.ui-tir__label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  color: var(--wk-ink-body);
+  font-size: var(--ui-type-label);
+}
+.ui-tir__label:first-child { align-items: flex-start; }
+.ui-tir__label:last-child { align-items: flex-end; }
+
+.ui-tir__range { display: flex; align-items: center; gap: 6px; }
+.ui-tir__key { flex: none; width: 10px; height: 10px; }
+.ui-tir__share { color: var(--wk-ink); font-weight: var(--ui-weight-strong); }
+.ui-tir__unit { color: var(--wk-ink-meta); font-weight: var(--ui-weight-regular); }
+.ui-tir__word { color: var(--wk-ink-meta); }

@@ -18,7 +18,7 @@ export type PillState = keyof typeof LABELS;
 export function StatePill({ state }: { state: PillState }) {
   return (
     <span className={`ui-pill ui-pill--${state}`} data-state={state}>
-      {(state === 'pattern' || state === 'setting') && <Icon name={state} size={12} />}
+      {(state === 'pattern' || state === 'setting') && <Icon name={state} size={16} stroke={1.8} />}
       {LABELS[state]}
     </span>
   );

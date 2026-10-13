@@ -48,7 +48,7 @@ const PATHS = {
 
 export type IconName = keyof typeof PATHS;
 
-export function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
+export function Icon({ name, size = 20, stroke = 1.6 }: { name: IconName; size?: number; stroke?: number }) {
   return (
     <svg
       aria-hidden="true"
@@ -57,7 +57,7 @@ export function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="1.6"
+      strokeWidth={stroke}
       strokeLinecap="round"
       strokeLinejoin="round"
     >

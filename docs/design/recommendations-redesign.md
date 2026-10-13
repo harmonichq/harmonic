@@ -51,7 +51,7 @@ Each row lists a screen's states. Labels only; no state uses prose.
 | Queue | Ranked cards, top card expanded | "0 patterns" label | Card skeletons | Unavailable + Retry | A card expanded; mid-swipe; just snoozed (bar "Snoozed · Until <date>" + Undo); Snoozed footer when N > 0 |
 | Queue · Snoozed | Each snoozed item as its Queue row, plus "Until <date>" + Restore | Not reachable (the footer is hidden at 0) | — | Unavailable + Retry | Restored (row leaves) |
 | Queue · setting detail | current → estimate, range, n, chart | — | Chart skeleton | Unavailable | — |
-| Changes | Active Trial or Focus + last change | "No active change" label | Skeleton | Unavailable + Retry | Maturing; Matured (result pill); **End** (Focus: anytime; Trial: once matured) → confirm sheet → ended |
+| Changes | Active Trial or Focus + the last change as one row | "No active change" label | Skeleton | Unavailable + Retry | Maturing; Matured (result pill); last change row expanded in place; **End** (Focus: anytime; Trial: once matured) → confirm sheet → ended |
 | Overview | 14 d selected | "No data" label per window | Skeleton | Unavailable + Retry | 30 d / 90 d selected |
 | Day | Latest day with data | "No data" for a day without readings | Chart skeleton | Unavailable + Retry | Week strip; Month sheet; Prompts row when count > 0 |
 | Day · Prompts | One prompt, "n / N" | Not reachable (the row is hidden at 0) | — | Not saved + Retry | Yes → grams field and keyboard; mid-swipe Not sure |
@@ -310,6 +310,12 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   the engine judged that row better or worse; an unclear or context row moves
   in neutral ink. Every derived difference is taken between the values as
   printed, so a delta always equals the numbers beside it.
+- **2026-10-13 — the last change is one row.** The operator: "the previous
+  change should show as a small row that can be extended … I guess we can
+  leave a slot, like a one row small slot for previous change. but I'm not
+  trying to maintain a queue of all past changes in a historical record." The
+  most recently ended change is one disclosure row (what changed, when, its
+  result) that expands in place into its ended card; there is only ever one.
 - **2026-10-13 — charts take their container's width.** The operator: "fix
   the chart width to be responsive on desktop." The Setting card's evidence
   chart had stayed at its phone width inside a wide desktop card; every chart
@@ -513,7 +519,8 @@ unless noted. Loading is a skeleton of the component's own shape.
 
 20. **ListRow**: label, inline value or state, ›; read-only rows have no ›.
     - States: navigable; read-only; with alert ("⚠ Failed"); with a secondary
-      button ("Update").
+      button ("Update"); disclosure, closed or open (expands in place: the
+      Changes screen's last change).
     - Fields: `status`; `credentials.configured, email` (masked), `region`;
       `pump_settings.profile.segments[]`.
     - Desktop: the same.

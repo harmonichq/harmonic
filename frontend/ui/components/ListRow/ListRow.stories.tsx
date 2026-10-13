@@ -34,6 +34,12 @@ export const Navigable: Story = { args: { label: 'Pump profile', value: profile.
 export const ReadOnly: Story = { args: { label: 'Last attempt', value: <DateTime at={lastAttempt} /> } };
 export const WithAlert: Story = { args: { label: 'Tandem Source', value: 'Failed', alert: true, onOpen: () => {} } };
 export const WithButton: Story = { args: { label: 'Password', value: 'Set', action: { label: 'Update' } } };
+export const DisclosureClosed: Story = {
+  args: { label: 'Pump profile', value: profile.name, disclosure: { expanded: false } },
+};
+export const DisclosureOpen: Story = {
+  args: { label: 'Pump profile', value: profile.name, disclosure: { expanded: true } },
+};
 export const GlossaryTerm: Story = {
   render: () => {
     const entry = glossary().find((e) => e.term === 'Snooze')!;

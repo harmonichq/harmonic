@@ -2,9 +2,10 @@
 // components.
 //
 // The active change first: its Trial or Focus as the ChangeCard, or the "No
-// active change" label. Then "Last change": the Trial the person ended most
-// recently, as the ended ChangeCard, when there is one. Nothing else: no
-// history archive.
+// active change" label. Then "Last change": the one change the person ended
+// most recently, as a single row (what changed, when, its result) that
+// expands in place into its ended ChangeCard. One slot, never a list: no
+// history archive (operator, 2026-10-13).
 //
 // End (§1.3a) is the card's compact secondary action, offered when the engine
 // accepts it (a Focus at any time; a Trial once matured). Pressing it asks once:
@@ -39,8 +40,8 @@ export type ChangesScreenProps = {
   end?: { after: ChangesStore };
   /** Start with the End confirmation open. */
   confirming?: boolean;
-  /** How the last change is drawn: its full card, or one row that opens it. */
-  last?: 'card' | 'row';
+  /** Start with the last change's row expanded into its card. */
+  lastOpen?: boolean;
 };
 
 const dayCount = sourced<number>('prompts[answer=null].length');
@@ -64,9 +65,10 @@ function Confirm({ data, onEnd, onCancel }: { data: ChangeData; onEnd: () => voi
   );
 }
 
-export function ChangesScreen({ layout, store, state = 'ready', end, confirming = false, last: lastAs = 'card' }: ChangesScreenProps) {
+export function ChangesScreen({ layout, store, state = 'ready', end, confirming = false, lastOpen = false }: ChangesScreenProps) {
   const [ended, setEnded] = useState(false);
   const [asking, setAsking] = useState(confirming);
+  const [lastExpanded, setLastExpanded] = useState(lastOpen);
   const shown = ended && end ? end.after : store;
   const active = change(shown);
   const last = lastChange(shown);
@@ -96,7 +98,7 @@ export function ChangesScreen({ layout, store, state = 'ready', end, confirming 
     : state === 'ready' && (
       <>
         <ChangeCard data={active} onEnd={() => setAsking(true)} confirm={popover} />
-        {last && lastAs === 'row' && (
+        {last && (
           <div className="ui-changes__last">
             <ListGroup caption="Last change">
               <ListRow
@@ -108,15 +110,10 @@ export function ChangesScreen({ layout, store, state = 'ready', end, confirming 
                   </span>
                 </span>}
                 value={last.result ? <StatePill state={last.result} /> : undefined}
-                onOpen={() => undefined} />
+                disclosure={{ expanded: lastExpanded, onToggle: () => setLastExpanded(!lastExpanded) }} />
             </ListGroup>
+            {lastExpanded && <div className="ui-changes__last-card"><ChangeCard data={last} /></div>}
           </div>
-        )}
-        {last && lastAs === 'card' && (
-          <section className="ui-changes__last" aria-labelledby="ui-changes-last">
-            <h2 id="ui-changes-last" className="ui-caption ui-changes__caption">Last change</h2>
-            <ChangeCard data={last} />
-          </section>
         )}
       </>
     );

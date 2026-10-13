@@ -6,10 +6,15 @@
 // for the Pump profile's segment table. A Glossary row adds its one-line
 // definition beneath the term.
 //
+// A disclosure row expands what it names in place, beneath it: its chevron
+// points down when closed and up when open, and it says which to assistive
+// tech (aria-expanded). It never navigates.
+//
 // ListGroup gathers rows into a full-bleed section under an optional caption,
 // with hairline rules between rows and no box around them. The Glossary's
 // group is marked `.glossary`, the one place a sentence may appear (§2.3).
 import type { ReactNode } from 'react';
+import { Icon } from '../../icons';
 import { Button } from '../Button/Button';
 import '../../shared.css';
 import './ListRow.css';
@@ -25,6 +30,8 @@ export type ListRowProps = {
   action?: { label: string; onAction?: () => void };
   /** Glossary: the term's definition, beneath it. */
   definition?: string;
+  /** A disclosure row: open or closed, toggled in place. */
+  disclosure?: { expanded: boolean; onToggle?: () => void };
 };
 
 function Value({ value, alert }: Pick<ListRowProps, 'value' | 'alert'>) {
@@ -37,7 +44,17 @@ function Value({ value, alert }: Pick<ListRowProps, 'value' | 'alert'>) {
   );
 }
 
-export function ListRow({ label, value, alert = false, onOpen, action, definition }: ListRowProps) {
+export function ListRow({ label, value, alert = false, onOpen, action, definition, disclosure }: ListRowProps) {
+  if (disclosure) {
+    return (
+      <button type="button" className="ui-row ui-row--open" data-role="row" aria-expanded={disclosure.expanded}
+        onClick={disclosure.onToggle}>
+        <span className="ui-row__label">{label}</span>
+        <Value value={value} alert={alert} />
+        <span className="ui-row__disclosure"><Icon name={disclosure.expanded ? 'collapse' : 'expand'} /></span>
+      </button>
+    );
+  }
   if (onOpen) {
     return (
       <button type="button" className="ui-row ui-row--open" data-role="row" onClick={onOpen}>

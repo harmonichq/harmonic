@@ -6,7 +6,7 @@ import { ChangesScreen, type ChangesScreenProps } from './ChangesScreen';
 // The Changes screen in each state §1.3 lists, at phone (390) and desktop
 // (1440), every value the simulated wearer's served answer:
 // - Default: a Focus pinned after the person ended a basal Trial, so the
-//   ended Trial is the last change.
+//   ended Trial is the last change, one row; Last open: that row expanded.
 // - Trial maturing (six days in), Trial matured Better with End offered, and
 //   the second wearer's Trial matured Worse.
 // - Focus maturing (a day after its pin) and matured (four weeks after),
@@ -82,6 +82,7 @@ const endPlay: Story['play'] = async ({ canvasElement }) => {
   await expect(canvas.queryByRole('dialog')).toBeNull();
   await expect(canvas.getByText('No active change')).toBeInTheDocument();
   await expect(canvas.getByRole('heading', { name: 'Last change' })).toBeInTheDocument();
+  await expect(canvas.getByRole('button', { expanded: false })).toBeInTheDocument();
 };
 
 const cancelPlay: Story['play'] = async ({ canvasElement }) => {
@@ -97,5 +98,20 @@ export const EndTrialDesktop: Story = { ...story('desktop', MATURED), play: endP
 export const CancelEndPhone: Story = { ...story('phone', DEFAULT), play: cancelPlay };
 export const CancelEndDesktop: Story = { ...story('desktop', DEFAULT), play: cancelPlay };
 
-export const DefaultLastRowPhone = story('phone', { ...DEFAULT, last: 'row' });
-export const DefaultLastRowDesktop = story('desktop', { ...DEFAULT, last: 'row' });
+export const LastOpenPhone = story('phone', { ...DEFAULT, lastOpen: true });
+export const LastOpenDesktop = story('desktop', { ...DEFAULT, lastOpen: true });
+
+// The last change is one row; it expands in place into its card and back.
+export const ExpandLastPhone: Story = {
+  ...story('phone', DEFAULT),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const row = canvas.getByRole('button', { expanded: false });
+    await expect(canvas.queryByText('Before')).toBeNull();
+    await userEvent.click(row);
+    await expect(row).toHaveAttribute('aria-expanded', 'true');
+    await expect(canvas.getByText('Before')).toBeInTheDocument();
+    await userEvent.click(row);
+    await expect(canvas.queryByText('Before')).toBeNull();
+  },
+};

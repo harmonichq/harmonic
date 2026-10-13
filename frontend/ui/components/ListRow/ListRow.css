@@ -52,3 +52,6 @@
 .ui-row__cell:first-child { text-align: left; }
 .ui-row--head { min-height: 40px; align-items: end; padding-bottom: 6px; }
 .ui-row--head .ui-row__cell { color: var(--wk-ink-meta); }
+
+/* A disclosure row's chevron: down closed, up open. */
+.ui-row__disclosure { display: flex; flex: none; color: var(--wk-ink-meta); }

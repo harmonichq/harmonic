@@ -87,6 +87,6 @@
 }
 .ui-badge--alert {
   width: var(--ui-size-badge);
-  background: var(--warn);
+  background: var(--danger);
   color: var(--on-primary);
 }

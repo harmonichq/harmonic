@@ -20,7 +20,8 @@ import { DayScreen, type DayScreenProps } from './DayScreen';
 // - Log carbs: open, filled, saving, not saved, Time edited.
 // Plays per size: picking another day; the Month sheet picking one (phone);
 // Log carbs saved, closed with Escape, and retried after a failed save; the
-// Prompts walked through (Yes, Recorded, Next, the second, ‹ Day); a Yes not
+// Prompts walked through (Yes, Recorded, Next, the second, ‹ Day), the badge,
+// the row and N reading one store throughout; a Yes not
 // saved, then retried. Desktop fits its panes without scrolling.
 const meta: Meta<typeof DayScreen> = {
   title: 'Screens/Day',
@@ -168,24 +169,34 @@ export const LogCarbsRetryDesktop: Story = { ...story('desktop', { ...DEFAULT, f
 const place = (canvas: ReturnType<typeof within>) =>
   canvas.getByRole('heading', { level: 1, name: 'Lows' }).parentElement as HTMLElement;
 
-// The Prompts row drills in to "1 / 2"; Yes records it (Recorded, the grams
-// field, Next); Next shows "2 / 2"; ‹ Day returns, the row counting one.
+/** The NavBar's Day badge. */
+const badge = (root: HTMLElement) => root.querySelector('.ui-badge--count');
+
+// The Prompts row drills in to "1 / 2", the badge 2; Yes records it (Recorded,
+// the grams field, Next) on the same store; Next reads the store after it,
+// "1 / 1" and the badge 1; ‹ Day returns, the row counting one.
 const promptsPlay: Story['play'] = async ({ canvasElement }) => {
   const canvas = within(canvasElement);
+  await expect(canvas.getByRole('button', { name: /Lows/ })).toHaveTextContent('2');
   await userEvent.click(canvas.getByRole('button', { name: /Lows/ }));
   await expect(place(canvas)).toHaveTextContent('1 / 2');
+  await expect(badge(canvasElement)).toHaveTextContent('2');
   await userEvent.click(canvas.getByRole('button', { name: /Yes/ }));
   const yes = canvas.getByRole('button', { name: /Yes/ });
   await expect(yes).toHaveAttribute('aria-pressed', 'true');
   await expect(within(yes).getByText('Recorded')).toBeInTheDocument();
+  await expect(place(canvas)).toHaveTextContent('1 / 2');
+  await expect(badge(canvasElement)).toHaveTextContent('2');
   await userEvent.type(canvas.getByRole('textbox', { name: 'Carbs' }), typed);
   await userEvent.click(within(canvasElement.querySelector<HTMLElement>('.ui-prompt')!).getByRole('button', { name: 'Next' }));
-  await expect(place(canvas)).toHaveTextContent('2 / 2');
+  await expect(place(canvas)).toHaveTextContent('1 / 1');
+  await expect(badge(canvasElement)).toHaveTextContent('1');
   await expect(canvas.getByRole('button', { name: /Yes/ })).toHaveAttribute('aria-pressed', 'false');
   await userEvent.click(within(canvas.getByRole('heading', { level: 1, name: 'Lows' }).closest('header') as HTMLElement)
     .getByRole('button', { name: 'Day' }));
   await expect(canvas.getByRole('heading', { level: 1, name: 'Day' })).toBeInTheDocument();
   await expect(canvas.getByRole('button', { name: /Lows/ })).toHaveTextContent('1');
+  await expect(badge(canvasElement)).toHaveTextContent('1');
 };
 export const PromptsFlowPhone: Story = { ...story('phone', { store: 'wearer-pending' }), play: promptsPlay };
 export const PromptsFlowDesktop: Story = { ...story('desktop', { store: 'wearer-pending' }), play: promptsPlay };

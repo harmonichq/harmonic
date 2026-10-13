@@ -16,9 +16,10 @@
 // Day badge is the same count), hidden at none. It drills down (§2.2) to the
 // Prompts under "‹ Day": one PromptCard at a time, its place "n / N" in the
 // header, nothing else to act on (on desktop the month pane goes inert).
-// An answer moves the Prompts one served store on: Yes stays on the card,
-// recorded, with the optional grams field and Next; any other answer goes to
-// the next prompt, and past the last, back to Day. A write that fails puts the
+// Yes stays on the card, recorded, with the optional grams field and Next;
+// moving on (Next, or any other answer) reads the store served after that
+// answer and shows its next prompt, or past the last, returns to Day. The
+// badge, the row and "n / N" all read the one store the screen shows. A write that fails puts the
 // card back as it was and shows "Not saved" with Retry in the TransientBar.
 //
 // Log carbs: on phone a bottom sheet over the screen (on the system keyboard,
@@ -64,7 +65,7 @@ export type DayScreenProps = {
   logCarbs?: LogCarbsState;
   /** Log carbs with its Time row edited. */
   timeEdited?: boolean;
-  /** Start on the Prompts with the first one answered Yes. */
+  /** Start on the Prompts with the shown one answered Yes. */
   recorded?: boolean;
   /** Phone: the prompt held mid-swipe over its Not sure reveal. */
   swiping?: boolean;
@@ -100,7 +101,7 @@ export function DayScreen({
   const [view, setView] = useState(initialView);
   // The Prompts, one served store per answer given.
   const entry = PROMPT_STEPS.indexOf(store);
-  const [step, setStep] = useState(entry + (recorded ? 1 : 0));
+  const [step, setStep] = useState(entry);
   const [recordedNow, setRecordedNow] = useState(recorded);
   const [failed, setFailed] = useState<Answer | null>(notSaved ? 'carbs' : null);
   const [attempt, setAttempt] = useState(0);
@@ -112,14 +113,15 @@ export function DayScreen({
 
   const current = PROMPT_STEPS[step];
   const count = unanswered(current);
-  const shown = PROMPT_STEPS[recordedNow ? step - 1 : step];
 
   const select = (iso: string) => { setSelected(iso); setWeek(weekOf(iso)!); setSheet(false); };
   const go = (direction: 1 | -1) => { const next = adjacentWeek(week, direction); if (next) setWeek(next); };
 
-  const advance = (at: number) => {
+  // Moving on reads the store served after this prompt's answer.
+  const moveOn = () => {
     setRecordedNow(false);
-    if (unanswered(PROMPT_STEPS[at]).value === 0) setView('day');
+    setStep(step + 1);
+    if (unanswered(PROMPT_STEPS[step + 1]).value === 0) setView('day');
   };
   const answer = (given: Answer) => {
     if (fails.current) {
@@ -130,12 +132,11 @@ export function DayScreen({
       return;
     }
     setFailed(null);
-    setStep(step + 1);
     if (given === 'carbs') {
       setRecordedNow(true);
       setAttempt((n) => n + 1);
     } else {
-      advance(step + 1);
+      moveOn();
     }
   };
 
@@ -175,7 +176,7 @@ export function DayScreen({
     ? <ScreenHeader title="Day" trailing="unavailable" layout={layout} />
     : view === 'prompts'
       ? <ScreenHeader title="Lows" layout={layout} back={{ label: 'Day', onBack: () => setView('day') }}
-          trailing="count" {...promptPlace(store, shown)} />
+          trailing="count" {...promptPlace(current)} />
       : layout === 'phone'
         ? <ScreenHeader title="Day" day={dayDate(selected)} layout={layout} trailing="action" label="+ Log carbs"
             onAction={() => setCarbs('empty')} />
@@ -199,8 +200,8 @@ export function DayScreen({
   );
 
   const prompt = () => (
-    <PromptCard key={`${shown}-${attempt}`} data={lowPrompt(0, shown)} layout={layout} recorded={recordedNow}
-      swiping={swiping && !recordedNow} onAnswer={answer} onNext={() => advance(step)} />
+    <PromptCard key={`${current}-${attempt}`} data={lowPrompt(0, current)} layout={layout} recorded={recordedNow}
+      swiping={swiping && !recordedNow} onAnswer={answer} onNext={moveOn} />
   );
   const bar = view === 'prompts' && failed && (
     <TransientBar kind="not_saved" layout={layout} onRetry={() => { fails.current = false; answer(failed); }} />

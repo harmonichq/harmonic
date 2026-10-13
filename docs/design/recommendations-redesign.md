@@ -4,7 +4,7 @@ Status: **exploring** (#481).
 - Information architecture approved 2026-10-12.
 - Direction approved 2026-10-12 (step 1 closed): round 3 on the design canvas,
   https://claude.ai/artifact/KHE7tPovxexxNx1ZQS8zfM, row "Current · round 3".
-- Component inventory (§4) proposed and awaiting approval.
+- Component inventory (§4) approved 2026-10-12 (step 2 closed).
 
 This document is the durable record of the redesign. Sections 1–3 are what the
 build will be checked against once they are approved. The appendix keeps the
@@ -182,7 +182,7 @@ Any term not in this table may not appear in the UI.
 The inventory in §1.3, with phone screens at 390 px and desktop at 1440 px.
 Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
 
-## 4. Component inventory (proposed — awaiting approval)
+## 4. Component inventory (approved 2026-10-12)
 
 Twenty components. Screens are composed only from these. Every state listed
 gets a Storybook story in step 3. "Fields" are the only served data a component

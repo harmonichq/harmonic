@@ -173,12 +173,12 @@ class SlotEstimate:
         this slot — the single "this slot moves" predicate the consolidated
         deliverable and the Priority impact tally both key on (issue #264).
 
-        A **held** slot reads ``False``: ``INSUFFICIENT`` (wide, thin-n, *or* the
-        CI-spans-current case), ``NO_CHANGE``, ``NO_DATA``, ``NO_BASELINE``, or a
-        ``None`` status. This closes the old ``not estimate.wide``-only gap — a
-        CI-spans-current slot is now held everywhere, not just in the frontend —
-        except a recurring-lows lower (``HARM_LOWER``), which the harm layer moves
-        whatever its interval (ADR 466)."""
+        A **held** slot reads ``False``: ``INSUFFICIENT`` (no sign-test support, a
+        disagreeing sign, *or* a served range that still contains the set rate,
+        closed bounds, #489), ``NO_CHANGE``, ``NO_DATA``, ``NO_BASELINE``, or a
+        ``None`` status. A range-contains-current slot is held everywhere, not just
+        in the frontend — except a recurring-lows lower (``HARM_LOWER``), which the
+        harm layer moves whatever its interval (ADR 466)."""
         return self.status is not None and self.status.actionable
 
     def to_dict(self) -> dict:

@@ -473,10 +473,15 @@ def _half_gap(programmed: float, target: float, cfg: IsfConfig) -> float:
 
 
 def isf_asserts_move(current: Optional[float], direction: Optional[str],
-                     recommended: Optional[float]) -> bool:
-    """Whether the final ISF verdict may stage a real settings move."""
+                     recommended: Optional[float], estimate: Estimate) -> bool:
+    """Whether the final ISF verdict may stage a real settings move.
+
+    The fasting estimate's served range must also exclude the programmed value
+    (closed bounds, #489): a range that still contains it holds the move, whatever
+    the night votes say."""
     return (current is not None and direction is not None
-            and recommended is not None and recommended != current)
+            and recommended is not None and recommended != current
+            and estimate.excludes(current))
 
 
 @dataclass(frozen=True)
@@ -794,6 +799,17 @@ def analyze_isf(
             ann = "a correction low is on record"
         evidence["harm"] = arm_harm_evidence(harm_arm, 0)
 
+    # The one staging decision, on the post-harm values. A sized strengthen it
+    # refuses can only have been refused for its range (#489): the fasting range
+    # still contains the programmed value, so the read is a hold like every other
+    # ISF hold, with no direction or number, and nothing downstream prices it.
+    asserts_move = isf_asserts_move(programmed, direction, rec, est)
+    if (not asserts_move and direction == "strengthen" and rec is not None
+            and rec != programmed):
+        rec, direction, priced_target = None, None, None
+        ann = ("overnight you look more sensitive to insulin than the set value, "
+               "but the measured range still includes it, so it stays as it is")
+
     # Night-honest recurrence + the impact currency's window-grounded inputs, stashed
     # for the priority builder (which owns the Wilson roll-up, #413 §4).
     side_dir = 1 if direction == "weaken" else -1 if direction == "strengthen" else 0
@@ -836,7 +852,6 @@ def analyze_isf(
         # rescue channel actually ran over (#467).
         evidence["rescue_evidence"] = rescue_observation.to_dict()
 
-    asserts_move = isf_asserts_move(programmed, direction, rec)
     return [SegmentEstimate(
         start_min=0,
         label="Fasting",

@@ -86,6 +86,18 @@ class Estimate:
         ref = abs(self.value) if self.value else 1.0
         return half > _WIDE_REL_HALFWIDTH * ref
 
+    def excludes(self, value: Optional[float]) -> bool:
+        """Whether this estimate's range rules ``value`` out (#489).
+
+        The range is the served ``lo``/``hi`` pair, the one a reader sees, and it
+        is **closed**: a value equal to either bound is inside it. With no value or
+        no range nothing is ruled out. Each setting kind's staging predicate
+        requires this of its programmed value, so a setting whose own range still
+        contains what is programmed is held rather than recommended.
+        """
+        return (value is not None and self.lo is not None and self.hi is not None
+                and not (self.lo <= value <= self.hi))
+
     def to_dict(self) -> dict:
         out = {
             "value": self.value,

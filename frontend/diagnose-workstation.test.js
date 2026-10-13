@@ -852,14 +852,13 @@ test('basal night roster preserves a null served roster mean as an em dash', () 
 });
 
 /* ADR 466: the recurring-lows panel reads task 51's served /api/analyze rows —
-   01:00 held on the spread nights, 03:00 a recurring-lows lower on the same
-   nights, 05:00 held within the threshold (ADR 465) — never a hand-set verdict. */
+   01:00 held on the spread nights, 03:00 held by recurring lows on the same
+   nights because their range contains the setting (ADR 489), 05:00 held within
+   the threshold (ADR 465) — never a hand-set verdict. */
 const recurringLows = JSON.parse(readFileSync(new URL(
   './__fixtures__/basal-night-evidence.json', import.meta.url), 'utf8')).recurring_lows;
 const recurringCell = (label) => buildSlotLane(recurringLows.analyze_basal).cells
   .find((cell) => cell.label === label);
-const OWNER_SENTENCE = 'The steady nights alone do not establish this step down. '
-  + 'It comes from the overnight lows listed below.';
 const HEDGE = 'is consistent with this data, not established by it.';
 
 function recurringPanel(label, onDay = () => {}) {
@@ -882,17 +881,24 @@ const countLine = (harm) => `Overnight lows on ${harm.recurrence_nights} night`
   + `not this half hour alone. A step down needs lows on ${harm.recurrence_bar} night`
   + `${harm.recurrence_bar === 1 ? '' : 's'}.`;
 
-test('ADR 466 · a recurring-lows lower says the overnight lows own its step down', () => {
+test('ADR 489 · recurring lows whose range contains the setting hold, say so and stage nothing', () => {
   const originalDocument = globalThis.document;
   try {
     globalThis.document = { createElement: (tagName) => new RosterElement(tagName) };
-    const { panel } = recurringPanel('03:00');
-    assert.ok(panel.includes(OWNER_SENTENCE), `the interval sentence names the lows: ${panel}`);
-    assert.ok(!panel.includes(HEDGE), 'the hedge that the data does not establish a move is replaced');
+    const slot = recurringCell('03:00').slot;
+    assert.equal(slot.safety_status, 'held (recurring-low gate)');
+    assert.equal(slot.asserts_move, false);
+    assert.ok(slot.estimate.lo <= slot.current && slot.current <= slot.estimate.hi,
+      'premise: the served range contains the setting');
+    const { panel, stage } = recurringPanel('03:00');
+    assert.ok(panel.includes(HEDGE), `the interval sentence keeps the hedge: ${panel}`);
+    assert.ok(!panel.includes('do not establish this step down'), 'no step down is owned by the lows');
+    assert.ok(panel.includes(slot.annotation), `the panel prints the served hold sentence: ${panel}`);
+    assert.equal(stage, 0, 'a held slot offers no Stage change');
   } finally { globalThis.document = originalDocument; }
 });
 
-test('ADR 466 · a recurring-lows lower shows the served count and each low, each opening Day', () => {
+test('ADR 466 · a recurring-lows slot shows the served count and each low, each opening Day', () => {
   const originalDocument = globalThis.document;
   try {
     globalThis.document = { createElement: (tagName) => new RosterElement(tagName) };
@@ -937,29 +943,6 @@ test('ADR 466 · a slot with no recurring lows keeps today\'s hedge and no lows 
     assert.ok(panel.includes(HEDGE), `the held spread slot keeps the hedge: ${panel}`);
     assert.ok(!extra.includes('Overnight lows on'));
     assert.equal(lows.length, 0);
-  } finally { globalThis.document = originalDocument; }
-});
-
-test('ADR 466 guard · a plain lower whose interval reaches the setting keeps the hedge', () => {
-  // Hand-built on purpose: this pins the frontend's status-string branch, not a
-  // backend verdict.
-  const originalDocument = globalThis.document;
-  try {
-    globalThis.document = { createElement: (tagName) => new RosterElement(tagName) };
-    const host = new RosterElement();
-    renderSlotLevel(host, {
-      i: 6, startMin: 180, endMin: 210, asserts: true, verdict: 'down',
-      slot: {
-        current: 0.6, recommended: 0.54, safety_status: 'lower',
-        annotation: 'one cautious step down is supported at this time',
-        estimate: { value: 0.54, lo: 0.45, hi: 0.66, n: 30, wide: false },
-      },
-    }, new Set(), 30, 8, () => {}, {
-      nightEvidence: { nights: [], roster_glucose_mean: null, excluded_night_count: 0 },
-    });
-    const panel = sentences({ children: [host.children[0]] });
-    assert.ok(panel.includes(HEDGE), panel);
-    assert.ok(!panel.includes(OWNER_SENTENCE));
   } finally { globalThis.document = originalDocument; }
 });
 

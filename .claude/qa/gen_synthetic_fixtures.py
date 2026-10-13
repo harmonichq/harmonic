@@ -44,6 +44,7 @@ from ciq_autotune.finding_case_file import Member, PreparedCases, _opaque, wrap
 from ciq_autotune.findings_projection import _occurrence_verdict
 from ciq_autotune.safety import _MIN_SUPPORTED_NIGHTS
 from ciq_autotune.store import Store
+from ciq_autotune.uncertainty import Estimate
 from ciq_autotune.window_membership import WindowQuery
 
 OUT = sys.argv[1] if len(sys.argv) > 1 else 'mockups/diagnose-workstation.synthetic'
@@ -393,8 +394,9 @@ def build_ic(asserting):
     current_isf = 42.0
     direction = None
     recommended_isf = None
+    isf_estimate = estimate(31.4, 18.2, 46.9, 1583, wide=True)
     isf = [{'start_min': 0, 'label': 'Fasting', 'parameter': 'isf', 'current': current_isf,
-            'estimate': estimate(31.4, 18.2, 46.9, 1583, wide=True), 'recommended': None,
+            'estimate': isf_estimate, 'recommended': None,
             'annotation': 'corrections keep overshooting into lows, so the correction factor '
                           'eases weaker',
             # 27 detected rest windows, 24 of which produced a per-night fit: the
@@ -404,7 +406,10 @@ def build_ic(asserting):
                          'night_fits': [{'date': d, 'isf': isf}
                                         for d, isf in zip(DATES * 8,
                                                           [28.5, 31.4, 34.2] * 8)]},
-            'asserts_move': isf_asserts_move(current_isf, direction, recommended_isf),
+            'asserts_move': isf_asserts_move(
+                current_isf, direction, recommended_isf,
+                Estimate(isf_estimate['value'], isf_estimate['lo'], isf_estimate['hi'],
+                         isf_estimate['n'])),
             'block_id': None}]
     out = {**LABEL, 'schema_version': 8, 'generated': f'{WINDOW["end"]}T00:00:00+00:00',
            'ic': [], 'ic_blocks': [evening, morning], 'isf': isf}

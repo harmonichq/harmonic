@@ -120,7 +120,8 @@ def programmed_basal_by_slot(basal_events: List[BasalEvent],
     return {s: rate for s, (_, rate) in latest.items()}
 
 
-def _annotation_for(status: Status, *, recurring_hold: bool = False) -> str:
+def _annotation_for(status: Status, *, recurring_hold: bool = False,
+                    range_hold: bool = False) -> str:
     """The one sentence each status prints, in the canonical user register.
 
     These strings are *user copy*, not engine vocabulary: they surface verbatim in
@@ -132,7 +133,19 @@ def _annotation_for(status: Status, *, recurring_hold: bool = False) -> str:
     ``recurring_hold`` picks the held sentence for a :attr:`Status.HARM_GATED` slot
     whose recurring lows argue down but whose step down is too small to take
     (ADR 465); every other gated slot withholds a raise and keeps that sentence.
+
+    ``range_hold`` picks the held sentence for a slot whose measured range still
+    contains the set rate (#489): an :attr:`Status.INSUFFICIENT` slot whose nights
+    do point one way, so the sentence never blames a well-supported slot on thin
+    data, and a :attr:`Status.HARM_GATED` slot whose recurring lows argue down. It
+    takes precedence over ``recurring_hold``.
     """
+    if status is Status.INSUFFICIENT and range_hold:
+        return ("most nights point one way, but the measured range still includes "
+                "the set rate, so it stays as it is")
+    if status is Status.HARM_GATED and range_hold:
+        return ("lows keep happening overnight, but the measured range still "
+                "includes the set rate, so it stays as it is")
     if status is Status.HARM_GATED and recurring_hold:
         return ("lows keep happening overnight, but the step down is smaller than "
                 "the smallest change worth making, so the rate stays as it is")
@@ -527,10 +540,16 @@ def analyze_basal(
         # The same family-corrected direction verdict drives status and therefore
         # SlotEstimate.asserts_move. Slots that do not clear it keep their estimate
         # visible but hold everywhere downstream.
+        # A supported direction also needs the served range to exclude the set
+        # rate (#489); `cap()` owns that rule. Only the sentence below asks which
+        # rule held the slot, so a well-supported slot is not called thin.
         recommended, status = cap(
             current, est.value, safety, est,
             supported_direction=supported_directions.get(s, 0),
         )
+        range_hold = (status is Status.INSUFFICIENT
+                      and supported_directions.get(s, 0) != 0
+                      and not est.excludes(current))
         # Harm layer (ADR 0038): if this slot printed an overnight fasting low, gate a
         # raise; if such lows recurred across the band, nudge it down one step. Applied
         # on top of the clean verdict and only ever toward less insulin. It overrides
@@ -544,6 +563,7 @@ def analyze_basal(
                 current, recommended, status, safety,
                 nudge=nudged,
                 median=est.value,
+                estimate=est,
             )
             harm_verdict = basal_harm_evidence(harm, s, cfg.slot_minutes)
             # ADR 465: a nudged hold whose median does not argue up is the lows'
@@ -551,6 +571,12 @@ def analyze_basal(
             recurring_hold = (
                 status is Status.HARM_GATED and nudged
                 and (est.value is None or est.value <= current)
+            )
+            # #489: a cut the clean median argues for, held by the range.
+            range_hold = (status is Status.INSUFFICIENT and range_hold) or (
+                status is Status.HARM_GATED and nudged
+                and est.value is not None and est.value < current
+                and not est.excludes(current)
             )
         evidence: Dict = {"points": [
             {"date": d.isoformat(),
@@ -652,7 +678,8 @@ def analyze_basal(
             current=current,
             estimate=est,
             recommended=recommended,
-            annotation=_annotation_for(status, recurring_hold=recurring_hold),
+            annotation=_annotation_for(status, recurring_hold=recurring_hold,
+                                       range_hold=range_hold),
             days=len(per_day),
             evidence=evidence,
             status=status,

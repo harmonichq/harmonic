@@ -16,6 +16,8 @@
 // time.
 import type { Sourced } from '../../fixtures';
 import { formatValue } from '../../provenance.js';
+import { useWidth } from '../../measure';
+import '../../shared.css';
 import './EvidenceChart.css';
 
 export type EvidenceChartProps = {
@@ -27,7 +29,6 @@ export type EvidenceChartProps = {
   lo: Sourced<number>;
   hi: Sourced<number>;
   units: string;
-  width?: number;
 };
 
 const DOT = 6;
@@ -78,7 +79,8 @@ function MarkLabel({ word, value, x, other, row, width, className }: {
   );
 }
 
-export function EvidenceChart({ nights, roster, current, estimate, lo, hi, units, width = 326 }: EvidenceChartProps) {
+export function EvidenceChart({ nights, roster, current, estimate, lo, hi, units }: EvidenceChartProps) {
+  const [box, width] = useWidth<HTMLDivElement>();
   // The band that matters, padded generously, snapped outward to round ticks.
   const marks = [current.value, estimate.value, lo.value, hi.value];
   const low = Math.min(...marks);
@@ -127,7 +129,8 @@ export function EvidenceChart({ nights, roster, current, estimate, lo, hi, units
   const lastIndex = scale.values.length - 1;
 
   return (
-    <svg width={width} height={HEIGHT} viewBox={`0 0 ${width} ${HEIGHT}`} className="ui-evidence">
+    <div ref={box} className="ui-chart">
+    {width > 0 && <svg width={width} height={HEIGHT} viewBox={`0 0 ${width} ${HEIGHT}`} className="ui-evidence">
       {lo.value !== hi.value && (
         <rect x={x(lo.value)} y={PLOT_TOP} width={x(hi.value) - x(lo.value)} height={PLOT_HEIGHT}
           className="ui-evidence__band" />
@@ -165,6 +168,7 @@ export function EvidenceChart({ nights, roster, current, estimate, lo, hi, units
           </g>
         ))}
       </g>
-    </svg>
+    </svg>}
+    </div>
   );
 }

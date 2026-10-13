@@ -197,6 +197,7 @@ in §2.
 | Popover | Anchored to its trigger. |
 | Transient bar | Above the tab bar, label and one text action. |
 | Drill-down (back) | A screen that opens a sub-screen pushes it: the sub-screen's ScreenHeader gains a leading back control, "‹" and the parent screen's name ("‹ Queue"), 44 px target, in the text-action blue, on its own row; the sub-screen's title sits below it at title size, left-aligned (large-title convention, the same on every drill-down). Phone: the sub-screen replaces the screen above the tab bar, which stays; back returns to the parent as it was (the same item open). Desktop: the drill-down happens inside the pane that owns it, with the same back control in that pane's header. |
+| Charts | A chart takes its container's full width at every size: it measures its box and lays out to it, so its type stays at its true px size (never a stretched viewBox), and its axis stays flush with the card's text column. No chart has a fixed width. |
 | Scrolling | A screen's content scrolls as one page: on phone the content scrolls under the fixed screen header and above the fixed tab bar and transient bar; on desktop each pane scrolls on its own, as a whole pane. |
 
 ### 2.3 Absolute bans
@@ -277,6 +278,10 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   different text than the numbers it's describing": it was centred beside a
   larger value. §2.2 now sets the caption + value pair: stacked, or inline on
   one baseline.
+- **2026-10-13 — charts take their container's width.** The operator: "fix
+  the chart width to be responsive on desktop." The Setting card's evidence
+  chart had stayed at its phone width inside a wide desktop card; every chart
+  now measures its box and lays out to it (§2.2 Charts).
 
 ### 2.6 Deferred (not cut)
 Not built in the current screens. The engine still serves what each needs, and

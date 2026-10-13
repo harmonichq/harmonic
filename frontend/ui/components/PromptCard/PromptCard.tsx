@@ -17,6 +17,7 @@ import type { PromptData } from '../../day-model';
 import { Num, NumSvg } from '../../Num';
 import { GramsField } from '../../GramsField';
 import { formatValue } from '../../provenance.js';
+import { useWidth } from '../../measure';
 import { SEVERE_LOW, glucoseDomain, glucoseFraction, zones } from '../../glucose-zones';
 import { Button } from '../Button/Button';
 import '../../shared.css';
@@ -28,7 +29,6 @@ export type PromptCardProps = {
   /** Phone only: the card held mid-swipe over its Not sure reveal. */
   swiping?: boolean;
   layout?: 'phone' | 'desktop';
-  width?: number;
   /** An answer was tapped: carbs (Yes), no, false-low or not-sure. */
   onAnswer?: (answer: Answer) => void;
   /** Next after Yes, with the grams typed (empty when none). */
@@ -44,7 +44,8 @@ const POSTED: Record<(typeof ANSWERS)[number], Answer> = {
 const HEIGHT = 96;
 const AXIS = 16;
 
-function Sparkline({ data, width }: { data: PromptData; width: number }) {
+function Sparkline({ data }: { data: PromptData }) {
+  const [box, width] = useWidth<HTMLDivElement>();
   const span = Math.max(...data.cgm.map((r) => r.minute));
   const domain = glucoseDomain(data.cgm.map((r) => r.bg));
   const x = (minute: number) => width * (minute / span);
@@ -55,7 +56,8 @@ function Sparkline({ data, width }: { data: PromptData; width: number }) {
   const clock = (minute: number) => formatValue((data.start + minute) % 1440, 'clock');
   const tone = data.bg.value < SEVERE_LOW ? 'very-low' : 'low';
   return (
-    <svg width={width} height={HEIGHT + AXIS} viewBox={`0 0 ${width} ${HEIGHT + AXIS}`} className="ui-prompt__spark">
+    <div ref={box} className="ui-chart">
+    {width > 0 && <svg width={width} height={HEIGHT + AXIS} viewBox={`0 0 ${width} ${HEIGHT + AXIS}`} className="ui-prompt__spark">
       <defs>
         {zones(data.low.value, 180).map((zone) => (
           <clipPath key={zone.tone} id={`${id}-${zone.tone}`}>
@@ -79,12 +81,13 @@ function Sparkline({ data, width }: { data: PromptData; width: number }) {
         <text x={0} y={HEIGHT + AXIS - 2} className="ui-prompt__scale">{clock(0)}</text>
         <text x={width} y={HEIGHT + AXIS - 2} textAnchor="end" className="ui-prompt__scale">{clock(span)}</text>
       </g>
-    </svg>
+    </svg>}
+    </div>
   );
 }
 
 export function PromptCard({
-  data, recorded: initiallyRecorded = false, swiping = false, layout = 'phone', width = 326, onAnswer, onNext,
+  data, recorded: initiallyRecorded = false, swiping = false, layout = 'phone', onAnswer, onNext,
 }: PromptCardProps) {
   // Yes records at once; the card then holds the grams typed until Next.
   const [recorded, setRecorded] = useState(initiallyRecorded);
@@ -99,7 +102,7 @@ export function PromptCard({
         <span className={`ui-prompt__bg ui-zone--${tone}`}><Num value={data.bg} /></span>
         <span className="ui-prompt__meta"> mg/dL</span>
       </p>
-      <Sparkline data={data} width={width} />
+      <Sparkline data={data} />
       <span className="ui-caption ui-prompt__caption">Carbs</span>
       <div className="ui-prompt__answers" role="group" aria-label="Carbs">
         {(layout === 'desktop' ? ANSWERS : ANSWERS.slice(0, 3)).map((answer) => {

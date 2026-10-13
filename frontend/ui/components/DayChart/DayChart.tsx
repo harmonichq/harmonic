@@ -27,12 +27,13 @@
 import type { DayChartData, DayEvent } from '../../day-model';
 import { Num, NumSvg } from '../../Num';
 import { formatValue } from '../../provenance.js';
+import { useWidth } from '../../measure';
 import { glucoseDomain, glucoseFraction, zones } from '../../glucose-zones';
 import { Icon } from '../../icons';
 import '../../shared.css';
 import './DayChart.css';
 
-export type DayChartProps = { data: DayChartData; width?: number; layout?: 'phone' | 'desktop' };
+export type DayChartProps = { data: DayChartData; layout?: 'phone' | 'desktop' };
 
 const DAY = 1440;
 const GAP = 10; // minutes without a reading that break the trace
@@ -106,7 +107,8 @@ function runs(cgm: DayChartData['cgm']) {
   return out;
 }
 
-export function DayChart({ data, width = 358, layout = 'phone' }: DayChartProps) {
+export function DayChart({ data, layout = 'phone' }: DayChartProps) {
+  const [box, width] = useWidth<HTMLDivElement>();
   const glucoseHeight = layout === 'desktop' ? 260 : 176;
   const glucoseTop = STRIP + 4;
   const glucoseBottom = glucoseTop + glucoseHeight;
@@ -154,7 +156,8 @@ export function DayChart({ data, width = 358, layout = 'phone' }: DayChartProps)
           {sites.length > 0 && <Key kind="site" label="Site change" />}
         </div>
       )}
-      <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="ui-daychart__chart">
+      <div ref={box} className="ui-chart">
+      {width > 0 && <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="ui-daychart__chart">
         <defs>
           {zones(data.low.value, data.high.value).map((zone) => (
             <clipPath key={zone.tone} id={`${id}-${zone.tone}`}>
@@ -220,7 +223,8 @@ export function DayChart({ data, width = 358, layout = 'phone' }: DayChartProps)
             </text>
           ))}
         </g>
-      </svg>
+      </svg>}
+      </div>
       {data.events.length > 0 && (
         <ol className="ui-daychart__events" style={{ '--rows': Math.ceil(data.events.length / 3) } as React.CSSProperties}>
           {data.events.map((e, i) => (

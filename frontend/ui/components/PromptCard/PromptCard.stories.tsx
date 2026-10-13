@@ -23,7 +23,7 @@ export const Unanswered: Story = { args: { data: lowPrompt() } };
 export const YesRecorded: Story = { args: { data: lowPrompt(), recorded: true } };
 export const MidSwipe: Story = { args: { data: lowPrompt(), swiping: true } };
 export const Desktop: Story = {
-  args: { data: lowPrompt(), layout: 'desktop', width: 656 },
+  args: { data: lowPrompt(), layout: 'desktop' },
   parameters: { frame: { width: 720 } },
 };
 

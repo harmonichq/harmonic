@@ -20,6 +20,6 @@ export const Default: Story = { args: { data: dayChart('default') } };
 export const WithLoggedCarbs: Story = { args: { data: dayChart('with_carbs') } };
 export const NoData: Story = { args: { data: dayChart('no_data') } };
 export const Desktop: Story = {
-  args: { data: dayChart('with_carbs'), layout: 'desktop', width: 1376 },
+  args: { data: dayChart('with_carbs'), layout: 'desktop' },
   parameters: { frame: { width: 1440 } },
 };

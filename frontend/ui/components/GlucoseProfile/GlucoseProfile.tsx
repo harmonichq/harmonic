@@ -17,11 +17,12 @@
 import type { ProfileBin, ProfileData } from '../../overview-model';
 import { Num, NumSvg } from '../../Num';
 import { formatValue } from '../../provenance.js';
+import { useWidth } from '../../measure';
 import { SEVERE_HIGH, ZoneHatches, glucoseDomain, glucoseFraction, zoneArea, zones as glucoseZones } from '../../glucose-zones';
 import '../../shared.css';
 import './GlucoseProfile.css';
 
-export type GlucoseProfileProps = { data: ProfileData; width?: number };
+export type GlucoseProfileProps = { data: ProfileData };
 
 const HEIGHT = 274;
 const LEFT = 34;
@@ -51,7 +52,8 @@ function runs(bins: ProfileBin[]): ProfileBin[][] {
   return out;
 }
 
-export function GlucoseProfile({ data, width = 334 }: GlucoseProfileProps) {
+export function GlucoseProfile({ data }: GlucoseProfileProps) {
+  const [box, width] = useWidth<HTMLDivElement>();
   const right = width - RIGHT_PAD;
   const supported = data.bins.filter((bin) => bin.supported);
   const domain = glucoseDomain(supported.flatMap((bin) => [bin.p10, bin.p90]));
@@ -115,7 +117,8 @@ export function GlucoseProfile({ data, width = 334 }: GlucoseProfileProps) {
           </span>
         </div>
       )}
-      <svg width={width} height={HEIGHT} viewBox={`0 0 ${width} ${HEIGHT}`} className="ui-profile__chart">
+      <div ref={box} className="ui-chart">
+      {width > 0 && <svg width={width} height={HEIGHT} viewBox={`0 0 ${width} ${HEIGHT}`} className="ui-profile__chart">
         <defs>
           {zones.map((zone) => (
             <clipPath key={zone.tone} id={`${id}-clip-${zone.tone}`}>
@@ -171,7 +174,8 @@ export function GlucoseProfile({ data, width = 334 }: GlucoseProfileProps) {
             </text>
           ))}
         </g>
-      </svg>
+      </svg>}
+      </div>
     </section>
   );
 }

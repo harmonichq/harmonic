@@ -11,17 +11,19 @@ import type { DayData } from '../../overview-model';
 import { isClean } from '../../overview-model';
 import { Num } from '../../Num';
 import { formatValue } from '../../provenance.js';
+import { useWidth } from '../../measure';
 import { glucoseDomain, glucoseFraction, zones } from '../../glucose-zones';
 import '../../shared.css';
 import './DayTile.css';
 
-export type DayTileProps = { day: DayData; selected?: boolean; width?: number; onSelect?: () => void };
+export type DayTileProps = { day: DayData; selected?: boolean; onSelect?: () => void };
 
 const HEIGHT = 72;
 const LOW = 70;
 const HIGH = 180;
 
-export function DayTile({ day, selected = false, width = 145, onSelect }: DayTileProps) {
+export function DayTile({ day, selected = false, onSelect }: DayTileProps) {
+  const [box, width] = useWidth<HTMLDivElement>();
   const domain = glucoseDomain(day.curve.map((p) => p.bg));
   const y = (bg: number) => HEIGHT * (1 - glucoseFraction(bg, domain));
   const points = day.curve.map((p) => `${(p.x * width).toFixed(1)},${y(p.bg).toFixed(1)}`).join(' ');
@@ -36,7 +38,8 @@ export function DayTile({ day, selected = false, width = 145, onSelect }: DayTil
           {formatValue(day.date.value, day.date.format)}
         </span>
       </span>
-      <svg aria-hidden="true" width={width} height={HEIGHT} viewBox={`0 0 ${width} ${HEIGHT}`} className="ui-day__spark">
+      <div ref={box} className="ui-chart">
+      {width > 0 && <svg aria-hidden="true" width={width} height={HEIGHT} viewBox={`0 0 ${width} ${HEIGHT}`} className="ui-day__spark">
         <defs>
           {zones(LOW, HIGH).map((zone) => (
             <clipPath key={zone.tone} id={`${id}-${zone.tone}`}>
@@ -50,7 +53,8 @@ export function DayTile({ day, selected = false, width = 145, onSelect }: DayTil
           <polyline key={zone.tone} points={points} clipPath={`url(#${id}-${zone.tone})`}
             className={zone.tone === 'in-range' ? 'ui-day__trace ui-day__trace--in-range' : `ui-day__trace ui-zone-stroke ui-zone--${zone.tone}`} />
         ))}
-      </svg>
+      </svg>}
+      </div>
       <span className="ui-day__foot">
         {day.hasData && (<>
           <span className="ui-day__counts">

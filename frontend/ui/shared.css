@@ -28,3 +28,7 @@
 /* A card's lesser action (Snooze): a text action centred beneath the card's
    primary, far enough below it not to be hit by accident. */
 .ui-card-snooze { display: flex; justify-content: center; margin-top: 16px; }
+
+/* A chart's box: the full width of its container, which the chart measures
+   and lays out to (§2.2 Charts). */
+.ui-chart { width: 100%; min-width: 0; }

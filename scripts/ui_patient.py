@@ -8,35 +8,44 @@ answers look like, through the real engine, rather than hand-shaped cases.
 The person: twelve weeks on a Tandem pump with Control-IQ and a CGM.
 
 * **Physiology.** Glucose moves by insulin acting against a true basal need
-  (lowest in the small hours, a rise on waking, day-to-day variation and the
-  odd resistant day or cold), by carbohydrate absorbed at a mixed, fast or slow meal's
-  pace, and by the kidneys spilling glucose above about 160 mg/dL. Insulin
+  (lowest in the small hours, a dawn rise, day-to-day variation and the odd
+  resistant day or cold), by carbohydrate absorbed at a mixed, fast or slow
+  meal's pace, and by the kidneys spilling glucose above about 160 mg/dL. Insulin
   acts on the exponential curve the engine's own IOB model uses, taken up a
   little less well on an infusion site's third day. The CGM reads it every
   5 minutes with correlated sensor noise, a warm-up gap at each sensor change
   and the odd dropped reading.
-* **Pump profile.** Basal, correction factor and carb ratio segments, two of
-  them mis-set: the 03:00 basal is more than twice what the night needs, so on the
+* **Pump profile.** Basal, correction factor and carb ratio segments, some of
+  them mis-set: the 02:00 basal is twice what the small hours need, so on the
   nights Control-IQ cannot pull it back in time the person runs low by
-  06:00-07:00, and the lunch carb ratio is weaker than this person's response,
-  so lunches run high. The programmed correction factor is stronger than the
-  true one, so corrections overshoot now and then. On ``TRIAL_DAY`` the person
-  lowers the 03:00 basal most of the way, which the engine detects as a Trial
-  and measures as fewer early-morning lows.
+  04:00-05:00; the 00:00 block runs a little high; and the 11:00 carb
+  ratio is weaker than this person's response, so lunches run high. The
+  programmed correction factor is stronger than the true one, so corrections
+  overshoot now and then. On ``TRIAL_DAY`` the person lowers the 02:00 basal
+  most of the way, which the engine detects as a Trial and measures as fewer
+  small-hours lows. A second wearer has the 02:00 block right and raises it in
+  the wrong direction instead.
 * **Control-IQ.** Every 5 minutes it predicts glucose 30 minutes out and
-  raises, lowers or suspends basal against the profile, with a tighter target
-  through the sleep schedule, counting bolus insulin still to act before it
-  raises, and adds an automatic correction bolus when glucose is predicted
-  above 180, at most hourly. Each basal row carries what was delivered against
-  what was programmed, and the source: Profile, Algorithm, Temp or Suspended.
-* **Behaviour.** Three meals and an occasional snack, 8 to 75 g, at varied
-  times, and now and then a light, low-carb day. Most meal boluses are on
-  time, with carb counts that run a little low; some are late, some
-  undercount the carbs, a few are forgotten until the high alert and a few
-  are overridden short, and small snacks often go unbolused. Highs are corrected through the calculator, and now and then
+  raises, lowers or suspends basal against the profile, gently through the
+  sleep schedule, and adds an automatic correction bolus of at least 0.35 U
+  when glucose is predicted above 180 net of bolus insulin on board, at most
+  hourly. Each basal row carries what was delivered against what was
+  programmed, and the source: Profile, Algorithm, Temp or Suspended.
+* **Behaviour.** Three meals and up to three snacks a day, mostly 15 to 60 g:
+  a mid-afternoon snack, sometimes an early-evening one, and most nights a
+  slow, fatty late-evening one whose carbs are undercounted, so the night
+  drifts up. Breakfast is skipped now and then, and some days are light and
+  low-carb. Most boluses are on time, with carb counts that scatter and run a
+  little low; some are late, some undercount, a few are forgotten until the
+  high alert and a few are overridden short, and small snacks often go
+  unbolused. Highs are corrected through the calculator, and now and then
   corrected again on top of insulin still acting. Lows are treated with fast
-  carbs, sometimes too many. Exercise three evenings a week, with a temp
-  basal, and a more insulin-sensitive night after it.
+  carbs, a little later when asleep, sometimes too many. Exercise three
+  evenings a week, with a temp basal, and a more insulin-sensitive night
+  after it.
+* **Units.** Insulin doses, rates, ratios and the correction factor sit on a
+  scale like a real adult wearer's: about 4 to 6 U for a meal and 1 to 2 U/h
+  of basal.
 
 Only ``materialize`` touches a store, and only through ``Store`` writes, the
 same rows a Tandem Source ingestion writes.
@@ -58,25 +67,32 @@ DAYS = 84
 STEP = 5  # minutes
 STEPS_PER_DAY = 24 * 60 // STEP
 TRIAL_DAY = 56
-TRIAL_SEGMENT_START = 180
+TRIAL_SEGMENT_START = 120
 # The person's change on ``TRIAL_DAY``: most of the way down to what the
-# 03:00 block needs, which ends its early-morning lows.
-TRIAL_BASAL = 0.80
+# 02:00 block needs, which ends its 04:00-05:00 lows.
+TRIAL_BASAL = 1.00
 
 # The programmed profile: (start_min, basal U/h, ISF mg/dL/U, carb ratio g/U, target).
 PROFILE = (
-    (0, 0.70, 40, 10.0, 110),
-    (180, 1.50, 40, 10.0, 110),   # mis-set: 03:00-07:00 needs about 0.58
-    (420, 1.05, 40, 10.0, 110),
-    (660, 0.85, 40, 12.0, 110),   # mis-set: lunch responds to about 9.5 g/U
-    (960, 0.90, 40, 10.0, 110),
-    (1260, 0.75, 40, 10.0, 110),
+    (0, 1.00, 28, 7.0, 110),      # a little high: 00:00-02:00 needs about 0.85
+    (120, 1.60, 28, 7.0, 110),    # mis-set: 02:00-05:00 needs about 0.80
+    (300, 1.40, 28, 7.0, 110),
+    (660, 1.20, 28, 8.5, 110),    # mis-set: lunch responds to about 6.8 g/U
+    (840, 1.20, 28, 7.0, 110),
+    (960, 1.25, 28, 7.0, 110),
+    (1260, 1.05, 28, 7.0, 110),
 )
+# A second wearer, for the Worse Trial: the same person with the 02:00 block
+# set right, who on ``TRIAL_DAY`` raises it in the wrong direction (as if for
+# the breakfast highs). Control-IQ trims the extra insulin but cannot stop it
+# all, so the small hours start running low.
+WORSE_PROFILE_BASAL = 0.85
+WORSE_TRIAL_BASAL = 2.40
 SLEEP = (23 * 60, 7 * 60)
 DIA_MIN = 300
 
 # The person's true response, by minute of day.
-TRUE_ISF = 52.0
+TRUE_ISF = 34.0
 # A cold late in the history: three days of insulin resistance, which the
 # latest month's outcomes show against the longer windows.
 COLD_DAYS = range(64, 67)
@@ -85,29 +101,31 @@ COLD_RESISTANCE = 1.35
 
 def true_basal_need(minute: int) -> float:
     """U/h the body uses at this time of day: lowest in the small hours, then a
-    rise on waking. This person has little dawn phenomenon before 07:00, so the
-    03:00 block's 1.50 U/h is more than the night needs and, on the nights
-    Control-IQ cannot pull it back in time, runs them low by 06:00-07:00."""
+    dawn rise from 05:00. The 02:00 block's 1.60 U/h is twice what 02:00-05:00
+    needs and, on the nights Control-IQ cannot pull it back in time, runs them
+    low by 04:00-05:00."""
     hour = minute / 60
-    if hour < 3:
-        return 0.70
-    if hour < 7:
-        return 0.58
-    if hour < 8:  # the waking rise, steep once up
-        return 0.58 + 0.47 * (hour - 7)
+    if hour < 2:
+        return 0.85
+    if hour < 5:
+        return 0.80
+    if hour < 6.5:  # the dawn rise
+        return 0.80 + 0.73 * (hour - 5)
+    if hour < 8:
+        return 1.90 - 0.20 * (hour - 6.5)
     if hour < 10:
-        return 1.05
+        return 1.60
     if hour < 11:  # easing into the day
-        return 1.05 - 0.19 * (hour - 10)
+        return 1.60 - 0.40 * (hour - 10)
     if hour < 17:
-        return 0.86
+        return 1.20
     if hour < 21:
-        return 0.90
-    return 0.76
+        return 1.26
+    return 1.06
 
 
 def true_carb_ratio(minute: int) -> float:
-    return 9.5 if 11 * 60 <= minute < 16 * 60 else 10.0
+    return 6.8 if 11 * 60 <= minute < 14 * 60 else 7.0
 
 
 def _profile_at(segments, minute: int):
@@ -128,9 +146,10 @@ def settings(segments=PROFILE, idp: int = 1, name: str = "Synthetic wearer") -> 
                         sleep_schedules=(SleepSchedule(SLEEP[0], SLEEP[1], tuple(range(7))),))
 
 
-def trial_profile():
-    return tuple((start, TRIAL_BASAL if start == TRIAL_SEGMENT_START else basal, isf, ratio, target)
-                 for start, basal, isf, ratio, target in PROFILE)
+def trial_profile(trial_basal: float = TRIAL_BASAL, profile=PROFILE):
+    """``profile`` with its 02:00 block set to ``trial_basal``."""
+    return tuple((start, trial_basal if start == TRIAL_SEGMENT_START else basal, isf, ratio, target)
+                 for start, basal, isf, ratio, target in profile)
 
 
 # --- insulin and carbohydrate kernels, per 5-minute step ---------------------
@@ -182,8 +201,8 @@ LONGEST_MEAL = max(len(kernel) for _, kernel in MEALS)
 # 400 ceiling.
 RENAL_THRESHOLD = 162.0
 # The hour of exercise itself: working muscle takes up glucose without
-# insulin, about 54 mg/dL over the session (mg/dL per step).
-EXERCISE_UPTAKE = 4.5
+# insulin, about 42 mg/dL over the session (mg/dL per step).
+EXERCISE_UPTAKE = 3.5
 # An infusion site takes up insulin less well as it ages: by its third day a
 # tenth or so less, which is why third-day afternoons run higher.
 SITE_ABSORPTION = (1.0, 0.97, 0.88)
@@ -204,8 +223,9 @@ def _stamp(t: datetime) -> str:
     return t.strftime("%Y-%m-%d %H:%M:%S")
 
 
-def simulate(*, trial: bool) -> History:
-    """Run the wearer for ``DAYS`` days. ``trial`` makes the ``TRIAL_DAY`` change."""
+def simulate(*, trial: bool, trial_basal: float = TRIAL_BASAL, profile=PROFILE) -> History:
+    """Run the wearer for ``DAYS`` days on ``profile``. ``trial`` makes the
+    ``TRIAL_DAY`` change to the 02:00 block, to ``trial_basal`` U/h."""
     rng = random.Random(SEED)
     steps = DAYS * STEPS_PER_DAY
     insulin_excess = [0.0] * (steps + len(INSULIN))   # U above the body's need
@@ -219,8 +239,8 @@ def simulate(*, trial: bool) -> History:
     # then a resistant day (a stressful day, a cold) that runs high.
     resistance = []
     for day in range(DAYS):
-        varied, resistant = math.exp(rng.gauss(0, 0.10)), rng.random() < 0.12
-        resistance.append(varied * (COLD_RESISTANCE if day in COLD_DAYS else 1.25 if resistant else 1.0))
+        varied, resistant = math.exp(rng.gauss(0, 0.13)), rng.random() < 0.12
+        resistance.append(varied * (COLD_RESISTANCE if day in COLD_DAYS else 1.35 if resistant else 1.0))
     exercise = {day for day in range(DAYS) if day % 7 in (1, 3, 5)}
     sensor_changes = {day for day in range(DAYS) if day % 10 == 3}
     site_changes = {day for day in range(DAYS) if day % 3 == 0}
@@ -235,32 +255,44 @@ def simulate(*, trial: bool) -> History:
     meals = []  # (step, g, behaviour, two rolls, kernel)
     for day in range(DAYS):
         base = day * STEPS_PER_DAY
+        # Three meals and up to three snacks: mid-afternoon, early evening
+        # and late evening. Breakfast is skipped now and then.
         plan = [
-            (rng.uniform(7.0, 8.75), rng.uniform(20, 60)),
-            (rng.uniform(12.0, 13.75), rng.uniform(30, 70)),
-            (rng.uniform(18.0, 20.0), rng.uniform(35, 75)),
+            (rng.uniform(7.0, 8.75), rng.uniform(15, 40) if rng.random() < 0.93 else 0),
+            (rng.uniform(12.0, 13.5), rng.uniform(30, 60)),
+            (rng.uniform(18.0, 19.75), rng.uniform(35, 62)),
         ]
-        light = rng.random() < 0.10  # a light, low-carb day: small meals, no snack
+        snacks = [
+            (rng.uniform(14.75, 15.75), rng.uniform(20, 45) if rng.random() < 0.8 else 0),
+            (rng.uniform(16.5, 17.5), rng.uniform(20, 40) if rng.random() < 0.4 else 0),
+            (rng.uniform(20.75, 22.5), rng.uniform(20, 48) if rng.random() < 0.85 else 0),
+        ]
+        light = rng.random() < 0.10  # a light, low-carb day: small meals, no snacks
         if light:
             plan = [(hour, grams * 0.4) for hour, grams in plan]
-        if rng.random() < 0.5:
-            snack = (rng.choice((16.5, 21.5)) + rng.uniform(-0.5, 0.5), rng.uniform(8, 25))
-            if not light:
-                plan.append(snack)
+        else:
+            plan += snacks
+        plan = [(hour, grams) for hour, grams in plan if grams]
         for index, (hour, grams) in enumerate(plan):
             step = base + int(hour * 60 // STEP)
             roll = rng.random()
             # Most boluses are on time. Some come 15-40 minutes into the meal,
             # some undercount the carbs, a few are forgotten until the CGM's
             # high alert 30-55 minutes in, and a few are overridden short.
-            behaviour = ("on_time" if roll < 0.52 else "late" if roll < 0.70 else
-                         "undercount" if roll < 0.82 else "forgotten" if roll < 0.90 else "short")
-            if index == 3 and grams < 26 and rng.random() < 0.5:
+            behaviour = ("on_time" if roll < 0.50 else "late" if roll < 0.66 else
+                         "undercount" if roll < 0.78 else "forgotten" if roll < 0.90 else "short")
+            if grams < 15 and rng.random() < 0.5:
                 behaviour = "missed"  # small snacks often go unbolused
             speed, pick = rng.random(), 0
             while speed > MEALS[pick][0]:
                 speed -= MEALS[pick][0]
                 pick += 1
+            if hour >= 20.5:
+                # The late-evening snack is a slow, fatty one whose carbs are
+                # undercounted, so the night drifts up after it.
+                pick = len(MEALS) - 1
+                if behaviour in ("on_time", "late"):
+                    behaviour = "undercount"
             meals.append((step, round(grams), behaviour, rng.random(), rng.random(), MEALS[pick][1]))
     meal_at = {}
     for meal in meals:
@@ -287,7 +319,7 @@ def simulate(*, trial: bool) -> History:
     treat_at = None
 
     def pump_profile(day: int):
-        return trial_profile() if trial and day >= TRIAL_DAY else PROFILE
+        return trial_profile(trial_basal, profile) if trial and day >= TRIAL_DAY else profile
 
     def bolus(step: int, *, insulin: float, requested: float, carbs_g, bg_read, food, correction,
               option: int, override: int, segment) -> None:
@@ -337,7 +369,7 @@ def simulate(*, trial: bool) -> History:
         sensor_error = 0.75 * sensor_error + rng.gauss(0, 2.0)
         reading = bg + drift + sensor_error
         warming = day in sensor_changes and 9 * 60 <= minute < 11 * 60
-        dropped = rng.random() < 0.004
+        dropped = rng.random() < 0.035
         cgm = None if warming or dropped else max(40, min(400, round(reading)))
         if cgm is not None:
             history.cgm.append({"EventDateTime": _stamp(now), "Readings (CGM / BGM)": cgm,
@@ -349,8 +381,8 @@ def simulate(*, trial: bool) -> History:
         trend = ((3 * (recent[3] - recent[0]) + (recent[2] - recent[1])) / (10 * STEP)
                  if len(recent) == 4 else 0.0)
         predicted = seen + 30 * trend
-        # Raising basal, Control-IQ counts the bolus insulin still to act, so a
-        # covered meal's rise does not draw extra insulin on top of its bolus.
+        # Raising basal or correcting, Control-IQ counts the bolus insulin still
+        # to act, so a covered meal's rise does not draw extra insulin on top.
         predicted_with_iob = predicted - 0.5 * segment[2] * bolus_iob[step]
 
         # -- Control-IQ sets this step's basal
@@ -362,8 +394,11 @@ def simulate(*, trial: bool) -> History:
         elif predicted < 112.5:
             delivered = programmed * max(0.0, 1 - (112.5 - predicted) / 40)
             source = "algorithmDelivery" if delivered > 0 else "algorithmDelivery (control-iq suspension)"
-        elif predicted_with_iob > (120 if asleep else 160):
-            delivered = programmed * min(3.0, 1 + (predicted_with_iob - (120 if asleep else 160)) / 90)
+        elif asleep and predicted_with_iob > 120:  # gently through the sleep schedule
+            delivered = programmed * min(2.0, 1 + (predicted_with_iob - 120) / 120)
+            source = "algorithmDelivery"
+        elif not asleep and predicted_with_iob > 160:
+            delivered = programmed * min(3.0, 1 + (predicted_with_iob - 160) / 40)
             source = "algorithmDelivery"
         else:
             delivered, source = programmed, "profileDelivery"
@@ -378,11 +413,11 @@ def simulate(*, trial: bool) -> History:
             insulin_excess[step + k] += (delivered * site_uptake(step) - need) * STEP / 60 * weight
 
         # -- Control-IQ's automatic correction: when glucose is predicted above
-        # 180, 60% of the correction to 110 net of insulin on board, at most
+        # 180 net of bolus insulin on board, 60% of the correction to 110 net of insulin on board, at most
         # hourly, never asleep
-        if (not asleep and predicted > 180 and step - last_auto >= 12):
+        if (not asleep and predicted_with_iob > 180 and step - last_auto >= 12):
             wanted = 0.6 * ((predicted - 110) / segment[2] - bolus_iob[step])
-            if wanted >= 0.1:
+            if wanted >= 0.35:
                 bolus(step, insulin=wanted, requested=wanted, carbs_g=None, bg_read=seen,
                       food=0.0, correction=wanted, option=3, override=0, segment=segment)
                 last_auto = step
@@ -390,7 +425,7 @@ def simulate(*, trial: bool) -> History:
         # -- the person: meal boluses as planned
         for behaviour, grams, roll in bolus_at.get(step, ()):
             entered = grams * (rng.uniform(0.65, 0.8) if behaviour == "undercount"
-                               else rng.gauss(0.92, 0.12))  # counts run a little low
+                               else rng.gauss(0.92, 0.2))  # counts run a little low
             entered = max(5, round(entered))
             food = entered / segment[3]
             correction = max(0.0, (seen - segment[4]) / segment[2] - bolus_iob[step])
@@ -405,7 +440,7 @@ def simulate(*, trial: bool) -> History:
         if (cgm is not None and not asleep and cgm > 200 and trend > -0.5
                 and step - last_user_bolus >= 24 and rng.random() < 0.12):
             correction = (cgm - segment[4]) / segment[2] - bolus_iob[step]
-            if correction >= 0.3:
+            if correction >= 0.4:
                 bolus(step, insulin=correction, requested=correction, carbs_g=None, bg_read=cgm,
                       food=0.0, correction=correction, option=0, override=0, segment=segment)
                 last_user_bolus = last_correction = step
@@ -424,7 +459,8 @@ def simulate(*, trial: bool) -> History:
         # and treated early on a fast-falling arrow
         if cgm is not None and (cgm < 70 or (cgm < 80 and trend < -1.0)) and not low_episode:
             low_episode = True
-            treat_at = step + rng.randint(1, 4)
+            # noticed a little later asleep, when the alarm has to wake them
+            treat_at = step + (rng.randint(3, 7) if asleep else rng.randint(2, 5))
         if cgm is not None and cgm > 85:
             low_episode = False
         if treat_at == step:
@@ -464,22 +500,23 @@ def simulate(*, trial: bool) -> History:
     return history
 
 
-def materialize(store, *, trial: bool, days: int = DAYS) -> History:
+def materialize(store, *, trial: bool, days: int = DAYS, trial_basal: float = TRIAL_BASAL,
+                profile=PROFILE) -> History:
     """Ingest the simulated history into ``store`` as a Tandem Source pull would:
     the profile read at the start (and again after the ``TRIAL_DAY`` change),
     then CGM, basal, bolus and pump events. ``days`` stops the pull at the end of
     that day, as a sync made early in the wearer's history would."""
-    history = simulate(trial=trial)
+    history = simulate(trial=trial, trial_basal=trial_basal, profile=profile)
     cut = _stamp(START + timedelta(days=days))
     history.cgm = [row for row in history.cgm if row["EventDateTime"] < cut]
     history.basal = [row for row in history.basal if row["time"] < cut]
     history.bolus = [row for row in history.bolus if row["request_time"] < cut]
     history.pump = [row for row in history.pump if row["time"] < cut]
     history.treated_lows = [low for low in history.treated_lows if _stamp(low[0]) < cut]
-    store.upsert_settings_snapshot(_stamp(START), settings())
+    store.upsert_settings_snapshot(_stamp(START), settings(profile))
     if trial and days > TRIAL_DAY:
         store.upsert_settings_snapshot(_stamp(START + timedelta(days=TRIAL_DAY)),
-                                       settings(trial_profile()))
+                                       settings(trial_profile(trial_basal, profile)))
     store.upsert_cgm(history.cgm)
     store.upsert_basal(history.basal)
     store.upsert_bolus(history.bolus)

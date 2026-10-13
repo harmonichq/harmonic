@@ -36,9 +36,12 @@ Two committed outputs, one generator, one ``--check``:
   ``wearer`` with its matured Trial and that Trial's retained comparison;
   ``wearer-ended`` the same store once the person ends that Trial through
   ``POST /api/verify/trials/{id}/finish``; ``wearer-pinned`` with its Focus;
-  ``wearer-first-days`` with no active change; and ``wearer-trial-maturing``,
+  ``wearer-first-days`` with no active change; ``wearer-trial-maturing``,
   the wearer's history cut six days after the Trial day, so the Trial is still
-  maturing.
+  maturing; and ``wearer-worse``, the second wearer, whose wrong-direction
+  Trial matures Worse. The two matured results are checked: the generator
+  fails if either stops being served. ``wearer-worse`` also has its Queue
+  answers in ``queue``.
 
   ``day`` holds ``/api/timeline`` and ``/api/carbs`` for three of the wearer's
   days, picked by rule: the latest day with readings, a site change and no
@@ -97,9 +100,10 @@ WINDOWS = (14, 30, 90)
 # The pinned wall clock: one hour after the wearer's last reading.
 CLOCK = ui_patient.START + timedelta(days=ui_patient.DAYS, hours=1)
 FAILED_ERROR = "synthetic sync failure"
-# The person logs the treated lows of the prompt window (the last week) by
-# hand, all but the most recent few, which stay as prompts.
-PROMPT_WINDOW_DAYS = 7
+# The person logs the treated lows of the last fortnight by hand, all but the
+# most recent few, which stay as prompts: about four entries a week, the rate
+# a real wearer's manual carb log runs at.
+LOGGING_DAYS = 14
 UNLOGGED_LOWS = 2
 # §4.2 SegmentedControl: "14 / 30 / 90 d", and QueueRow's magnitude "9 of 71 lows".
 UNITS = ("d",)
@@ -169,16 +173,16 @@ def _serve(database: pathlib.Path) -> TestClient:
     ))
 
 
-def _wearer(scratch: pathlib.Path, name: str, *, trial: bool, days: int = ui_patient.DAYS):
+def _wearer(scratch: pathlib.Path, name: str, *, trial: bool, days: int = ui_patient.DAYS, **change):
     """Ingest the wearer into a scratch store, as a sync would, and serve it."""
     database = scratch / f"{name}.sqlite"
     with Store.open(str(database)) as store:
-        history = ui_patient.materialize(store, trial=trial, days=days)
+        history = ui_patient.materialize(store, trial=trial, days=days, **change)
         reconcile_ingested_follow_up(store)
     client = _serve(database)
-    # The person's own writes: the week's treated lows logged by hand, bar the
-    # latest few, and one remaining prompt answered.
-    window_start = ui_patient.START + timedelta(days=ui_patient.DAYS - PROMPT_WINDOW_DAYS)
+    # The person's own writes: the fortnight's treated lows logged by hand, bar
+    # the latest few, and one remaining prompt answered.
+    window_start = ui_patient.START + timedelta(days=ui_patient.DAYS - LOGGING_DAYS)
     logged = [low for low in history.treated_lows if low[0] >= window_start][:-UNLOGGED_LOWS]
     for at, grams in logged:
         _post(client, "/api/carbs", {"t": at.strftime("%Y-%m-%d %H:%M:%S"), "grams": grams,
@@ -229,7 +233,14 @@ def fixtures() -> dict:
         _, maturing = _wearer(scratch, "wearer-trial-maturing", trial=True,
                               days=ui_patient.TRIAL_DAY + MATURING_DAYS)
         changes["wearer-trial-maturing"] = _changes_store(maturing)
+
+        _, worse = _wearer(scratch, "wearer-worse", trial=True,
+                           profile=ui_patient.trial_profile(ui_patient.WORSE_PROFILE_BASAL),
+                           trial_basal=ui_patient.WORSE_TRIAL_BASAL)
+        changes["wearer-worse"] = _changes_store(worse)
+        queue["wearer-worse"] = _queue_store(worse)
         _require_result(changes["wearer"], "favorable")
+        _require_result(changes["wearer-worse"], "concerning")
 
         unsynced = scratch / "wearer-unsynced.sqlite"
         with Store.open(str(unsynced)):
@@ -504,7 +515,9 @@ def _blocks(store: dict) -> list[dict]:
 def states(queue: dict) -> dict:
     """The store and subject behind each story state, chosen from the served answers."""
     patterns = _patterns(queue["wearer"])
-    blocks = _blocks(queue["wearer"])
+    blocks = [{**b, "store": "wearer"} for b in _blocks(queue["wearer"])]
+    # A block whose Trial has matured: the wearer's, or else the second wearer's.
+    blocks += [{**b, "store": "wearer-worse"} for b in _blocks(queue["wearer-worse"]) if b["trial"]]
 
     def pattern(store, rule):
         found = sorted((p for p in (patterns if store == "wearer" else _patterns(queue[store]))
@@ -513,7 +526,7 @@ def states(queue: dict) -> dict:
 
     def block(rule):
         found = [b for b in blocks if rule(b)]
-        return {"store": "wearer", "start_min": found[0]["start"]} if found else None
+        return {"store": found[0]["store"], "start_min": found[0]["start"]} if found else None
 
     pinned = next((f["pattern_key"] for f in queue["wearer-pinned"]["focus"]["focuses"]
                    if f["status"] == "active"), None)

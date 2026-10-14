@@ -6,8 +6,9 @@
 // once its own reads have landed.
 //
 // Most answers are served as the API returns them; the models read a subset of
-// their fields. Where scripts/gen_ui_fixtures.py reshapes an answer, this does
-// the same, and names the generator function it mirrors.
+// their fields. Where the stories' fixture generator reshapes an answer, this
+// does the same, and names the generator function it mirrors (gen_ui_fixtures,
+// which the public tree excludes).
 //
 // THE READS ARE BOUNDED. The server answers one request at a time, so every
 // read waits behind every other, and a read that fans out with the length of

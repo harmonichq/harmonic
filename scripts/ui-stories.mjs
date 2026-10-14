@@ -196,7 +196,15 @@ if (mode === 'check') {
       try {
         const errors = await render(page, story.id);
         assert.deepEqual(errors, [], 'the story threw');
-        assert.deepEqual(precheckProblems(await page.evaluate(inspect), { fixtures: FIXTURES, allowed: ALLOWED }), []);
+        // A story may read a served-shape variant (frontend/ui/served-variants.ts);
+        // its stores join the generated answers at their own keys, never replacing one.
+        const variants = await page.evaluate(() => globalThis.__uiVariants ?? null);
+        const fixtures = variants ? {
+          ...FIXTURES,
+          changes: { ...variants.changes, ...FIXTURES.changes },
+          queue: { ...variants.queue, ...FIXTURES.queue },
+        } : FIXTURES;
+        assert.deepEqual(precheckProblems(await page.evaluate(inspect), { fixtures, allowed: ALLOWED }), []);
       } finally {
         await page.close();
       }

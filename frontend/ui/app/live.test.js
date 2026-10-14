@@ -131,3 +131,19 @@ test('Log carbs posts the time picked, today, or now when none was', async () =>
   assert.match(unpicked.t, /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
   assert.equal(picked.t.slice(0, 10), unpicked.t.slice(0, 10));
 });
+
+test('a whole-profile Trial and a candidate of an unknown kind are read through, never dropped or fatal', async () => {
+  const served = history({ activeKind: 'trial' });
+  Object.assign(served.trials[29], { parameter: 'profile', slot: null, before: null, after: null });
+  served.candidates.push({ subject: 'habit:missed_meal', kind: 'habit', title: 'Habit', units: null, priority: 99,
+    admitted: true, preference: { set_aside: false }, decision: null });
+  const fake = fakeClient(served);
+  const live = createLive({ client: fake.client, glossary: [] });
+  await live.readTab('changes');
+  await live.readTab('queue');
+  const active = live.answers.changes.wearer.trials.find((t) => t.id === 'trial:29');
+  assert.equal(active.parameter, 'profile');
+  assert.ok(active.reassessment, 'the active profile Trial is reassessed like any Trial');
+  const unknown = live.answers.queue.wearer.guidance.candidates.find((c) => c.subject === 'habit:missed_meal');
+  assert.equal(unknown.queued, true);
+});

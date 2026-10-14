@@ -28,14 +28,16 @@ export type OutcomeRow = {
 
 export type TrialData = {
   kind: 'trial';
-  /** The parameter's served title and units, as the Queue names the setting. */
-  title: string;
-  units: string;
+  /** What changed, by its name: a setting's served title, "Pump profile" for a
+   *  whole-profile switch, "Target" for the target; null for a parameter the
+   *  engine serves that the app has no name for. */
+  title: string | null;
   /** Null for a change the engine serves no time block for (a whole-profile change). */
   slot: Sourced<string> | null;
   changedAt: Sourced<string>;
-  before: Sourced<number>;
-  after: Sourced<number>;
+  /** The value before and after, in the setting's units; null where the engine
+   *  serves none (a whole-profile switch) or the app cannot print the parameter. */
+  change: { before: Sourced<number>; after: Sourced<number>; units: string } | null;
   daysElapsed: Sourced<number>;
   daysRequired: Sourced<number>;
   maturing: boolean;
@@ -175,6 +177,13 @@ export function lastChange(name: ChangesStore): TrialData | null {
   return ended[0] ? trialData(name, ended[0]) : null;
 }
 
+/** What a Trial changed that the guidance serves no setting candidate for: a
+ *  whole-profile switch (§1.5 Pump profile), and the pump's target. */
+const TRIAL_NAMES: Record<string, { title: string; units?: string }> = {
+  profile: { title: 'Pump profile' },
+  target_bg: { title: 'Target', units: 'mg/dL' },
+};
+
 function trialData(name: ChangesStore, trial: TrialRow): TrialData {
   const store = answers.changes[name];
   const root = `changes.${name}`;
@@ -184,19 +193,21 @@ function trialData(name: ChangesStore, trial: TrialRow): TrialData {
   const compared = ended ? { path: `${path}.ending.assessment.outcomes`, rows: ended.outcomes }
     : trial.reassessment ? { path: `${path}.reassessment.outcomes`, rows: trial.reassessment.outcomes } : null;
   const target = compared?.rows.find((r) => trial.target_metrics.includes(r.key));
+  // Served data: a parameter the app has no name, units or format for draws the
+  // card without those parts, never fails the screen.
+  const named = TRIAL_NAMES[trial.parameter];
   const candidate = answers.queue.wearer.guidance.candidates.find((c) => c.subject === `setting:${trial.parameter}`);
-  if (!candidate?.units) throw new Error(`the engine serves no title for ${trial.parameter}`);
+  const units = candidate?.units ?? named?.units ?? null;
   const format = PARAMETER_FORMATS[trial.parameter as keyof typeof PARAMETER_FORMATS];
-  if (!format) throw new Error(`no pump profile format for ${trial.parameter}`);
+  const values = trial as { before?: number | null; after?: number | null; slot?: string | null };
   return {
     kind: 'trial',
-    title: candidate.title,
-    units: candidate.units,
-    slot: (trial as { slot?: string | null }).slot ? sourced(`${path}.slot`) : null,
+    title: candidate?.title ?? named?.title ?? null,
+    slot: values.slot ? sourced(`${path}.slot`) : null,
     changedAt: sourced(`${path}.changed_at`, 'date'),
     // Each setting as the pump profile prints it.
-    before: sourced(`${path}.before`, format),
-    after: sourced(`${path}.after`, format),
+    change: units && format && values.before != null && values.after != null
+      ? { before: sourced(`${path}.before`, format), after: sourced(`${path}.after`, format), units } : null,
     daysElapsed: sourced(`${path}.maturing.days_elapsed`),
     daysRequired: sourced(`${path}.maturing.days_required`),
     maturing: trial.state === 'maturing',

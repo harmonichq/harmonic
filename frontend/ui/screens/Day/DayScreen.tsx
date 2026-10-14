@@ -113,7 +113,8 @@ export type DayWrites = {
 /** How long a save is shown busy before it settles. */
 const SAVE_MS = 600;
 
-const week = (iso: string) => weekOf(iso)!.map(navigatorDay);
+/** The week holding a day, when the navigator serves all of it. */
+const week = (iso: string) => weekOf(iso)?.map(navigatorDay) ?? null;
 
 /** The month, dropped down from the header's day: its name, ‹ ›, and its weeks. */
 function Month({ layout, selected, onSelect, left, exit }: {
@@ -446,7 +447,7 @@ function Day({
           <div key={`${view}-body`} className="ui-dayscreen__body ui-push">
             {view === 'prompts' ? prompt() : (
               <>
-                <DayRibbon days={week(selected)} selected={selected} onSelect={select} />
+                {week(selected) && <DayRibbon days={week(selected)!} selected={selected} onSelect={select} />}
                 {dayContent}
               </>
             )}

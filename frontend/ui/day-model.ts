@@ -128,10 +128,18 @@ const shift = (iso: string, days: number) => {
   return date.toISOString().slice(0, 10);
 };
 
-/** The latest day the navigator serves readings for: Day's default. */
+/** The latest day the navigator serves readings for: Day's default. A store
+ *  with no readings yet (before its first sync) has none, and Day opens on the
+ *  served month's last day up to today instead, which the chart shows as
+ *  "No data". */
 export function latestDay(): string {
-  const withData = navigator().days.filter((d) => d.has_data);
-  return withData[withData.length - 1].iso;
+  const { days, month } = navigator();
+  const withData = days.filter((d) => d.has_data);
+  if (withData.length) return withData[withData.length - 1].iso;
+  const today = new Date().toISOString().slice(0, 10);
+  const inMonth = days.filter((d) => d.iso.startsWith(month));
+  const past = inMonth.filter((d) => d.iso <= today);
+  return (past[past.length - 1] ?? inMonth[0] ?? days[0]).iso;
 }
 
 /** The day as Day's header names it: its weekday and served date ("Sun 25 May"). */

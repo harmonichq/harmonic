@@ -7,6 +7,7 @@
 // answers in from the live API.
 import { answers, sourced, type Sourced } from './answers';
 import { formatValue } from './provenance.js';
+import { PARAMETER_FORMATS } from './settings-model';
 
 export type QueueStore = keyof typeof answers.queue;
 export type Tone = 'high' | 'low';
@@ -50,27 +51,35 @@ export type SettingData = {
   estimate: Sourced<number>;
   lo: Sourced<number>;
   hi: Sourced<number>;
-  days: Sourced<number>;
-  nights: { rate: Sourced<number> }[];
-  /** The roster's own path, so the chart can name the nights beyond its axis. */
-  roster: string;
+  /** Basal's night evidence: the count, each night's delivered rate, and the
+   *  roster's own path, so the chart can name the nights beyond its axis. Null
+   *  for ISF and I:C, whose evidence is not nights. */
+  days: Sourced<number> | null;
+  nights: { rate: Sourced<number> }[] | null;
+  roster: string | null;
   /** The slot's change was detected and has matured into a Trial. */
   trial: boolean;
 };
 
 const store = (name: QueueStore) => answers.queue[name];
 
+/** The findings row a Pattern is read through, or none. A pattern that
+ *  collapses to its one member is served as that member's habit row: the Queue
+ *  reads it through that row, whose habit is its cause. */
+function patternRow(name: QueueStore, key: string) {
+  const s = store(name);
+  const outcome = s.findings.outcome_patterns.find((p) => p.key === key);
+  const member = outcome?.collapse === 'collapse_to_member' && outcome.action
+    ? `finding:${outcome.action.split(':')[1]}` : null;
+  const rowId = member ?? `pattern:${key}`;
+  return { outcome, member, rowId, row: s.findings.rows.find((r) => r.id === rowId) };
+}
+
 export function pattern(name: QueueStore, key: string): PatternData {
   const root = `queue.${name}.findings`;
   const s = store(name);
   const id = `pattern:${key}`;
-  const outcome = s.findings.outcome_patterns.find((p) => p.key === key);
-  // A pattern that collapses to its one member is served as that member's
-  // habit row: the Queue reads it through that row, whose habit is its cause.
-  const member = outcome?.collapse === 'collapse_to_member' && outcome.action
-    ? `finding:${outcome.action.split(':')[1]}` : null;
-  const rowId = member ?? id;
-  const row = s.findings.rows.find((r) => r.id === rowId);
+  const { outcome, member, rowId, row } = patternRow(name, key);
   if (!row) throw new Error(`${name} serves no ${rowId} row`);
   const rowPath = `${root}.rows[id=${rowId}].0`;
   const counted = Boolean(row.count_sentences?.length);
@@ -128,7 +137,8 @@ function impact(name: QueueStore, key: string, tone: Tone): Impact | null {
 
 export function basalSetting(name: QueueStore, startMin: number): SettingData {
   const s = store(name);
-  const row = s.findings.rows.find((r) => r.kind === 'setting' && r.span?.start_min === startMin);
+  const row = s.findings.rows.find((r) => r.kind === 'setting' && r.parameter === 'basal_rate'
+    && r.span?.start_min === startMin);
   if (!row) throw new Error(`${name} serves no basal block at ${startMin}`);
   const rowPath = `queue.${name}.findings.rows[id=${row.id}].0`;
   const slot = startMin / 30;
@@ -156,6 +166,38 @@ export function basalSetting(name: QueueStore, startMin: number): SettingData {
   };
 }
 
+/** The glossary's names for the settings whose candidate titles are longer (§1.5 ISF, I:C). */
+const SETTING_TITLES: Record<string, string> = { isf: 'ISF', carb_ratio: 'I:C' };
+
+/** An ISF or I:C Setting, from its admitted findings row: its block, and its
+ *  first member's current, suggested and estimate range, each printed as the
+ *  pump profile prints that setting. Null when the findings serve no admitted
+ *  row for it. Its evidence is not nights, so it has no night chart or count. */
+export function otherSetting(name: QueueStore, parameter: 'isf' | 'carb_ratio'): SettingData | null {
+  const s = store(name);
+  const row = s.findings.rows.find((r) => r.kind === 'setting' && r.parameter === parameter && r.members?.length);
+  const candidate = s.guidance.candidates.find((c) => c.subject === `setting:${parameter}`);
+  if (!row?.span || !candidate?.units) return null;
+  const rowPath = `queue.${name}.findings.rows[id=${row.id}].0`;
+  const member = `${rowPath}.members.0`;
+  const format = PARAMETER_FORMATS[parameter];
+  return {
+    title: SETTING_TITLES[parameter],
+    units: candidate.units,
+    start: sourced(`${rowPath}.span.start_min`, 'clock'),
+    end: sourced(`${rowPath}.span.end_min`, 'clock'),
+    current: sourced(`${member}.current`, format),
+    suggested: sourced(`${member}.recommended`, format),
+    estimate: sourced(`${member}.estimate.value`, format),
+    lo: sourced(`${member}.estimate.lo`, format),
+    hi: sourced(`${member}.estimate.hi`, format),
+    days: null,
+    nights: null,
+    roster: null,
+    trial: false,
+  };
+}
+
 /** The story states the generator found in the served answers, by name. */
 const states = () => answers.states;
 type PatternState = 'multi_cause' | 'single_cause' | 'no_cause' | 'pinned' | 'uncertain';
@@ -179,18 +221,33 @@ export type QueueItem =
 
 type Candidate = (typeof answers.queue)[QueueStore]['guidance']['candidates'][number];
 
-function item(name: QueueStore, candidate: Candidate): QueueItem {
+/** A candidate as its Queue component draws it, or null for one no Queue
+ *  component draws (a kind the app does not know), or one whose served
+ *  findings or analysis lack what its component reads. The candidates are served data: one
+ *  the Queue cannot draw is left out, never fatal to the screen. */
+function item(name: QueueStore, candidate: Candidate): QueueItem | null {
+  const s = store(name);
   if (candidate.kind === 'pattern') {
-    return { subject: candidate.subject, kind: 'pattern', data: pattern(name, candidate.subject.split(':')[1]) };
+    const key = candidate.subject.split(':')[1];
+    return patternRow(name, key).row ? { subject: candidate.subject, kind: 'pattern', data: pattern(name, key) } : null;
   }
   if (candidate.subject === 'setting:basal_rate') {
     // The basal Setting opens on its admitted block, the earliest in the day.
-    const start = Math.min(...store(name).findings.rows
-      .filter((r) => r.kind === 'setting' && r.members?.length).map((r) => r.span!.start_min));
-    return { subject: candidate.subject, kind: 'setting', data: basalSetting(name, start) };
+    const starts = s.findings.rows.filter((r) => r.kind === 'setting' && r.parameter === 'basal_rate'
+      && r.members?.length).map((r) => r.span!.start_min);
+    if (starts.length === 0) return null;
+    const start = Math.min(...starts);
+    return s.analyze.basal.some((b) => b.slot === start / 30)
+      ? { subject: candidate.subject, kind: 'setting', data: basalSetting(name, start) } : null;
   }
-  throw new Error(`no Queue component draws ${candidate.subject}`);
+  if (candidate.subject === 'setting:isf' || candidate.subject === 'setting:carb_ratio') {
+    const data = otherSetting(name, candidate.subject === 'setting:isf' ? 'isf' : 'carb_ratio');
+    return data ? { subject: candidate.subject, kind: 'setting', data } : null;
+  }
+  return null;
 }
+
+const drawn = <T>(value: T | null): value is T => value !== null;
 
 /** The Queue's order (the brief's Queue section): the candidates the engine
  *  admitted and the person has not snoozed, by priority, highest first, an
@@ -199,7 +256,7 @@ export function ranking(name: QueueStore): QueueItem[] {
   return store(name).guidance.candidates
     .filter((c) => c.queued)
     .sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0) || a.subject.localeCompare(b.subject))
-    .map((c) => item(name, c));
+    .map((c) => item(name, c)).filter(drawn);
 }
 
 /** How many the Queue holds, and how many are snoozed, as served counts. */
@@ -211,8 +268,11 @@ export type SnoozedItem = QueueItem & { until: Sourced<string> };
 /** The Snoozed list: each snoozed candidate as its Queue row reads it, until
  *  fourteen days after the engine's served decision time. */
 export function snoozed(name: QueueStore): SnoozedItem[] {
-  return store(name).guidance.candidates.filter((c) => c.set_aside).map((c) => ({
-    ...item(name, c),
-    until: sourced<string>(`queue.${name}.guidance.candidates[subject=${c.subject}].0.decided_at`, 'until'),
-  }));
+  return store(name).guidance.candidates.filter((c) => c.set_aside).flatMap((c) => {
+    const drawable = item(name, c);
+    return drawable ? [{
+      ...drawable,
+      until: sourced<string>(`queue.${name}.guidance.candidates[subject=${c.subject}].0.decided_at`, 'until'),
+    }] : [];
+  });
 }

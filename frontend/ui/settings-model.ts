@@ -6,9 +6,9 @@ import { answers, sourced, type Format, type Sourced } from './answers';
 
 /** How the pump profile prints each setting, and so every screen that prints
  *  one: basal in U/h to two decimals (the engine serves no pump increment),
- *  ISF in whole mg/dL per unit, I:C to one decimal. */
-export const PARAMETER_FORMATS: Record<'basal_rate' | 'isf' | 'carb_ratio', Format> = {
-  basal_rate: 'fixed2', isf: 'round', carb_ratio: 'fixed1',
+ *  ISF and the target in whole mg/dL, I:C to one decimal. */
+export const PARAMETER_FORMATS: Record<'basal_rate' | 'isf' | 'carb_ratio' | 'target_bg', Format> = {
+  basal_rate: 'fixed2', isf: 'round', carb_ratio: 'fixed1', target_bg: 'round',
 };
 
 export type SyncState = 'synced' | 'failed';
@@ -82,7 +82,7 @@ export function pumpProfile(store: PumpStore): PumpProfileData {
     dia: sourced(`${root}.profile.dia_hours`, 'round'),
     maxBolus: sourced(`${root}.profile.max_bolus`, 'round'),
     // The engine serves a target per segment; the profile line shows the first's.
-    target: sourced(`${root}.profile.segments.0.target_bg`),
+    target: sourced(`${root}.profile.segments.0.target_bg`, PARAMETER_FORMATS.target_bg),
     segments: answer.profile.segments.map((_, i) => {
       const path = `${root}.profile.segments.${i}`;
       return {

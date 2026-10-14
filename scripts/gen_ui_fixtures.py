@@ -712,7 +712,7 @@ def _queue_store(client: TestClient) -> dict:
                 {field: r.get(field) for field in ROW_FIELDS}
                 for r in findings["rows"]
                 if r["kind"] == "pattern" or r.get("claimed_by") or r["id"] in collapsed
-                or (r["kind"] == "setting" and r.get("parameter") == "basal_rate" and r.get("members"))
+                or (r["kind"] == "setting" and r.get("members"))
             ],
         },
         "guidance": {
@@ -807,7 +807,7 @@ def _blocks(store: dict) -> list[dict]:
     """Admitted basal blocks: their start, range, nights and whether a Trial matured there."""
     out = []
     for row in store["findings"]["rows"]:
-        if row["kind"] != "setting" or not row.get("members"):
+        if row["kind"] != "setting" or row.get("parameter") != "basal_rate" or not row.get("members"):
             continue
         start = row["span"]["start_min"]
         slot = next(b for b in store["analyze"]["basal"] if b["slot"] * 30 == start)

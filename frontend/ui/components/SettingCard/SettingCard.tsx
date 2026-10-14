@@ -1,7 +1,8 @@
 // SettingCard (§4.2): the open setting. Its title is one line: the kind word
 // ("Basal") in strong ink, then its time block in regular meta ink on the same
 // baseline; current → suggested in figure type, only the suggestion in strong
-// ink; the EvidenceChart; then Nights and Range as two captioned values. No button: a setting is changed on the pump, not here. A range the
+// ink; the EvidenceChart; then Nights and Range as two captioned values. An
+// ISF or I:C setting, whose evidence is not nights, has Range alone. No button: a setting is changed on the pump, not here. A range the
 // engine serves as one value (lo = hi) shows that value once. Once the slot's
 // change has matured into a Trial, the card names it and links to Changes.
 // Snooze, when the screen offers it, is a centred text action at the foot.
@@ -32,15 +33,19 @@ export function SettingCard({ data, onChanges, onSnooze }: SettingCardProps) {
         <span className="ui-scard__suggested"><Num value={data.suggested} /></span>
         <span className="ui-scard__units">{data.units}</span>
       </div>
-      <div className="ui-scard__chart">
-        <EvidenceChart nights={data.nights} roster={data.roster} current={data.current} estimate={data.estimate}
-          lo={data.lo} hi={data.hi} units={data.units} />
-      </div>
-      <dl className="ui-scard__facts">
-        <div>
-          <dt className="ui-caption">Nights</dt>
-          <dd><Num value={data.days} /></dd>
+      {data.nights && data.roster && (
+        <div className="ui-scard__chart">
+          <EvidenceChart nights={data.nights} roster={data.roster} current={data.current} estimate={data.estimate}
+            lo={data.lo} hi={data.hi} units={data.units} />
         </div>
+      )}
+      <dl className="ui-scard__facts">
+        {data.days && (
+          <div>
+            <dt className="ui-caption">Nights</dt>
+            <dd><Num value={data.days} /></dd>
+          </div>
+        )}
         <div>
           <dt className="ui-caption">Range</dt>
           <dd>

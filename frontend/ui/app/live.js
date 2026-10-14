@@ -125,12 +125,12 @@ export function createLive({ client, glossary }) {
   const queue = () => once('queue', async () => {
     const [served, guided, analysis, roster, focused] = await Promise.all([
       findings(), guidance(), analyze(), trials(), focus()]);
-    // gen_ui_fixtures._queue_store: the rows a Queue component reads, among them only the admitted basal blocks.
+    // gen_ui_fixtures._queue_store: the rows a Queue component reads, among them every admitted setting block.
     const collapsed = new Set(served.outcome_patterns
       .filter((p) => p.collapse === 'collapse_to_member' && p.action)
       .map((p) => `finding:${p.action.split(':')[1]}`));
     const rows = served.rows.filter((r) => r.kind === 'pattern' || r.claimed_by || collapsed.has(r.id)
-      || (r.kind === 'setting' && r.parameter === 'basal_rate' && r.members?.length));
+      || (r.kind === 'setting' && r.members?.length));
     // Only the Patterns the Queue ranks open into a card; a snoozed one is a row.
     const ranked = guided.candidates
       .filter((c) => c.kind === 'pattern' && c.admitted && !c.preference.set_aside).map((c) => c.subject);

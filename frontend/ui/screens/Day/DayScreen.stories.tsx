@@ -5,6 +5,7 @@ import { formatValue } from '../../provenance.js';
 import { dayDate, loggedGrams } from '../../day-model';
 import { swipe } from '../../gesture';
 import { failsOnce } from '../../flaky';
+import { WithoutReadings } from '../../served-variants';
 import { DayScreen, type DayScreenProps } from './DayScreen';
 
 // The Day screen in each state §1.3 lists for Day, Day · Prompts and Day · Log
@@ -286,3 +287,15 @@ const timeEditedPlay: Story['play'] = async ({ canvasElement }) => {
 };
 export const LiveTimeEditedPhone: Story = { ...story('phone', { store: 'wearer', writes: liveLog() }), play: timeEditedPlay };
 export const LiveTimeEditedDesktop: Story = { ...story('desktop', { store: 'wearer', writes: liveLog() }), play: timeEditedPlay };
+
+// Before the first sync the navigator serves no day with readings: Day opens
+// on the served month's last day up to today (its timeline, not served here,
+// shows as the chart's skeleton; the live app reads it as "No data").
+const noReadings: Story['decorators'] = [(Story) => <WithoutReadings><Story /></WithoutReadings>];
+const noReadingsPlay: Story['play'] = async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  await expect(canvas.getByRole('heading', { level: 1, name: 'Day' })).toBeInTheDocument();
+  await expect(canvas.getByRole('button', { expanded: false, name: /31 May/ })).toBeInTheDocument();
+};
+export const NoReadingsPhone: Story = { ...story('phone', { store: 'wearer-answered' }), decorators: noReadings, play: noReadingsPlay };
+export const NoReadingsDesktop: Story = { ...story('desktop', { store: 'wearer-answered' }), decorators: noReadings, play: noReadingsPlay };

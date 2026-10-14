@@ -138,7 +138,8 @@ export function ChangesScreen({
                 label={<span className="ui-changes__last-row">
                   <span>{last.title}{last.slot && <> <Num value={last.slot} /></>}</span>
                   <span className="ui-changes__last-meta">
-                    <Num value={last.before} /> → <Num value={last.after} /> {last.units} · <Num value={last.changedAt} />
+                    {last.change && <><Num value={last.change.before} /> → <Num value={last.change.after} /> {last.change.units} · </>}
+                    <Num value={last.changedAt} />
                     {last.endedAt && <> – <Num value={last.endedAt} /></>}
                   </span>
                 </span>}

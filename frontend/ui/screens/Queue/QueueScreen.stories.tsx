@@ -4,6 +4,7 @@ import { fixtures, sourced } from '../../fixtures';
 import { swipe } from '../../gesture';
 import { ranking } from '../../queue-model';
 import { failsOnce } from '../../flaky';
+import { QUEUE_IC, QUEUE_ISF, QUEUE_UNDRAWABLE } from '../../served-variants';
 import { QueueScreen, type QueueScreenProps } from './QueueScreen';
 
 // The Queue screen in each state §1.3 lists, at phone (390) and desktop (1440),
@@ -197,3 +198,31 @@ const liveWrites = (): QueueScreenProps['writes'] => ({
 });
 export const LiveSnoozeNotSavedPhone: Story = { ...story('phone', { store: 'wearer', writes: liveWrites() }), play: liveSnoozePlay };
 export const LiveSnoozeNotSavedDesktop: Story = { ...story('desktop', { store: 'wearer', writes: liveWrites() }), play: liveSnoozePlay };
+
+// A ranking holding candidates the Queue cannot draw (an ISF and an I:C
+// Setting with no admitted row, a Pattern the findings serve no row for, and a
+// kind the app does not know): they are left out, and the Queue draws the rest.
+const undrawablePlay: Story['play'] = async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  await expect(canvas.getByRole('heading', { level: 1, name: 'Queue' })).toBeInTheDocument();
+  await expect(canvas.queryByText('Unserved')).toBeNull();
+  await expect(canvas.queryByText('Unknown')).toBeNull();
+  await expect(canvas.getAllByRole('img', { name: 'Pattern' }).length).toBeGreaterThan(0);
+};
+export const UndrawablePhone: Story = { ...story('phone', { store: QUEUE_UNDRAWABLE }), play: undrawablePlay };
+export const UndrawableDesktop: Story = { ...story('desktop', { store: QUEUE_UNDRAWABLE }), play: undrawablePlay };
+
+// An admitted ISF, and an admitted I:C, Setting: the SettingCard with its
+// block, current → suggested and Range, printed as the pump profile prints
+// each, and no night chart or count, since its evidence is not nights.
+const settingPlay = (title: string, units: string): Story['play'] => async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  await expect(canvas.getByRole('heading', { level: 2, name: new RegExp(`^${title}`) })).toBeInTheDocument();
+  await expect(canvas.getAllByText(units).length).toBeGreaterThan(0);
+  await expect(canvas.queryByText('Nights')).toBeNull();
+  await expect(canvas.getByText('Range')).toBeInTheDocument();
+};
+export const IsfSettingPhone: Story = { ...story('phone', { store: QUEUE_ISF, open: 'setting:isf' }), play: settingPlay('ISF', 'mg/dL/U') };
+export const IsfSettingDesktop: Story = { ...story('desktop', { store: QUEUE_ISF, open: 'setting:isf' }), play: settingPlay('ISF', 'mg/dL/U') };
+export const IcSettingPhone: Story = { ...story('phone', { store: QUEUE_IC, open: 'setting:carb_ratio' }), play: settingPlay('I:C', 'g/U') };
+export const IcSettingDesktop: Story = { ...story('desktop', { store: QUEUE_IC, open: 'setting:carb_ratio' }), play: settingPlay('I:C', 'g/U') };

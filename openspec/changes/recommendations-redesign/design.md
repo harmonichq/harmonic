@@ -429,3 +429,11 @@ engine guard for flat fasting glucose.
   finish before the night. No case changed `asserts_move` or a direction.
 - A test that composes recipes outside `materialize_case` finishes its store with
   `_respond_fasting_lane`, or it measures the old flat-lane bug.
+
+**Test-time budgets raised (2026-10-14).** Real fasting evidence makes the ISF fit
+and the checks that need a non-zero ISF run where they used to skip, about 2 s
+per behavioral case. Under load the focused QA suite measured 116–146 s and the
+slowest case 20–27 s, over the 90 s and 15 s limits. Connor accepted the cost:
+"As the price of a real ISF ... it's fine. We can, the tests can take longer. If
+I get pissed off about that later, we can iterate." The limits in AGENTS.md are
+now 150 s and 30 s.

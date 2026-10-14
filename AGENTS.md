@@ -250,8 +250,8 @@ When an analyzer state or Finding changes:
 3. Run the catalog-generated `test_case_<case name with hyphens replaced by
    underscores>` test.
 4. Re-measure all five existing budgets without raising their limits: committed
-   showcase size ≤25 MiB, showcase drift ≤30 s, focused QA suite ≤90 s,
-   slowest generated case ≤15 s, and full pytest ≤2.5× the recorded chunk-1
+   showcase size ≤25 MiB, showcase drift ≤30 s, focused QA suite ≤150 s,
+   slowest generated case ≤30 s, and full pytest ≤2.5× the recorded chunk-1
    baseline (recorded in the active QA change's coverage appendix). A breach stops the work without changing the committed showcase.
 
 To inspect one case through the production APIs, emit its uncommitted case store:

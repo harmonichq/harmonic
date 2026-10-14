@@ -495,6 +495,39 @@ class ApiTest(unittest.TestCase):
         r = self.client.get("/api/pump-settings")
         self.assertEqual(r.json()["other_profile_count"], 1)
 
+    def test_pump_settings_answers_the_latest_capture_among_many(self):
+        # The endpoint reads only the newest capture, not every snapshot: with a
+        # long history of older captures on another active profile, the answer is
+        # the newest capture's, the one the full snapshot list ends on.
+        from ciq_autotune.settings import parse_pump_settings
+        pad = [{"startTime": 0, "basalRate": 0, "isf": 0, "carbRatio": 0, "targetBg": 0}] * 15
+
+        def raw(name, idp, active, basal):
+            return parse_pump_settings({
+                "profiles": {"activeIdp": active, "profile": [
+                    {"name": name, "idp": idp, "insulinDuration": 300, "carbEntry": 1,
+                     "maxBolus": 15000, "tDependentSegs": [
+                         {"startTime": 0, "basalRate": basal, "isf": 30, "carbRatio": 6000,
+                          "targetBg": 110}] + pad},
+                    {"name": "Other", "idp": 9, "insulinDuration": 300, "carbEntry": 1,
+                     "maxBolus": 15000, "tDependentSegs": [
+                         {"startTime": 0, "basalRate": 100, "isf": 40, "carbRatio": 8000,
+                          "targetBg": 130}] + pad},
+                ]}, "cgmSettings": {}})
+
+        with Store.open(self.tmp.name) as store:
+            store.upsert_settings_snapshot("2026-09-01 09:00:00", raw("Newest", 4, 4, 900))
+            for hour in range(40):
+                store.upsert_settings_snapshot(
+                    f"2026-08-{1 + hour // 24:02d} {hour % 24:02d}:00:00", raw("Older", 5, 9, 100 + hour))
+            expected = store.settings_snapshots()[-1]
+        body = self.client.get("/api/pump-settings").json()
+        self.assertEqual(body["fetched_at"], expected.captured_at.isoformat())
+        self.assertEqual(body["active_idp"], 4)
+        self.assertEqual(body["profile"]["name"], "Newest")
+        self.assertEqual(body["profile"]["segments"][0]["basal_rate"], 0.9)
+        self.assertEqual(body["other_profile_count"], 1)
+
     def test_pump_settings_unconfigured_with_no_snapshot(self):
         with tempfile.NamedTemporaryFile(suffix=".db") as empty_db:
             from ciq_autotune.api import create_app

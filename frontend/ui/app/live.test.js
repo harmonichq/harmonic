@@ -62,6 +62,9 @@ function fakeClient(served = history()) {
   return { client, calls, count };
 }
 
+/** Every part Settings draws, read as the app reads them. */
+const readSettings = (live) => Promise.all(['status', 'account', 'pump'].map(live.settings.read));
+
 const detail = (call) => Boolean(call.args[0]?.selected);
 
 test('Changes reads at most the active change\'s detail, however long the history', async () => {
@@ -85,9 +88,11 @@ test('the Queue reads a case file only for each Pattern it ranks', async () => {
 test('switching tabs back and forth reads nothing again', async () => {
   const fake = fakeClient();
   const live = createLive({ client: fake.client, glossary: [] });
-  for (const tab of ['queue', 'changes', 'overview', 'day', 'settings']) await live.readTab(tab);
+  for (const tab of ['queue', 'changes', 'overview', 'day']) await live.readTab(tab);
+  await readSettings(live);
   const first = fake.calls.length;
-  for (const tab of ['changes', 'queue', 'settings', 'day', 'overview', 'queue']) await live.readTab(tab);
+  for (const tab of ['changes', 'queue', 'day', 'overview', 'queue']) await live.readTab(tab);
+  await readSettings(live);
   assert.equal(fake.calls.length, first);
   // One read of each shared answer across every tab: the badges, the roster, the guidance.
   for (const name of ['status', 'prompts', 'guidance', 'focus', 'navigator', 'time-of-day']) {
@@ -114,9 +119,40 @@ test('Retry and a write read again only what they change', async () => {
 test('concurrent tabs share one request for an answer in flight', async () => {
   const fake = fakeClient();
   const live = createLive({ client: fake.client, glossary: [] });
-  await Promise.all([live.readTab('queue'), live.readTab('changes'), live.readTab('settings')]);
+  await Promise.all([live.readTab('queue'), live.readTab('changes'), readSettings(live)]);
   assert.equal(fake.count('guidance'), 1);
   assert.equal(fake.count('trials', (c) => !detail(c)), 1);
+});
+
+test('Settings reads no guidance, and its root resolves once the status has landed', async () => {
+  const fake = fakeClient();
+  // The pump profile and the account are the slow reads; the root must not wait on them.
+  let landPump;
+  fake.client.fetchPumpSettings = () => new Promise((resolve) => { landPump = resolve; });
+  const live = createLive({ client: fake.client, glossary: [] });
+  const pump = live.settings.read('pump');
+  let pumpLanded = false;
+  pump.then(() => { pumpLanded = true; });
+  await live.settings.read('status');
+  await live.settings.read('account');
+  assert.equal(pumpLanded, false, 'the status and account resolved while the pump profile is still in flight');
+  assert.equal(live.answers.status.ok.last_attempt_at, null, 'the status the root draws is read');
+  landPump({ configured: false });
+  await pump;
+  await live.settings.badges();
+  assert.equal(fake.count('guidance'), 0, 'no guidance read');
+  assert.equal(fake.count('status'), 1);
+  assert.deepEqual(live.answers.settings.pump_settings.wearer, { configured: false });
+});
+
+test('Retry on a Settings part reads only that part again', async () => {
+  const fake = fakeClient();
+  const live = createLive({ client: fake.client, glossary: [] });
+  await readSettings(live);
+  await live.settings.retry('pump');
+  assert.equal(fake.count('pump'), 2);
+  assert.equal(fake.count('credentials'), 1);
+  assert.equal(fake.count('status'), 1);
 });
 
 test('Log carbs posts the time picked, today, or now when none was', async () => {

@@ -1191,10 +1191,9 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     @app.get("/api/pump-settings")
     def pump_settings_endpoint(_: None = Depends(require_token)) -> dict:
         with Store.open(db_path) as store:
-            snaps = store.settings_snapshots()
-        if not snaps:
+            latest = store.latest_settings_snapshot()
+        if latest is None:
             return {"configured": False}
-        latest = snaps[-1]
         settings = latest.settings
         active = settings.active()
         if active is None:

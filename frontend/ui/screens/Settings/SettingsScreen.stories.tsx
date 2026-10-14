@@ -131,3 +131,45 @@ export const LoadingPhone = story('phone', { ...SYNCED, state: 'loading' });
 export const LoadingDesktop = story('desktop', { ...SYNCED, state: 'loading' });
 export const UnavailablePhone = story('phone', { ...SYNCED, state: 'unavailable' });
 export const UnavailableDesktop = story('desktop', { ...SYNCED, state: 'unavailable' });
+
+// Progressive loading: the sync status has landed, so the root's three rows
+// show; the pump profile and the account are still being read. Only those parts
+// are skeletons, and the rows that wait on nothing else work meanwhile.
+const READING = { account: 'loading', pump: 'loading', onRetry: () => undefined } as const;
+const progressivePlay: Story['play'] = async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  // The root is drawn: the Tandem Source row's state is the status, the Pump profile row has no name yet.
+  await expect(canvas.getByRole('button', { name: /^Tandem Source/ })).toHaveTextContent('OK');
+  const pumpRow = canvas.getByRole('button', { name: /^Pump profile/ });
+  await expect(pumpRow).not.toHaveTextContent('No profile');
+  await expect(pumpRow.querySelector('.ui-skeleton')).not.toBeNull();
+  // Each drill-down waits only for its own data: the sync rows show, the account is a skeleton.
+  await userEvent.click(canvas.getByRole('button', { name: /^Tandem Source/ }));
+  await expect(canvas.getByText('Last success')).toBeInTheDocument();
+  await expect(canvas.queryByText('Password')).toBeNull();
+  await userEvent.click(back(canvas, 'Tandem Source'));
+  // The Pump profile is a skeleton, not the "No profile" answer.
+  await userEvent.click(canvas.getByRole('button', { name: /^Pump profile/ }));
+  await expect(canvas.queryByText('No profile')).toBeNull();
+  await expect(canvasElement.querySelector('.ui-settings__body .ui-skeleton')).not.toBeNull();
+  await userEvent.click(back(canvas, 'Pump profile'));
+  // The Glossary waits on nothing.
+  await userEvent.click(canvas.getByRole('button', { name: /^Glossary/ }));
+  await expect(canvas.getByRole('heading', { level: 1, name: 'Glossary' })).toBeInTheDocument();
+};
+export const ProgressiveLoadingPhone: Story = { ...story('phone', { ...SYNCED, parts: READING }), play: progressivePlay };
+export const ProgressiveLoadingDesktop: Story = { ...story('desktop', { ...SYNCED, parts: READING }), play: progressivePlay };
+
+// One part that cannot be read is Unavailable with Retry in its own drill-down; the rest still work.
+const PUMP_DOWN = { account: 'ready', pump: 'unavailable', onRetry: () => undefined } as const;
+const partUnavailablePlay: Story['play'] = async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  await expect(canvas.getByRole('button', { name: /^Tandem Source/ })).toHaveTextContent('OK');
+  await userEvent.click(canvas.getByRole('button', { name: /^Pump profile/ }));
+  await expect(canvas.getByText('Unavailable')).toBeInTheDocument();
+  await expect(canvas.getByRole('button', { name: 'Retry' })).toBeInTheDocument();
+};
+export const PumpProfileUnavailablePhone: Story = {
+  ...story('phone', { ...SYNCED, parts: PUMP_DOWN }), play: partUnavailablePlay };
+export const PumpProfileUnavailableDesktop: Story = {
+  ...story('desktop', { ...SYNCED, parts: PUMP_DOWN }), play: partUnavailablePlay };

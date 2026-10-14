@@ -11,6 +11,12 @@ export const PARAMETER_FORMATS: Record<'basal_rate' | 'isf' | 'carb_ratio' | 'ta
   basal_rate: 'fixed2', isf: 'round', carb_ratio: 'fixed1', target_bg: 'round',
 };
 
+/** The units each profile setting is printed in, under its column header: fixed by how the pump
+ *  stores them, so the table never waits on the guidance to name them. */
+export const PARAMETER_UNITS: Record<'basal_rate' | 'isf' | 'carb_ratio', string> = {
+  basal_rate: 'U/h', isf: 'mg/dL/U', carb_ratio: 'g/U',
+};
+
 export type SyncState = 'synced' | 'failed';
 export type AccountState = 'set' | 'unset';
 
@@ -40,7 +46,8 @@ export const syncFailed = () => lastFailed(answers.status.ok) === true;
 export function tandemSource(sync: SyncState | null, account: AccountState): TandemSourceData {
   const status = sync ? `settings.status.${sync}` : 'status.ok';
   const served = sync ? answers.settings.status[sync] : answers.status.ok;
-  const credentials = answers.settings.credentials[account];
+  // Before the account has been read there is none; the screen draws nothing from it until it is.
+  const credentials = answers.settings.credentials[account] ?? { configured: false, email: null, region: null };
   return {
     failed: lastFailed(served),
     lastSuccess: served.last_success_at ? when(`${status}.last_success_at`) : null,

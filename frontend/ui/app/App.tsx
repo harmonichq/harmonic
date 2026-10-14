@@ -3,6 +3,9 @@
 // the live adapter. Phone gets the tab bar, tablet and desktop the rail (§1.1),
 // by the viewport's width.
 //
+// Settings draws progressively instead: its sync status gates the screen, and
+// the account and the pump profile fill in as each lands (see `part`).
+//
 // Each tab reads its answers when it first opens, and the adapter keeps them:
 // switching back reads nothing again (live.js says when an answer is read
 // again). Until they first land, the screen shows its loading state; when they
@@ -29,6 +32,8 @@ const { changesWrites, dayWrites, queueWrites, settingsWrites } = live;
 serve(live.answers as unknown as Answers);
 
 type Read = 'loading' | 'ready' | 'unavailable';
+type Part = 'status' | 'account' | 'pump';
+const PARTS: Part[] = ['status', 'account', 'pump'];
 /** §2.4: tablet follows desktop's structure; the phone layout is narrower than this. */
 const WIDE = '(min-width: 768px)';
 
@@ -59,8 +64,22 @@ export function App() {
     ).finally(redraw);
   }, [redraw]);
 
+  // Settings' parts, each read on its own so the screen draws what has landed.
+  const [parts, setParts] = useState<Partial<Record<Part, Read>>>({});
+  const part = useCallback((which: Part, retry = false) => {
+    setParts((now) => (now[which] === 'ready' ? now : { ...now, [which]: 'loading' }));
+    (retry ? live.settings.retry(which) : live.settings.read(which)).then(
+      () => setParts((now) => ({ ...now, [which]: 'ready' })),
+      () => setParts((now) => ({ ...now, [which]: 'unavailable' })),
+    ).finally(redraw);
+  }, [redraw]);
+
   useEffect(() => subscribeRoute((next: string) => setTab(next as Tab)), []);
-  useEffect(() => { read(tab); }, [tab, read]);
+  useEffect(() => {
+    if (tab !== 'settings') { read(tab); return; }
+    PARTS.forEach((which) => part(which));
+    live.settings.badges().then(redraw, redraw);
+  }, [tab, read, part, redraw]);
 
   const go = (item: NavItem) => {
     writeRoute(item);
@@ -70,9 +89,9 @@ export function App() {
   const drawn = <A extends unknown[], R>(run: (...args: A) => Promise<R>) =>
     (...args: A) => run(...args).finally(redraw);
 
-  const state = reads[tab] ?? 'loading';
+  const state = (tab === 'settings' ? parts.status : reads[tab]) ?? 'loading';
   const nav = { onSelect: go, syncFailed: syncFailed() };
-  const retry = () => read(tab, true);
+  const retry = () => (tab === 'settings' ? part('status', true) : read(tab, true));
 
   switch (tab) {
     case 'queue':
@@ -90,7 +109,9 @@ export function App() {
         writes={{ answer: drawn(dayWrites.answer), grams: drawn(dayWrites.grams), logCarbs: drawn(dayWrites.logCarbs) }} />;
     case 'settings':
       return <SettingsScreen key={tab} layout={layout} sync={null} state={state} onRetry={retry}
-        account={state === 'ready' ? live.accountState() : 'unset'} nav={nav}
+        account={live.accountState()} nav={nav}
+        parts={{ account: parts.account ?? 'loading', pump: parts.pump ?? 'loading',
+          onRetry: (which) => part(which, true) }}
         writes={{ saveCredentials: drawn(settingsWrites.saveCredentials) }} />;
   }
 }

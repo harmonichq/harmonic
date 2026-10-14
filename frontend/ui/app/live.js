@@ -212,8 +212,6 @@ export function createLive({ client, glossary }) {
     overview: { read: () => Promise.all([outcomes(), timeOfDay(), navigator()]),
       keys: ['outcomes', 'time-of-day', 'navigator'] },
     day: { read: () => Promise.all([navigator(), timeOfDay()]), keys: ['navigator', 'time-of-day'] },
-    settings: { read: () => Promise.all([credentials(), pump(), guidance()]),
-      keys: ['credentials', 'pump', 'guidance'] },
   };
   const BADGES = ['status', 'prompts'];
 
@@ -224,6 +222,24 @@ export function createLive({ client, glossary }) {
   const retryTab = (tab) => {
     forget(...TABS[tab].keys, ...BADGES);
     return readTab(tab);
+  };
+
+  /** Settings is read in parts, so each draws as it lands rather than the screen waiting on the slowest:
+   *  the sync status (the root's first row and the NavBar's alert), the account, and the pump profile.
+   *  Nothing Settings draws reads the guidance. The Prompts badge is read beside them, never waited on. */
+  const SETTINGS = {
+    status: { read: status, keys: ['status'] },
+    account: { read: credentials, keys: ['credentials'] },
+    pump: { read: pump, keys: ['pump'] },
+  };
+  const settings = {
+    read: (part) => SETTINGS[part].read(),
+    /** Retry: forget what `part` shows and read it again. */
+    retry: (part) => {
+      forget(...SETTINGS[part].keys);
+      return SETTINGS[part].read();
+    },
+    badges: prompts,
   };
 
   // --- Writes ----------------------------------------------------------------
@@ -332,6 +348,7 @@ export function createLive({ client, glossary }) {
     answers,
     readTab,
     retryTab,
+    settings,
     readDay: day,
     /** The weeks of one month (`YYYY-MM`), read once; Retry is a second call after a failure. */
     readMonth: month,

@@ -1017,6 +1017,15 @@ class Store:
             for r in self._select("basal_events", start, end)
         ]
 
+    def latest_profile_basal_rate_before(self, t: str) -> Optional[float]:
+        """The last programmed basal rate a row before ``t`` reported, if any."""
+        row = self.conn.execute(
+            "SELECT profile_basal_rate FROM basal_events "
+            "WHERE t < ? AND profile_basal_rate IS NOT NULL ORDER BY t DESC LIMIT 1",
+            (t,),
+        ).fetchone()
+        return row["profile_basal_rate"] if row is not None else None
+
     def latest_cgm_or_basal_timestamp(self) -> Optional[datetime]:
         """The latest timestamp in the two streams that define a data horizon.
 

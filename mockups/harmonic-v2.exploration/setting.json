@@ -1815,6 +1815,14 @@
       ],
       "end": "2024-06-02 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": {
+        "basal": 0.48,
+        "basal_programmed": 0.6,
+        "control_iq_bolus": 0.0,
+        "correction": 0.0,
+        "meal": 0.0,
+        "total": 0.48
+      },
       "pump_events": [],
       "rest_windows": [],
       "sleep_windows": [],
@@ -1888,6 +1896,14 @@
       ],
       "end": "2024-06-03 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": {
+        "basal": 0.48,
+        "basal_programmed": 0.6,
+        "control_iq_bolus": 0.0,
+        "correction": 0.0,
+        "meal": 0.0,
+        "total": 0.48
+      },
       "pump_events": [],
       "rest_windows": [],
       "sleep_windows": [],
@@ -1961,6 +1977,14 @@
       ],
       "end": "2024-06-04 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": {
+        "basal": 0.48,
+        "basal_programmed": 0.6,
+        "control_iq_bolus": 0.0,
+        "correction": 0.0,
+        "meal": 0.0,
+        "total": 0.48
+      },
       "pump_events": [],
       "rest_windows": [],
       "sleep_windows": [],
@@ -2034,6 +2058,14 @@
       ],
       "end": "2024-06-05 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": {
+        "basal": 0.48,
+        "basal_programmed": 0.6,
+        "control_iq_bolus": 0.0,
+        "correction": 0.0,
+        "meal": 0.0,
+        "total": 0.48
+      },
       "pump_events": [],
       "rest_windows": [],
       "sleep_windows": [],
@@ -2107,6 +2139,14 @@
       ],
       "end": "2024-06-06 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": {
+        "basal": 0.48,
+        "basal_programmed": 0.6,
+        "control_iq_bolus": 0.0,
+        "correction": 0.0,
+        "meal": 0.0,
+        "total": 0.48
+      },
       "pump_events": [],
       "rest_windows": [],
       "sleep_windows": [],
@@ -2180,6 +2220,14 @@
       ],
       "end": "2024-06-07 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": {
+        "basal": 0.48,
+        "basal_programmed": 0.6,
+        "control_iq_bolus": 0.0,
+        "correction": 0.0,
+        "meal": 0.0,
+        "total": 0.48
+      },
       "pump_events": [],
       "rest_windows": [],
       "sleep_windows": [],
@@ -2253,6 +2301,14 @@
       ],
       "end": "2024-06-08 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": {
+        "basal": 0.48,
+        "basal_programmed": 0.6,
+        "control_iq_bolus": 0.0,
+        "correction": 0.0,
+        "meal": 0.0,
+        "total": 0.48
+      },
       "pump_events": [],
       "rest_windows": [],
       "sleep_windows": [],
@@ -2326,6 +2382,14 @@
       ],
       "end": "2024-06-09 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": {
+        "basal": 0.48,
+        "basal_programmed": 0.6,
+        "control_iq_bolus": 0.0,
+        "correction": 0.0,
+        "meal": 0.0,
+        "total": 0.48
+      },
       "pump_events": [],
       "rest_windows": [],
       "sleep_windows": [],
@@ -2399,6 +2463,14 @@
       ],
       "end": "2024-06-10 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": {
+        "basal": 0.48,
+        "basal_programmed": 0.6,
+        "control_iq_bolus": 0.0,
+        "correction": 0.0,
+        "meal": 0.0,
+        "total": 0.48
+      },
       "pump_events": [],
       "rest_windows": [],
       "sleep_windows": [],
@@ -2472,6 +2544,14 @@
       ],
       "end": "2024-06-11 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": {
+        "basal": 0.48,
+        "basal_programmed": 0.6,
+        "control_iq_bolus": 0.0,
+        "correction": 0.0,
+        "meal": 0.0,
+        "total": 0.48
+      },
       "pump_events": [],
       "rest_windows": [],
       "sleep_windows": [],
@@ -2545,6 +2625,14 @@
       ],
       "end": "2024-06-12 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": {
+        "basal": 0.48,
+        "basal_programmed": 0.6,
+        "control_iq_bolus": 0.0,
+        "correction": 0.0,
+        "meal": 0.0,
+        "total": 0.48
+      },
       "pump_events": [],
       "rest_windows": [],
       "sleep_windows": [],
@@ -2618,6 +2706,14 @@
       ],
       "end": "2024-06-13 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": {
+        "basal": 0.48,
+        "basal_programmed": 0.6,
+        "control_iq_bolus": 0.0,
+        "correction": 0.0,
+        "meal": 0.0,
+        "total": 0.48
+      },
       "pump_events": [],
       "rest_windows": [],
       "sleep_windows": [],

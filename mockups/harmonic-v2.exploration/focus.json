@@ -2209,6 +2209,7 @@
       ],
       "end": "2024-05-02 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": null,
       "pump_events": [],
       "rest_windows": [
         {
@@ -3379,6 +3380,7 @@
       ],
       "end": "2024-05-03 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": null,
       "pump_events": [],
       "rest_windows": [
         {
@@ -4553,6 +4555,7 @@
       ],
       "end": "2024-05-04 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": null,
       "pump_events": [],
       "rest_windows": [
         {
@@ -5727,6 +5730,7 @@
       ],
       "end": "2024-05-05 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": null,
       "pump_events": [],
       "rest_windows": [
         {
@@ -6901,6 +6905,7 @@
       ],
       "end": "2024-05-06 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": null,
       "pump_events": [],
       "rest_windows": [
         {
@@ -8075,6 +8080,7 @@
       ],
       "end": "2024-05-07 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": null,
       "pump_events": [],
       "rest_windows": [
         {
@@ -9249,6 +9255,7 @@
       ],
       "end": "2024-05-08 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": null,
       "pump_events": [],
       "rest_windows": [
         {
@@ -10423,6 +10430,7 @@
       ],
       "end": "2024-05-09 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": null,
       "pump_events": [],
       "rest_windows": [
         {
@@ -11597,6 +11605,7 @@
       ],
       "end": "2024-05-10 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": null,
       "pump_events": [],
       "rest_windows": [
         {
@@ -12771,6 +12780,7 @@
       ],
       "end": "2024-05-11 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": null,
       "pump_events": [],
       "rest_windows": [
         {
@@ -13945,6 +13955,7 @@
       ],
       "end": "2024-05-12 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": null,
       "pump_events": [],
       "rest_windows": [
         {
@@ -15119,6 +15130,7 @@
       ],
       "end": "2024-05-13 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": null,
       "pump_events": [],
       "rest_windows": [
         {
@@ -16293,6 +16305,7 @@
       ],
       "end": "2024-05-14 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": null,
       "pump_events": [],
       "rest_windows": [
         {
@@ -17467,6 +17480,7 @@
       ],
       "end": "2024-05-15 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": null,
       "pump_events": [],
       "rest_windows": [
         {
@@ -18641,6 +18655,7 @@
       ],
       "end": "2024-05-16 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": null,
       "pump_events": [],
       "rest_windows": [
         {
@@ -19815,6 +19830,7 @@
       ],
       "end": "2024-05-17 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": null,
       "pump_events": [],
       "rest_windows": [
         {
@@ -20989,6 +21005,7 @@
       ],
       "end": "2024-05-18 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": null,
       "pump_events": [],
       "rest_windows": [
         {
@@ -22163,6 +22180,7 @@
       ],
       "end": "2024-05-19 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": null,
       "pump_events": [],
       "rest_windows": [
         {
@@ -23337,6 +23355,7 @@
       ],
       "end": "2024-05-20 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": null,
       "pump_events": [],
       "rest_windows": [
         {
@@ -24511,6 +24530,7 @@
       ],
       "end": "2024-05-21 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": null,
       "pump_events": [],
       "rest_windows": [
         {
@@ -25685,6 +25705,7 @@
       ],
       "end": "2024-05-22 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": null,
       "pump_events": [],
       "rest_windows": [
         {
@@ -26859,6 +26880,7 @@
       ],
       "end": "2024-05-23 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": null,
       "pump_events": [],
       "rest_windows": [
         {
@@ -28033,6 +28055,7 @@
       ],
       "end": "2024-05-24 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": null,
       "pump_events": [],
       "rest_windows": [
         {
@@ -29207,6 +29230,7 @@
       ],
       "end": "2024-05-25 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": null,
       "pump_events": [],
       "rest_windows": [
         {
@@ -30381,6 +30405,7 @@
       ],
       "end": "2024-05-26 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": null,
       "pump_events": [],
       "rest_windows": [
         {
@@ -31555,6 +31580,7 @@
       ],
       "end": "2024-05-27 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": null,
       "pump_events": [],
       "rest_windows": [
         {
@@ -32729,6 +32755,7 @@
       ],
       "end": "2024-05-28 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": null,
       "pump_events": [],
       "rest_windows": [
         {
@@ -33918,6 +33945,14 @@
       ],
       "end": "2024-05-29 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": {
+        "basal": 0.0,
+        "basal_programmed": 0.0,
+        "control_iq_bolus": 0.0,
+        "correction": 4.2,
+        "meal": 7.4,
+        "total": 11.600000000000001
+      },
       "pump_events": [],
       "rest_windows": [
         {
@@ -35092,6 +35127,7 @@
       ],
       "end": "2024-05-30 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": null,
       "pump_events": [],
       "rest_windows": [
         {
@@ -36266,6 +36302,7 @@
       ],
       "end": "2024-05-31 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": null,
       "pump_events": [],
       "rest_windows": [
         {
@@ -37440,6 +37477,7 @@
       ],
       "end": "2024-06-01 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": null,
       "pump_events": [],
       "rest_windows": [
         {
@@ -38614,6 +38652,7 @@
       ],
       "end": "2024-06-02 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": null,
       "pump_events": [],
       "rest_windows": [
         {
@@ -39788,6 +39827,7 @@
       ],
       "end": "2024-06-03 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": null,
       "pump_events": [],
       "rest_windows": [
         {
@@ -40962,6 +41002,7 @@
       ],
       "end": "2024-06-04 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": null,
       "pump_events": [],
       "rest_windows": [
         {
@@ -42136,6 +42177,7 @@
       ],
       "end": "2024-06-05 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": null,
       "pump_events": [],
       "rest_windows": [
         {
@@ -43310,6 +43352,7 @@
       ],
       "end": "2024-06-06 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": null,
       "pump_events": [],
       "rest_windows": [
         {
@@ -44484,6 +44527,7 @@
       ],
       "end": "2024-06-07 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": null,
       "pump_events": [],
       "rest_windows": [
         {
@@ -45658,6 +45702,7 @@
       ],
       "end": "2024-06-08 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": null,
       "pump_events": [],
       "rest_windows": [
         {
@@ -46832,6 +46877,7 @@
       ],
       "end": "2024-06-09 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": null,
       "pump_events": [],
       "rest_windows": [
         {
@@ -48006,6 +48052,7 @@
       ],
       "end": "2024-06-10 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": null,
       "pump_events": [],
       "rest_windows": [
         {
@@ -49180,6 +49227,7 @@
       ],
       "end": "2024-06-11 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": null,
       "pump_events": [],
       "rest_windows": [
         {
@@ -50354,6 +50402,7 @@
       ],
       "end": "2024-06-12 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": null,
       "pump_events": [],
       "rest_windows": [
         {
@@ -51528,6 +51577,7 @@
       ],
       "end": "2024-06-13 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": null,
       "pump_events": [],
       "rest_windows": [
         {
@@ -52702,6 +52752,7 @@
       ],
       "end": "2024-06-14 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": null,
       "pump_events": [],
       "rest_windows": [
         {
@@ -53876,6 +53927,7 @@
       ],
       "end": "2024-06-15 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": null,
       "pump_events": [],
       "rest_windows": [
         {
@@ -55050,6 +55102,7 @@
       ],
       "end": "2024-06-16 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": null,
       "pump_events": [],
       "rest_windows": [
         {
@@ -56224,6 +56277,7 @@
       ],
       "end": "2024-06-17 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": null,
       "pump_events": [],
       "rest_windows": [
         {
@@ -57398,6 +57452,7 @@
       ],
       "end": "2024-06-18 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": null,
       "pump_events": [],
       "rest_windows": [
         {
@@ -58572,6 +58627,7 @@
       ],
       "end": "2024-06-19 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": null,
       "pump_events": [],
       "rest_windows": [
         {
@@ -59746,6 +59802,7 @@
       ],
       "end": "2024-06-20 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": null,
       "pump_events": [],
       "rest_windows": [
         {
@@ -60920,6 +60977,7 @@
       ],
       "end": "2024-06-21 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": null,
       "pump_events": [],
       "rest_windows": [
         {
@@ -62094,6 +62152,7 @@
       ],
       "end": "2024-06-22 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": null,
       "pump_events": [],
       "rest_windows": [
         {
@@ -63268,6 +63327,7 @@
       ],
       "end": "2024-06-23 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": null,
       "pump_events": [],
       "rest_windows": [
         {
@@ -64442,6 +64502,7 @@
       ],
       "end": "2024-06-24 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": null,
       "pump_events": [],
       "rest_windows": [
         {
@@ -65616,6 +65677,7 @@
       ],
       "end": "2024-06-25 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": null,
       "pump_events": [],
       "rest_windows": [
         {
@@ -66790,6 +66852,7 @@
       ],
       "end": "2024-06-26 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": null,
       "pump_events": [],
       "rest_windows": [
         {
@@ -67964,6 +68027,7 @@
       ],
       "end": "2024-06-27 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": null,
       "pump_events": [],
       "rest_windows": [
         {
@@ -69153,6 +69217,14 @@
       ],
       "end": "2024-06-28 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": {
+        "basal": 0.0,
+        "basal_programmed": 0.0,
+        "control_iq_bolus": 0.0,
+        "correction": 4.2,
+        "meal": 7.4,
+        "total": 11.600000000000001
+      },
       "pump_events": [],
       "rest_windows": [
         {
@@ -70327,6 +70399,7 @@
       ],
       "end": "2024-06-29 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": null,
       "pump_events": [],
       "rest_windows": [
         {
@@ -71501,6 +71574,7 @@
       ],
       "end": "2024-06-30 00:00:00",
       "false_low_exclusion_spans": [],
+      "insulin_totals": null,
       "pump_events": [],
       "rest_windows": [
         {
@@ -73772,6 +73846,7 @@
         ],
         "end": "2024-06-23 00:00:00",
         "false_low_exclusion_spans": [],
+        "insulin_totals": null,
         "pump_events": [],
         "rest_windows": [
           {
@@ -74946,6 +75021,7 @@
         ],
         "end": "2024-06-24 00:00:00",
         "false_low_exclusion_spans": [],
+        "insulin_totals": null,
         "pump_events": [],
         "rest_windows": [
           {
@@ -76120,6 +76196,7 @@
         ],
         "end": "2024-06-25 00:00:00",
         "false_low_exclusion_spans": [],
+        "insulin_totals": null,
         "pump_events": [],
         "rest_windows": [
           {
@@ -77294,6 +77371,7 @@
         ],
         "end": "2024-06-26 00:00:00",
         "false_low_exclusion_spans": [],
+        "insulin_totals": null,
         "pump_events": [],
         "rest_windows": [
           {
@@ -78468,6 +78546,7 @@
         ],
         "end": "2024-06-27 00:00:00",
         "false_low_exclusion_spans": [],
+        "insulin_totals": null,
         "pump_events": [],
         "rest_windows": [
           {
@@ -79657,6 +79736,14 @@
         ],
         "end": "2024-06-28 00:00:00",
         "false_low_exclusion_spans": [],
+        "insulin_totals": {
+          "basal": 0.0,
+          "basal_programmed": 0.0,
+          "control_iq_bolus": 0.0,
+          "correction": 4.2,
+          "meal": 7.4,
+          "total": 11.600000000000001
+        },
         "pump_events": [],
         "rest_windows": [
           {
@@ -81935,6 +82022,7 @@
             ],
             "end": "2024-06-23 00:00:00",
             "false_low_exclusion_spans": [],
+            "insulin_totals": null,
             "pump_events": [],
             "rest_windows": [
               {
@@ -83109,6 +83197,7 @@
             ],
             "end": "2024-06-24 00:00:00",
             "false_low_exclusion_spans": [],
+            "insulin_totals": null,
             "pump_events": [],
             "rest_windows": [
               {
@@ -84283,6 +84372,7 @@
             ],
             "end": "2024-06-25 00:00:00",
             "false_low_exclusion_spans": [],
+            "insulin_totals": null,
             "pump_events": [],
             "rest_windows": [
               {
@@ -85457,6 +85547,7 @@
             ],
             "end": "2024-06-26 00:00:00",
             "false_low_exclusion_spans": [],
+            "insulin_totals": null,
             "pump_events": [],
             "rest_windows": [
               {
@@ -86631,6 +86722,7 @@
             ],
             "end": "2024-06-27 00:00:00",
             "false_low_exclusion_spans": [],
+            "insulin_totals": null,
             "pump_events": [],
             "rest_windows": [
               {
@@ -87820,6 +87912,14 @@
             ],
             "end": "2024-06-28 00:00:00",
             "false_low_exclusion_spans": [],
+            "insulin_totals": {
+              "basal": 0.0,
+              "basal_programmed": 0.0,
+              "control_iq_bolus": 0.0,
+              "correction": 4.2,
+              "meal": 7.4,
+              "total": 11.600000000000001
+            },
             "pump_events": [],
             "rest_windows": [
               {
@@ -88120,6 +88220,7 @@
                 ],
                 "end": "2024-06-22 15:10:00",
                 "false_low_exclusion_spans": [],
+                "insulin_totals": null,
                 "pump_events": [],
                 "rest_windows": [],
                 "sleep_windows": [],
@@ -88268,6 +88369,7 @@
                 ],
                 "end": "2024-06-23 15:10:00",
                 "false_low_exclusion_spans": [],
+                "insulin_totals": null,
                 "pump_events": [],
                 "rest_windows": [],
                 "sleep_windows": [],
@@ -88635,6 +88737,14 @@
                 ],
                 "end": "2024-06-28 00:30:00",
                 "false_low_exclusion_spans": [],
+                "insulin_totals": {
+                  "basal": 0.0,
+                  "basal_programmed": 0.0,
+                  "control_iq_bolus": 0.0,
+                  "correction": 4.2,
+                  "meal": 7.4,
+                  "total": 11.600000000000001
+                },
                 "pump_events": [],
                 "rest_windows": [
                   {
@@ -91107,6 +91217,7 @@
             ],
             "end": "2024-06-22 15:10:00",
             "false_low_exclusion_spans": [],
+            "insulin_totals": null,
             "pump_events": [],
             "rest_windows": [],
             "sleep_windows": [],
@@ -91255,6 +91366,7 @@
             ],
             "end": "2024-06-23 15:10:00",
             "false_low_exclusion_spans": [],
+            "insulin_totals": null,
             "pump_events": [],
             "rest_windows": [],
             "sleep_windows": [],
@@ -91622,6 +91734,14 @@
             ],
             "end": "2024-06-28 00:30:00",
             "false_low_exclusion_spans": [],
+            "insulin_totals": {
+              "basal": 0.0,
+              "basal_programmed": 0.0,
+              "control_iq_bolus": 0.0,
+              "correction": 4.2,
+              "meal": 7.4,
+              "total": 11.600000000000001
+            },
             "pump_events": [],
             "rest_windows": [
               {
@@ -96146,6 +96266,7 @@
         ],
         "end": "2024-05-24 00:00:00",
         "false_low_exclusion_spans": [],
+        "insulin_totals": null,
         "pump_events": [],
         "rest_windows": [
           {
@@ -97320,6 +97441,7 @@
         ],
         "end": "2024-05-25 00:00:00",
         "false_low_exclusion_spans": [],
+        "insulin_totals": null,
         "pump_events": [],
         "rest_windows": [
           {
@@ -98494,6 +98616,7 @@
         ],
         "end": "2024-05-26 00:00:00",
         "false_low_exclusion_spans": [],
+        "insulin_totals": null,
         "pump_events": [],
         "rest_windows": [
           {
@@ -99668,6 +99791,7 @@
         ],
         "end": "2024-05-27 00:00:00",
         "false_low_exclusion_spans": [],
+        "insulin_totals": null,
         "pump_events": [],
         "rest_windows": [
           {
@@ -100842,6 +100966,7 @@
         ],
         "end": "2024-05-28 00:00:00",
         "false_low_exclusion_spans": [],
+        "insulin_totals": null,
         "pump_events": [],
         "rest_windows": [
           {
@@ -102031,6 +102156,14 @@
         ],
         "end": "2024-05-29 00:00:00",
         "false_low_exclusion_spans": [],
+        "insulin_totals": {
+          "basal": 0.0,
+          "basal_programmed": 0.0,
+          "control_iq_bolus": 0.0,
+          "correction": 4.2,
+          "meal": 7.4,
+          "total": 11.600000000000001
+        },
         "pump_events": [],
         "rest_windows": [
           {
@@ -102323,6 +102456,7 @@
             ],
             "end": "2024-05-23 15:10:00",
             "false_low_exclusion_spans": [],
+            "insulin_totals": null,
             "pump_events": [],
             "rest_windows": [],
             "sleep_windows": [],
@@ -102471,6 +102605,7 @@
             ],
             "end": "2024-05-24 15:10:00",
             "false_low_exclusion_spans": [],
+            "insulin_totals": null,
             "pump_events": [],
             "rest_windows": [],
             "sleep_windows": [],
@@ -102838,6 +102973,14 @@
             ],
             "end": "2024-05-29 00:30:00",
             "false_low_exclusion_spans": [],
+            "insulin_totals": {
+              "basal": 0.0,
+              "basal_programmed": 0.0,
+              "control_iq_bolus": 0.0,
+              "correction": 4.2,
+              "meal": 7.4,
+              "total": 11.600000000000001
+            },
             "pump_events": [],
             "rest_windows": [
               {

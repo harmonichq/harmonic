@@ -198,3 +198,49 @@ around 0.60) now holds.
   fixture's spread slot is regenerated as a hold.
 - The I:C spec already states the band rule; the basal, harm and correction-factor
   requirements carry the new condition as deltas in this change.
+
+## ADR 492 — The Day timeline serves the day's insulin split, with each user bolus split in its recorded food-to-correction proportion
+
+**Decision.** The day timeline serves `insulin_totals` for its window in units:
+`basal`, `meal`, `correction`, `control_iq_bolus` and `total`, plus
+`basal_programmed` beside them. The redesigned Day screen's insulin bar draws the
+four parts and the total from it, and no surface re-derives them. Nothing is
+predicted, and a window with no basal row and no delivered bolus serves `null`.
+
+- **Basal** is delivered: each basal row's delivered rate over the part of its own
+  duration inside the window. A row that starts before the window and runs into it
+  counts only its inside part, and so does one running past the end.
+  Control-IQ's basal increases, decreases and suspensions all stay inside it.
+- **`control_iq_bolus`** is the delivered insulin of the boluses the pump tagged
+  automatic (bolus options 3 and 6), read through the bolus row's one provenance
+  property. It holds only Control-IQ's automatic boluses, not the algorithm's basal
+  adjustments. A bolus without that tag, including one with no provenance at all,
+  is a user bolus.
+- **Meal and correction** come from each user bolus's *delivered* insulin, split in
+  the proportion of the food and correction sizes the pump recorded. Those sizes
+  are what was *requested*, so a bolus cut short or overridden keeps its recorded
+  mix rather than leaving a remainder unfiled. With no recorded split (both sizes
+  absent or zero), a bolus with carbs is all meal, matching the engine's existing
+  "no split means meal-only" reading, and a bolus without carbs is all correction.
+  The correction part is the delivered dose minus the meal part, so each bolus's
+  two parts always add up to what it delivered.
+- **`total`** is `basal + meal + correction + control_iq_bolus`, added in that
+  order and served unrounded, so the parts add up to it exactly as served.
+- **`basal_programmed`** is the programmed rate over the same rows, clipped the
+  same way, and is **not** part of `total`. It lets the Day screen show how far
+  Control-IQ's delivery ran below or above the schedule. During a suspension the
+  pump reports no programmed rate, so a row without one carries the last rate the
+  pump reported, including from before the window. When no rate has ever been
+  reported for an overlapping row, `basal_programmed` is `null` and the other
+  totals still serve.
+
+**Why proportional.** The pump records food and correction sizes for the dose it
+was asked for, but the bar shows delivered insulin. Splitting the delivered dose
+in the recorded proportion is the one rule that files every delivered unit, keeps
+the parts summing to the total, and needs no guess about which part an aborted
+bolus lost.
+
+**Consequences.** The findings-projection fixture and the private v2 design
+exploration embed day timelines, so both are regenerated with the new field; no
+existing value changes. The http-api spec carries the served shape as a delta in
+this change.

@@ -16,9 +16,9 @@ The person: twelve weeks on a Tandem pump with Control-IQ and a CGM.
   5 minutes with correlated sensor noise, a warm-up gap at each sensor change
   and the odd dropped reading.
 * **Pump profile.** Basal, correction factor and carb ratio segments, some of
-  them mis-set: the 02:00 basal is twice what the small hours need, so on the
-  nights Control-IQ cannot pull it back in time the person runs low by
-  04:00-05:00; the 00:00 block runs a little high; and the 11:00 carb
+  them mis-set: the 02:00 basal is more than twice what the small hours need,
+  so on the nights Control-IQ cannot pull it back in time (about one in four)
+  the person runs low across the block, mostly by 04:00-05:00; the 00:00 block runs a little high; and the 11:00 carb
   ratio is weaker than this person's response, so lunches run high. The
   programmed correction factor is stronger than the true one, so corrections
   overshoot now and then. On ``TRIAL_DAY`` the person lowers the 02:00 basal
@@ -75,7 +75,10 @@ TRIAL_BASAL = 1.00
 # The programmed profile: (start_min, basal U/h, ISF mg/dL/U, carb ratio g/U, target).
 PROFILE = (
     (0, 1.00, 28, 7.0, 110),      # a little high: 00:00-02:00 needs about 0.85
-    (120, 1.60, 28, 7.0, 110),    # mis-set: 02:00-05:00 needs about 0.80
+    # Mis-set: 02:00-05:00 needs about 0.80. A basal Trial reads its whole
+    # block (#506), so the block's lows must be frequent enough before the
+    # change for the lowered rate to read as fewer lows.
+    (120, 1.80, 28, 7.0, 110),
     (300, 1.40, 28, 7.0, 110),
     (660, 1.20, 28, 8.5, 110),    # mis-set: lunch responds to about 6.8 g/U
     (840, 1.20, 28, 7.0, 110),
@@ -101,7 +104,7 @@ COLD_RESISTANCE = 1.35
 
 def true_basal_need(minute: int) -> float:
     """U/h the body uses at this time of day: lowest in the small hours, then a
-    dawn rise from 05:00. The 02:00 block's 1.60 U/h is twice what 02:00-05:00
+    dawn rise from 05:00. The 02:00 block's 1.80 U/h is more than twice what 02:00-05:00
     needs and, on the nights Control-IQ cannot pull it back in time, runs them
     low by 04:00-05:00."""
     hour = minute / 60

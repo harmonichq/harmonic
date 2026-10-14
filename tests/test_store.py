@@ -195,6 +195,69 @@ class StoreTest(unittest.TestCase):
                          [datetime(2022, 5, 27, 1, 0, 0), datetime(2022, 5, 27, 2, 0, 0)])
 
 
+class CgmSlotTest(unittest.TestCase):
+    """Two CGM records for one five-minute slot are one reading (#519).
+
+    The vendor feed can carry two records seconds apart for one slot: the same
+    reading twice, or two disagreeing series side by side. The store keys on the
+    timestamp, so both land as rows; the reader must hand every analyzer one.
+    """
+
+    def setUp(self):
+        self.store = Store.open(":memory:")
+
+    def tearDown(self):
+        self.store.close()
+
+    def _put(self, *readings):
+        self.store.upsert_cgm([
+            {"EventDateTime": t, "Readings (CGM / BGM)": bg, "Description": "EGV"}
+            for t, bg in readings
+        ])
+
+    def test_the_same_reading_seconds_apart_is_one_reading(self):
+        self._put(("2022-05-27T01:00:10", "120"), ("2022-05-27T01:05:10", "124"),
+                  ("2022-05-27T01:05:11", "124"), ("2022-05-27T01:10:10", "128"))
+        got = self.store.cgm_readings()
+        self.assertEqual([(r.t, r.bg) for r in got], [
+            (datetime(2022, 5, 27, 1, 0, 10), 120.0),
+            (datetime(2022, 5, 27, 1, 5, 10), 124.0),
+            (datetime(2022, 5, 27, 1, 10, 10), 128.0),
+        ])
+
+    def test_two_disagreeing_series_leave_each_slot_with_no_value(self):
+        # Every slot carries a second, disagreeing reading 26 s later.
+        self._put(("2022-05-27T01:00:00", "150"),
+                  ("2022-05-27T01:05:00", "140"), ("2022-05-27T01:05:26", "190"),
+                  ("2022-05-27T01:10:00", "145"), ("2022-05-27T01:10:26", "195"),
+                  ("2022-05-27T01:15:26", "200"))
+        got = self.store.cgm_readings()
+        self.assertEqual([(r.t, r.bg) for r in got], [
+            (datetime(2022, 5, 27, 1, 0, 0), 150.0),
+            (datetime(2022, 5, 27, 1, 5, 0), None),
+            (datetime(2022, 5, 27, 1, 10, 0), None),
+            (datetime(2022, 5, 27, 1, 15, 26), 200.0),
+        ])
+        self.assertEqual({r.type for r in got}, {"EGV"})
+
+    def test_a_ranged_read_agrees_with_the_whole_read_at_both_edges(self):
+        self._put(("2022-05-27T00:59:50", "150"), ("2022-05-27T01:00:16", "190"),
+                  ("2022-05-27T01:05:00", "140"),
+                  ("2022-05-27T01:59:50", "145"), ("2022-05-27T02:00:16", "195"))
+        start, end = datetime(2022, 5, 27, 1, 0, 0), datetime(2022, 5, 27, 2, 0, 0)
+        whole = [(r.t, r.bg) for r in self.store.cgm_readings() if start <= r.t < end]
+        ranged = [(r.t, r.bg) for r in self.store.cgm_readings(
+            start="2022-05-27 01:00:00", end="2022-05-27 02:00:00")]
+        self.assertEqual(ranged, whole)
+        self.assertEqual(ranged, [(datetime(2022, 5, 27, 1, 5, 0), 140.0),
+                                  (datetime(2022, 5, 27, 1, 59, 50), None)])
+
+    def test_a_normal_five_minute_stream_is_untouched(self):
+        self._put(("2022-05-27T01:00:00", "120"), ("2022-05-27T01:04:43", "121"),
+                  ("2022-05-27T01:10:00", "122"))
+        self.assertEqual([r.bg for r in self.store.cgm_readings()], [120.0, 121.0, 122.0])
+
+
 class OpenReadonlyTest(unittest.TestCase):
     """`Store.open_readonly` reads a snapshot without touching the file —
     the grounding-workflow contract (pulled snapshots stay pristine)."""

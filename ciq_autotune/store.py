@@ -317,6 +317,11 @@ def _seq_key(r: dict, kind: str) -> int:
     return seq
 
 
+# CGM arrives every five minutes, so readings chained closer than this are two
+# records of one slot, never two observations (#519).
+_CGM_SLOT_SPAN = timedelta(minutes=2)
+
+
 # --- schema -----------------------------------------------------------------
 
 _SCHEMA = """
@@ -1160,10 +1165,52 @@ class Store:
         ]
 
     def cgm_readings(self, start=None, end=None) -> List[CgmReading]:
-        return [
-            CgmReading(parse_t(r["t"]), r["bg"], r["type"])
-            for r in self._select("cgm_readings", start, end)
-        ]
+        """CGM readings in ``[start, end)``, one per five-minute slot (#519).
+
+        The vendor feed can carry two records for one slot seconds apart — the
+        same reading twice, or two disagreeing series side by side — and the
+        timestamp key keeps both. Readings chained less than two minutes apart
+        are one slot, dated at its first reading: one value when they agree, no
+        value when they disagree, so no analyzer trusts either series. A slot is
+        in range by its first reading, and a ranged read looks across its edges
+        so it answers exactly as the whole read does. Stored rows are untouched.
+        """
+        rows = [(parse_t(r["t"]), r["bg"], r["type"])
+                for r in self._select("cgm_readings", start, end)]
+        if not rows:
+            return []
+        first_in_range = rows[0][0]
+        if start:
+            while True:
+                prev = self.conn.execute(
+                    "SELECT t, bg, type FROM cgm_readings WHERE t < ? ORDER BY t DESC LIMIT 1",
+                    (rows[0][0].isoformat(sep=" "),)).fetchone()
+                if prev is None or rows[0][0] - parse_t(prev["t"]) >= _CGM_SLOT_SPAN:
+                    break
+                rows.insert(0, (parse_t(prev["t"]), prev["bg"], prev["type"]))
+        if end:
+            while True:
+                nxt = self.conn.execute(
+                    "SELECT t, bg, type FROM cgm_readings WHERE t > ? ORDER BY t LIMIT 1",
+                    (rows[-1][0].isoformat(sep=" "),)).fetchone()
+                if nxt is None or parse_t(nxt["t"]) - rows[-1][0] >= _CGM_SLOT_SPAN:
+                    break
+                rows.append((parse_t(nxt["t"]), nxt["bg"], nxt["type"]))
+        slots: List[list] = []
+        for row in rows:
+            if slots and row[0] - slots[-1][-1][0] < _CGM_SLOT_SPAN:
+                slots[-1].append(row)
+            else:
+                slots.append([row])
+        out = []
+        for slot in slots:
+            t, bg, kind = slot[0]
+            if t < first_in_range:
+                continue
+            if any(other[1] != bg for other in slot[1:]):
+                bg = None
+            out.append(CgmReading(t, bg, kind))
+        return out
 
     def cgm_day_bounds(self) -> tuple:
         """Return (earliest_day, latest_day) as YYYY-MM-DD pump-local strings.

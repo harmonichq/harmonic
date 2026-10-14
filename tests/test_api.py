@@ -288,6 +288,20 @@ class ApiTest(unittest.TestCase):
         self.assertNotIn("programmed_ic", body)
         self.assertIn("cgm", body["window"])
         self.assertIsInstance(body["episodes"], list)
+        self.assertIsInstance(body["findings"], list)
+
+    def test_model_view_marks_the_low_correction_stacking_reached(self):
+        # The Lows after correcting highs Pattern counts the low the stacked
+        # doses reached as Correction stacking's, so the day serves it as a
+        # finding beside the stacking dose, and the first correction as none.
+        client = _guidance_client(self, "behavioral-correction-stacking")
+        body = client.get("/api/model-view", params={"date": "2024-05-24"}).json()
+        self.assertEqual(body["findings"], [
+            {"t": "2024-05-24 14:40:00", "kind": "correction", "bg": None,
+             "levers": [{"lever": "correction_stacking", "title": "Correction stacking"}]},
+            {"t": "2024-05-24 16:05:00", "kind": "low", "bg": 60.0,
+             "levers": [{"lever": "correction_stacking", "title": "Correction stacking"}]},
+        ])
 
     def test_model_view_rejects_bad_date(self):
         r = self.client.get("/api/model-view", params={"date": "06/03/2026"})

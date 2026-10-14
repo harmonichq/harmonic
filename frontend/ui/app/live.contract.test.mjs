@@ -8,6 +8,7 @@
 //   uv run python scripts/smoke_app.py --then node --test frontend/ui/app/live.contract.test.mjs
 //   uv run python scripts/smoke_app.py --case isf-strengthen --then node --test frontend/ui/app/live.contract.test.mjs
 //   uv run python scripts/smoke_app.py --case c3-trial --then node --test frontend/ui/app/live.contract.test.mjs
+//   uv run python scripts/smoke_app.py --case pattern-correction-fold --then node --test frontend/ui/app/live.contract.test.mjs
 //
 // smoke_app names the serve in HARMONIC_URL and the store in HARMONIC_CASE.
 // Every expected value is a literal read once from that store's served answers,
@@ -74,7 +75,29 @@ const EXPECTED = {
     change: { kind: 'none' },
     overview: { tir: 98.6, previous: 100, isf: { current: 40, recommended: null, uncertain: true, nights: 14 } },
     day: { latest: '2024-06-30', insulin: 19.56, firstLowBg: 48 },
+    // The 22:00 low resolves after midnight: it is the 29th's finding.
+    findings: {
+      '2024-06-25': [['2024-06-25 12:00:00', 'meal', ['Carb undercount']]],
+      '2024-06-26': [['2024-06-26 13:55:00', 'pattern', ['Over-treated low']]],
+      '2024-06-29': [['2024-06-29 22:00:00', 'pattern', ['Correction on active insulin']]],
+      '2024-06-30': [],
+    },
     settings: { days: 35, segments: [{ start: 0, basal: 0.6, isf: 40, carbRatio: 10 }] },
+  },
+  // Five kinds of finding over its days: the stacking dose and the low it
+  // reached, evening lows that resolve after midnight, a treated low, and an
+  // unannounced rise.
+  'pattern-correction-fold': {
+    queue: ['pattern:lows_after_correcting_highs', 'pattern:highs_after_treating_lows'],
+    isf: null,
+    change: { kind: 'none' },
+    findings: {
+      '2024-05-14': [['2024-05-14 22:00:00', 'pattern', ['Correction on active insulin']]],
+      '2024-05-16': [['2024-05-16 13:55:00', 'pattern', ['Over-treated low']]],
+      '2024-05-24': [['2024-05-24 14:40:00', 'correction', ['Correction stacking']],
+        ['2024-05-24 16:05:00', 'pattern', ['Correction stacking']]],
+      '2024-05-27': [['2024-05-27 17:00:00', 'pattern', ['Missed / unannounced meal']]],
+    },
   },
   'isf-strengthen': {
     queue: ['setting:isf'],
@@ -132,6 +155,19 @@ test(`the live adapter serves each tab's model from the ${CASE} store`, async (t
     for (const [key, value] of Object.entries(rest)) assert.equal(active[key], value, `change ${key}`);
     if (before !== undefined) assert.deepEqual([active.change.before, active.change.after], [before, after]);
   });
+
+  if (expected.findings) {
+    // Every finding the engine served on a day reaches its Day model: a bolus it
+    // counted carries its habits, and any other moment is its own Pattern row.
+    await t.test('Day findings', async () => {
+      await live.readTab('day');
+      for (const [iso, rows] of Object.entries(expected.findings)) {
+        await live.readDay(iso);
+        const counted = values(day.dayChartOf(iso)).events.filter((e) => e.habits?.length);
+        assert.deepEqual(counted.map((e) => [e.time, e.kind, e.habits]), rows, iso);
+      }
+    });
+  }
 
   if (!expected.overview) return;
 

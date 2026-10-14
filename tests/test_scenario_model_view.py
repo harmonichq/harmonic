@@ -488,6 +488,31 @@ class VerdictTitleTest(unittest.TestCase):
         self.assertEqual(matched[0]["title"], title(Lever.CORRECTION_ON_IOB))
         self.assertEqual(episode["lever_title"], title(Lever.MEAL_OVER_DELIVERY))
 
+    def test_an_evening_that_resolves_after_midnight_serves_its_findings_on_its_own_day(self):
+        bolus, cgm, basal = self._evenings()
+        evening = assemble_model_view(bolus, cgm, basal, target=date(2024, 5, 24), isf=ISF)
+        # The episode resolves on the 25th, so the 24th serves no episode of its own,
+        # but its meal that drove and its low that was claimed are the 24th's findings.
+        self.assertEqual(evening["episodes"], [])
+        self.assertEqual(evening["findings"], [
+            {"t": "2024-05-24 19:00:00", "kind": "meal", "bg": None,
+             "levers": [{"lever": "meal_over_delivery", "title": "Meal over-delivery"}]},
+            {"t": "2024-05-24 22:05:00", "kind": "low", "bg": 48.0,
+             "levers": [{"lever": "correction_on_iob", "title": "Correction on active insulin"}]},
+        ])
+        # The day it resolves on serves only its own evening's findings.
+        after = assemble_model_view(bolus, cgm, basal, target=date(2024, 5, 25), isf=ISF)
+        self.assertEqual([f["t"] for f in after["findings"]], ["2024-05-25 19:00:00", "2024-05-25 22:05:00"])
+
+    def test_clean_anchors_serve_no_finding(self):
+        bolus, cgm, basal = self._evenings()
+        day = assemble_model_view(bolus, cgm, basal, target=date(2024, 5, 25), isf=ISF)
+        clean = [a["t"] for ep in day["episodes"] for a in ep["anchors"] if a["state"] == "clean"]
+        self.assertEqual(clean, ["2024-05-24 20:00:00", "2024-05-24 21:00:00"])
+        evening = assemble_model_view(bolus, cgm, basal, target=date(2024, 5, 24), isf=ISF)
+        self.assertNotIn("2024-05-24 20:00:00", [f["t"] for f in evening["findings"]])
+        self.assertNotIn("2024-05-24 21:00:00", [f["t"] for f in evening["findings"]])
+
     def test_every_retained_verdict_on_every_anchor_serves_a_title(self):
         day = self._day_after_first_evening()
         verdicts = [v for ep in day["episodes"] for a in ep["anchors"] for v in a["verdicts"]]

@@ -3,6 +3,7 @@ import sqlite3
 import tempfile
 import threading
 import unittest
+from contextlib import closing
 from pathlib import Path
 from unittest.mock import patch
 
@@ -306,3 +307,33 @@ class DerivedArtifactsTest(unittest.TestCase):
         self.assertEqual(self.load(lambda store: calls.append(1) or {"wrong": True}, ("late",)),
                          {"revision": 1})
         self.assertEqual(calls, [])
+
+    def test_a_new_revision_or_source_replaces_the_shape_it_supersedes(self):
+        for day in (1, 2, 3):
+            with Store.open(self.tmp.name) as store:
+                store.upsert_cgm([{"EventDateTime": f"2020-01-0{day} 00:00:00",
+                                   "Readings (CGM / BGM)": 100}])
+            self.load(lambda store, day=day: {"day": day}, ("pruned",))
+        self.load(lambda store: {"other": True}, ("kept",))
+        old = artifacts._FINGERPRINT
+        try:
+            artifacts._FINGERPRINT = "different-source-fingerprint"
+            self.load(lambda store: {"day": "new source"}, ("pruned",))
+        finally:
+            artifacts._FINGERPRINT = old
+        with closing(sqlite3.connect(sidecar_path(self.tmp.name))) as sidecar:
+            rows = sidecar.execute(
+                "SELECT coordinates, COUNT(*) FROM artifacts GROUP BY coordinates").fetchall()
+        self.assertEqual(dict(rows), {'["kept"]': 1, '["pruned"]': 1})
+
+    def test_the_latest_prior_survives_pruning(self):
+        for day in (1, 2):
+            with Store.open(self.tmp.name) as store:
+                store.upsert_cgm([{"EventDateTime": f"2020-01-0{day} 00:00:00",
+                                   "Readings (CGM / BGM)": 100}])
+            self.load(lambda store, day=day: {"day": day}, ("prior",))
+        with Store.open(self.tmp.name) as store:
+            store.upsert_cgm([{"EventDateTime": "2020-01-03 00:00:00",
+                               "Readings (CGM / BGM)": 100}])
+        self.assertEqual(load_latest_prior(self.tmp.name, ("prior",),
+                                           shape_marker="test-v1").value, {"day": 2})

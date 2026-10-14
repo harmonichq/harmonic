@@ -1288,3 +1288,35 @@ class FollowUpMigrationStoreTest(unittest.TestCase):
                     with self.assertRaises(FocusAlreadyActive):
                         migrated.pin_focus('late_bolus', '2026-08-03 10:00:00')
                     self.assertEqual(migrated.active_focus()['id'], 2)
+
+
+class OpenWithoutWriterTest(unittest.TestCase):
+    """A current file opens by reads alone; whatever schema setup owes still lands."""
+
+    def setUp(self):
+        self.dir = tempfile.TemporaryDirectory()
+        self.path = os.path.join(self.dir.name, "store.db")
+        with Store.open(self.path):
+            pass
+
+    def tearDown(self):
+        self.dir.cleanup()
+
+    def test_current_store_opens_while_another_connection_holds_the_writer(self):
+        writer = sqlite3.connect(self.path, isolation_level=None)
+        writer.execute("BEGIN IMMEDIATE")
+        try:
+            with Store.open(self.path) as store:
+                self.assertEqual(store.input_data_revision(), 0)
+        finally:
+            writer.rollback()
+            writer.close()
+
+    def test_a_missing_table_is_created_although_the_version_stamp_is_current(self):
+        conn = sqlite3.connect(self.path)
+        conn.execute("DROP TABLE plan_draft")
+        conn.commit()
+        conn.close()
+        with Store.open(self.path) as store:
+            self.assertIsNotNone(store.conn.execute(
+                "SELECT 1 FROM sqlite_master WHERE type='table' AND name='plan_draft'").fetchone())

@@ -21,6 +21,16 @@ Status: **exploring** (#481).
   stacked bar (Basal delivered, Meal, Correction, Control-IQ), the day chart,
   Prompts with Not sure visible on phone, and Log carbs. The operator,
   approving it ahead of the last change: "pre-approving it".
+  Re-pinned to `55fee6e4` after the operator's quieter meal teal ("just
+  limit the saturation of the teal a bit"), which changes only Day's meal
+  marks and its insulin bar's Meal segment.
+- **Settings screen locked 2026-10-13**: Storybook `Screens/Settings` at
+  commit `55fee6e4`: the grouped root (Tandem Source with its inline sync
+  state, Pump profile, Glossary), the Tandem Source drill-down with its sync
+  and account groups and the Update form, the Pump profile and its segment
+  table, and the Glossary of only the terms the app prints. The operator:
+  "locked looks good."
+- **All five screens locked 2026-10-13.** Step 4 is closed.
 
 This document is the durable record of the redesign. Sections 1–3 are what the
 build will be checked against once they are approved. The appendix keeps the

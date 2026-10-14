@@ -3,7 +3,7 @@
 // thing twice. A change with no tone stays in neutral ink; one that prints as
 // zero has no arrow. MetricFigure and ChangeCard both draw it, so a change
 // reads the same on every screen.
-import type { Sourced } from './fixtures';
+import type { Sourced } from './answers';
 import { Num } from './Num';
 import './shared.css';
 

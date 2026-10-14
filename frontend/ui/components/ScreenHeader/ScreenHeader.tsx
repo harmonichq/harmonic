@@ -13,7 +13,7 @@
 // text-action blue. The title below it keeps the same size and place on every
 // sub-screen.
 import type { ReactNode } from 'react';
-import type { Sourced } from '../../fixtures';
+import type { Sourced } from '../../answers';
 import { Icon } from '../../icons';
 import { Num } from '../../Num';
 import { Button } from '../Button/Button';

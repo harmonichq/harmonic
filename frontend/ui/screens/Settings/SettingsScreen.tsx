@@ -23,6 +23,11 @@
 // terms, alphabetical, each with its one-line definition, the one place a
 // sentence appears (§2.3).
 //
+// Live (`writes`, #495): Save posts the account and waits on it, busy; once
+// saved, the form closes and the rows show what the engine then serves. A Save
+// that fails leaves the form open with what was typed, and "Not saved" with
+// Retry in the bar.
+//
 // Phone: the header stays put while the page scrolls under it, above the tab
 // bar. Desktop: the rail and one pane, the drill-down inside it; the pane
 // scrolls as a whole.
@@ -31,16 +36,17 @@
 // the account form's sheet rises, and its popover opens out of its arrow.
 import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import { fixtures, sourced } from '../../fixtures';
-import { useMotionGate } from '../../motion';
+import { answers, sourced } from '../../answers';
+import { useMotionGate, usePresence } from '../../motion';
 import { Num } from '../../Num';
 import {
   glossary, pumpProfile, tandemSource, type AccountState, type SyncState, type When,
 } from '../../settings-model';
 import { Button } from '../../components/Button/Button';
 import { ListGroup, ListRow, ListRowDense } from '../../components/ListRow/ListRow';
-import { NavBar } from '../../components/NavBar/NavBar';
+import { NavBar, type NavHooks } from '../../components/NavBar/NavBar';
 import { ScreenHeader } from '../../components/ScreenHeader/ScreenHeader';
+import { TransientBar } from '../../components/TransientBar/TransientBar';
 import '../../shared.css';
 import './SettingsScreen.css';
 
@@ -59,6 +65,10 @@ export type SettingsScreenProps = {
   view?: SettingsView;
   /** Start with the account form open. */
   updating?: boolean;
+  /** The live engine's account write: resolves once the answers are read again, rejects when not saved. */
+  writes?: { saveCredentials: (email: string, password: string) => Promise<void> };
+  /** Where a tab goes; the Settings alert is this screen's own. */
+  nav?: Pick<NavHooks, 'onSelect'>;
 };
 
 /** How long a save is shown busy before it settles. */
@@ -66,14 +76,14 @@ const SAVE_MS = 600;
 const TITLES: Record<SettingsView, string> = {
   root: 'Settings', tandem: 'Tandem Source', profile: 'Pump profile', glossary: 'Glossary',
 };
-const dayCount = sourced<number>('prompts[answer=null].length');
+const dayCount = () => sourced<number>('prompts[answer=null].length');
 
 const DateTime = ({ at }: { at: When }) => <><Num value={at.date} /> <Num value={at.time} /></>;
 
 // Column headers are the glossary's short forms (Basal, ISF, I:C) over the
 // served units, so a header holds two short lines on a phone.
 const units = (parameter: string) =>
-  fixtures.queue.wearer.guidance.candidates.find((c) => c.subject === `setting:${parameter}`)!.units;
+  answers.queue.wearer.guidance.candidates.find((c) => c.subject === `setting:${parameter}`)!.units;
 const Head = ({ parameter, label }: { parameter: string; label: string }) => (
   <span className="ui-caption">{label}<br /><span className="ui-settings__unit">{units(parameter)}</span></span>
 );
@@ -153,7 +163,7 @@ function Glossary() {
 }
 
 /** The account form: the email and password the engine takes, and Save. */
-function AccountForm({ saving, onSave }: { saving: boolean; onSave: () => void }) {
+function AccountForm({ saving, onSave }: { saving: boolean; onSave: (email: string, password: string) => void }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   return (
@@ -164,14 +174,15 @@ function AccountForm({ saving, onSave }: { saving: boolean; onSave: () => void }
         <ListRow label="Password" field={{ kind: 'password', onChange: setPassword, disabled: saving }} />
       </ListGroup>
       <div className="ui-settings__form-foot">
-        <Button kind="primary" label="Save" disabled={!email || !password} busy={saving} onClick={onSave} />
+        <Button kind="primary" label="Save" disabled={!email || !password} busy={saving}
+          onClick={() => onSave(email, password)} />
       </div>
     </>
   );
 }
 
 export function SettingsScreen({
-  layout, sync, account, pump = 'wearer', view: initialView = 'root', updating = false,
+  layout, sync, account, pump = 'wearer', view: initialView = 'root', updating = false, writes, nav,
 }: SettingsScreenProps) {
   const [view, setView] = useState<SettingsView>(initialView);
   const root = useMotionGate<HTMLDivElement>();
@@ -183,8 +194,17 @@ export function SettingsScreen({
   const shownAccount: AccountState = saved ? 'set' : account;
   const failed = tandemSource(sync, shownAccount).failed === true;
 
-  const save = () => {
+  const [notSaved, setNotSaved] = useState<{ retry: () => void } | null>(null);
+  const save = (email: string, password: string) => {
     setForm('saving');
+    setNotSaved(null);
+    if (writes) {
+      writes.saveCredentials(email, password).then(() => setForm(null), () => {
+        setForm('open');
+        setNotSaved({ retry: () => save(email, password) });
+      });
+      return;
+    }
     timer.current = window.setTimeout(() => { setForm(null); setSaved(true); }, SAVE_MS);
   };
   const close = () => setForm((now) => (now === 'saving' ? now : null));
@@ -200,10 +220,12 @@ export function SettingsScreen({
     ? <ScreenHeader key={view} title="Settings" layout={layout} />
     : <ScreenHeader key={view} title={TITLES[view]} layout={layout} back={{ label: 'Settings', onBack: () => { setForm(null); setView('root'); } }} />;
 
-  const popover = layout === 'desktop' && form !== null && (
+  // The account form stays while it closes, as it last showed.
+  const formShown = usePresence(form);
+  const popover = layout === 'desktop' && formShown.value && (
     <section className="ui-popover ui-popover--end ui-settings__form ui-settings__form--desktop" role="dialog"
-      aria-label="Tandem Source">
-      <AccountForm saving={form === 'saving'} onSave={save} />
+      aria-label="Tandem Source" {...formShown.exit}>
+      <AccountForm saving={formShown.value === 'saving'} onSave={save} />
     </section>
   );
 
@@ -214,6 +236,13 @@ export function SettingsScreen({
     glossary: <Glossary />,
   }[view];
 
+  const barShown = usePresence(notSaved);
+  const bar = barShown.value && (
+    <div className="ui-settings__bar" {...barShown.exit}>
+      <TransientBar kind="not_saved" onRetry={barShown.value.retry} layout={layout} />
+    </div>
+  );
+
   if (layout === 'phone') {
     return (
       <div ref={root} className="ui-settings ui-settings--phone">
@@ -221,13 +250,14 @@ export function SettingsScreen({
         <main className="ui-settings__main" data-scroll="page" data-push={push}>
           <div key={`${view}-body`} className="ui-settings__body ui-push">{content}</div>
         </main>
-        <NavBar layout="tabbar" selected="settings" dayCount={dayCount} syncFailed={failed} />
-        {form !== null && view === 'tandem' && (
-          <div className="ui-scrim ui-settings__scrim" onClick={close}>
+        {bar}
+        <NavBar layout="tabbar" selected="settings" dayCount={dayCount()} {...nav} syncFailed={failed} />
+        {formShown.value && view === 'tandem' && (
+          <div className="ui-scrim ui-settings__scrim" onClick={close} {...formShown.exit}>
             <section className="ui-sheet ui-settings__form" role="dialog" aria-label="Tandem Source"
               onClick={(event) => event.stopPropagation()}>
               <span className="ui-sheet__grabber" aria-hidden="true" />
-              <AccountForm saving={form === 'saving'} onSave={save} />
+              <AccountForm saving={formShown.value === 'saving'} onSave={save} />
             </section>
           </div>
         )}
@@ -236,10 +266,11 @@ export function SettingsScreen({
   }
   return (
     <div ref={root} className="ui-settings ui-settings--desktop">
-      <NavBar layout="rail" selected="settings" dayCount={dayCount} syncFailed={failed} />
+      <NavBar layout="rail" selected="settings" dayCount={dayCount()} {...nav} syncFailed={failed} />
       <section className="ui-settings__pane" data-scroll="page" data-push={push}>
         {header}
         <div key={`${view}-body`} className="ui-settings__body ui-push">{content}</div>
+        {bar}
       </section>
     </div>
   );

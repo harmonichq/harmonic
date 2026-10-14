@@ -3,6 +3,8 @@ import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { fixtures } from '../../fixtures';
 import { formatValue } from '../../provenance.js';
 import { dayDate, loggedGrams } from '../../day-model';
+import { swipe } from '../../gesture';
+import { failsOnce } from '../../flaky';
 import { DayScreen, type DayScreenProps } from './DayScreen';
 
 // The Day screen in each state §1.3 lists for Day, Day · Prompts and Day · Log
@@ -222,6 +224,15 @@ export const PromptNotSurePhone: Story = {
     await expect(place(canvas)).toHaveTextContent('2 / 2');
   },
 };
+// Phone: a full swipe is Not sure's shortcut, and moves to the next prompt.
+export const PromptSwipePhone: Story = {
+  ...story('phone', PROMPTS),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await swipe(canvasElement.querySelector<HTMLElement>('.ui-prompt')!, -72);
+    await expect(place(canvas)).toHaveTextContent('2 / 2');
+  },
+};
 export const PromptRetryPhone: Story = { ...story('phone', { ...PROMPTS, failing: true }), play: notSavedPlay };
 export const PromptRetryDesktop: Story = { ...story('desktop', { ...PROMPTS, failing: true }), play: notSavedPlay };
 
@@ -234,3 +245,21 @@ export const FitsDesktop: Story = {
     }
   },
 };
+
+// Live (#495): a Yes the engine does not save takes its check back, with
+// "Not saved", and Retry records it; then Next.
+const liveAnswerPlay: Story['play'] = async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  await userEvent.click(canvas.getByRole('button', { name: /Lows/ }));
+  await userEvent.click(canvas.getByRole('button', { name: 'Yes' }));
+  await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent(/Not saved/));
+  await expect(canvas.getByRole('button', { name: 'Yes', pressed: false })).toBeInTheDocument();
+  await userEvent.click(canvas.getByRole('button', { name: 'Retry' }));
+  await waitFor(() => expect(canvas.queryByText(/Not saved/)).toBeNull());
+  await expect(canvas.getByRole('button', { name: /Yes/, pressed: true })).toBeInTheDocument();
+};
+const liveDay = (): DayScreenProps['writes'] => ({
+  answer: failsOnce({ carbEntryId: null }), grams: failsOnce(undefined), logCarbs: failsOnce(undefined),
+});
+export const LiveAnswerNotSavedPhone: Story = { ...story('phone', { store: 'wearer', writes: liveDay() }), play: liveAnswerPlay };
+export const LiveAnswerNotSavedDesktop: Story = { ...story('desktop', { store: 'wearer', writes: liveDay() }), play: liveAnswerPlay };

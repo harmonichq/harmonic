@@ -2,15 +2,15 @@
 // queue-model.ts, every number a Day component prints is built here as a
 // Sourced value naming its field; the chart's marks read the same served rows.
 //
-// `fixtures.day` holds the wearer's timeline and logged carbs for the days its
+// `answers.day` holds the wearer's timeline and logged carbs for the days its
 // generator picked by rule; the prompts are the top-level `prompts`, and
 // `day.prompts` the same wearer's before and after the Day screen's answers.
-import { fixtures, sourced, type Sourced } from './fixtures';
+import { answers, sourced, type Sourced } from './answers';
 import { MONTHS } from './provenance.js';
 
-export type DayState = keyof typeof fixtures.day.states;
-type ServedDay = typeof fixtures.day.days[keyof typeof fixtures.day.days];
-const servedDays = fixtures.day.days as Record<string, ServedDay>;
+export type DayState = keyof typeof answers.day.states;
+type ServedDay = typeof answers.day.days[keyof typeof answers.day.days];
+const servedDays = () => answers.day.days as Record<string, ServedDay>;
 
 /** Minutes since midnight of a served "YYYY-MM-DD HH:MM:SS" time. */
 export const minuteOf = (t: string) => Number(t.slice(11, 13)) * 60 + Number(t.slice(14, 16));
@@ -48,13 +48,13 @@ export type DayChartData = {
 };
 
 export function dayChart(state: DayState): DayChartData {
-  return dayChartOf(fixtures.day.states[state])!;
+  return dayChartOf(answers.day.states[state])!;
 }
 
 /** The chart of one served day; null for a day whose timeline is not served. */
 export function dayChartOf(iso: string): DayChartData | null {
   const root = `day.days.${iso}`;
-  const day = servedDays[iso];
+  const day = servedDays()[iso];
   if (!day) return null;
   const { timeline, carbs } = day;
   const boluses: DayEvent[] = timeline.boluses.map((b, i) => {
@@ -104,7 +104,7 @@ const INSULIN_KEYS: InsulinKey[] = ['basal', 'meal', 'correction', 'control_iq_b
  *  each share is its part ÷ the total as printed, so the shares need not sum
  *  to exactly 100. */
 export function insulinBar(iso: string): InsulinData | null {
-  const totals = servedDays[iso]?.timeline.insulin_totals;
+  const totals = servedDays()[iso]?.timeline.insulin_totals;
   if (!totals) return null;
   const root = `day.days.${iso}.timeline.insulin_totals`;
   return {
@@ -120,7 +120,7 @@ export function insulinBar(iso: string): InsulinData | null {
 // --- Day navigator -----------------------------------------------------------
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const navigator = () => fixtures.overview.wearer.day_navigator;
+const navigator = () => answers.overview.wearer.day_navigator;
 const utc = (iso: string) => new Date(`${iso}T00:00:00Z`);
 const shift = (iso: string, days: number) => {
   const date = utc(iso);
@@ -176,7 +176,7 @@ export const PROMPT_STEPS = ['wearer-pending', 'wearer', 'wearer-answered'] as c
 export type PromptStore = (typeof PROMPT_STEPS)[number];
 
 const promptsPath = (store: PromptStore) => (store === 'wearer' ? 'prompts' : `day.prompts.${store}`);
-const promptsOf = (store: PromptStore) => (store === 'wearer' ? fixtures.prompts : fixtures.day.prompts[store]);
+const promptsOf = (store: PromptStore) => (store === 'wearer' ? answers.prompts : answers.day.prompts[store]);
 
 /** The unanswered prompts: the Day badge and Day's Prompts row. */
 export const unanswered = (store: PromptStore) => sourced<number>(`${promptsPath(store)}[answer=null].length`);
@@ -199,6 +199,9 @@ export function promptPlace(entry: PromptStore, shown: PromptStore = entry) {
 }
 
 export type PromptData = {
+  /** The prompt's identity, as an answer names it. */
+  detector: string;
+  anchorT: string;
   date: Sourced<string>;
   time: Sourced<string>;
   /** The low's own reading, mg/dL. */
@@ -226,6 +229,8 @@ export function lowPrompt(n = 0, store: PromptStore = 'wearer'): PromptData {
     return minute - start;
   };
   return {
+    detector: prompt.detector,
+    anchorT: prompt.anchor_t,
     date: sourced(`${path}.anchor_t`, 'date'),
     time: sourced(`${path}.anchor_t`, 'time'),
     bg: sourced(`${path}.key_bg`, 'round'),
@@ -236,15 +241,29 @@ export function lowPrompt(n = 0, store: PromptStore = 'wearer'): PromptData {
   };
 }
 
+/** Every low prompt still unanswered, in served order. */
+export function lowPrompts(store: PromptStore = 'wearer'): PromptData[] {
+  const count = promptsOf(store).filter((p) => p.detector === 'low' && p.answer === null).length;
+  return Array.from({ length: count }, (_, n) => lowPrompt(n, store));
+}
+
+/** "n / N" while answering the live engine, where no served store holds the
+ *  Prompts as they were: N the unanswered count held from when the Prompts
+ *  opened, and n the shown card's place among them, N less those still to come. */
+export function livePromptPlace(total: Sourced<number>, place: number) {
+  const count: Sourced<number> = { value: place, source: `${total.source} − ${total.value - place}` };
+  return { count, total };
+}
+
 // --- LogCarbsEntry -----------------------------------------------------------
 
 /** A served amount for the filled field: the first entry the wearer logged on
  *  the day the stories show with logged carbs. */
 export function loggedGrams(): Sourced<number> {
-  return sourced(`day.days.${fixtures.day.states.with_carbs}.carbs.carb_entries.0.grams`, 'round');
+  return sourced(`day.days.${answers.day.states.with_carbs}.carbs.carb_entries.0.grams`, 'round');
 }
 
 /** A served time for the edited Time row: when the wearer logged that entry. */
 export function loggedTime(): Sourced<string> {
-  return sourced(`day.days.${fixtures.day.states.with_carbs}.carbs.carb_entries.0.t`, 'time');
+  return sourced(`day.days.${answers.day.states.with_carbs}.carbs.carb_entries.0.t`, 'time');
 }

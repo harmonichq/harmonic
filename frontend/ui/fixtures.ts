@@ -1,17 +1,11 @@
-// The stories' only data: the served answers in ui-fixtures.json, generated
-// from the synthetic QA store and stamped as such. A number reaches a component as a Sourced value,
-// carrying the field path it was read from, so the story check can prove the
-// rendered text equals that field.
+// The stories' adapter (#483, #495): the served answers in ui-fixtures.json,
+// generated from the synthetic QA store and stamped as such, made the answers
+// every model reads (answers.ts). Only the stories import this module, so the
+// built app never carries the fixture file.
 import data from './__fixtures__/ui-fixtures.json';
-import { resolveSource } from './provenance.js';
+import { serve } from './answers';
 
-export type Format =
-  | 'round' | 'fixed1' | 'fixed2' | 'pct1' | 'share' | 'clock' | 'day' | 'date' | 'time' | 'until';
-export type Sourced<T> = { readonly value: T; readonly source: string; readonly format?: Format };
+export { sourced, type Format, type Sourced } from './answers';
 
 export const fixtures = data;
-
-/** One served field, or several joined by " − " for a derived value. */
-export function sourced<T>(source: string, format?: Format): Sourced<T> {
-  return { value: resolveSource(data, source, format) as T, source, format };
-}
+serve(data);

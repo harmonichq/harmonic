@@ -8,6 +8,10 @@
 .ui-settings__none { margin: 16px 0 0; color: var(--wk-ink-meta); font-size: var(--ui-type-body); }
 .ui-settings__unit { text-transform: none; }
 
+/* A failed Save's bar: above the tab bar, or at the foot of the pane. */
+.ui-settings--phone .ui-settings__bar { padding: 0 16px 8px; }
+.ui-settings--desktop .ui-settings__bar { position: sticky; bottom: 0; max-width: 720px; padding-top: 24px; }
+
 /* Desktop: the rail and one pane, up to a reading width. */
 .ui-settings--desktop { display: grid; grid-template-columns: auto 1fr; height: 100%; }
 .ui-settings__pane { box-sizing: border-box; min-height: 0; overflow-y: auto; padding: 24px 32px; }

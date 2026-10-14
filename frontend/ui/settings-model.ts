@@ -2,7 +2,7 @@
 // other models, every number a Settings row prints is a Sourced value naming
 // its field; the account's email arrives already masked from the generator,
 // and nothing here invents a state.
-import { fixtures, sourced, type Sourced } from './fixtures';
+import { answers, sourced, type Sourced } from './answers';
 
 export type SyncState = 'synced' | 'failed';
 export type AccountState = 'set' | 'unset';
@@ -22,12 +22,20 @@ export type TandemSourceData = {
   account: { configured: boolean; email: string | null; region: string | null };
 };
 
+type Status = { last_attempt_at: string | null; last_error: string | null };
+
+/** Whether a sync status says its last attempt failed; null before any attempt. */
+const lastFailed = (served: Status) => (served.last_attempt_at ? served.last_error !== null : null);
+
+/** The last sync failed: the Settings alert on every screen's NavBar (§1.1). */
+export const syncFailed = () => lastFailed(answers.status.ok) === true;
+
 export function tandemSource(sync: SyncState | null, account: AccountState): TandemSourceData {
   const status = sync ? `settings.status.${sync}` : 'status.ok';
-  const served = sync ? fixtures.settings.status[sync] : fixtures.status.ok;
-  const credentials = fixtures.settings.credentials[account];
+  const served = sync ? answers.settings.status[sync] : answers.status.ok;
+  const credentials = answers.settings.credentials[account];
   return {
-    failed: served.last_attempt_at ? served.last_error !== null : null,
+    failed: lastFailed(served),
     lastSuccess: served.last_success_at ? when(`${status}.last_success_at`) : null,
     lastAttempt: served.last_attempt_at ? when(`${status}.last_attempt_at`) : null,
     error: served.last_error,
@@ -54,10 +62,10 @@ export type PumpProfileData = {
   segments: PumpSegment[];
 } | null;
 
-type PumpStore = keyof typeof fixtures.settings.pump_settings;
+type PumpStore = keyof typeof answers.settings.pump_settings;
 
 export function pumpProfile(store: PumpStore): PumpProfileData {
-  const answer = fixtures.settings.pump_settings[store] as
+  const answer = answers.settings.pump_settings[store] as
     { configured: boolean; profile?: { name: string; segments: unknown[] } };
   if (!answer.configured || !answer.profile) return null;
   const root = `settings.pump_settings.${store}`;
@@ -82,4 +90,4 @@ export function pumpProfile(store: PumpStore): PumpProfileData {
 
 export type GlossaryEntry = { term: string; meaning: string };
 
-export const glossary = (): GlossaryEntry[] => fixtures.glossary.map(({ term, meaning }) => ({ term, meaning }));
+export const glossary = (): GlossaryEntry[] => answers.glossary.map(({ term, meaning }) => ({ term, meaning }));

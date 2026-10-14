@@ -14,23 +14,28 @@
 // as a text action beneath it. Ending shows what the engine served after the
 // end: the `after` store, where the ended change is now the last change.
 //
+// Live (`writes`, #495): End asks the engine to end the active change once
+// confirmed, and the screen then shows what it served after; an End that fails
+// leaves the change as it was, with "Not saved" and Retry in the bar.
+//
 // Phone: the header stays put while the page scrolls under it, above the tab
 // bar. Desktop: the rail and one pane up to a reading width; the pane scrolls
 // as a whole (§2.3).
 //
 // Motion: the sheet rises over a darkening scrim, the popover opens out of
 // its arrow, and the last change's card grows open under its row.
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { change, lastChange, type ChangeData, type ChangesStore } from '../../changes-model';
-import { sourced } from '../../fixtures';
-import { useMotionGate } from '../../motion';
+import { sourced } from '../../answers';
+import { useMotionGate, usePresence } from '../../motion';
 import { Num } from '../../Num';
 import { Button } from '../../components/Button/Button';
 import { ChangeCard } from '../../components/ChangeCard/ChangeCard';
 import { ListGroup, ListRow } from '../../components/ListRow/ListRow';
 import { StatePill } from '../../components/StatePill/StatePill';
-import { NavBar } from '../../components/NavBar/NavBar';
+import { NavBar, type NavHooks } from '../../components/NavBar/NavBar';
 import { ScreenHeader } from '../../components/ScreenHeader/ScreenHeader';
+import { TransientBar } from '../../components/TransientBar/TransientBar';
 import '../../shared.css';
 import './ChangesScreen.css';
 
@@ -46,13 +51,18 @@ export type ChangesScreenProps = {
   confirming?: boolean;
   /** Start with the last change's row expanded into its card. */
   lastOpen?: boolean;
+  /** The live engine's End: resolves once the answers are read again, rejects when not saved. */
+  writes?: { end: () => Promise<void> };
+  nav?: NavHooks;
+  /** Unavailable's Retry. */
+  onRetry?: () => void;
 };
 
-const dayCount = sourced<number>('prompts[answer=null].length');
+const dayCount = () => sourced<number>('prompts[answer=null].length');
 
 /** The change's name, as its card titles it. */
 function Name({ data }: { data: ChangeData }) {
-  if (data.kind === 'trial') return <>{data.title} <Num value={data.slot} /></>;
+  if (data.kind === 'trial') return <>{data.title}{data.slot && <> <Num value={data.slot} /></>}</>;
   if (data.kind === 'focus') return <>{data.habit}</>;
   return null;
 }
@@ -69,16 +79,34 @@ function Confirm({ data, onEnd, onCancel }: { data: ChangeData; onEnd: () => voi
   );
 }
 
-export function ChangesScreen({ layout, store, state = 'ready', end, confirming = false, lastOpen = false }: ChangesScreenProps) {
+export function ChangesScreen({
+  layout, store, state = 'ready', end, confirming = false, lastOpen = false, writes, nav, onRetry,
+}: ChangesScreenProps) {
   const [ended, setEnded] = useState(false);
   const [asking, setAsking] = useState(confirming);
   const [lastExpanded, setLastExpanded] = useState(lastOpen);
+  const [notSaved, setNotSaved] = useState(false);
   const root = useMotionGate<HTMLDivElement>();
   const shown = ended && end ? end.after : store;
-  const active = change(shown);
-  const last = lastChange(shown);
+  const ready = state === 'ready';
+  const active: ChangeData = ready ? change(shown) : { kind: 'none' };
+  const last = ready ? lastChange(shown) : null;
+  // The confirmation and the last change's card stay while they close; the
+  // confirmation keeps the change it asked about.
+  const asked = usePresence(asking && state === 'ready');
+  const askedAbout = useRef(active);
+  if (asking) askedAbout.current = active;
+  const lastCard = usePresence(lastExpanded);
 
-  const doEnd = () => { setAsking(false); if (end) setEnded(true); };
+  const liveEnd = () => {
+    setNotSaved(false);
+    writes?.end().catch(() => setNotSaved(true));
+  };
+  const doEnd = () => {
+    setAsking(false);
+    if (writes) liveEnd();
+    else if (end) setEnded(true);
+  };
   const cancel = () => setAsking(false);
 
   useEffect(() => {
@@ -89,12 +117,12 @@ export function ChangesScreen({ layout, store, state = 'ready', end, confirming 
   });
 
   const header = state === 'unavailable'
-    ? <ScreenHeader title="Changes" trailing="unavailable" layout={layout} />
+    ? <ScreenHeader title="Changes" trailing="unavailable" layout={layout} onRetry={onRetry} />
     : <ScreenHeader title="Changes" layout={layout} />;
 
-  const popover = layout === 'desktop' && asking && (
-    <section className="ui-popover ui-popover--end ui-changes__confirm" role="dialog" aria-label="End">
-      <Confirm data={active} onEnd={doEnd} onCancel={cancel} />
+  const popover = layout === 'desktop' && asked.value && (
+    <section className="ui-popover ui-popover--end ui-changes__confirm" role="dialog" aria-label="End" {...asked.exit}>
+      <Confirm data={askedAbout.current} onEnd={doEnd} onCancel={cancel} />
     </section>
   );
 
@@ -108,7 +136,7 @@ export function ChangesScreen({ layout, store, state = 'ready', end, confirming 
             <ListGroup caption="Last change">
               <ListRow
                 label={<span className="ui-changes__last-row">
-                  <span>{last.title} <Num value={last.slot} /></span>
+                  <span>{last.title}{last.slot && <> <Num value={last.slot} /></>}</span>
                   <span className="ui-changes__last-meta">
                     <Num value={last.before} /> → <Num value={last.after} /> {last.units} · <Num value={last.changedAt} />
                     {last.endedAt && <> – <Num value={last.endedAt} /></>}
@@ -117,11 +145,20 @@ export function ChangesScreen({ layout, store, state = 'ready', end, confirming 
                 value={last.result ? <StatePill state={last.result} /> : undefined}
                 disclosure={{ expanded: lastExpanded, onToggle: () => setLastExpanded(!lastExpanded) }} />
             </ListGroup>
-            {lastExpanded && <div className="ui-changes__last-card ui-expand"><ChangeCard data={last} /></div>}
+            {lastCard.value && (
+              <div className="ui-changes__last-card ui-expand" {...lastCard.exit}><ChangeCard data={last} /></div>
+            )}
           </div>
         )}
       </>
     );
+
+  const barShown = usePresence(notSaved);
+  const bar = barShown.value && (
+    <div className="ui-changes__bar" {...barShown.exit}>
+      <TransientBar kind="not_saved" onRetry={liveEnd} layout={layout} />
+    </div>
+  );
 
   if (layout === 'phone') {
     return (
@@ -130,13 +167,14 @@ export function ChangesScreen({ layout, store, state = 'ready', end, confirming 
         <main className="ui-changes__main" data-scroll="page">
           <div className="ui-changes__body">{content}</div>
         </main>
-        <NavBar layout="tabbar" selected="changes" dayCount={dayCount} />
-        {asking && state === 'ready' && (
-          <div className="ui-scrim ui-changes__scrim" onClick={cancel}>
+        {bar}
+        <NavBar layout="tabbar" selected="changes" dayCount={dayCount()} {...nav} />
+        {asked.value && (
+          <div className="ui-scrim ui-changes__scrim" onClick={cancel} {...asked.exit}>
             <section className="ui-sheet ui-changes__confirm" role="dialog" aria-label="End"
               onClick={(event) => event.stopPropagation()}>
               <span className="ui-sheet__grabber" aria-hidden="true" />
-              <Confirm data={active} onEnd={doEnd} onCancel={cancel} />
+              <Confirm data={askedAbout.current} onEnd={doEnd} onCancel={cancel} />
             </section>
           </div>
         )}
@@ -145,10 +183,11 @@ export function ChangesScreen({ layout, store, state = 'ready', end, confirming 
   }
   return (
     <div ref={root} className="ui-changes ui-changes--desktop">
-      <NavBar layout="rail" selected="changes" dayCount={dayCount} />
+      <NavBar layout="rail" selected="changes" dayCount={dayCount()} {...nav} />
       <section className="ui-changes__pane" data-scroll="page">
         {header}
         <div className="ui-changes__body">{content}</div>
+        {bar}
       </section>
     </div>
   );

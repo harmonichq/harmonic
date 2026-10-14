@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
+import { failsOnce } from '../../flaky';
 import { SettingsScreen, type SettingsScreenProps } from './SettingsScreen';
 
 // The Settings screen in each state §1.3 lists, at phone (390) and desktop
@@ -105,3 +106,22 @@ const escapePlay: Story['play'] = async ({ canvasElement }) => {
 };
 export const CloseFormPhone: Story = { ...story('phone', { ...SYNCED, view: 'tandem' }), play: escapePlay };
 export const CloseFormDesktop: Story = { ...story('desktop', { ...SYNCED, view: 'tandem' }), play: escapePlay };
+
+// Live (#495): a Save the engine does not save keeps the form open with what
+// was typed, with "Not saved", and Retry saves it.
+const liveSavePlay: Story['play'] = async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  await userEvent.click(canvas.getByRole('button', { name: 'Update' }));
+  const form = within(canvas.getByRole('dialog', { name: 'Tandem Source' }));
+  await userEvent.type(form.getByLabelText('Email'), 'wearer@example.invalid');
+  await userEvent.type(form.getByLabelText('Password'), 'synthetic');
+  await userEvent.click(form.getByRole('button', { name: 'Save' }));
+  await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent(/Not saved/));
+  await expect(canvas.getByRole('dialog', { name: 'Tandem Source' })).toBeInTheDocument();
+  await userEvent.click(canvas.getByRole('button', { name: 'Retry' }));
+  await waitFor(() => expect(canvas.queryByRole('dialog')).toBeNull());
+};
+export const LiveSaveNotSavedPhone: Story = {
+  ...story('phone', { ...NOT_SET, view: 'tandem', writes: { saveCredentials: failsOnce(undefined) } }), play: liveSavePlay };
+export const LiveSaveNotSavedDesktop: Story = {
+  ...story('desktop', { ...NOT_SET, view: 'tandem', writes: { saveCredentials: failsOnce(undefined) } }), play: liveSavePlay };

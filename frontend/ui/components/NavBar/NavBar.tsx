@@ -3,7 +3,7 @@
 // Day's count of unanswered Prompts, and Settings' "!" when the last sync
 // failed.
 import { Icon, type IconName } from '../../icons';
-import type { Sourced } from '../../fixtures';
+import type { Sourced } from '../../answers';
 import { Num } from '../../Num';
 import './NavBar.css';
 
@@ -26,6 +26,10 @@ export type NavBarProps = {
   syncFailed?: boolean;
   onSelect?: (item: NavItem) => void;
 };
+
+/** What a screen hands its NavBar from the app: where a tab goes, and the
+ *  Settings alert, which shows on every screen's NavBar. */
+export type NavHooks = Pick<NavBarProps, 'onSelect' | 'syncFailed'>;
 
 export function NavBar({ layout, selected, dayCount, syncFailed = false, onSelect }: NavBarProps) {
   return (

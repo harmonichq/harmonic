@@ -3,14 +3,14 @@
 // value naming its field; the state, the result and the End action all follow
 // what the engine served, and nothing here invents a verdict.
 //
-// A store is one entry of `fixtures.changes`: its admission names the active
+// A store is one entry of `answers.changes`: its admission names the active
 // change, and its trials hold that Trial with its comparison, and any Trial the
 // person has ended (the last change).
 import type { Change } from './Delta';
-import { fixtures, sourced, type Sourced } from './fixtures';
+import { answers, sourced, type Sourced } from './answers';
 import { formatValue } from './provenance.js';
 
-export type ChangesStore = keyof typeof fixtures.changes;
+export type ChangesStore = keyof typeof answers.changes;
 export type Result = 'better' | 'worse' | 'unclear';
 
 /** One outcome's Before and After, named by its glossary metric. */
@@ -30,7 +30,8 @@ export type TrialData = {
   /** The parameter's served title and units, as the Queue names the setting. */
   title: string;
   units: string;
-  slot: Sourced<string>;
+  /** Null for a change the engine serves no time block for (a whole-profile change). */
+  slot: Sourced<string> | null;
   changedAt: Sourced<string>;
   before: Sourced<number>;
   after: Sourced<number>;
@@ -136,7 +137,7 @@ function adherence(path: string, unit: string, state: string): NonNullable<Focus
 
 /** The active change: its Trial or Focus, or none. */
 export function change(name: ChangesStore): ChangeData {
-  const store = fixtures.changes[name];
+  const store = answers.changes[name];
   const root = `changes.${name}`;
   const { admission } = store;
   if (admission.active_kind === 'focus') {
@@ -167,14 +168,14 @@ export function change(name: ChangesStore): ChangeData {
 
 /** The last finished change: the Trial the person ended most recently, or null. */
 export function lastChange(name: ChangesStore): TrialData | null {
-  const ended = (fixtures.changes[name].trials as readonly TrialRow[])
+  const ended = (answers.changes[name].trials as readonly TrialRow[])
     .filter((t) => t.ending.kind)
     .sort((a, b) => (b.ending.effective_at ?? '').localeCompare(a.ending.effective_at ?? ''));
   return ended[0] ? trialData(name, ended[0]) : null;
 }
 
 function trialData(name: ChangesStore, trial: TrialRow): TrialData {
-  const store = fixtures.changes[name];
+  const store = answers.changes[name];
   const root = `changes.${name}`;
   const { admission } = store;
   const path = `${root}.trials[id=${trial.id}].0`;
@@ -182,13 +183,13 @@ function trialData(name: ChangesStore, trial: TrialRow): TrialData {
   const compared = ended ? { path: `${path}.ending.assessment.outcomes`, rows: ended.outcomes }
     : trial.reassessment ? { path: `${path}.reassessment.outcomes`, rows: trial.reassessment.outcomes } : null;
   const target = compared?.rows.find((r) => trial.target_metrics.includes(r.key));
-  const candidate = fixtures.queue.wearer.guidance.candidates.find((c) => c.subject === `setting:${trial.parameter}`);
+  const candidate = answers.queue.wearer.guidance.candidates.find((c) => c.subject === `setting:${trial.parameter}`);
   if (!candidate?.units) throw new Error(`the engine serves no title for ${trial.parameter}`);
   return {
     kind: 'trial',
     title: candidate.title,
     units: candidate.units,
-    slot: sourced(`${path}.slot`),
+    slot: (trial as { slot?: string | null }).slot ? sourced(`${path}.slot`) : null,
     changedAt: sourced(`${path}.changed_at`, 'date'),
     // The engine serves no pump increment, so every U/h value prints at 2
     // decimals, as the SettingCard prints it.

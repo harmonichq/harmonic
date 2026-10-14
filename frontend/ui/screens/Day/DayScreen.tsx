@@ -36,13 +36,22 @@
 // opening out of its arrow); Log carbs' sheet rises; the Prompts push in from
 // the right and back from the left, and each next prompt comes in from the
 // right.
+//
+// Live (`writes`, #495): each answer is optimistic. Yes keeps its card,
+// recorded, while the answer saves, and Next adds the grams typed to the
+// entry Yes created; any other answer, the Not sure text action or the full
+// swipe moves on to the next prompt at once. Log carbs waits on its save, busy.
+// A write that fails puts the card back with "Not saved" and Retry; a failed
+// Log carbs keeps its entry with Retry. Every write resolves once the engine's
+// answers are read again. The day the person picks is read as it is picked.
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import type { Sourced } from '../../answers';
 import {
-  PROMPT_STEPS, dayChartOf, dayDate, insulinBar, latestDay, loggedGrams, loggedTime, lowPrompt, monthName, monthWeeks,
-  promptPlace, unanswered, weekOf, type PromptStore,
+  PROMPT_STEPS, dayChartOf, dayDate, insulinBar, latestDay, livePromptPlace, loggedGrams, loggedTime, lowPrompt,
+  lowPrompts, monthName, monthWeeks, promptPlace, unanswered, weekOf, type PromptData, type PromptStore,
 } from '../../day-model';
 import { day as navigatorDay } from '../../overview-model';
-import { useMotionGate } from '../../motion';
+import { useMotionGate, usePresence } from '../../motion';
 import { Num } from '../../Num';
 import { Button } from '../../components/Button/Button';
 import { DayChart } from '../../components/DayChart/DayChart';
@@ -50,7 +59,7 @@ import { DayRibbon } from '../../components/DayRibbon/DayRibbon';
 import { InsulinBar } from '../../components/InsulinBar/InsulinBar';
 import { ListGroup, ListRow } from '../../components/ListRow/ListRow';
 import { LogCarbsEntry, type LogCarbsState } from '../../components/LogCarbsEntry/LogCarbsEntry';
-import { NavBar } from '../../components/NavBar/NavBar';
+import { NavBar, type NavHooks } from '../../components/NavBar/NavBar';
 import { PromptCard, type Answer } from '../../components/PromptCard/PromptCard';
 import { ScreenHeader } from '../../components/ScreenHeader/ScreenHeader';
 import { TransientBar } from '../../components/TransientBar/TransientBar';
@@ -81,6 +90,23 @@ export type DayScreenProps = {
   failing?: boolean;
   /** Start just after a Yes that was not saved, with the bar showing. */
   notSaved?: boolean;
+  /** The live engine's writes; without them the Prompts step through the served stores. */
+  writes?: DayWrites;
+  /** The day the screen shows, each time it changes: the live app reads it. */
+  onDay?: (iso: string) => void;
+  nav?: NavHooks;
+  /** Unavailable's Retry. */
+  onRetry?: () => void;
+};
+
+/** Each resolves once the engine's answers are read again, and rejects when the write was not saved. */
+export type DayWrites = {
+  /** Answer one prompt; Yes resolves with the carb entry it created. */
+  answer: (prompt: PromptData, answer: Answer) => Promise<{ carbEntryId: number | null }>;
+  /** The grams typed after a Yes, onto the entry it created. */
+  grams: (carbEntryId: number, grams: number) => Promise<void>;
+  /** Carbs eaten without a bolus, now. */
+  logCarbs: (grams: number) => Promise<void>;
 };
 
 /** How long a save is shown busy before it settles. */
@@ -89,13 +115,15 @@ const SAVE_MS = 600;
 const week = (iso: string) => weekOf(iso)!.map(navigatorDay);
 
 /** The month, dropped down from the header's day: its name, ‹ ›, and its weeks. */
-function Month({ layout, selected, onSelect, left }: {
+function Month({ layout, selected, onSelect, left, exit }: {
   layout: Layout; selected: string; onSelect: (iso: string) => void; left?: number;
+  /** Closing: what usePresence marks it with. */
+  exit: object;
 }) {
   return (
     <section className={layout === 'phone' ? 'ui-dayscreen__month ui-dayscreen__month--phone'
       : 'ui-popover ui-dayscreen__month ui-dayscreen__month--desktop'} style={{ left }}
-      role="dialog" aria-label={monthName()}>
+      role="dialog" aria-label={monthName()} {...exit}>
       <div className="ui-dayscreen__month-head">
         <h2 className="ui-dayscreen__month-name">{monthName()}</h2>
         <span className="ui-dayscreen__steps">
@@ -112,9 +140,46 @@ function Month({ layout, selected, onSelect, left }: {
   );
 }
 
-export function DayScreen({
+/** The screen before the live answers arrive (its skeleton) or when they
+ *  cannot be read (Unavailable and Retry): nothing read from the answers. */
+function Frame({ layout, state, nav, onRetry }: {
+  layout: Layout; state: 'loading' | 'unavailable'; nav?: NavHooks; onRetry?: () => void;
+}) {
+  const header = state === 'unavailable'
+    ? <ScreenHeader title="Day" trailing="unavailable" layout={layout} onRetry={onRetry} />
+    : <ScreenHeader title="Day" layout={layout} />;
+  const body = state === 'loading' && <span className="ui-skeleton ui-dayscreen__skeleton" aria-hidden="true" />;
+  if (layout === 'phone') {
+    return (
+      <div className="ui-dayscreen ui-dayscreen--phone">
+        <div className="ui-dayscreen__head">{header}</div>
+        <main className="ui-dayscreen__main" data-scroll="page"><div className="ui-dayscreen__body">{body}</div></main>
+        <NavBar layout="tabbar" selected="day" {...nav} />
+      </div>
+    );
+  }
+  return (
+    <div className="ui-dayscreen ui-dayscreen--desktop">
+      <NavBar layout="rail" selected="day" {...nav} />
+      <section className="ui-dayscreen__pane" data-scroll="page">
+        <div className="ui-dayscreen__pane-head">{header}</div>
+        <div className="ui-dayscreen__body">{body}</div>
+      </section>
+    </div>
+  );
+}
+
+export function DayScreen(props: DayScreenProps) {
+  // The live app has no answers to read until they arrive.
+  if (props.writes && props.state !== undefined && props.state !== 'ready') {
+    return <Frame layout={props.layout} state={props.state} nav={props.nav} onRetry={props.onRetry} />;
+  }
+  return <Day {...props} />;
+}
+
+function Day({
   layout, store, state = 'ready', day, view: initialView = 'day', monthOpen = false, logCarbs, timeEdited = false,
-  recorded = false, swiping = false, failing = false, notSaved = false,
+  recorded = false, swiping = false, failing = false, notSaved = false, writes, onDay, nav, onRetry,
 }: DayScreenProps) {
   const [selected, setSelected] = useState(day ?? latestDay());
   const [month, setMonth] = useState(monthOpen);
@@ -132,12 +197,26 @@ export function DayScreen({
   const [anchor, setAnchor] = useState<number>();
   const root = useMotionGate<HTMLDivElement>();
   useEffect(() => () => window.clearTimeout(timer.current), []);
+  useEffect(() => { onDay?.(selected); }, [selected]);
+
+  // Live: the prompts answered while their write is in flight, the Yes card
+  // held until Next with the entry its answer creates, the count the Prompts
+  // opened with, the grams typed into Log carbs, and a failed write's Retry.
+  const [pending, setPending] = useState<ReadonlySet<string>>(new Set());
+  const [held, setHeld] = useState<PromptData | null>(null);
+  const heldEntry = useRef<Promise<number | null>>();
+  const [opened, setOpened] = useState<Sourced<number>>();
+  const typed = useRef('');
+  const [retry, setRetry] = useState<{ again: () => void } | null>(null);
 
   const current = PROMPT_STEPS[step];
   const count = unanswered(current);
   const shown = PROMPT_STEPS[recordedNow ? step - 1 : step];
+  const visible = writes ? lowPrompts().filter((p) => !pending.has(p.anchorT) && p.anchorT !== held?.anchorT) : [];
+  const liveCard = held ?? visible[0] ?? null;
   // The prompt the Prompts opened on; each one after it comes in as the next.
-  const [entered, setEntered] = useState(shown);
+  const [entered, setEntered] = useState<string>(shown);
+  const cardKey = writes ? liveCard?.anchorT ?? '' : shown;
   const push = view === 'prompts' ? 'forward' : 'back';
 
   const select = (iso: string) => { setSelected(iso); setMonth(false); };
@@ -152,6 +231,10 @@ export function DayScreen({
     if (unanswered(PROMPT_STEPS[at]).value === 0) setView('day');
   };
   const answer = (given: Answer) => {
+    if (writes) {
+      if (liveCard && !held) liveAnswer(liveCard, given);
+      return;
+    }
     if (fails.current) {
       // Not saved: the card returns to its prior state.
       fails.current = false;
@@ -169,8 +252,56 @@ export function DayScreen({
     }
   };
 
+  const notSavedLive = (again: () => void) => () => {
+    setAttempt((n) => n + 1);
+    setRetry({ again });
+  };
+  const leaveWhenDone = () => { if (unanswered('wearer').value === 0) setView('day'); };
+  const mark = (prompt: PromptData, on: boolean) => setPending((now) => {
+    const next = new Set(now);
+    if (on) next.add(prompt.anchorT); else next.delete(prompt.anchorT);
+    return next;
+  });
+  const liveAnswer = (prompt: PromptData, given: Answer) => {
+    setRetry(null);
+    if (given === 'carbs') {
+      setHeld(prompt);
+      // The card draws recorded from its first render.
+      setAttempt((n) => n + 1);
+      heldEntry.current = writes!.answer(prompt, 'carbs').then((saved) => saved.carbEntryId);
+      heldEntry.current.catch(() => {
+        setHeld((now) => (now === prompt ? null : now));
+        notSavedLive(() => liveAnswer(prompt, given))();
+      });
+      return;
+    }
+    mark(prompt, true);
+    writes!.answer(prompt, given).then(leaveWhenDone, notSavedLive(() => liveAnswer(prompt, given)))
+      .finally(() => mark(prompt, false));
+  };
+  const liveGrams = (made: Promise<number | null>, grams: number) => {
+    setRetry(null);
+    made.then((id) => (id === null ? undefined : writes!.grams(id, grams)))
+      .catch(notSavedLive(() => liveGrams(made, grams)));
+  };
+  const next = (grams: string) => {
+    if (!writes) {
+      advance(step);
+      return;
+    }
+    const made = heldEntry.current;
+    setHeld(null);
+    if (made && /^\d+$/.test(grams)) liveGrams(made, Number(grams));
+    // The Yes already left the unanswered count once its write was read back.
+    if (visible.length === 0) setView('day');
+  };
+
   const save = () => {
     setCarbs('saving');
+    if (writes) {
+      writes.logCarbs(Number(typed.current)).then(() => setCarbs(null), () => setCarbs('not_saved'));
+      return;
+    }
     timer.current = window.setTimeout(() => {
       if (fails.current) {
         fails.current = false;
@@ -197,16 +328,30 @@ export function DayScreen({
     state: carbs ?? 'empty',
     grams: logCarbs && logCarbs !== 'empty' ? loggedGrams() : undefined,
     time: timeEdited ? loggedTime() : undefined,
-    onGramsChange: (text: string) => setCarbs(text ? 'filled' : 'empty'),
+    onGramsChange: (text: string) => {
+      typed.current = text;
+      setCarbs(text ? 'filled' : 'empty');
+    },
     onSave: save,
   };
 
+  const openPrompts = () => {
+    setEntered(writes ? visible[0]?.anchorT ?? '' : shown);
+    setOpened(count);
+    setView('prompts');
+  };
+  // "n / N": the served stores' difference, or live, the place among those the Prompts opened with.
+  const place = view !== 'prompts' ? undefined : writes
+    ? opened && livePromptPlace(opened, opened.value - visible.length + (held ? 0 : 1))
+    : promptPlace(store, shown);
   const dayControl = { ...dayDate(selected), open: month, onToggle: () => setMonth(!month) };
   const header = state === 'unavailable'
-    ? <ScreenHeader title="Day" trailing="unavailable" layout={layout} />
+    ? <ScreenHeader title="Day" trailing="unavailable" layout={layout} onRetry={onRetry} />
     : view === 'prompts'
-      ? <ScreenHeader key={view} title="Lows" layout={layout} back={{ label: 'Day', onBack: () => setView('day') }}
-          trailing="count" {...promptPlace(store, shown)} />
+      ? place
+        ? <ScreenHeader key={view} title="Lows" layout={layout} back={{ label: 'Day', onBack: () => setView('day') }}
+            trailing="count" {...place} />
+        : <ScreenHeader key={view} title="Lows" layout={layout} back={{ label: 'Day', onBack: () => setView('day') }} />
       : layout === 'phone'
         ? <ScreenHeader key={view} title="Day" day={dayControl} layout={layout} trailing="action" label="+ Log carbs"
             onAction={() => setCarbs('empty')} />
@@ -222,7 +367,7 @@ export function DayScreen({
         {count.value > 0 && (
           <ListGroup>
             <ListRow label={<><span className="ui-dayscreen__low" aria-hidden="true">▼</span>Lows</>}
-              value={<Num value={count} />} onOpen={() => { setEntered(shown); setView('prompts'); }} />
+              value={<Num value={count} />} onOpen={openPrompts} />
           </ListGroup>
         )}
       </div>
@@ -232,37 +377,51 @@ export function DayScreen({
     </>
   );
 
-  const prompt = () => (
-    <div key={shown} className={shown === entered ? 'ui-dayscreen__prompt' : 'ui-dayscreen__prompt ui-advance'}>
-      <PromptCard key={attempt} data={lowPrompt(0, shown)} layout={layout} recorded={recordedNow}
-        swiping={swiping && !recordedNow} onAnswer={answer} onNext={() => advance(step)} />
+  const prompt = () => {
+    const card = writes ? liveCard : lowPrompt(0, shown);
+    return card && (
+    <div key={cardKey} className={cardKey === entered ? 'ui-dayscreen__prompt' : 'ui-dayscreen__prompt ui-advance'}>
+      <PromptCard key={attempt} data={card} layout={layout} recorded={writes ? held !== null : recordedNow}
+        swiping={swiping && !recordedNow} onAnswer={answer} onNext={next} />
+    </div>
+    );
+  };
+  // What is open stays while it closes: the bar, the month, the sheet.
+  const barShown = usePresence(view === 'prompts' && (writes ? retry : failed));
+  const bar = barShown.value && (
+    <div className="ui-dayscreen__bar" {...barShown.exit}>
+      <TransientBar kind="not_saved" layout={layout}
+        onRetry={() => {
+          const shownRetry = barShown.value;
+          if (shownRetry && typeof shownRetry === 'object') { shownRetry.again(); return; }
+          fails.current = false;
+          answer(barShown.value as Answer);
+        }} />
     </div>
   );
-  const bar = view === 'prompts' && failed && (
-    <TransientBar kind="not_saved" layout={layout} onRetry={() => { fails.current = false; answer(failed); }} />
-  );
 
-  const dropped = month && state !== 'unavailable' && view === 'day';
+  const dropped = usePresence(month && state !== 'unavailable' && view === 'day');
+  const sheet = usePresence(carbs !== null && state === 'ready' && view === 'day' && carbs);
 
   if (layout === 'phone') {
     return (
       <div ref={root} className="ui-dayscreen ui-dayscreen--phone">
-        {dropped && <div className="ui-scrim ui-dayscreen__scrim" onClick={() => setMonth(false)} />}
+        {dropped.value && <div className="ui-scrim ui-dayscreen__scrim" onClick={() => setMonth(false)} {...dropped.exit} />}
         <div className="ui-dayscreen__head" data-push={push}>
           {header}
-          {dropped && <Month layout="phone" selected={selected} onSelect={select} />}
+          {dropped.value && <Month layout="phone" selected={selected} onSelect={select} exit={dropped.exit} />}
         </div>
         <main className="ui-dayscreen__main" data-scroll="page" data-push={push}>
           <div key={`${view}-body`} className="ui-dayscreen__body ui-push">
             {state !== 'unavailable' && (view === 'prompts' ? prompt() : dayContent)}
           </div>
         </main>
-        {bar && <div className="ui-dayscreen__bar">{bar}</div>}
-        <NavBar layout="tabbar" selected="day" dayCount={count} />
-        {carbs !== null && state === 'ready' && view === 'day' && (
-          <div className="ui-scrim ui-dayscreen__scrim ui-dayscreen__scrim--sheet" onClick={closeCarbs}>
+        {bar}
+        <NavBar layout="tabbar" selected="day" dayCount={count} {...nav} />
+        {sheet.value && (
+          <div className="ui-scrim ui-dayscreen__scrim ui-dayscreen__scrim--sheet" onClick={closeCarbs} {...sheet.exit}>
             <div onClick={(event) => event.stopPropagation()}>
-              <LogCarbsEntry layout="phone" {...entryProps} />
+              <LogCarbsEntry layout="phone" {...entryProps} state={sheet.value} />
             </div>
           </div>
         )}
@@ -271,11 +430,11 @@ export function DayScreen({
   }
   return (
     <div ref={root} className="ui-dayscreen ui-dayscreen--desktop">
-      <NavBar layout="rail" selected="day" dayCount={count} />
+      <NavBar layout="rail" selected="day" dayCount={count} {...nav} />
       <section className="ui-dayscreen__pane" data-scroll="page" data-push={push}>
         <div ref={headRef} className="ui-dayscreen__pane-head" data-push={push}>
           {header}
-          {dropped && <Month layout="desktop" selected={selected} onSelect={select} left={anchor} />}
+          {dropped.value && <Month layout="desktop" selected={selected} onSelect={select} left={anchor} exit={dropped.exit} />}
         </div>
         {state !== 'unavailable' && (
           <div key={`${view}-body`} className="ui-dayscreen__body ui-push">
@@ -287,7 +446,7 @@ export function DayScreen({
             )}
           </div>
         )}
-        {bar && <div className="ui-dayscreen__bar">{bar}</div>}
+        {bar}
       </section>
     </div>
   );

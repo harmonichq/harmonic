@@ -2,16 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="dark" />
   <title>Harmonic</title>
   <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
-
-  <!-- No font or script CDN: HV2-01 requires the packaged runtime to need
-       neither a Node runtime nor a CDN, so Inter is a declared family that
-       falls back to the platform's own, and ECharts is bundled from the tree.
-       Every stylesheet this desk needs is imported by ./main.js, in the one
-       order the cascade depends on. -->
-  <script type="module" src="./main.js"></script>
+  <!-- No font or script CDN: the packaged runtime needs neither a Node runtime
+       nor a CDN, so Inter is vendored and every module is bundled. -->
+  <script type="module" src="./ui/app/main.tsx"></script>
 </head>
-<body></body>
+<body><div id="app"></div></body>
 </html>

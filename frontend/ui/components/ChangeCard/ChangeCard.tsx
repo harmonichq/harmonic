@@ -29,7 +29,7 @@
 // desktop, the confirmation popover (§1.3a), its arrow on End.
 import type { ReactNode } from 'react';
 import type { ChangeData, FocusData, OutcomeRow, TrialData } from '../../changes-model';
-import type { Sourced } from '../../fixtures';
+import type { Sourced } from '../../answers';
 import { Delta } from '../../Delta';
 import { Num } from '../../Num';
 import { Button } from '../Button/Button';
@@ -122,7 +122,7 @@ function Trial({ data, onEnd, confirm }: { data: TrialData } & Ends) {
       <h2 className="ui-change__title">
         {data.title}{' '}
         <span className="ui-change__meta">
-          <Num value={data.slot} /> · <Num value={data.changedAt} />
+          {data.slot && <><Num value={data.slot} /> · </>}<Num value={data.changedAt} />
           {data.endedAt && <> – <Num value={data.endedAt} /></>}
         </span>
       </h2>

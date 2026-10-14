@@ -179,6 +179,9 @@ async function render(page, id) {
   if (phase !== 'finished' && phase !== 'completed') errors.push(`the story's render ended ${phase}`);
   errors.push(...await page.evaluate(() => window.__uiStoryErrors));
   await page.evaluate(() => document.fonts.ready);
+  // What a play closed has left once its closing motion ends (usePresence); the
+  // prechecks and the shots read the screen after it has gone.
+  await page.waitForFunction(() => !document.querySelector('[data-closing]'), null, { timeout: 5000 });
   return errors;
 }
 

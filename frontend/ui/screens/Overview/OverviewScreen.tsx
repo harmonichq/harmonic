@@ -15,14 +15,14 @@
 // rail and one pane, the metrics beside the profile, and the recent days as
 // tiles beneath (§4.2 DayTile).
 import { useState } from 'react';
-import { fixtures, sourced } from '../../fixtures';
+import { answers, sourced } from '../../answers';
 import {
   day, metric, profile, tirBands, type MetricKey, type Window,
 } from '../../overview-model';
 import { DayTile } from '../../components/DayTile/DayTile';
 import { GlucoseProfile } from '../../components/GlucoseProfile/GlucoseProfile';
 import { MetricFigure } from '../../components/MetricFigure/MetricFigure';
-import { NavBar } from '../../components/NavBar/NavBar';
+import { NavBar, type NavHooks } from '../../components/NavBar/NavBar';
 import { ScreenHeader } from '../../components/ScreenHeader/ScreenHeader';
 import { lacksCoverage, SegmentedControl } from '../../components/SegmentedControl/SegmentedControl';
 import { TimeInRangeBar } from '../../components/TimeInRangeBar/TimeInRangeBar';
@@ -38,6 +38,9 @@ export type OverviewScreenProps = {
   state?: 'ready' | 'loading' | 'unavailable';
   /** The window selected first. */
   window?: Window;
+  nav?: NavHooks;
+  /** Unavailable's Retry. */
+  onRetry?: () => void;
 };
 
 const WINDOWS: Window[] = ['14', '30', '90'];
@@ -46,31 +49,69 @@ const OTHER_METRICS: MetricKey[] = ['mean_glucose', 'gmi', 'cv', 'tbr_lvl1', 'ta
 const RECENT_DAYS = 14;
 /** Phone: the profile's plot height that lets the screen fit without scrolling. */
 const PHONE_PLOT = 170;
-const dayCount = sourced<number>('prompts[answer=null].length');
+const dayCount = () => sourced<number>('prompts[answer=null].length');
 
 const outcomes = (store: Store) => (store === 'wearer'
-  ? fixtures.outcomes : fixtures.overview['wearer-unsynced'].outcomes) as Record<Window, {
+  ? answers.outcomes : answers.overview['wearer-unsynced'].outcomes) as Record<Window, {
     window_days: number; coverage: { days: number }; metrics: { tir: number | null };
   }>;
 const outcomesRoot = (store: Store) => (store === 'wearer' ? 'outcomes' : 'overview.wearer-unsynced.outcomes');
 
 function recentDays() {
-  const days = fixtures.overview.wearer.day_navigator.days;
+  const days = answers.overview.wearer.day_navigator.days;
   const last = days.map((d) => d.has_data).lastIndexOf(true);
   return days.slice(Math.max(0, last + 1 - RECENT_DAYS), last + 1).map((d) => day(d.iso));
 }
 
-export function OverviewScreen({ layout, store, state = 'ready', window: initial = '14' }: OverviewScreenProps) {
+/** Loading (the screen's skeleton) or Unavailable (its title, the label and
+ *  Retry): the frame, with nothing read from the answers. */
+function Frame({ layout, state, nav, onRetry }: {
+  layout: Layout; state: 'loading' | 'unavailable'; nav?: NavHooks; onRetry?: () => void;
+}) {
+  const header = state === 'unavailable'
+    ? <ScreenHeader title="Overview" trailing="unavailable" layout={layout} onRetry={onRetry} />
+    : <ScreenHeader title="Overview" layout={layout} />;
+  const loading = state === 'loading' && (
+    <>
+      <span className="ui-skeleton" style={{ height: 32 }} aria-hidden="true" />
+      <span className="ui-skeleton" style={{ height: 160, marginTop: 24 }} aria-hidden="true" />
+      <span className="ui-skeleton" style={{ height: 220, marginTop: 24 }} aria-hidden="true" />
+    </>
+  );
+  if (layout === 'phone') {
+    return (
+      <div className="ui-overview ui-overview--phone">
+        <div className="ui-overview__head">{header}</div>
+        <main className="ui-overview__main" data-scroll="page">
+          <div className="ui-overview__body">{loading}</div>
+        </main>
+        <NavBar layout="tabbar" selected="overview" dayCount={dayCount()} {...nav} />
+      </div>
+    );
+  }
+  return (
+    <div className="ui-overview ui-overview--desktop">
+      <NavBar layout="rail" selected="overview" dayCount={dayCount()} {...nav} />
+      <section className="ui-overview__pane" data-scroll="page">
+        <div className="ui-overview__width">{header}</div>
+        <div className="ui-overview__body">{loading}</div>
+      </section>
+    </div>
+  );
+}
+
+export function OverviewScreen({
+  layout, store, state = 'ready', window: initial = '14', nav, onRetry,
+}: OverviewScreenProps) {
   const [window, setWindow] = useState<Window>(initial);
+  if (state !== 'ready') return <Frame layout={layout} state={state} nav={nav} onRetry={onRetry} />;
   const served = outcomes(store);
   const hasData = served[window].metrics.tir !== null;
 
-  const header = state === 'unavailable'
-    ? <ScreenHeader title="Overview" trailing="unavailable" layout={layout} />
-    : state === 'ready' && hasData
-      ? <ScreenHeader title="Overview" trailing="date" layout={layout}
-          date={sourced(`${outcomesRoot(store)}.${window}.span_end`, 'date')} />
-      : <ScreenHeader title="Overview" layout={layout} />;
+  const header = hasData
+    ? <ScreenHeader title="Overview" trailing="date" layout={layout}
+        date={sourced(`${outcomesRoot(store)}.${window}.span_end`, 'date')} />
+    : <ScreenHeader title="Overview" layout={layout} />;
 
   const control = (
     <SegmentedControl
@@ -100,45 +141,31 @@ export function OverviewScreen({ layout, store, state = 'ready', window: initial
     </section>
   );
 
-  const loading = (
-    <>
-      <span className="ui-skeleton" style={{ height: 32 }} aria-hidden="true" />
-      <span className="ui-skeleton" style={{ height: 160, marginTop: 24 }} aria-hidden="true" />
-      <span className="ui-skeleton" style={{ height: 220, marginTop: 24 }} aria-hidden="true" />
-    </>
-  );
-
   if (layout === 'phone') {
     return (
       <div className="ui-overview ui-overview--phone">
         <div className="ui-overview__head">{header}</div>
         <main className="ui-overview__main" data-scroll="page">
           <div className="ui-overview__body">
-            {state === 'loading' ? loading : state === 'ready' && (
-              <>{control}{metrics}{glucoseProfile}</>
-            )}
+            {control}{metrics}{glucoseProfile}
           </div>
         </main>
-        <NavBar layout="tabbar" selected="overview" dayCount={dayCount} />
+        <NavBar layout="tabbar" selected="overview" dayCount={dayCount()} {...nav} />
       </div>
     );
   }
   return (
     <div className="ui-overview ui-overview--desktop">
-      <NavBar layout="rail" selected="overview" dayCount={dayCount} />
+      <NavBar layout="rail" selected="overview" dayCount={dayCount()} {...nav} />
       <section className="ui-overview__pane" data-scroll="page">
         <div className="ui-overview__width">{header}</div>
         <div className="ui-overview__body">
-          {state === 'loading' ? loading : state === 'ready' && (
-            <>
-              <div className="ui-overview__control">{control}</div>
-              <div className="ui-overview__columns">{metrics}{glucoseProfile}</div>
-              {store === 'wearer' && (
-                <section className="ui-overview__days">
-                  {recentDays().map((d) => <DayTile key={d.date.value} day={d} />)}
-                </section>
-              )}
-            </>
+          <div className="ui-overview__control">{control}</div>
+          <div className="ui-overview__columns">{metrics}{glucoseProfile}</div>
+          {store === 'wearer' && (
+            <section className="ui-overview__days">
+              {recentDays().map((d) => <DayTile key={d.date.value} day={d} />)}
+            </section>
           )}
         </div>
       </section>

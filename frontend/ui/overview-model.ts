@@ -4,10 +4,10 @@
 //
 // The wearer's own outcomes are the top-level `outcomes`; the other stores'
 // answers sit under `overview.<store>`.
-import { fixtures, sourced, type Format, type Sourced } from './fixtures';
+import { answers, sourced, type Format, type Sourced } from './answers';
 import { formatValue } from './provenance.js';
 
-export type OverviewStore = keyof typeof fixtures.overview;
+export type OverviewStore = keyof typeof answers.overview;
 export type Window = '14' | '30' | '90';
 export const COMPARE_WINDOW: Window = '90';
 
@@ -35,7 +35,7 @@ type TimeOfDay = {
 
 export function profile(store: OverviewStore): ProfileData {
   const root = `overview.${store}.time_of_day`;
-  const answer = (fixtures.overview[store] as { time_of_day?: TimeOfDay }).time_of_day;
+  const answer = (answers.overview[store] as { time_of_day?: TimeOfDay }).time_of_day;
   if (!answer) throw new Error(`${store} serves no time of day`);
   const bins = answer.pooled?.bins ?? [];
   return {
@@ -163,7 +163,7 @@ export type DayData = {
 };
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const navigatorDays = () => fixtures.overview.wearer.day_navigator.days;
+const navigatorDays = () => answers.overview.wearer.day_navigator.days;
 
 export function day(iso: string): DayData {
   const found = navigatorDays().find((d) => d.iso === iso);

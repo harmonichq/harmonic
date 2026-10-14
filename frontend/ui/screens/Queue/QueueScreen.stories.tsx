@@ -1,7 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, userEvent, within } from 'storybook/test';
+import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { fixtures, sourced } from '../../fixtures';
+import { swipe } from '../../gesture';
 import { ranking } from '../../queue-model';
+import { failsOnce } from '../../flaky';
 import { QueueScreen, type QueueScreenProps } from './QueueScreen';
 
 // The Queue screen in each state §1.3 lists, at phone (390) and desktop (1440),
@@ -122,6 +124,29 @@ export const SnoozeUndoPhone: Story = {
   },
 };
 
+// The swipe is Snooze's shortcut on a phone row: short of half its reveal it
+// settles back; past half it snoozes the row as Snooze does, the bar with
+// Undo, and Undo puts the row back.
+export const SwipeSnoozeUndoPhone: Story = {
+  args: {
+    layout: 'phone', store: 'wearer-pinned', snooze,
+    open: ranking('wearer-pinned').find((item) => item.subject !== fixtures.snooze.subject)!.subject,
+  },
+  parameters: { frame: FRAMES.phone },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const row = () => canvas.getByRole('button', { name: new RegExp(fixtures.snooze.title) });
+    await swipe(row(), -30, 6);
+    await expect(canvas.queryByRole('status')).toBeNull();
+    await swipe(row(), -64);
+    await expect(canvas.getByRole('status')).toHaveTextContent(/Snoozed · Until/);
+    await expect(canvas.queryByRole('button', { name: new RegExp(fixtures.snooze.title) })).toBeNull();
+    await userEvent.click(canvas.getByRole('button', { name: 'Undo' }));
+    await expect(canvas.queryByRole('status')).toBeNull();
+    await expect(row()).toBeInTheDocument();
+  },
+};
+
 // The drill-down (§2.2): the Snoozed row opens the Snoozed list under
 // "‹ Queue", and back returns to the Queue with the same item open.
 export const SnoozedDrillDownPhone: Story = {
@@ -155,3 +180,20 @@ export const SnoozedDrillDownDesktop: Story = {
     await expect(canvas.getByRole('heading', { level: 2, name: new RegExp(open.data.title) })).toBeInTheDocument();
   },
 };
+
+// Live (#495): a Snooze the engine does not save puts the item back with
+// "Not saved", and Retry saves it.
+const liveSnoozePlay: Story['play'] = async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  const title = ranking('wearer')[0].data.title;
+  await userEvent.click(canvas.getByRole('button', { name: 'Snooze' }));
+  await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent(/Not saved/));
+  await expect(canvas.getByRole('heading', { level: 2, name: new RegExp(title) })).toBeInTheDocument();
+  await userEvent.click(canvas.getByRole('button', { name: 'Retry' }));
+  await waitFor(() => expect(canvas.queryByText(/Not saved/)).toBeNull());
+};
+const liveWrites = (): QueueScreenProps['writes'] => ({
+  snooze: failsOnce(undefined), restore: failsOnce(undefined), pin: failsOnce(undefined),
+});
+export const LiveSnoozeNotSavedPhone: Story = { ...story('phone', { store: 'wearer', writes: liveWrites() }), play: liveSnoozePlay };
+export const LiveSnoozeNotSavedDesktop: Story = { ...story('desktop', { store: 'wearer', writes: liveWrites() }), play: liveSnoozePlay };

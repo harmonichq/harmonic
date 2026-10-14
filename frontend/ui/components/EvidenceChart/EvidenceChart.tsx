@@ -14,7 +14,7 @@
 // engine's range is a band behind them in the estimate colour, and the nights
 // inside it draw bright while the rest recede. Left to right is rate, never
 // time.
-import type { Sourced } from '../../fixtures';
+import type { Sourced } from '../../answers';
 import { formatValue } from '../../provenance.js';
 import { useWidth } from '../../measure';
 import '../../shared.css';

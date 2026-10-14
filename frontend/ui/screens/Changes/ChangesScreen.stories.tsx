@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, userEvent, within } from 'storybook/test';
+import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { fixtures } from '../../fixtures';
+import { failsOnce } from '../../flaky';
 import { ChangesScreen, type ChangesScreenProps } from './ChangesScreen';
 
 // The Changes screen in each state §1.3 lists, at phone (390) and desktop
@@ -112,6 +113,21 @@ export const ExpandLastPhone: Story = {
     await expect(row).toHaveAttribute('aria-expanded', 'true');
     await expect(canvas.getByText('Before')).toBeInTheDocument();
     await userEvent.click(row);
-    await expect(canvas.queryByText('Before')).toBeNull();
+    // It closes in place, then is gone.
+    await waitFor(() => expect(canvas.queryByText('Before')).toBeNull());
   },
 };
+
+// Live (#495): an End the engine does not save leaves the change as it was,
+// with "Not saved", and Retry ends it.
+const liveEndPlay: Story['play'] = async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  await userEvent.click(canvas.getByRole('button', { name: 'End' }));
+  await userEvent.click(within(canvas.getByRole('dialog', { name: 'End' })).getByRole('button', { name: 'End' }));
+  await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent(/Not saved/));
+  await expect(canvas.getByRole('button', { name: 'End' })).toBeInTheDocument();
+  await userEvent.click(canvas.getByRole('button', { name: 'Retry' }));
+  await waitFor(() => expect(canvas.queryByText(/Not saved/)).toBeNull());
+};
+export const LiveEndNotSavedPhone: Story = { ...story('phone', { ...MATURED, writes: { end: failsOnce(undefined) } }), play: liveEndPlay };
+export const LiveEndNotSavedDesktop: Story = { ...story('desktop', { ...MATURED, writes: { end: failsOnce(undefined) } }), play: liveEndPlay };

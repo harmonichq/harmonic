@@ -3,12 +3,12 @@
 // as a Sourced value naming its field, and nothing here invents a threshold or
 // a verdict — uncertain, pinned, matured and the cause shares are all served.
 //
-// A store is one entry of `fixtures.queue`; the screens will hand the same
+// A store is one entry of `answers.queue`; the screens will hand the same
 // answers in from the live API.
-import { fixtures, sourced, type Sourced } from './fixtures';
+import { answers, sourced, type Sourced } from './answers';
 import { formatValue } from './provenance.js';
 
-export type QueueStore = keyof typeof fixtures.queue;
+export type QueueStore = keyof typeof answers.queue;
 export type Tone = 'high' | 'low';
 
 export type Magnitude = {
@@ -58,7 +58,7 @@ export type SettingData = {
   trial: boolean;
 };
 
-const store = (name: QueueStore) => fixtures.queue[name];
+const store = (name: QueueStore) => answers.queue[name];
 
 export function pattern(name: QueueStore, key: string): PatternData {
   const root = `queue.${name}.findings`;
@@ -157,17 +157,17 @@ export function basalSetting(name: QueueStore, startMin: number): SettingData {
 }
 
 /** The story states the generator found in the served answers, by name. */
-const states = fixtures.states;
+const states = () => answers.states;
 type PatternState = 'multi_cause' | 'single_cause' | 'no_cause' | 'pinned' | 'uncertain';
 type SettingState = 'setting' | 'setting_trial';
 
 export function patternState(name: PatternState): PatternData {
-  const { store, pattern: key } = states[name];
+  const { store, pattern: key } = states()[name];
   return pattern(store as QueueStore, key);
 }
 
 export function settingState(name: SettingState): SettingData {
-  const { store, start_min: start } = states[name];
+  const { store, start_min: start } = states()[name];
   return basalSetting(store as QueueStore, start);
 }
 
@@ -177,7 +177,7 @@ export type QueueItem =
   | { subject: string; kind: 'pattern'; data: PatternData }
   | { subject: string; kind: 'setting'; data: SettingData };
 
-type Candidate = (typeof fixtures.queue)[QueueStore]['guidance']['candidates'][number];
+type Candidate = (typeof answers.queue)[QueueStore]['guidance']['candidates'][number];
 
 function item(name: QueueStore, candidate: Candidate): QueueItem {
   if (candidate.kind === 'pattern') {

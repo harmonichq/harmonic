@@ -1,6 +1,6 @@
 // A served number (or served date or time) as text, carrying the field (or formula) it came from so
 // the story check can prove the text equals it. See provenance.js.
-import type { Sourced } from './fixtures';
+import type { Sourced } from './answers';
 import { formatValue } from './provenance.js';
 
 export function Num({ value }: { value: Sourced<number | string> }) {

@@ -6,6 +6,8 @@
 // A store is one entry of `answers.queue`; the screens will hand the same
 // answers in from the live API.
 import { answers, sourced, type Sourced } from './answers';
+import { delta } from './changes-model';
+import type { Change } from './Delta';
 import { formatValue } from './provenance.js';
 import { PARAMETER_FORMATS } from './settings-model';
 
@@ -134,6 +136,16 @@ function impact(name: QueueStore, key: string, tone: Tone): Impact | null {
   const typical = extreme('comparison');
   return own && typical ? { kind, own, typical } : null;
 }
+
+/** The collapsed row's impact: the Pattern's own value against Typical, as
+ *  printed (own − typical; the arrow carries the sign). Neutral: the engine
+ *  judges neither cohort better or worse, so no colour (§2.5, 2026-10-14). */
+export const impactChange = (impact: Impact): Change => delta(impact.typical, impact.own, undefined);
+
+/** The cause a collapsed row names: the leading one, and only when the
+ *  Pattern has more than one. A single cause, or the one habit a Pattern
+ *  collapses to, repeats the title, so the row omits it (§2.5, 2026-10-14). */
+export const rowCause = (causes: Cause[]): string | undefined => (causes.length > 1 ? causes[0].title : undefined);
 
 export function basalSetting(name: QueueStore, startMin: number): SettingData {
   const s = store(name);

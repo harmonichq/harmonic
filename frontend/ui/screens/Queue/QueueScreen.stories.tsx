@@ -62,8 +62,26 @@ const EMPTY = { store: 'wearer-first-days-snoozed' } as const;
 const LOADING = { store: 'wearer', state: 'loading' } as const;
 const UNAVAILABLE = { store: 'wearer', state: unavailable ? 'unavailable' : 'ready' } as const;
 
-export const DefaultPhone = story('phone', DEFAULT);
-export const DefaultDesktop = story('desktop', DEFAULT);
+// A row is the same height with or without its trailing impact (§2.5,
+// 2026-10-14), and its chevron stays centred on its title line.
+const rowsLevel: Story['play'] = async ({ canvasElement }) => {
+  const rows = [...canvasElement.querySelectorAll<HTMLElement>('.ui-qrow[data-role="row"]')];
+  const trailing = rows.filter((row) => row.querySelector('.ui-qrow__impact'));
+  await expect(trailing.length).toBeGreaterThan(0);
+  await expect(trailing.length).toBeLessThan(rows.length);
+  const heights = new Set(rows.map((row) => row.getBoundingClientRect().height));
+  await expect([...heights]).toHaveLength(1);
+  for (const row of rows) {
+    const chevron = row.querySelector('.ui-qrow__chevron');
+    if (!chevron) continue;
+    const title = row.querySelector('.ui-qrow__title')!.getBoundingClientRect();
+    const box = chevron.getBoundingClientRect();
+    await expect(Math.abs((box.top + box.bottom) / 2 - (title.top + title.bottom) / 2)).toBeLessThanOrEqual(1);
+  }
+};
+
+export const DefaultPhone: Story = { ...story('phone', DEFAULT), play: rowsLevel };
+export const DefaultDesktop: Story = { ...story('desktop', DEFAULT), play: rowsLevel };
 export const PatternOpenPhone = story('phone', PATTERN_OPEN);
 export const PatternOpenDesktop = story('desktop', PATTERN_OPEN);
 export const SettingDetailPhone = story('phone', SETTING_DETAIL);

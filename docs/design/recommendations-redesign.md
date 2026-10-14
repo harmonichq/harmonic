@@ -456,6 +456,26 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   while its answers load, and its title, Unavailable and Retry when they
   cannot be read, as §1.2 has every other screen do. No new words.
 
+- **2026-10-14 — a single-cause row drops its cause, and the collapsed row
+  carries the impact as a delta.** On the collapsed rows the operator asked:
+  "And why are we repeating labels here? … it's the same thing". A row names
+  its leading cause only when its Pattern has more than one; a Pattern with
+  exactly one cause, or one that collapses to its one habit member, shows the
+  magnitude alone ("6 of 40 lows"). The open card's waffle and legend are
+  unchanged. On the impact, which the 2026-10-13 amendment had kept to the
+  open card: "for the impact number I want a comparison. or a delta maybe?…",
+  and of three mocked rows "the format of B is more to my liking". A Pattern
+  row with an impact ends in a trailing value: Peak (high) or Nadir (low) as a
+  caption on the title line, and beneath it, on the magnitude line, the shared
+  Delta of the Pattern's own value minus Typical (each as the open card prints
+  it), in mg/dL. The pair is stacked, left edges aligned (§2.2). The Delta is
+  neutral ink: the engine judges neither cohort better or worse, so the arrow
+  alone gives the direction. Mock B's two flaws are not carried over: the
+  value fits the row's two lines, so a row is the same height with or without
+  it, and the chevron stays on the title line. A row with no impact (no case
+  file, a standalone habit, a Setting) has no trailing value. The open card
+  keeps its full "Peak 227 · Typical 164 mg/dL" line.
+
 ### 2.6 Deferred (not cut)
 Not built in the current screens. The engine still serves what each needs, and
 nothing is removed from the engine or the fixtures for them.
@@ -538,14 +558,22 @@ unless noted. Loading is a skeleton of the component's own shape.
 7. **QueueRow**: a collapsed recommendation, with a leading 20 px kind glyph
    (Pattern: rising dots; Setting: sliders; named "Pattern" / "Setting" for
    assistive tech, and no kind pill), its title, one magnitude
-   ("9 of 71 lows") and a cause label.
-   - States: default; selected (desktop); mid-swipe (snooze reveal);
-     no cause (label omitted); setting (current → suggested replaces the
-     magnitude); snoozed (read-only: no chevron, swipe or selection; a last
-     line "Until <date>" + Restore); loading.
+   ("9 of 71 lows") and, when the Pattern has more than one cause, the
+   leading cause's label. A Pattern with an impact ends in a trailing value:
+   the caption Peak (high) or Nadir (low) on the title line, and beneath it
+   the shared Delta (▲ / ▼ and the amount, neutral ink) of own − Typical as
+   printed, with mg/dL. The row is two lines with or without it, and the
+   chevron sits on the title line (§2.5, 2026-10-14).
+   - States: default (multi-cause, its leading cause); selected (desktop);
+     mid-swipe (snooze reveal); single cause or collapsed to one habit
+     (label omitted); no cause (label omitted); with impact, high (Peak) or
+     low (Nadir); without impact (no trailing value); setting (current →
+     suggested replaces the magnitude); snoozed (read-only: no chevron, swipe
+     or selection; a last line "Until <date>" + Restore); loading.
    - Fields: `guidance.candidates[].title, kind, priority, admitted,
-     preference`; `findings.outcome_patterns[].k, n` and the noun; the top
-     cause lever from `findings.rows[].fold_sentences`.
+     preference`; `findings.outcome_patterns[].k, n` and the noun; the
+     leading cause lever from `findings.rows[].fold_sentences`; the impact as
+     PatternCard reads it, its delta the derived `own − typical`.
    - Desktop: a list row that selects into the detail pane. Snooze is an icon
      the open card's Snooze text action (shortcut S); there's no swipe.
 8. **PatternCard**: the open pattern, showing the magnitude, a CauseWaffle,

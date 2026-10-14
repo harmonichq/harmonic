@@ -3520,6 +3520,14 @@
               "t": "2025-05-17 23:55:00"
             }
           ],
+          "insulin_totals": {
+            "basal": 24.156416666666697,
+            "basal_programmed": 28.80000000000007,
+            "control_iq_bolus": 5.959999999999999,
+            "correction": 0.9455888650963593,
+            "meal": 26.694411134903643,
+            "total": 57.7564166666667
+          },
           "pump_events": [
             {
               "duration_mins": 0.0,
@@ -6409,6 +6417,14 @@
               "t": "2025-05-23 23:55:00"
             }
           ],
+          "insulin_totals": {
+            "basal": 28.767250000000043,
+            "basal_programmed": 28.80000000000007,
+            "control_iq_bolus": 3.6,
+            "correction": 6.080749338286916,
+            "meal": 30.589250661713084,
+            "total": 69.03725000000004
+          },
           "pump_events": [
             {
               "duration_mins": 0.0,
@@ -9243,6 +9259,14 @@
               "t": "2025-05-25 23:55:00"
             }
           ],
+          "insulin_totals": {
+            "basal": 29.42291666666668,
+            "basal_programmed": 28.80000000000007,
+            "control_iq_bolus": 6.760000000000001,
+            "correction": 4.1582871536523935,
+            "meal": 22.101712846347606,
+            "total": 62.44291666666668
+          },
           "pump_events": [],
           "sleep_windows": [
             {
@@ -9264,6 +9288,7 @@
           "basal": [],
           "boluses": [],
           "cgm": [],
+          "insulin_totals": null,
           "pump_events": [],
           "sleep_windows": [
             {

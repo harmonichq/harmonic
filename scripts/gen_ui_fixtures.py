@@ -641,6 +641,7 @@ def _days(client: TestClient, navigator: dict) -> dict:
                           for b in timeline["basal"]],
                 "pump_events": timeline["pump_events"],
                 "sleep_windows": timeline["sleep_windows"],
+                "insulin_totals": timeline["insulin_totals"],
             },
             "carbs": {"carb_entries": [{field: e[field] for field in ("id", "t", "grams", "certainty", "source")}
                                        for e in carbs["carb_entries"]]},

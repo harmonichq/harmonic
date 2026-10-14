@@ -8,6 +8,17 @@
 .ui-dayscreen__body { display: flex; flex-direction: column; gap: 16px; margin-top: 8px; }
 .ui-dayscreen--phone .ui-dayscreen__bar { padding: 0 16px 8px; }
 
+/* The day's insulin and the Prompts row: stacked on phone, side by side on
+   desktop so the pane still holds the whole day. */
+.ui-dayscreen__summary { display: flex; flex-direction: column; gap: 16px; }
+.ui-dayscreen__summary--desktop {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 48px;
+  align-items: start;
+}
+.ui-dayscreen__summary--desktop > :only-child { grid-column: 1 / -1; }
+
 /* The Prompts row's ▼, in the low tone beside its label. */
 .ui-dayscreen__low { margin-right: 8px; color: var(--glucose-low); font-size: var(--ui-type-label); }
 

@@ -12,8 +12,11 @@
 // midnight in HH:MM, `day` as the day of the month of a YYYY-MM-DD date,
 // `date` as the day and month of a served date or time ("19 May"), `time` as
 // the HH:MM of a served "YYYY-MM-DD HH:MM:SS" time, `until` as the date
-// fourteen days after a served time (§1.5 Snooze: "for 14 days").
-// The 54–69 band prints tbr_lvl1 − tbr_lvl2 as fixed1.
+// fourteen days after a served time (§1.5 Snooze: "for 14 days"), `signed1`
+// one decimal with its sign ("+0.6", "−3.1"), and `share` a whole percent of a
+// quotient whose operands print to one decimal, as a day's insulin parts do.
+// The 54–69 band prints tbr_lvl1 − tbr_lvl2 as fixed1; a part's share of the
+// day's insulin is part ÷ total as share. The operators are − and ÷.
 //
 // Grammar: dot-separated keys and array indexes; `length` on an array; and one
 // filter on an array segment: equality, `prompts[answer=null]`, whose value is
@@ -55,7 +58,7 @@ export function resolveField(root, path) {
   return value;
 }
 
-const OPERATORS = { '−': (a, b) => a - b };
+const OPERATORS = { '−': (a, b) => a - b, '÷': (a, b) => a / b };
 
 // A number as its format prints it, back in the field's own scale: a formula
 // works on the values the reader sees, so a change printed beside 25.5 and
@@ -65,10 +68,12 @@ const PRINTED = {
   fixed1: (v) => Number(v.toFixed(1)),
   fixed2: (v) => Number(v.toFixed(2)),
   pct1: (v) => Number((v * 100).toFixed(1)) / 100,
+  signed1: (v) => Number(v.toFixed(1)),
+  share: (v) => Number(v.toFixed(1)),
 };
 
 export function resolveSource(root, source, format) {
-  const [first, ...rest] = source.split(/ (−) /);
+  const [first, ...rest] = source.split(/ ([−÷]) /);
   if (rest.length === 0) return resolveField(root, first);
   const printed = PRINTED[format] ?? ((v) => v);
   let value = printed(resolveField(root, first));
@@ -87,6 +92,12 @@ export function formatValue(value, format) {
   if (format === 'fixed1') return value.toFixed(1);
   if (format === 'fixed2') return value.toFixed(2);
   if (format === 'pct1') return (value * 100).toFixed(1);
+  if (format === 'share') return String(Math.round(value * 100));
+  if (format === 'signed1') {
+    const rounded = Number(value.toFixed(1));
+    if (rounded === 0) return '0.0';
+    return `${rounded > 0 ? '+' : '−'}${Math.abs(rounded).toFixed(1)}`;
+  }
   if (format === 'day') return String(Number(value.slice(8, 10)));
   if (format === 'date') return `${Number(value.slice(8, 10))} ${MONTHS[Number(value.slice(5, 7)) - 1]}`;
   if (format === 'time') return value.slice(11, 16);

@@ -11,6 +11,8 @@
 // one ribbon under the header. The day is its DayChart, which carries its own
 // event list; a day without readings is the chart's "No data"; a day whose
 // timeline is not served yet is the chart's skeleton, as it shows while loading.
+// Above the Prompts row (on desktop, beside it), the day's insulin as its
+// InsulinBar; none on a day that serves none.
 //
 // Unanswered Prompts show as one row, "▼ Lows" and their count (the NavBar's
 // Day badge is the same count), hidden at none. It drills down (§2.2) to the
@@ -31,7 +33,7 @@
 // (§2.3).
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
-  PROMPT_STEPS, dayChartOf, dayDate, latestDay, loggedGrams, loggedTime, lowPrompt, monthName, monthWeeks,
+  PROMPT_STEPS, dayChartOf, dayDate, insulinBar, latestDay, loggedGrams, loggedTime, lowPrompt, monthName, monthWeeks,
   promptPlace, unanswered, weekOf, type PromptStore,
 } from '../../day-model';
 import { day as navigatorDay } from '../../overview-model';
@@ -39,6 +41,7 @@ import { Num } from '../../Num';
 import { Button } from '../../components/Button/Button';
 import { DayChart } from '../../components/DayChart/DayChart';
 import { DayRibbon } from '../../components/DayRibbon/DayRibbon';
+import { InsulinBar } from '../../components/InsulinBar/InsulinBar';
 import { ListGroup, ListRow } from '../../components/ListRow/ListRow';
 import { LogCarbsEntry, type LogCarbsState } from '../../components/LogCarbsEntry/LogCarbsEntry';
 import { NavBar } from '../../components/NavBar/NavBar';
@@ -204,12 +207,15 @@ export function DayScreen({
   const chart = dayChartOf(selected);
   const dayContent = (
     <>
-      {count.value > 0 && (
-        <ListGroup>
-          <ListRow label={<><span className="ui-dayscreen__low" aria-hidden="true">▼</span>Lows</>}
-            value={<Num value={count} />} onOpen={() => setView('prompts')} />
-        </ListGroup>
-      )}
+      <div className={`ui-dayscreen__summary ui-dayscreen__summary--${layout}`}>
+        <InsulinBar data={insulinBar(selected)} loading={state === 'loading' || !chart} />
+        {count.value > 0 && (
+          <ListGroup>
+            <ListRow label={<><span className="ui-dayscreen__low" aria-hidden="true">▼</span>Lows</>}
+              value={<Num value={count} />} onOpen={() => setView('prompts')} />
+          </ListGroup>
+        )}
+      </div>
       {state === 'loading' || !chart
         ? <span className="ui-skeleton ui-dayscreen__skeleton" aria-hidden="true" />
         : <DayChart data={chart} layout={layout} />}

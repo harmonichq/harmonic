@@ -8,9 +8,10 @@ import { DayScreen, type DayScreenProps } from './DayScreen';
 // The Day screen in each state §1.3 lists for Day, Day · Prompts and Day · Log
 // carbs, at phone (390) and desktop (1440), every value the simulated wearer's
 // served answer:
-// - Default: the latest day with readings, its one unanswered low as the
-//   Prompts row; Logged carbs: the day with the most logged carbs; No prompts:
-//   once the person has answered them all, no row and no badge.
+// - Default: the latest day with readings, its insulin bar and its one
+//   unanswered low as the Prompts row; Logged carbs: the day with the most
+//   logged carbs; No prompts: once the person has answered them all, no row
+//   and no badge.
 // - Empty: the first day after the history ends ("No data"); Loading;
 //   Unavailable.
 // - Month open: the header's day dropped down to the month's weeks.

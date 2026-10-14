@@ -28,6 +28,10 @@
 // that fails leaves the form open with what was typed, and "Not saved" with
 // Retry in the bar.
 //
+// Until its answers land, the screen is its title over a skeleton of the root
+// list; when they cannot be read, its title, Unavailable and Retry (§2.5,
+// 2026-10-13), as on every other screen.
+//
 // Phone: the header stays put while the page scrolls under it, above the tab
 // bar. Desktop: the rail and one pane, the drill-down inside it; the pane
 // scrolls as a whole.
@@ -69,7 +73,48 @@ export type SettingsScreenProps = {
   writes?: { saveCredentials: (email: string, password: string) => Promise<void> };
   /** Where a tab goes; the Settings alert is this screen's own. */
   nav?: Pick<NavHooks, 'onSelect'>;
+  state?: 'ready' | 'loading' | 'unavailable';
+  /** Unavailable's Retry. */
+  onRetry?: () => void;
 };
+
+/** Loading (a skeleton of the root list) or Unavailable (the title, the label
+ *  and Retry): nothing read from the answers. */
+function Frame({ layout, state, nav, onRetry }: {
+  layout: Layout; state: 'loading' | 'unavailable'; nav?: Pick<NavHooks, 'onSelect'>; onRetry?: () => void;
+}) {
+  const header = state === 'unavailable'
+    ? <ScreenHeader title="Settings" trailing="unavailable" layout={layout} onRetry={onRetry} />
+    : <ScreenHeader title="Settings" layout={layout} />;
+  const body = state === 'loading' && (
+    <span className="ui-skeleton ui-settings__skeleton" aria-hidden="true" />
+  );
+  if (layout === 'phone') {
+    return (
+      <div className="ui-settings ui-settings--phone">
+        <div className="ui-settings__head">{header}</div>
+        <main className="ui-settings__main" data-scroll="page"><div className="ui-settings__body">{body}</div></main>
+        <NavBar layout="tabbar" selected="settings" dayCount={dayCount()} {...nav} />
+      </div>
+    );
+  }
+  return (
+    <div className="ui-settings ui-settings--desktop">
+      <NavBar layout="rail" selected="settings" dayCount={dayCount()} {...nav} />
+      <section className="ui-settings__pane" data-scroll="page">
+        {header}
+        <div className="ui-settings__body">{body}</div>
+      </section>
+    </div>
+  );
+}
+
+export function SettingsScreen(props: SettingsScreenProps) {
+  if (props.state && props.state !== 'ready') {
+    return <Frame layout={props.layout} state={props.state} nav={props.nav} onRetry={props.onRetry} />;
+  }
+  return <Settings {...props} />;
+}
 
 /** How long a save is shown busy before it settles. */
 const SAVE_MS = 600;
@@ -181,7 +226,7 @@ function AccountForm({ saving, onSave }: { saving: boolean; onSave: (email: stri
   );
 }
 
-export function SettingsScreen({
+function Settings({
   layout, sync, account, pump = 'wearer', view: initialView = 'root', updating = false, writes, nav,
 }: SettingsScreenProps) {
   const [view, setView] = useState<SettingsView>(initialView);

@@ -11,7 +11,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { parseRoute, subscribeRoute, writeRoute } from '../../tab-routing.js';
 import type { NavItem } from '../components/NavBar/NavBar';
-import { NavBar } from '../components/NavBar/NavBar';
 import { ChangesScreen } from '../screens/Changes/ChangesScreen';
 import { DayScreen } from '../screens/Day/DayScreen';
 import { OverviewScreen } from '../screens/Overview/OverviewScreen';
@@ -89,12 +88,8 @@ export function App() {
         onDay={(iso) => { live.readDay(iso).then(redraw, redraw); }}
         writes={{ answer: drawn(dayWrites.answer), grams: drawn(dayWrites.grams), logCarbs: drawn(dayWrites.logCarbs) }} />;
     case 'settings':
-      // §1.3: Settings has no loading or error state of its own; its rows show once read.
-      return state === 'ready'
-        ? <SettingsScreen key={tab} layout={layout} sync={null} account={live.accountState()} nav={nav}
-            writes={{ saveCredentials: drawn(settingsWrites.saveCredentials) }} />
-        : <div className={`ui-app__waiting ui-app__waiting--${layout}`}>
-            <NavBar layout={layout === 'phone' ? 'tabbar' : 'rail'} selected="settings" {...nav} />
-          </div>;
+      return <SettingsScreen key={tab} layout={layout} sync={null} state={state} onRetry={retry}
+        account={state === 'ready' ? live.accountState() : 'unset'} nav={nav}
+        writes={{ saveCredentials: drawn(settingsWrites.saveCredentials) }} />;
   }
 }

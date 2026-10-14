@@ -9,6 +9,7 @@
 import type { Change } from './Delta';
 import { answers, sourced, type Sourced } from './answers';
 import { formatValue } from './provenance.js';
+import { PARAMETER_FORMATS } from './settings-model';
 
 export type ChangesStore = keyof typeof answers.changes;
 export type Result = 'better' | 'worse' | 'unclear';
@@ -185,16 +186,17 @@ function trialData(name: ChangesStore, trial: TrialRow): TrialData {
   const target = compared?.rows.find((r) => trial.target_metrics.includes(r.key));
   const candidate = answers.queue.wearer.guidance.candidates.find((c) => c.subject === `setting:${trial.parameter}`);
   if (!candidate?.units) throw new Error(`the engine serves no title for ${trial.parameter}`);
+  const format = PARAMETER_FORMATS[trial.parameter as keyof typeof PARAMETER_FORMATS];
+  if (!format) throw new Error(`no pump profile format for ${trial.parameter}`);
   return {
     kind: 'trial',
     title: candidate.title,
     units: candidate.units,
     slot: (trial as { slot?: string | null }).slot ? sourced(`${path}.slot`) : null,
     changedAt: sourced(`${path}.changed_at`, 'date'),
-    // The engine serves no pump increment, so every U/h value prints at 2
-    // decimals, as the SettingCard prints it.
-    before: sourced(`${path}.before`, 'fixed2'),
-    after: sourced(`${path}.after`, 'fixed2'),
+    // Each setting as the pump profile prints it.
+    before: sourced(`${path}.before`, format),
+    after: sourced(`${path}.after`, format),
     daysElapsed: sourced(`${path}.maturing.days_elapsed`),
     daysRequired: sourced(`${path}.maturing.days_required`),
     maturing: trial.state === 'maturing',

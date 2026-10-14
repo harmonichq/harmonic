@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, userEvent, waitFor, within } from 'storybook/test';
+import { expect, fireEvent, userEvent, waitFor, within } from 'storybook/test';
 import { fixtures } from '../../fixtures';
 import { formatValue } from '../../provenance.js';
 import { dayDate, loggedGrams } from '../../day-model';
@@ -263,3 +263,26 @@ const liveDay = (): DayScreenProps['writes'] => ({
 });
 export const LiveAnswerNotSavedPhone: Story = { ...story('phone', { store: 'wearer', writes: liveDay() }), play: liveAnswerPlay };
 export const LiveAnswerNotSavedDesktop: Story = { ...story('desktop', { store: 'wearer', writes: liveDay() }), play: liveAnswerPlay };
+
+// Live (#495): Log carbs' Time row opens the system picker, and Save logs the
+// carbs at the time picked.
+const PICKED = '07:45';
+const logged: [number, string | undefined][] = [];
+const liveLog = (): DayScreenProps['writes'] => ({
+  answer: async () => ({ carbEntryId: null }), grams: async () => undefined,
+  logCarbs: async (grams, time) => { logged.push([grams, time]); },
+});
+const timeEditedPlay: Story['play'] = async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  logged.length = 0;
+  const entry = await openCarbs(canvas);
+  await userEvent.type(entry.getByRole('textbox', { name: 'Carbs' }), '30');
+  await expect(entry.getByRole('button', { name: /Time/ })).toHaveTextContent('Now');
+  fireEvent.change(entry.getByLabelText('Time', { selector: 'input' }), { target: { value: PICKED } });
+  await expect(entry.getByRole('button', { name: /Time/ })).toHaveTextContent(PICKED);
+  await userEvent.click(entry.getByRole('button', { name: 'Save' }));
+  await waitFor(() => expect(canvas.queryByRole('dialog', { name: 'Log carbs' })).toBeNull());
+  await expect(logged).toEqual([[30, PICKED]]);
+};
+export const LiveTimeEditedPhone: Story = { ...story('phone', { store: 'wearer', writes: liveLog() }), play: timeEditedPlay };
+export const LiveTimeEditedDesktop: Story = { ...story('desktop', { store: 'wearer', writes: liveLog() }), play: timeEditedPlay };

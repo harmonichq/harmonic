@@ -7,6 +7,8 @@
 .ui-settings__body { display: flex; flex-direction: column; margin-top: 8px; }
 .ui-settings__none { margin: 16px 0 0; color: var(--wk-ink-meta); font-size: var(--ui-type-body); }
 .ui-settings__unit { text-transform: none; }
+/* Loading: the root list's three rows. */
+.ui-settings__skeleton { height: 144px; }
 
 /* A failed Save's bar: above the tab bar, or at the foot of the pane. */
 .ui-settings--phone .ui-settings__bar { padding: 0 16px 8px; }

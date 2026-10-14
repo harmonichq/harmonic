@@ -125,3 +125,9 @@ export const LiveSaveNotSavedPhone: Story = {
   ...story('phone', { ...NOT_SET, view: 'tandem', writes: { saveCredentials: failsOnce(undefined) } }), play: liveSavePlay };
 export const LiveSaveNotSavedDesktop: Story = {
   ...story('desktop', { ...NOT_SET, view: 'tandem', writes: { saveCredentials: failsOnce(undefined) } }), play: liveSavePlay };
+
+// Loading and Unavailable (§2.5, 2026-10-13), as every other screen has them.
+export const LoadingPhone = story('phone', { ...SYNCED, state: 'loading' });
+export const LoadingDesktop = story('desktop', { ...SYNCED, state: 'loading' });
+export const UnavailablePhone = story('phone', { ...SYNCED, state: 'unavailable' });
+export const UnavailableDesktop = story('desktop', { ...SYNCED, state: 'unavailable' });

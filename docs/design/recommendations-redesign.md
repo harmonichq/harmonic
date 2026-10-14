@@ -80,7 +80,7 @@ Each row lists a screen's states. Labels only; no state uses prose.
 | Day | Latest day with data | "No data" for a day without readings | Chart skeleton | Unavailable + Retry | Month dropped down from the header's day; desktop: the selected week as a ribbon; Prompts row when count > 0 |
 | Day · Prompts | One prompt, "n / N" | Not reachable (the row is hidden at 0) | — | Not saved + Retry | Yes → grams field and keyboard; mid-swipe Not sure |
 | Day · Log carbs | Grams field focused, Time = now | — | Saving | Not saved + Retry | Time edited |
-| Settings | Three rows with inline status | — | — | — | Sync OK (no badge) / Failed (badge) |
+| Settings | Three rows with inline status | — | Skeleton (§2.5) | Unavailable + Retry (§2.5) | Sync OK (no badge) / Failed (badge) |
 | Settings · Tandem Source | Sync rows + account rows | Account "Not set" + Update | — | — | Updating credentials |
 | Settings · Pump profile | The active profile's segments | "No profile" label | — | — | — |
 | Settings · Glossary | Alphabetical terms | — | — | — | — |
@@ -448,6 +448,13 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   which means interactive or selected. The phone's tab bar has no wordmark.
   The favicon is the same mark in `--primary` with the H in `--on-primary`;
   the page title stays "Harmonic" (§4.2 NavBar).
+
+- **2026-10-13 — Settings loads and fails like every screen.** The screen
+  inventory (§1.3) gave Settings no Loading or Error state: the lock had none,
+  though its rows are read from the engine like every other screen's. As
+  built (#495), Settings shows its title over a skeleton of the root list
+  while its answers load, and its title, Unavailable and Retry when they
+  cannot be read, as §1.2 has every other screen do. No new words.
 
 ### 2.6 Deferred (not cut)
 Not built in the current screens. The engine still serves what each needs, and

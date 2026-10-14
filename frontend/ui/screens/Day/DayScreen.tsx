@@ -26,7 +26,8 @@
 // Log carbs: on phone a bottom sheet over the screen (on the system keyboard,
 // which the story does not draw), on desktop a popover under "+ Log carbs".
 // Save is its one primary; it saves, then closes; a failed save keeps the
-// entry with Retry. Escape, or the scrim on phone, closes it unsaved.
+// entry with Retry. Its Time row opens the system time picker, and the time
+// picked is the time the carbs are logged at, today. Escape, or the scrim on phone, closes it unsaved.
 //
 // Phone: only the header stays put; everything under it scrolls as one page,
 // above the tab bar. Desktop: the rail and one pane, which scrolls as a whole
@@ -105,8 +106,8 @@ export type DayWrites = {
   answer: (prompt: PromptData, answer: Answer) => Promise<{ carbEntryId: number | null }>;
   /** The grams typed after a Yes, onto the entry it created. */
   grams: (carbEntryId: number, grams: number) => Promise<void>;
-  /** Carbs eaten without a bolus, now. */
-  logCarbs: (grams: number) => Promise<void>;
+  /** Carbs eaten without a bolus, today at `time` (`HH:MM`), or now. */
+  logCarbs: (grams: number, time?: string) => Promise<void>;
 };
 
 /** How long a save is shown busy before it settles. */
@@ -207,6 +208,8 @@ function Day({
   const heldEntry = useRef<Promise<number | null>>();
   const [opened, setOpened] = useState<Sourced<number>>();
   const typed = useRef('');
+  // The time picked in Log carbs' Time row, until the entry closes.
+  const [chosen, setChosen] = useState<string>();
   const [retry, setRetry] = useState<{ again: () => void } | null>(null);
 
   const current = PROMPT_STEPS[step];
@@ -299,7 +302,7 @@ function Day({
   const save = () => {
     setCarbs('saving');
     if (writes) {
-      writes.logCarbs(Number(typed.current)).then(() => setCarbs(null), () => setCarbs('not_saved'));
+      writes.logCarbs(Number(typed.current), chosen).then(() => setCarbs(null), () => setCarbs('not_saved'));
       return;
     }
     timer.current = window.setTimeout(() => {
@@ -312,6 +315,7 @@ function Day({
     }, SAVE_MS);
   };
   const closeCarbs = () => setCarbs((now) => (now === 'saving' ? now : null));
+  useEffect(() => { if (carbs === null) setChosen(undefined); }, [carbs]);
 
   useEffect(() => {
     if (carbs === null && !month) return undefined;
@@ -328,6 +332,8 @@ function Day({
     state: carbs ?? 'empty',
     grams: logCarbs && logCarbs !== 'empty' ? loggedGrams() : undefined,
     time: timeEdited ? loggedTime() : undefined,
+    chosen,
+    onTimeChange: setChosen,
     onGramsChange: (text: string) => {
       typed.current = text;
       setCarbs(text ? 'filled' : 'empty');

@@ -304,8 +304,9 @@ export function createLive({ client, glossary }) {
       await write(() => client.updateCarb(carbEntryId, { grams, certainty: 'exact' }),
         shownDays().map((iso) => `day ${iso}`), rereadDays);
     },
-    logCarbs: async (grams) => {
-      const t = now();
+    /** Today at `time` (`HH:MM`) when the person picked one, else now. */
+    logCarbs: async (grams, time) => {
+      const t = time ? `${now().slice(0, 10)} ${time}:00` : now();
       const days = [...new Set([...shownDays(), t.slice(0, 10)])];
       await write(() => client.createCarb({ t, grams, certainty: 'exact', source: 'manual' }),
         days.map((iso) => `day ${iso}`), () => Promise.all(days.map(day)));

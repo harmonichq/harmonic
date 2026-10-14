@@ -2,7 +2,14 @@
 // other models, every number a Settings row prints is a Sourced value naming
 // its field; the account's email arrives already masked from the generator,
 // and nothing here invents a state.
-import { answers, sourced, type Sourced } from './answers';
+import { answers, sourced, type Format, type Sourced } from './answers';
+
+/** How the pump profile prints each setting, and so every screen that prints
+ *  one: basal in U/h to two decimals (the engine serves no pump increment),
+ *  ISF in whole mg/dL per unit, I:C to one decimal. */
+export const PARAMETER_FORMATS: Record<'basal_rate' | 'isf' | 'carb_ratio', Format> = {
+  basal_rate: 'fixed2', isf: 'round', carb_ratio: 'fixed1',
+};
 
 export type SyncState = 'synced' | 'failed';
 export type AccountState = 'set' | 'unset';
@@ -80,9 +87,9 @@ export function pumpProfile(store: PumpStore): PumpProfileData {
       const path = `${root}.profile.segments.${i}`;
       return {
         start: sourced(`${path}.start_min`, 'clock'),
-        basal: sourced(`${path}.basal_rate`, 'fixed2'),
-        isf: sourced(`${path}.isf`),
-        carbRatio: sourced(`${path}.carb_ratio`, 'fixed1'),
+        basal: sourced(`${path}.basal_rate`, PARAMETER_FORMATS.basal_rate),
+        isf: sourced(`${path}.isf`, PARAMETER_FORMATS.isf),
+        carbRatio: sourced(`${path}.carb_ratio`, PARAMETER_FORMATS.carb_ratio),
       };
     }),
   };

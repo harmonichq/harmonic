@@ -56,6 +56,7 @@ function fakeClient(served = history()) {
     fetchCarbs: answer('carbs', () => ({ carb_entries: [] })),
     setGuidancePreference: answer('snooze', () => ({})),
     answerPrompt: answer('answer', () => ({ carb_entry_id: null })),
+    createCarb: answer('log', () => ({})),
   };
   const count = (name, where = () => true) => calls.filter((c) => c.name === name && where(c)).length;
   return { client, calls, count };
@@ -116,4 +117,17 @@ test('concurrent tabs share one request for an answer in flight', async () => {
   await Promise.all([live.readTab('queue'), live.readTab('changes'), live.readTab('settings')]);
   assert.equal(fake.count('guidance'), 1);
   assert.equal(fake.count('trials', (c) => !detail(c)), 1);
+});
+
+test('Log carbs posts the time picked, today, or now when none was', async () => {
+  const fake = fakeClient();
+  const live = createLive({ client: fake.client, glossary: [] });
+  await live.dayWrites.logCarbs(30, '07:45');
+  await live.dayWrites.logCarbs(12);
+  const [picked, unpicked] = fake.calls.filter((c) => c.name === 'log').map((c) => c.args[0]);
+  assert.match(picked.t, /^\d{4}-\d{2}-\d{2} 07:45:00$/);
+  assert.deepEqual({ grams: picked.grams, certainty: picked.certainty, source: picked.source },
+    { grams: 30, certainty: 'exact', source: 'manual' });
+  assert.match(unpicked.t, /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
+  assert.equal(picked.t.slice(0, 10), unpicked.t.slice(0, 10));
 });

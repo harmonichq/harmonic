@@ -3,7 +3,3 @@
 html, body { height: 100%; margin: 0; }
 body { background: var(--wk-canvas); color-scheme: dark; }
 #app { height: 100dvh; }
-
-/* Settings before its rows are read: the canvas and the NavBar only. */
-.ui-app__waiting { box-sizing: border-box; height: 100%; display: flex; background: var(--wk-canvas); }
-.ui-app__waiting--phone { flex-direction: column; justify-content: flex-end; }

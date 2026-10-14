@@ -8,20 +8,32 @@
 // Estimate, Range and Fasting nights as captioned values. A window the engine
 // serves no estimate for says "No data"; one not read yet is the card's
 // skeleton.
+//
+// In the Queue (§2.5, 2026-10-14), an ISF the engine stages is the same card
+// in the Queue's frame: titled "ISF" alone, as its Queue row is, since there it
+// is a change rather than an estimate, and with the Setting card's Snooze text
+// action at its foot. A setting is changed on the pump, so there is no other
+// action.
 import type { IsfData } from '../../overview-model';
 import { Num } from '../../Num';
+import { Button } from '../Button/Button';
 import { EvidenceChart } from '../EvidenceChart/EvidenceChart';
 import { StatePill } from '../StatePill/StatePill';
 import '../../shared.css';
 import '../SettingCard/SettingCard.css';
 import './IsfCard.css';
 
-export type IsfCardProps = { data: IsfData | 'none' | null };
+export type IsfCardProps = {
+  data: IsfData | 'none' | null;
+  /** The Queue's frame: no "estimate", and Snooze when the screen offers it. */
+  queue?: boolean;
+  onSnooze?: () => void;
+};
 
-export function IsfCard({ data }: IsfCardProps) {
+export function IsfCard({ data, queue = false, onSnooze }: IsfCardProps) {
   const title = (
     <h2 className="ui-scard__title ui-isf__title">
-      ISF <span className="ui-scard__slot">estimate</span>
+      ISF{!queue && <> <span className="ui-scard__slot">estimate</span></>}
       {data && data !== 'none' && data.uncertain && <StatePill state="uncertain" />}
     </h2>
   );
@@ -72,6 +84,7 @@ export function IsfCard({ data }: IsfCardProps) {
           <dd><Num value={data.nights} /></dd>
         </div>
       </dl>
+      {queue && onSnooze && <div className="ui-card-snooze"><Button kind="text" label="Snooze" onClick={onSnooze} /></div>}
     </section>
   );
 }

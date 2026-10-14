@@ -174,7 +174,7 @@ export function createLive({ client, glossary }) {
     answers.queue.wearer = {
       findings: { outcome_patterns: served.outcome_patterns, rows },
       guidance: answers.queue.wearer.guidance,
-      analyze: { basal: analysis.basal.filter((b) => b.asserts_move) },
+      analyze: { basal: analysis.basal.filter((b) => b.asserts_move), isf: analysis.isf.slice(0, 1) },
       trials: roster,
       focus: focused,
       cases: await cases(ranked),

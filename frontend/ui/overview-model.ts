@@ -193,7 +193,7 @@ export type IsfData = {
   units: string;
 };
 
-type IsfAnswer = {
+export type IsfAnswer = {
   current: number | null;
   recommended: number | null;
   asserts_move: boolean;
@@ -208,9 +208,16 @@ export function isfEstimate(store: OverviewStore, window: Window): IsfData | 'no
   const served = (answers.overview[store] as { analyze?: Partial<Record<Window, { isf: IsfAnswer[] }>> })
     .analyze?.[window];
   if (!served) return null;
-  const row = served.isf[0];
+  return isfData(`overview.${store}.analyze.${window}.isf`, served.isf);
+}
+
+/** The ISF card's data from one served `isf` list at `path`: its first
+ *  segment, or 'none' when the engine serves no estimate or no programmed
+ *  value. The Overview and the Queue draw the same card from it. */
+export function isfData(path: string, isf: IsfAnswer[]): IsfData | 'none' {
+  const row = isf[0];
   if (!row?.estimate || row.current === null) return 'none';
-  const root = `overview.${store}.analyze.${window}.isf.0`;
+  const root = `${path}.0`;
   const format = PARAMETER_FORMATS.isf;
   return {
     current: sourced(`${root}.current`, format),

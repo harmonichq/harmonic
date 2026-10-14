@@ -77,7 +77,11 @@ Two committed outputs, one generator, one ``--check``:
   each store's candidates carry their rank, admission and snooze; the pinned
   store's Queue is read again after its snooze (``wearer-pinned-snoozed``);
   ``wearer-first-days-snoozed`` is the first days with everything snoozed (an
-  empty Queue); and the unsynced store records its guidance disposition. Each
+  empty Queue); ``isf-supported`` is the Overview's store of the same name,
+  whose ISF the engine supports a change for and so queues; and the unsynced
+  store records its guidance disposition. Each Queue store's ``analyze`` holds
+  its first ISF segment, trimmed as the Overview's is, for the Queue's ISF
+  card. Each
   Queue store also holds ``cases``: every admitted Pattern's event-aligned case
   file from ``/api/diagnose/finding-case-file``, trimmed to the median traces
   of its matched and comparison cohorts, for the open card's impact line.
@@ -374,7 +378,9 @@ def fixtures() -> dict:
         supported = scratch / "isf-supported.sqlite"
         with Store.open(str(supported)) as store:
             qa_e2e_cases._materialize_isf_coverage(store, **ISF_SUPPORTED)
-        overview["isf-supported"] = {"analyze": _isf_windows(_serve(supported))}
+        supported_client = _serve(supported)
+        overview["isf-supported"] = {"analyze": _isf_windows(supported_client)}
+        queue["isf-supported"] = _queue_store(supported_client)
 
         unsynced = scratch / "wearer-unsynced.sqlite"
         with Store.open(str(unsynced)):
@@ -528,15 +534,21 @@ def _time_of_day(client: TestClient, days: int) -> dict:
     }
 
 
-def _isf_windows(client: TestClient) -> dict:
-    """The Overview's ISF estimate card for each window: ``/api/analyze``'s
-    first ISF segment, trimmed to what the card reads."""
-    return {str(w): {"isf": [
+def _isf(analysis: dict) -> list[dict]:
+    """``/api/analyze``'s first ISF segment, trimmed to what the ISF card reads."""
+    return [
         {**{field: r[field] for field in ("current", "recommended", "asserts_move")},
-         "estimate": {field: r["estimate"][field] for field in ("value", "lo", "hi", "wide", "n_clusters")},
+         # A store too short for an estimate serves none.
+         "estimate": r["estimate"] and {field: r["estimate"][field]
+                                        for field in ("value", "lo", "hi", "wide", "n_clusters")},
          "evidence": {"night_fits": [{field: f[field] for field in ("date", "isf")}
                                      for f in r["evidence"]["night_fits"]]}}
-        for r in _get(client, "/api/analyze", window=w)["isf"][:1]]} for w in WINDOWS}
+        for r in analysis["isf"][:1]]
+
+
+def _isf_windows(client: TestClient) -> dict:
+    """The Overview's ISF estimate card for each window."""
+    return {str(w): {"isf": _isf(_get(client, "/api/analyze", window=w))} for w in WINDOWS}
 
 
 def _day_navigator(client: TestClient) -> dict:
@@ -795,6 +807,8 @@ def _queue_store(client: TestClient) -> dict:
                  ]}}
                 for b in analyze["basal"] if b.get("asserts_move")
             ],
+            # The Queue's ISF card is the Overview's, over the engine's default window.
+            "isf": _isf(analyze),
         },
         "trials": {
             "trials": [

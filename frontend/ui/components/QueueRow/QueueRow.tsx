@@ -3,7 +3,7 @@
 // "Setting" for assistive tech, and no kind pill repeats it. Then the
 // title, then one quiet line: the magnitude alone ("9 of 71 lows"); the causes
 // are the open card's to name. A setting row's title is its kind word with its time block beside it in meta
-// ink, and current → suggested takes the magnitude's place.
+// ink (ISF, one fasting value, has none), and current → suggested takes the magnitude's place.
 //
 // A Pattern with an impact ends both lines with a trailing value: Peak (highs)
 // or Nadir (lows) as a caption on the title line, and beneath it the shared
@@ -54,8 +54,13 @@ export type QueueRowProps =
           /** Null or absent: no trailing value. */
           impact?: Impact | null;
         }
-      | { kind: 'setting'; setting: SettingData }
+      | { kind: 'setting'; setting: SettingRow }
     );
+
+/** What a setting row prints. A setting with no time block (ISF, one fasting
+ *  value) has no block beside its title. */
+export type SettingRow = Pick<SettingData, 'current' | 'suggested' | 'units'>
+  & Partial<Pick<SettingData, 'start' | 'end'>>;
 
 function Meta(props: Extract<QueueRowProps, { kind: string }>) {
   if (props.kind === 'setting') {
@@ -96,7 +101,7 @@ export function QueueRow(props: QueueRowProps) {
       <span className={`ui-qrow__body${impact ? ' ui-qrow__body--trailing' : ''}`}>
         <span className="ui-qrow__title">
           {title}
-          {kind === 'setting' && <>{' '}<span className="ui-qrow__slot">
+          {kind === 'setting' && props.setting.start && props.setting.end && <>{' '}<span className="ui-qrow__slot">
             <Num value={props.setting.start} />–<Num value={props.setting.end} />
           </span></>}
         </span>

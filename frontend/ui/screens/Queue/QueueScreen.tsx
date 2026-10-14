@@ -4,7 +4,8 @@
 // Phone: the header stays put while the page scrolls under it, above the tab
 // bar; the open item shows its card in the row's place (accordion; the others
 // stay rows), with Snooze as a text action centred beneath Pin, or at a
-// Setting card's foot (the swipe is its shortcut). A quiet "Snoozed · N" row ends the list when anything is
+// Setting card's foot (the swipe is its shortcut). A queued ISF opens into the
+// Overview's ISF card in the Queue's frame (§2.5, 2026-10-14). A quiet "Snoozed · N" row ends the list when anything is
 // snoozed, and drills down to the Snoozed list (§2.2 Drill-down: "‹ Queue",
 // each its Queue row with Until and Restore); back returns with the same
 // item open.
@@ -38,6 +39,7 @@ import { Num } from '../../Num';
 import {
   queuedCount, ranking, snoozed, snoozedCount, type QueueItem, type QueueStore,
 } from '../../queue-model';
+import { IsfCard } from '../../components/IsfCard/IsfCard';
 import { ListGroup, ListRow } from '../../components/ListRow/ListRow';
 import { NavBar, type NavHooks } from '../../components/NavBar/NavBar';
 import { PatternCard } from '../../components/PatternCard/PatternCard';
@@ -87,6 +89,11 @@ function Row({ item, layout, selected, swiping, onSelect, onSnooze, until, onRes
   onRestore?: () => void;
 }) {
   const snoozed = until && { until, onRestore };
+  if (item.kind === 'isf') {
+    const { current, recommended, units } = item.data;
+    return <QueueRow kind="setting" title={item.data.title} setting={{ current, suggested: recommended, units }}
+      layout={layout} selected={selected} swiping={swiping} onSelect={onSelect} onSnooze={onSnooze} snoozed={snoozed} />;
+  }
   if (item.kind === 'setting') {
     return <QueueRow kind="setting" title={item.data.title} setting={item.data} layout={layout}
       selected={selected} swiping={swiping} onSelect={onSelect} onSnooze={onSnooze} snoozed={snoozed} />;
@@ -103,6 +110,7 @@ type CardActions = { onPin?: () => void; pinned?: boolean; onChanges?: () => voi
 function Card({ item, layout, onSnooze, actions = {} }: {
   item: QueueItem; layout: Layout; onSnooze: () => void; actions?: CardActions;
 }) {
+  if (item.kind === 'isf') return <IsfCard data={item.data} queue onSnooze={onSnooze} />;
   return item.kind === 'setting'
     ? <SettingCard data={item.data} onSnooze={onSnooze} onChanges={actions.onChanges} />
     : <PatternCard data={actions.pinned ? { ...item.data, pinned: true } : item.data} onSnooze={onSnooze}

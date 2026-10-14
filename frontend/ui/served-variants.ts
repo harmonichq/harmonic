@@ -12,11 +12,11 @@
 // - A Queue whose ranking holds candidates the Queue cannot draw: an ISF and an
 //   I:C Setting the findings serve no admitted row for, a Pattern the findings
 //   hold no row for, and a candidate of a kind the app does not know.
-// - A Queue with an admitted ISF Setting, and one with an admitted I:C Setting:
-//   the findings row the engine serves for an admitted block (the shape of the
-//   generated basal block's), its current value the generated pump profile's,
-//   its suggestion and range test values a tenth below it. No generated store
-//   admits either; the synthetic wearer's ISF and I:C hold.
+// - A Queue with an admitted I:C Setting: the findings row the engine serves
+//   for an admitted block (the shape of the generated basal block's), its
+//   current value the generated pump profile's, its suggestion and range test
+//   values a tenth below it. No generated store admits one; the synthetic
+//   wearer's I:C holds. (A queued ISF is generated: `isf-supported`.)
 // - A day navigator with no readings, as a store before its first sync serves it.
 // - A day with no Control-IQ boluses: the latest day's timeline with
 //   `insulin_totals.control_iq_bolus` served as 0 and its `total` the served
@@ -72,7 +72,7 @@ type Store = typeof fixtures.queue.wearer;
 type Row = Store['findings']['rows'][number];
 
 /** The wearer's Queue with its `parameter` Setting admitted, over the whole day. */
-function admitted(parameter: 'isf' | 'carb_ratio'): Store {
+function admitted(parameter: 'carb_ratio'): Store {
   const store = clone(fixtures.queue.wearer);
   const current = fixtures.settings.pump_settings.wearer.profile.segments[0][parameter];
   const suggested = Math.round(current * 9) / 10;
@@ -94,9 +94,7 @@ function admitted(parameter: 'isf' | 'carb_ratio'): Store {
   }
   return store;
 }
-add('queue', 'wearer-isf', admitted('isf'));
 add('queue', 'wearer-ic', admitted('carb_ratio'));
-export const QUEUE_ISF = 'wearer-isf' as keyof typeof fixtures.queue;
 export const QUEUE_IC = 'wearer-ic' as keyof typeof fixtures.queue;
 
 export const CHANGES_PROFILE = 'wearer-profile' as keyof typeof fixtures.changes;

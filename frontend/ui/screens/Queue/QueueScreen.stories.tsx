@@ -4,7 +4,7 @@ import { fixtures, sourced } from '../../fixtures';
 import { swipe } from '../../gesture';
 import { ranking } from '../../queue-model';
 import { failsOnce } from '../../flaky';
-import { QUEUE_IC, QUEUE_ISF, QUEUE_UNDRAWABLE } from '../../served-variants';
+import { QUEUE_IC, QUEUE_UNDRAWABLE } from '../../served-variants';
 import { QueueScreen, type QueueScreenProps } from './QueueScreen';
 
 // The Queue screen in each state §1.3 lists, at phone (390) and desktop (1440),
@@ -230,9 +230,33 @@ const undrawablePlay: Story['play'] = async ({ canvasElement }) => {
 export const UndrawablePhone: Story = { ...story('phone', { store: QUEUE_UNDRAWABLE }), play: undrawablePlay };
 export const UndrawableDesktop: Story = { ...story('desktop', { store: QUEUE_UNDRAWABLE }), play: undrawablePlay };
 
-// An admitted ISF, and an admitted I:C, Setting: the SettingCard with its
-// block, current → suggested and Range, printed as the pump profile prints
-// each, and no night chart or count, since its evidence is not nights.
+// A queued ISF (§2.5, 2026-10-14): the store whose ISF the engine supports a
+// change for. Its row prints current → recommended with no time block; open,
+// it is the Overview's ISF card in the Queue's frame: titled "ISF" alone,
+// current → recommended above the fasting nights' chart (one dot per night),
+// Estimate, Range and Fasting nights beneath, and Snooze at its foot.
+const ISF_STORE = 'isf-supported' as const;
+const isfPlay: Story['play'] = async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  const isf = ranking(ISF_STORE).find((i) => i.subject === 'setting:isf')!;
+  if (isf.kind !== 'isf') throw new Error('the queued ISF is not drawn as the ISF card');
+  await expect(canvas.getByRole('heading', { level: 2, name: 'ISF' })).toBeInTheDocument();
+  await expect(canvasElement.querySelector('.ui-isf [data-source$=".analyze.isf.0.recommended"]')).not.toBeNull();
+  // Every fasting night is a dot, or counted at the end of the axis it lies beyond.
+  const beyond = [...canvasElement.querySelectorAll('.ui-isf [data-edge]')]
+    .reduce((sum, edge) => sum + Number(edge.textContent!.replace(/\D/g, '')), 0);
+  await expect(canvasElement.querySelectorAll('.ui-isf .ui-evidence__night').length + beyond).toBe(isf.data.fits.length);
+  const captions = [...canvasElement.querySelectorAll('.ui-isf__facts dt')].map((dt) => dt.textContent);
+  await expect(captions).toEqual(['Estimate', 'Range', 'Fasting nights']);
+  await expect(within(canvasElement.querySelector('.ui-isf') as HTMLElement).getByRole('button', { name: 'Snooze' }))
+    .toBeInTheDocument();
+};
+export const IsfSettingPhone: Story = { ...story('phone', { store: ISF_STORE, open: 'setting:isf' }), play: isfPlay };
+export const IsfSettingDesktop: Story = { ...story('desktop', { store: ISF_STORE, open: 'setting:isf' }), play: isfPlay };
+
+// An admitted I:C Setting: the SettingCard with its block, current →
+// suggested and Range, printed as the pump profile prints it, and no night
+// chart or count, since its evidence is not nights.
 const settingPlay = (title: string, units: string): Story['play'] => async ({ canvasElement }) => {
   const canvas = within(canvasElement);
   await expect(canvas.getByRole('heading', { level: 2, name: new RegExp(`^${title}`) })).toBeInTheDocument();
@@ -240,7 +264,5 @@ const settingPlay = (title: string, units: string): Story['play'] => async ({ ca
   await expect(canvas.queryByText('Nights')).toBeNull();
   await expect(canvas.getByText('Range')).toBeInTheDocument();
 };
-export const IsfSettingPhone: Story = { ...story('phone', { store: QUEUE_ISF, open: 'setting:isf' }), play: settingPlay('ISF', 'mg/dL/U') };
-export const IsfSettingDesktop: Story = { ...story('desktop', { store: QUEUE_ISF, open: 'setting:isf' }), play: settingPlay('ISF', 'mg/dL/U') };
 export const IcSettingPhone: Story = { ...story('phone', { store: QUEUE_IC, open: 'setting:carb_ratio' }), play: settingPlay('I:C', 'g/U') };
 export const IcSettingDesktop: Story = { ...story('desktop', { store: QUEUE_IC, open: 'setting:carb_ratio' }), play: settingPlay('I:C', 'g/U') };

@@ -8,6 +8,7 @@
 import { answers, sourced, type Sourced } from './answers';
 import { delta } from './changes-model';
 import type { Change } from './Delta';
+import { isfData, type IsfAnswer, type IsfData } from './overview-model';
 import { formatValue } from './provenance.js';
 import { PARAMETER_FORMATS } from './settings-model';
 
@@ -173,14 +174,14 @@ export function basalSetting(name: QueueStore, startMin: number): SettingData {
   };
 }
 
-/** The glossary's names for the settings whose candidate titles are longer (§1.5 ISF, I:C). */
-const SETTING_TITLES: Record<string, string> = { isf: 'ISF', carb_ratio: 'I:C' };
+/** The glossary's name for I:C, whose candidate title is longer (§1.5 I:C). */
+const SETTING_TITLES: Record<string, string> = { carb_ratio: 'I:C' };
 
-/** An ISF or I:C Setting, from its admitted findings row: its block, and its
+/** An I:C Setting, from its admitted findings row: its block, and its
  *  first member's current, suggested and estimate range, each printed as the
  *  pump profile prints that setting. Null when the findings serve no admitted
  *  row for it. Its evidence is not nights, so it has no night chart or count. */
-export function otherSetting(name: QueueStore, parameter: 'isf' | 'carb_ratio'): SettingData | null {
+export function otherSetting(name: QueueStore, parameter: 'carb_ratio'): SettingData | null {
   const s = store(name);
   const row = s.findings.rows.find((r) => r.kind === 'setting' && r.parameter === parameter && r.members?.length);
   const candidate = s.guidance.candidates.find((c) => c.subject === `setting:${parameter}`);
@@ -205,6 +206,19 @@ export function otherSetting(name: QueueStore, parameter: 'isf' | 'carb_ratio'):
   };
 }
 
+/** A queued ISF is the Overview's ISF card (§2.5, 2026-10-14) with the change
+ *  the engine stages: its row prints current → recommended. */
+export type IsfSettingData = IsfData & { title: string; recommended: Sourced<number> };
+
+/** The queued ISF, from the store's analysis (the Overview's ISF card, over the
+ *  engine's default window). Null when the analysis serves no estimate, or no
+ *  recommendation: the engine stamps one only with its ISF staging verdict. */
+export function isfSetting(name: QueueStore): IsfSettingData | null {
+  const data = isfData(`queue.${name}.analyze.isf`, store(name).analyze.isf as IsfAnswer[]);
+  if (data === 'none' || !data.recommended) return null;
+  return { ...data, title: 'ISF', recommended: data.recommended };
+}
+
 /** The story states the generator found in the served answers, by name. */
 const states = () => answers.states;
 type PatternState = 'multi_cause' | 'single_cause' | 'no_cause' | 'pinned' | 'uncertain';
@@ -224,7 +238,8 @@ export function settingState(name: SettingState): SettingData {
 
 export type QueueItem =
   | { subject: string; kind: 'pattern'; data: PatternData }
-  | { subject: string; kind: 'setting'; data: SettingData };
+  | { subject: string; kind: 'setting'; data: SettingData }
+  | { subject: string; kind: 'isf'; data: IsfSettingData };
 
 type Candidate = (typeof answers.queue)[QueueStore]['guidance']['candidates'][number];
 
@@ -247,8 +262,12 @@ function item(name: QueueStore, candidate: Candidate): QueueItem | null {
     return s.analyze.basal.some((b) => b.slot === start / 30)
       ? { subject: candidate.subject, kind: 'setting', data: basalSetting(name, start) } : null;
   }
-  if (candidate.subject === 'setting:isf' || candidate.subject === 'setting:carb_ratio') {
-    const data = otherSetting(name, candidate.subject === 'setting:isf' ? 'isf' : 'carb_ratio');
+  if (candidate.subject === 'setting:isf') {
+    const data = isfSetting(name);
+    return data ? { subject: candidate.subject, kind: 'isf', data } : null;
+  }
+  if (candidate.subject === 'setting:carb_ratio') {
+    const data = otherSetting(name, 'carb_ratio');
     return data ? { subject: candidate.subject, kind: 'setting', data } : null;
   }
   return null;

@@ -82,6 +82,18 @@ export const EdgeCounts: Story = {
   },
 };
 
+/** In the Queue (§2.5, 2026-10-14): the same card titled "ISF" alone, with
+ *  Snooze at its foot. */
+export const Queue: Story = {
+  args: { data: isfState('supported'), queue: true, onSnooze: () => {} },
+  play: async ({ canvasElement }) => {
+    await expect(canvasElement.querySelector('h2')!.textContent).toBe('ISF');
+    await expect(canvasElement.querySelector('.ui-card-snooze button')!.textContent).toBe('Snooze');
+    await expect(canvasElement.querySelector('[data-source$=".isf.0.recommended"]')).not.toBeNull();
+    await ticksClear(canvasElement);
+  },
+};
+
 export const Desktop: Story = {
   args: { data: isfState('supported') },
   parameters: { frame: { width: 1100 } },

@@ -80,7 +80,7 @@ Each row lists a screen's states. Labels only; no state uses prose.
 |---|---|---|---|---|---|
 | Queue | Ranked cards, top card expanded | "0 patterns" label | Card skeletons | Unavailable + Retry | A card expanded; mid-swipe; just snoozed (bar "Snoozed · Until <date>" + Undo); Snoozed footer when N > 0 |
 | Queue · Snoozed | Each snoozed item as its Queue row, plus "Until <date>" + Restore | Not reachable (the footer is hidden at 0) | — | Unavailable + Retry | Restored (row leaves) |
-| Queue · setting detail | current → estimate, range, n, chart | — | Chart skeleton | Unavailable | — |
+| Queue · setting detail | current → estimate, range, n, chart | — | Chart skeleton | Unavailable | A queued ISF: the Overview's ISF card in the Queue's frame (§2.5, 2026-10-14) |
 | Changes | Active Trial or Focus + the last change as one row | "No active change" label | Skeleton | Unavailable + Retry | Maturing; Matured (result pill); last change row expanded in place; **End** (Focus: anytime; Trial: once matured) → confirm sheet → ended |
 | Overview | 14 d selected; one scrolling page, the summary (window switch, date span, In range, metrics, glucose profile) its first screenful, the ISF estimate below | "No data" label per window, and in the ISF estimate when none is served | Skeleton; a window not yet read shows its profile's and ISF estimate's skeletons | Unavailable + Retry | 30 d / 90 d selected; a previous period without data (the span alone, no changes); the ISF estimate with a supported change (current → recommended), held, Uncertain, with nights beyond its axis |
 | Day | Latest day with data | "No data" for a day without readings | Chart skeleton | Unavailable + Retry | Month dropped down from the header's day; desktop: the selected week as a ribbon; Prompts row when count > 0 |
@@ -546,6 +546,21 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   otherwise there is no figure. The axis goes below 0 only when the Range does.
   Fasting joins §1.5; Estimate is a plain word, as the chart already prints it
   (§4.2 IsfCard).
+- **2026-10-14 — an ISF the engine stages is queued, as the Overview's card.**
+  The operator: "I think ISF can show up in the queue if there is an asserted
+  change and then we just use the card design that we came up with basically
+  or a slight modification thereof from the overview page. But I think, well,
+  it can pretty much always exist on the overview page as an estimate, you
+  know what I mean?" The engine queues ISF only when its one ISF staging
+  verdict supports the change (ADR 504); a held, direction-only or
+  unprogrammed ISF stays out of the Queue. A queued ISF's row is the Setting
+  row with no time block (ISF is one fasting value): "ISF", then current →
+  recommended. Open, it is the IsfCard in the Queue's frame: titled "ISF"
+  alone, as its row is, with the figure, the fasting nights' EvidenceChart,
+  Estimate, Range and Fasting nights, and the Setting card's Snooze at its
+  foot. It is changed on the pump, so it has no other action. The Overview's
+  ISF estimate card is unchanged and always shown (§4.2 QueueRow, SettingCard,
+  IsfCard).
 - **2026-10-14 — edge counts sit outside the plot.** The operator, on the
   nights beyond the axis ("‹ 3", "2 ›"): "clean up how those edge counts are
   handled, they collide with the data". A count now takes a gutter reserved at
@@ -724,7 +739,8 @@ unless noted. Loading is a skeleton of the component's own shape.
      mid-swipe (snooze reveal); single cause and no cause (the same row);
      with impact, high (Peak) or
      low (Nadir); without impact (no trailing value); setting (current →
-     suggested replaces the magnitude); snoozed (read-only: no chevron, swipe
+     suggested replaces the magnitude; a queued ISF's row has no time block,
+     §2.5 2026-10-14); snoozed (read-only: no chevron, swipe
      or selection; a last line "Until <date>" + Restore); loading.
    - Fields: `guidance.candidates[].title, kind, priority, admitted,
      preference`; `findings.outcome_patterns[].k, n` and the noun; the
@@ -760,7 +776,8 @@ unless noted. Loading is a skeleton of the component's own shape.
       matured into a Trial (Changes link).
     - Snooze: a text action centred at the card's foot.
     - Fields: `analyze.basal[slot].current, estimate.value, estimate.lo, hi,
-      days`, plus their ISF/carb-ratio equivalents.
+      days`, plus their carb-ratio equivalents. A queued ISF opens into the
+      IsfCard instead (§2.5, 2026-10-14).
     - Desktop: fills the detail pane up to 720 px.
 11. **EvidenceChart**: a setting's evidence, one dot per night against current
     and the estimate in its range: a basal slot's delivered rate, or an ISF
@@ -823,6 +840,12 @@ unless noted. Loading is a skeleton of the component's own shape.
       estimate.value, lo, hi, wide, n_clusters,
       evidence.night_fits[].isf`, read from `/api/analyze?window=N`.
     - Desktop: the width of the Overview's body, below its summary.
+    - In the Queue (§2.5, 2026-10-14): the open card of a queued ISF, the
+      engine's default window (`/api/analyze`). The title is "ISF" alone;
+      the figure always stands (the engine queues ISF only with its staging
+      verdict); Snooze is a text action centred at its foot, as on the
+      SettingCard; no other action. Phone: in its row's place. Desktop:
+      fills the detail pane up to 720 px.
 
 **Changes**
 

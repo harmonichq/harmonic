@@ -91,6 +91,15 @@ test('the Queue reads a case file only for each Pattern it ranks', async () => {
   assert.equal(fake.count('case-preparation'), 1);
 });
 
+test('the Queue keeps the analysis\'s first ISF segment, which its ISF card draws', async () => {
+  const fake = fakeClient();
+  const segments = [{ start_min: 0, current: 40, recommended: 36.2, asserts_move: true }, { start_min: 720 }];
+  fake.client.fetchAnalysis = () => Promise.resolve({ basal: [], isf: segments });
+  const live = createLive({ client: fake.client, glossary: [] });
+  await live.readTab('queue');
+  assert.deepEqual(live.answers.queue.wearer.analyze.isf, segments.slice(0, 1));
+});
+
 test('switching tabs back and forth reads nothing again', async () => {
   const fake = fakeClient();
   const live = createLive({ client: fake.client, glossary: [] });

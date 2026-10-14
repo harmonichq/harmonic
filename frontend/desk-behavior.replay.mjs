@@ -23,6 +23,10 @@
 // AMENDED 2026-10-14 · #499: S109 pins a 720 px height. The engine cut left
 // the showcase roster short enough to fit a 900 px pane, so its premise (a
 // scrollable reading pane) was unreachable at 1440x900. Claim unchanged.
+// AMENDED 2026-10-14 · #507: the opener's context sends Connection: close.
+// Playwright pools every page.request socket with keep-alive, uvicorn closes
+// an idle one after 5 s, and a read sent on it as it closed failed S52 with
+// "socket hang up". Transport only; no story claim, wait or action changes.
 //
 // WHY THIS EXISTS: mockups/harmonic-v2-desktop.lock.md says what the surface
 // looks like across 34 terms. It does not say that pressing the destination
@@ -242,7 +246,9 @@ export async function openApp(browser, { source = null, state = 'investigate', v
     fail(`a declared base URL must name localhost, got ${hostname}`);
   }
 
-  const context = await browser.newContext({ viewport: VIEWPORTS[viewport], colorScheme: 'dark' });
+  // #507: no harness read may reuse a socket the server is closing.
+  const context = await browser.newContext({ viewport: VIEWPORTS[viewport], colorScheme: 'dark',
+    extraHTTPHeaders: { connection: 'close' } });
   const page = await context.newPage();
 
   const unrouted = [];

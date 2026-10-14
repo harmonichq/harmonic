@@ -278,7 +278,9 @@ jobs:
           - gate: Trial and Pattern Focus
             timeout: 30
             python: true
-            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" node --test frontend/follow-up.browser.test.mjs
+            # #507: each story's no-fetch server log, kept for the artifact below.
+            server-logs: follow-up-server-logs
+            command: CASE_STORE_ROOT="$RUNNER_TEMP/follow-up-cases" PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" node --test frontend/follow-up.browser.test.mjs
     steps:
       - uses: actions/checkout@v5
       - name: Set up Node
@@ -311,6 +313,12 @@ jobs:
         env:
           PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/ciq-playwright-browsers
         run: ${{ matrix.command }}
+      - name: Retain the synthetic servers' logs
+        if: always() && matrix.server-logs
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.server-logs }}
+          path: ${{ runner.temp }}/follow-up-cases/*/run-*/*.log
 
   ledger-plan:
     name: select ledger shards
@@ -403,6 +411,7 @@ jobs:
           path: |
             ${{ runner.temp }}/ledger-*/*.json
             ${{ runner.temp }}/ledger-*/*.log
+            ${{ runner.temp }}/ledger-*/cases/run-*/*.log
             ${{ runner.temp }}/ledger-*/captures/
 
 

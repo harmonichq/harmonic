@@ -62,6 +62,7 @@ class Run:
         inputs = ["mockups/harmonic-v2-desktop.lock.md", "mockups/harmonic-v2-desktop.behavior.md",
                   "frontend/desk-behavior.replay.mjs", "frontend/c2.replay.mjs",
                   "frontend/c3.replay.mjs", "frontend/c4.replay.mjs", "frontend/replay-cases.mjs",
+                  "frontend/replay-warm.py",
                   "mockups/sweep/harmonic-v2-desktop/acceptance.py", "frontend/capture.mjs", "scripts/qa_e2e_cases.py",
                   "scripts/gen_qa_e2e_db.py", "mockups/qa-e2e.synthetic/harmonic.sqlite"]
         (self.out / "inputs.json").write_text(json.dumps({
@@ -1282,7 +1283,7 @@ def case_cache(run, check=False, cases=None, benchmark=False):
     script = r"""
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { copyFile, readFile, writeFile, access } from 'node:fs/promises';
+import { copyFile, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { REGISTRY } from './frontend/desk-behavior.replay.mjs';
 import { createCaseServer, storyCase } from './frontend/replay-cases.mjs';
@@ -1331,11 +1332,14 @@ assert _dump(reference) == _dump(Path(out)), 'case generator drift: ' + name
     const coldMs = performance.now() - coldStart;
     if (checking) {
       const expected = await readFile(first.db);
+      const expectedDerived = await readFile(`${first.db}.derived.sqlite`);
       await writeFile(first.db, 'synthetic story mutation');
       await writeFile(`${first.db}.derived.sqlite`, 'synthetic derived mutation');
       const fresh = await server.prepare('check', name);
       assert.deepEqual(await readFile(fresh.db), expected, 'a story mutated the cached template');
-      await assert.rejects(access(`${fresh.db}.derived.sqlite`), { code: 'ENOENT' });
+      // #507: every copy carries the case's warmed sidecar, never a story's.
+      assert.deepEqual(await readFile(`${fresh.db}.derived.sqlite`), expectedDerived,
+        "a story mutated the cached template's derived sidecar");
       console.log(`CHECK ${name}`);
     }
     if (!benchmarking) continue;

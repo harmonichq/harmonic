@@ -389,3 +389,52 @@ staging verdict are untouched.
   overnight Pattern row.
 - The Overview report card for carbs vs post-meal response needs its own producer
   (#501). It does not revive the detector.
+
+## ADR 504 — The correction factor joins the Queue when its analyzer supports the change
+
+**Context.** ADR 499 kept the correction factor (ISF) out of the Queue entirely:
+guidance served the `setting:isf` candidate with its action, because the Plan
+applies an ISF draft against it, but never admitted it. The Overview's ISF estimate
+card (§2.5 of the lock, 2026-10-14) now shows the estimate whatever the engine
+decides, and draws "current → recommended" only when the analyzer's one ISF
+staging verdict, `isf_asserts_move`, supports the change.
+
+**The operator's decision** (Connor, 2026-10-14): "I think ISF can show up in the
+queue if there is an asserted change and then we just use the card design that we
+came up with basically or a slight modification thereof from the overview page.
+But I think, well, it can pretty much always exist on the overview page as an
+estimate, you know what I mean?"
+
+**Decision.** This amends ADR 499's fifth decision ("ISF is served but never
+queued").
+
+1. *The analyzer's verdict decides.* Guidance admits `setting:isf` when it carries
+   an action and a member carries `asserts_move` true, the flag the ISF analyzer
+   stamps from `isf_asserts_move`. A held, direction-only, range-held or
+   unprogrammed ISF is still served but not admitted. Nothing downstream re-derives
+   the verdict: the frontend Queue shows what guidance admits.
+2. *Selected only when admitted.* ADR 499's sixth decision lets guidance consider a
+   Setting no Pattern carries. ISF is one, but it is considered only when admitted,
+   so a held ISF never leads an investigation, as before.
+3. *Ranking follows the existing rule for every admitted candidate.* An admitted ISF
+   ranks by its served Priority (the ISF tuning lever's), highest first, an exact
+   tie broken by subject. It gets no boost and no penalty of its own.
+4. *The Queue draws it with the Overview's card.* The open card is the IsfCard in
+   the Queue's frame: titled "ISF", current → recommended, the fasting nights'
+   evidence chart with the estimate in its range and the Current line, Estimate,
+   Range and Fasting nights, and the Setting card's Snooze. Its Queue row is the
+   Setting row with no time block. The Overview's card is unchanged and always
+   shown.
+
+**Evidence.** Through `/api/guidance` on the manufactured QA stores:
+`isf-strengthen`, whose ISF asserts a strengthen, is admitted and queued;
+`isf-held`, `isf-direction-only-weaken`, `isf-range-hold`, and `isf-strengthen`
+with its pump profile removed (no programmed value) are not. No analyzer, predicate
+or `safety.py` value changes.
+
+**Consequences.**
+- A person whose fasting nights support an ISF change sees it in the Queue, and can
+  Snooze it as any Setting. Lows after correcting highs still carries no setting
+  member.
+- The hand-built "admitted ISF" Queue variant of the stories is replaced by the
+  generated `isf-supported` store, read through the same API.

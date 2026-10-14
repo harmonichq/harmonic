@@ -277,12 +277,18 @@ class _Cand:
     # its settled day's first observation (for a whole-profile one, the latest of
     # its parts'). ``None`` for a pump-read switch, which that dating never moved.
     legacy: Optional[datetime] = None
-    # A block-scoped I:C candidate bound to one complete annotated applied Plan group
-    # (#581) carries that group's captured wrap-aware arc and member list. The arc is
-    # Trial-owned identity: later profile repartitions cannot retarget it, because it
-    # is read off the immutable provenance, never off current settings.
+    # A block-scoped I:C candidate carries the wrap-aware arc and member list the
+    # settings reads either side of its change recorded (#581, #500). The arc is
+    # Trial-owned identity: later profile repartitions cannot retarget it, because
+    # the retained record keeps it, never re-reading current settings.
     block: Optional[tuple] = None
     members: Optional[list] = None
+    # A pump-read candidate's earlier read (#500): the change landed after it, so a
+    # dose or delivery observation of the same move after it is this change.
+    observed_after: Optional[datetime] = None
+    # The time block a targeted pump-read candidate moved, whatever its setting:
+    # a slotted delivery observation corroborates it only inside this block.
+    arc: Optional[tuple] = None
 
 
 def _slot_label(slot: int, slot_minutes: int = 30) -> str:
@@ -338,80 +344,146 @@ def _deliberate(parameter: str, changed_at: datetime, plan_history) -> bool:
 
 @dataclass(frozen=True)
 class _Switch:
-    """One observed active-profile switch and what it changed.
+    """One change the person made on the pump, as two consecutive settings reads show it.
 
-    ``diffs`` is the outgoing→incoming :func:`~ciq_autotune.settings.diff_profiles`
-    result; an **empty** list means the diff couldn't be taken (outgoing profile gone)
-    or the two profiles are identical, which classifies as whole-profile.
+    Either an active-profile switch or an in-place edit of the active profile
+    (#500). ``at`` is the read that first shows the change and ``observed_after``
+    the read before it, so the change itself landed in ``(observed_after, at]``.
+    ``blocks`` maps each changed setting to its changed time blocks,
+    ``(start_min, end_min, before, after)``, read off the full schedule either
+    side of the change. An **empty** mapping means the outgoing profile is gone
+    from the read or the two profiles are identical, which classifies as
+    whole-profile. ``old`` and ``new`` are the two carb-ratio schedules, which an
+    applied Plan's block annotation is matched against (#581).
     """
 
     at: datetime
-    diffs: list
+    observed_after: datetime
+    blocks: Dict[str, List[tuple]]
+    old: list = field(default_factory=list)
+    new: list = field(default_factory=list)
 
 
-def _profile_switches(snapshots) -> List[_Switch]:
-    """Every ``active_idp`` switch in the changelog, chronological, already diffed."""
-    if not snapshots:
-        return []
-    from .settings import changelog, diff_profiles
-    by_time = {s.captured_at: s for s in snapshots}
-    out: List[_Switch] = []
-    for ch in changelog(snapshots):
-        if ch.parameter != "active_idp":
+def _changed_blocks(old_sched, new_sched) -> List[tuple]:
+    """Each wrap-aware time block one setting moved over, with its before and after.
+
+    Both schedules are read piecewise over the union of their boundaries; adjacent
+    stretches that moved between the same two values are one block, across
+    midnight too. A block over the whole day is ``(0, 1440, before, after)``.
+    """
+    bounds = sorted({0} | {s for s, _ in old_sched} | {s for s, _ in new_sched})
+    bounds = [b for b in bounds if 0 <= b < 1440]
+    runs: List[list] = []
+    for index, start in enumerate(bounds):
+        end = bounds[index + 1] if index + 1 < len(bounds) else 1440
+        before, after = _value_at(old_sched, start), _value_at(new_sched, start)
+        if before == after:
             continue
-        snap = by_time.get(ch.at)
-        old = snap.settings.by_idp(ch.old_schedule) if snap else None
-        new = snap.settings.by_idp(ch.new_schedule) if snap else None
-        diffs = [] if (old is None or new is None) else diff_profiles(old, new)
-        out.append(_Switch(at=ch.at, diffs=diffs))
-    out.sort(key=lambda s: s.at)
+        if runs and runs[-1][1] == start and runs[-1][2:] == [before, after]:
+            runs[-1][1] = end
+        else:
+            runs.append([start, end, before, after])
+    if (len(runs) > 1 and runs[0][0] == 0 and runs[-1][1] == 1440
+            and runs[0][2:] == runs[-1][2:]):
+        last = runs.pop()
+        runs[0][0] = last[0]
+    return [(start, end % 1440 if (start, end) != (0, 1440) else 1440,
+             float(before), float(after)) for start, end, before, after in runs]
+
+
+def _pump_changes(snapshots) -> List[_Switch]:
+    """Every change the person made to the profile the pump runs, chronological (#500).
+
+    Consecutive reads are compared directly. An ``active_idp`` switch diffs the
+    outgoing profile as the later read holds it against the incoming one (#331);
+    otherwise an in-place edit diffs the active profile across the two reads. An
+    edit to an inactive profile is never delivered, and an in-place edit that
+    moves no value (a segment split or merge) delivers nothing new, so neither is
+    a pump change.
+    """
+    from .settings import SEGMENT_PARAMETERS
+    snaps = sorted(snapshots or [], key=lambda s: s.captured_at)
+    out: List[_Switch] = []
+    for prev, cur in zip(snaps, snaps[1:]):
+        switched = prev.settings.active_idp != cur.settings.active_idp
+        old = (cur.settings.by_idp(prev.settings.active_idp) if switched
+               else prev.settings.active())
+        new = cur.settings.active()
+        blocks = {}
+        if old is not None and new is not None:
+            for parameter in SEGMENT_PARAMETERS:
+                moved = _changed_blocks(old.schedule(parameter), new.schedule(parameter))
+                if moved:
+                    blocks[parameter] = moved
+        if not switched and not blocks:
+            continue
+        out.append(_Switch(cur.captured_at, prev.captured_at, blocks,
+                           old.schedule("carb_ratio") if old else [],
+                           new.schedule("carb_ratio") if new else []))
     return out
 
 
 def _switch_reverts(prev: Optional[_Switch], cur: _Switch,
                     mature_window: timedelta) -> bool:
-    """Did ``cur`` switch straight back to what ``prev`` switched away from, in-window?
+    """Did ``cur`` put back exactly what ``prev`` moved, in-window?
 
-    Compared on the *values* each switch moved, not the profile ids: a switch whose
-    diff is the exact inverse of the preceding one, landing inside the maturing
-    window, is a walk-back — that Trial closes and spawns no second Trial, the same
-    rule the dose stream gets from :func:`_is_revert`.
+    Compared on the blocks each change moved, not the profile ids: a change whose
+    blocks are the exact inverse of the preceding one's, landing inside the
+    maturing window, is a walk-back — that Trial closes and spawns no second
+    Trial, the same rule the dose stream gets from :func:`_is_revert`.
     """
-    if prev is None or not prev.diffs or not cur.diffs:
+    if prev is None or not prev.blocks or not cur.blocks:
         return False
     if (cur.at - prev.at) > mature_window:
         return False
-    was = sorted((d.parameter, d.slot or "", d.before, d.after) for d in prev.diffs)
-    back = sorted((d.parameter, d.slot or "", d.after, d.before) for d in cur.diffs)
+    was = sorted((p, s, e, b, a) for p, rows in prev.blocks.items() for s, e, b, a in rows)
+    back = sorted((p, s, e, a, b) for p, rows in cur.blocks.items() for s, e, b, a in rows)
     return was == back
 
 
-def _switch_candidates(snapshots, mature_window: timedelta) -> List[_Cand]:
-    """Trial candidates supplied by the settings snapshots themselves (#463).
+def _switch_candidates(snapshots, plan_history, mature_window: timedelta) -> List[_Cand]:
+    """Trial candidates supplied by the settings reads themselves (#463, #500).
 
-    An active-profile switch is authoritative on its own (#331): the diff names what
-    moved and the switch snapshot is the change instant, so the Trial starts there
-    rather than waiting for the dose stream to re-observe the new value across two
-    days. Exactly one changed parameter is a targeted candidate; zero or two-plus
-    stay whole-profile.
+    A change made on the pump is authoritative on its own (#331, #500): the two
+    reads either side of it name what moved, so the Trial starts at the read that
+    shows it rather than waiting for the dose stream to re-observe the new value
+    across two days, and no Plan is needed for it. A change confined to one
+    setting is one targeted candidate per changed time block; zero or two-plus
+    changed settings is one whole-profile candidate. A carb-ratio block owns its
+    arc and member starts (#581); an applied Plan group that matches the change
+    uniquely only supplies its own member list.
     """
     cands: List[_Cand] = []
-    switches = _profile_switches(snapshots)
-    # A walk-back closes the switch it undid, so both ends of the pair drop out —
+    switches = _pump_changes(snapshots)
+    groups = _annotated_ic_groups(plan_history)
+    # A walk-back closes the change it undid, so both ends of the pair drop out —
     # otherwise the fall-through to the next-most-recent change would resurrect the
-    # very switch that was reverted.
+    # very change that was reverted.
     closed = set()
     for i, sw in enumerate(switches):
         if i and _switch_reverts(switches[i - 1], sw, mature_window):
             closed.update((i - 1, i))
     for i, sw in enumerate(switches):
-        if len(sw.diffs) == 1:
-            d = sw.diffs[0]
-            cands.append(_Cand(d.parameter, d.slot, sw.at, d.before, d.after, [],
-                               switch=True, reverted=i in closed))
-        else:
-            cands.append(_Cand("profile", None, sw.at, None, None, [],
-                               switch=True, reverted=i in closed))
+        if len(sw.blocks) != 1:
+            cands.append(_Cand("profile", None, sw.at, None, None, [], switch=True,
+                               reverted=i in closed, observed_after=sw.observed_after))
+            continue
+        (parameter, blocks), = sw.blocks.items()
+        group = (_match_unique_group(sw.old, sw.new, sw.at, groups)
+                 if parameter == "carb_ratio" else None)
+        for start, end, before, after in blocks:
+            whole_day = (start, end) == (0, 1440)
+            block = (start, end) if parameter == "carb_ratio" and not whole_day else None
+            if block is None:
+                members = None
+            elif group is not None and tuple(group["block"]) == block:
+                members = list(group["members"])
+            else:
+                members = sorted({start} | {s for s, _ in sw.new if _in_arc(s, block)})
+            cands.append(_Cand(parameter, None if whole_day else _min_label(start), sw.at,
+                               before, after, [], switch=True, reverted=i in closed,
+                               block=block, members=members, observed_after=sw.observed_after,
+                               arc=(start, end)))
     return cands
 
 
@@ -534,10 +606,13 @@ def _reviewable_trials(store, now, *, horizon_start=None):
     # and each record is kept by one candidate at most, the earliest. A record
     # dated at a pump-read switch, reverted ones included, is never kept: the
     # switch's own candidate carries it (ADR 463 decision 5).
-    switched = {switch.at for switch in _profile_switches(snapshots)}
+    switched = {switch.at for switch in _pump_changes(snapshots)}
+    records = store.follow_up_records("trial")
+    candidates = [cand for cand in candidates
+                  if not _recorded_from_delivery(cand, records, switched)]
     delivered = sorted((cand for cand in candidates if not cand.switch), key=lambda cand: cand.start)
     keeper = {}
-    for record in store.follow_up_records("trial"):
+    for record in records:
         if datetime.fromisoformat(record["changed_at"]) in switched:
             continue
         cand = next((cand for cand in delivered if same_change(
@@ -581,6 +656,36 @@ def _reviewable_trials(store, now, *, horizon_start=None):
         ))
 
     return trials
+
+
+def _recorded_from_delivery(cand: _Cand, records: List[dict], switched: set) -> bool:
+    """Whether a retained record already holds this pump change under the delivery
+    dating, so the change is not recorded a second time (#500).
+
+    A record saved before pump changes were read from settings, or by a reconcile
+    whose fetch brought the delivery feed but not the settings read, dates the
+    change at its first delivery observation. That record is this change when it
+    names the same setting, before and after, inside the change's block, and its
+    time falls after the earlier read and within a day of the read that shows the
+    change; a whole-profile record matches on its time alone. The pump change's
+    own record, dated at that read, never counts, and a change that already has
+    its own record is kept.
+    """
+    if cand.observed_after is None:
+        return False
+    stamp = cand.start.strftime(_DT_FMT)
+    if any(r["changed_at"] == stamp and r["parameter"] == cand.parameter for r in records):
+        return False
+    for record in records:
+        at = datetime.fromisoformat(record["changed_at"])
+        if (at in switched or record["parameter"] != cand.parameter
+                or not cand.observed_after < at <= cand.start + _PROFILE_TOLERANCE):
+            continue
+        if cand.parameter == "profile" or (
+                record.get("before") == cand.before and record.get("after") == cand.after
+                and _slot_in_arc(record.get("slot"), cand.arc)):
+            return True
+    return False
 
 
 def _review_focus_title(record):
@@ -720,8 +825,8 @@ class _ReviewTrial:
     view: TrialView
     gap_count: int
     # The captured wrap-aware arc + member starts when this is a block-bound I:C
-    # Trial (#581); ``None`` for every other Trial. Trial-owned identity read off
-    # the immutable applied-Plan provenance, never off current settings.
+    # Trial (#581, #500); ``None`` for every other Trial. Trial-owned identity read
+    # off the change's own two settings reads, never off current settings.
     block: Optional[tuple] = None
     members: Optional[list] = None
 
@@ -735,17 +840,13 @@ def _review_candidates(basal, bolus, snapshots, plan_history, *,
     suppression and switch corroboration remain local rather than making a
     frontend recreate setting history.
 
-    Block-scoped I:C changes are handled apart from the generic switch diff (#581):
-    a slot-scoped ``carb_ratio`` switch candidate is dropped here and re-derived by
-    :func:`_block_ic_candidates`, which admits it only when it uniquely matches one
-    complete annotated applied Plan group — fail-closed otherwise, so an
-    uncorroborated block change no longer surfaces general, non-isolated evidence.
+    A change the settings reads show is a candidate whether or not a Plan proposed
+    it (#500); a carb-ratio block change carries its own observed arc.
     """
-    all_switches = [
-        candidate for candidate in _switch_candidates(snapshots, mature_window)
+    switches = [
+        candidate for candidate in _switch_candidates(snapshots, plan_history, mature_window)
         if not candidate.reverted
     ]
-    block_ic = _block_ic_candidates(snapshots, plan_history, horizon_start)
     raw = []
     for parameter in ("isf", "carb_ratio", "target_bg"):
         raw.extend(_regime_candidates(parameter, None, dose_regimes(bolus, parameter),
@@ -754,13 +855,13 @@ def _review_candidates(basal, bolus, snapshots, plan_history, *,
         raw.extend(_regime_candidates("basal_rate", _slot_label(slot), regimes,
                                        mature_window))
 
-    # A later dose observation can corroborate a profile switch but never deserves
-    # a second roster entry.  Keep the switch even if its source data later ages out
-    # so the observation cannot resurrect it under a different identity. Matched
-    # against every live switch, INCLUDING slot-scoped I:C ones (#463): a late dose
-    # observation of the value a block switch established must still be recognised
-    # as corroborating that switch, or dropping it first would let the observation
-    # resurrect an aged-out change as a brand-new whole-parameter Trial.
+    # A later dose observation can corroborate a pump change but never deserves a
+    # second roster entry.  Keep the pump change even if its source data later ages
+    # out so the observation cannot resurrect it under a different identity. The
+    # change landed after the read before the one that shows it, and reads are
+    # taken at fetch time, so a dose or delivery that carried the new value after
+    # that earlier read is this change (#500), even when it precedes the read that
+    # first shows it.
     raw = [
         candidate for candidate in raw
         if not any(
@@ -768,26 +869,31 @@ def _review_candidates(basal, bolus, snapshots, plan_history, *,
                 switch.parameter == "profile"
                 and abs(switch.start - candidate.start) <= _PROFILE_TOLERANCE
             ) or (
-                switch.start < candidate.start
+                switch.observed_after < candidate.start
                 and switch.parameter == candidate.parameter
                 and switch.before == candidate.before
                 and switch.after == candidate.after
+                and _slot_in_arc(candidate.slot, switch.arc)
             )
-            for switch in all_switches
+            for switch in switches
         )
     ]
     raw = _coalesce_profile_changes(raw)
-    # Slot-scoped I:C is owned by the block-matching path above; drop it here, AFTER
-    # the corroboration match, not before — a switch that moved only one I:C block
-    # only counts as a roster entry when a Plan group corroborates it.
-    switches = [
-        candidate for candidate in all_switches
-        if not (candidate.parameter == "carb_ratio" and candidate.slot is not None)
-    ]
     return [
         candidate for candidate in switches + raw
         if candidate.start > horizon_start
-    ] + block_ic
+    ]
+
+
+def _slot_in_arc(slot: Optional[str], arc: Optional[tuple]) -> bool:
+    """Whether a delivery observation at ``slot`` lies in a pump change's block.
+
+    A whole-parameter observation (no slot) or a whole-day block always does.
+    """
+    if slot is None or arc is None or tuple(arc) == (0, 1440):
+        return True
+    hour, minute = map(int, slot.split(":"))
+    return _in_arc(hour * 60 + minute, arc)
 
 
 def _regime_candidates(parameter: str, slot: Optional[str], regimes: List[Regime],
@@ -833,17 +939,17 @@ def _coalesce_profile_changes(candidates: List[_Cand]) -> List[_Cand]:
     return out
 
 
-# --- block-scoped I:C matching (private, #581) ------------------------------
+# --- block-scoped I:C matching (private, #581, #500) ------------------------
 #
-# ADR 581 amends ADR 579 §5: a block-scoped I:C change is no longer surfaced with
-# general, non-isolated evidence. It is admitted only when the pump-observed
-# schedule change *uniquely* matches exactly one complete annotated applied Plan
-# group (the ``ic_block_provenance`` slice 1 stamped onto every staged member) in
-# ``store.plan_history()`` within ``_APPLY_TOLERANCE`` of the settings-snapshot
-# instant. Zero or ≥2 matching groups fail closed — no block-scoped roster entry.
-# The captured group's arc, members, and current/proposed values then become the
-# Trial's durable identity and cohort, read off the immutable provenance rather
-# than current settings, so a later repartition cannot retarget the earlier Trial.
+# A carb-ratio change on the pump is a block-bound Trial on its own (ADR 500,
+# revising ADR 581): the two settings reads either side of it record the whole
+# schedule, so its arc, before and after are observed, never inferred, and a Plan
+# is not needed. The arc becomes the Trial's durable identity and cohort, so a
+# later repartition cannot retarget the earlier Trial. An applied Plan group still
+# annotates the change: when one complete annotated group (the
+# ``ic_block_provenance`` stamped onto every staged member) uniquely matches the
+# observed change within ``_APPLY_TOLERANCE`` of the read, its member starts are
+# the Trial's, and the Plan receipt names its block.
 
 
 def _norm_ic(value) -> Optional[float]:
@@ -856,8 +962,8 @@ def _norm_ic(value) -> Optional[float]:
         return None
 
 
-def _ic_at(schedule, minute: int) -> Optional[float]:
-    """The I:C value in force at ``minute`` for a ``[(start_min, value)]`` schedule.
+def _value_at(schedule, minute: int) -> Optional[float]:
+    """The value in force at ``minute`` for a ``[(start_min, value)]`` schedule.
 
     A schedule wraps: a minute before the first segment takes the final segment's
     value, matching :func:`ciq_autotune.settings.resample_schedule`.
@@ -908,8 +1014,8 @@ def _ic_change_matches(old_sched, new_sched, block: tuple, members,
     boundaries.update(members or ())
     changed = False
     for b in sorted(x for x in boundaries if 0 <= x < 1440):
-        old_v = _norm_ic(_ic_at(old_sched, b))
-        new_v = _norm_ic(_ic_at(new_sched, b))
+        old_v = _norm_ic(_value_at(old_sched, b))
+        new_v = _norm_ic(_value_at(new_sched, b))
         if _in_arc(b, block):
             if old_v != current or new_v != proposed:
                 return False
@@ -973,9 +1079,9 @@ def _match_unique_group(old_sched, new_sched, snapshot_at: datetime,
                         groups: List[dict]) -> Optional[dict]:
     """The single annotated group an observed change matches within 3 days, else None.
 
-    Fail-closed: zero or more than one matching group returns ``None``, so a block
-    change with no corroborating annotated Plan group — or an ambiguous one — never
-    becomes a block-scoped roster entry.
+    Fail-closed: zero or more than one matching group returns ``None``, so an
+    ambiguous annotation never names the change's Plan or its member starts. The
+    change is a Trial either way (#500).
     """
     matches = [
         g for g in groups
@@ -988,72 +1094,6 @@ def _match_unique_group(old_sched, new_sched, snapshot_at: datetime,
 
 def _min_label(minutes: int) -> str:
     return f"{minutes // 60:02d}:{minutes % 60:02d}"
-
-
-def _observed_ic_changes(snapshots) -> List[tuple]:
-    """Every pump-observed active-profile I:C change: ``(at, old_sched, new_sched)``.
-
-    Two sources, both dated at the *later* snapshot's instant (the pump-observed
-    settings boundary, never Plan apply time):
-
-    * a **duplicate-and-switch** ``active_idp`` change — the outgoing active
-      profile's I:C schedule against the incoming active profile's; and
-    * an **in-place edit** ``SettingChange`` on ``carb_ratio`` whose ``idp`` equals
-      the active IDP in the later snapshot — an edit to an *inactive* profile is
-      never observed by the wearer, so it is excluded (#581 regression).
-    """
-    from .settings import changelog
-    if not snapshots:
-        return []
-    by_time = {s.captured_at: s for s in snapshots}
-    out: List[tuple] = []
-    for ch in changelog(snapshots):
-        snap = by_time.get(ch.at)
-        if snap is None:
-            continue
-        if ch.parameter == "active_idp":
-            old = snap.settings.by_idp(ch.old_schedule)
-            new = snap.settings.by_idp(ch.new_schedule)
-            if old is None or new is None:
-                continue
-            old_ic, new_ic = old.schedule("carb_ratio"), new.schedule("carb_ratio")
-            if old_ic != new_ic:
-                out.append((ch.at, old_ic, new_ic))
-        elif ch.parameter == "carb_ratio" and ch.idp == snap.settings.active_idp:
-            out.append((ch.at, ch.old_schedule, ch.new_schedule))
-    return out
-
-
-def _block_ic_candidates(snapshots, plan_history,
-                         horizon_start: datetime) -> List[_Cand]:
-    """Block-scoped I:C candidates uniquely corroborated by applied Plan groups.
-
-    Each pump-observed active-profile I:C change is matched against the complete
-    annotated applied groups; a unique match yields one block-bound candidate that
-    owns the captured arc, members, and current→proposed values. A multi-member
-    block produces exactly one candidate, not one per member row.
-    """
-    groups = _annotated_ic_groups(plan_history)
-    if not groups:
-        return []
-    cands: List[_Cand] = []
-    seen = set()
-    for at, old_sched, new_sched in _observed_ic_changes(snapshots):
-        group = _match_unique_group(old_sched, new_sched, at, groups)
-        if group is None:
-            continue
-        start, end = group["block"]
-        key = (at, start, end)
-        if key in seen:
-            continue
-        seen.add(key)
-        cands.append(_Cand(
-            "carb_ratio", _min_label(start), at,
-            group["current"], group["value"], [],
-            switch=True, reverted=False,
-            block=group["block"], members=list(group["members"]),
-        ))
-    return [c for c in cands if c.start > horizon_start]
 
 
 def _review_id(view: TrialView, block: Optional[tuple] = None) -> str:
@@ -1237,8 +1277,8 @@ def _trial_limits(trial: _ReviewTrial) -> List[str]:
     """The explicit limits of one observational before-and-Trial read.
 
     A block-scoped I:C Trial no longer carries the general non-isolation caveat
-    (#581): its evidence *is* isolated to the captured block, so ADR 579 §5's
-    "This is general I:C evidence" line is amended away for corroborated blocks.
+    (#581): its evidence *is* isolated to the observed block, so ADR 579 §5's
+    "This is general I:C evidence" line is amended away for every block Trial.
     """
     limits = [
         "The evidence is limited to the selected Before and Trial periods.",
@@ -1556,7 +1596,7 @@ class _ReversalHistory:
 
     @cached_property
     def switches(self):
-        return _profile_switches(self._store.settings_snapshots())
+        return _pump_changes(self._store.settings_snapshots())
 
     @cached_property
     def slots(self):

@@ -389,3 +389,51 @@ staging verdict are untouched.
   overnight Pattern row.
 - The Overview report card for carbs vs post-meal response needs its own producer
   (#501). It does not revive the detector.
+
+## ADR 505 — The synthetic fasting lane answers insulin; the engine keeps no guard for flat fasting glucose
+
+**Context.** Every manufactured QA night held glucose flat at 120 mg/dL. The fasting
+ISF regression read a 0 slope over that wall, so the showcase and nine coverage cases
+measured ISF −0.0 with a −0.0 to −0.0 range, and the Overview card printed
+"Estimate 0". The effective ISF prefers a measured value, so Carb undercount, the I:C
+outcome read and the meals-start-high finding all ran on 0 in those stores.
+
+**Decision** (Connor, 2026-10): "You just fix it in the synthetic. Obviously, my real
+data fluctuates randomly enough that corrections happen often enough that an ISF
+estimate is always going to be a real number, so it's just a synthetic issue." No
+engine guard for flat fasting glucose.
+
+- The QA catalog's flat lanes (both backgrounds and the basal-coverage lane) are
+  tagged lane readings. Between 22:00 and 08:00 each lane night starts at 120 at its
+  first reading. Each step it moves by a constant endogenous drift minus 40 mg/dL/U
+  times the insulin that acted, and every reading carries 0.5 mg/dL seeded noise.
+  The drift is the lane's mean insulin effect, so steady basal stays level.
+- The lane answers delivered basal and uncovered boluses given since it last
+  started. A case's own reading interrupts it, and the lane resumes at 120 after it.
+  The case drew what its doses did, so applying them again would draw false lows.
+- Each background carries two seeded Control-IQ automatic corrections between 04:00
+  and 05:00, tagged automatic. That window clears the 01:00 and 03:00 basal slots the
+  basal recipes read, the evening stories' lows, and the 06:00 test meals.
+- The pass is idempotent and runs at the end of `materialize_case`, and before any
+  recipe records follow-ups, because reconcile reads CGM.
+
+**Consequences.**
+
+- The showcase's committed bytes change. That goes past the "showcase unchanged"
+  clause, which constrains coverage-era additions; this change is the operator's
+  correction of the showcase itself.
+- Wherever a real ISF lets another analyzer judge, the expectation moved. Two
+  recipes moved to keep their demonstrations: the correction-on-IOB evening peaks at
+  195, under Carb undercount's 200 runaway bar (pattern-near-tie keeps the 238
+  runaway), and correction stacking's missed meal moved to 15:00 so its corrections
+  finish before the night. No case changed `asserts_move` or a direction.
+- A test that composes recipes outside `materialize_case` finishes its store with
+  `_respond_fasting_lane`, or it measures the old flat-lane bug.
+
+**Test-time budgets raised (2026-10-14).** Real fasting evidence makes the ISF fit
+and the checks that need a non-zero ISF run where they used to skip, about 2 s
+per behavioral case. Under load the focused QA suite measured 116–146 s and the
+slowest case 20–27 s, over the 90 s and 15 s limits. Connor accepted the cost:
+"As the price of a real ISF ... it's fine. We can, the tests can take longer. If
+I get pissed off about that later, we can iterate." The limits in AGENTS.md are
+now 150 s and 30 s.

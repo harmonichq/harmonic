@@ -38,11 +38,12 @@ test('each read asks for its endpoint', async () => {
   await api.fetchFocuses();
   await api.fetchExploreTimeOfDay();
   await api.fetchDayNavigator();
+  await api.fetchDayNavigator('2026-03');
   await api.fetchPrompts();
   assert.deepEqual(calls.map((c) => c.url), [
     '/api/status', '/api/credentials', '/api/pump-settings', '/api/guidance', '/api/diagnose/findings',
     '/api/analyze', '/api/diagnose/finding-case-file-preparation', '/api/focus', '/api/explore/time-of-day',
-    '/api/day-navigator', '/api/prompts',
+    '/api/day-navigator', '/api/day-navigator?month=2026-03', '/api/prompts',
   ]);
   assert.ok(calls.every((c) => !c.opts.method));
 });

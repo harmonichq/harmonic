@@ -495,6 +495,23 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   motion. The pill and label overflow the 44 px target by a few px, inside the
   existing spacing (§2.2 Tab bar / rail item).
 
+- **2026-10-14 — the selected day fills its column, and the month steps.** The
+  operator, on the Day screen's month drop-down: "selected day is nearly
+  impossible to see." The thin bar at the top of the selected day's column is
+  gone. The whole column (weekday, date, its trace segment, counts and %)
+  takes a `--primary` tint at 18% with a 7 px radius, as the NavBar's
+  selection pill does, and its weekday and date are `--primary`; the trace and
+  its glucose zone colours are unchanged and run on across the column, the
+  tint behind them. The fill and the blue date both mark it, so selection
+  keeps a position as well as a colour. It applies in the month drop-down and
+  the desktop week alike (§4.2 DayTile). On the same screen: "and month
+  left/right buttons are disabled." ‹ and › now step a month: ‹ is enabled
+  while the month is after the first month with readings, › up to the latest.
+  A month shows the drop-down's skeleton while it is read and, when it cannot
+  be, Unavailable with Retry inside the drop-down. A day picked in another
+  month opens that day, and on desktop the week in view follows the selected
+  day across month boundaries.
+
 ### 2.6 Deferred (not cut)
 Not built in the current screens. The engine still serves what each needs, and
 nothing is removed from the engine or the fixtures for them.
@@ -661,8 +678,12 @@ unless noted. Loading is a skeleton of the component's own shape.
     - Day draws the same days as a **DayRibbon**: a week of them, gapless, on
       one band with one trace that runs on from day to day, hairline dividers,
       and each day's weekday and date above and counts and % beneath; each day
-      picks itself. States: default; selected; a week without readings. Day's
-      month is its weeks stacked; desktop keeps the selected week in view.
+      picks itself. States: default; selected (the whole column takes a
+      `--primary` tint at 18%, 7 px radius, behind the trace, and its weekday
+      and date are `--primary`; no bar); a week without readings. Day's month
+      is its weeks stacked, with ‹ › stepping to the previous and next month
+      (loading, or Unavailable with Retry, while a month is not read); desktop
+      keeps the selected week in view, across months.
 
 **Changes**
 

@@ -5,7 +5,7 @@ import { formatValue } from '../../provenance.js';
 import { dayDate, loggedGrams } from '../../day-model';
 import { swipe } from '../../gesture';
 import { failsOnce } from '../../flaky';
-import { WithoutReadings } from '../../served-variants';
+import { WithoutReadings, monthReader } from '../../served-variants';
 import { DayScreen, type DayScreenProps } from './DayScreen';
 
 // The Day screen in each state §1.3 lists for Day, Day · Prompts and Day · Log
@@ -133,6 +133,52 @@ export const PickInWeekDesktop: Story = {
     await expect(headerDay(canvas)).toHaveTextContent(printed(siteDay));
   },
 };
+
+// Stepping months: ‹ reads April once and shows its weeks, a day in it opens
+// that day (on desktop the week in view follows it), and › steps back; March is
+// the first month with readings, so ‹ is disabled there. A month the engine
+// cannot serve says Unavailable, with Retry, in the drop-down.
+const steppable = (layout: 'phone' | 'desktop', failing: string[] = []): Story => {
+  const months = monthReader(failing);
+  return { ...story(layout, { ...DEFAULT, readMonth: months.readMonth }), beforeEach: () => months.cleanup };
+};
+const openMonth = async (canvas: ReturnType<typeof within>) => {
+  await userEvent.click(canvas.getByRole('button', { name: named(latest), expanded: false }));
+  return within(canvas.getByRole('dialog', { name: 'May' }));
+};
+const stepPlay = (layout: 'phone' | 'desktop'): Story['play'] => async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  const may = await openMonth(canvas);
+  await expect(may.getByRole('button', { name: 'Next' })).toBeDisabled();
+  await userEvent.click(may.getByRole('button', { name: 'Previous' }));
+  const april = within(await canvas.findByRole('dialog', { name: 'Apr' }));
+  await expect(april.getByRole('button', { name: 'Next' })).toBeEnabled();
+  await userEvent.click(april.getByRole('button', { name: 'Previous' }));
+  const march = within(await canvas.findByRole('dialog', { name: 'Mar' }));
+  await expect(march.getByRole('button', { name: 'Previous' })).toBeDisabled();
+  await userEvent.click(march.getByRole('button', { name: 'Next' }));
+  const back = within(await canvas.findByRole('dialog', { name: 'Apr' }));
+  await userEvent.click(back.getByRole('button', { name: named('2025-04-10') }));
+  await expect(canvas.queryByRole('dialog')).toBeNull();
+  await expect(headerDay(canvas)).toHaveTextContent(printed('2025-04-10'));
+  if (layout === 'desktop') {
+    await expect(canvas.getByRole('button', { name: named('2025-04-10'), pressed: true })).toBeInTheDocument();
+  }
+};
+const unavailablePlay: Story['play'] = async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  const may = await openMonth(canvas);
+  await userEvent.click(may.getByRole('button', { name: 'Previous' }));
+  const april = within(await canvas.findByRole('dialog', { name: 'Apr' }));
+  await waitFor(() => expect(april.getByText('Unavailable')).toBeInTheDocument());
+  await expect(april.getByRole('button', { name: 'Retry' })).toBeInTheDocument();
+  await userEvent.click(april.getByRole('button', { name: 'Next' }));
+  await expect(within(await canvas.findByRole('dialog', { name: 'May' })).queryByText('Unavailable')).toBeNull();
+};
+export const StepMonthPhone: Story = { ...steppable('phone'), play: stepPlay('phone') };
+export const StepMonthDesktop: Story = { ...steppable('desktop'), play: stepPlay('desktop') };
+export const MonthUnavailablePhone: Story = { ...steppable('phone', ['2025-04']), play: unavailablePlay };
+export const MonthUnavailableDesktop: Story = { ...steppable('desktop', ['2025-04']), play: unavailablePlay };
 
 const typed = formatValue(loggedGrams().value, loggedGrams().format);
 const openCarbs = async (canvas: ReturnType<typeof within>) => {

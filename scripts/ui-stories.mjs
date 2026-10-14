@@ -199,11 +199,12 @@ if (mode === 'check') {
         // A story may read a served-shape variant (frontend/ui/served-variants.ts);
         // its stores join the generated answers at their own keys, never replacing one.
         const variants = await page.evaluate(() => globalThis.__uiVariants ?? null);
+        const months = await page.evaluate(() => globalThis.__uiMonths ?? {});
         const fixtures = variants ? {
           ...FIXTURES,
           changes: { ...variants.changes, ...FIXTURES.changes },
           queue: { ...variants.queue, ...FIXTURES.queue },
-          day: { ...FIXTURES.day, days: { ...variants.days, ...FIXTURES.day.days } },
+          day: { ...FIXTURES.day, days: { ...variants.days, ...FIXTURES.day.days }, months },
         } : FIXTURES;
         assert.deepEqual(precheckProblems(await page.evaluate(inspect), { fixtures, allowed: ALLOWED }), []);
       } finally {

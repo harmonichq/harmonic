@@ -165,10 +165,25 @@ export type DayData = {
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const navigatorDays = () => answers.overview.wearer.day_navigator.days;
 
+type Navigator = typeof answers.overview.wearer.day_navigator;
+/** The other months the Day screen has read (live only), by `YYYY-MM`. */
+export const otherMonths = () => (answers.day as { months?: Record<string, Navigator> }).months ?? {};
+
+/** Where the navigator serves a day: the Overview's month first, then any other month read. */
+export function servedDay(iso: string): { path: string; found: Navigator['days'][number] } | null {
+  const first = navigatorDays().find((d) => d.iso === iso);
+  if (first) return { path: `overview.wearer.day_navigator.days[iso=${iso}].0`, found: first };
+  for (const [month, navigator] of Object.entries(otherMonths())) {
+    const found = navigator.days.find((d) => d.iso === iso);
+    if (found) return { path: `day.months.${month}.days[iso=${iso}].0`, found };
+  }
+  return null;
+}
+
 export function day(iso: string): DayData {
-  const found = navigatorDays().find((d) => d.iso === iso);
-  if (!found) throw new Error(`the day navigator serves no ${iso}`);
-  const path = `overview.wearer.day_navigator.days[iso=${iso}].0`;
+  const served = servedDay(iso);
+  if (!served) throw new Error(`the day navigator serves no ${iso}`);
+  const { found, path } = served;
   return {
     date: sourced(`${path}.iso`, 'day'),
     weekday: WEEKDAYS[new Date(`${iso}T12:00:00Z`).getUTCDay()],

@@ -61,6 +61,7 @@
   font-weight: var(--ui-weight-strong);
   line-height: 22px;
 }
+.ui-dayscreen__unavailable { flex-direction: row; align-items: center; justify-content: space-between; padding: 12px 0; color: var(--wk-ink-meta); font-size: var(--ui-type-label); }
 .ui-dayscreen__steps { display: flex; gap: 4px; }
 .ui-dayscreen__weeks { display: flex; flex-direction: column; border-top: 1px solid var(--wk-rule); }
 .ui-dayscreen__weeks > * + * { border-top: 1px solid var(--wk-rule); }

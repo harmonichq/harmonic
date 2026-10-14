@@ -86,6 +86,7 @@ export function App() {
     case 'day':
       return <DayScreen key={tab} layout={layout} store="wearer" state={state} nav={nav} onRetry={retry}
         onDay={(iso) => { live.readDay(iso).then(redraw, redraw); }}
+        readMonth={(month) => live.readMonth(month).finally(redraw)}
         writes={{ answer: drawn(dayWrites.answer), grams: drawn(dayWrites.grams), logCarbs: drawn(dayWrites.logCarbs) }} />;
     case 'settings':
       return <SettingsScreen key={tab} layout={layout} sync={null} state={state} onRetry={retry}

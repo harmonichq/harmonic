@@ -49,7 +49,7 @@ function fakeClient(served = history()) {
     fetchDiagnoseFindingCase: answer('case', () => ({ projection: { comparison: { state: 'available' }, cohorts: [] } })),
     fetchOutcomes: answer('outcomes', () => ({})),
     fetchExploreTimeOfDay: answer('time-of-day', () => ({})),
-    fetchDayNavigator: answer('navigator', () => ({ month: '2026-01', days: [] })),
+    fetchDayNavigator: answer('navigator', (month) => ({ month: month ?? '2026-01', days: [] })),
     fetchCredentials: answer('credentials', () => ({ configured: false, email: null, region: null })),
     fetchPumpSettings: answer('pump', () => ({ configured: false })),
     fetchTimeline: answer('timeline', () => ({})),
@@ -146,4 +146,30 @@ test('a whole-profile Trial and a candidate of an unknown kind are read through,
   assert.ok(active.reassessment, 'the active profile Trial is reassessed like any Trial');
   const unknown = live.answers.queue.wearer.guidance.candidates.find((c) => c.subject === 'habit:missed_meal');
   assert.equal(unknown.queued, true);
+});
+
+test('the Day screen reads each other month once, and the navigator\'s own month not at all', async () => {
+  const fake = fakeClient();
+  const live = createLive({ client: fake.client, glossary: [] });
+  await live.readTab('day');
+  assert.equal(fake.count('navigator'), 1);
+  await live.readMonth('2026-01');
+  assert.equal(fake.count('navigator'), 1, 'the month already read is not read again');
+  await live.readMonth('2025-12');
+  await live.readMonth('2025-12');
+  assert.equal(fake.count('navigator'), 2, 'stepping back reads the previous month once');
+  assert.deepEqual(fake.calls.filter((c) => c.name === 'navigator').map((c) => c.args[0]), [undefined, '2025-12']);
+  assert.equal(live.answers.day.months['2025-12'].month, '2025-12');
+});
+
+test('a month that cannot be read is read again on the next ask', async () => {
+  const fake = fakeClient();
+  const live = createLive({ client: fake.client, glossary: [] });
+  await live.readTab('day');
+  const real = fake.client.fetchDayNavigator;
+  fake.client.fetchDayNavigator = (month) => (month === '2025-12' ? Promise.reject(new Error('down')) : real(month));
+  await assert.rejects(live.readMonth('2025-12'));
+  fake.client.fetchDayNavigator = real;
+  await live.readMonth('2025-12');
+  assert.equal(live.answers.day.months['2025-12'].month, '2025-12');
 });

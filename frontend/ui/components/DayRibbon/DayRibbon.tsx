@@ -6,9 +6,10 @@
 // date above the trace and its ▽ lows, △ highs (or ✓ for neither) and in-range
 // % beneath it.
 //
-// Each day is a button over its whole column: it picks that day. Selected adds
-// the surface and a mark above, as the NavBar does, so selection carries a
-// position as well as a colour. A day with no data keeps its weekday and date,
+// Each day is a button over its whole column: it picks that day. Selected
+// tints the whole column --primary behind the trace and sets its weekday and
+// date in --primary, as the NavBar's selection pill does, so selection carries
+// a position as well as a colour; the trace runs on across it unchanged. A day with no data keeps its weekday and date,
 // dimmed, draws no trace, and cannot be picked. The ribbon measures its box.
 import { useId } from 'react';
 import type { DayData } from '../../overview-model';
@@ -68,10 +69,8 @@ export function DayRibbon({ days, selected, onSelect }: DayRibbonProps) {
           </defs>
           <g aria-hidden="true">
             {days.map((d, i) => d.date.value === selected && (
-              <g key="selected">
-                <rect x={i * column} y={0} width={column} height={HEIGHT} className="ui-ribbon__selected" />
-                <rect x={i * column + 4} y={0} width={column - 8} height={2} className="ui-ribbon__mark" />
-              </g>
+              <rect key="selected" x={i * column + 1} y={1} width={column - 2} height={HEIGHT - 2} rx={7} ry={7}
+                className="ui-ribbon__selected" />
             ))}
             <rect x={0} y={y(HIGH)} width={width} height={y(LOW) - y(HIGH)} className="ui-ribbon__band ui-zone-area ui-zone--in-range" />
             {days.slice(1).map((d, i) => (
@@ -85,8 +84,8 @@ export function DayRibbon({ days, selected, onSelect }: DayRibbonProps) {
           </g>
           {days.map((d, i) => (
             <g key={d.date.value} className={d.hasData ? undefined : 'ui-ribbon__none'}>
-              <text x={i * column + 6} y={13} className="ui-ribbon__weekday">{d.weekday}</text>
-              <text x={i * column + 6} y={28} className="ui-ribbon__date"><NumSvg value={d.date} /></text>
+              <text x={i * column + 6} y={13} className="ui-ribbon__weekday" data-selected={d.date.value === selected || undefined}>{d.weekday}</text>
+              <text x={i * column + 6} y={28} className="ui-ribbon__date" data-selected={d.date.value === selected || undefined}><NumSvg value={d.date} /></text>
               {d.hasData && (
                 <>
                   <text x={i * column + 6} y={HEAD + TRACE + 17} className="ui-ribbon__counts">

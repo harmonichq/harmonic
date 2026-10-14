@@ -47,7 +47,7 @@ export function createLive({ client, glossary }) {
     queue: { wearer: { guidance: { candidates: [] } } },
     overview: { wearer: {} },
     changes: {},
-    day: { states: {}, days: {}, prompts: {} },
+    day: { states: {}, days: {}, prompts: {}, months: {} },
     settings: { credentials: {}, status: {}, pump_settings: {} },
     glossary,
     states: {},
@@ -90,6 +90,13 @@ export function createLive({ client, glossary }) {
   });
   const navigator = () => once('navigator', async () => {
     answers.overview.wearer.day_navigator = await client.fetchDayNavigator();
+  });
+  /** Another month's weeks, read once when the Day screen steps to it. The month the
+   *  navigator already holds is not read again. */
+  const month = (iso) => once(`month ${iso}`, async () => {
+    await navigator();
+    if (answers.overview.wearer.day_navigator.month === iso) return;
+    answers.day.months[iso] = await client.fetchDayNavigator(iso);
   });
   const timeOfDay = () => once('time-of-day', async () => {
     answers.overview.wearer.time_of_day = await client.fetchExploreTimeOfDay();
@@ -326,6 +333,8 @@ export function createLive({ client, glossary }) {
     readTab,
     retryTab,
     readDay: day,
+    /** The weeks of one month (`YYYY-MM`), read once; Retry is a second call after a failure. */
+    readMonth: month,
     /** The account the Settings screen shows: set, or not. */
     accountState: () => (answers.settings.credentials.set?.configured ? 'set' : 'unset'),
     queueWrites,

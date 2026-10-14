@@ -130,3 +130,37 @@ export function WithoutReadings({ children }: { children: ReactNode }) {
   useEffect(() => () => { served.day_navigator = original; }, [served, original]);
   return children;
 }
+
+/** A month the Day screen can step to, as the engine serves `/api/day-navigator?month=…`: every week
+ *  that touches it, Monday first, its days the served May navigator's days in turn (dates changed). */
+function monthOf(month: string) {
+  const navigator = clone(fixtures.overview.wearer.day_navigator);
+  const served = navigator.days;
+  const first = new Date(`${month}-01T00:00:00Z`);
+  const end = new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + 1, 0));
+  const lead = (first.getUTCDay() + 6) % 7;
+  first.setUTCDate(first.getUTCDate() - lead);
+  const weeks = Math.ceil((lead + end.getUTCDate()) / 7);
+  const days = Array.from({ length: weeks * 7 }, (_, i) => {
+    const date = new Date(first);
+    date.setUTCDate(first.getUTCDate() + i);
+    return { ...clone(served[i % served.length]), iso: date.toISOString().slice(0, 10) };
+  });
+  return { ...navigator, month, days };
+}
+const STEPPABLE = ['2025-03', '2025-04'];
+const stepped = Object.fromEntries(STEPPABLE.map((month) => [month, monthOf(month)]));
+(globalThis as { __uiMonths?: Record<string, unknown> }).__uiMonths = stepped;
+
+/** The Day screen's month reader for a story: March and April 2025 are served, and any month in
+ *  `failing` cannot be read. What was read in is taken back out when the story ends (the cleanup). */
+export function monthReader(failing: string[] = []): { readMonth: (month: string) => Promise<void>; cleanup: () => void } {
+  const day = answers.day as { months?: Record<string, unknown> };
+  return {
+    readMonth: async (month) => {
+      if (failing.includes(month) || !(month in stepped)) throw new Error(`no ${month}`);
+      day.months = { ...day.months, [month]: stepped[month] };
+    },
+    cleanup: () => { delete day.months; },
+  };
+}

@@ -6,6 +6,7 @@
 // generator picked by rule; the prompts are the top-level `prompts`, and
 // `day.prompts` the same wearer's before and after the Day screen's answers.
 import { answers, sourced, type Sourced } from './answers';
+import { otherMonths, servedDay } from './overview-model';
 import { MONTHS } from './provenance.js';
 
 export type DayState = keyof typeof answers.day.states;
@@ -144,28 +145,41 @@ export function latestDay(): string {
 
 /** The day as Day's header names it: its weekday and served date ("Sun 25 May"). */
 export function dayDate(iso: string): { weekday: string; date: Sourced<string> } {
-  if (!navigator().days.some((d) => d.iso === iso)) throw new Error(`the day navigator serves no ${iso}`);
-  return {
-    weekday: WEEKDAYS[utc(iso).getUTCDay()],
-    date: sourced(`overview.wearer.day_navigator.days[iso=${iso}].0.iso`, 'date'),
-  };
+  const served = servedDay(iso);
+  if (!served) throw new Error(`the day navigator serves no ${iso}`);
+  return { weekday: WEEKDAYS[utc(iso).getUTCDay()], date: sourced(`${served.path}.iso`, 'date') };
 }
 
 /** The Monday-to-Sunday week holding a day, when the navigator serves all of it. */
 export function weekOf(iso: string): string[] | null {
   const monday = shift(iso, -((utc(iso).getUTCDay() + 6) % 7));
   const week = Array.from({ length: 7 }, (_, i) => shift(monday, i));
-  const served = new Set(navigator().days.map((d) => d.iso));
-  return week.every((d) => served.has(d)) ? week : null;
+  return week.every((d) => servedDay(d)) ? week : null;
 }
 
-/** The served month's name, as a date prints its month ("May"). */
-export const monthName = () => MONTHS[Number(navigator().month.slice(5, 7)) - 1];
+/** A month's name, as a date prints its month ("May"). */
+export const monthName = (month: string) => MONTHS[Number(month.slice(5, 7)) - 1];
 
-/** The served month as weeks, Monday first; the navigator's week of padding on
- *  each side fills the first and last rows. */
-export function monthWeeks(): { month: string; weeks: string[][] } {
-  const { month } = navigator();
+/** The month `step` months from `month` (`YYYY-MM`). */
+export function monthBy(month: string, step: number): string {
+  const index = Number(month.slice(0, 4)) * 12 + Number(month.slice(5, 7)) - 1 + step;
+  return `${Math.floor(index / 12)}-${String((index % 12) + 1).padStart(2, '0')}`;
+}
+
+/** Whether the navigator has served a month's weeks: the Overview's, or one the Day screen read. */
+export const monthServed = (month: string) => navigator().month === month || month in otherMonths();
+
+/** The first and last months with readings, as the status serves the data's
+ *  span; the served month alone before there is any. */
+export function monthSpan(): { first: string; last: string } {
+  const { earliest_data_day: first, latest_data_day: last } = answers.status.ok;
+  return first && last ? { first: first.slice(0, 7), last: last.slice(0, 7) }
+    : { first: navigator().month, last: navigator().month };
+}
+
+/** A month as weeks, Monday first; the navigator's week of padding on each
+ *  side fills the first and last rows. */
+export function monthWeeks(month: string): string[][] {
   const weeks: string[][] = [];
   for (let first = `${month}-01`; first.slice(0, 7) <= month;) {
     const week = weekOf(first);
@@ -173,7 +187,7 @@ export function monthWeeks(): { month: string; weeks: string[][] } {
     weeks.push(week);
     first = shift(week[6], 1);
   }
-  return { month, weeks };
+  return weeks;
 }
 
 // --- PromptCard --------------------------------------------------------------

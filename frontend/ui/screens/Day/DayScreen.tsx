@@ -5,10 +5,13 @@
 // The latest day with readings opens first. The header names the day beside
 // its title as the control that drops the month down, and carries "+ Log
 // carbs". The month opens as its weeks, each a gapless DayRibbon with every
-// day's counts and in-range %, under the month's name and ‹ › (the navigator
-// serves no other month here); picking a day closes it, as do Escape and, on
+// day's counts and in-range %, under the month's name and ‹ ›, which step a month
+// at a time between the first and last months with readings (live, each month
+// is read once as it is first shown: loading while it reads, Unavailable and
+// Retry inside the drop-down when it cannot be); picking a day, in any month,
+// closes it and opens that day, as do Escape and, on
 // phone, the scrim. On desktop the selected day's week also stays in view as
-// one ribbon under the header. The day is its DayChart, which carries its own
+// one ribbon under the header, following the selected day across months. The day is its DayChart, which carries its own
 // event list; a day without readings is the chart's "No data"; a day whose
 // timeline is not served yet is the chart's skeleton, as it shows while loading.
 // Above the Prompts row (on desktop, beside it), the day's insulin as its
@@ -49,7 +52,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { Sourced } from '../../answers';
 import {
   PROMPT_STEPS, dayChartOf, dayDate, insulinBar, latestDay, livePromptPlace, loggedGrams, loggedTime, lowPrompt,
-  lowPrompts, monthName, monthWeeks, promptPlace, unanswered, weekOf, type PromptData, type PromptStore,
+  lowPrompts, monthBy, monthName, monthServed, monthSpan, monthWeeks, promptPlace, unanswered, weekOf, type PromptData, type PromptStore,
 } from '../../day-model';
 import { day as navigatorDay } from '../../overview-model';
 import { useMotionGate, usePresence } from '../../motion';
@@ -95,6 +98,8 @@ export type DayScreenProps = {
   writes?: DayWrites;
   /** The day the screen shows, each time it changes: the live app reads it. */
   onDay?: (iso: string) => void;
+  /** Read another month's weeks (`YYYY-MM`) into the answers; without it only the served month steps. */
+  readMonth?: (month: string) => Promise<void>;
   nav?: NavHooks;
   /** Unavailable's Retry. */
   onRetry?: () => void;
@@ -117,27 +122,39 @@ const SAVE_MS = 600;
 const week = (iso: string) => weekOf(iso)?.map(navigatorDay) ?? null;
 
 /** The month, dropped down from the header's day: its name, ‹ ›, and its weeks. */
-function Month({ layout, selected, onSelect, left, exit }: {
-  layout: Layout; selected: string; onSelect: (iso: string) => void; left?: number;
+function Month({ layout, month, selected, onSelect, onStep, canStep, read, onRetry, left, exit }: {
+  layout: Layout; month: string; selected: string; onSelect: (iso: string) => void;
+  onStep: (step: -1 | 1) => void; canStep: (step: -1 | 1) => boolean;
+  /** The month's weeks until they are served. */
+  read: 'loading' | 'unavailable' | null; onRetry: () => void; left?: number;
   /** Closing: what usePresence marks it with. */
   exit: object;
 }) {
   return (
     <section className={layout === 'phone' ? 'ui-dayscreen__month ui-dayscreen__month--phone'
       : 'ui-popover ui-dayscreen__month ui-dayscreen__month--desktop'} style={{ left }}
-      role="dialog" aria-label={monthName()} {...exit}>
+      role="dialog" aria-label={monthName(month)} {...exit}>
       <div className="ui-dayscreen__month-head">
-        <h2 className="ui-dayscreen__month-name">{monthName()}</h2>
+        <h2 className="ui-dayscreen__month-name">{monthName(month)}</h2>
         <span className="ui-dayscreen__steps">
-          <Button kind="icon" icon="previous" label="Previous" disabled />
-          <Button kind="icon" icon="next" label="Next" disabled />
+          <Button kind="icon" icon="previous" label="Previous" disabled={!canStep(-1)} onClick={() => onStep(-1)} />
+          <Button kind="icon" icon="next" label="Next" disabled={!canStep(1)} onClick={() => onStep(1)} />
         </span>
       </div>
-      <div className="ui-dayscreen__weeks">
-        {monthWeeks().weeks.map((days) => (
-          <DayRibbon key={days[0]} days={days.map(navigatorDay)} selected={selected} onSelect={onSelect} />
-        ))}
-      </div>
+      {read === 'unavailable' ? (
+        <div className="ui-dayscreen__weeks ui-dayscreen__unavailable">
+          <span>Unavailable</span>
+          <Button kind="text" label="Retry" onClick={onRetry} />
+        </div>
+      ) : read === 'loading' ? (
+        <div className="ui-dayscreen__weeks"><span className="ui-skeleton ui-dayscreen__skeleton" aria-hidden="true" /></div>
+      ) : (
+        <div className="ui-dayscreen__weeks">
+          {monthWeeks(month).map((days) => (
+            <DayRibbon key={days[0]} days={days.map(navigatorDay)} selected={selected} onSelect={onSelect} />
+          ))}
+        </div>
+      )}
     </section>
   );
 }
@@ -181,10 +198,15 @@ export function DayScreen(props: DayScreenProps) {
 
 function Day({
   layout, store, state = 'ready', day, view: initialView = 'day', monthOpen = false, logCarbs, timeEdited = false,
-  recorded = false, swiping = false, failing = false, notSaved = false, writes, onDay, nav, onRetry,
+  recorded = false, swiping = false, failing = false, notSaved = false, writes, onDay, readMonth, nav, onRetry,
 }: DayScreenProps) {
   const [selected, setSelected] = useState(day ?? latestDay());
   const [month, setMonth] = useState(monthOpen);
+  // The month the drop-down shows, and how reading it went, until it is served.
+  const [monthShown, setShown] = useState(selected.slice(0, 7));
+  const shownRef = useRef(monthShown);
+  const [monthRead, setMonthRead] = useState<'loading' | 'unavailable' | null>(null);
+  const [, redraw] = useState(0);
   const [view, setView] = useState(initialView);
   // The Prompts, one served store per answer given.
   const entry = PROMPT_STEPS.indexOf(store);
@@ -224,6 +246,38 @@ function Day({
   const push = view === 'prompts' ? 'forward' : 'back';
 
   const select = (iso: string) => { setSelected(iso); setMonth(false); };
+  const toggleMonth = () => {
+    if (!month) {
+      setShown(selected.slice(0, 7));
+      shownRef.current = selected.slice(0, 7);
+      setMonthRead(null);
+    }
+    setMonth(!month);
+  };
+  // A month is read once, as it is first shown; what has landed is not read again.
+  const loadMonth = (target: string) => {
+    if (monthServed(target) || !readMonth) { setMonthRead(null); return; }
+    setMonthRead('loading');
+    readMonth(target).then(
+      () => { if (target === shownRef.current) setMonthRead(null); redraw((n) => n + 1); },
+      () => { if (target === shownRef.current) setMonthRead('unavailable'); },
+    );
+  };
+  const stepMonth = (by: -1 | 1) => {
+    const target = monthBy(monthShown, by);
+    setShown(target);
+    shownRef.current = target;
+    loadMonth(target);
+  };
+  const canStep = (by: -1 | 1) => {
+    const target = monthBy(monthShown, by);
+    const { first, last } = monthSpan();
+    return target >= first && target <= last && (monthServed(target) || readMonth !== undefined);
+  };
+  const monthProps = {
+    month: monthShown, selected, onSelect: select, onStep: stepMonth, canStep,
+    read: monthServed(monthShown) ? null : monthRead ?? 'loading', onRetry: () => loadMonth(monthShown),
+  } as const;
   // Desktop: the month's popover sits under the header's day, its arrow on it.
   useLayoutEffect(() => {
     const control = headRef.current?.querySelector<HTMLElement>('.ui-header__day');
@@ -351,7 +405,7 @@ function Day({
   const place = view !== 'prompts' ? undefined : writes
     ? opened && livePromptPlace(opened, opened.value - visible.length + (held ? 0 : 1))
     : promptPlace(store, shown);
-  const dayControl = { ...dayDate(selected), open: month, onToggle: () => setMonth(!month) };
+  const dayControl = { ...dayDate(selected), open: month, onToggle: toggleMonth };
   const header = state === 'unavailable'
     ? <ScreenHeader title="Day" trailing="unavailable" layout={layout} onRetry={onRetry} />
     : view === 'prompts'
@@ -416,7 +470,7 @@ function Day({
         {dropped.value && <div className="ui-scrim ui-dayscreen__scrim" onClick={() => setMonth(false)} {...dropped.exit} />}
         <div className="ui-dayscreen__head" data-push={push}>
           {header}
-          {dropped.value && <Month layout="phone" selected={selected} onSelect={select} exit={dropped.exit} />}
+          {dropped.value && <Month layout="phone" {...monthProps} exit={dropped.exit} />}
         </div>
         <main className="ui-dayscreen__main" data-scroll="page" data-push={push}>
           <div key={`${view}-body`} className="ui-dayscreen__body ui-push">
@@ -441,7 +495,7 @@ function Day({
       <section className="ui-dayscreen__pane" data-scroll="page" data-push={push}>
         <div ref={headRef} className="ui-dayscreen__pane-head" data-push={push}>
           {header}
-          {dropped.value && <Month layout="desktop" selected={selected} onSelect={select} left={anchor} exit={dropped.exit} />}
+          {dropped.value && <Month layout="desktop" {...monthProps} left={anchor} exit={dropped.exit} />}
         </div>
         {state !== 'unavailable' && (
           <div key={`${view}-body`} className="ui-dayscreen__body ui-push">

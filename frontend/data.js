@@ -158,10 +158,11 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
   const fetchExploreTimeOfDay = () => api('/api/explore/time-of-day');
 
   /**
-   * GET /api/day-navigator — each day of the latest month with data (± a week
-   * of pad): its lows, highs, in-range share and sparkline.
+   * GET /api/day-navigator[?month=YYYY-MM] — each day of the month (the latest
+   * with data when none is named), ± a week of pad: its lows, highs, in-range
+   * share and sparkline.
    */
-  const fetchDayNavigator = () => api('/api/day-navigator');
+  const fetchDayNavigator = (month) => api('/api/day-navigator' + (month ? `?month=${encodeURIComponent(month)}` : ''));
 
   // --- Day: one day, the carb log, Prompts --------------------------------
 

@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, userEvent, waitFor, within } from 'storybook/test';
+import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
+import { TOKEN_KEY } from '../../../data.js';
 import { failsOnce } from '../../flaky';
 import { SettingsScreen, type SettingsScreenProps } from './SettingsScreen';
 
@@ -12,10 +13,13 @@ import { SettingsScreen, type SettingsScreenProps } from './SettingsScreen';
 // - Pump profile: the wearer's profile and its segments; "No profile" for the
 //   store that has none.
 // - Glossary: §1.5's terms with their definitions.
+// - Token: the field and Save under the root list, and in Unavailable, the
+//   screen a browser without the token gets when every read is refused (401).
 // Plays per size: each root row drills down under "‹ Settings" and back;
 // Update → email and password → Save sets the account; Escape closes the form
-// unsaved. The account typed is the generator's invented address on a
-// reserved domain; nothing is sent.
+// unsaved; Token → Save keeps the token where the client reads it. The
+// account typed is the generator's invented address on a reserved domain, the
+// token an invented word; nothing is sent.
 const meta: Meta<typeof SettingsScreen> = {
   title: 'Screens/Settings',
   component: SettingsScreen,
@@ -173,3 +177,24 @@ export const PumpProfileUnavailablePhone: Story = {
   ...story('phone', { ...SYNCED, parts: PUMP_DOWN }), play: partUnavailablePlay };
 export const PumpProfileUnavailableDesktop: Story = {
   ...story('desktop', { ...SYNCED, parts: PUMP_DOWN }), play: partUnavailablePlay };
+
+// Token (§2.5, 2026-10-14): Save waits for a token, keeps it where the one
+// client reads it, and reads the app again. In Unavailable, every read
+// refused, the field is there as on the root.
+const tokenPlay: Story['play'] = async ({ canvasElement, args }) => {
+  const canvas = within(canvasElement);
+  localStorage.removeItem(TOKEN_KEY);
+  const save = canvas.getByRole('button', { name: 'Save' });
+  await expect(save).toBeDisabled();
+  await userEvent.type(canvas.getByLabelText('Token'), 'synthetic-token');
+  await userEvent.click(save);
+  await expect(localStorage.getItem(TOKEN_KEY)).toBe('synthetic-token');
+  await expect(args.onToken).toHaveBeenCalledOnce();
+  localStorage.removeItem(TOKEN_KEY);
+};
+export const TokenPhone: Story = { ...story('phone', { ...SYNCED, onToken: fn() }), play: tokenPlay };
+export const TokenDesktop: Story = { ...story('desktop', { ...SYNCED, onToken: fn() }), play: tokenPlay };
+export const TokenUnavailablePhone: Story = {
+  ...story('phone', { ...SYNCED, state: 'unavailable', onToken: fn() }), play: tokenPlay };
+export const TokenUnavailableDesktop: Story = {
+  ...story('desktop', { ...SYNCED, state: 'unavailable', onToken: fn() }), play: tokenPlay };

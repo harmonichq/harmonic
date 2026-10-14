@@ -29,6 +29,16 @@ export class ApiTransportError extends Error {
 export const TOKEN_KEY = 'ciq_token';
 
 /**
+ * Keep the API token where every request reads it. Storage that refuses
+ * access (a private window, blocked site data) keeps nothing.
+ *
+ * @param {string} token
+ */
+export function saveToken(token) {
+  try { localStorage.setItem(TOKEN_KEY, token); } catch {}
+}
+
+/**
  * Build a bound API namespace whose transport can be replaced.
  *
  * @param {{ fetch?: Function }} [deps={}]

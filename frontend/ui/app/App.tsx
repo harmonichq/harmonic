@@ -11,6 +11,9 @@
 // again). Until they first land, the screen shows its loading state; when they
 // cannot be read (a refused or failed read, the engine unavailable), it shows
 // Unavailable with Retry, and the other tabs keep working (§1.2).
+//
+// Saving a token in Settings reads the app again under it: Settings' parts and
+// badges at once, and every other tab when it next opens.
 import { useCallback, useEffect, useState } from 'react';
 import { parseRoute, subscribeRoute, writeRoute } from '../../tab-routing.js';
 import type { NavItem } from '../components/NavBar/NavBar';
@@ -92,6 +95,11 @@ export function App() {
   const state = (tab === 'settings' ? parts.status : reads[tab]) ?? 'loading';
   const nav = { onSelect: go, syncFailed: syncFailed() };
   const retry = () => (tab === 'settings' ? part('status', true) : read(tab, true));
+  const reread = () => {
+    setReads({});
+    PARTS.forEach((which) => part(which, true));
+    live.settings.badges().then(redraw, redraw);
+  };
 
   switch (tab) {
     case 'queue':
@@ -109,7 +117,7 @@ export function App() {
         readMonth={(month) => live.readMonth(month).finally(redraw)}
         writes={{ answer: drawn(dayWrites.answer), grams: drawn(dayWrites.grams), logCarbs: drawn(dayWrites.logCarbs) }} />;
     case 'settings':
-      return <SettingsScreen key={tab} layout={layout} sync={null} state={state} onRetry={retry}
+      return <SettingsScreen key={tab} layout={layout} sync={null} state={state} onRetry={retry} onToken={reread}
         account={live.accountState()} nav={nav}
         parts={{ account: parts.account ?? 'loading', pump: parts.pump ?? 'loading',
           onRetry: (which) => part(which, true) }}

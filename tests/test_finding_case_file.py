@@ -123,10 +123,14 @@ def _analyzer_prepared(recipe):
     from ciq_autotune.analyze import analyze
     from ciq_autotune.analyzers.scenario import build_scenarios
     from ciq_autotune.explore_exposures import build_exposures
+    from scripts.qa_e2e_cases import _respond_fasting_lane
 
     database = tempfile.NamedTemporaryFile(suffix=".sqlite")
     with Store.open(database.name) as store:
         recipe(store)
+        # Finish the store the way materialize_case does: the lane's fasting
+        # nights answer the insulin the recipe wrote.
+        _respond_fasting_lane(store)
         prepared = finding_case_file.prepare(
             store,
             query=WindowQuery.whole_day(),

@@ -295,12 +295,17 @@ class SupportedComparisonTest(unittest.TestCase):
         self.assertEqual(result["adherence"]["assessment"]["state"],"favorable")
 
     def test_fixed_context_changes_counts_only_on_explicit_current_reassessment(self):
-        from scripts.qa_e2e_cases import _materialize_behavioral_correction_on_iob
+        from scripts.qa_e2e_cases import (
+            _materialize_behavioral_correction_on_iob, _respond_fasting_lane,
+        )
         from ciq_autotune.settings import ProfileSegment, ProfileSettings, PumpSettings
         with tempfile.TemporaryDirectory() as directory:
             path=Path(directory)/"context-replay.sqlite"
             with Store.open(path) as store:
-                _materialize_behavioral_correction_on_iob(store)
+                # The evenings run away, so a forty ISF lets Carb undercount own
+                # them while a zero ISF cannot judge the carb count at all.
+                _materialize_behavioral_correction_on_iob(store, meal_runs_away=True)
+                _respond_fasting_lane(store)
                 tail=max(r.t for r in store.cgm_readings()) + timedelta(seconds=1)
                 pin=tail-timedelta(days=7)
                 zero=ProfileSettings(1,"context-zero",300,True,15,(ProfileSegment(0,.9,0,10,110),))

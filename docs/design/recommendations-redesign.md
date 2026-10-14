@@ -61,7 +61,7 @@ Each row lists a screen's states. Labels only; no state uses prose.
 | Queue · setting detail | current → estimate, range, n, chart | — | Chart skeleton | Unavailable | — |
 | Changes | Active Trial or Focus + the last change as one row | "No active change" label | Skeleton | Unavailable + Retry | Maturing; Matured (result pill); last change row expanded in place; **End** (Focus: anytime; Trial: once matured) → confirm sheet → ended |
 | Overview | 14 d selected | "No data" label per window | Skeleton | Unavailable + Retry | 30 d / 90 d selected |
-| Day | Latest day with data | "No data" for a day without readings | Chart skeleton | Unavailable + Retry | Week strip; Month sheet; Prompts row when count > 0 |
+| Day | Latest day with data | "No data" for a day without readings | Chart skeleton | Unavailable + Retry | Month dropped down from the header's day; desktop: the selected week as a ribbon; Prompts row when count > 0 |
 | Day · Prompts | One prompt, "n / N" | Not reachable (the row is hidden at 0) | — | Not saved + Retry | Yes → grams field and keyboard; mid-swipe Not sure |
 | Day · Log carbs | Grams field focused, Time = now | — | Saving | Not saved + Retry | Time edited |
 | Settings | Three rows with inline status | — | — | — | Sync OK (no badge) / Failed (badge) |
@@ -87,8 +87,8 @@ Each row lists a screen's states. Labels only; no state uses prose.
 | Tap a Queue card to expand it in place | Click or ↑/↓ to select in the list; the detail shows in the right pane |
 | Swipe a Queue card to snooze it, or the Snooze text action beneath Pin (a Setting card: at its foot) | The same Snooze text action; shortcut S |
 | Swipe a Prompt to record Not sure, or the Not sure text action beneath its answers | A fourth button, **Not sure** |
-| Swipe the Day week strip | ‹ › buttons and a month grid that is always visible |
-| Tap the month label to open the Month sheet | Month grid in the left pane |
+| Tap the day in the Day header to drop the month down, its weeks as gapless ribbons | The same drop-down, a popover under the day; the selected week stays in view as a ribbon |
+| Pick a day in the month (it closes); the scrim closes it unchanged | Pick a day in the month or the week in view; Escape closes it unchanged |
 | Bottom sheet for Log carbs, on the system keyboard | Popover anchored to "+ Log carbs" |
 | Tap Undo in the snooze bar | Same bar, clickable; ⌘Z |
 | Tap "‹ Parent" in a drill-down's header (the system edge-swipe also goes back) | The same "‹ Parent" control in the pane's header |
@@ -136,6 +136,11 @@ the system's own edge-swipe back is left to the platform, never overridden.
 | **DIA** | noun | Duration of insulin action: how long the pump counts a bolus as still working, in hours. |
 | **Sleep** | noun | The pump's sleep schedule, when Control-IQ runs its tighter overnight target. |
 | **Site change** | noun | A new infusion site and cartridge, as the pump logged it. |
+| **Insulin** | noun | Everything the pump delivered in a day, basal and boluses together, in units (U). |
+| **Basal** | noun | The insulin the pump delivered steadily through the day, including Control-IQ's changes to the programmed rate. |
+| **Meal** | noun | A bolus for carbs, or the carbs part of a bolus. |
+| **Correction** | noun | A bolus you gave to bring glucose down, or the correction part of a meal bolus. |
+| **Control-IQ** | noun | The pump's automatic boluses, as the day's insulin counts them. |
 
 Any domain term not in this table may not appear in the UI. Plain interface
 words (labels, verbs, units, dates) are exempt; see the 2026-10-13 amendment
@@ -345,6 +350,29 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   centred beneath Yes · No · False low, as Snooze sits beneath Pin; the swipe
   stays as its shortcut, and desktop keeps its fourth answer (§1.4, §4.2
   PromptCard).
+- **2026-10-13 — Day picks its day from a drop-down, and the days run
+  gapless.** The operator, on the built Day: "It feels cramped on the phone. I
+  think the ability to view different day … needs to be a drop-down or
+  something; it should not be always visible," and "I think the days should
+  chain together so it's like a gapless kind of view," and "on desktop, the
+  current week is always visible, and you can drop down the month." Of two
+  mocked options he chose "4. B". The week strip, the Month sheet and the
+  desktop month pane are gone. The day in the header is the control that drops
+  the month down as its weeks, each a DayRibbon (§4.2 DayTile) with every day's
+  counts and %; picking a day closes it. Desktop is one pane, the selected
+  week in view as a ribbon under the header (§1.3, §1.4).
+- **2026-10-13 — the day's insulin, split.** The operator: "it would be nice
+  to split correction from meal from Control-IQ and to really like split those
+  numbers." Of two mocked options he chose "5. A": one stacked bar for the
+  day's total, its parts labelled beneath in U and % — Basal (delivered),
+  Meal, Correction and Control-IQ (its automatic boluses only). Beside Basal,
+  outside the bar, one signed figure, delivered − Pump profile in U, which is
+  negative when Control-IQ cuts or suspends basal: "Yeah, I think B sounds
+  good because then we'll be able to see like programmed vs. delivered
+  basal." The engine serves these through #492 (basal delivered, basal
+  programmed, meal, correction, Control-IQ bolus, total); the bar waits for
+  it (§4.2 InsulinBar). Insulin, Basal, Meal, Correction and Control-IQ join
+  §1.5.
 
 ### 2.6 Deferred (not cut)
 Not built in the current screens. The engine still serves what each needs, and
@@ -363,7 +391,7 @@ nothing is removed from the engine or the fixtures for them.
 
 ## 4. Component inventory (approved 2026-10-12)
 
-Twenty components. Screens are composed only from these. Every state listed
+Twenty components, and InsulinBar pending #492. Screens are composed only from these. Every state listed
 gets a Storybook story in step 3. "Fields" are the only served data a component
 may display; derived values name their formula in the provenance table.
 
@@ -498,7 +526,12 @@ unless noted. Loading is a skeleton of the component's own shape.
     counts or ✓, and in-range %.
     - States: default; selected; clean (✓); no data.
     - Fields: `day_navigator.days[]`.
-    - Desktop: the Overview's recent-days strip and Day's month grid.
+    - Desktop: the Overview's recent-days strip.
+    - Day draws the same days as a **DayRibbon**: a week of them, gapless, on
+      one band with one trace that runs on from day to day, hairline dividers,
+      and each day's weekday and date above and counts and % beneath; each day
+      picks itself. States: default; selected; a week without readings. Day's
+      month is its weeks stacked; desktop keeps the selected week in view.
 
 **Changes**
 
@@ -525,7 +558,7 @@ unless noted. Loading is a skeleton of the component's own shape.
     - States: default; no data; with logged carbs.
     - Fields: `timeline.cgm, boluses, basal, pump_events, sleep_windows`;
       `carbs.carb_entries`.
-    - Desktop: wide, with the month grid of DayTiles beside it.
+    - Desktop: wide, under the selected week's DayRibbon.
 18. **PromptCard**: one low prompt, showing "Low · <date time> · <mg/dL>",
     its sparkline, Yes · No · False low, and on phone Not sure as a text
     action centred beneath them, as Snooze sits beneath Pin (the swipe is its
@@ -541,6 +574,15 @@ unless noted. Loading is a skeleton of the component's own shape.
     - Fields: posts `t, grams, certainty` to `/api/carbs`.
     - Desktop: a popover anchored to "+ Log carbs"; on phone, a bottom sheet
       on the system keyboard.
+21. **InsulinBar** (pending #492): the selected day's insulin as one stacked
+    bar for the total, its parts labelled beneath in U and %: Basal
+    (delivered), Meal, Correction and Control-IQ (its automatic boluses only).
+    Beside Basal, outside the bar, one signed figure: delivered − Pump profile,
+    in U, negative when Control-IQ cut or suspended basal.
+    - States: default; no data (no bar); loading.
+    - Fields: pending #492, the engine's per-day basal delivered, basal
+      programmed, meal, correction, Control-IQ bolus and total.
+    - Desktop: the same, between the selected week and the Prompts row.
 
 **Settings**
 

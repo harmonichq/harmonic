@@ -10089,6 +10089,11 @@
   },
   "glossary": [
     {
+      "kind": "noun",
+      "meaning": "The insulin the pump delivered steadily through the day, including Control-IQ's changes to the programmed rate.",
+      "term": "Basal"
+    },
+    {
       "kind": "state",
       "meaning": "A matured change's result against its before period.",
       "term": "Better / Worse / Unclear"
@@ -10102,6 +10107,16 @@
       "kind": "noun",
       "meaning": "A Trial or a Focus. One is active at a time.",
       "term": "Change"
+    },
+    {
+      "kind": "noun",
+      "meaning": "The pump's automatic boluses, as the day's insulin counts them.",
+      "term": "Control-IQ"
+    },
+    {
+      "kind": "noun",
+      "meaning": "A bolus you gave to bring glucose down, or the correction part of a meal bolus.",
+      "term": "Correction"
     },
     {
       "kind": "noun",
@@ -10140,6 +10155,11 @@
     },
     {
       "kind": "noun",
+      "meaning": "Everything the pump delivered in a day, basal and boluses together, in units (U).",
+      "term": "Insulin"
+    },
+    {
+      "kind": "noun",
       "meaning": "Insulin sensitivity factor, the pump's correction factor: how far one unit of insulin lowers glucose, in mg/dL.",
       "term": "ISF"
     },
@@ -10152,6 +10172,11 @@
       "kind": "state",
       "meaning": "A change still collecting its 14 days of after data.",
       "term": "Maturing"
+    },
+    {
+      "kind": "noun",
+      "meaning": "A bolus for carbs, or the carbs part of a bolus.",
+      "term": "Meal"
     },
     {
       "kind": "noun",

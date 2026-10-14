@@ -4,9 +4,9 @@ import { insulinBar } from '../../day-model';
 import { InsulinBar } from './InsulinBar';
 
 // One story per state (§4.2 InsulinBar), from the simulated wearer's served
-// timeline: the latest day with readings, its basal against the pump profile
-// beside Basal; the same across a desktop pane; the first day after the
-// history ends, which serves no insulin and shows no bar; and loading.
+// timeline: the latest day with readings; the same across a desktop pane; the
+// first day after the history ends, which serves no insulin and shows no bar;
+// and loading.
 const meta = {
   title: 'InsulinBar',
   component: InsulinBar,

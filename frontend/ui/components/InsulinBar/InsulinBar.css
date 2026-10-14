@@ -37,5 +37,3 @@
 .ui-insulin__swatch--control_iq_bolus {
   background: repeating-linear-gradient(135deg, var(--wk-ink) 0 2px, var(--wk-surface-rail) 2px 4px);
 }
-.ui-insulin__line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; }
-.ui-insulin__profile { color: var(--wk-ink-meta); font-size: var(--ui-type-label); white-space: nowrap; }

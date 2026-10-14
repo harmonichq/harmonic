@@ -95,34 +95,25 @@ export type InsulinData = {
   total: Sourced<number>;
   /** Basal, Meal, Correction and Control-IQ, in that order. */
   parts: InsulinPart[];
-  /** Basal delivered − Pump profile, as printed; null when no programmed rate is served. */
-  againstProfile: Sourced<number> | null;
 };
 
 const INSULIN_KEYS: InsulinKey[] = ['basal', 'meal', 'correction', 'control_iq_bolus'];
 
 /** The day's insulin as the timeline serves it (ADR 492); null when it serves
- *  none. Each part prints to one decimal, and the largest part prints as the
- *  printed total less the others as printed, so the printed parts always add
- *  up to the printed total; each share is its part ÷ the total, as printed. */
+ *  none. The total and each part print their own value to one decimal, and
+ *  each share is its part ÷ the total as printed, so the shares need not sum
+ *  to exactly 100. */
 export function insulinBar(iso: string): InsulinData | null {
-  const totals = servedDays[iso]?.timeline.insulin_totals as Record<string, number | null> | null | undefined;
+  const totals = servedDays[iso]?.timeline.insulin_totals;
   if (!totals) return null;
   const root = `day.days.${iso}.timeline.insulin_totals`;
-  const largest = INSULIN_KEYS.reduce((a, b) => ((totals[b] ?? 0) > (totals[a] ?? 0) ? b : a));
-  const unitsSource = (key: InsulinKey) => (key === largest
-    ? [`${root}.total`, ...INSULIN_KEYS.filter((k) => k !== key).map((k) => `${root}.${k}`)].join(' − ')
-    : `${root}.${key}`);
-  const parts = INSULIN_KEYS.map((key) => ({
-    key,
-    units: sourced<number>(unitsSource(key), 'fixed1'),
-    share: sourced<number>(`${unitsSource(key)} ÷ ${root}.total`, 'share'),
-  }));
   return {
     total: sourced(`${root}.total`, 'fixed1'),
-    parts,
-    againstProfile: totals.basal_programmed === null
-      ? null : sourced(`${unitsSource('basal')} − ${root}.basal_programmed`, 'signed1'),
+    parts: INSULIN_KEYS.map((key) => ({
+      key,
+      units: sourced<number>(`${root}.${key}`, 'fixed1'),
+      share: sourced<number>(`${root}.${key} ÷ ${root}.total`, 'share'),
+    })),
   };
 }
 

@@ -3522,7 +3522,6 @@
           ],
           "insulin_totals": {
             "basal": 24.156416666666697,
-            "basal_programmed": 28.80000000000007,
             "control_iq_bolus": 5.959999999999999,
             "correction": 0.9455888650963593,
             "meal": 26.694411134903643,
@@ -6419,7 +6418,6 @@
           ],
           "insulin_totals": {
             "basal": 28.767250000000043,
-            "basal_programmed": 28.80000000000007,
             "control_iq_bolus": 3.6,
             "correction": 6.080749338286916,
             "meal": 30.589250661713084,
@@ -9261,7 +9259,6 @@
           ],
           "insulin_totals": {
             "basal": 29.42291666666668,
-            "basal_programmed": 28.80000000000007,
             "control_iq_bolus": 6.760000000000001,
             "correction": 4.1582871536523935,
             "meal": 22.101712846347606,

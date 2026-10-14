@@ -7,10 +7,12 @@
 // carbs". The month opens as its weeks, each a gapless DayRibbon with every
 // day's counts and in-range %, under the month's name and ‹ › (the navigator
 // serves no other month here); picking a day closes it, as do Escape and, on
-// phone, the scrim. On desktop the selected day's week also stays in view as
-// one ribbon under the header. The day is its DayChart, which carries its own
-// event list; a day without readings is the chart's "No data"; a day whose
-// timeline is not served yet is the chart's skeleton, as it shows while loading.
+// phone, the scrim. On desktop the selected day's week also stays in view
+// under the header, as the ribbon without its trace: its days, counts and %,
+// since the day's chart below already draws the glucose. The day is its
+// DayChart, which carries its own event list; a day without readings is the
+// chart's "No data"; a day whose timeline is not served yet is the chart's
+// skeleton, as it shows while loading.
 // Above the Prompts row (on desktop, beside it), the day's insulin as its
 // InsulinBar; none on a day that serves none.
 //
@@ -269,7 +271,7 @@ export function DayScreen({
           <div className="ui-dayscreen__body">
             {view === 'prompts' ? <div className="ui-dayscreen__prompt">{prompt()}</div> : (
               <>
-                <DayRibbon days={week(selected)} selected={selected} onSelect={select} />
+                <DayRibbon days={week(selected)} selected={selected} onSelect={select} trace={false} />
                 {dayContent}
               </>
             )}

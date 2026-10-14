@@ -3,15 +3,12 @@
 // labelled with its units and its share of the total: Basal (delivered, grey
 // as the Day chart's basal), Meal (the meal teal), Correction (neutral ink)
 // and Control-IQ (its automatic boluses, hatched, so no part is told apart by
-// colour alone). Beside Basal's value, outside the bar (beneath it where the
-// column is narrow), Pump profile and one signed figure in neutral ink: what
-// the pump delivered less what it was programmed to, negative where Control-IQ
-// cut or suspended basal. The parts sit two to a row in a narrow box, and in
-// one row, each its own width, in a wide one.
+// colour alone). The parts sit two to a row in a narrow box, and in one row,
+// each its own width, in a wide one.
 //
-// Every number is a served field or a formula over the values as printed
-// (day-model.ts): the printed parts add up to the printed total. A day with no
-// insulin served shows no bar; loading is the bar's own shape, in blocks.
+// Every number is a served field printed to one decimal, and each share is its
+// part ÷ the total as printed (day-model.ts). A day with no insulin served
+// shows no bar; loading is the bar's own shape, in blocks.
 import { useId } from 'react';
 import type { InsulinData, InsulinKey } from '../../day-model';
 import { Num } from '../../Num';
@@ -78,16 +75,9 @@ export function InsulinBar({ data, loading = false }: InsulinBarProps) {
               <span className={`ui-insulin__swatch ui-insulin__swatch--${part.key}`} aria-hidden="true" />
               <span className="ui-caption">{NAMES[part.key]}</span>
             </span>
-            <span className="ui-insulin__line">
-              <span className="ui-insulin__value">
-                <Num value={part.units} /><span className="ui-insulin__unit"> U</span>
-                <span className="ui-insulin__share"><Num value={part.share} />%</span>
-              </span>
-              {part.key === 'basal' && data.againstProfile && (
-                <span className="ui-insulin__profile">
-                  Pump profile <Num value={data.againstProfile} /> U
-                </span>
-              )}
+            <span className="ui-insulin__value">
+              <Num value={part.units} /><span className="ui-insulin__unit"> U</span>
+              <span className="ui-insulin__share"><Num value={part.share} />%</span>
             </span>
           </div>
         ))}

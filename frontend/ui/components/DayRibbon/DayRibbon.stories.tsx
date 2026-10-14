@@ -9,7 +9,8 @@ import { DayRibbon } from './DayRibbon';
 // One story per state (§4.2 DayRibbon), from the simulated wearer's day
 // navigator: the week of its latest day with readings, that day selected, at
 // the phone's width and across a desktop pane; and the week after the history
-// ends, with no readings. A play picks another day.
+// ends, with no readings; and without its trace, as desktop Day keeps the
+// selected week in view above the day's own chart. A play picks another day.
 const meta = {
   title: 'DayRibbon',
   component: DayRibbon,
@@ -27,6 +28,11 @@ export const Selected: Story = { args: { days: week(latest), selected: latest } 
 export const NoData: Story = { args: { days: week(noData) } };
 export const Desktop: Story = {
   args: { days: week(latest), selected: latest },
+  parameters: { frame: { width: 1440 } },
+};
+
+export const WithoutTrace: Story = {
+  args: { days: week(latest), selected: latest, trace: false },
   parameters: { frame: { width: 1440 } },
 };
 

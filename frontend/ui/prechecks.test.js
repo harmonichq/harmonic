@@ -106,19 +106,12 @@ test('a derived difference is taken between the values as printed', async () => 
   assert.equal(shown, '2.2');
 });
 
-test('(e) a share and a signed difference resolve over the values as printed', async () => {
-  const fixtures = { ins: { basal: 29.4229, meal: 22.1017, correction: 4.1583, ciq: 6.76, total: 62.4429, programmed: 28.8 } };
+test('(e) a share resolves over the values as printed', () => {
+  const fixtures = { ins: { basal: 29.4229, meal: 22.1017, total: 62.4429 } };
   const check = (texts) => precheckProblems({ ...clean, texts }, { ...sources, fixtures });
-  const rest = 'ins.total − ins.basal − ins.meal − ins.correction';
-  // The last part is the printed total less the other printed parts: 62.4 − 29.4 − 22.1 − 4.2.
-  assert.deepEqual(check([{ text: '6.7', source: rest, format: 'fixed1' }]), []);
+  // 29.4 ÷ 62.4 as printed: 47.1%, shown whole.
   assert.deepEqual(check([{ text: '47', source: 'ins.basal ÷ ins.total', format: 'share' }]), []);
-  assert.deepEqual(check([{ text: '11', source: `${rest} ÷ ins.total`, format: 'share' }]), []);
-  assert.deepEqual(check([{ text: '+0.6', source: 'ins.basal − ins.programmed', format: 'signed1' }]), []);
-  assert.deepEqual(check([{ text: '−0.6', source: 'ins.programmed − ins.basal', format: 'signed1' }]), []);
-  assert.match(check([{ text: '0.6', source: 'ins.basal − ins.programmed', format: 'signed1' }])[0],
-    /^\(e\) "0\.6" is not ins\.basal − ins\.programmed as signed1 \(\+0\.6\)/);
-  const { formatValue } = await import('./provenance.js');
-  assert.equal(formatValue(0.04, 'signed1'), '0.0');
-  assert.equal(formatValue(-0.04, 'signed1'), '0.0');
+  assert.deepEqual(check([{ text: '35', source: 'ins.meal ÷ ins.total', format: 'share' }]), []);
+  assert.match(check([{ text: '47.1', source: 'ins.basal ÷ ins.total', format: 'share' }])[0],
+    /^\(e\) "47\.1" is not ins\.basal ÷ ins\.total as share \(47\)/);
 });

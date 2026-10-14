@@ -97,7 +97,6 @@ _SITE_AGING_DAYS = 2
 # The anchor-follow window and clustering gaps (mirrors the #364 reference).
 _FOLLOW_HOURS = 3
 _SUSPEND_CLUSTER = timedelta(hours=3)
-_SITE_CLUSTER = timedelta(minutes=5)
 _NEAR_SITE = timedelta(minutes=30)
 # Site-life drift accounting (mirrors the #364 reference's reactive-site probe): the
 # reconstructed-IOB curve peak/DIA, and the IOB above which a reading is "explained".
@@ -1048,8 +1047,9 @@ def _price_sitelife(snap: DaySnapshot, spec: CellSpec,
     outcome = spec.outcome
     up = outcome.key == "high"
     lo_t, hi_t = _era_window(era_days)
-    site_times = [t for t in snap.site_times if lo_t is not None and lo_t <= t < hi_t]
-    changes = [group[0] for group in _clusters(site_times, _SITE_CLUSTER)]
+    # One time per site change: the store already joins a change's fills
+    # (``Store.pump_events``), so consecutive times bound one site life.
+    changes = [t for t in snap.site_times if lo_t is not None and lo_t <= t < hi_t]
     lives = list(zip(changes, changes[1:]))
 
     def clean_values(start: datetime, end: datetime) -> List[float]:

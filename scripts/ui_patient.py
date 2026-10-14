@@ -485,10 +485,13 @@ def simulate(*, trial: bool, trial_basal: float = TRIAL_BASAL, profile=PROFILE) 
                 carbs[step + k] += absorbed * weight
 
         # -- the pump's own events
+        # A site change logs one event per fill, as the pump does: the cartridge,
+        # the tubing and the cannula, seconds apart.
         if day in site_changes and minute == 10 * 60:
-            seq["pump"] += 1
-            history.pump.append({"seq_num": seq["pump"], "time": _stamp(now),
-                                 "event_type": "Site/Cartridge Change", "duration_mins": 0})
+            for fill in range(3):
+                seq["pump"] += 1
+                history.pump.append({"seq_num": seq["pump"], "time": _stamp(now + timedelta(seconds=4 * fill)),
+                                     "event_type": "Site/Cartridge Change", "duration_mins": 0})
 
         # -- glucose moves to the next step
         # A unit of insulin acts more on a sensitive day; a gram of carbohydrate

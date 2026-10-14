@@ -654,6 +654,20 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   modal, no sign-in screen and no new route; the `/#token=` link still works
   as before. "Token" joins the plain interface words (Settings labels).
 
+- **2026-10-14 — the Error row: a short served label, the raw text
+  beneath.** A failed sync's served error is the raw text the fetch raised
+  (a whole connection-pool message when the network is down), and as the
+  row's inline value it ran off the right edge and over the "Error" label.
+  The server now serves `status.last_error_label` beside `last_error`: one
+  short label per way a fetch fails — No connection, Timed out, Sign-in
+  refused, HTTP and its status code, Not set up, or Unknown. The Error row
+  shows that label as its inline value, and the raw text beneath the label
+  in meta ink at label size, broken at any character, so it wraps inside the
+  row at every width and never reaches under the value. Both are served
+  values, not app copy (§2.3 bans 1 and 7), and the frontend classifies
+  nothing. Nothing is tapped open or hidden (§1.4). The Tandem Source failed
+  stories serve a long error at phone and desktop and check the row holds it.
+
 ### 2.6 Deferred (not cut)
 Not built in the current screens. The engine still serves what each needs, and
 nothing is removed from the engine or the fixtures for them.
@@ -928,8 +942,11 @@ unless noted. Loading is a skeleton of the component's own shape.
     - States: navigable; read-only; with alert ("⚠ Failed"); with a secondary
       button ("Update"); disclosure, closed or open (expands in place: the
       Changes screen's last change); field (the account form's Email and
-      Password, and the root's Token).
-    - Fields: `status`; `credentials.configured, email` (masked), `region`;
+      Password, and the root's Token); with a served detail beneath the
+      label, wrapped at any width (the Error row's raw text under its label,
+      §2.5 2026-10-14).
+    - Fields: `status` (`last_error_label` inline, `last_error` beneath);
+      `credentials.configured, email` (masked), `region`;
       `pump_settings.profile.segments[]`.
     - Desktop: the same.
 

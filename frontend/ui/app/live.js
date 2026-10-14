@@ -36,7 +36,7 @@ const FIRST_WINDOW = '14';
 const DEFAULT_ANALYSIS = '30';
 /** A Pattern Focus is pinned over the whole day, the window the Queue's findings read. */
 const WHOLE_DAY = { start_min: 0, end_min: 1440 };
-const NO_STATUS = { last_attempt_at: null, last_success_at: null, last_error: null };
+const NO_STATUS = { last_attempt_at: null, last_success_at: null, last_error: null, last_error_label: null };
 
 /** The model-view trimmed to what the Day chart marks: each episode's habit,
  *  and each anchor's time, kind, state, glucose and verdicts (mirrors

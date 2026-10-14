@@ -317,7 +317,7 @@ def _materialize_automatic_corrections(store, *, first: date, days: int) -> None
     """
     rng = random.Random(first.toordinal())
     store.upsert_bolus([{
-        "seq_num": 700_000 + offset * 10 + index,
+        "seq_num": 880_000 + offset * 10 + index,
         "request_time": str(datetime.combine(first + timedelta(days=offset),
                                              datetime.min.time())
                             + timedelta(minutes=minute)),

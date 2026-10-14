@@ -20,7 +20,7 @@ def write_split_meals(store, *, gap, peak=360.0, days=14):
     bolus to ``peak``, then falls; the settings snapshot and flat background are the
     behavioral QA lane's.
     """
-    from scripts.qa_e2e_cases import _materialize_behavioral_background
+    from scripts.qa_e2e_cases import _materialize_behavioral_background, _respond_fasting_lane
 
     _materialize_behavioral_background(store, span_days=30)
     for day in range(days):
@@ -43,6 +43,7 @@ def write_split_meals(store, *, gap, peak=360.0, days=14):
             "insulin": insulin, "requested_insulin": insulin, "carbs": carbs,
             "carb_ratio": 10.0, "isf": 40.0, "target_bg": 110.0,
         } for seq_num, at, insulin, carbs in doses])
+    _respond_fasting_lane(store)
 
 
 def write_late_meals(store, *, post_peak, top_up=False):
@@ -56,7 +57,7 @@ def write_late_meals(store, *, post_peak, top_up=False):
     carb bolus explains the climb. ``top_up`` adds a 20 g / 2 U top-up ten minutes
     after each bolus.
     """
-    from scripts.qa_e2e_cases import _materialize_behavioral_background
+    from scripts.qa_e2e_cases import _materialize_behavioral_background, _respond_fasting_lane
 
     first = _materialize_behavioral_background(store, span_days=30)
     lane = datetime.combine(first, datetime.min.time())
@@ -79,6 +80,7 @@ def write_late_meals(store, *, post_peak, top_up=False):
             "insulin": insulin, "requested_insulin": insulin, "carbs": carbs,
             "carb_ratio": 10.0, "isf": 40.0, "target_bg": 110.0,
         } for seq_num, at, insulin, carbs in doses])
+    _respond_fasting_lane(store)
 
 class ScopedPatternPopulationTest(unittest.TestCase):
     def test_scoped_pattern_membership_uses_only_the_published_outcome_population(self):
@@ -369,7 +371,7 @@ def write_over_treated_lows(store, *, count):
     One a day at 13:00 from 2024-05-11 on the behavioral background; every low the
     lane holds is over-treated, so ``count`` is both the habit's ``k`` and its ``n``.
     """
-    from scripts.qa_e2e_cases import _materialize_behavioral_background
+    from scripts.qa_e2e_cases import _materialize_behavioral_background, _respond_fasting_lane
 
     first = _materialize_behavioral_background(store, span_days=30)
     down = [100.0 - 52.0 * i / 4 for i in range(1, 5)]
@@ -383,6 +385,7 @@ def write_over_treated_lows(store, *, count):
             "Readings (CGM / BGM)": bg, "Description": "Synthetic EGV",
         } for i, bg in enumerate([100.0] * 5 + down + up))
     store.upsert_cgm(rows)
+    _respond_fasting_lane(store)
 
 
 class PatternUncertainTest(unittest.TestCase):

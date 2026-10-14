@@ -121,10 +121,13 @@ export function EvidenceChart({ nights, roster, field, current, estimate, lo, hi
   }
   for (const [bin, count] of bins) {
     const columns = Math.ceil(count / MAX_ROWS);
+    // A wrapped stack at an end of the axis shifts inward, never past the plot.
+    const half = ((columns - 1) / 2) * PITCH;
+    const centre = Math.min(Math.max(bin * PITCH, left + half), right - half);
     for (let i = 0; i < count; i += 1) {
       const column = i % columns;
       dots.push({
-        cx: bin * PITCH + (column - (columns - 1) / 2) * PITCH,
+        cx: centre + (column - (columns - 1) / 2) * PITCH,
         cy: AXIS_Y - 2 - DOT / 2 - Math.floor(i / columns) * PITCH,
         inRange: binRange.get(bin)!,
       });

@@ -6,7 +6,7 @@ change is one Trial carrying its block, measured across the block exactly as a
 change read from two settings reads is (ADR 506).
 
 Every store is a manufactured QA case store (``scripts/qa_e2e_cases.py``): the
-programmed 02:00–05:00 rate moves 0.9 → 0.7 U/h on the basal feed alone, first
+programmed 02:00–05:00 rate falls from 0.9 to 0.7 units an hour on the basal feed alone, first
 delivered at 02:00 on 2024-05-21, with CGM low from 04:00 to 05:00 on every
 night before the change. The legacy cases hold the six per-slot records an
 earlier build saved for that change. Everything is read through

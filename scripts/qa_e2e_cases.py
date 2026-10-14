@@ -5689,9 +5689,9 @@ QA_CASES += (
 
 
 # #510: a basal change seen only in delivery history. The programmed rate inside
-# one block moves 0.9 → 0.7 U/h on the dense basal feed, and no settings read
+# one block falls from 0.9 to 0.7 units an hour on the dense basal feed, and no settings read
 # brackets the change: the one read predates it. The rest of the day stays at
-# 0.6 U/h. CGM is 120 mg/dL every five minutes, except 62 mg/dL inside the low
+# 0.6 units an hour. CGM is 120 mg/dL every five minutes, except 62 mg/dL inside the low
 # minutes on every night before the change, so the lows it targets sit late in
 # its block. A lane is ``(slots, first delivery of the new rate at the block's
 # first slot, low minutes, the read's basal segments)``.

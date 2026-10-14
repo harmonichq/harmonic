@@ -374,18 +374,20 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   it (§4.2 InsulinBar). Insulin, Basal, Meal, Correction and Control-IQ join
   §1.5. The signed figure beside Basal was dropped before it shipped; see the
   next amendment.
-- **2026-10-13 — the insulin bar as built, and no graph twice on desktop.**
-  Three decisions on the built Day. Basal shows only what was delivered, its
+- **2026-10-13 — the insulin bar as built.**
+  Decisions on the built Day. Basal shows only what was delivered, its
   U and %, with no Pump profile figure beside it, signed or not: "for basal
   just show delivered amount I don't need the +/-". Each part and the total
   print their own value to one decimal, and each % is that part as printed ÷
   the total as printed, so the %s are not forced to sum to 100 (the
-  operator: "your recs."). And the desktop's selected week stops redrawing
-  the glucose the day's chart already draws: "Let's not duplicate data on
-  tablet view though that's silly. why showing the same graphs twice." The
-  week in view keeps each day's weekday, date, ▽/△ counts and %, and the
-  selection mark, with no band and no trace; the month drop-down keeps its
-  traces, since it is for choosing a day (§4.2 DayTile, InsulinBar).
+  operator: "your recs."). A third change, dropping the desktop week's
+  traces after "Let's not duplicate data on tablet view though that's silly.
+  why showing the same graphs twice", was reverted: the operator had read a
+  phone-and-desktop composite as one desktop split pane ("my bad I actually
+  misread the single screenshot with 3 renderings as a single desktop
+  experience so I thought we had duplicated the [right] and left sides of a
+  split pane"), and answered "yes restore the traces". The desktop week keeps
+  its traces (§4.2 DayTile, InsulinBar).
 
 ### 2.6 Deferred (not cut)
 Not built in the current screens. The engine still serves what each needs, and
@@ -543,10 +545,8 @@ unless noted. Loading is a skeleton of the component's own shape.
     - Day draws the same days as a **DayRibbon**: a week of them, gapless, on
       one band with one trace that runs on from day to day, hairline dividers,
       and each day's weekday and date above and counts and % beneath; each day
-      picks itself. States: default; selected; a week without readings;
-      without its trace (no band, no glucose line). Day's month is its weeks
-      stacked, with their traces; desktop keeps the selected week in view
-      without its trace, above the day's own chart.
+      picks itself. States: default; selected; a week without readings. Day's
+      month is its weeks stacked; desktop keeps the selected week in view.
 
 **Changes**
 

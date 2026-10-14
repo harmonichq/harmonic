@@ -10,9 +10,6 @@
 // the surface and a mark above, as the NavBar does, so selection carries a
 // position as well as a colour. A day with no data keeps its weekday and date,
 // dimmed, draws no trace, and cannot be picked. The ribbon measures its box.
-//
-// Without its trace the ribbon is the same row of days with no band and no
-// glucose line, for a screen whose own chart already draws the selected day.
 import { useId } from 'react';
 import type { DayData } from '../../overview-model';
 import { isClean } from '../../overview-model';
@@ -29,24 +26,21 @@ export type DayRibbonProps = {
   /** The selected day's served date (YYYY-MM-DD), if it is in this week. */
   selected?: string;
   onSelect?: (iso: string) => void;
-  /** Draw the band and the joined glucose trace (default); off, only the labels. */
-  trace?: boolean;
 };
 
 const HEAD = 34; // weekday and date
-const TRACE_HEIGHT = 40;
+const TRACE = 40;
 const FOOT = 40; // counts and in-range %
+const HEIGHT = HEAD + TRACE + FOOT;
 const LOW = 70;
 const HIGH = 180;
 
-export function DayRibbon({ days, selected, onSelect, trace = true }: DayRibbonProps) {
-  const traceHeight = trace ? TRACE_HEIGHT : 0;
-  const height = HEAD + traceHeight + FOOT;
+export function DayRibbon({ days, selected, onSelect }: DayRibbonProps) {
   const [box, width] = useWidth<HTMLDivElement>();
   const id = `ui-ribbon-${useId().replace(/:/g, '')}`;
   const column = width / days.length;
   const domain = glucoseDomain(days.flatMap((d) => d.curve.map((p) => p.bg)));
-  const y = (bg: number) => HEAD + traceHeight * (1 - glucoseFraction(bg, domain));
+  const y = (bg: number) => HEAD + TRACE * (1 - glucoseFraction(bg, domain));
   // One joined line across the week, broken where a day has no readings.
   const runs: string[] = [];
   let run: string[] = [];
@@ -63,27 +57,27 @@ export function DayRibbon({ days, selected, onSelect, trace = true }: DayRibbonP
   return (
     <div ref={box} className="ui-ribbon ui-chart">
       {width > 0 && (
-        <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="ui-ribbon__chart">
+        <svg width={width} height={HEIGHT} viewBox={`0 0 ${width} ${HEIGHT}`} className="ui-ribbon__chart">
           <defs>
             {zones(LOW, HIGH).map((zone) => (
               <clipPath key={zone.tone} id={`${id}-${zone.tone}`}>
                 <rect x={-2} width={width + 4} y={zone.to === Infinity ? 0 : y(zone.to)}
-                  height={(zone.from === -Infinity ? height : y(zone.from)) - (zone.to === Infinity ? 0 : y(zone.to))} />
+                  height={(zone.from === -Infinity ? HEIGHT : y(zone.from)) - (zone.to === Infinity ? 0 : y(zone.to))} />
               </clipPath>
             ))}
           </defs>
           <g aria-hidden="true">
             {days.map((d, i) => d.date.value === selected && (
               <g key="selected">
-                <rect x={i * column} y={0} width={column} height={height} className="ui-ribbon__selected" />
+                <rect x={i * column} y={0} width={column} height={HEIGHT} className="ui-ribbon__selected" />
                 <rect x={i * column + 4} y={0} width={column - 8} height={2} className="ui-ribbon__mark" />
               </g>
             ))}
-            {trace && <rect x={0} y={y(HIGH)} width={width} height={y(LOW) - y(HIGH)} className="ui-ribbon__band ui-zone-area ui-zone--in-range" />}
+            <rect x={0} y={y(HIGH)} width={width} height={y(LOW) - y(HIGH)} className="ui-ribbon__band ui-zone-area ui-zone--in-range" />
             {days.slice(1).map((d, i) => (
-              <line key={d.date.value} x1={(i + 1) * column} x2={(i + 1) * column} y1={0} y2={height} className="ui-ribbon__divider" />
+              <line key={d.date.value} x1={(i + 1) * column} x2={(i + 1) * column} y1={0} y2={HEIGHT} className="ui-ribbon__divider" />
             ))}
-            {trace && zones(LOW, HIGH).map((zone) => runs.map((points, k) => (
+            {zones(LOW, HIGH).map((zone) => runs.map((points, k) => (
               <polyline key={`${zone.tone}-${k}`} points={points} clipPath={`url(#${id}-${zone.tone})`}
                 className={zone.tone === 'in-range' ? 'ui-ribbon__trace ui-ribbon__trace--in-range'
                   : `ui-ribbon__trace ui-zone-stroke ui-zone--${zone.tone}`} />
@@ -95,12 +89,12 @@ export function DayRibbon({ days, selected, onSelect, trace = true }: DayRibbonP
               <text x={i * column + 6} y={28} className="ui-ribbon__date"><NumSvg value={d.date} /></text>
               {d.hasData && (
                 <>
-                  <text x={i * column + 6} y={HEAD + traceHeight + 17} className="ui-ribbon__counts">
+                  <text x={i * column + 6} y={HEAD + TRACE + 17} className="ui-ribbon__counts">
                     {isClean(d) && <tspan className="ui-ribbon__clean">✓</tspan>}
                     {d.lows.value > 0 && <><tspan className="ui-ribbon__low">▽</tspan><NumSvg value={d.lows} /> </>}
                     {d.highs.value > 0 && <><tspan className="ui-ribbon__high">△</tspan><NumSvg value={d.highs} /></>}
                   </text>
-                  <text x={i * column + 6} y={HEAD + traceHeight + 34} className="ui-ribbon__tir">
+                  <text x={i * column + 6} y={HEAD + TRACE + 34} className="ui-ribbon__tir">
                     <NumSvg value={d.tir} /><tspan className="ui-ribbon__unit">%</tspan>
                   </text>
                 </>

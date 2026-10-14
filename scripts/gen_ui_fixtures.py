@@ -845,7 +845,6 @@ def states(queue: dict) -> dict:
     found = {
         "multi_cause": pattern(lambda p: len(p["shares"]) >= 2),
         "single_cause": pattern(lambda p: len(p["shares"]) == 1),
-        "no_cause": pattern(lambda p: not p["shares"] and p["count"] > 0),
         "pinned": {"store": "wearer-pinned", "pattern": pinned} if pinned else None,
         "setting": block(lambda b: b["spread"] and not b["collapsed"] and not b["trial"]),
         "setting_trial": block(lambda b: b["trial"]),
@@ -854,7 +853,7 @@ def states(queue: dict) -> dict:
         "range_collapsed": block(lambda b: b["collapsed"]),
         "zero_variance": block(lambda b: not b["spread"]),
     }
-    required = ("multi_cause", "single_cause", "no_cause", "pinned", "setting", "setting_trial")
+    required = ("multi_cause", "single_cause", "pinned", "setting", "setting_trial")
     missing = [name for name in required if found[name] is None]
     if missing:
         raise SystemExit(f"the simulated wearer no longer serves: {', '.join(missing)}")

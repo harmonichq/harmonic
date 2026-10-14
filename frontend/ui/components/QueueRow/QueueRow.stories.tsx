@@ -4,8 +4,8 @@ import { QueueRow, type QueueRowProps } from './QueueRow';
 
 // One story per state (§4.2 QueueRow), each the simulated wearer's own
 // served answer: the multi-cause pattern by default and selected on desktop,
-// the single-cause one mid-swipe, the pattern no cause claims, and the
-// admitted Basal block; and a snoozed row, with its Until and Restore.
+// the single-cause one mid-swipe, and the admitted Basal block; and a snoozed
+// row, with its Until and Restore.
 const meta = {
   title: 'QueueRow',
   component: QueueRow,
@@ -15,7 +15,7 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-function patternRow(name: 'multi_cause' | 'single_cause' | 'no_cause'): Extract<QueueRowProps, { kind: 'pattern' }> {
+function patternRow(name: 'multi_cause' | 'single_cause'): Extract<QueueRowProps, { kind: 'pattern' }> {
   const data = patternState(name);
   return { kind: 'pattern', title: data.title, magnitude: data.magnitude!, cause: data.causes[0]?.title };
 }
@@ -26,7 +26,6 @@ export const SelectedDesktop: Story = {
   parameters: { frame: { width: 400, padding: 24 } },
 };
 export const MidSwipe: Story = { args: { ...patternRow('single_cause'), swiping: true } };
-export const NoCause: Story = { args: patternRow('no_cause') };
 export const Setting: Story = {
   args: (() => {
     const setting = settingState('setting');

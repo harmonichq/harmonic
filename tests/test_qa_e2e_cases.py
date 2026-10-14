@@ -65,6 +65,8 @@ EXPECTED_CASE_NAMES = (
     "edit-chain",
     "basal-and-carb-ratio-lower",
     "c4-isf-late-read",
+    "delivery-basal-block", "delivery-basal-legacy", "delivery-basal-legacy-open",
+    "delivery-basal-across-midnight", "delivery-basal-whole-day",
 )
 
 

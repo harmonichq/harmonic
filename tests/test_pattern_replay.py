@@ -81,6 +81,11 @@ EXPECTED_ACTIVE_KINDS = {
     "edit-chain": None,
     "basal-and-carb-ratio-lower": None,
     "c4-isf-late-read": None,
+    "delivery-basal-block": "trial",
+    "delivery-basal-legacy": None,
+    "delivery-basal-legacy-open": "trial",
+    "delivery-basal-across-midnight": "trial",
+    "delivery-basal-whole-day": "trial",
 }
 
 

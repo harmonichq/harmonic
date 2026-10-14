@@ -717,7 +717,9 @@ inactive profile is not a change the pump runs. A change seen only in delivery h
 the dose-stamped boluses or the basal feed — is dated at the first observation
 carrying its new value on the first day that value settled, not at that day's
 first observation; a record saved under the earlier day-level dating keeps its
-time.
+time. A basal change seen only in delivery history is one trial per changed
+block — the adjacent **Slots** that moved between the same two rates — measured
+across the block, as a change read from two settings reads is (ADR 510).
 Because the setting is objectively in effect, *adherence is guaranteed*, so
 Changes shows a clean before-and-Trial comparison anchored to the change date and
 the trial resolves **keep-or-revert**. Each trial carries a **target metric** —

@@ -159,3 +159,60 @@ stays as it was captured. The synthetic QA cases' basal Trials move only
 delivery history is still one Trial per slot, measured over that slot: the feed
 names no block, and grouping those slots would change the identity of records
 already saved under it.
+
+## ADR 510 — A basal change seen only in delivery history is one Trial per changed block
+
+**Context.** ADR 506 gave a basal change read from two settings reads its whole
+changed block, and recorded as a consequence that a basal change seen only in
+delivery history stays one Trial per slot: the basal feed names a slot, never a
+block, and grouping would change the identity of records already saved per
+slot. A 02:00–05:00 change made with no settings read either side of it was six
+Trials, each judged on its own half-hour. Connor decided on 2026-10-14 (Q39):
+"They should be grouped."
+
+**Decision.** This amends ADR 506's consequence for delivery-only basal changes.
+
+1. **One Trial per contiguous changed block.** Adjacent slots, across midnight
+   too, that moved between the same two rates, each first delivering the new
+   rate within a day of its neighbour, are one change. The day bound is the
+   same tolerance the Edit and whole-profile rules use: one change reaches
+   every slot it covers within a day, because each slot first runs it at its
+   next occurrence. Grouping runs after pump-read corroboration, so a slot a
+   pump read already holds stays out.
+2. **The block's first slot dates and identifies it.** The Trial is dated at
+   its first slot's first delivery of the new rate, read through that slot's
+   history, and keeps the slotted id a basal Trial has always had (ADR 506
+   decision 3). It carries the wrap-aware block and is measured across it
+   exactly as a pump-read block Trial is. A change over every slot is one
+   whole-day Trial with no slot and no block, read through midnight's slot.
+3. **The roster serves the block.** `GET /api/verify/trials` already serves
+   each Trial's `block`, and a delivery-only block Trial's is its grouped
+   block; a whole-day Trial's is `null`.
+4. **Saved per-slot records are grouped when read, never rewritten.** No
+   retained record is rewritten (outcomes requirement, ADR 463), so a migration
+   that wrote one grouped record and retired six would break the capture-once
+   rule and leave the saved endings on records nothing reads. Instead, per-slot
+   delivery-only basal records — no block, not dated at a pump read — are
+   grouped by the same rule a new change is, and served as one Trial over the
+   block they form together. That Trial is the record carrying the person's
+   own decision (a finish, else a late conclusion), or else the block's first
+   slot. An earlier build admitted the newest slot as the active Trial and only
+   that one could be finished, so a finished change keeps its saved ending;
+   once a record is chosen nothing moves the choice, because only the served
+   record takes a later decision. The other records stay in the store but are
+   not roster rows; their ids open the served Trial, the admission an earlier
+   build gave one of them is the served Trial's, and a new detection of the
+   change is held by the served record, so nothing is recorded again.
+5. **Read-time grouping, not identity folding.** The id stays the record's own,
+   so links, the frontier and saved endings keep resolving. A new delivery-only
+   block record carries its block, so it is never regrouped.
+
+**Dosing.** No analyzer's staging predicate changes. This changes only how an
+observational follow-up groups and reads a change already made.
+
+**Consequences.** A served legacy Trial keeps its record's own dating: one
+served under its 04:30 slot reads its before period up to 04:30 on the change's
+first night. A legacy change over every slot is served under its 00:00 record
+and still read over that slot, because the record names a slot and no block can
+express the whole day. A change recorded partly per slot before an upgrade and
+partly after is served over the slots its records name.

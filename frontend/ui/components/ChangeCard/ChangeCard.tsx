@@ -3,7 +3,7 @@
 // A Trial: its kind as a caption with its state pill beside it (Maturing, or
 // the result once matured); the setting and its slot as the body-size title,
 // the change date beside them in meta ink; what changed, before → after, as
-// the one figure; its days of evidence as ticks, one per required day, filled
+// the one figure (a whole-profile switch serves no values, so it has none); its days of evidence as ticks, one per required day, filled
 // as they accrue, counted against the days required ("6 / 14"). A matured
 // Trial has every required day, "14 / 14", however long it has run since.
 // Once matured, the engine's Before and After for the glossary metrics, each
@@ -29,7 +29,7 @@
 // desktop, the confirmation popover (§1.3a), its arrow on End.
 import type { ReactNode } from 'react';
 import type { ChangeData, FocusData, OutcomeRow, TrialData } from '../../changes-model';
-import type { Sourced } from '../../fixtures';
+import type { Sourced } from '../../answers';
 import { Delta } from '../../Delta';
 import { Num } from '../../Num';
 import { Button } from '../Button/Button';
@@ -122,16 +122,18 @@ function Trial({ data, onEnd, confirm }: { data: TrialData } & Ends) {
       <h2 className="ui-change__title">
         {data.title}{' '}
         <span className="ui-change__meta">
-          <Num value={data.slot} /> · <Num value={data.changedAt} />
+          {data.slot && <><Num value={data.slot} /> · </>}<Num value={data.changedAt} />
           {data.endedAt && <> – <Num value={data.endedAt} /></>}
         </span>
       </h2>
-      <div className="ui-change__figure">
-        <span className="ui-change__before"><Num value={data.before} /></span>
-        <span className="ui-change__arrow" aria-hidden="true">→</span>
-        <span className="ui-change__after"><Num value={data.after} /></span>
-        <span className="ui-change__units">{data.units}</span>
-      </div>
+      {data.change && (
+        <div className="ui-change__figure">
+          <span className="ui-change__before"><Num value={data.change.before} /></span>
+          <span className="ui-change__arrow" aria-hidden="true">→</span>
+          <span className="ui-change__after"><Num value={data.change.after} /></span>
+          <span className="ui-change__units">{data.change.units}</span>
+        </div>
+      )}
       <Days caption="Days" elapsed={data.daysElapsed} required={data.daysRequired} done={!data.maturing} />
       {matured && <Outcomes rows={data.outcomes} />}
       {data.canEnd && (

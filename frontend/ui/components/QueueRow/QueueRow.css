@@ -26,29 +26,57 @@
 .ui-qrow__body {
   flex: 1;
   min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  display: grid;
+  /* Title and meta | the trailing value | the chevron. A column with nothing
+     in it takes no width; its leading padding is its gap. */
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  row-gap: 6px;
 }
-.ui-qrow__head { display: flex; align-items: center; gap: 8px; }
 .ui-qrow__title {
-  flex: 1;
+  grid-column: 1 / 3;
   min-width: 0;
   font-size: var(--ui-type-body);
   font-weight: var(--ui-weight-strong);
   line-height: 22px;
 }
 .ui-qrow__slot { color: var(--wk-ink-meta); }
-.ui-qrow__chevron { display: flex; color: var(--wk-ink-meta); }
+.ui-qrow__chevron {
+  grid-column: 3;
+  grid-row: 1;
+  align-self: center;
+  display: flex;
+  padding-left: 8px;
+  color: var(--wk-ink-meta);
+}
 
 .ui-qrow__meta {
+  grid-column: 1 / 3;
   display: flex;
   min-width: 0;
   color: var(--wk-ink-body);
   font-size: var(--ui-type-label);
+  line-height: 18px;
   font-variant-numeric: tabular-nums;
 }
 .ui-qrow__magnitude { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* The trailing value (§2.2 caption + value pair, stacked): the caption on the
+   title line, sitting on the value beneath it, left edges aligned. */
+.ui-qrow__body--trailing .ui-qrow__title,
+.ui-qrow__body--trailing .ui-qrow__meta { grid-column: 1; }
+.ui-qrow__caption {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: end;
+  padding: 0 0 2px 12px;
+}
+.ui-qrow__impact {
+  grid-column: 2;
+  grid-row: 2;
+  padding-left: 12px;
+  line-height: 18px;
+}
+.ui-qrow__foot { grid-column: 1 / -1; }
 
 /* Phone: a row under a rule, the meta line clear of the chevron. */
 .ui-qrow--phone {
@@ -56,7 +84,6 @@
   border-top: 1px solid var(--wk-rule);
   background: var(--wk-canvas);
 }
-.ui-qrow--phone .ui-qrow__meta { padding-right: 28px; }
 
 /* Desktop: a list row; selected takes the surface and a leading bar. */
 .ui-qrow--desktop {
@@ -65,7 +92,7 @@
   border-radius: var(--wk-radius);
   background: transparent;
 }
-.ui-qrow--desktop .ui-qrow__body { gap: 8px; }
+.ui-qrow--desktop .ui-qrow__body { row-gap: 8px; }
 .ui-qrow--desktop[aria-current='true'] { background: var(--wk-surface); }
 .ui-qrow--desktop[aria-current='true']::before {
   content: '';
@@ -84,10 +111,9 @@
 
 /* Snoozed: read-only, with Until and Restore on a last line. */
 .ui-qrow--snoozed { cursor: default; }
-.ui-qrow--phone.ui-qrow--snoozed .ui-qrow__meta { padding-right: 0; }
 .ui-qrow__foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .ui-qrow__until { color: var(--wk-ink-meta); font-size: var(--ui-type-label); font-variant-numeric: tabular-nums; }
-.ui-qrow--loading .ui-qrow__body { gap: 10px; }
+.ui-qrow--loading .ui-qrow__body { display: flex; flex-direction: column; gap: 10px; }
 
 /* Mid-swipe: the row slides left over the Snooze reveal, which is drawn only
    while the row is off its rest. */

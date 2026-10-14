@@ -1,6 +1,5 @@
 // ScreenHeader (§4.2): the screen's title and one trailing slot. The slot holds
-// a date ("To 25 May", the data's last day, as content, §1.2), a control, or a
-// labelled action ("+ Log carbs"). An unavailable engine (§1.2) keeps the title
+// a control or a labelled action ("+ Log carbs"). An unavailable engine (§1.2) keeps the title
 // and puts the label "Unavailable" and a compact Retry in the slot. The title is
 // the one dominant line; the slot is quieter, on the same line. Day names the
 // day it shows beside its title, on the title's baseline ("Day Sun 25 May ⌄"),
@@ -13,7 +12,7 @@
 // text-action blue. The title below it keeps the same size and place on every
 // sub-screen.
 import type { ReactNode } from 'react';
-import type { Sourced } from '../../fixtures';
+import type { Sourced } from '../../answers';
 import { Icon } from '../../icons';
 import { Num } from '../../Num';
 import { Button } from '../Button/Button';
@@ -29,7 +28,6 @@ export type ScreenHeaderProps = {
   day?: { weekday: string; date: Sourced<string>; open?: boolean; onToggle?: () => void };
 } & (
   | { trailing?: undefined }
-  | { trailing: 'date'; date: Sourced<string> }
   | { trailing: 'action'; label: string; onAction?: () => void }
   | { trailing: 'control'; control: ReactNode }
   | { trailing: 'unavailable'; onRetry?: () => void }
@@ -38,8 +36,6 @@ export type ScreenHeaderProps = {
 
 function Slot(props: ScreenHeaderProps) {
   switch (props.trailing) {
-    case 'date':
-      return <span className="ui-header__date">To <Num value={props.date} /></span>;
     case 'action':
       return <Button kind="secondary" label={props.label} onClick={props.onAction} />;
     case 'control':

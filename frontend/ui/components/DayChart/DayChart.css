@@ -32,6 +32,8 @@
    the kinds apart. A halo of the canvas keeps a glyph clear of the grid lines
    behind it. */
 .ui-daychart__mark { color: var(--wk-ink-body); }
+/* The engine's marks: the Pattern glyph in the brightest ink. */
+.ui-daychart__mark--pattern { color: var(--wk-ink); }
 /* Food alone takes a colour: meal boluses and logged carbs. */
 .ui-daychart__mark--meal, .ui-daychart__grams--meal { color: var(--ui-meal); }
 .ui-daychart__mark svg { overflow: visible; }
@@ -42,7 +44,21 @@
 .ui-daychart__sleep { fill: var(--wk-ink-meta); fill-opacity: .45; }
 .ui-daychart__sleep-wash { fill: var(--wk-ink); fill-opacity: .035; }
 
-.ui-daychart__basal { fill: var(--wk-ink-meta); fill-opacity: .4; }
+/* Basal against the pump profile (the dashed line): more than programmed in
+   body ink above it, less in a lighter grey below, and a suspend hatched in
+   body ink; the side of the line tells more from less, not the tone alone. */
+.ui-daychart__basal-up { fill: var(--wk-ink-body); fill-opacity: .7; }
+.ui-daychart__basal-down { fill: var(--wk-ink-meta); fill-opacity: .45; }
+.ui-daychart__suspend-stripe { fill: var(--wk-ink-body); }
+.ui-daychart__suspend { stroke: var(--wk-ink-body); stroke-width: 1; }
+.ui-daychart__key-suspend {
+  display: block;
+  width: 12px;
+  height: 10px;
+  box-sizing: border-box;
+  border: 1px solid var(--wk-ink-body);
+  background: repeating-linear-gradient(-45deg, var(--wk-ink-body) 0 1.4px, transparent 1.4px 2.83px);
+}
 .ui-daychart__profile { fill: none; stroke: var(--wk-ink-body); stroke-width: 1.2; stroke-dasharray: 3 2; }
 
 .ui-daychart__scale {

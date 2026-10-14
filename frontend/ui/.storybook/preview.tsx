@@ -1,4 +1,6 @@
 import type { Decorator, Preview } from '@storybook/react-vite';
+// The stories read the generated answers (fixtures.ts serves them).
+import '../fixtures';
 import '../tokens.css';
 import './preview.css';
 

@@ -185,9 +185,9 @@ Trials, each judged on its own half-hour. Connor decided on 2026-10-14 (Q39):
    decision 3). It carries the wrap-aware block and is measured across it
    exactly as a pump-read block Trial is. A change over every slot is one
    whole-day Trial with no slot and no block, read through midnight's slot.
-3. **The roster serves the block.** `GET /api/verify/trials` serves each
-   Trial's `block` — `[start, end)` minutes, or `null` for a whole-day or
-   whole-profile Trial — as `feat/new-app` already does.
+3. **The roster serves the block.** `GET /api/verify/trials` already serves
+   each Trial's `block`, and a delivery-only block Trial's is its grouped
+   block; a whole-day Trial's is `null`.
 4. **Saved per-slot records are grouped when read, never rewritten.** No
    retained record is rewritten (outcomes requirement, ADR 463), so a migration
    that wrote one grouped record and retired six would break the capture-once

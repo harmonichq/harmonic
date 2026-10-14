@@ -1,11 +1,13 @@
 // MetricFigure (§4.2): one CGM metric over the selected window — its label,
-// value and unit — and below it the change against 90 d.
+// value and unit — and below it the change against the period of the same
+// length before it, which the Overview names once on its date line.
 //
 // The change is a Delta (the one change element, shared with ChangeCard): ▲ or
-// ▼ and the amount in the metric's own unit, coloured favourable or adverse by
-// the metric's good direction. A change that prints as zero has no arrow and
-// stays in neutral ink. A metric the engine does not serve
-// shows a dash and no change.
+// ▼ and the amount in the metric's own unit, the difference of the values as
+// printed. Only Below 70 and Above 180 are coloured favourable or adverse; the
+// others keep a neutral arrow. A change that prints as zero has no arrow and
+// stays in neutral ink. A metric the engine does not serve, or a previous
+// period without data, shows no change.
 import { ZoneSwatch } from '../../glucose-zones';
 import { change, type MetricData, type MetricKey } from '../../overview-model';
 import { Delta } from '../../Delta';

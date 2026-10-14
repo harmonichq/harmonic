@@ -854,9 +854,10 @@ class _ReviewTrial:
 
     view: TrialView
     gap_count: int
-    # The captured wrap-aware arc + member starts when this is a block-bound I:C
-    # Trial (#581, #500); ``None`` for every other Trial. Trial-owned identity read
-    # off the change's own two settings reads, never off current settings.
+    # The captured wrap-aware arc when this is a block-bound I:C or basal Trial
+    # (#581, #500, #506), and an I:C Trial's member starts; ``None`` for every
+    # other Trial. Trial-owned identity read off the change's own two settings
+    # reads, never off current settings.
     block: Optional[tuple] = None
     members: Optional[list] = None
 

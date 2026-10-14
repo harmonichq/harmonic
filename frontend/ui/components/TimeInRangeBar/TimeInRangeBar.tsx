@@ -4,7 +4,7 @@
 // 70–180 is labelled "In range" without a number: the figure beside the bar
 // prints it. Each band is its glucose zone's swatch (glucose-zones.tsx), the
 // two severe ends hatched. A band too small to see keeps a 3 px sliver.
-import type { Sourced } from '../../fixtures';
+import type { Sourced } from '../../answers';
 import type { TirBands } from '../../overview-model';
 import { Num } from '../../Num';
 import { ZoneSwatch, type Tone } from '../../glucose-zones';

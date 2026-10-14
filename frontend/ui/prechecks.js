@@ -14,7 +14,8 @@
 //       scale labels are not served values: axis ticks, and the fixed glucose
 //       thresholds a band or a metric is named by ("<54", "54–69", "Below 70",
 //       "10–90%"). A plain number, clock, range or bound inside [data-axis] is
-//       exempt, and nothing else there is.
+//       exempt, signed where a scale runs either side of a line ("+1.9",
+//       "−1.4", the Day chart's basal), and nothing else there is.
 //
 // The Glossary list (inside `.glossary`) is the one place a sentence may
 // appear (§2.3 ban 1): its terms and definitions are §1.5's own text, so (a),
@@ -27,7 +28,7 @@ export const ROLE_MIN_HEIGHTS = { row: 48 };
 
 const WORD = /[A-Za-z][A-Za-z'’-]*/g;
 const SENTENCE = /[A-Za-z][^.!?]*[.!?](\s|$)/;
-const SCALE = /^[<>]?\d+(\.\d+)?([–:]\d+)?%?$/;
+const SCALE = /^[<>+−]?\d+(\.\d+)?([–:]\d+)?%?$/;
 
 /**
  * @param {{texts: {text: string, source: string|null, format?: string|null, axis?: boolean, glossary?: boolean}[], names: string[],

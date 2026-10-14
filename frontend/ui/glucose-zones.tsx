@@ -1,7 +1,7 @@
 // The five clinical glucose zones, as every glucose chart draws them: one tone
 // each from the glucose tokens, and the two severe ends (<54, >250) hatched so
 // they read by pattern as well as colour (§2.3 ban 4). The TimeInRangeBar's
-// swatches, the GlucoseProfile's band and the DayTile's trace all come from
+// swatches, the GlucoseProfile's band and the DayRibbon's trace all come from
 // here, so a zone looks the same wherever it appears.
 import './glucose-zones.css';
 

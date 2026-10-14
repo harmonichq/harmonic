@@ -1,20 +1,26 @@
-// EvidenceChart (§4.2): how a setting slot's nights are distributed by
-// delivered rate — the nights the engine's own evidence rules count, no more.
+// EvidenceChart (§4.2): how a setting's nights are distributed — a basal
+// slot's nights by delivered rate, or the ISF's fasting nights by their fitted
+// ISF — the nights the engine's own evidence rules count, no more.
 //
-// The rate axis spans the band that matters: the current value, the estimate
-// and the engine's range, padded generously and snapped to round ticks. One
-// dot per night at its rate; nights at one rate stack, wrapping into further
-// columns rather than outgrowing the chart. A night beyond the axis is not
-// dropped: the edge it lies past carries their count ("‹ 1"), and it still
-// counts in the card's total; the count sits above the axis end, lifted clear of
-// any stack beneath it. The axis runs the full width, flush with the card's text
-// column: the end tick labels anchor inward and the unit follows the last one.
+// The axis spans the band that matters: the current value, the estimate and
+// the engine's range, padded generously and snapped to round ticks; it goes
+// below 0 only when the range does. One dot per night at its value; nights at
+// one value stack, wrapping into further columns rather than outgrowing the
+// chart. A night beyond the axis is not dropped: the edge it lies past carries
+// their count ("‹ 1"), and it still counts in the card's total. The count sits
+// in a gutter reserved at that end of the axis, level with the dots' first row,
+// and the axis and every mark stop short of it, so a count never touches a dot,
+// the band or a line (§2.5, 2026-10-14); an end with no count reserves nothing.
+// The axis otherwise runs the full width, flush with the card's text column:
+// the end tick labels anchor inward and the unit follows the last one. Every
+// tick keeps its mark, but a label that would run into its neighbour is left
+// out, the last (with the unit) always kept, so no two labels ever touch.
 // Current (dashed, top row) and Estimate (solid,
 // second row) are full-height marks labelled with their word and value; the
 // engine's range is a band behind them in the estimate colour, and the nights
 // inside it draw bright while the rest recede. Left to right is rate, never
 // time.
-import type { Sourced } from '../../fixtures';
+import type { Sourced } from '../../answers';
 import { formatValue } from '../../provenance.js';
 import { useWidth } from '../../measure';
 import '../../shared.css';
@@ -22,8 +28,10 @@ import './EvidenceChart.css';
 
 export type EvidenceChartProps = {
   nights: readonly { rate: Sourced<number> }[];
-  /** The served roster's path, so an edge count can name its nights. */
+  /** The served roster's path and the field each night's value is, so an edge
+   *  count can name its nights. */
   roster: string;
+  field: string;
   current: Sourced<number>;
   estimate: Sourced<number>;
   lo: Sourced<number>;
@@ -40,8 +48,11 @@ const PLOT_HEIGHT = MAX_ROWS * PITCH + 4;
 const AXIS_Y = PLOT_TOP + PLOT_HEIGHT;
 const HEIGHT = AXIS_Y + 22;
 const EDGE_LABEL = 26;  // an edge count's width, "‹ 12" at 13 px
+const EDGE_GUTTER = EDGE_LABEL + 8; // the count and its clearance from the plot
 const LABEL_CHAR = 7.4; // a 13 px Inter character, generously
-const STEPS = [0.01, 0.02, 0.025, 0.05, 0.1, 0.2, 0.25, 0.5, 1];
+const TICK_CHAR = 6.6;  // an 11 px Inter tick character, generously
+const TICK_GAP = 16;    // the least space between two tick labels, so they never read as one
+const STEPS = [0.01, 0.02, 0.025, 0.05, 0.1, 0.2, 0.25, 0.5, 1, 2, 2.5, 5, 10, 20, 25, 50, 100, 200, 250, 500];
 
 /** Round ticks covering [min, max]: the finest step that needs at most five. */
 function ticks(min: number, max: number): { values: number[]; decimals: number } {
@@ -57,6 +68,19 @@ function ticks(min: number, max: number): { values: number[]; decimals: number }
     }
   }
   return { values: [min, max], decimals: 2 };
+}
+
+/** The ticks whose labels are drawn, given each label's [left, right] extent:
+ *  left to right, each that clears the last one kept; then the last tick, which
+ *  carries the unit, displacing any kept label it would touch. */
+function labelledTicks(extents: [number, number][]): Set<number> {
+  const kept: number[] = [];
+  const last = extents.length - 1;
+  for (let i = 0; i < last; i += 1) {
+    if (kept.length === 0 || extents[i][0] >= extents[kept[kept.length - 1]][1] + TICK_GAP) kept.push(i);
+  }
+  while (kept.length && extents[kept[kept.length - 1]][1] + TICK_GAP > extents[last][0]) kept.pop();
+  return new Set([...kept, last]);
 }
 
 /** A mark's label, on the side away from the other mark unless the chart's
@@ -79,23 +103,25 @@ function MarkLabel({ word, value, x, other, row, width, className }: {
   );
 }
 
-export function EvidenceChart({ nights, roster, current, estimate, lo, hi, units }: EvidenceChartProps) {
+export function EvidenceChart({ nights, roster, field, current, estimate, lo, hi, units }: EvidenceChartProps) {
   const [box, width] = useWidth<HTMLDivElement>();
-  // The band that matters, padded generously, snapped outward to round ticks.
+  // The band that matters, padded generously, snapped outward to round ticks;
+  // below 0 only when the range is.
   const marks = [current.value, estimate.value, lo.value, hi.value];
   const low = Math.min(...marks);
   const high = Math.max(...marks);
   const pad = Math.max((high - low) * 0.75, 0.05);
-  const scale = ticks(Math.max(0, low - pad), high + pad);
+  const scale = ticks(lo.value < 0 ? low - pad : Math.max(0, low - pad), high + pad);
   const first = scale.values[0];
   const last = scale.values[scale.values.length - 1];
-  const left = 0;
-  const right = width;
-  const x = (rate: number) => left + (right - left) * ((rate - first) / (last - first));
 
   const inside = nights.map((night) => night.rate.value).filter((rate) => rate >= first && rate <= last);
   const below = nights.filter((night) => night.rate.value < first).length;
   const above = nights.filter((night) => night.rate.value > last).length;
+  // The plot stops short of each end's gutter, when that end has a count.
+  const left = below > 0 ? EDGE_GUTTER : 0;
+  const right = above > 0 ? width - EDGE_GUTTER : width;
+  const x = (rate: number) => left + (right - left) * ((rate - first) / (last - first));
 
   // Histogram stacks: nights whose dots would touch share a bin; a stack taller
   // than the chart wraps into balanced columns.
@@ -112,21 +138,27 @@ export function EvidenceChart({ nights, roster, current, estimate, lo, hi, units
   }
   for (const [bin, count] of bins) {
     const columns = Math.ceil(count / MAX_ROWS);
+    // A wrapped stack at an end of the axis shifts inward, never past the plot.
+    const half = ((columns - 1) / 2) * PITCH;
+    const centre = Math.min(Math.max(bin * PITCH, left + half), right - half);
     for (let i = 0; i < count; i += 1) {
       const column = i % columns;
       dots.push({
-        cx: bin * PITCH + (column - (columns - 1) / 2) * PITCH,
+        cx: centre + (column - (columns - 1) / 2) * PITCH,
         cy: AXIS_Y - 2 - DOT / 2 - Math.floor(i / columns) * PITCH,
         inRange: binRange.get(bin)!,
       });
     }
   }
 
-  // An edge count's baseline: above the axis, or above the tallest dot it covers.
-  const edgeY = (from: number, to: number) => Math.min(AXIS_Y - 6, ...dots
-    .filter((dot) => dot.cx + DOT / 2 >= from && dot.cx - DOT / 2 <= to)
-    .map((dot) => dot.cy - DOT / 2 - 4));
+  // An edge count's baseline: level with the dots' first row, in its gutter.
+  const edgeY = AXIS_Y - 2;
   const lastIndex = scale.values.length - 1;
+  const labelled = labelledTicks(scale.values.map((value, i) => {
+    const at = x(value);
+    const span = (value.toFixed(scale.decimals).length + (i === lastIndex ? 1 + units.length : 0)) * TICK_CHAR;
+    return i === 0 ? [at, at + span] : i === lastIndex ? [at - span, at] : [at - span / 2, at + span / 2];
+  }));
 
   return (
     <div ref={box} className="ui-chart">
@@ -146,13 +178,13 @@ export function EvidenceChart({ nights, roster, current, estimate, lo, hi, units
           className={dot.inRange ? 'ui-evidence__night ui-evidence__night--in' : 'ui-evidence__night'} />)}
       </g>
       {below > 0 && (
-        <text x={0} y={edgeY(0, EDGE_LABEL)} className="ui-evidence__edge">
-          ‹ <tspan data-source={`${roster}[delivered_rate<${first}].length`}>{below}</tspan>
+        <text x={0} y={edgeY} className="ui-evidence__edge" data-edge="below">
+          ‹ <tspan data-source={`${roster}[${field}<${first}].length`}>{below}</tspan>
         </text>
       )}
       {above > 0 && (
-        <text x={width} y={edgeY(width - EDGE_LABEL, width)} textAnchor="end" className="ui-evidence__edge">
-          <tspan data-source={`${roster}[delivered_rate>${last}].length`}>{above}</tspan> ›
+        <text x={width} y={edgeY} textAnchor="end" className="ui-evidence__edge" data-edge="above">
+          <tspan data-source={`${roster}[${field}>${last}].length`}>{above}</tspan> ›
         </text>
       )}
       <g data-axis="">
@@ -160,11 +192,13 @@ export function EvidenceChart({ nights, roster, current, estimate, lo, hi, units
         {scale.values.map((value, i) => (
           <g key={value}>
             <line x1={x(value)} x2={x(value)} y1={AXIS_Y} y2={AXIS_Y + 4} className="ui-evidence__axis" />
-            <text x={x(value)} y={AXIS_Y + 17} textAnchor={i === 0 ? 'start' : i === lastIndex ? 'end' : 'middle'}
-              className="ui-evidence__tick">
-              {value.toFixed(scale.decimals)}
-              {i === lastIndex && <tspan className="ui-evidence__unit"> {units}</tspan>}
-            </text>
+            {labelled.has(i) && (
+              <text x={x(value)} y={AXIS_Y + 17} textAnchor={i === 0 ? 'start' : i === lastIndex ? 'end' : 'middle'}
+                className="ui-evidence__tick">
+                {value.toFixed(scale.decimals)}
+                {i === lastIndex && <tspan className="ui-evidence__unit"> {units}</tspan>}
+              </text>
+            )}
           </g>
         ))}
       </g>

@@ -2,21 +2,23 @@
 // queue-model.ts, every number a Day component prints is built here as a
 // Sourced value naming its field; the chart's marks read the same served rows.
 //
-// `fixtures.day` holds the wearer's timeline and logged carbs for the days its
+// `answers.day` holds the wearer's timeline and logged carbs for the days its
 // generator picked by rule; the prompts are the top-level `prompts`, and
 // `day.prompts` the same wearer's before and after the Day screen's answers.
-import { fixtures, sourced, type Sourced } from './fixtures';
+import { answers, sourced, type Sourced } from './answers';
+import { otherMonths, servedDay } from './overview-model';
 import { MONTHS } from './provenance.js';
 
-export type DayState = keyof typeof fixtures.day.states;
-type ServedDay = typeof fixtures.day.days[keyof typeof fixtures.day.days];
-const servedDays = fixtures.day.days as Record<string, ServedDay>;
+export type DayState = keyof typeof answers.day.states;
+type ServedDay = typeof answers.day.days[keyof typeof answers.day.days];
+const servedDays = () => answers.day.days as Record<string, ServedDay>;
 
 /** Minutes since midnight of a served "YYYY-MM-DD HH:MM:SS" time. */
 export const minuteOf = (t: string) => Number(t.slice(11, 13)) * 60 + Number(t.slice(14, 16));
 
-// The engine's one clinical range, as the glucose profile serves it.
-const RANGE = 'overview.wearer.time_of_day.target_range';
+// The engine's one clinical range, as every window's glucose profile serves it;
+// Day reads the Overview's first window's.
+const RANGE = 'overview.wearer.time_of_day.14.target_range';
 export const targetRange = () => ({
   low: sourced<number>(`${RANGE}.low`),
   high: sourced<number>(`${RANGE}.high`),
@@ -26,15 +28,49 @@ export const targetRange = () => ({
 
 /** A bolus is a meal bolus when it carries carbs, else a correction (the
  *  timeline serves no other type); logged carbs are the manual carb log; a site
- *  change is the pump's own event. */
+ *  change is the pump's own event. A Pattern is a moment the engine counted
+ *  toward a habit (the model-view's anchors), named by the habits' served
+ *  titles; a bolus the engine counted carries those titles itself. */
 export type DayEvent =
   | { kind: 'meal' | 'correction'; minute: number; time: Sourced<string>; insulin: Sourced<number>;
-      carbs: Sourced<number> | null }
+      carbs: Sourced<number> | null; habits: string[] }
   | { kind: 'carbs'; minute: number; time: Sourced<string>; grams: Sourced<number> }
-  | { kind: 'site'; minute: number; time: Sourced<string> };
+  | { kind: 'site'; minute: number; time: Sourced<string> }
+  | { kind: 'pattern'; minute: number; time: Sourced<string>; bg: Sourced<number> | null; habits: string[] };
 
 // The pump event the glossary names, and the only one this timeline draws.
 const SITE_CHANGE = 'Site/Cartridge Change';
+// The habits the engine is cutting (#499): no Day mark is built for them.
+const CUT_HABITS = new Set(['meal_bolus_short', 'high_carb_sequence', 'repeat_eating']);
+
+type ServedModelView = ServedDay['model_view'];
+
+/** The day's moments the engine counted toward a habit, one per minute: an
+ *  anchor that drove its episode's habit (fired) names that habit; one another
+ *  habit's episode claimed (outranked) names the habits its own verdicts
+ *  matched. Anchors of the day before (an episode that crosses midnight) are
+ *  left to that day. */
+function counted(iso: string, view: ServedModelView, root: string) {
+  const byMinute = new Map<number, { t: string; path: string; bg: number | null; habits: string[] }>();
+  view.episodes.forEach((episode, e) => episode.anchors.forEach((anchor, a) => {
+    if (anchor.t.slice(0, 10) !== iso) return;
+    const habits = anchor.state === 'fired'
+      ? (episode.lever && !CUT_HABITS.has(episode.lever) && episode.lever_title ? [episode.lever_title] : [])
+      : anchor.state === 'outranked'
+        ? anchor.verdicts.filter((v) => v.matched && !CUT_HABITS.has(v.classifier)).map((v) => v.title)
+        : [];
+    if (!habits.length) return;
+    const minute = minuteOf(anchor.t);
+    const at = byMinute.get(minute);
+    if (at) {
+      for (const habit of habits) if (!at.habits.includes(habit)) at.habits.push(habit);
+      if (at.bg === null && anchor.bg !== null) Object.assign(at, { bg: anchor.bg, path: `${root}.episodes.${e}.anchors.${a}` });
+    } else {
+      byMinute.set(minute, { t: anchor.t, path: `${root}.episodes.${e}.anchors.${a}`, bg: anchor.bg, habits: [...habits] });
+    }
+  }));
+  return byMinute;
+}
 
 export type DayChartData = {
   low: Sourced<number>;
@@ -43,30 +79,39 @@ export type DayChartData = {
   basal: { minute: number; duration: number; delivered: number; programmed: number }[];
   /** The pump's sleep schedule over this day, in minutes, clipped to it. */
   sleep: { from: number; to: number }[];
-  /** Boluses, logged carbs and site changes, in time order. */
+  /** Boluses, logged carbs, site changes and the moments the engine counted, in time order. */
   events: DayEvent[];
 };
 
 export function dayChart(state: DayState): DayChartData {
-  return dayChartOf(fixtures.day.states[state])!;
+  return dayChartOf(answers.day.states[state])!;
 }
 
 /** The chart of one served day; null for a day whose timeline is not served. */
 export function dayChartOf(iso: string): DayChartData | null {
   const root = `day.days.${iso}`;
-  const day = servedDays[iso];
+  const day = servedDays()[iso];
   if (!day) return null;
-  const { timeline, carbs } = day;
+  const { timeline, carbs, model_view: view } = day;
+  const habits = counted(iso, view, `${root}.model_view`);
   const boluses: DayEvent[] = timeline.boluses.map((b, i) => {
     const path = `${root}.timeline.boluses.${i}`;
+    const minute = minuteOf(b.t);
+    const at = habits.get(minute);
+    habits.delete(minute);
     return {
       kind: b.carbs ? 'meal' : 'correction',
-      minute: minuteOf(b.t),
+      minute,
       time: sourced(`${path}.t`, 'time'),
       insulin: sourced(`${path}.insulin`, 'fixed2'),
       carbs: b.carbs ? sourced(`${path}.carbs`, 'round') : null,
+      habits: at?.habits ?? [],
     };
   });
+  const patterns: DayEvent[] = [...habits.entries()].map(([minute, at]) => ({
+    kind: 'pattern', minute, time: sourced(`${at.path}.t`, 'time'),
+    bg: at.bg === null ? null : sourced(`${at.path}.bg`, 'round'), habits: at.habits,
+  }));
   const logged: DayEvent[] = carbs.carb_entries.map((entry, i) => {
     const path = `${root}.carbs.carb_entries.${i}`;
     return { kind: 'carbs', minute: minuteOf(entry.t), time: sourced(`${path}.t`, 'time'),
@@ -83,7 +128,7 @@ export function dayChartOf(iso: string): DayChartData | null {
     basal: timeline.basal.map((row) => ({ minute: minuteOf(row.t), duration: row.duration_mins,
       delivered: row.basal_rate, programmed: row.profile_basal_rate })),
     sleep: timeline.sleep_windows.map((w) => ({ from: clip(w.start), to: clip(w.end) })).filter((w) => w.to > w.from),
-    events: [...boluses, ...logged, ...sites].sort((a, b) => a.minute - b.minute),
+    events: [...boluses, ...logged, ...sites, ...patterns].sort((a, b) => a.minute - b.minute),
   };
 }
 
@@ -104,7 +149,7 @@ const INSULIN_KEYS: InsulinKey[] = ['basal', 'meal', 'correction', 'control_iq_b
  *  each share is its part ÷ the total as printed, so the shares need not sum
  *  to exactly 100. */
 export function insulinBar(iso: string): InsulinData | null {
-  const totals = servedDays[iso]?.timeline.insulin_totals;
+  const totals = servedDays()[iso]?.timeline.insulin_totals;
   if (!totals) return null;
   const root = `day.days.${iso}.timeline.insulin_totals`;
   return {
@@ -120,7 +165,7 @@ export function insulinBar(iso: string): InsulinData | null {
 // --- Day navigator -----------------------------------------------------------
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const navigator = () => fixtures.overview.wearer.day_navigator;
+const navigator = () => answers.overview.wearer.day_navigator;
 const utc = (iso: string) => new Date(`${iso}T00:00:00Z`);
 const shift = (iso: string, days: number) => {
   const date = utc(iso);
@@ -128,36 +173,57 @@ const shift = (iso: string, days: number) => {
   return date.toISOString().slice(0, 10);
 };
 
-/** The latest day the navigator serves readings for: Day's default. */
+/** The latest day the navigator serves readings for: Day's default. A store
+ *  with no readings yet (before its first sync) has none, and Day opens on the
+ *  served month's last day up to today instead, which the chart shows as
+ *  "No data". */
 export function latestDay(): string {
-  const withData = navigator().days.filter((d) => d.has_data);
-  return withData[withData.length - 1].iso;
+  const { days, month } = navigator();
+  const withData = days.filter((d) => d.has_data);
+  if (withData.length) return withData[withData.length - 1].iso;
+  const today = new Date().toISOString().slice(0, 10);
+  const inMonth = days.filter((d) => d.iso.startsWith(month));
+  const past = inMonth.filter((d) => d.iso <= today);
+  return (past[past.length - 1] ?? inMonth[0] ?? days[0]).iso;
 }
 
 /** The day as Day's header names it: its weekday and served date ("Sun 25 May"). */
 export function dayDate(iso: string): { weekday: string; date: Sourced<string> } {
-  if (!navigator().days.some((d) => d.iso === iso)) throw new Error(`the day navigator serves no ${iso}`);
-  return {
-    weekday: WEEKDAYS[utc(iso).getUTCDay()],
-    date: sourced(`overview.wearer.day_navigator.days[iso=${iso}].0.iso`, 'date'),
-  };
+  const served = servedDay(iso);
+  if (!served) throw new Error(`the day navigator serves no ${iso}`);
+  return { weekday: WEEKDAYS[utc(iso).getUTCDay()], date: sourced(`${served.path}.iso`, 'date') };
 }
 
 /** The Monday-to-Sunday week holding a day, when the navigator serves all of it. */
 export function weekOf(iso: string): string[] | null {
   const monday = shift(iso, -((utc(iso).getUTCDay() + 6) % 7));
   const week = Array.from({ length: 7 }, (_, i) => shift(monday, i));
-  const served = new Set(navigator().days.map((d) => d.iso));
-  return week.every((d) => served.has(d)) ? week : null;
+  return week.every((d) => servedDay(d)) ? week : null;
 }
 
-/** The served month's name, as a date prints its month ("May"). */
-export const monthName = () => MONTHS[Number(navigator().month.slice(5, 7)) - 1];
+/** A month's name, as a date prints its month ("May"). */
+export const monthName = (month: string) => MONTHS[Number(month.slice(5, 7)) - 1];
 
-/** The served month as weeks, Monday first; the navigator's week of padding on
- *  each side fills the first and last rows. */
-export function monthWeeks(): { month: string; weeks: string[][] } {
-  const { month } = navigator();
+/** The month `step` months from `month` (`YYYY-MM`). */
+export function monthBy(month: string, step: number): string {
+  const index = Number(month.slice(0, 4)) * 12 + Number(month.slice(5, 7)) - 1 + step;
+  return `${Math.floor(index / 12)}-${String((index % 12) + 1).padStart(2, '0')}`;
+}
+
+/** Whether the navigator has served a month's weeks: the Overview's, or one the Day screen read. */
+export const monthServed = (month: string) => navigator().month === month || month in otherMonths();
+
+/** The first and last months with readings, as the status serves the data's
+ *  span; the served month alone before there is any. */
+export function monthSpan(): { first: string; last: string } {
+  const { earliest_data_day: first, latest_data_day: last } = answers.status.ok;
+  return first && last ? { first: first.slice(0, 7), last: last.slice(0, 7) }
+    : { first: navigator().month, last: navigator().month };
+}
+
+/** A month as weeks, Monday first; the navigator's week of padding on each
+ *  side fills the first and last rows. */
+export function monthWeeks(month: string): string[][] {
   const weeks: string[][] = [];
   for (let first = `${month}-01`; first.slice(0, 7) <= month;) {
     const week = weekOf(first);
@@ -165,7 +231,7 @@ export function monthWeeks(): { month: string; weeks: string[][] } {
     weeks.push(week);
     first = shift(week[6], 1);
   }
-  return { month, weeks };
+  return weeks;
 }
 
 // --- PromptCard --------------------------------------------------------------
@@ -176,7 +242,7 @@ export const PROMPT_STEPS = ['wearer-pending', 'wearer', 'wearer-answered'] as c
 export type PromptStore = (typeof PROMPT_STEPS)[number];
 
 const promptsPath = (store: PromptStore) => (store === 'wearer' ? 'prompts' : `day.prompts.${store}`);
-const promptsOf = (store: PromptStore) => (store === 'wearer' ? fixtures.prompts : fixtures.day.prompts[store]);
+const promptsOf = (store: PromptStore) => (store === 'wearer' ? answers.prompts : answers.day.prompts[store]);
 
 /** The unanswered prompts: the Day badge and Day's Prompts row. */
 export const unanswered = (store: PromptStore) => sourced<number>(`${promptsPath(store)}[answer=null].length`);
@@ -199,6 +265,9 @@ export function promptPlace(entry: PromptStore, shown: PromptStore = entry) {
 }
 
 export type PromptData = {
+  /** The prompt's identity, as an answer names it. */
+  detector: string;
+  anchorT: string;
   date: Sourced<string>;
   time: Sourced<string>;
   /** The low's own reading, mg/dL. */
@@ -226,6 +295,8 @@ export function lowPrompt(n = 0, store: PromptStore = 'wearer'): PromptData {
     return minute - start;
   };
   return {
+    detector: prompt.detector,
+    anchorT: prompt.anchor_t,
     date: sourced(`${path}.anchor_t`, 'date'),
     time: sourced(`${path}.anchor_t`, 'time'),
     bg: sourced(`${path}.key_bg`, 'round'),
@@ -236,15 +307,29 @@ export function lowPrompt(n = 0, store: PromptStore = 'wearer'): PromptData {
   };
 }
 
+/** Every low prompt still unanswered, in served order. */
+export function lowPrompts(store: PromptStore = 'wearer'): PromptData[] {
+  const count = promptsOf(store).filter((p) => p.detector === 'low' && p.answer === null).length;
+  return Array.from({ length: count }, (_, n) => lowPrompt(n, store));
+}
+
+/** "n / N" while answering the live engine, where no served store holds the
+ *  Prompts as they were: N the unanswered count held from when the Prompts
+ *  opened, and n the shown card's place among them, N less those still to come. */
+export function livePromptPlace(total: Sourced<number>, place: number) {
+  const count: Sourced<number> = { value: place, source: `${total.source} − ${total.value - place}` };
+  return { count, total };
+}
+
 // --- LogCarbsEntry -----------------------------------------------------------
 
 /** A served amount for the filled field: the first entry the wearer logged on
  *  the day the stories show with logged carbs. */
 export function loggedGrams(): Sourced<number> {
-  return sourced(`day.days.${fixtures.day.states.with_carbs}.carbs.carb_entries.0.grams`, 'round');
+  return sourced(`day.days.${answers.day.states.with_carbs}.carbs.carb_entries.0.grams`, 'round');
 }
 
 /** A served time for the edited Time row: when the wearer logged that entry. */
 export function loggedTime(): Sourced<string> {
-  return sourced(`day.days.${fixtures.day.states.with_carbs}.carbs.carb_entries.0.t`, 'time');
+  return sourced(`day.days.${answers.day.states.with_carbs}.carbs.carb_entries.0.t`, 'time');
 }

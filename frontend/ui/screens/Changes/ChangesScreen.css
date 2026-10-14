@@ -12,6 +12,10 @@
 
 .ui-changes__skeleton { height: 220px; }
 
+/* A failed End's bar: above the tab bar, or at the foot of the pane. */
+.ui-changes--phone .ui-changes__bar { padding: 0 16px 8px; }
+.ui-changes--desktop .ui-changes__bar { position: sticky; bottom: 0; max-width: 720px; padding-top: 24px; }
+
 /* Desktop: the rail and one pane, up to a reading width. */
 .ui-changes--desktop { display: grid; grid-template-columns: auto 1fr; height: 100%; }
 .ui-changes__pane { box-sizing: border-box; min-height: 0; overflow-y: auto; padding: 24px 32px; }

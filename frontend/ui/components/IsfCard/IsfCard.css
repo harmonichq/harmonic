@@ -1,0 +1,14 @@
+/* The Setting card's surface, title, figure and facts (SettingCard.css); only
+   what differs is here. */
+.ui-isf__title { display: flex; align-items: baseline; gap: 6px; }
+.ui-isf__title .ui-scard__slot { margin-left: 0; }
+.ui-isf__title .ui-pill { align-self: center; margin-left: 4px; }
+
+/* Three captioned values: Estimate, Range, Fasting nights, each as wide as its
+   value, which never wraps; only a caption may take a second line. */
+.ui-isf__facts { grid-template-columns: repeat(3, auto); justify-content: start; column-gap: 32px; }
+.ui-isf__facts dd { white-space: nowrap; }
+.ui-isf__estimate { color: var(--ui-estimate); font-weight: var(--ui-weight-strong); }
+
+.ui-isf__none { margin: 12px 0 0; color: var(--wk-ink-meta); font-size: var(--ui-type-body); }
+.ui-isf__skeleton { display: block; height: 180px; margin-top: 16px; }

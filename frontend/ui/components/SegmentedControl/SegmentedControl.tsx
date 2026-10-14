@@ -2,7 +2,7 @@
 // 32 px and each segment the §4.1 28 px. A window that lacks coverage is
 // disabled; its label is struck through as well as dimmed, so the state never
 // rests on colour alone (§2.3 ban 4).
-import type { Sourced } from '../../fixtures';
+import type { Sourced } from '../../answers';
 import { Num } from '../../Num';
 import './SegmentedControl.css';
 

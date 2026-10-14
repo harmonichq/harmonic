@@ -4,7 +4,7 @@
 // engine's served decision time; after a write that failed (§1.2), "⚠ Not
 // saved" with Retry. On desktop Undo also answers ⌘Z (§1.4).
 import { useEffect } from 'react';
-import type { Sourced } from '../../fixtures';
+import type { Sourced } from '../../answers';
 import { Num } from '../../Num';
 import { Button } from '../Button/Button';
 import './TransientBar.css';

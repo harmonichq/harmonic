@@ -43,6 +43,8 @@ from .basal_night_evidence import (
     prepare_basal_night_evidence,
     rebuild_basal_night_evidence,
 )
+from .explore_time_of_day import DATA_DAYS as TIME_OF_DAY_DAYS
+from .explore_time_of_day import DEFAULT_DATA_DAYS as TIME_OF_DAY_DEFAULT_DAYS
 from .explore_time_of_day import build_time_of_day
 from .events import CarbEntry, parse_t
 from .model import ModelConfig
@@ -85,20 +87,20 @@ RECOMPUTE_PACE_SECONDS = 0.1
 
 _FRONTEND_BUILD_COMMAND = "npm ci && npm run build"
 
-# The desk is the only browser shell (ADR 416), built ahead of time and served
-# at the root page with its three destinations as page paths and its
-# fingerprinted assets under one prefix. That closed set is what keeps a file on
-# disk from ever shadowing an API route or the shell, and it is mirrored by the
-# browser router (frontend/tab-routing.js) and by the disk-serving mirror the
-# browser gates run against (frontend/built-shell.js). Every retired address —
-# the whole `/v2` prefix and v1's own page paths — answers 404, never a redirect.
+# The app is the only browser shell (ADR 416, #495), built ahead of time and
+# served with its five tabs as page paths — the Queue at the root page, each
+# other tab at its own path — and its fingerprinted assets under one prefix.
+# That closed set is what keeps a file on disk from ever shadowing an API route
+# or the shell, and it is mirrored by the browser router
+# (frontend/tab-routing.js). Every retired address — the desk's Diagnose, the
+# whole `/v2` prefix and v1's own page paths — answers 404, never a redirect.
 _FRONTEND_DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"
 _FRONTEND_INDEX = _FRONTEND_DIST / "index.html"
 _FRONTEND_ASSETS = _FRONTEND_DIST / "assets"
 PAGE = "/"
 ASSETS = "/assets"
-DESTINATIONS = ("diagnose", "changes", "day")
-DESTINATION_PAGES = tuple(f"{PAGE}{destination}" for destination in DESTINATIONS)
+TABS = ("queue", "changes", "overview", "day", "settings")
+TAB_PAGES = (PAGE, *(f"{PAGE}{tab}" for tab in TABS[1:]))
 
 # #269 Guide-KB: the authored how-tos live as markdown here, served raw by
 # ``/api/kb/{slug}``. ``slug`` is restricted to this charset so a request can
@@ -597,11 +599,10 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             )
         return FileResponse(_FRONTEND_INDEX)
 
-    @app.get(PAGE)
     def index():
         return built_shell()
 
-    for _page in DESTINATION_PAGES:
+    for _page in TAB_PAGES:
         app.add_api_route(_page, index, methods=["GET"])
 
     # The shell has one stable URL, so it revalidates on every load. Vite
@@ -610,7 +611,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     async def _frontend_no_store(request, call_next):
         response = await call_next(request)
         path = request.url.path
-        if path == PAGE or path in DESTINATION_PAGES:
+        if path in TAB_PAGES:
             response.headers["Cache-Control"] = "no-cache"
         elif path.startswith(f"{ASSETS}/") and response.status_code == 200:
             response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
@@ -792,14 +793,15 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         raise HTTPException(status_code=503, detail="history inputs changed during every snapshot")
 
     @app.get("/api/explore/time-of-day")
-    def explore_time_of_day_endpoint(_: None = Depends(require_token)) -> dict:
-        """The fixed 30-day, time-of-day evidence feed for Explore (#578)."""
-        def compute() -> dict:
-            with Store.open(db_path) as store:
-                return build_time_of_day(store)
-
-        return fixed_response(fixed(("explore-time-of-day",), "time-of-day-v1",
-                                    lambda store: build_time_of_day(store)))
+    def explore_time_of_day_endpoint(days: int = TIME_OF_DAY_DEFAULT_DAYS,
+                                     _: None = Depends(require_token)) -> dict:
+        """The time-of-day evidence feed (#578) over the last 14, 30 or 90 days;
+        each window is its own fixed result."""
+        if days not in TIME_OF_DAY_DAYS:
+            raise HTTPException(status_code=400,
+                                detail=f"days must be one of {list(TIME_OF_DAY_DAYS)}")
+        return fixed_response(fixed(("explore-time-of-day", days), "time-of-day-v1",
+                                    lambda store: build_time_of_day(store, days=days)))
 
     @app.get("/api/explore/exposures")
     def explore_exposures_endpoint(_: None = Depends(require_token)) -> dict:
@@ -1192,10 +1194,9 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     @app.get("/api/pump-settings")
     def pump_settings_endpoint(_: None = Depends(require_token)) -> dict:
         with Store.open(db_path) as store:
-            snaps = store.settings_snapshots()
-        if not snaps:
+            latest = store.latest_settings_snapshot()
+        if latest is None:
             return {"configured": False}
-        latest = snaps[-1]
         settings = latest.settings
         active = settings.active()
         if active is None:
@@ -1858,7 +1859,12 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             ("outcomes-trend", outcomes_trend_endpoint),
             ("analyze-pooled", lambda: analyze_endpoint(window=30, ignore_changes=False, pool=True)),
             ("scenarios", lambda: scenarios_endpoint(window=30)),
-            ("explore-time-of-day", explore_time_of_day_endpoint),
+            # Every window the Overview switches between: its outcomes (each with
+            # its previous period) and its glucose profile.
+            *((f"outcomes-{days}", lambda days=days: outcomes_endpoint(window=days))
+              for days in TIME_OF_DAY_DAYS),
+            *((f"explore-time-of-day-{days}", lambda days=days: explore_time_of_day_endpoint(days=days))
+              for days in TIME_OF_DAY_DAYS),
             ("exposures", explore_exposures_endpoint),
             ("ic-block-evidence-preparation", ic_block_evidence_preparation),
             ("basal-night-evidence", lambda: basal_night_evidence_preparation(

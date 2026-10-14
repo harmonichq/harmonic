@@ -15,6 +15,11 @@ Status: **exploring** (#481).
   `0b0b78d8`: one page with no scrolling, one time-in-ranges bar for the
   selected window, colour only on Below 70 and Above 180. The operator:
   "locked."
+  Revised 2026-10-14 by the operator's decisions in §2.5: one scrolling page,
+  the summary as its first screenful; the glucose profile follows the window
+  switch and the recent-days strip is gone; an ISF estimate card below the
+  summary; each window compared with the period of the same length before it,
+  its date span on the line under the window switch.
 - **Day screen locked 2026-10-13**: Storybook `Screens/Day` at commit
   `4972898a`: the date in the header as a drop-down month of gapless weeks,
   the current week as a gapless ribbon on desktop, the day's insulin as one
@@ -44,7 +49,7 @@ consolidated brief from the first exploration (2026-10-12) as decision history.
 |---|---|---|
 | **Queue** | The ranked recommendations, from Patterns and Settings, and the Snoozed list. | No logging, no status, no counters. |
 | **Changes** | The active watched change (one Trial or one Focus) and the last finished change. | No history archive. |
-| **Overview** | Standard metrics over 14, 30 and 90 days, the time-in-ranges bars and the time-of-day strip. | No recommendations. |
+| **Overview** | Standard metrics over 14, 30 or 90 days against the period of the same length before, the selected window's time-in-ranges bar and glucose profile, and the ISF estimate. | No Queue items and nothing to act on: the ISF estimate shows the engine's supported change as the Queue's card does, but changes nothing. |
 | **Day** | One day's glucose, insulin and carbs, the day navigator, carb logging and Prompts. | No aggregates beyond that day. |
 | **Settings** | Tandem Source (sync and account), Pump profile and the Glossary. | No preferences the engine doesn't have. |
 
@@ -59,8 +64,9 @@ Phone uses a bottom tab bar, and tablet and desktop use a left rail, with the sa
   - The Settings badge and the root row's inline "⚠ Failed" are the only
     signals elsewhere.
   - No banner, toast or strip on any other screen.
-- **Data as of** is content, not status. It appears as "To 30 Sep" on Overview
-  and as the date on Day.
+- **Data as of** is content, not status. It appears as the selected window's
+  date span on Overview ("30 Sep – 13 Oct", §2.5 2026-10-14) and as the date on
+  Day.
 - **Engine unavailable** (a read endpoint returns 503 or "unavailable"): the
   affected screen shows its title, the label "Unavailable" and a compact
   **Retry**. Other tabs keep working.
@@ -74,13 +80,13 @@ Each row lists a screen's states. Labels only; no state uses prose.
 |---|---|---|---|---|---|
 | Queue | Ranked cards, top card expanded | "0 patterns" label | Card skeletons | Unavailable + Retry | A card expanded; mid-swipe; just snoozed (bar "Snoozed · Until <date>" + Undo); Snoozed footer when N > 0 |
 | Queue · Snoozed | Each snoozed item as its Queue row, plus "Until <date>" + Restore | Not reachable (the footer is hidden at 0) | — | Unavailable + Retry | Restored (row leaves) |
-| Queue · setting detail | current → estimate, range, n, chart | — | Chart skeleton | Unavailable | — |
+| Queue · setting detail | current → estimate, range, n, chart | — | Chart skeleton | Unavailable | A queued ISF: the Overview's ISF card in the Queue's frame (§2.5, 2026-10-14) |
 | Changes | Active Trial or Focus + the last change as one row | "No active change" label | Skeleton | Unavailable + Retry | Maturing; Matured (result pill); last change row expanded in place; **End** (Focus: anytime; Trial: once matured) → confirm sheet → ended |
-| Overview | 14 d selected | "No data" label per window | Skeleton | Unavailable + Retry | 30 d / 90 d selected |
+| Overview | 14 d selected; one scrolling page, the summary (window switch, date span, In range, metrics, glucose profile) its first screenful, the ISF estimate below | "No data" label per window, and in the ISF estimate when none is served | Skeleton; a window not yet read shows its profile's and ISF estimate's skeletons | Unavailable + Retry | 30 d / 90 d selected; a previous period without data (the span alone, no changes); the ISF estimate with a supported change (current → recommended), held, Uncertain, with nights beyond its axis |
 | Day | Latest day with data | "No data" for a day without readings | Chart skeleton | Unavailable + Retry | Month dropped down from the header's day; desktop: the selected week as a ribbon; Prompts row when count > 0 |
 | Day · Prompts | One prompt, "n / N" | Not reachable (the row is hidden at 0) | — | Not saved + Retry | Yes → grams field and keyboard; mid-swipe Not sure |
 | Day · Log carbs | Grams field focused, Time = now | — | Saving | Not saved + Retry | Time edited |
-| Settings | Three rows with inline status | — | — | — | Sync OK (no badge) / Failed (badge) |
+| Settings | Three rows with inline status | — | Skeleton (§2.5) | Unavailable + Retry (§2.5) | Sync OK (no badge) / Failed (badge) |
 | Settings · Tandem Source | Sync rows + account rows | Account "Not set" + Update | — | — | Updating credentials |
 | Settings · Pump profile | The active profile's segments | "No profile" label | — | — | — |
 | Settings · Glossary | Alphabetical terms | — | — | — | — |
@@ -134,7 +140,8 @@ the system's own edge-swipe back is left to the platform, never overridden.
 | **Uncertain** | state | Not yet clear enough to act on: the evidence behind it is thin. |
 | **Peak / Nadir** | noun | The highest or lowest glucose after an event such as a meal, as the median across the events counted, in mg/dL. |
 | **Typical** | noun | The same for the comparison events: similar events that did not end in the Pattern's outcome. |
-| **Glucose profile** | noun | Glucose by time of day over the last 30 days: the median and the 10th–90th percentile spread. |
+| **Glucose profile** | noun | Glucose by time of day over the selected window (14, 30 or 90 days): the median and the 10th–90th percentile spread. |
+| **Fasting** | state | No food and no recent bolus: the nights an ISF estimate is read from. |
 | **Median** | noun | The middle value of the profile at that time of day. |
 | **Yes / No / False low / Not sure** | answer | The answers to whether carbs were eaten for a low. False low marks the reading itself as invalid. |
 | **Log carbs** | verb | Record carbs eaten without a bolus. |
@@ -150,6 +157,7 @@ the system's own edge-swipe back is left to the platform, never overridden.
 | **Site change** | noun | A new infusion site and cartridge, as the pump logged it. |
 | **Insulin** | noun | Everything the pump delivered in a day, basal and boluses together, in units (U). |
 | **Basal** | noun | The insulin the pump delivered steadily through the day, including Control-IQ's changes to the programmed rate. |
+| **Suspend** | noun | A stretch when the pump delivered no basal, whether Control-IQ or you stopped it. |
 | **Meal** | noun | A bolus for carbs, or the carbs part of a bolus. |
 | **Correction** | noun | A bolus you gave to bring glucose down, or the correction part of a meal bolus. |
 | **Control-IQ** | noun | The pump's automatic boluses, as the day's insulin counts them. |
@@ -221,7 +229,7 @@ in §2.
 | State pill | Borderless tinted tag: 18 px, 2 px radius, uppercase 11 px label, the state's tone at 15% fill (Unclear on the rail surface). No outline, so it never reads as a button. Item kinds take no pill: the kind glyph carries Pattern vs Setting. |
 | Badge | 16 px; a count pill or an alert "!". |
 | Caption + value pair | A caption names the value it sits with and reads as one unit with it: stacked, the caption directly above the value, left edges aligned (Nights / Range); or inline, the caption before the value on the value's own baseline (`align-items: baseline`), never centred against it. |
-| Tab bar item / rail item | 44 px target, icon above label. |
+| Tab bar item / rail item | 44 px target, icon above label. The selected item carries Material 3's active indicator: a pill behind the icon, 64 x 32 px on the tab bar and 56 x 32 on the rail, fully rounded, `--primary` at 18%, the icon centred in it and the label below it. The icon and label take the accent. Badges stay top-right of the icon, above the pill. The pill fades and scales in over `--ui-motion-standard` and is instant under reduced motion. |
 | Sheet | Bottom-attached, 12 px top radius, grabber. |
 | Popover | Anchored to its trigger. |
 | Transient bar | Above the tab bar, label and one text action. |
@@ -291,6 +299,8 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   like their original rows looked … we have room to show a little bit more in
   that screen." The Snoozed list draws each item with QueueRow's snoozed state
   (glyph, title, kind pill, magnitude and cause), plus Until and Restore.
+  *Amended 2026-10-14:* the cause is gone from every row, Snoozed included,
+  so a Snoozed row reads glyph, title, magnitude, plus Until and Restore.
 - **2026-10-13 — the state pill is a tinted tag, and kinds take no pill.** The
   operator: "I don't like that the restore button and the pattern pill look
   extremely similar … that goes for all of them." Of three treatments, the
@@ -341,7 +351,7 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   trying to maintain a queue of all past changes in a historical record." The
   most recently ended change is one disclosure row (what changed, when, its
   result) that expands in place into its ended card; there is only ever one.
-- **2026-10-13 — the Overview never scrolls.** The operator: "No scrolling
+- **2026-10-13 — the Overview never scrolls** (reversed 2026-10-14, below). The operator: "No scrolling
   for the overview page." It fits one 390 × 844 phone screen and a 1440 × 900
   desktop pane: three metrics to a row and a shorter glucose-profile plot on
   phone. A story fails if its page overflows. This narrows the one-page
@@ -370,7 +380,7 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   current week is always visible, and you can drop down the month." Of two
   mocked options he chose "4. B". The week strip, the Month sheet and the
   desktop month pane are gone. The day in the header is the control that drops
-  the month down as its weeks, each a DayRibbon (§4.2 DayTile) with every day's
+  the month down as its weeks, each a DayRibbon (§4.2 DayRibbon) with every day's
   counts and %; picking a day closes it. Desktop is one pane, the selected
   week in view as a ribbon under the header (§1.3, §1.4).
 - **2026-10-13 — the day's insulin, split.** The operator: "it would be nice
@@ -399,7 +409,7 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   misread the single screenshot with 3 renderings as a single desktop
   experience so I thought we had duplicated the [right] and left sides of a
   split pane"), and answered "yes restore the traces". The desktop week keeps
-  its traces (§4.2 DayTile, InsulinBar).
+  its traces (§4.2 DayRibbon, InsulinBar).
 - **2026-10-13 — the glossary lists only what the app prints.** The
   operator, on the Glossary page: "Looks good, though isn't 'cause' dropped
   from the frontend?" No built screen prints it. An audit of the text every
@@ -436,6 +446,201 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   opening on the standard easing, instantly or as a 120 ms fade under reduced
   motion.
 
+- **2026-10-13 — a wordmark on the desktop rail, and the mark in the new
+  colours.** No built screen printed "Harmonic", and the desk's orange mark
+  went with the desk (#495). Of the options put to the operator, he chose a
+  wordmark at the top of the desktop rail only: "B but I guess we should
+  change from the existing orange huh?", then, for its colours, "A". The rail
+  opens with the existing mark, an Inter capital H in a 24 px square of 6 px
+  radius, with "Harmonic" at 11 px semibold beneath it, stacked like a rail
+  item above Queue but not one: nothing to press. The square is `--wk-ink`
+  with the H in `--wk-canvas`, and the name is `--wk-ink`, never the accent,
+  which means interactive or selected. The phone's tab bar has no wordmark.
+  The favicon is the same mark in `--primary` with the H in `--on-primary`;
+  the page title stays "Harmonic" (§4.2 NavBar).
+
+- **2026-10-13 — Settings loads and fails like every screen.** The screen
+  inventory (§1.3) gave Settings no Loading or Error state: the lock had none,
+  though its rows are read from the engine like every other screen's. As
+  built (#495), Settings shows its title over a skeleton of the root list
+  while its answers load, and its title, Unavailable and Retry when they
+  cannot be read, as §1.2 has every other screen do. No new words.
+
+- **2026-10-14 — a collapsed row drops its cause, and carries the impact as
+  a delta.** On the collapsed rows the operator asked: "And why are we
+  repeating labels here? … it's the same thing". That first dropped the cause
+  from single-cause rows; the operator then decided: "drop the leading cause
+  entirely." No collapsed row names a cause, whatever its Pattern's causes;
+  the second line is the magnitude alone ("38 of 137 meals"), with the
+  trailing impact value as below. The Snoozed list's rows follow, as they draw
+  with QueueRow's snoozed state. The open card's waffle and legend are
+  unchanged and still name the causes. On the impact, which the 2026-10-13 amendment had kept to the
+  open card: "for the impact number I want a comparison. or a delta maybe?…",
+  and of three mocked rows "the format of B is more to my liking". A Pattern
+  row with an impact ends in a trailing value: Peak (high) or Nadir (low) as a
+  caption on the title line, and beneath it, on the magnitude line, the shared
+  Delta of the Pattern's own value minus Typical (each as the open card prints
+  it), in mg/dL. The pair is stacked, left edges aligned (§2.2). The Delta is
+  neutral ink: the engine judges neither cohort better or worse, so the arrow
+  alone gives the direction. Mock B's two flaws are not carried over: the
+  value fits the row's two lines, so a row is the same height with or without
+  it, and the chevron stays on the title line. A row with no impact (no case
+  file, a standalone habit, a Setting) has no trailing value. The open card
+  keeps its full "Peak 227 · Typical 164 mg/dL" line.
+
+- **2026-10-14 — the selected tab's indicator is Material 3's pill.** The
+  selected item showed a short bar above its icon. The operator: "this
+  selected indicator should I think be underneath the icon on phone, and left
+  or right on tablet and desktop. Unless apple or google design standards have
+  other options which I'm open to." Of the options put to him he chose "A",
+  Material 3's active indicator. A tinted pill sits behind the selected icon,
+  64 x 32 px on the phone tab bar and 56 x 32 on the tablet/desktop rail, fully
+  rounded, `--primary` at 18%, the icon centred in it and the label below.
+  The icon and label keep the accent. The bar above the icon is gone. Targets
+  stay 44 px, the badges stay top-right of the icon above the pill, and the
+  rail wordmark is untouched. The pill fades and scales in over
+  `--ui-motion-standard` on a selection change and is instant under reduced
+  motion. The pill and label overflow the 44 px target by a few px, inside the
+  existing spacing (§2.2 Tab bar / rail item).
+
+- **2026-10-14 — the selected day fills its column, and the month steps.** The
+  operator, on the Day screen's month drop-down: "selected day is nearly
+  impossible to see." The thin bar at the top of the selected day's column is
+  gone. The whole column (weekday, date, its trace segment, counts and %)
+  takes a `--primary` tint at 18% with a 7 px radius, as the NavBar's
+  selection pill does, and its weekday and date are `--primary`; the trace and
+  its glucose zone colours are unchanged and run on across the column, the
+  tint behind them. The fill and the blue date both mark it, so selection
+  keeps a position as well as a colour. It applies in the month drop-down and
+  the desktop week alike (§4.2 DayRibbon). On the same screen: "and month
+  left/right buttons are disabled." ‹ and › now step a month: ‹ is enabled
+  while the month is after the first month with readings, › up to the latest.
+  A month shows the drop-down's skeleton while it is read and, when it cannot
+  be, Unavailable with Retry inside the drop-down. A day picked in another
+  month opens that day, and on desktop the week in view follows the selected
+  day across month boundaries.
+- **2026-10-14 — the glucose profile follows the window; the recent-days strip
+  is gone.** The operator, on a profile fixed at 30 days under a 14 / 30 / 90 d
+  switch: "but then 30d and 90d don't switch it so it feels odd to me", then
+  "21. B". The engine serves the profile for 14, 30 or 90 days
+  (`/api/explore/time-of-day?days=`), the profile shows the selected window's,
+  and the desktop's recent-days strip is removed. Day draws its days as
+  DayRibbon, so the standalone DayTile goes with it (§4.2 DayRibbon,
+  GlucoseProfile).
+- **2026-10-14 — the Overview scrolls as one page.** The operator: "25. B for
+  now sure. We can rethink later". This reverses the 2026-10-13 amendment "the
+  Overview never scrolls": the Overview scrolls as every other screen does
+  (§2.2 Scrolling), and the one-page rule stands, so nothing inside a component
+  scrolls (§2.3 ban 6). The summary (the window switch and its date line, In
+  range, the metrics and the glucose profile) is the first screenful at 390 ×
+  844 and 1440 × 900; what follows it scrolls. The stories that failed on an
+  overflowing page are removed.
+- **2026-10-14 — an ISF estimate on the Overview.** Of the options put to the
+  operator he chose "24 A", "26 B" and "28 A": a card below the summary, titled
+  "ISF" with "estimate", drawing the selected window's evidence as an
+  EvidenceChart: a dot per night's ISF fit, the Estimate line in its Range
+  band, and the Current line. Beneath it, Estimate, Range and Fasting nights
+  (the nights the estimate counts). The Uncertain tag when the engine flags the
+  estimate wide. When the engine supports a change (its one ISF staging verdict),
+  "current → recommended" stands above the chart as on the Queue's Setting card;
+  otherwise there is no figure. The axis goes below 0 only when the Range does.
+  Fasting joins §1.5; Estimate is a plain word, as the chart already prints it
+  (§4.2 IsfCard).
+- **2026-10-14 — an ISF the engine stages is queued, as the Overview's card.**
+  The operator: "I think ISF can show up in the queue if there is an asserted
+  change and then we just use the card design that we came up with basically
+  or a slight modification thereof from the overview page. But I think, well,
+  it can pretty much always exist on the overview page as an estimate, you
+  know what I mean?" The engine queues ISF only when its one ISF staging
+  verdict supports the change (ADR 504); a held, direction-only or
+  unprogrammed ISF stays out of the Queue. A queued ISF's row is the Setting
+  row with no time block (ISF is one fasting value): "ISF", then current →
+  recommended. Open, it is the IsfCard in the Queue's frame: titled "ISF"
+  alone, as its row is, with the figure, the fasting nights' EvidenceChart,
+  Estimate, Range and Fasting nights, and the Setting card's Snooze at its
+  foot. It is changed on the pump, so it has no other action. The Overview's
+  ISF estimate card is unchanged and always shown (§4.2 QueueRow, SettingCard,
+  IsfCard).
+- **2026-10-14 — edge counts sit outside the plot.** The operator, on the
+  nights beyond the axis ("‹ 3", "2 ›"): "clean up how those edge counts are
+  handled, they collide with the data". A count now takes a gutter reserved at
+  its end of the axis, which the axis and every mark stop short of, so it can
+  never touch a dot, the band or a line. The EvidenceChart is shared, and the
+  locked basal Setting card had the same collision (its counts were lifted
+  over the end stacks, inside the plot), so it takes the same rule; a chart
+  with no night beyond its axis reserves no gutter and draws as before (§4.2
+  EvidenceChart).
+- **2026-10-14 — each window against the period before it.** The operator:
+  "do we even need those deltas? I think 14d should compare previous 14 MAYBE?"
+  then "31 A, with the comparison named once in a place that makes sense." Each
+  metric's change is now against the period of the same length just before the
+  window (14 d against the 14 days before it, 30 against 30, 90 against 90),
+  which the engine serves with each window's outcomes, by the same definitions.
+  The colour rule is unchanged: only Below 70 and Above 180 take favourable or
+  adverse colour. A previous period without data shows no changes (§4.2
+  MetricFigure).
+- **2026-10-14 — the window's date span, and the comparison named once.** The
+  operator: "Name a date span entirely, not just a single 'to'". The header's
+  "To 13 Oct" is gone; on the line under the window switch the window's first
+  and last served days print as a span, then the comparison:
+  "30 Sep – 13 Oct · vs previous 14 d". With no data before the window, the
+  span stands alone. "vs" and "previous" are plain words (§1.2, §4.2
+  ScreenHeader).
+
+- **2026-10-14 — the Day chart's basal lane and the engine's marks, as the
+  desk drew them.** The operator, on the redesigned Day chart: "basal lane is
+  nearly useless. can't read shit." then "honestly steal from the desk,
+  whatever we currently have for the day graph is pretty good". He added
+  "Including seeing event triggers." and "by event triggers I also mean
+  ENGINE DATA". The desk's daily chart drew basal not as a rate but as its
+  difference from the programmed rate, around a zero line, with the engine's
+  findings as marks at their time named in its Episode Log; the redesign's
+  lane drew the delivered area under a 30 px scale, where a Control-IQ change
+  of a few tenths of a unit was a pixel. §4.2 DayChart now draws:
+  - **Basal against the Pump profile.** The lane is 72 px on desktop and
+    56 px on the phone (the desk's 13 % of its chart), and its zero line is
+    the Pump profile, dashed. Where Control-IQ delivered more than programmed
+    a bar rises above the line in body ink; less, a lighter grey bar hangs
+    below; nothing delivered (any run of zero-rate rows, as the desk keyed
+    it) reaches down by the whole programmed rate, hatched, and is a
+    **Suspend**, which joins §1.5. Slots of one difference merge into one bar
+    per held command, a gap stays empty, and the linear scale is at least
+    0.3 U/h each side with 15 % headroom, its two signed ticks labelled
+    ("+1.7 U/h", "−1.4"). Above and below are told apart by side as well as
+    tone. Legend: Basal (both tones), Pump profile (the dashed line), and
+    Suspend (hatched) on a day that has one. To keep the Day pane inside
+    its 1440 × 900 frame (Appendix §2, rule 7) with the taller lane and the
+    Pattern row, the desktop glucose plot gives up 55 px (260 → 205 px),
+    close to the desk's own three to one of glucose to basal; the phone's
+    plot is unchanged.
+  - **The engine's marks.** Each moment the engine counted toward a habit on
+    that day, read from `/api/model-view?date=` (the desk's own read), takes
+    the Pattern glyph on a new top row of the marks lane, at its time, above
+    the bolus and carbs rows. A moment that drove its episode's habit
+    (`state` fired) is named by the episode's served `lever_title`; one
+    another habit's episode claimed (`outranked`) by the served titles of the
+    verdicts it matched itself. Nothing the engine only checked, or found
+    clean, is marked. The names are visible, never hovered (§1.4): a bolus
+    the engine counted carries them in its event-list row ("13:10 Meal ·
+    Carb undercount  30 g  3.53 U"), and any other moment (a low, a high) is
+    its own row, the Pattern glyph, its habits and its reading in mg/dL.
+    The habits the engine is cutting (Meal bolus fell short, High-carb
+    sequence, Repeat eating) are never marked. Legend: Pattern, on a day
+    that has one.
+  - **Not carried over.** The desk's hover tooltip (the delivered and
+    programmed rates, the command's length): §1.4 bans hover-only content,
+    and the signed scale and the bars carry the same reading. Its rate
+    source, which the timeline serves as `basal[].delivery_type`: the desk
+    drew it nowhere but the tooltip, and a zero rate already shows a
+    suspend. Its fasting and exercise ribbons and its other pump-event pins
+    (User Suspended, Exercise): fasting is not a §1.5 term, the simulated
+    wearer the stories draw serves no Exercise or User Suspended event to
+    check them against, and a user suspension already reads as a Suspend in
+    the basal lane. The phone's collapsed basal accordion: the lane stays
+    open on the phone, since nothing on Day is hover- or tap-revealed.
+    Episodes, the desk's near-miss rings and its rescue mark stay out with
+    the episode drill-in (§2.6).
+
 ### 2.6 Deferred (not cut)
 Not built in the current screens. The engine still serves what each needs, and
 nothing is removed from the engine or the fixtures for them.
@@ -453,7 +658,7 @@ nothing is removed from the engine or the fixtures for them.
 
 ## 4. Component inventory (approved 2026-10-12)
 
-Twenty-one components. Screens are composed only from these. Every state listed
+Twenty-two components. Screens are composed only from these. Every state listed
 gets a Storybook story in step 3. "Fields" are the only served data a component
 may display; derived values name their formula in the provenance table.
 
@@ -479,23 +684,30 @@ unless noted. Loading is a skeleton of the component's own shape.
 **Shell**
 
 1. **NavBar**: the phone tab bar and the desktop/tablet rail; five items, an
-   icon above a label.
+   icon above a label; the selected item has a pill behind its icon (§2.5,
+   2026-10-14).
    - States: default; item selected; with a count badge; with an alert badge.
    - Fields: `prompts` length (Day count); `status.last_error` and
      `status.last_success_at` (Settings alert).
-   - Desktop: the rail, with the same items and badges.
+   - Desktop: the rail, with the same items and badges, opened by the
+     wordmark (§2.5, 2026-10-13).
    - Glyphs: Queue, Changes, Overview, Day, and a gear for Settings. The
      sliders glyph belongs to the Setting kind.
-2. **ScreenHeader**: the screen title plus one trailing slot (a date, a
-   control, or a labelled action).
-   - States: default; with date; with action ("+ Log carbs"); drill-down
-     ("‹ Parent" back control above the title, §2.2).
-   - Fields: `outcomes_*.span_end` (date).
+2. **ScreenHeader**: the screen title plus one trailing slot (a control, or a
+   labelled action).
+   - States: default; with action ("+ Log carbs"); drill-down
+     ("‹ Parent" back control above the title, §2.2). The Overview's date
+     moved under its window switch (§2.5, 2026-10-14).
+   - Fields: none of its own.
    - Desktop: the same, at the top of each pane; a drill-down's back control
      sits in the header of the pane that owns it.
 3. **SegmentedControl**: 14 / 30 / 90 d.
    - States: each option selected; disabled (window lacks coverage).
    - Fields: `outcomes_*.coverage.days`.
+   - On the Overview, the line beneath it is the window's date span and its
+     comparison: "30 Sep – 13 Oct · vs previous 14 d", or the span alone when
+     the previous period has no data. Fields: `outcomes_*.span_start,
+     span_end`, `outcomes_*.previous.window_days, span_start`.
    - Desktop: the same, full width of its group.
 4. **Button**, in the roles from §4.1.
    - States: default; pressed; focused; disabled; busy.
@@ -517,14 +729,24 @@ unless noted. Loading is a skeleton of the component's own shape.
 7. **QueueRow**: a collapsed recommendation, with a leading 20 px kind glyph
    (Pattern: rising dots; Setting: sliders; named "Pattern" / "Setting" for
    assistive tech, and no kind pill), its title, one magnitude
-   ("9 of 71 lows") and a cause label.
-   - States: default; selected (desktop); mid-swipe (snooze reveal);
-     setting (current → suggested replaces the
-     magnitude); snoozed (read-only: no chevron, swipe or selection; a last
-     line "Until <date>" + Restore); loading.
+   ("9 of 71 lows") and no cause (§2.5, 2026-10-14: "drop the leading cause
+   entirely"; the open card names the causes). A Pattern with an impact ends in a trailing value:
+   the caption Peak (high) or Nadir (low) on the title line, and beneath it
+   the shared Delta (▲ / ▼ and the amount, neutral ink) of own − Typical as
+   printed, with mg/dL. The row is two lines with or without it, and the
+   chevron sits on the title line (§2.5, 2026-10-14).
+   - States: default (multi-cause, no cause named); selected (desktop);
+     mid-swipe (snooze reveal); single cause (the same row; the no-cause
+     state is retired with the overnight Pattern, ADR 499);
+     with impact, high (Peak) or
+     low (Nadir); without impact (no trailing value); setting (current →
+     suggested replaces the magnitude; a queued ISF's row has no time block,
+     §2.5 2026-10-14); snoozed (read-only: no chevron, swipe
+     or selection; a last line "Until <date>" + Restore); loading.
    - Fields: `guidance.candidates[].title, kind, priority, admitted,
-     preference`; `findings.outcome_patterns[].k, n` and the noun; the top
-     cause lever from `findings.rows[].fold_sentences`.
+     preference`; `findings.outcome_patterns[].k, n` and the noun; the
+     impact as
+     PatternCard reads it, its delta the derived `own − typical`.
    - Desktop: a list row that selects into the detail pane. Snooze is an icon
      the open card's Snooze text action (shortcut S); there's no swipe.
 8. **PatternCard**: the open pattern, showing the magnitude, a CauseWaffle,
@@ -552,25 +774,36 @@ unless noted. Loading is a skeleton of the component's own shape.
     type, the time block as its title, a compact EvidenceChart, the evidence
     count ("30 nights") and one Range. No button.
     - States: default; range collapsed (lo = hi, single value shown);
-      matured into a Trial (Changes link).
+      matured into a Trial (Changes link): the block lies in a matured basal
+      Trial's served block (#506), whether or not it starts where the Trial
+      starts.
     - Snooze: a text action centred at the card's foot.
     - Fields: `analyze.basal[slot].current, estimate.value, estimate.lo, hi,
-      days`, plus their ISF/carb-ratio equivalents.
+      days`, plus their carb-ratio equivalents. A queued ISF opens into the
+      IsfCard instead (§2.5, 2026-10-14).
     - Desktop: fills the detail pane up to 720 px.
-11. **EvidenceChart**: the setting's slot evidence, showing the nights'
-    delivered rate against current and suggested.
-    - States: default; zero variance (a compact strip).
-    - Fields: `analyze.basal[slot].evidence.night_roster`.
+11. **EvidenceChart**: a setting's evidence, one dot per night against current
+    and the estimate in its range: a basal slot's delivered rate, or an ISF
+    fasting night's fit.
+    - States: default; zero variance (a compact strip); nights beyond the
+      axis, counted ("‹ 3", "2 ›") in a gutter reserved at that end, outside
+      the plot (§2.5, 2026-10-14).
+    - The axis covers the marks, padded; it goes below 0 only when the range
+      does. Every tick keeps its mark, but a tick label that would touch its
+      neighbour is left out; the last, which carries the unit, always shows.
+    - Fields: `analyze.basal[slot].evidence.night_roster`;
+      `analyze.isf[0].evidence.night_fits[].isf`.
     - Desktop: wider, same marks.
 
 **Overview**
 
-12. **GlucoseProfile**: 24 h, 30 d. Shows the median, the 10–90% spread, the
-    above-180 tint, the 70/180 lines with a 250 tick, meal density, and one
-    Median callout.
-    - States: default; insufficient data ("No data").
-    - Fields: `time_of_day.pooled.bins[]` (median, p10, p90), `pooled.meals`,
-      `target_range`.
+12. **GlucoseProfile**: 24 h over the selected window (14, 30 or 90 d). Shows
+    the median, the 10–90% spread, the above-180 tint, the 70/180 lines with a
+    250 tick, meal density, and one Median callout.
+    - States: default; insufficient data ("No data"); not yet read (its
+      skeleton).
+    - Fields: `time_of_day[days].window.data_days`, `pooled.bins[]` (median,
+      p10, p90), `pooled.meals`, `target_range`.
     - Desktop: full pane width.
 13. **TimeInRangeBar**: five AGP bands, each labelled; 70–180 labelled
     "In range".
@@ -578,22 +811,44 @@ unless noted. Loading is a skeleton of the component's own shape.
     - Fields: `outcomes_*.metrics.tbr_lvl1, tbr_lvl2, tir, tar_lvl1, tar_lvl2`
       (bands derived as differences).
     - Desktop: the same.
-14. **MetricFigure**: a value, its unit, and its change against 90 d (arrow,
-    better/worse colour, units).
-    - States: better; worse; unchanged (neutral); not available.
+14. **MetricFigure**: a value, its unit, and its change against the previous
+    period of the same length (arrow, units; better/worse colour only on Below
+    70 and Above 180), the difference taken between the values as printed.
+    - States: better; worse; unchanged (neutral); not available; no previous
+      data (no change).
     - Fields: `outcomes_*.metrics.tir, mean_glucose, gmi, cv, tbr_lvl1,
-      tar_lvl1`.
+      tar_lvl1`, and the same under `outcomes_*.previous.metrics`.
     - Desktop: the same, in a row.
-15. **DayTile**: a weekday and date, sparkline over the 70–180 band, ▽/△
-    counts or ✓, and in-range %.
-    - States: default; selected; clean (✓); no data.
+15. **DayRibbon**: a week of days, gapless, on one band with one trace that
+    runs on from day to day, hairline dividers, and each day's weekday and
+    date above and ▽/△ counts or ✓ and in-range % beneath; each day picks
+    itself.
+    - States: default; selected; a week without readings.
     - Fields: `day_navigator.days[]`.
-    - Desktop: the Overview's recent-days strip.
-    - Day draws the same days as a **DayRibbon**: a week of them, gapless, on
-      one band with one trace that runs on from day to day, hairline dividers,
-      and each day's weekday and date above and counts and % beneath; each day
-      picks itself. States: default; selected; a week without readings. Day's
-      month is its weeks stacked; desktop keeps the selected week in view.
+    - Day's month is its weeks stacked, with ‹ › stepping to the previous and
+      next month (loading, or Unavailable with Retry, while a month is not
+      read); desktop keeps the selected week in view, across months. Selected:
+      the whole column takes a `--primary` tint at 18%, 7 px radius, behind the
+      trace, and its weekday and date are `--primary`; no bar. (The standalone
+      DayTile went with the Overview's recent-days strip, §2.5 2026-10-14.)
+
+22. **IsfCard**: the ISF estimate for the selected window, below the
+    Overview's summary. The title "ISF" with "estimate", and the Uncertain
+    pill when the estimate is wide; "current → recommended" in figure type
+    only when the engine supports the change; an EvidenceChart of the fasting
+    nights' fits; then Estimate, Range and Fasting nights as captioned values.
+    - States: supported change; held (no figure); Uncertain; nights beyond the
+      axis; no data ("No data"); not yet read (its skeleton).
+    - Fields: `analyze.isf[0].current, recommended, asserts_move,
+      estimate.value, lo, hi, wide, n_clusters,
+      evidence.night_fits[].isf`, read from `/api/analyze?window=N`.
+    - Desktop: the width of the Overview's body, below its summary.
+    - In the Queue (§2.5, 2026-10-14): the open card of a queued ISF, the
+      engine's default window (`/api/analyze`). The title is "ISF" alone;
+      the figure always stands (the engine queues ISF only with its staging
+      verdict); Snooze is a text action centred at its foot, as on the
+      SettingCard; no other action. Phone: in its row's place. Desktop:
+      fills the detail pane up to 720 px.
 
 **Changes**
 
@@ -614,12 +869,18 @@ unless noted. Loading is a skeleton of the component's own shape.
 
 **Day**
 
-17. **DayChart**: one day. Shows glucose with the 70–180 band, bolus markers
-    (meal / correction), basal delivered against programmed, logged-carb
-    markers, and an event list below.
+17. **DayChart**: one day. Shows glucose with the 70–180 band, a marks lane
+    (a Pattern glyph at each moment the engine counted toward a habit, above
+    the meal / correction and logged-carb markers), basal as its difference
+    from the Pump profile (above, below, Suspend hatched, on a signed U/h
+    scale; §2.5, 2026-10-14), and an event list below, where a counted bolus
+    carries its habits' titles and any other counted moment is its own
+    Pattern row with its reading.
     - States: default; no data; with logged carbs.
     - Fields: `timeline.cgm, boluses, basal, pump_events, sleep_windows`;
-      `carbs.carb_entries`.
+      `carbs.carb_entries`; `model_view.episodes[].lever, lever_title,
+      anchors[].t, state, bg, verdicts[].classifier, matched, title`
+      (`/api/model-view?date=`).
     - Desktop: wide, under the selected week's DayRibbon.
 18. **PromptCard**: one low prompt, showing "Low · <date time> · <mg/dL>",
     its sparkline, Yes · No · False low, and on phone Not sure as a text

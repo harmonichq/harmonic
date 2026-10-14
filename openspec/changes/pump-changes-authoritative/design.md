@@ -96,3 +96,66 @@ the code path, not run against the operator's store: the next reconcile of an
 existing store records every past pump change the old rule dropped. Those beyond
 their 28-day window end at once, so history gains records it should always have
 had. The 2026-10-12 carb-ratio change should become the active Trial.
+
+## ADR 506 — A basal pump change is measured across its whole block
+
+**Context.** ADR 500 decision 2 made each block a targeted pump change moved
+its own Trial, and gave a carb-ratio block its wrap-aware arc as identity and
+cohort. A basal block got only its starting slot. The comparison then read every
+basal outcome — time in range, time below range, time above range, Rest windows
+with a low — and the readiness count of qualifying clean nights over that one
+30-minute slot. A 02:00–05:00 basal change was judged on 02:00–02:30, before the
+insulin acts; the lows it targets sit at 04:00–05:00 and were never counted.
+Connor decided on 2026-10-14: "I do believe it is reasonable [for a trial to
+cover more than a 30-minute block]... for example, I could change my insulin
+to carb ratio from noon to seven, and that would cover more than just a
+30-minute block."
+
+**Decision.** This amends ADR 500 decision 2.
+
+1. **A basal block owns its arc.** A targeted basal pump change carries the
+   wrap-aware `[start, end)` block the two settings reads show moving, the same
+   shape a carb-ratio block carries, and the retained record keeps it. A basal
+   block carries no member starts; those stay a carb-ratio annotation.
+2. **Every basal outcome and its readiness read the whole block.** The
+   comparison's population is the coverage-qualified Rest windows clipped to the
+   block on each date, across midnight when the block wraps. Readiness counts
+   qualifying clean nights for every slot inside the block, and the setting
+   history that bounds both periods is the block's. The served Trial evidence
+   reads its time in range and time below range over the block's readings. A
+   slotted basal Trial with no block still reads its one slot.
+3. **Identity does not move.** A basal block Trial keeps the slotted id a basal
+   pump change has always had. The block's end minute is not folded into it as a
+   carb-ratio block's is, because one pump change never yields two basal blocks
+   from one start, and folding it in would orphan every basal record already
+   saved. `same_change` already matches on block, and a delivery-detected basal
+   change still has none.
+4. **A record saved without its block is read through its own reads.** No
+   retained record is rewritten (outcomes requirement, ADR 463). A basal record
+   saved at a pump change before this carries no block, so the comparison takes
+   the block the two reads either side of its own change show moving from its
+   slot, with its before and after. It never reads the current settings, so a
+   later repartition cannot retarget it.
+5. **What stays carb-ratio-only.** The meal cohort is a carb-ratio block's: a
+   basal Trial's meals and post-meal arc stay period-wide context. A basal Trial
+   matures on the clock, because a change read after its block's hours would
+   otherwise count its own day as a data gap. The Plan-group annotation, the
+   pump-read Plan link exclusion and the delivery-regime reversal skip stay keyed
+   to a carb-ratio block, so a basal block Trial still links to a confirmed Plan,
+   and its lead slot's delivery reversal is still read.
+6. **Whole-day and whole-profile Trials are unchanged.** A whole-day basal change
+   already read every slot and every Rest window, and a whole-profile Trial reads
+   the whole period.
+
+**Dosing.** No analyzer's staging predicate changes. This changes only what an
+observational follow-up reads after a change has been made. A basal Trial's
+verdict now counts the lows inside its block, so a change that worsened them
+reads `concerning` where it read `unclear` before.
+
+**Consequences.** Each basal Trial with a block longer than 30 minutes is
+reassessed on its whole block at the next read; a saved ending's assessment
+stays as it was captured. The synthetic QA cases' basal Trials move only
+03:00–03:30, so their verdicts are unchanged. A basal change seen only in
+delivery history is still one Trial per slot, measured over that slot: the feed
+names no block, and grouping those slots would change the identity of records
+already saved under it.

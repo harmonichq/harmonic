@@ -42,7 +42,7 @@ import {
   promptPlace, unanswered, weekOf, type PromptStore,
 } from '../../day-model';
 import { day as navigatorDay } from '../../overview-model';
-import { useMotionGate } from '../../motion';
+import { useMotionGate, usePresence } from '../../motion';
 import { Num } from '../../Num';
 import { Button } from '../../components/Button/Button';
 import { DayChart } from '../../components/DayChart/DayChart';
@@ -89,13 +89,15 @@ const SAVE_MS = 600;
 const week = (iso: string) => weekOf(iso)!.map(navigatorDay);
 
 /** The month, dropped down from the header's day: its name, ‹ ›, and its weeks. */
-function Month({ layout, selected, onSelect, left }: {
+function Month({ layout, selected, onSelect, left, exit }: {
   layout: Layout; selected: string; onSelect: (iso: string) => void; left?: number;
+  /** Closing: what usePresence marks it with. */
+  exit: object;
 }) {
   return (
     <section className={layout === 'phone' ? 'ui-dayscreen__month ui-dayscreen__month--phone'
       : 'ui-popover ui-dayscreen__month ui-dayscreen__month--desktop'} style={{ left }}
-      role="dialog" aria-label={monthName()}>
+      role="dialog" aria-label={monthName()} {...exit}>
       <div className="ui-dayscreen__month-head">
         <h2 className="ui-dayscreen__month-name">{monthName()}</h2>
         <span className="ui-dayscreen__steps">
@@ -238,31 +240,37 @@ export function DayScreen({
         swiping={swiping && !recordedNow} onAnswer={answer} onNext={() => advance(step)} />
     </div>
   );
-  const bar = view === 'prompts' && failed && (
-    <TransientBar kind="not_saved" layout={layout} onRetry={() => { fails.current = false; answer(failed); }} />
+  // What is open stays while it closes: the bar, the month, the sheet.
+  const barShown = usePresence(view === 'prompts' && failed);
+  const bar = barShown.value && (
+    <div className="ui-dayscreen__bar" {...barShown.exit}>
+      <TransientBar kind="not_saved" layout={layout}
+        onRetry={() => { fails.current = false; answer(barShown.value as Answer); }} />
+    </div>
   );
 
-  const dropped = month && state !== 'unavailable' && view === 'day';
+  const dropped = usePresence(month && state !== 'unavailable' && view === 'day');
+  const sheet = usePresence(carbs !== null && state === 'ready' && view === 'day' && carbs);
 
   if (layout === 'phone') {
     return (
       <div ref={root} className="ui-dayscreen ui-dayscreen--phone">
-        {dropped && <div className="ui-scrim ui-dayscreen__scrim" onClick={() => setMonth(false)} />}
+        {dropped.value && <div className="ui-scrim ui-dayscreen__scrim" onClick={() => setMonth(false)} {...dropped.exit} />}
         <div className="ui-dayscreen__head" data-push={push}>
           {header}
-          {dropped && <Month layout="phone" selected={selected} onSelect={select} />}
+          {dropped.value && <Month layout="phone" selected={selected} onSelect={select} exit={dropped.exit} />}
         </div>
         <main className="ui-dayscreen__main" data-scroll="page" data-push={push}>
           <div key={`${view}-body`} className="ui-dayscreen__body ui-push">
             {state !== 'unavailable' && (view === 'prompts' ? prompt() : dayContent)}
           </div>
         </main>
-        {bar && <div className="ui-dayscreen__bar">{bar}</div>}
+        {bar}
         <NavBar layout="tabbar" selected="day" dayCount={count} />
-        {carbs !== null && state === 'ready' && view === 'day' && (
-          <div className="ui-scrim ui-dayscreen__scrim ui-dayscreen__scrim--sheet" onClick={closeCarbs}>
+        {sheet.value && (
+          <div className="ui-scrim ui-dayscreen__scrim ui-dayscreen__scrim--sheet" onClick={closeCarbs} {...sheet.exit}>
             <div onClick={(event) => event.stopPropagation()}>
-              <LogCarbsEntry layout="phone" {...entryProps} />
+              <LogCarbsEntry layout="phone" {...entryProps} state={sheet.value} />
             </div>
           </div>
         )}
@@ -275,7 +283,7 @@ export function DayScreen({
       <section className="ui-dayscreen__pane" data-scroll="page" data-push={push}>
         <div ref={headRef} className="ui-dayscreen__pane-head" data-push={push}>
           {header}
-          {dropped && <Month layout="desktop" selected={selected} onSelect={select} left={anchor} />}
+          {dropped.value && <Month layout="desktop" selected={selected} onSelect={select} left={anchor} exit={dropped.exit} />}
         </div>
         {state !== 'unavailable' && (
           <div key={`${view}-body`} className="ui-dayscreen__body ui-push">
@@ -287,7 +295,7 @@ export function DayScreen({
             )}
           </div>
         )}
-        {bar && <div className="ui-dayscreen__bar">{bar}</div>}
+        {bar}
       </section>
     </div>
   );

@@ -85,3 +85,7 @@
 .ui-dayscreen .ui-header__control { display: flex; justify-content: flex-end; }
 .ui-dayscreen .ui-logcarbs-anchor { position: relative; }
 .ui-dayscreen .ui-popover.ui-logcarbs { position: absolute; top: 100%; right: 0; z-index: 1; }
+[data-motion] [data-closing].ui-dayscreen__month--phone {
+  translate: 0 calc(-1 * var(--ui-motion-rise) * var(--ui-motion-move));
+  opacity: 0;
+}

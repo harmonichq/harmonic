@@ -14,11 +14,13 @@
 // which the story does not draw. Desktop: a popover anchored under its
 // "+ Log carbs" trigger, its arrow on the trigger; the trigger opens and closes
 // it, and at a header's trailing edge both align to that edge.
+import { useRef } from 'react';
 import type { Sourced } from '../../fixtures';
 import { Num } from '../../Num';
 import { GramsField } from '../../GramsField';
 import { Button } from '../Button/Button';
 import '../../shared.css';
+import { usePresence } from '../../motion';
 import './LogCarbsEntry.css';
 
 export type LogCarbsState = 'empty' | 'filled' | 'saving' | 'not_saved';
@@ -69,6 +71,10 @@ function Entry({ state, grams, time, onGramsChange, onSave }: EntryProps) {
 }
 
 export function LogCarbsEntry({ layout = 'phone', open = true, onToggle, align = 'start', ...entry }: LogCarbsEntryProps) {
+  // Desktop: the popover stays while it closes, holding what it showed.
+  const shown = usePresence(open);
+  const held = useRef(entry);
+  if (open) held.current = entry;
   if (layout === 'phone') {
     return (
       <section className="ui-sheet ui-logcarbs" role="dialog" aria-label="Log carbs">
@@ -80,10 +86,10 @@ export function LogCarbsEntry({ layout = 'phone', open = true, onToggle, align =
   return (
     <div className={`ui-logcarbs-anchor ui-logcarbs-anchor--${align}`}>
       <Button kind="secondary" label="+ Log carbs" onClick={onToggle} />
-      {open && (
+      {shown.value && (
         <section className={`ui-popover ui-logcarbs${align === 'end' ? ' ui-popover--end' : ''}`} role="dialog"
-          aria-label="Log carbs">
-          <Entry {...entry} />
+          aria-label="Log carbs" {...shown.exit}>
+          <Entry {...held.current} />
         </section>
       )}
     </div>

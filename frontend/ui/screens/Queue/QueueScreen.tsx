@@ -25,7 +25,7 @@
 import { useEffect, useState } from 'react';
 import type { Sourced } from '../../fixtures';
 import { sourced } from '../../fixtures';
-import { useMotionGate } from '../../motion';
+import { useMotionGate, usePresence } from '../../motion';
 import { Num } from '../../Num';
 import {
   queuedCount, ranking, snoozed, snoozedCount, type QueueItem, type QueueStore,
@@ -58,25 +58,44 @@ export type QueueScreenProps = {
 
 const dayCount = sourced<number>('prompts[answer=null].length');
 
-function Row({ item, layout, selected, swiping, onSelect, until }: {
+function Row({ item, layout, selected, swiping, onSelect, onSnooze, until }: {
   item: QueueItem; layout: Layout; selected?: boolean; swiping?: boolean; onSelect?: () => void;
+  /** Phone: a full swipe snoozes the row. */
+  onSnooze?: () => void;
   /** A Snoozed list row: its served Until, with Restore. */
   until?: Sourced<string>;
 }) {
   const snoozed = until && { until };
   if (item.kind === 'setting') {
     return <QueueRow kind="setting" title={item.data.title} setting={item.data} layout={layout}
-      selected={selected} swiping={swiping} onSelect={onSelect} snoozed={snoozed} />;
+      selected={selected} swiping={swiping} onSelect={onSelect} onSnooze={onSnooze} snoozed={snoozed} />;
   }
   return <QueueRow kind="pattern" title={item.data.title} magnitude={item.data.magnitude!}
     cause={item.data.causes[0]?.title} layout={layout} selected={selected} swiping={swiping} onSelect={onSelect}
-    snoozed={snoozed} />;
+    onSnooze={onSnooze} snoozed={snoozed} />;
 }
 
 function Card({ item, layout, onSnooze }: { item: QueueItem; layout: Layout; onSnooze: () => void }) {
   return item.kind === 'setting'
     ? <SettingCard data={item.data} onSnooze={onSnooze} />
     : <PatternCard data={item.data} onSnooze={onSnooze} collapsible={layout === 'phone'} />;
+}
+
+/** Phone: an item is its row, or its card in the row's place while open. A card
+ *  the person opens grows out of its row, and a card that closes shrinks back
+ *  into it before the row returns. */
+function PhoneItem({ item, open, grows, swiping, onSelect, onSnooze }: {
+  item: QueueItem; open: boolean; grows: boolean; swiping: boolean; onSelect: () => void; onSnooze: () => void;
+}) {
+  const card = usePresence(open);
+  if (!card.value) {
+    return <Row item={item} layout="phone" swiping={swiping} onSelect={onSelect} onSnooze={onSnooze} />;
+  }
+  return (
+    <div className={grows || card.closing ? 'ui-queue__open ui-expand' : 'ui-queue__open'} {...card.exit}>
+      <Card item={item} layout="phone" onSnooze={onSnooze} />
+    </div>
+  );
 }
 
 export function QueueScreen({
@@ -99,12 +118,17 @@ export function QueueScreen({
   const current = items.find((i) => i.subject === selected) ?? items[0];
   const snoozedTotal = snoozedCount(shown);
 
-  const doSnooze = () => {
-    if (!snooze || current?.subject !== snooze.subject) return;
+  // What was open before a snooze, which Undo opens again.
+  const [before, setBefore] = useState<string>();
+  /** Snooze an item: the open one (its Snooze, or S), or a row swiped on the phone. */
+  const doSnooze = (subject = current?.subject) => {
+    if (!snooze || subject !== snooze.subject) return;
+    setBefore(current?.subject);
     setSnoozedNow(true);
-    setSelected(ranking(snooze.after)[0]?.subject);
+    if (subject === current?.subject) setSelected(ranking(snooze.after)[0]?.subject);
   };
-  const undo = () => { setSnoozedNow(false); setSelected(snooze?.subject); };
+  const undo = () => { setSnoozedNow(false); setSelected(before ?? snooze?.subject); };
+  const barShown = usePresence(snoozedNow && Boolean(snooze));
 
   useEffect(() => {
     if (layout !== 'desktop' || view !== 'queue') return undefined;
@@ -139,15 +163,18 @@ export function QueueScreen({
       ? snoozed(shown).map((s) => <Row key={s.subject} item={s} layout={layout} until={s.until} />)
       : items.length === 0 && state === 'ready'
         ? <p className="ui-queue__empty"><Num value={queuedCount(shown)} /> patterns</p>
-        : items.map((item) => (layout === 'phone' && item.subject === current?.subject
-          ? <div key={item.subject} className={item.subject === expanded ? 'ui-queue__open ui-expand' : 'ui-queue__open'}>
-              <Card item={item} layout={layout} onSnooze={doSnooze} />
-            </div>
+        : items.map((item) => (layout === 'phone'
+          ? <PhoneItem key={item.subject} item={item} open={item.subject === current?.subject}
+              grows={item.subject === expanded} swiping={item.subject === swiping}
+              onSelect={() => { setSelected(item.subject); setExpanded(item.subject); }}
+              onSnooze={() => doSnooze(item.subject)} />
           : <Row key={item.subject} item={item} layout={layout} selected={item.subject === current?.subject}
-              swiping={item.subject === swiping} onSelect={() => { setSelected(item.subject); setExpanded(item.subject); }} />));
+              onSelect={() => setSelected(item.subject)} />));
 
-  const bar = snoozedNow && snooze && (
-    <TransientBar kind="snoozed" until={snooze.until} onUndo={undo} layout={layout} />
+  const bar = barShown.value && (
+    <div className="ui-queue__bar" {...barShown.exit}>
+      <TransientBar kind="snoozed" until={snooze!.until} onUndo={undo} layout={layout} />
+    </div>
   );
 
   if (layout === 'phone') {
@@ -161,7 +188,7 @@ export function QueueScreen({
             {view === 'queue' && state === 'ready' && footer}
           </div>
         </main>
-        {bar && <div className="ui-queue__bar">{bar}</div>}
+        {bar}
         <NavBar layout="tabbar" selected="queue" dayCount={dayCount} />
       </div>
     );
@@ -179,9 +206,9 @@ export function QueueScreen({
       <section className="ui-queue__pane ui-queue__pane--detail" data-scroll="page">
         {state === 'loading' && <div className="ui-queue__detail"><PatternCard loading /></div>}
         {state === 'ready' && current && (
-          <div className="ui-queue__detail"><Card item={current} layout={layout} onSnooze={doSnooze} /></div>
+          <div className="ui-queue__detail"><Card item={current} layout={layout} onSnooze={() => doSnooze()} /></div>
         )}
-        {bar && <div className="ui-queue__bar">{bar}</div>}
+        {bar}
       </section>
     </div>
   );

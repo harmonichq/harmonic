@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, within } from 'storybook/test';
 import { fixtures, sourced } from '../../fixtures';
+import { swipe } from '../../gesture';
 import { ranking } from '../../queue-model';
 import { QueueScreen, type QueueScreenProps } from './QueueScreen';
 
@@ -119,6 +120,29 @@ export const SnoozeUndoPhone: Story = {
     await expect(canvas.getByRole('status')).toHaveTextContent(/Snoozed · Until/);
     await userEvent.click(canvas.getByRole('button', { name: 'Undo' }));
     await expect(canvas.queryByRole('status')).toBeNull();
+  },
+};
+
+// The swipe is Snooze's shortcut on a phone row: short of half its reveal it
+// settles back; past half it snoozes the row as Snooze does, the bar with
+// Undo, and Undo puts the row back.
+export const SwipeSnoozeUndoPhone: Story = {
+  args: {
+    layout: 'phone', store: 'wearer-pinned', snooze,
+    open: ranking('wearer-pinned').find((item) => item.subject !== fixtures.snooze.subject)!.subject,
+  },
+  parameters: { frame: FRAMES.phone },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const row = () => canvas.getByRole('button', { name: new RegExp(fixtures.snooze.title) });
+    await swipe(row(), -30, 6);
+    await expect(canvas.queryByRole('status')).toBeNull();
+    await swipe(row(), -64);
+    await expect(canvas.getByRole('status')).toHaveTextContent(/Snoozed · Until/);
+    await expect(canvas.queryByRole('button', { name: new RegExp(fixtures.snooze.title) })).toBeNull();
+    await userEvent.click(canvas.getByRole('button', { name: 'Undo' }));
+    await expect(canvas.queryByRole('status')).toBeNull();
+    await expect(row()).toBeInTheDocument();
   },
 };
 

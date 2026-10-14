@@ -32,7 +32,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { fixtures, sourced } from '../../fixtures';
-import { useMotionGate } from '../../motion';
+import { useMotionGate, usePresence } from '../../motion';
 import { Num } from '../../Num';
 import {
   glossary, pumpProfile, tandemSource, type AccountState, type SyncState, type When,
@@ -200,10 +200,12 @@ export function SettingsScreen({
     ? <ScreenHeader key={view} title="Settings" layout={layout} />
     : <ScreenHeader key={view} title={TITLES[view]} layout={layout} back={{ label: 'Settings', onBack: () => { setForm(null); setView('root'); } }} />;
 
-  const popover = layout === 'desktop' && form !== null && (
+  // The account form stays while it closes, as it last showed.
+  const formShown = usePresence(form);
+  const popover = layout === 'desktop' && formShown.value && (
     <section className="ui-popover ui-popover--end ui-settings__form ui-settings__form--desktop" role="dialog"
-      aria-label="Tandem Source">
-      <AccountForm saving={form === 'saving'} onSave={save} />
+      aria-label="Tandem Source" {...formShown.exit}>
+      <AccountForm saving={formShown.value === 'saving'} onSave={save} />
     </section>
   );
 
@@ -222,12 +224,12 @@ export function SettingsScreen({
           <div key={`${view}-body`} className="ui-settings__body ui-push">{content}</div>
         </main>
         <NavBar layout="tabbar" selected="settings" dayCount={dayCount} syncFailed={failed} />
-        {form !== null && view === 'tandem' && (
-          <div className="ui-scrim ui-settings__scrim" onClick={close}>
+        {formShown.value && view === 'tandem' && (
+          <div className="ui-scrim ui-settings__scrim" onClick={close} {...formShown.exit}>
             <section className="ui-sheet ui-settings__form" role="dialog" aria-label="Tandem Source"
               onClick={(event) => event.stopPropagation()}>
               <span className="ui-sheet__grabber" aria-hidden="true" />
-              <AccountForm saving={form === 'saving'} onSave={save} />
+              <AccountForm saving={formShown.value === 'saving'} onSave={save} />
             </section>
           </div>
         )}

@@ -201,3 +201,41 @@
   transition: translate calc(var(--ui-motion-standard) * var(--ui-motion-move) + 1ms) var(--ui-ease-standard);
 }
 .ui-swipe--dragging .ui-swipe-settle { transition: none; user-select: none; }
+
+/* Closing (usePresence): what leaves takes [data-closing] and plays its entry
+   in reverse, on the standard duration and easing, then goes. Nothing it
+   covers can be pressed meanwhile. */
+[data-closing] { pointer-events: none; }
+[data-motion] [data-closing].ui-scrim {
+  background-color: transparent;
+  transition: background-color var(--ui-motion-standard) linear;
+}
+[data-motion] [data-closing] .ui-sheet {
+  translate: 0 calc(100% * var(--ui-motion-move));
+  opacity: var(--ui-motion-move);
+  transition:
+    translate var(--ui-motion-standard) var(--ui-ease-standard),
+    opacity var(--ui-motion-fast) linear;
+}
+[data-motion] [data-closing].ui-popover {
+  opacity: 0;
+  scale: calc(1 - .04 * var(--ui-motion-move));
+  translate: 0 calc(-4px * var(--ui-motion-move));
+  transition:
+    opacity var(--ui-motion-standard) var(--ui-ease-standard),
+    scale var(--ui-motion-standard) var(--ui-ease-standard),
+    translate var(--ui-motion-standard) var(--ui-ease-standard);
+}
+[data-motion] [data-closing] .ui-bar {
+  translate: 0 calc(var(--ui-motion-rise) * var(--ui-motion-move));
+  opacity: 0;
+}
+[data-motion] [data-closing].ui-expand {
+  height: var(--ui-expand-from, 0px);
+  margin-block: 0;
+  opacity: 0;
+  transition:
+    height calc(var(--ui-motion-standard) * var(--ui-motion-move)) var(--ui-ease-standard),
+    margin-block calc(var(--ui-motion-standard) * var(--ui-motion-move)) var(--ui-ease-standard),
+    opacity var(--ui-motion-standard) var(--ui-ease-standard);
+}

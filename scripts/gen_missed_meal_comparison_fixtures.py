@@ -63,7 +63,6 @@ def _preparation(*, zero_attribution=False):
         "selection": None,
         "counts": {"assert": 0, "held": 0, "blind": 0, "finding": 1, "history": 0},
         "chip_counts": {"highs": 1, "lows": 0, "meals": 0, "corrections": 0},
-        "uncaused_highs": {"count": 0, "text": "None"},
     }
     return PreparedCases(
         "fp_" + "1" * 32, 178, WindowQuery.whole_day(), findings,

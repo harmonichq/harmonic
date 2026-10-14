@@ -25,7 +25,6 @@ const missedMealFixture = JSON.parse(await readFile(new URL(
 const independent = (value) => JSON.parse(JSON.stringify(value));
 const eventCase = () => independent(capture.cases['finding:meal_over_delivery'].event);
 const missedMealCase = () => independent(capture.cases['finding:missed_meal'].event);
-const mealBolusShortCase = () => independent(capture.cases['finding:meal_bolus_short'].event);
 const zeroMissedMealCase = () => independent(missedMealFixture.zero_payload);
 const selectedEventCase = () => independent(
   Object.values(capture.cases['finding:over_treated_low'].selected_event)[0]);
@@ -162,14 +161,8 @@ test('accepts the current valid event case-file cohort partition', () => {
   assert.equal(validFindingCaseFile(eventCase()), true);
 });
 
-test('accepts the policy-owned meal identity for Meal bolus fell short', () => {
-  const caseFile = mealBolusShortCase();
-  assert.ok(caseFile.occurrences.every((row) => /^m_[0-9a-f]{32}$/.test(row.id)));
-  assert.equal(validFindingCaseFile(caseFile), true);
-});
-
-test('rejects a cross-population identity for Meal bolus fell short', () => {
-  const caseFile = mealBolusShortCase();
+test('rejects an announced-meal identity in a same-population comparison', () => {
+  const caseFile = eventCase();
   assert.equal(caseFile.cross_population, false);
   assert.equal(caseFile.population, 'meals');
   caseFile.projection.cohorts[2].occurrence_ids[0] = 'm_ffffffffffffffffffffffffffffffff';
@@ -333,9 +326,10 @@ test('#468 · rejects a same-population comparison whose states are not its memb
   const omitted = eventCase();
   omitted.projection.cohorts[2].band_states.pop();
   assert.equal(validFindingCaseFile(omitted), false);
-  const invented = independent(capture.cases['finding:meal_bolus_short'].event);
-  assert.equal(invented.verdict_counts.clean, 0, 'premise: no member is clean');
-  invented.projection.cohorts[2].band_states = ['clean', ...invented.projection.cohorts[2].band_states];
+  const invented = eventCase();
+  assert.ok(!invented.projection.cohorts[2].occurrence_ids.some((id) => invented.occurrences
+    .find((row) => row.id === id)?.verdict === 'near_miss'), 'premise: no comparison member is nearly matched');
+  invented.projection.cohorts[2].band_states = ['near_miss', ...invented.projection.cohorts[2].band_states];
   assert.equal(validFindingCaseFile(invented), false);
   const reordered = eventCase();
   reordered.projection.cohorts[2].band_states.reverse();

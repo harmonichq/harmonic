@@ -8,7 +8,6 @@ comparison mean for the lever's claim.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
 from typing import Callable, Sequence
 
 from ..meals import group_meals
@@ -22,83 +21,31 @@ def _completed_meal(meal, *, scenario_config: ScenarioConfig = ScenarioConfig())
     return meal.completed
 
 
-def _event_identity(item) -> str:
-    return f"meal-{item.seq_num}" if item.seq_num is not None else f"meal-{item.t.isoformat()}"
-
-
-def _episode_identity(item) -> str:
-    return item.id
-
-
 def _family_member(family: Exposure) -> Callable:
     return lambda item, *, scenario_config: getattr(item, "family", None) is family
 
 
 @dataclass(frozen=True)
 class EvidencePopulationPolicy:
-    recurrence_family: Exposure | None
+    recurrence_family: Exposure
     recurrence_noun: str
     recurrence_members: Callable
     comparison_family: Exposure | None
     comparison_members: Callable
     comparison_name: str
-    comparison_anchor_kind: str
     comparison_window: tuple[int, int]
     cross_population: bool
-    occurrence_id: Callable
-    sequence_lever: str | None = None
-
-    @property
-    def rate_family(self) -> Exposure | None:
-        """Closed recurrence account for clean rates, if one exists.
-
-        Custom meal recurrence still belongs to meals. Sequence recurrence has
-        no Exposure account, regardless of its Meals display affinity.
-        """
-        return self.recurrence_family or next(
-            (family for family in Exposure if family.value == self.recurrence_noun), None,
-        )
 
     def recurrence_population(
         self,
         families: dict,
-        bolus: Sequence,
         *,
         scenario_config: ScenarioConfig = ScenarioConfig(),
-        sequence_populations: dict | None = None,
     ) -> tuple:
-        if self.sequence_lever is not None:
-            return tuple((sequence_populations or {}).get(self.sequence_lever, ()))
-        if self.recurrence_family is None:
-            return tuple(
-                meal for meal in group_meals(bolus, scenario_config=scenario_config)
-                if self.recurrence_members(meal, scenario_config=scenario_config)
-            )
         return tuple(item for item in families.get(self.recurrence_family, ())
                      if self.recurrence_members(
                          item, scenario_config=scenario_config,
                      ))
-
-    def occurrence_for_episode(
-        self,
-        episode_id: str,
-        bolus: Sequence,
-        before: datetime,
-        *,
-        scenario_config: ScenarioConfig = ScenarioConfig(),
-    ) -> str:
-        """Return the policy's stable occurrence id for an attributed episode."""
-        if self.sequence_lever is not None:
-            raise ValueError("sequence occurrence identity must come from the shared evaluation")
-        if self.recurrence_family is not None:
-            return episode_id
-        members = [meal for meal in group_meals(bolus, scenario_config=scenario_config)
-                   if meal.t < before and self.recurrence_members(
-                       meal, scenario_config=scenario_config,
-                   )]
-        if not members:
-            raise ValueError("attributed episode has no recurrence-population occurrence")
-        return self.occurrence_id(max(members, key=lambda item: item.t))
 
     def comparison_population(
         self,
@@ -106,12 +53,8 @@ class EvidencePopulationPolicy:
         bolus: Sequence,
         *,
         scenario_config: ScenarioConfig = ScenarioConfig(),
-        sequence_populations: dict | None = None,
     ) -> tuple:
         """Return the candidates eligible for this lever's comparison cohort."""
-        if self.sequence_lever is not None:
-            return tuple(row for row in (sequence_populations or {}).get(self.sequence_lever, ())
-                         if not row.candidate)
         if self.cross_population:
             return tuple(
                 meal for meal in group_meals(bolus, scenario_config=scenario_config)
@@ -131,38 +74,6 @@ class EvidencePopulationPolicy:
 
         return tuple(member for member in roster if eligible(member))
 
-    def projected_recurrence_account(
-        self,
-        lever: str,
-        attributed_families: dict[str, Sequence[dict]],
-        recurrence_families: dict[str, Sequence[dict]],
-        pattern: dict,
-    ) -> tuple[frozenset[str], int] | None:
-        """Project a custom recurrence population from serialized evidence."""
-        if self.recurrence_family is not None:
-            return None
-        if self.sequence_lever is not None:
-            return (frozenset(group["id"] for group in pattern.get("occurrence_groups") or ()),
-                    (pattern.get("confidence") or {}).get("n", 0))
-        occurrence_ids = frozenset(
-            occurrence_id
-            for occurrences in attributed_families.values()
-            for item in occurrences
-            if item.get("cause_lever") == lever
-            if (occurrence_id := item.get("cause_occurrence_id")) is not None
-        )
-        group_ids = {
-            group.get("id")
-            for group in pattern.get("occurrence_groups") or ()
-        }
-        if group_ids and not occurrence_ids.issubset(group_ids):
-            raise ValueError(
-                f"{lever} serialized recurrence identity differs from its pattern"
-            )
-        return occurrence_ids, len(
-            recurrence_families.get(self.recurrence_noun, ())
-        )
-
 
 _WINDOWS = {
     Exposure.MEALS: (-60, 300), Exposure.LOWS: (-60, 120),
@@ -181,31 +92,15 @@ def _ordinary(lever: Lever) -> EvidencePopulationPolicy:
             Exposure.MEALS: "Other meal opportunities", Exposure.LOWS: "Other low excursions",
             Exposure.CORRECTION_CLUSTERS: "Other back-to-back correction pairs", Exposure.HIGHS: "Other highs",
         }[family],
-        comparison_anchor_kind={Exposure.MEALS: "completed_carb_bolus", Exposure.LOWS: "excursion_nadir",
-                                Exposure.CORRECTION_CLUSTERS: "correction_pair", Exposure.HIGHS: "high_peak"}[family],
-        comparison_window=_WINDOWS[family], cross_population=False, occurrence_id=_episode_identity,
+        comparison_window=_WINDOWS[family], cross_population=False,
     )
 
 
 _POLICIES = {lever: _ordinary(lever) for lever in Lever}
 _POLICIES[Lever.MISSED_MEAL] = EvidencePopulationPolicy(
     Exposure.HIGHS, "highs", _family_member(Exposure.HIGHS), None,
-    _completed_meal, "Completed carb-bolus meals",
-    "completed_carb_bolus", (-60, 300), True, _episode_identity,
+    _completed_meal, "Completed carb-bolus meals", (-60, 300), True,
 )
-_POLICIES[Lever.MEAL_BOLUS_SHORT] = EvidencePopulationPolicy(
-    None, "meals", _completed_meal, None, _completed_meal,
-    "Other completed carb-bolus meals",
-    "completed_carb_bolus", (-60, 300), False, _event_identity,
-)
-
-
-for _lever in (Lever.HIGH_CARB_SEQUENCE, Lever.REPEAT_EATING):
-    _POLICIES[_lever] = EvidencePopulationPolicy(
-        None, "sequences", lambda item, **_: True, None, lambda item, **_: True,
-        "Q1–Q4 sequences" if _lever is Lever.HIGH_CARB_SEQUENCE else "Single-window sequences at matched carb quintile",
-        "sequence", (0, 360), False, _episode_identity, _lever.value,
-    )
 
 
 def policy_for(lever: Lever | str) -> EvidencePopulationPolicy:
@@ -216,10 +111,9 @@ def policy_for(lever: Lever | str) -> EvidencePopulationPolicy:
 def recurrence_count(
     lever: Lever | str,
     families: dict,
-    bolus: Sequence,
     *,
     scenario_config: ScenarioConfig = ScenarioConfig(),
 ) -> int:
     return len(policy_for(lever).recurrence_population(
-        families, bolus, scenario_config=scenario_config,
+        families, scenario_config=scenario_config,
     ))

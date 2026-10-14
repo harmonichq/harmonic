@@ -404,9 +404,9 @@ test('the observed change reads its own units, and says the pump was not program
 });
 
 test('a Focus changed no setting, and its record says that rather than showing a blank table', () => {
-  const html = changeSection({ kind: 'focus', lever: 'high_carb_sequence', title: 'Highs after meals',
-    lever_title: 'High-carb sequence', changes: [] });
-  assert.match(html, /The intended behavior: High-carb sequence\. No pump setting changed\./);
+  const html = changeSection({ kind: 'focus', lever: 'late_bolus', title: 'Highs after meals',
+    lever_title: 'Late bolus', changes: [] });
+  assert.match(html, /The intended behavior: Late bolus\. No pump setting changed\./);
   assert.doesNotMatch(html, /Highs after meals/, 'the Pattern title stays the nameplate, not the behavior');
   assert.doesNotMatch(html, /<table/);
   assert.doesNotMatch(html, /_/, 'the behavior is named by its served name, never its key');

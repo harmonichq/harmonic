@@ -180,10 +180,10 @@ test('a lane-picked slot for a DIFFERENT slot than the clicked chart still pops 
 
 test('a thin slot owns the stage even when the preceding Pattern frame retains its row id', () => {
   const descriptors = [
-    { chartId: 'finding:meal_bolus_short', kind: 'event-comparison', coordinates: {} },
+    { chartId: 'finding:late_bolus', kind: 'event-comparison', coordinates: {} },
     { chartId: 'basal:720', kind: 'basal', coordinates: { slot: 24 } },
   ];
-  assert.equal(drilledChartIdForFrame({ k: 'slot', rowId: 'finding:meal_bolus_short', cell: { i: 24 } }, descriptors),
+  assert.equal(drilledChartIdForFrame({ k: 'slot', rowId: 'finding:late_bolus', cell: { i: 24 } }, descriptors),
     'basal:720', 'a selected slot must not leave the preceding Pattern chart on stage');
 });
 

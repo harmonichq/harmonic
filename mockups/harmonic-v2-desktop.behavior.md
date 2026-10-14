@@ -2693,7 +2693,8 @@ S107 · Diagnose, Changes and Day share one reading-rail width; All charts and
   source:   frontend-v2/diagnose.js; frontend-v2/day.js; frontend-v2/plan-view.js;
             frontend/diagnose-workstation.css
   lock:     HV2-11; existing density tokens remain authoritative (no pixel target)
-  data:     showcase; All charts then finding:meal_bolus_short's long cohort roster
+  data:     ic-block-evidence (amended by #499); All charts then the first meals
+            Finding's long cohort roster
   evidence: C4_STORIES.S107; aggregates every label/rail/focal/row observation,
             including served grouped-cohort headings, full event-text ink, and
             ordinary mixed-tier column geometry
@@ -3931,9 +3932,10 @@ S126 · Under a Pattern that serves a count, the open fold prints each folded
             frontend/diagnose-workstation.css .qmember .out
   lock:     #413 design lock (the fold's structure, unchanged); #424 Q2 sanction
             for the share-first line
-  data:     behavioral-correction-stacking (scripts/qa_e2e_cases.py QaCase): Lows
-            after correcting highs counts its lows and folds Correction stacking,
-            whose own count is on correction clusters
+  data:     pattern-correction-fold (scripts/qa_e2e_cases.py QaCase; amended by
+            #499): Lows after correcting highs counts its lows and folds
+            Correction stacking, whose own count is on correction clusters, beside
+            Correction on active insulin
   evidence: C4_STORIES.S126; reads the served preparation, requires every
             folded cause to serve `fold_sentences` (assertServedFold424) and
             Correction stacking to lead with its share, opens the fold, reads each
@@ -4115,57 +4117,6 @@ Safe start is unchanged: AGENTS.md's QA copy-then-serve command over the showcas
 or a named `scripts/qa_e2e_cases.py` case store.
 
 ```
-S148 · Every row of the Meal bolus short response comparison names its own
-       meal: its served carbs, its dose and, when served, its peak, with the word
-       peak or nadir, and without the constant anchor label its cohort heading
-       already names; no meal row leads with a dash.
-  element:  #level .case-occurrence .only
-  source:   frontend/diagnose-workstation.js occurrenceDescription,
-            renderEventComparisonRoster, renderCaseRoster
-  lock:     none (revise; ADR 432 in openspec/changes/meal-occurrence-facts/design.md)
-  data:     showcase; All charts, then finding:meal_bolus_short's event case
-            (32 meals, each serving its dose, carbs and Arc peak)
-  evidence: C4_STORIES.S148 → assertServedRowDescriptions432; expands the
-            roster once, then reads every rendered row against its own served
-            Occurrence: the served anchor must carry dose and carbs, the row may
-            not lead with a dash, and its text must equal the served
-            description. A rendered row that is not a served Occurrence, or no
-            rendered row at all, is a premise failure. The verdict-band roster
-            renders only for a clock-aligned case file, which no chartable
-            finding's drill reaches; it prints through the same description
-            function, pinned by frontend/diagnose-workstation.test.js
-  status:   base a4d374a7 with this harness laid over it fails at its feature
-            assertion at both sizes ("every Meal bolus short row names its own
-            meal"), not at setup; branch 03ff4579 passes at both sizes. The first
-            branch run timed out under load (load average about 18); low-load
-            re-runs passed at 1280x720 and 1440x900. Coordinator-run 2026-09-23
-```
-
-```
-S149 · Selecting the matched meal of the Meal bolus short case shows that meal:
-       the figure line reads its served carbs and dose at the anchor label; the
-       facts list prints a Peak line whose value and minutes equal the served
-       Arc peak, the served cause (its title, then its text), and each served
-       habit with its verdict's band label and, when served, the classifier's
-       sentence; no line only counts readings or markers and no sentence
-       describes the canvas.
-  element:  #level .occ-detail .occ-nums; #level .case-facts .vd.outcome,
-            .vd.cause, .vd.habit
-  source:   frontend/diagnose-workstation.js occurrenceFacts, renderCaseSelection
-  lock:     none (revise; ADR 432)
-  data:     showcase; the matched cohort's first member of finding:meal_bolus_short
-            (it serves an Arc peak and a Meal bolus fell short cause with text)
-  evidence: C4_STORIES.S149 → assertSelectedFacts432; reads the served detail
-            for the selected Occurrence and the rendered block, and compares the
-            figure, the outcome, cause and habit lines, and the absence of
-            count-only lines and the canvas sentence
-  status:   base a4d374a7 with this harness laid over it fails at its feature
-            assertion at both sizes ("the selected matched meal reads as its
-            facts and served reason"), not at setup; branch 03ff4579 passes at
-            both sizes, first time. Coordinator-run 2026-09-23
-```
-
-```
 S150 · A Highs after meals Pattern case file carries the same facts: every row
        reads its served carbs, dose and peak, and a selected Occurrence lists
        each served habit with its band label and sentence.
@@ -4194,8 +4145,8 @@ Additional handler inventory for this amendment:
 
 | Handler / registration | Source | Story |
 |---|---|---|
-| Case-file roster row description, both rosters | frontend/diagnose-workstation.js occurrenceDescription | S148, S150 |
-| Selected Occurrence figure and evidence facts | frontend/diagnose-workstation.js occurrenceFacts, renderCaseSelection | S149, S150, S25 |
+| Case-file roster row description, both rosters | frontend/diagnose-workstation.js occurrenceDescription | S150 |
+| Selected Occurrence figure and evidence facts | frontend/diagnose-workstation.js occurrenceFacts, renderCaseSelection | S150, S25 |
 
 ## #446 amendment — 2026-09-23, issue #446
 
@@ -5271,9 +5222,9 @@ S177 · On a plain arrival at Changes, the Action figure reads the served
   source:   frontend/changes.js actionLead, concernFrame, leadWords;
             frontend/guidance.js statusWords; frontend/plan.js settingValue
   lock:     none (revise; ADR 451 in openspec/changes/archive/2026-09-24-setting-concern-labels/design.md)
-  data:     isf-strengthen; guidance selects pattern:lows_after_correcting_highs,
-            eligible_action, carrying the correction factor's served
-            "strengthen" instruction
+  data:     basal-lower (amended by #499); guidance selects setting:basal_rate,
+            eligible_action, carrying the basal Setting's served "lower"
+            instruction
   evidence: C4_STORIES.S177; reads /api/guidance for the served disposition and
             first instruction, compares the figure's text and the two word
             slots, stages and undoes through [data-set="stage"] and
@@ -5330,8 +5281,8 @@ S179 · After staging the correction factor and recording the Plan, Changes' "Wh
             /api/plan/history subject_titles; ciq_autotune/guidance.py
             subject_title and the setting concern's title
   lock:     none (revise; ADR 451)
-  data:     isf-strengthen; Changes stages the served correction-factor
-            instruction and records it
+  data:     isf-strengthen; Diagnose stages the served correction-factor
+            instruction and Changes records it (amended by #499)
   evidence: C4_STORIES.S179; stages and records through the Plan, reads the
             newest record's decision_context from /api/plan/history, and
             compares the section's concern name, change value and explanation
@@ -5920,35 +5871,6 @@ Changed shipped behavior:
   headline, its Priority and its chart (none) are unchanged.
 - **The chart no longer decides the listing.** Whether a Pattern row draws a
   mini and opens a case file is decided as before.
-
-```
-S192 · A scoped window keeps the overnight Pattern its outcomes land in. On
-       basal-recurring-low-lower, the 24 h rail's overnight Pattern row
-       prints "2 of 30 nights ran low overnight" and draws no mini; pressing
-       Overnight keeps the row, printing "2 of 30 nights ran low between
-       00:00 and 06:00", with no mini; pressing Afternoon lists no overnight
-       Pattern row. No rank numeral, tier or position is asserted.
-  element:  #level .qrow[data-id="pattern:overnight_lows_no_iob"] .den,
-            #level .qrow .mini canvas, #seg-window [aria-pressed="true"]
-  source:   ciq_autotune/analyzers/scenario/outcome_patterns.py
-            pattern_in_window, outcome_window_population;
-            ciq_autotune/findings_projection.py _pattern_rows,
-            _pattern_count_sentences
-  lock:     ADR 467 (openspec/changes/qa-round-2/design.md)
-  data:     basal-recurring-low-lower: lows on 2 of 30 overnight source
-            nights, the Pattern admitted through the basal setting
-  evidence: C4_STORIES.S192; opens the 24 h rail and reads the row, presses
-            Overnight and reads it again, presses Afternoon and reads its
-            absence
-  status:   #467's base 0da909bb with this harness (ca2417c4) laid over it
-            fails at 1280x720 at the Overnight row ("S192 Overnight must list
-            the overnight Pattern row", the row count 0). The branch passes at
-            1280x720 and 1440x900 on ca2417c4, beside the fifteen touched
-            stories, which pass at both sizes on the base and on the branch.
-            Renders of the 24 h and Overnight rail, before on 0da909bb and
-            after on ca2417c4, handed to the coordinator uncommitted; the 24 h
-            rail's text is unchanged. Coordinator-run 2026-09-25
-```
 
 Additional handler inventory for this amendment:
 
@@ -6739,3 +6661,62 @@ Additional handler inventory for this amendment:
 | Basal range hold sentences | ciq_autotune/analyzers/basal.py _annotation_for, analyze_basal | S191 |
 | Correction-factor range hold | ciq_autotune/analyzers/isf.py isf_asserts_move, analyze_isf | backend tests, QA `isf-range-hold` |
 | Recurring-lows interval sentence | retired (diagnose-workstation.js renderSlotLevel) | S191 |
+
+## Added retirement — 2026-10-14, issue #499
+
+ADR 499 (openspec/changes/recommendations-redesign/design.md) cuts Meal bolus fell
+short and the overnight-lows Pattern from the engine. S148 and S149 read Meal bolus
+fell short's event case on the showcase, and S192 read the overnight-lows Pattern
+in the 24 h and Overnight windows. Their premises are gone, so they are retired,
+not rewritten, and each retirement carries the proof that the premise is gone.
+
+```
+R20 · Meal bolus fell short is absent everywhere: no Finding row, no rail row and
+      no lever catalog entry names it.
+  predecessor: S148, S149
+  lock:     ADR 499
+  verdict:  retired
+  sanction: Connor Griffin · 2026-10-14 · "I don't understand the point of 'meal bolus fell short'… It's the exact same concept as carb undercount…"
+  premise:  the showcase still serves Highs after meals, the Pattern whose highs
+            Meal bolus fell short used to claim
+  replay:   fn R20 reads the preparation, the lever catalog and the rail, asserts
+            the absence, and prints the sanction
+  status:   owed by the build — no passing result recorded
+```
+
+```
+R21 · The overnight-lows Pattern is absent in every window, and the basal
+      Setting that answers the same lows is still served.
+  predecessor: S192
+  lock:     ADR 499
+  verdict:  retired
+  sanction: Connor Griffin · 2026-10-14 · "that'd for SURE get captured by a basal recommendation, otherwise it should be cut from the engine as silly and redundant"
+  premise:  on basal-recurring-low-lower an asserting basal Setting row is served
+            in the 24 h and Overnight windows
+  replay:   fn R21 reads both windows' findings and the rail, asserts the
+            absence beside the basal Setting, and prints the sanction
+  status:   owed by the build — no passing result recorded
+```
+
+Two active stories keep their behaviour and change only the case store they read,
+because the store they named no longer serves their premise:
+
+- **S107** reads its long meal cohort from `ic-block-evidence` (37 meals, two
+  meals Findings with event charts) instead of the showcase, whose only meals
+  Finding was Meal bolus fell short.
+- **S177** reads `basal-lower` instead of `isf-strengthen`. The correction
+  factor no longer leads Changes (ADR 499: "ISF tends to suck… keep it out of
+  the queue."), so the story's lead is the basal Setting guidance now selects
+  directly; its Action figure reads "<direction> to <recommended> U/h", and
+  every word-slot, staging, Undo, set-aside and engine-word assertion is
+  unchanged.
+- **S179** stages the correction factor from its Diagnose panel, as S178 does,
+  and records the Plan from the watch dock's Changes route, instead of from the
+  Changes lead it can no longer be; everything it reads of the recorded Plan is
+  unchanged.
+- **S126** reads `pattern-correction-fold` instead of
+  `behavioral-correction-stacking`. With the correction factor out of the
+  Pattern (ADR 499), Lows after correcting highs collapses onto Correction
+  stacking when it is the only admitted habit; the new case admits both
+  correction habits, so the Pattern still folds Correction stacking with its
+  share first and its correction-cluster count outside.

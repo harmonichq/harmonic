@@ -519,7 +519,7 @@ unless noted. Loading is a skeleton of the component's own shape.
    assistive tech, and no kind pill), its title, one magnitude
    ("9 of 71 lows") and a cause label.
    - States: default; selected (desktop); mid-swipe (snooze reveal);
-     no cause (label omitted); setting (current → suggested replaces the
+     setting (current → suggested replaces the
      magnitude); snoozed (read-only: no chevron, swipe or selection; a last
      line "Until <date>" + Restore); loading.
    - Fields: `guidance.candidates[].title, kind, priority, admitted,
@@ -530,7 +530,7 @@ unless noted. Loading is a skeleton of the component's own shape.
 8. **PatternCard**: the open pattern, showing the magnitude, a CauseWaffle,
    and Pin. No Range: only a Setting has one; Uncertain carries a pattern's
    confidence (ADR 485).
-   - States: multi-cause; **single cause**; **no attributed cause**; Uncertain
+   - States: multi-cause; **single cause**; Uncertain
      (the tag at the end of the magnitude line); with or without the impact
      line (Peak or Nadir · Typical, mg/dL, beneath the magnitude);
      pinned (Pin replaced by a "Focus" pill); loading.
@@ -543,9 +543,9 @@ unless noted. Loading is a skeleton of the component's own shape.
    - Desktop: fills the detail pane up to 720 px; no collapse chevron.
 9. **CauseWaffle**: one cell per occurrence in n, with filled cells patterned
    by cause, plus a legend.
-   - States: multi-cause; single cause (one legend entry); no cause (the
-     occurrences in the pattern's solid tone, as a single cause draws them,
-     with a "Meals" or "Lows" legend only).
+   - States: multi-cause; single cause (one legend entry). A counted Pattern
+     always has a claiming cause since ADR 499 cut the overnight Pattern, so
+     the no-cause state is retired.
    - Fields: as PatternCard.
    - Desktop: larger cells, same rules.
 10. **SettingCard**: the open setting, showing current → suggested in figure

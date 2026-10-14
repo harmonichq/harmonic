@@ -261,3 +261,131 @@ bolus lost.
 exploration embed day timelines, so both are regenerated with the new field; no
 existing value changes. The http-api spec carries the served shape as a delta in
 this change.
+
+## ADR 499 — The engine keeps only Patterns a person can pin, and the correction factor stays out of the Queue
+
+**Context.** The redesigned Queue offers Patterns to pin as a Focus and Settings to
+apply. Several engine outputs either duplicated another item, could not be acted on,
+or were computed and read by no one:
+
+- *Overnight lows with no insulin on board* had no habit behind it. Its count was the
+  basal analysis's own count of overnight low nights, and its only remedy was the
+  basal rate, so it was the overnight basal Setting counted twice. It also could not
+  be pinned, so the Queue would have offered a Pin the engine refuses.
+- *Meal bolus fell short* claimed only that a meal dose did not cover what followed.
+  That is the same concept as carb undercount, and it was never admitted for action.
+- *High-carb sequence* and *Repeat eating* were aggregate associations over eating
+  sequences, with nothing to pin. They competed with the meal habits for the same
+  highs.
+- The *Highs without a detected cause* investigation and the findings payload's
+  `uncaused_highs` block had no frontend reader.
+- Each roster row's `overlap_counts` and `harm_low_overlap` had no reader.
+- The correction-factor estimate is the weakest of the three settings, and it reached
+  the Queue both as its own Setting and as a member of *Lows after correcting highs*.
+
+**The operator's decisions** (Connor, 2026-10):
+
+1. Cut the overnight Pattern: "that'd for SURE get captured by a basal
+   recommendation, otherwise it should be cut from the engine as silly and redundant",
+   then "cut it".
+2. Cut Meal bolus fell short as a lever, Finding and guidance candidate: "I don't
+   understand the point of 'meal bolus fell short'… It's the exact same concept as
+   carb undercount… its criteria should be folded into a different highs capture."
+3. Cut the uncaused-highs investigation and its findings block.
+4. Cut the unread overlap blocks.
+5. Cut High-carb sequence and Repeat eating from the engine: "Drop these from the
+   engine." The question they answered moves to a future Overview report card,
+   *carbs vs post-meal response* (#501).
+6. Keep ISF out of the Queue: "ISF tends to suck… keep it out of the queue." The ISF
+   analyzer, its estimate and `isf_asserts_move` stay, and a later Overview card will
+   show the estimate.
+7. Keep Missed / unannounced meal as a standalone habit: "Stand-alone habits are FINE."
+8. Keep Highs after treating lows.
+
+**Decision.**
+
+1. *Four Patterns, each pinnable.* The roster is Highs after meals, Lows after meals,
+   Highs after treating lows and Lows after correcting highs. Every one carries at
+   least one pinnable habit. The harm-band "nights" family goes with the overnight
+   Pattern, and so does everything that existed only to count it. That covers
+   `starts_in_harm_band`, the Pattern's queue anchoring and chips, and the harm
+   layer's `harm_band_source_nights` (its observed overnight source-night count),
+   which was the Pattern's denominator. The harm gate, the nudge and `band_nights`
+   are untouched. Overnight lows reach the person through the basal Setting exactly
+   as before.
+2. *Meal bolus fell short is removed whole.* That means its classifier, config, Lever,
+   evidence policy and copy. "Fold" means its rises stay in the highs Exposure, and
+   `carb_undercount` and `late_bolus` attribute them wherever their own classifiers
+   apply. No new classifier is added. Highs after meals' rate levers become
+   `carb_undercount, late_bolus`.
+3. *The eating-sequence detector leaves the engine.* The detector and its config are
+   deleted, along with the scenario engine's sequence candidates and the
+   observed-impact competition they needed. Also removed: the exposures payload's
+   `sequence_report` and `sequence_evidence` (which supersedes ADR 488's single-
+   evaluation report), the habit `member_associations`, the eating-sequence case-file
+   kind and its frontend renderer, and their generator and fixtures. Episode
+   ownership is again the earliest actionable driver for every episode. ADR 488's
+   second half, which withholds one inconsistent case by name, stays.
+4. *No investigation, no unread blocks.* Guidance no longer emits
+   `investigation:uncaused_highs`. The findings payload drops `uncaused_highs`, and
+   roster rows drop `overlap_counts` and `harm_low_overlap`. The exposures feed still
+   counts `highs.uncaused`, the QA catalog still pins it, and ADR 422's owned Highs
+   are still never uncaused.
+5. *ISF is served but never queued.* Guidance still serves the `setting:isf`
+   candidate with its action, because the Plan applies an ISF draft against that
+   candidate (`/api/plan/apply` resolves `setting:<parameter>`). Removing it would
+   break ISF staging. The candidate is never `admitted`, and the Queue holds only
+   admitted candidates. Lows after correcting highs has no setting member and admits
+   only through its correction habits. The analyzer, `isf_asserts_move`, the
+   findings `isf` row and the pump-profile path are unchanged.
+6. *A Setting no Pattern carries is selected as itself.* Guidance chose its next
+   concern only among Patterns and habits, so the basal Setting reached that choice
+   only as the overnight Pattern's member. With the Pattern cut, a basal move read
+   "No current concern". Guidance now also considers a Setting that no Pattern
+   carries (basal, today), never ISF. Overnight basal moves select as before, a
+   held basal slot is investigated as before, and a daytime-only basal move,
+   which the overnight Pattern never admitted, is now offered as an action too.
+
+**What changes in the counts** (habit evidence only; no setting verdict changes):
+
+- *Highs after meals.* A meal that only Meal bolus fell short claimed now leaves the
+  Pattern's `k`. A meal that `carb_undercount` or `late_bolus` also claims still
+  counts, once (ADR 424). `n`, the meals Exposure, is unchanged. In the QA showcase
+  `k` goes from 1 of 32 to 0 of 32.
+- *Uncaused highs.* A high whose episode only Meal bolus fell short explained now
+  has no cause, so it counts in `highs.uncaused`. The QA showcase goes from 0 to 1,
+  and `behavioral-missed-meal` from 3 to 4.
+- *Verdict states.* High anchors that Meal bolus fell short fired on, or outranked
+  another lever on, now read `clean` for the remaining levers. Missed meal's tally
+  in `behavioral-missed-meal` moves from 2 / 1 / 1 / 1 / 1 to 2 / 0 / 1 / 1 / 2.
+- *Meals clean rate.* The Outcomes meals clean rate no longer charges Meal bolus fell
+  short's attributions to meals.
+
+**Evidence that no dose moved.** Every surviving QA case was re-run through
+`execute_case`. Its analyzer rows, support counts, queue rows (register, direction,
+`asserts_move`, headline), ISF rest windows and carb-ratio history series are
+identical to their committed literals before the cut. Only the outcome roster,
+Finding titles, verdict tallies, occurrence states and the uncaused count were
+re-dumped. The basal and carb-ratio predicates, `safety.py` and every analyzer's
+staging verdict are untouched.
+
+**Consequences.**
+- A stored preference on a cut subject is served as an absent, set-aside row, and
+  Restore still clears it. An active Focus on Meal bolus fell short ends through the
+  existing `lever_unavailable` reconciliation.
+- The 13 QA cases for the cut levers are deleted; the rest keep their names.
+  Lows after correcting highs now remains a Pattern only when both correction
+  habits are admitted, so a new `pattern-correction-fold` case composes the two
+  correction recipes and carries the cross-family fold (ADR 424) and ledger S126.
+- The no-cause Pattern state of the locked component library existed for the
+  overnight Pattern alone; no counted Pattern can lack a claiming cause now, so it
+  is retired from the stories, the fixture states and the lock (§4.2), pending the
+  operator's approval of that lock amendment.
+- Ledger stories S148, S149 and S192 are retired as R20 and R21; S107 reads
+  `ic-block-evidence`, whose meals Findings replace the showcase's Meal bolus fell
+  short. The correction factor no longer leads Changes, so S177 reads the basal
+  lead on `basal-lower` and S179 stages its correction-factor Plan from the
+  Diagnose panel before recording it. R18's finding count drops by the one
+  overnight Pattern row.
+- The Overview report card for carbs vs post-meal response needs its own producer
+  (#501). It does not revive the detector.

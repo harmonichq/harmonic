@@ -14,7 +14,6 @@
  * the output.
  */
 import test from 'node:test';
-import { expandSequenceFixture } from './eating-sequence-fixture.js';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -54,7 +53,7 @@ test('the mirror reproduces the empty analysis, where term 41 lives', () => {
   for (const [name, bounds] of [['global', null], ['morning', WINDOWS.morning]]) {
     const got = projectFindings(empty, bounds);
     if (name === 'global') {
-      assert.equal(got.rows.length, 5, 'global carries the five Pattern states');
+      assert.equal(got.rows.length, 4, 'global carries the four Pattern states');
       assert.ok(got.rows.every((row) => row.kind === 'pattern'
         && row.priority === null && row.pattern_chart === null));
     } else assert.deepEqual(got.rows, [], `${name} has no rows`);
@@ -162,96 +161,3 @@ test('the mirror serves each folded cause its share of the Pattern first', () =>
   assert.ok(rows.filter((row) => !row.claimed_by).every((row) => row.fold_sentences === null));
 });
 
-/* The deep-compare above would still pass if BOTH sides regressed the honest
- * unexplained-highs count to zero together, and a count frozen at zero is exactly the
- * silent-drift shape #63 exists to close. So name the value: the fixture's ep6 is a
- * high whose episode drew no lever in ANY family, and it must survive the mirror as a
- * finished sentence, unchanged by clock scope. */
-test('the mirror preserves the whole-window unexplained-highs count and its copy', () => {
-  assert.equal(fixture.inputs.exposures.exposures.highs.uncaused, 1);
-  for (const [name, bounds] of Object.entries(WINDOWS)) {
-    assert.deepEqual(projectFindings(fixture.inputs, bounds).uncaused_highs,
-      { count: 1, text: '1 high had no cause detected by the app' },
-      `window ${name} must carry the whole-window count, not a scoped one`);
-  }
-});
-
-/* The line is whole-window, so an EMPTY scoped queue still reports it. This is the
- * case the copy has to survive: a reader looking at a window with nothing in it must
- * not be told "0 highs had no cause", which would be a claim the data never made. */
-test('an empty scoped queue still carries the whole-window count', () => {
-  const inputs = {
-    analysis: { window_days: 30, basal: [], isf: [], ic_blocks: [] },
-    exposures: { window: { start: null, end: null }, exposures: { highs: { uncaused: 4 } } },
-    scenarios: { patterns: [], low_confidence: [] },
-    outcome_patterns: [],
-    analysis_generation: fixture.inputs.analysis_generation,
-  };
-  const got = projectFindings(inputs, WINDOWS.quiet);
-  assert.deepEqual(got.rows, []);
-  assert.deepEqual(got.uncaused_highs,
-    { count: 4, text: '4 highs had no cause detected by the app' });
-});
-
-test('the mirror publishes no sentence when nothing went unexplained', () => {
-  const empty = {
-    analysis: { window_days: 30, basal: [], isf: [], ic_blocks: [] },
-    exposures: { window: { start: null, end: null }, exposures: {} },
-    scenarios: { patterns: [], low_confidence: [] },
-    outcome_patterns: [],
-    analysis_generation: fixture.inputs.analysis_generation,
-  };
-  assert.deepEqual(projectFindings(empty, null).uncaused_highs, { count: 0, text: null });
-});
-
-
-test('sequence QA cases preserve Python witness, recurrence and habit-only nesting', () => {
-  const cases = expandSequenceFixture(fixture.sequence_cases).states;
-  assert.equal(Object.keys(cases).length, 18);
-  for (const [name, { inputs, windows }] of Object.entries(cases)) {
-    for (const [window, bounds] of Object.entries(WINDOWS)) {
-      if (window !== 'global') continue;
-      assert.deepEqual(projectFindings(inputs, bounds), windows[window], `${name}: ${window}`);
-    }
-    const lever = name.startsWith('high-carb') ? 'high_carb_sequence' : 'repeat_eating';
-    const global = projectFindings(inputs);
-    const cause = global.rows.find((row) => row.lever === lever);
-    const parent = global.outcome_patterns.find((pattern) => pattern.key === 'highs_after_meals');
-    assert.ok(!parent.rate_levers.includes(`habit:${lever}`), name);
-    if (/-(covered|empty|multiple|midnight-witness)$/.test(name)) {
-      assert.equal(cause.claimed_by, 'pattern:highs_after_meals', name);
-      assert.deepEqual(cause.chips, ['highs', 'meals']);
-      assert.equal(cause.appearances[0].n, 8);
-      assert.equal(cause.appearances[0].m, lever === 'high_carb_sequence' ? 40 : 16);
-      assert.equal(parent.k, 0, 'habit association never enters the meals rate');
-      for (const window of Object.keys(windows).filter((key) => key !== 'global')) {
-        const scoped = windows[window].rows.find((row) => row.lever === lever);
-        if (scoped) {
-          const parent = windows[window].rows.find(
-            (row) => row.id === 'pattern:highs_after_meals',
-          );
-          assert.equal(scoped.claimed_by, parent ? parent.id : null);
-          assert.equal(scoped.priority, cause.priority, 'source price survives clock scope');
-        }
-      }
-    } else {
-      assert.equal(cause, undefined, `${name} supplies no witnessed winning cause`);
-    }
-    if (name.endsWith('-covered')) {
-      const meals = inputs.exposures.exposures.meals.occurrences;
-      assert.ok(meals.some((meal) => (meal.member_associations || []).includes(`habit:${lever}`)),
-        'covered meals retain habit evidence while the parent rate stays zero');
-    }
-    if (name.endsWith('-empty')) {
-      const meals = inputs.exposures.exposures.meals.occurrences;
-      assert.ok(meals.every((meal) => !(meal.member_associations || []).includes(`habit:${lever}`)));
-    }
-    if (name.endsWith('-multiple')) {
-      assert.ok(cause.evidence.some((item) => item.episodes.length > 1));
-    }
-    if (name.endsWith('-midnight-witness')) {
-      assert.ok(windows.overnight.rows.some((row) => row.lever === lever));
-      assert.ok(!windows.morning.rows.some((row) => row.lever === lever));
-    }
-  }
-});

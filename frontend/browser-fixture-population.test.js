@@ -141,7 +141,7 @@ test('browser Pattern rows and case files share the public producer denominator'
 
 test('#454 · the Pattern mirror judges only its rate family, as the Python producer answers', () => {
   const frozen = Object.entries(findingsFixture.pattern_family_cases);
-  assert.deepEqual(frozen.map(([key]) => key).sort(), ['highs_after_meals', 'lows_after_correcting_highs']);
+  assert.deepEqual(frozen.map(([key]) => key).sort(), ['lows_after_correcting_highs']);
   for (const [key, answer] of frozen) {
     assert.ok(answer.roster_row.members.some(({ subject }) => subject === `habit:${answer.lever}`),
       `${key} premise: the frozen roster carries its out-of-family member`);
@@ -162,46 +162,6 @@ test('#454 · the Pattern mirror judges only its rate family, as the Python prod
     assert.throws(() => projectPatternCaseFile(unmapped, { patternChart, alignment: 'clock' }),
       new RegExp(`no frozen rate family: ${answer.lever}`));
   }
-});
-
-test('correction-on-IOB claims the lows in its Pattern population', () => {
-  const inputs = populateFindingsProjectionInput({ exposures: payload.exposures });
-  const projection = projectFindings(inputs);
-  const member = projection.rows.find(({ id }) => id === 'finding:correction_on_iob');
-  const pattern = projection.rows.find(({ id }) => id === 'pattern:lows_after_correcting_highs');
-  const caseFile = projectPatternCaseFile(capture, { patternChart: pattern.pattern_chart });
-
-  assert.equal(member.claimed_by, 'pattern:lows_after_correcting_highs');
-  assert.equal(caseFile.family, 'lows');
-  assert.equal(caseFile.summary.denominator, payload.exposures.exposures.lows.n);
-  assert.equal(caseFile.summary.claimed, pattern.pattern.k);
-  assert.equal(caseFile.occurrences.filter(
-    (row) => row.member === 'habit:correction_on_iob',
-  ).length, pattern.pattern.k);
-});
-
-test('correcting-highs Pattern selection uses the low-nadir comparison idiom', () => {
-  const inputs = populateFindingsProjectionInput({ exposures: payload.exposures });
-  const projection = projectFindings(inputs);
-  const pattern = projection.rows.find(({ id }) => id === 'pattern:lows_after_correcting_highs');
-  const enriched = structuredClone(capture);
-  const source = enriched.pattern_populations.lows[0];
-
-  const caseFile = projectPatternCaseFile(enriched, {
-    patternChart: pattern.pattern_chart,
-    alignment: 'clock',
-    occurrenceId: source.id,
-  });
-
-  assert.equal(caseFile.selection.state, 'selected');
-  assert.equal('member' in caseFile.selection.detail, false);
-  assert.equal(caseFile.selection.detail.anchor.kind, 'low');
-  const eventCase = projectPatternCaseFile(enriched, {
-    patternChart: pattern.pattern_chart,
-  });
-  assert.equal(eventCase.projection.anchor.kind, 'excursion_nadir');
-  assert.deepEqual(eventCase.projection.window_min, [-60, 120]);
-  assert.deepEqual(caseFile.selection.detail.source_corrections, []);
 });
 
 test('Pattern misses prefer near misses over outranked member states', () => {
@@ -292,12 +252,13 @@ test('the Afternoon fixture retains every published behavioral Finding and Patte
   const shown = queueRows(projection, selected)
     .filter((row) => !row.hidden && !row.collapsed);
 
-  // The server's shown rows, in its order: both Patterns fold their causes here, and
-  // the priced Over-treated low leads (ADR 454).
+  // The server's shown rows, in its order: Highs after meals folds its cause here,
+  // Correction stacking stands as its own row, and the priced Over-treated low
+  // leads (ADR 454).
   assert.deepEqual(shown.map(({ id }) => id), [
     'finding:over_treated_low',
     'pattern:highs_after_meals',
-    'pattern:lows_after_correcting_highs',
+    'finding:correction_stacking',
     'finding:missed_meal',
     // ADR 467: its meals land in this window, so Lows after meals is served here.
     'pattern:lows_after_meals',

@@ -20,6 +20,9 @@
 // landing after the focus detached or moved it, and the story timed out on
 // three of main's last six runs. Claim and tolerance remain unchanged; the
 // probe's two idempotent actions repeat per attempt.
+// AMENDED 2026-10-14 · #499: S109 pins a 720 px height. The engine cut left
+// the showcase roster short enough to fit a 900 px pane, so its premise (a
+// scrollable reading pane) was unreachable at 1440x900. Claim unchanged.
 //
 // WHY THIS EXISTS: mockups/harmonic-v2-desktop.lock.md says what the surface
 // looks like across 34 terms. It does not say that pressing the destination
@@ -65,7 +68,9 @@ import { fileURLToPath } from 'node:url';
 import { S8 as sharedEventSpeech } from './diagnose-replay.mjs';
 import { buildDeliverable, segmentCapacity, PLAN_PARAM_FAMILY } from './plan.js';
 import { createCaseServer, storyCase } from './replay-cases.mjs';
-import { C4_STORIES, C4_RETIREMENTS, historicalAbsence } from './c4.replay.mjs';
+import {
+  C4_STORIES, C4_RETIREMENTS, historicalAbsence, mealBolusShortAbsence, overnightPatternAbsence,
+} from './c4.replay.mjs';
 import { C3_STORIES } from './c3.replay.mjs';
 import { C2_STORIES, waitForDesk, waitForCharts } from './c2.replay.mjs';
 import { captureStory } from './capture.mjs';
@@ -2774,6 +2779,8 @@ const SANCTIONS = {
   R16: 'Connor Griffin · 2026-08-26 · "The ring and the raised rail mark the drilled tile. The chip was noise."',
   R17: 'ADR 340 · Connor Griffin · 2026-09-04 · "Sure." (after the proposal stated that Keep saved nothing and Revert-to-Plan should remain)',
   R19: 'Connor Griffin · 2026-09-21 · "Kill all the V1 stuff."',
+  R20: 'Connor Griffin · 2026-10-14 · "I don\'t understand the point of \'meal bolus fell short\'… It\'s the exact same concept as carb undercount…"',
+  R21: 'Connor Griffin · 2026-10-14 · "that\'d for SURE get captured by a basal recommendation, otherwise it should be cut from the engine as silly and redundant"',
 };
 
 const printSanction = (id) => {
@@ -3092,6 +3099,13 @@ export const R19 = appOnly('HV2-02', 'every retired v1 and /v2/ address answers 
     }
   });
 
+// RETIRED:Connor Griffin:2026-10-14 — ADR 499 (S148, S149).
+export const R20 = appOnly('ADR 499', 'Meal bolus fell short is absent from findings, rail and catalog',
+  mealBolusShortAbsence);
+// RETIRED:Connor Griffin:2026-10-14 — ADR 499 (S192).
+export const R21 = appOnly('ADR 499', 'the overnight-lows Pattern is absent in every window while the basal Setting stays',
+  overnightPatternAbsence);
+
 // STORY:harmonic-v2-desktop:S101
 export const S101 = appOnly('HV2-11', '#404 custom Window chip contains only the span', C4_STORIES.S101);
 // STORY:harmonic-v2-desktop:S102
@@ -3216,12 +3230,6 @@ export const S125 = appOnly('HV2-18',
 // STORY:harmonic-v2-desktop:S126
 export const S126 = appOnly('#413 design lock',
   '#424 a folded cause shows its share of its Pattern first, the rest set apart on a second row', C4_STORIES.S126);
-// STORY:harmonic-v2-desktop:S148
-export const S148 = appOnly('ADR 432',
-  '#432 Meal bolus short rows name their meal: served carbs, dose and peak', C4_STORIES.S148);
-// STORY:harmonic-v2-desktop:S149
-export const S149 = appOnly('ADR 432',
-  '#432 a selected matched meal reads as its facts and served reason', C4_STORIES.S149);
 // STORY:harmonic-v2-desktop:S150
 export const S150 = appOnly('ADR 432',
   '#432 a Highs after meals Pattern serves the same row facts and each habit with its band', C4_STORIES.S150);
@@ -3282,10 +3290,6 @@ export const S190 = appOnly('ADR 465',
 export const S191 = appOnly('ADR 466',
   '#466 a recurring-lows slot says the overnight lows own its move, counts them and lists each one',
   C4_STORIES.S191);
-// STORY:harmonic-v2-desktop:S192
-export const S192 = appOnly('ADR 467',
-  '#467 a scoped window keeps the overnight Pattern its outcomes land in, with the band counts',
-  C4_STORIES.S192);
 // STORY:harmonic-v2-desktop:S193
 export const S193 = appOnly('ADR 469',
   '#469 the rail follows the one urgency ranking: a setting-admitted Pattern shares its setting\'s position and a correction factor that cannot stage says why',
@@ -3952,13 +3956,13 @@ export const REGISTRY = [
   ['S162', S162, J()], ['S163', S163, J()], ['S164', S164, J()], ['S165', S165, J()],
   ['S145', S145, J()], ['S146', S146, J()], ['S147', S147, J()],
   ['S124', S124, J()], ['S125', S125, J()], ['S126', S126, J()],
-  ['S148', S148, J()], ['S149', S149, J()], ['S150', S150, J()],
+  ['S150', S150, J()],
   ['S166', S166, J()], ['S167', S167, J()], ['S168', S168, J()],
   ['S173', S173, J()], ['S174', S174, J()], ['S175', S175, J()], ['S176', S176, J()],
   ['S182', S182, J()],
   ['S177', S177, J()], ['S178', S178, J()], ['S179', S179, J()],
   ['S186', S186, J()], ['S187', S187, J()], ['S188', S188, J()], ['S189', S189, J()],
-  ['S190', S190, J()], ['S191', S191, J()], ['S192', S192, J()],
+  ['S190', S190, J()], ['S191', S191, J()],
   ['S193', S193, J()], ['S194', S194, J()], ['S195', S195, J()], ['S196', S196, J()],
   ['S197', S197, J()], ['S198', S198, J()], ['S199', S199, J()], ['S200', S200, J()],
   ['S201', S201, J()], ['S202', S202, J()], ['S203', S203, J()], ['S204', S204, J()],
@@ -3969,6 +3973,7 @@ export const REGISTRY = [
   ['R9', R9, M()], ['R10', R10, J()], ['R11', R11, M()], ['R12', R12, M()],
   ['R13', R13, M()], ['R14', R14, J()], ['R15', R15, J()], ['R16', R16, J()],
   ['R17', R17, M('ready')], ['R18', R18, J()], ['R19', R19, J()],
+  ['R20', R20, J()], ['R21', R21, J()],
 ];
 
 /* ------------------------------------------------------------------- runner */

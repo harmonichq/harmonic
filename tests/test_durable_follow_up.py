@@ -170,11 +170,11 @@ class DurableApiTest(unittest.TestCase):
         self.assertEqual(after.json()['selected']['original']['late_conclusion'], saved['late_conclusion'])
 
     def test_pattern_focus_post_saves_scope_and_rejects_invalid_or_stale_navigation(self):
-        source = self.seed_case('high-carb-sequence-covered')
+        source = self.seed_case('behavioral-split-meal')
         body = {'request_id': 'scoped-pattern-pin', 'input_revision': source['input_revision'],
                 'subject': 'pattern:highs_after_meals',
                 'analysis_generation': source['analysis_generation'],
-                'pattern_key': 'highs_after_meals', 'lever': 'high_carb_sequence',
+                'pattern_key': 'highs_after_meals', 'lever': 'carb_undercount',
                 'outcome_window': {'start_min': 0, 'end_min': 1440}}
         absent = self.client.post('/api/focus', headers=self.headers,
                                   json={key: value for key, value in body.items()
@@ -234,8 +234,7 @@ class DurableApiTest(unittest.TestCase):
         from ciq_autotune.outcomes_trend import OVERRIDE_LEVER, OVERRIDE_TITLE
         from ciq_autotune.watched_change import pinnable_levers
         pins = [(lever, None) for lever in sorted(pinnable_levers())] + [
-            ("high_carb_sequence", "highs_after_meals"), ("repeat_eating", "highs_after_meals"),
-            ("overnight_drift", None)]
+            ("carb_undercount", "highs_after_meals"), ("overnight_drift", None)]
         ids = {}
         with Store.open(self.path) as store:
             for lever, pattern in pins:
@@ -257,10 +256,9 @@ class DurableApiTest(unittest.TestCase):
         self.assertEqual(served[("correction_stacking", None)]["lever_title"], "Correction stacking")
         self.assertEqual(served[("missed_meal", None)]["lever_title"], "Missed / unannounced meal")
         self.assertEqual(served[("user_override", None)]["lever_title"], "Doses above pump calculation")
-        for lever, name in (("high_carb_sequence", "High-carb sequence"), ("repeat_eating", "Repeat eating")):
-            detail = served[(lever, "highs_after_meals")]
-            self.assertEqual(detail["lever_title"], name)
-            self.assertEqual(detail["title"], "Highs after meals")
+        detail = served[("carb_undercount", "highs_after_meals")]
+        self.assertEqual(detail["lever_title"], "Carb undercount")
+        self.assertEqual(detail["title"], "Highs after meals")
         outside = served[("overnight_drift", None)]
         self.assertIsNone(outside["lever_title"])
         self.assertEqual(outside["lever"], "overnight_drift")

@@ -177,24 +177,6 @@ term in Git history with no runner behind it.
 ambition, it has no surface yet, and the #31 exploration excludes it by name; it
 earns a row when it becomes a real job and gets its own round.
 
-Issue #342 chart baseline: `openspec/changes/eating-sequence-findings/evidence/`.
-Its contract was `finding-evidence-routing.behavior.md` and that ledger's
-app-only replay, both deleted by #416; what still runs over the six registry
-families is the fast gate over `frontend/diagnose-eating-sequences.js` and the
-generator-owned fixture below.
-
-
-- **Eating-sequence findings (#342):** `eating-sequence-findings.synthetic/payload.json`
-  is manufactured by `scripts/gen_eating_sequence_fixtures.py` through public
-  Python producers. The real chart lives in `frontend/diagnose-eating-sequences.js`;
-  S151–S158 consume these transports directly. High-carb
-  sequence uses the shared response renderer; Repeat eating keeps its aggregate chart.
-  All roster selections, including clean/reference sequences, expand losslessly
-  through the shared-value transport. Multiple-episode, differing-duration,
-  limited-support and missing-point states remain generator-owned. Both shipped
-  shells use these captures for the focused response and recovery checks.
-  This is generated test input, not a mock implementation.
-
 #404 re-freezes the shipped v2 revision contract in
 [harmonic-v2-desktop.behavior.md](harmonic-v2-desktop.behavior.md), with the
 registered S106/S107 fail-first trace and geometry obligations. The ledger's

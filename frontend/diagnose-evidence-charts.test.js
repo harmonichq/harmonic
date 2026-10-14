@@ -1,4 +1,3 @@
-import { expandSequenceFixture } from './eating-sequence-fixture.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -102,18 +101,17 @@ test('I:C block evidence turns only a stale-generation 409 into a typed stale re
   assert.equal(calls, 1, 'the transport reports staleness without retrying');
 });
 
-test('the registry declares six stateless chart kinds and their request coordinates', () => {
+test('the registry declares five stateless chart kinds and their request coordinates', () => {
   assert.deepEqual(DIAGNOSE_EVIDENCE_CHARTS.map(({ kind }) => kind), [
-    'basal', 'isf', 'carb-ratio', 'eating-sequence', 'event-comparison', 'pattern-case-file',
+    'basal', 'isf', 'carb-ratio', 'event-comparison', 'pattern-case-file',
   ]);
   assert.deepEqual(DIAGNOSE_EVIDENCE_CHARTS.map(({ coordinateSchema }) => coordinateSchema), [
     ['slot'], [], ['block_id', 'analysis_generation'],
     ['projection_id', 'finding_id', 'alignment', 'factor', 'view'],
     ['projection_id', 'finding_id', 'alignment', 'factor', 'view'],
-    ['projection_id', 'finding_id', 'alignment', 'factor', 'view'],
   ]);
   assert.deepEqual(DIAGNOSE_EVIDENCE_CHARTS.map(({ modes }) => modes), [
-    null, ['event', 'clock'], null, null, null, null,
+    null, ['event', 'clock'], null, null, null,
   ]);
   assert.ok(DIAGNOSE_EVIDENCE_CHARTS.every((entry) => typeof entry.matches === 'function'));
   assert.ok(DIAGNOSE_EVIDENCE_CHARTS.every((entry) => typeof entry.coordinates === 'function'));
@@ -128,7 +126,6 @@ test('every entry produces exactly the coordinates it declares', () => {
     basal: { id: 'basal:30-60', parameter: 'basal_rate', span: { start_min: 30, end_min: 60 } },
     isf: { id: 'isf', parameter: 'isf' },
     'carb-ratio': { id: 'ic:720', parameter: 'carb_ratio', span: { start_min: 720, end_min: 1440 } },
-    'eating-sequence': { id: 'finding:high_carb_sequence', lever: 'high_carb_sequence', title: 'High-carb sequence', event_chart: { lever: 'high_carb_sequence' } },
     'event-comparison': { id: 'finding:missed_meal', title: 'Missed meal',
       appearances: [{ family: 'highs', noun: 'highs' }],
       event_chart: { lever: 'missed_meal', window: { scoped: false } } },
@@ -1334,15 +1331,6 @@ test('glucose projections expose served values and thumbnails have no axis furni
   assert.ok(byKind['event-comparison'].glucoseValues(event).includes(servedMedian),
     'the comparison reports the medians the case file serves');
   for (const entry of DIAGNOSE_EVIDENCE_CHARTS) {
-    if (entry.kind === 'eating-sequence') {
-      const data = expandSequenceFixture(fixture('../mockups/eating-sequence-findings.synthetic/payload.json'))
-        .states.repeat_eating_empty.windows.global.cases['finding:repeat_eating'].event;
-      const thumb = entry.thumbnail(data);
-      assert.ok(thumb.xAxis.every((axis) => axis.axisLabel.show === false));
-      assert.ok(thumb.yAxis.every((axis) => axis.axisLabel.show === false));
-      assert.equal(thumb.tooltip.show, false);
-      continue;
-    }
     const thumbData = entry.kind === 'basal' ? { roster_count: 0, directional_support_count: 0, nights: [] }
       : entry.kind === 'isf' ? { counts: { detected_windows: 0, qualifying_windows: 0,
         qualifying_steps: 0 }, windows: [], steps: [] }
@@ -1432,20 +1420,9 @@ test('the shipped event-comparison mount derives its axis from rendered cohort g
     assert.deepEqual([mountedOption.yAxis.min, mountedOption.yAxis.max],
       [GLUCOSE_ENVELOPE[0], 280]);
 
-    const highCarb = structuredClone(event);
-    highCarb.projection = { ...highCarb.projection,
-      schema: 'high-carb-sequence-response-v1', scope: 'pooled', period: 'post_6h',
-      source_window: expandSequenceFixture(fixture('../mockups/eating-sequence-findings.synthetic/payload.json'))
-        .states.high_carb_sequence_empty.windows.global.cases['finding:high_carb_sequence']
-        .event.projection.response.source_window };
-    renderEventSurface(surface, highCarb, { range: [80, 240] });
-    assert.match(key.innerHTML, /Source population · Sequences at all times of day · 30 days · Next 6 h/);
+    renderEventSurface(surface, event, { range: [80, 240] });
     assert.deepEqual([mountedOption.yAxis.min, mountedOption.yAxis.max], [80, 240],
       'the focal surface preserves its injected shared range');
-    highCarb.projection.scope = 'evening';
-    renderEventSurface(surface, highCarb);
-    assert.match(key.innerHTML, /Source population · Evening sequences · 30 days · Next 6 h/);
-    assert.doesNotMatch(key.innerHTML, /pooled|evening scope/);
   } finally {
     globalThis.window = prior.window;
     globalThis.ResizeObserver = prior.ResizeObserver;
@@ -1537,7 +1514,6 @@ test('#395 · the Pattern rail preview labels served cohorts and seats the event
     warn: '#e2be4c', text: '#141a15', line: '#c3bfb4' };
   for (const [key, label, outcome] of [
     ['highs_after_meals', 'COMPLETED CARB BOLUS', 'RAN HIGH'],
-    ['lows_after_correcting_highs', 'LOW EXCURSION', 'FOLLOWED A CORRECTION'],
   ]) {
     const data = projectPatternCaseFile(capture, {
       patternChart: { key, window: { scoped: false, start_min: null, end_min: null } },
@@ -1586,53 +1562,6 @@ test('#395 · the Pattern rail preview labels served cohorts and seats the event
   }
 });
 
-test('#413 · the High-carb-sequence mini draws the same instrument, never the comparison token', () => {
-  // #413 review round 1: every fixture claims finding:high_carb_sequence, so
-  // its rail mini was never exercised by a mini-mounting test even though the
-  // registry already reroutes it through the shared cohort builder. Drive the
-  // registry entry directly against the real case file the app would serve
-  // for a RANKED (unclaimed) row, so a regression here fails even though the
-  // showcase never renders one live.
-  const entry = DIAGNOSE_EVIDENCE_CHARTS.find((item) => item.kind === 'eating-sequence');
-  const generated = expandSequenceFixture(fixture('../mockups/eating-sequence-findings.synthetic/payload.json'));
-  const data = generated.states.high_carb_sequence_in_sequence.windows.global.cases['finding:high_carb_sequence'].event;
-  const row = { count_sentences: [
-    { count: 8, denominator: 40, noun: 'sequences', outcome: 'ran less in range',
-      sentence: '8 of 40 sequences ran less in range' },
-  ] };
-  // The rail's own cohort palette, never the case file's comparison token —
-  // deliberately distinct hex values so a leaked `--ec-comparison`/blue read
-  // is caught rather than coincidentally matching.
-  const colors = { text: '#141a15', muted: '#3d5848', line: '#c3bfb4', signal: '#5a7a52',
-    high: '#caa23b', basal: '#9a8f7e', excluded: '#6b7169', warn: '#caa23b',
-    misses: '#b0632e', body: '#a79c88',
-    cohorts: { matched: '#5a7a52', nearly_matched: '#caa23b', comparison: '#b0632e' } };
-  const COMPARISON_BLUE = '#3b6ea5';
-  const option = entry.queuePreview({ kind: entry.kind, data }, [60, 260], colors, row);
-  assert.deepEqual(option.graphic.map((item) => item.style.text),
-    ['RAN LESS IN RANGE · 8', 'TYPICAL · 40'], 'the same cohort-label/TYPICAL instrument as every other mini');
-  assert.equal(option.graphic[0].style.fill, colors.misses, 'the rail miss ink, as on the Pattern mini');
-  const anchor = option.series.find((series) => series.id === 'queue:event:event-anchor')
-    .renderItem({ coordSys: { y: 20, height: 62 } }, { coord: () => [48, 20] });
-  const servedAnchor = data.projection.response.anchor?.label;
-  assert.ok(servedAnchor, 'premise: the High-carb response serves an anchor label');
-  assert.equal(anchor.children[1].style.text, servedAnchor.toUpperCase(),
-    'the anchor names the served event, not a desk word table');
-  const band = option.series.find((series) => series.id === 'queue:event:180');
-  assert.ok(band, 'the dashed 70-180 target band must render');
-  assert.equal(band.markLine.lineStyle.color, colors.warn);
-  const paintedColors = option.series.flatMap((series) =>
-    [series.lineStyle?.color, series.itemStyle?.color, series.markLine?.lineStyle?.color]).filter(Boolean);
-  assert.ok(paintedColors.length > 0, 'the mini must actually paint series');
-  for (const color of paintedColors) {
-    assert.notEqual(color, COMPARISON_BLUE, 'no mini series may resolve to the comparison-blue token');
-  }
-  assert.ok(paintedColors.every((color) =>
-    [colors.misses, colors.body, colors.cohorts.nearly_matched, colors.warn].includes(color)),
-    `every painted color must resolve to a rail cohort token or the warn band, saw ${JSON.stringify(paintedColors)}`);
-});
-
-
 test('#413 · a Pattern chart row match reads `pattern_chart` alone, the served roster', () => {
   // The projection serves `pattern_chart` only for a chartable Pattern
   // (#413 ADR "the desk carries no fallback"), so the frontend no longer
@@ -1650,13 +1579,13 @@ test('#395 · Pattern evidence joins the shared field and malformed previews fai
   const entry = DIAGNOSE_EVIDENCE_CHARTS.find((item) => item.kind === 'pattern-case-file');
   const capture = fixture('../mockups/diagnose-event-comparison.synthetic/capture.json');
   const data = projectPatternCaseFile(capture, {
-    patternChart: { key: 'lows_after_correcting_highs', window: caseFiles().preparation.coordinates.window },
+    patternChart: { key: 'highs_after_meals', window: caseFiles().preparation.coordinates.window },
   });
   const lever = { kind: 'event-comparison', state: 'ok', data: eventCase() };
   const pattern = { kind: entry.kind, state: 'ok', data };
-  assert.deepEqual(glucoseRange(entry.glucoseValues(data)), [40, 220]);
+  assert.deepEqual(glucoseRange(entry.glucoseValues(data)), [60, 220]);
   assert.deepEqual(fieldRange([lever], DIAGNOSE_EVIDENCE_CHARTS, glucoseRange), [60, 200]);
-  assert.deepEqual(fieldRange([lever, pattern], DIAGNOSE_EVIDENCE_CHARTS, glucoseRange), [40, 220]);
+  assert.deepEqual(fieldRange([lever, pattern], DIAGNOSE_EVIDENCE_CHARTS, glucoseRange), [60, 220]);
   const range = fieldRange([lever, pattern], DIAGNOSE_EVIDENCE_CHARTS, glucoseRange);
   for (const descriptor of [lever, pattern]) {
     const chart = DIAGNOSE_EVIDENCE_CHARTS.find((item) => item.kind === descriptor.kind);

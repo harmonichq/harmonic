@@ -9,7 +9,6 @@ import unittest
 from datetime import datetime, timedelta
 
 from ciq_autotune.analyzers.basal import analyze_basal
-from ciq_autotune.analyzers.scenario.outcome_patterns import build_outcome_patterns
 from ciq_autotune.events import BasalEvent, CgmReading
 from ciq_autotune.harm import HarmConfig
 from ciq_autotune.safety import Status
@@ -92,27 +91,10 @@ class BasalArmIntegrationTest(unittest.TestCase):
         # row-level keys are arm_days / row_days.
         self.assertEqual(s.evidence["harm"]["band_nights"], 2)
         self.assertEqual(s.evidence["harm"]["slot_nights"], 2)
-        self.assertEqual(s.evidence["harm"]["harm_band_source_nights"], 14)
         # ADR 466: the count the nudge used and the bar it met.
         self.assertEqual(s.evidence["harm"].get("recurrence_nights"), 2)
         self.assertEqual(s.evidence["harm"].get("recurrence_bar"), 2)
-        analysis = {
-            "basal": [s.to_dict()],
-            "tuning_levers": [{
-                "parameter": "basal_rate", "priority": 10,
-                "recurrence_channel": {"kind": "basal_lower", "k": 12, "n": 12},
-            }],
-        }
-        overnight = build_outcome_patterns(
-            analysis, {"exposures": {}}, {"patterns": [], "low_confidence": []},
-        )[-1]
-        self.assertEqual((overnight["k"], overnight["n"]), (2, 14))
-        seriousness = [{
-            "start_min": 180, "end_min": 210,
-            "seriousness": "recurring_low",
-        }]
-        self.assertEqual(overnight["members"][0]["seriousness"], "recurring_low")
-        self.assertEqual(overnight["members"][0]["seriousness_segments"], seriousness)
+        self.assertEqual(s.guidance["seriousness"], "recurring_low")
 
     def test_recurring_lows_hold_when_the_step_down_is_within_the_threshold(self):
         # ADR 465: 03:00's steady nights deliver 0.71 against 0.72. The cut the

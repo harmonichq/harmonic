@@ -71,14 +71,7 @@ EVENT_CHARTS = {
     for factor in config["factors"]
 }
 
-# Sequence Findings share the meals producer's outcome population. They have no
-# event-comparison factor card of their own, so this is an ownership map rather
-# than a second Pattern roster.
-_FOCUS_VIEW_FOR_LEVER = {
-    **{factor: config["view"] for factor, config in EVENT_CHARTS.items()},
-    "high_carb_sequence": "meals",
-    "repeat_eating": "meals",
-}
+_FOCUS_VIEW_FOR_LEVER = {factor: config["view"] for factor, config in EVENT_CHARTS.items()}
 
 FACTOR_LABELS = {
     "carb_undercount": "Carb undercount",

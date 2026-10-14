@@ -3,8 +3,7 @@ import { patternState } from '../../queue-model';
 import { CauseWaffle } from './CauseWaffle';
 
 // One story per state (§4.2 CauseWaffle), each the simulated wearer's own
-// served pattern: two or more attributed causes, one cause, and a count no
-// cause claims.
+// served pattern: two or more attributed causes, and one cause.
 const meta = {
   title: 'CauseWaffle',
   component: CauseWaffle,
@@ -15,7 +14,7 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-function story(name: 'multi_cause' | 'single_cause' | 'no_cause'): Story {
+function story(name: 'multi_cause' | 'single_cause'): Story {
   const data = patternState(name);
   const magnitude = data.magnitude!;
   return {
@@ -28,4 +27,3 @@ function story(name: 'multi_cause' | 'single_cause' | 'no_cause'): Story {
 
 export const MultiCause = story('multi_cause');
 export const SingleCause = story('single_cause');
-export const NoCause = story('no_cause');

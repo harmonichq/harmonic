@@ -467,11 +467,11 @@ test('#423 · two episodes of one Lever are one Finding', () => {
   assert.equal(ledger.claimedCount, 0);
 });
 
-test('#423 · a sequence Finding with no fired anchor still counts once', () => {
+test('#423 · a Finding with no fired anchor still counts once', () => {
   const claimedMeal = (t) => ({ t, kind: 'meal', bg: null, insulin: 4, carbs: 60, state: 'outranked',
     verdicts: [{ classifier: 'carb_undercount', title: 'Carb undercount', matched: true, silence_reason: null }] });
   const day = { ...claimedDay(), episodes: [{
-    id: '2026-06-17-ep3', lever: 'high_carb_sequence', lever_title: 'High-carb sequence', spans_midnight: false,
+    id: '2026-06-17-ep3', lever: 'late_bolus', lever_title: 'Late bolus', spans_midnight: false,
     start: '2026-06-17 12:00:00', end: '2026-06-17 15:00:00', steps: [],
     anchors: [claimedMeal('2026-06-17 12:00:00'), claimedMeal('2026-06-17 13:30:00')],
   }] };

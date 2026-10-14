@@ -1,8 +1,4 @@
 import {
-  highCarbResponseCase, isEatingSequence, eatingSequenceChartOption,
-  validEatingSequenceCase,
-} from './diagnose-eating-sequences.js';
-import {
   eventComparisonChartOption,
   eventComparisonGlucoseValues,
   GLUCOSE_ENVELOPE,
@@ -1278,41 +1274,6 @@ const entries = [
     glucoseValues: null,
   },
   {
-    kind: 'eating-sequence',
-    name: 'Eating sequence',
-    modes: null,
-    validateData: validEatingSequenceCase,
-    /* The High-carb mini is the SAME instrument every other ranked row's mini
-       draws (#413): cohort label and count, TYPICAL and denominator, a named
-       anchor, a dashed target band, all in the rail's own cohort palette —
-       `queuePreviewOption`'s shared cohort branch, not the case-file's own
-       renderer, which read its own comparison token rather than the rail's.
-       Repeat-eating's mini is a genuinely different shape (a carb-quintile ×
-       window-count matrix, no event to anchor on) and keeps its own chart. */
-    queuePreview: (descriptor, range, colors, row) => descriptor.data.finding.lever === 'high_carb_sequence'
-      ? queuePreviewOption({ kind: 'high-carb-response',
-        data: { projection: highCarbResponseCase(descriptor.data).projection } }, range, colors, row)
-      : eatingSequenceChartOption(descriptor.data, { mini: true, palette: colors.cohorts }),
-    nameFor: (row) => ({ title: row.title, meta: 'sequence cohorts · served comparison' }),
-    meta: () => 'sequence cohorts · served comparison',
-    option: (_mode, { data, range, caseFile = data, surface = null, mini = false } = {}) =>
-      caseFile.finding.lever === 'high_carb_sequence'
-        ? eventComparisonChartOption(highCarbResponseCase(caseFile), range, surface, mini)
-        : eatingSequenceChartOption(caseFile, { surface, mini }),
-    thumbnail: (data) => {
-      if (data.finding.lever !== 'high_carb_sequence') return eatingSequenceChartOption(data, { mini: true });
-      const response = highCarbResponseCase(data);
-      return eventComparisonChartOption(response,
-        glucoseRange(eventComparisonGlucoseValues(response)), null, true);
-    },
-    coordinateSchema: ['projection_id', 'finding_id', 'alignment', 'factor', 'view'],
-    matches: (row) => isEatingSequence(row.lever) && Boolean(row.event_chart),
-    coordinates: (row, findings) => ({ projection_id: findings.projection_id,
-      finding_id: row.id, alignment: 'event', factor: row.lever, view: 'sequences' }),
-    glucoseValues: (data) => data?.finding?.lever === 'high_carb_sequence'
-      ? eventComparisonGlucoseValues(highCarbResponseCase(data)) : [],
-  },
-  {
     kind: 'event-comparison',
     /* ONE TILE PER BEHAVIOURAL ROW, AND EACH ONE SAYS WHOSE IT IS. This kind is
        the only one a window can publish several of at once, so a single static
@@ -1340,7 +1301,7 @@ const entries = [
        back from the row's own `event_chart`, so two behavioural tiles in one
        window can never share a request. */
     coordinateSchema: ['projection_id', 'finding_id', 'alignment', 'factor', 'view'],
-    matches: (row) => Boolean(row.event_chart) && !isEatingSequence(row.lever),
+    matches: (row) => Boolean(row.event_chart),
     /* The case-file coordinates are opaque transport values: the served
        projection, the row's own id, and the alignment this tile draws. */
     coordinates: (row, findings) => ({

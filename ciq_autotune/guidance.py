@@ -33,19 +33,18 @@ _TREATMENT_FIELDS = {"recommended", "priced_target"}
 _SETTING_SUBJECTS = frozenset({
     "setting:basal_rate", "setting:carb_ratio", "setting:isf",
 })
-_INVESTIGATION_SUBJECTS = frozenset({"investigation:uncaused_highs"})
 _HABIT_SUBJECTS = frozenset(f"habit:{lever.value}" for lever in Lever)
 _PATTERN_SUBJECTS = frozenset(f"pattern:{key}" for key in _GATES)
-_PREFERENCE_SUBJECTS = (_SETTING_SUBJECTS | _HABIT_SUBJECTS
-                        | _INVESTIGATION_SUBJECTS | _PATTERN_SUBJECTS)
+_PREFERENCE_SUBJECTS = _SETTING_SUBJECTS | _HABIT_SUBJECTS | _PATTERN_SUBJECTS
+# Served as a candidate, because the Plan applies an ISF draft against it, but never
+# admitted to the Queue: the correction-factor estimate is shown, not queued (ADR 499).
+_UNQUEUED_SUBJECTS = frozenset({"setting:isf"})
 # The name served beside each Pattern member subject: a habit by its Lever's
 # title, a setting by its reader-facing name (ADR 426).
 _MEMBER_TITLES = {
     **{f"habit:{lever.value}": lever_title(lever) for lever in Lever},
     **{f"setting:{parameter}": name for parameter, name in _SETTING_TITLES.items()},
 }
-_UNCAUSED_HIGHS_TITLE = "Highs without a detected cause"
-_SUBJECT_TITLES = {**_MEMBER_TITLES, "investigation:uncaused_highs": _UNCAUSED_HIGHS_TITLE}
 
 
 def is_preference_subject(subject):
@@ -54,12 +53,12 @@ def is_preference_subject(subject):
 
 
 def subject_title(subject):
-    """The served name of a setting, habit or investigation subject, else ``None``.
+    """The served name of a setting or habit subject, else ``None``.
 
     Keyed by the whole subject, never parsed from it (ADR 451). A Pattern needs no
     name here: the outcome roster serves every Pattern present with its own title.
     """
-    return _SUBJECT_TITLES.get(subject)
+    return _MEMBER_TITLES.get(subject)
 
 
 def _factual(value):
@@ -242,15 +241,6 @@ def _source_candidates(analysis, exposures, scenarios):
                                  ["The source Priority threshold is unavailable."]
                                  if threshold_unavailable
                                  else [] if admitted else ["This finding is not admitted for action."])})
-    highs = ((exposures.get("exposures") or {}).get("highs") or {}).get("uncaused") or 0
-    if highs:
-        out.append({"subject": "investigation:uncaused_highs", "kind": "investigation",
-                    "title": _UNCAUSED_HIGHS_TITLE, "units": None,
-                    "priority": None, "action": None, "seriousness": None, "members": [],
-                    "evidence": [{"operation": "uncaused_highs", "count": highs}],
-                    "support": {"count": highs}, "population": [], "occurrence_ids": [],
-                    "source_window": deepcopy(exposures.get("window")), "priority_inputs": {},
-                    "unavailable": False, "unknowns": ["No cause was detected by the app."]})
     return out
 
 
@@ -449,7 +439,9 @@ def build_guidance(*, analysis, exposures, scenarios, preferences=(), active_wat
                 "unavailable": "Required analysis inputs are unavailable.", "candidates": [], "alternatives": []}
     all_candidates, stored = candidates(analysis, exposures, scenarios), {row["subject"]: row for row in preferences}
     for row in all_candidates:
-        row["preference"], row["admitted"] = preference_status(row, stored.get(row["subject"])), row.get("action") is not None
+        row["preference"] = preference_status(row, stored.get(row["subject"]))
+        row["admitted"] = (row.get("action") is not None
+                           and row["subject"] not in _UNQUEUED_SUBJECTS)
         if row["subject"] in stored:
             row["decision"] = {key: stored[row["subject"]][key] for key in ("decided_at", "reason", "comparison_version", "state")}
     known = {row["subject"] for row in all_candidates}
@@ -465,7 +457,13 @@ def build_guidance(*, analysis, exposures, scenarios, preferences=(), active_wat
                                                 else None)},
                "decision": {key: row[key] for key in ("decided_at", "reason", "comparison_version", "state")}}
               for row in preferences if row["subject"] not in known]
-    selection_rows = [row for row in all_candidates if row["kind"] != "setting"
+    # A setting a Pattern carries is selected through that Pattern; one no Pattern
+    # carries (basal, since ADR 499) is selected as itself. ISF is never selected.
+    carried = {member["subject"] for row in all_candidates if row["kind"] == "pattern"
+               for member in row["members"] if member["kind"] == "setting"}
+    selection_rows = [row for row in all_candidates
+                      if (row["kind"] != "setting"
+                          or row["subject"] not in carried | _UNQUEUED_SUBJECTS)
                       and (row["kind"] != "pattern" or row.get("action") is not None
                            or row.get("unavailable") or row.get("has_concern"))]
     available = sorted((row for row in selection_rows

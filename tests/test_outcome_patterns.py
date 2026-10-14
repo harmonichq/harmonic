@@ -1,15 +1,11 @@
-"""Sequence habit admission cannot change the Pattern's meals rate (#342)."""
+"""Outcome Patterns: scoped populations, membership, meal identity and uncertainty."""
 import unittest
-from types import SimpleNamespace
 from datetime import datetime, timedelta
 
-from ciq_autotune.analyzers.scenario.engine import assemble
-from ciq_autotune.analyzers.scenario.evaluation import evaluate
 from ciq_autotune.analyzers.scenario.outcome_patterns import build_outcome_patterns
 from ciq_autotune.analyzers.scenario.outcome_patterns import outcome_window_population
 from ciq_autotune.explore_exposures import build_exposures
 from ciq_autotune.window_membership import WindowQuery
-from tests.eating_sequence_streams import sequence_episode_stream
 
 
 SPLIT_MEAL_NOON = datetime(2024, 5, 3, 12, 0)
@@ -83,46 +79,6 @@ def write_late_meals(store, *, post_peak, top_up=False):
             "insulin": insulin, "requested_insulin": insulin, "carbs": carbs,
             "carb_ratio": 10.0, "isf": 40.0, "target_bg": 110.0,
         } for seq_num, at, insulin, carbs in doses])
-
-class SequenceHabitPatternTest(unittest.TestCase):
-    def test_covered_and_empty_winners_admit_without_rate_claims(self):
-        for lever in ('high_carb_sequence', 'repeat_eating'):
-            for covered in (False, True):
-                with self.subTest(lever=lever, covered=covered):
-                    b, c, log, basal = sequence_episode_stream(lever, covered=covered)
-                    store = SimpleNamespace(bolus_events=lambda: b, cgm_readings=lambda: c,
-                                            basal_events=lambda: basal, carb_entries=lambda: log,
-                                            settings_snapshots=lambda: [], prompt_responses=lambda: [])
-                    scenarios = assemble(b, c, basal, carb_entries=log).to_dict()
-                    evaluated = evaluate(b, c, basal, carb_entries=log)
-                    exposures = build_exposures(store)
-                    meals = exposures['exposures']['meals']['occurrences']
-                    pattern = next(p for p in build_outcome_patterns({}, exposures, scenarios)
-                                   if p['key'] == 'highs_after_meals')
-                    subject = f'habit:{lever}'
-                    member = next(m for m in pattern['members'] if m['subject'] == subject)
-                    own = next(p for p in scenarios['patterns'] + scenarios['low_confidence'] if p['lever'] == lever)
-                    self.assertTrue(member['admitted'])
-                    self.assertEqual(member['k'], 8)
-                    self.assertEqual(member['price'], own['priority'])
-                    self.assertEqual(pattern['admission_route'], 'habit_threshold')
-                    self.assertNotIn(subject, pattern['rate_levers'])
-                    self.assertNotIn('habit:high_carb_sequence', pattern['rate_levers'])
-                    self.assertNotIn('habit:repeat_eating', pattern['rate_levers'])
-                    self.assertIn('habit:meal_bolus_short', pattern['rate_levers'])
-                    self.assertEqual(pattern['n'], len(meals))
-                    self.assertEqual(pattern['k'], 0)
-                    self.assertTrue(all(lever not in m['attributed_levers'] for m in meals))
-                    owned = [e for e in evaluated.episodes if e.attribution.lever == lever]
-                    expected = {m['t'] for m in meals if any(
-                        e.start <= datetime.fromisoformat(m['t']) < e.end for e in owned)}
-                    actual = {m['t'] for m in meals if subject in m.get('member_associations', [])}
-                    self.assertEqual(actual, expected)
-                    self.assertEqual(bool(actual), covered)
-                    evidence = exposures['sequence_evidence'][lever]
-                    self.assertEqual(len({e['id'] for e in evidence['occurrences']}), 8)
-                    self.assertEqual(len(evidence['population']), own['confidence']['n'])
-
 
 class ScopedPatternPopulationTest(unittest.TestCase):
     def test_scoped_pattern_membership_uses_only_the_published_outcome_population(self):
@@ -289,33 +245,11 @@ class ScopedPatternMembershipTest(unittest.TestCase):
 
     SCENARIOS = {"patterns": [], "low_confidence": []}
 
-    @staticmethod
-    def _analysis(source_nights):
-        return {
-            "basal": [{"evidence": {"harm_band_source_nights": source_nights,
-                                    "harm": {"band_nights": 2}}}],
-            "tuning_levers": [{"parameter": "basal_rate", "priority": 39}],
-        }
-
     def _roster(self, analysis, exposures, bounds):
         _population, roster = outcome_window_population(
             analysis, exposures, self.SCENARIOS, WindowQuery.clock(*bounds),
         )
         return {row["key"]: row for row in roster}
-
-    def test_the_overnight_pattern_joins_windows_overlapping_its_band(self):
-        analysis = self._analysis(8)
-        for bounds in ((0, 360), (300, 420)):
-            with self.subTest(bounds=bounds):
-                pattern = self._roster(analysis, {"exposures": {}}, bounds)[
-                    "overnight_lows_no_iob"]
-                self.assertEqual((pattern["k"], pattern["n"]), (2, 8))
-        self.assertNotIn("overnight_lows_no_iob",
-                         self._roster(analysis, {"exposures": {}}, (360, 1440)))
-
-    def test_the_overnight_pattern_with_no_source_nights_joins_no_window(self):
-        self.assertNotIn("overnight_lows_no_iob",
-                         self._roster(self._analysis(0), {"exposures": {}}, (0, 360)))
 
     def test_an_unadmitted_pattern_joins_the_window_its_outcome_lands_in(self):
         low = {

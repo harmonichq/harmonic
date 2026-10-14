@@ -2158,7 +2158,6 @@
     "start_min": null
    }
   },
-  "eating_sequence_report": null,
   "findings": {
    "analysis_generation": "synthetic:178",
    "chip_counts": {
@@ -2188,10 +2187,6 @@
    ],
    "schema": "diagnose-findings-v2",
    "selection": null,
-   "uncaused_highs": {
-    "count": 0,
-    "text": "None"
-   },
    "window": {
     "end_min": null,
     "label": null,

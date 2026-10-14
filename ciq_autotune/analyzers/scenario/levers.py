@@ -52,27 +52,12 @@ class Lever(str, Enum):
     CORRECTION_STACKING = "correction_stacking"
     CORRECTION_ON_IOB = "correction_on_iob"
     MISSED_MEAL = "missed_meal"
-    MEAL_BOLUS_SHORT = "meal_bolus_short"
-    HIGH_CARB_SEQUENCE = "high_carb_sequence"
-    REPEAT_EATING = "repeat_eating"
 
 
 # Per-lever metadata: title, the outcome Exposure it belongs to, the
 # single recommendation the closed set promises, and the plain-language meaning
 # (#157). Keep these in lock-step with the taxonomy table in #70 §2.
 _META = {
-    Lever.HIGH_CARB_SEQUENCE: (
-        "High-carb sequence", Exposure.MEALS,
-        "Watch how your largest eating sequences compare with smaller ones.",
-        "Your highest-carb eating sequences were associated with less time in range "
-        "or more glucose variability than the rest.",
-    ),
-    Lever.REPEAT_EATING: (
-        "Repeat eating", Exposure.MEALS,
-        "Watch how repeated eating windows compare with a single window at similar total carbs.",
-        "Sequences with three or more eating windows were associated with less time in range "
-        "or more glucose variability than single-window sequences at similar total carbs.",
-    ),
     Lever.CARB_UNDERCOUNT: (
         "Carb undercount",
         Exposure.MEALS,
@@ -128,22 +113,6 @@ _META = {
         "Glucose rose with the shape of a meal but no bolus sits near it. A meal "
         "that went un-bolused, or was bolused very late.",
     ),
-    # DELIBERATELY NOT CARB UNDERCOUNT (#63). That lever runs implied-I:C inference
-    # and asserts a quantified carb shortfall; this one asserts only that the dose
-    # given did not cover the outcome that followed, with the correction as its
-    # evidence. No copy below may imply underestimated carbs, inferred grams, or a
-    # ratio change — the recommendation is observation-only, and the meaning says
-    # outright that the claim is not about carb counting.
-    Lever.MEAL_BOLUS_SHORT: (
-        "Meal bolus fell short",
-        Exposure.HIGHS,
-        "A correction was needed behind this meal dose. It is worth watching how "
-        "often that happens before changing anything.",
-        "You bolused for the meal, glucose climbed anyway, and a correction was "
-        "needed afterward. The dose did not cover what followed. This says nothing "
-        "about how many carbs the meal held, only that the dose given fell short of "
-        "the outcome.",
-    ),
 }
 
 
@@ -164,8 +133,6 @@ LEVER_EXPOSURE = {lever: meta[1] for lever, meta in _META.items()}
 # ``correction``). A lever whose consequence *is* its own anchor still declares one,
 # so the set stays closed and a new lever has to answer the question.
 _OUTCOME_KIND = {
-    Lever.HIGH_CARB_SEQUENCE: "sequence",
-    Lever.REPEAT_EATING: "sequence",
     Lever.CARB_UNDERCOUNT: "high",       # the run-away high after the meal
     Lever.LATE_BOLUS: "high",            # the peak the late dose never caught
     Lever.MEAL_OVER_DELIVERY: "low",     # the drop the strong meal dose left behind
@@ -173,7 +140,6 @@ _OUTCOME_KIND = {
     Lever.CORRECTION_STACKING: "low",    # the overshoot the stacked doses carried into
     Lever.CORRECTION_ON_IOB: "low",      # the low the doubled-up insulin reached
     Lever.MISSED_MEAL: "high",           # the un-bolused rise itself
-    Lever.MEAL_BOLUS_SHORT: "high",      # the run-away the meal dose did not cover
 }
 
 
@@ -203,14 +169,12 @@ def recommendation(lever: "Lever") -> str:
     return _META[lever][2]
 
 
-def action_id(lever: "Lever") -> Optional[str]:
+def action_id(lever: "Lever") -> str:
     """The closed semantic action identity for a behavioral Lever.
 
     Guidance compares this stable owner-produced identifier, never rendered
     recommendation prose. A copy edit therefore cannot manufacture a new action.
     """
-    if lever is Lever.MEAL_BOLUS_SHORT:
-        return None
     return f"habit:{lever.value}"
 
 

@@ -319,30 +319,6 @@
             }
           ],
           "title": "Missed / unannounced meal"
-        },
-        {
-          "exposure": "meals",
-          "lever": "meal_bolus_short",
-          "polarity": "down_good",
-          "recommendation": "A correction was needed behind this meal dose. It is worth watching how often that happens before changing anything.",
-          "series": [
-            {
-              "attributed": 0,
-              "exposure_n": 0,
-              "problem_rate": 0.0
-            },
-            {
-              "attributed": 0,
-              "exposure_n": 0,
-              "problem_rate": 0.0
-            },
-            {
-              "attributed": 0,
-              "exposure_n": 1,
-              "problem_rate": 0.0
-            }
-          ],
-          "title": "Meal bolus fell short"
         }
       ],
       "metrics": [
@@ -859,40 +835,6 @@
             }
           ],
           "title": "Missed / unannounced meal"
-        },
-        {
-          "exposure": "meals",
-          "lever": "meal_bolus_short",
-          "polarity": "down_good",
-          "recommendation": "A correction was needed behind this meal dose. It is worth watching how often that happens before changing anything.",
-          "series": [
-            {
-              "attributed": 0,
-              "exposure_n": 0,
-              "problem_rate": 0.0
-            },
-            {
-              "attributed": 0,
-              "exposure_n": 0,
-              "problem_rate": 0.0
-            },
-            {
-              "attributed": 0,
-              "exposure_n": 1,
-              "problem_rate": 0.0
-            },
-            {
-              "attributed": 0,
-              "exposure_n": 0,
-              "problem_rate": 0.0
-            },
-            {
-              "attributed": 0,
-              "exposure_n": 1,
-              "problem_rate": 0.0
-            }
-          ],
-          "title": "Meal bolus fell short"
         }
       ],
       "metrics": [
@@ -92080,121 +92022,6 @@
               "window_scope": "window"
             },
             {
-              "anchored_by": "basal:180-240",
-              "annotation": null,
-              "appearances": null,
-              "asserts_move": null,
-              "chips": [
-                "lows"
-              ],
-              "claimed_by": null,
-              "count_sentences": [
-                {
-                  "count": 0,
-                  "denominator": 30,
-                  "noun": "nights",
-                  "outcome": "ran low overnight",
-                  "sentence": "0 of 30 nights ran low overnight"
-                }
-              ],
-              "current": null,
-              "direction": null,
-              "episodes": null,
-              "estimate": null,
-              "event_chart": null,
-              "evidence": null,
-              "fold_sentences": null,
-              "headline": "Overnight lows with no insulin on board in 0 of 30 nights",
-              "id": "pattern:overnight_lows_no_iob",
-              "kind": "pattern",
-              "label": null,
-              "lean": null,
-              "lever": null,
-              "members": null,
-              "parameter": null,
-              "past_setting": null,
-              "pattern": {
-                "action": "basal_rate",
-                "admission_route": "setting_staging",
-                "collapse": "remain_pattern",
-                "harm_low_overlap": [],
-                "k": 0,
-                "key": "overnight_lows_no_iob",
-                "member_set_fingerprint": "be01b57ca95abd31",
-                "members": [
-                  {
-                    "action": "basal_rate",
-                    "admitted": true,
-                    "hi": null,
-                    "k": 0,
-                    "kind": "setting",
-                    "lo": null,
-                    "price": 97,
-                    "producer": "tuning_levers",
-                    "seriousness": null,
-                    "seriousness_segments": [],
-                    "subject": "setting:basal_rate"
-                  }
-                ],
-                "n": 30,
-                "overlap_counts": {
-                  "highs_after_meals": {
-                    "count": null,
-                    "reason": "no_habit_exposure_identity",
-                    "status": "not_comparable"
-                  },
-                  "highs_after_treating_lows": {
-                    "count": null,
-                    "reason": "no_habit_exposure_identity",
-                    "status": "not_comparable"
-                  },
-                  "lows_after_correcting_highs": {
-                    "count": null,
-                    "reason": "no_habit_exposure_identity",
-                    "status": "not_comparable"
-                  },
-                  "lows_after_meals": {
-                    "count": null,
-                    "reason": "no_habit_exposure_identity",
-                    "status": "not_comparable"
-                  }
-                },
-                "rate": 0.0,
-                "rate_levers": [],
-                "rate_producer": "harm_band_source_nights",
-                "readiness": {
-                  "count": 30,
-                  "gate": 12,
-                  "verdict": "ready"
-                },
-                "seriousness": null,
-                "settled_price": 97,
-                "subject": "pattern:overnight_lows_no_iob",
-                "title": "Overnight lows with no insulin on board",
-                "wide": false,
-                "wilson": {
-                  "hi": 0.0519,
-                  "lo": 0.0
-                }
-              },
-              "pattern_chart": null,
-              "priority": 97,
-              "programmed_now": null,
-              "rank_note": "Ranked with its setting",
-              "reason": null,
-              "recommended": null,
-              "regime_end": null,
-              "register": "finding",
-              "run_ids": null,
-              "span": null,
-              "support": null,
-              "tier": "next_in_line",
-              "title": "Overnight lows with no insulin on board",
-              "verdict_counts": null,
-              "verdict_counts_by_family": null,
-              "window_scope": "whole_day"
-            },
-            {
               "anchored_by": null,
               "annotation": null,
               "appearances": [
@@ -92355,36 +92182,6 @@
                 "action": null,
                 "admission_route": "none",
                 "collapse": "remain_pattern",
-                "harm_low_overlap": [
-                  {
-                    "count": null,
-                    "habit_subject": "habit:carb_undercount",
-                    "reason": "different_identity_spaces",
-                    "setting_subject": "setting:carb_ratio",
-                    "status": "not_comparable"
-                  },
-                  {
-                    "count": null,
-                    "habit_subject": "habit:late_bolus",
-                    "reason": "different_identity_spaces",
-                    "setting_subject": "setting:carb_ratio",
-                    "status": "not_comparable"
-                  },
-                  {
-                    "count": null,
-                    "habit_subject": "habit:high_carb_sequence",
-                    "reason": "different_identity_spaces",
-                    "setting_subject": "setting:carb_ratio",
-                    "status": "not_comparable"
-                  },
-                  {
-                    "count": null,
-                    "habit_subject": "habit:repeat_eating",
-                    "reason": "different_identity_spaces",
-                    "setting_subject": "setting:carb_ratio",
-                    "status": "not_comparable"
-                  }
-                ],
                 "k": 0,
                 "key": "highs_after_meals",
                 "member_set_fingerprint": "13141e472c40a768",
@@ -92404,33 +92201,10 @@
                   }
                 ],
                 "n": 1,
-                "overlap_counts": {
-                  "highs_after_treating_lows": {
-                    "count": null,
-                    "reason": "different_exposure_families",
-                    "status": "not_comparable"
-                  },
-                  "lows_after_correcting_highs": {
-                    "count": null,
-                    "reason": "different_exposure_families",
-                    "status": "not_comparable"
-                  },
-                  "lows_after_meals": {
-                    "count": 0,
-                    "reason": "shared_meals_exposure",
-                    "status": "comparable"
-                  },
-                  "overnight_lows_no_iob": {
-                    "count": null,
-                    "reason": "no_habit_exposure_identity",
-                    "status": "not_comparable"
-                  }
-                },
                 "rate": 0.0,
                 "rate_levers": [
                   "habit:carb_undercount",
-                  "habit:late_bolus",
-                  "habit:meal_bolus_short"
+                  "habit:late_bolus"
                 ],
                 "rate_producer": "exposures",
                 "readiness": {
@@ -92496,63 +92270,11 @@
                 "action": null,
                 "admission_route": "none",
                 "collapse": "remain_pattern",
-                "harm_low_overlap": [
-                  {
-                    "count": 0,
-                    "habit_subject": "habit:correction_stacking",
-                    "reason": "shared_low_episode_nadir",
-                    "setting_subject": "setting:isf",
-                    "status": "comparable"
-                  },
-                  {
-                    "count": 1,
-                    "habit_subject": "habit:correction_on_iob",
-                    "reason": "shared_low_episode_nadir",
-                    "setting_subject": "setting:isf",
-                    "status": "comparable"
-                  }
-                ],
                 "k": 1,
                 "key": "lows_after_correcting_highs",
-                "member_set_fingerprint": "72e37bdefcacb6d7",
-                "members": [
-                  {
-                    "action": null,
-                    "admitted": false,
-                    "hi": null,
-                    "k": 1,
-                    "kind": "setting",
-                    "lo": null,
-                    "price": 0,
-                    "producer": "tuning_levers",
-                    "seriousness": null,
-                    "seriousness_segments": [],
-                    "subject": "setting:isf"
-                  }
-                ],
+                "member_set_fingerprint": "e3b0c44298fc1c14",
+                "members": [],
                 "n": 6,
-                "overlap_counts": {
-                  "highs_after_meals": {
-                    "count": null,
-                    "reason": "different_exposure_families",
-                    "status": "not_comparable"
-                  },
-                  "highs_after_treating_lows": {
-                    "count": 0,
-                    "reason": "shared_lows_exposure",
-                    "status": "comparable"
-                  },
-                  "lows_after_meals": {
-                    "count": null,
-                    "reason": "different_exposure_families",
-                    "status": "not_comparable"
-                  },
-                  "overnight_lows_no_iob": {
-                    "count": null,
-                    "reason": "no_habit_exposure_identity",
-                    "status": "not_comparable"
-                  }
-                },
                 "rate": 0.1667,
                 "rate_levers": [
                   "habit:correction_stacking",
@@ -92761,15 +92483,6 @@
                 "action": null,
                 "admission_route": "none",
                 "collapse": "remain_pattern",
-                "harm_low_overlap": [
-                  {
-                    "count": 0,
-                    "habit_subject": "habit:meal_over_delivery",
-                    "reason": "shared_low_episode_nadir",
-                    "setting_subject": "setting:carb_ratio",
-                    "status": "comparable"
-                  }
-                ],
                 "k": 0,
                 "key": "lows_after_meals",
                 "member_set_fingerprint": "13141e472c40a768",
@@ -92789,28 +92502,6 @@
                   }
                 ],
                 "n": 1,
-                "overlap_counts": {
-                  "highs_after_meals": {
-                    "count": 0,
-                    "reason": "shared_meals_exposure",
-                    "status": "comparable"
-                  },
-                  "highs_after_treating_lows": {
-                    "count": null,
-                    "reason": "different_exposure_families",
-                    "status": "not_comparable"
-                  },
-                  "lows_after_correcting_highs": {
-                    "count": null,
-                    "reason": "different_exposure_families",
-                    "status": "not_comparable"
-                  },
-                  "overnight_lows_no_iob": {
-                    "count": null,
-                    "reason": "no_habit_exposure_identity",
-                    "status": "not_comparable"
-                  }
-                },
                 "rate": 0.0,
                 "rate_levers": [
                   "habit:meal_over_delivery"
@@ -95172,121 +94863,6 @@
           "window_scope": "window"
         },
         {
-          "anchored_by": "basal:180-240",
-          "annotation": null,
-          "appearances": null,
-          "asserts_move": null,
-          "chips": [
-            "lows"
-          ],
-          "claimed_by": null,
-          "count_sentences": [
-            {
-              "count": 0,
-              "denominator": 30,
-              "noun": "nights",
-              "outcome": "ran low overnight",
-              "sentence": "0 of 30 nights ran low overnight"
-            }
-          ],
-          "current": null,
-          "direction": null,
-          "episodes": null,
-          "estimate": null,
-          "event_chart": null,
-          "evidence": null,
-          "fold_sentences": null,
-          "headline": "Overnight lows with no insulin on board in 0 of 30 nights",
-          "id": "pattern:overnight_lows_no_iob",
-          "kind": "pattern",
-          "label": null,
-          "lean": null,
-          "lever": null,
-          "members": null,
-          "parameter": null,
-          "past_setting": null,
-          "pattern": {
-            "action": "basal_rate",
-            "admission_route": "setting_staging",
-            "collapse": "remain_pattern",
-            "harm_low_overlap": [],
-            "k": 0,
-            "key": "overnight_lows_no_iob",
-            "member_set_fingerprint": "be01b57ca95abd31",
-            "members": [
-              {
-                "action": "basal_rate",
-                "admitted": true,
-                "hi": null,
-                "k": 0,
-                "kind": "setting",
-                "lo": null,
-                "price": 97,
-                "producer": "tuning_levers",
-                "seriousness": null,
-                "seriousness_segments": [],
-                "subject": "setting:basal_rate"
-              }
-            ],
-            "n": 30,
-            "overlap_counts": {
-              "highs_after_meals": {
-                "count": null,
-                "reason": "no_habit_exposure_identity",
-                "status": "not_comparable"
-              },
-              "highs_after_treating_lows": {
-                "count": null,
-                "reason": "no_habit_exposure_identity",
-                "status": "not_comparable"
-              },
-              "lows_after_correcting_highs": {
-                "count": null,
-                "reason": "no_habit_exposure_identity",
-                "status": "not_comparable"
-              },
-              "lows_after_meals": {
-                "count": null,
-                "reason": "no_habit_exposure_identity",
-                "status": "not_comparable"
-              }
-            },
-            "rate": 0.0,
-            "rate_levers": [],
-            "rate_producer": "harm_band_source_nights",
-            "readiness": {
-              "count": 30,
-              "gate": 12,
-              "verdict": "ready"
-            },
-            "seriousness": null,
-            "settled_price": 97,
-            "subject": "pattern:overnight_lows_no_iob",
-            "title": "Overnight lows with no insulin on board",
-            "wide": false,
-            "wilson": {
-              "hi": 0.0519,
-              "lo": 0.0
-            }
-          },
-          "pattern_chart": null,
-          "priority": 97,
-          "programmed_now": null,
-          "rank_note": "Ranked with its setting",
-          "reason": null,
-          "recommended": null,
-          "regime_end": null,
-          "register": "finding",
-          "run_ids": null,
-          "span": null,
-          "support": null,
-          "tier": "next_in_line",
-          "title": "Overnight lows with no insulin on board",
-          "verdict_counts": null,
-          "verdict_counts_by_family": null,
-          "window_scope": "whole_day"
-        },
-        {
           "anchored_by": null,
           "annotation": null,
           "appearances": [
@@ -95447,36 +95023,6 @@
             "action": null,
             "admission_route": "none",
             "collapse": "remain_pattern",
-            "harm_low_overlap": [
-              {
-                "count": null,
-                "habit_subject": "habit:carb_undercount",
-                "reason": "different_identity_spaces",
-                "setting_subject": "setting:carb_ratio",
-                "status": "not_comparable"
-              },
-              {
-                "count": null,
-                "habit_subject": "habit:late_bolus",
-                "reason": "different_identity_spaces",
-                "setting_subject": "setting:carb_ratio",
-                "status": "not_comparable"
-              },
-              {
-                "count": null,
-                "habit_subject": "habit:high_carb_sequence",
-                "reason": "different_identity_spaces",
-                "setting_subject": "setting:carb_ratio",
-                "status": "not_comparable"
-              },
-              {
-                "count": null,
-                "habit_subject": "habit:repeat_eating",
-                "reason": "different_identity_spaces",
-                "setting_subject": "setting:carb_ratio",
-                "status": "not_comparable"
-              }
-            ],
             "k": 0,
             "key": "highs_after_meals",
             "member_set_fingerprint": "13141e472c40a768",
@@ -95496,33 +95042,10 @@
               }
             ],
             "n": 1,
-            "overlap_counts": {
-              "highs_after_treating_lows": {
-                "count": null,
-                "reason": "different_exposure_families",
-                "status": "not_comparable"
-              },
-              "lows_after_correcting_highs": {
-                "count": null,
-                "reason": "different_exposure_families",
-                "status": "not_comparable"
-              },
-              "lows_after_meals": {
-                "count": 0,
-                "reason": "shared_meals_exposure",
-                "status": "comparable"
-              },
-              "overnight_lows_no_iob": {
-                "count": null,
-                "reason": "no_habit_exposure_identity",
-                "status": "not_comparable"
-              }
-            },
             "rate": 0.0,
             "rate_levers": [
               "habit:carb_undercount",
-              "habit:late_bolus",
-              "habit:meal_bolus_short"
+              "habit:late_bolus"
             ],
             "rate_producer": "exposures",
             "readiness": {
@@ -95588,63 +95111,11 @@
             "action": null,
             "admission_route": "none",
             "collapse": "remain_pattern",
-            "harm_low_overlap": [
-              {
-                "count": 0,
-                "habit_subject": "habit:correction_stacking",
-                "reason": "shared_low_episode_nadir",
-                "setting_subject": "setting:isf",
-                "status": "comparable"
-              },
-              {
-                "count": 1,
-                "habit_subject": "habit:correction_on_iob",
-                "reason": "shared_low_episode_nadir",
-                "setting_subject": "setting:isf",
-                "status": "comparable"
-              }
-            ],
             "k": 1,
             "key": "lows_after_correcting_highs",
-            "member_set_fingerprint": "72e37bdefcacb6d7",
-            "members": [
-              {
-                "action": null,
-                "admitted": false,
-                "hi": null,
-                "k": 1,
-                "kind": "setting",
-                "lo": null,
-                "price": 0,
-                "producer": "tuning_levers",
-                "seriousness": null,
-                "seriousness_segments": [],
-                "subject": "setting:isf"
-              }
-            ],
+            "member_set_fingerprint": "e3b0c44298fc1c14",
+            "members": [],
             "n": 6,
-            "overlap_counts": {
-              "highs_after_meals": {
-                "count": null,
-                "reason": "different_exposure_families",
-                "status": "not_comparable"
-              },
-              "highs_after_treating_lows": {
-                "count": 0,
-                "reason": "shared_lows_exposure",
-                "status": "comparable"
-              },
-              "lows_after_meals": {
-                "count": null,
-                "reason": "different_exposure_families",
-                "status": "not_comparable"
-              },
-              "overnight_lows_no_iob": {
-                "count": null,
-                "reason": "no_habit_exposure_identity",
-                "status": "not_comparable"
-              }
-            },
             "rate": 0.1667,
             "rate_levers": [
               "habit:correction_stacking",
@@ -95853,15 +95324,6 @@
             "action": null,
             "admission_route": "none",
             "collapse": "remain_pattern",
-            "harm_low_overlap": [
-              {
-                "count": 0,
-                "habit_subject": "habit:meal_over_delivery",
-                "reason": "shared_low_episode_nadir",
-                "setting_subject": "setting:carb_ratio",
-                "status": "comparable"
-              }
-            ],
             "k": 0,
             "key": "lows_after_meals",
             "member_set_fingerprint": "13141e472c40a768",
@@ -95881,28 +95343,6 @@
               }
             ],
             "n": 1,
-            "overlap_counts": {
-              "highs_after_meals": {
-                "count": 0,
-                "reason": "shared_meals_exposure",
-                "status": "comparable"
-              },
-              "highs_after_treating_lows": {
-                "count": null,
-                "reason": "different_exposure_families",
-                "status": "not_comparable"
-              },
-              "lows_after_correcting_highs": {
-                "count": null,
-                "reason": "different_exposure_families",
-                "status": "not_comparable"
-              },
-              "overnight_lows_no_iob": {
-                "count": null,
-                "reason": "no_habit_exposure_identity",
-                "status": "not_comparable"
-              }
-            },
             "rate": 0.0,
             "rate_levers": [
               "habit:meal_over_delivery"
@@ -106643,13 +106083,6 @@
                 "late_bolus_prior_carb_bolus_lookback_min": 60,
                 "late_bolus_rising_slope_mgdl_min": 1.0,
                 "late_bolus_slope_lookback_min": 20,
-                "meal_bolus_short_correction_floor_u": 1.0,
-                "meal_bolus_short_correction_horizon_min": 180.0,
-                "meal_bolus_short_digestion_lookback_min": 150,
-                "meal_bolus_short_dose_split_grace_min": 30.0,
-                "meal_bolus_short_min_carbs": 10.0,
-                "meal_bolus_short_rise_slope_mgdl_min": 1.0,
-                "meal_bolus_short_slope_lookback_min": 20,
                 "meal_suspend_ownership_min": 120.0,
                 "missed_meal_digestion_lookback_min": 150,
                 "missed_meal_min_carbs": 10.0,
@@ -106704,7 +106137,7 @@
                 "user_override_harm_low_mgdl": 80.0,
                 "user_override_pump_zero_rec_u": 0.2
               },
-              "id": "aed2324f641249e962b10f5808bdf253ebe84e40244da9c88ba12a66f84b8cda",
+              "id": "9f3e27d3f2d0b7e20e0db2252fa33a9163d75801bc8fa14df25f0804e69ef213",
               "input_revision": 9,
               "policy": "340:1/386:1/387:1",
               "programmed_isf": {
@@ -106822,13 +106255,6 @@
                     "late_bolus_prior_carb_bolus_lookback_min": 60,
                     "late_bolus_rising_slope_mgdl_min": 1.0,
                     "late_bolus_slope_lookback_min": 20,
-                    "meal_bolus_short_correction_floor_u": 1.0,
-                    "meal_bolus_short_correction_horizon_min": 180.0,
-                    "meal_bolus_short_digestion_lookback_min": 150,
-                    "meal_bolus_short_dose_split_grace_min": 30.0,
-                    "meal_bolus_short_min_carbs": 10.0,
-                    "meal_bolus_short_rise_slope_mgdl_min": 1.0,
-                    "meal_bolus_short_slope_lookback_min": 20,
                     "meal_suspend_ownership_min": 120.0,
                     "missed_meal_digestion_lookback_min": 150,
                     "missed_meal_min_carbs": 10.0,
@@ -106883,7 +106309,7 @@
                     "user_override_harm_low_mgdl": 80.0,
                     "user_override_pump_zero_rec_u": 0.2
                   },
-                  "id": "aed2324f641249e962b10f5808bdf253ebe84e40244da9c88ba12a66f84b8cda",
+                  "id": "9f3e27d3f2d0b7e20e0db2252fa33a9163d75801bc8fa14df25f0804e69ef213",
                   "input_revision": 9,
                   "policy": "340:1/386:1/387:1",
                   "programmed_isf": {
@@ -110227,7 +109653,6 @@
               "insulin_acting": 0,
               "other": 0
             },
-            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -110267,7 +109692,6 @@
               "insulin_acting": 0,
               "other": 0
             },
-            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -110307,7 +109731,6 @@
               "insulin_acting": 0,
               "other": 0
             },
-            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -110347,7 +109770,6 @@
               "insulin_acting": 0,
               "other": 0
             },
-            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -110387,7 +109809,6 @@
               "insulin_acting": 0,
               "other": 0
             },
-            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -110427,7 +109848,6 @@
               "insulin_acting": 0,
               "other": 0
             },
-            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -110467,7 +109887,6 @@
               "insulin_acting": 0,
               "other": 0
             },
-            "harm_band_source_nights": 30,
             "night_roster": [
               {
                 "date": "2024-05-03",
@@ -113877,7 +113296,6 @@
               "insulin_acting": 0,
               "other": 0
             },
-            "harm_band_source_nights": 30,
             "night_roster": [
               {
                 "date": "2024-05-03",
@@ -117063,7 +116481,6 @@
               "insulin_acting": 0,
               "other": 0
             },
-            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -117103,7 +116520,6 @@
               "insulin_acting": 0,
               "other": 0
             },
-            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -117143,7 +116559,6 @@
               "insulin_acting": 0,
               "other": 0
             },
-            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -117183,7 +116598,6 @@
               "insulin_acting": 0,
               "other": 0
             },
-            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -117223,7 +116637,6 @@
               "insulin_acting": 0,
               "other": 0
             },
-            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -117263,7 +116676,6 @@
               "insulin_acting": 0,
               "other": 0
             },
-            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -117303,7 +116715,6 @@
               "insulin_acting": 0,
               "other": 0
             },
-            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -117343,7 +116754,6 @@
               "insulin_acting": 0,
               "other": 0
             },
-            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -117383,7 +116793,6 @@
               "insulin_acting": 0,
               "other": 0
             },
-            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -117423,7 +116832,6 @@
               "insulin_acting": 0,
               "other": 0
             },
-            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -117463,7 +116871,6 @@
               "insulin_acting": 0,
               "other": 0
             },
-            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -117503,7 +116910,6 @@
               "insulin_acting": 0,
               "other": 0
             },
-            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -117543,7 +116949,6 @@
               "insulin_acting": 0,
               "other": 0
             },
-            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -117583,7 +116988,6 @@
               "insulin_acting": 0,
               "other": 0
             },
-            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -117623,7 +117027,6 @@
               "insulin_acting": 0,
               "other": 0
             },
-            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -117663,7 +117066,6 @@
               "insulin_acting": 0,
               "other": 0
             },
-            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -117703,7 +117105,6 @@
               "insulin_acting": 0,
               "other": 0
             },
-            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -117743,7 +117144,6 @@
               "insulin_acting": 0,
               "other": 0
             },
-            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -117783,7 +117183,6 @@
               "insulin_acting": 0,
               "other": 0
             },
-            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -117823,7 +117222,6 @@
               "insulin_acting": 0,
               "other": 0
             },
-            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -117863,7 +117261,6 @@
               "insulin_acting": 0,
               "other": 0
             },
-            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -117903,7 +117300,6 @@
               "insulin_acting": 0,
               "other": 0
             },
-            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -117943,7 +117339,6 @@
               "insulin_acting": 0,
               "other": 0
             },
-            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -117983,7 +117378,6 @@
               "insulin_acting": 0,
               "other": 0
             },
-            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -118023,7 +117417,6 @@
               "insulin_acting": 0,
               "other": 0
             },
-            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -118063,7 +117456,6 @@
               "insulin_acting": 0,
               "other": 0
             },
-            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -118103,7 +117495,6 @@
               "insulin_acting": 0,
               "other": 0
             },
-            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -118143,7 +117534,6 @@
               "insulin_acting": 0,
               "other": 0
             },
-            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -118183,7 +117573,6 @@
               "insulin_acting": 0,
               "other": 0
             },
-            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -118223,7 +117612,6 @@
               "insulin_acting": 0,
               "other": 0
             },
-            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -118263,7 +117651,6 @@
               "insulin_acting": 0,
               "other": 0
             },
-            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -118303,7 +117690,6 @@
               "insulin_acting": 0,
               "other": 0
             },
-            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -118343,7 +117729,6 @@
               "insulin_acting": 0,
               "other": 0
             },
-            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -118383,7 +117768,6 @@
               "insulin_acting": 0,
               "other": 0
             },
-            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -118423,7 +117807,6 @@
               "insulin_acting": 0,
               "other": 0
             },
-            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -118463,7 +117846,6 @@
               "insulin_acting": 0,
               "other": 0
             },
-            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -118503,7 +117885,6 @@
               "insulin_acting": 0,
               "other": 0
             },
-            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -118543,7 +117924,6 @@
               "insulin_acting": 0,
               "other": 0
             },
-            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -118583,7 +117963,6 @@
               "insulin_acting": 0,
               "other": 0
             },
-            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -118623,7 +118002,6 @@
               "insulin_acting": 0,
               "other": 0
             },
-            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -118643,13 +118021,13 @@
         "chip_counts": {
           "corrections": 1,
           "highs": 2,
-          "lows": 4,
+          "lows": 3,
           "meals": 2
         },
         "counts": {
           "assert": 1,
           "blind": 0,
-          "finding": 5,
+          "finding": 4,
           "held": 0,
           "history": 0
         },
@@ -118663,36 +118041,6 @@
             "action": null,
             "admission_route": "none",
             "collapse": "remain_pattern",
-            "harm_low_overlap": [
-              {
-                "count": null,
-                "habit_subject": "habit:carb_undercount",
-                "reason": "different_identity_spaces",
-                "setting_subject": "setting:carb_ratio",
-                "status": "not_comparable"
-              },
-              {
-                "count": null,
-                "habit_subject": "habit:late_bolus",
-                "reason": "different_identity_spaces",
-                "setting_subject": "setting:carb_ratio",
-                "status": "not_comparable"
-              },
-              {
-                "count": null,
-                "habit_subject": "habit:high_carb_sequence",
-                "reason": "different_identity_spaces",
-                "setting_subject": "setting:carb_ratio",
-                "status": "not_comparable"
-              },
-              {
-                "count": null,
-                "habit_subject": "habit:repeat_eating",
-                "reason": "different_identity_spaces",
-                "setting_subject": "setting:carb_ratio",
-                "status": "not_comparable"
-              }
-            ],
             "k": 0,
             "key": "highs_after_meals",
             "member_set_fingerprint": "13141e472c40a768",
@@ -118712,33 +118060,10 @@
               }
             ],
             "n": 1,
-            "overlap_counts": {
-              "highs_after_treating_lows": {
-                "count": null,
-                "reason": "different_exposure_families",
-                "status": "not_comparable"
-              },
-              "lows_after_correcting_highs": {
-                "count": null,
-                "reason": "different_exposure_families",
-                "status": "not_comparable"
-              },
-              "lows_after_meals": {
-                "count": 0,
-                "reason": "shared_meals_exposure",
-                "status": "comparable"
-              },
-              "overnight_lows_no_iob": {
-                "count": null,
-                "reason": "no_habit_exposure_identity",
-                "status": "not_comparable"
-              }
-            },
             "rate": 0.0,
             "rate_levers": [
               "habit:carb_undercount",
-              "habit:late_bolus",
-              "habit:meal_bolus_short"
+              "habit:late_bolus"
             ],
             "rate_producer": "exposures",
             "readiness": {
@@ -118760,15 +118085,6 @@
             "action": null,
             "admission_route": "none",
             "collapse": "remain_pattern",
-            "harm_low_overlap": [
-              {
-                "count": 0,
-                "habit_subject": "habit:meal_over_delivery",
-                "reason": "shared_low_episode_nadir",
-                "setting_subject": "setting:carb_ratio",
-                "status": "comparable"
-              }
-            ],
             "k": 0,
             "key": "lows_after_meals",
             "member_set_fingerprint": "13141e472c40a768",
@@ -118788,28 +118104,6 @@
               }
             ],
             "n": 1,
-            "overlap_counts": {
-              "highs_after_meals": {
-                "count": 0,
-                "reason": "shared_meals_exposure",
-                "status": "comparable"
-              },
-              "highs_after_treating_lows": {
-                "count": null,
-                "reason": "different_exposure_families",
-                "status": "not_comparable"
-              },
-              "lows_after_correcting_highs": {
-                "count": null,
-                "reason": "different_exposure_families",
-                "status": "not_comparable"
-              },
-              "overnight_lows_no_iob": {
-                "count": null,
-                "reason": "no_habit_exposure_identity",
-                "status": "not_comparable"
-              }
-            },
             "rate": 0.0,
             "rate_levers": [
               "habit:meal_over_delivery"
@@ -118834,7 +118128,6 @@
             "action": "habit:over_treated_low",
             "admission_route": "habit_threshold",
             "collapse": "collapse_to_member",
-            "harm_low_overlap": [],
             "k": 2,
             "key": "highs_after_treating_lows",
             "member_set_fingerprint": "a0de7500243ef646",
@@ -118854,28 +118147,6 @@
               }
             ],
             "n": 6,
-            "overlap_counts": {
-              "highs_after_meals": {
-                "count": null,
-                "reason": "different_exposure_families",
-                "status": "not_comparable"
-              },
-              "lows_after_correcting_highs": {
-                "count": 0,
-                "reason": "shared_lows_exposure",
-                "status": "comparable"
-              },
-              "lows_after_meals": {
-                "count": null,
-                "reason": "different_exposure_families",
-                "status": "not_comparable"
-              },
-              "overnight_lows_no_iob": {
-                "count": null,
-                "reason": "no_habit_exposure_identity",
-                "status": "not_comparable"
-              }
-            },
             "rate": 0.3333,
             "rate_levers": [
               "habit:over_treated_low"
@@ -118900,63 +118171,11 @@
             "action": null,
             "admission_route": "none",
             "collapse": "remain_pattern",
-            "harm_low_overlap": [
-              {
-                "count": 0,
-                "habit_subject": "habit:correction_stacking",
-                "reason": "shared_low_episode_nadir",
-                "setting_subject": "setting:isf",
-                "status": "comparable"
-              },
-              {
-                "count": 1,
-                "habit_subject": "habit:correction_on_iob",
-                "reason": "shared_low_episode_nadir",
-                "setting_subject": "setting:isf",
-                "status": "comparable"
-              }
-            ],
             "k": 1,
             "key": "lows_after_correcting_highs",
-            "member_set_fingerprint": "72e37bdefcacb6d7",
-            "members": [
-              {
-                "action": null,
-                "admitted": false,
-                "hi": null,
-                "k": 1,
-                "kind": "setting",
-                "lo": null,
-                "price": 0,
-                "producer": "tuning_levers",
-                "seriousness": null,
-                "seriousness_segments": [],
-                "subject": "setting:isf"
-              }
-            ],
+            "member_set_fingerprint": "e3b0c44298fc1c14",
+            "members": [],
             "n": 6,
-            "overlap_counts": {
-              "highs_after_meals": {
-                "count": null,
-                "reason": "different_exposure_families",
-                "status": "not_comparable"
-              },
-              "highs_after_treating_lows": {
-                "count": 0,
-                "reason": "shared_lows_exposure",
-                "status": "comparable"
-              },
-              "lows_after_meals": {
-                "count": null,
-                "reason": "different_exposure_families",
-                "status": "not_comparable"
-              },
-              "overnight_lows_no_iob": {
-                "count": null,
-                "reason": "no_habit_exposure_identity",
-                "status": "not_comparable"
-              }
-            },
             "rate": 0.1667,
             "rate_levers": [
               "habit:correction_stacking",
@@ -118976,70 +118195,6 @@
             "wilson": {
               "hi": 0.4253,
               "lo": 0.0513
-            }
-          },
-          {
-            "action": "basal_rate",
-            "admission_route": "setting_staging",
-            "collapse": "remain_pattern",
-            "harm_low_overlap": [],
-            "k": 0,
-            "key": "overnight_lows_no_iob",
-            "member_set_fingerprint": "be01b57ca95abd31",
-            "members": [
-              {
-                "action": "basal_rate",
-                "admitted": true,
-                "hi": null,
-                "k": 0,
-                "kind": "setting",
-                "lo": null,
-                "price": 97,
-                "producer": "tuning_levers",
-                "seriousness": null,
-                "seriousness_segments": [],
-                "subject": "setting:basal_rate"
-              }
-            ],
-            "n": 30,
-            "overlap_counts": {
-              "highs_after_meals": {
-                "count": null,
-                "reason": "no_habit_exposure_identity",
-                "status": "not_comparable"
-              },
-              "highs_after_treating_lows": {
-                "count": null,
-                "reason": "no_habit_exposure_identity",
-                "status": "not_comparable"
-              },
-              "lows_after_correcting_highs": {
-                "count": null,
-                "reason": "no_habit_exposure_identity",
-                "status": "not_comparable"
-              },
-              "lows_after_meals": {
-                "count": null,
-                "reason": "no_habit_exposure_identity",
-                "status": "not_comparable"
-              }
-            },
-            "rate": 0.0,
-            "rate_levers": [],
-            "rate_producer": "harm_band_source_nights",
-            "readiness": {
-              "count": 30,
-              "gate": 12,
-              "verdict": "ready"
-            },
-            "seriousness": null,
-            "settled_price": 97,
-            "subject": "pattern:overnight_lows_no_iob",
-            "title": "Overnight lows with no insulin on board",
-            "wide": false,
-            "wilson": {
-              "hi": 0.0519,
-              "lo": 0.0
             }
           }
         ],
@@ -119126,121 +118281,6 @@
             "verdict_counts": null,
             "verdict_counts_by_family": null,
             "window_scope": "window"
-          },
-          {
-            "anchored_by": "basal:180-240",
-            "annotation": null,
-            "appearances": null,
-            "asserts_move": null,
-            "chips": [
-              "lows"
-            ],
-            "claimed_by": null,
-            "count_sentences": [
-              {
-                "count": 0,
-                "denominator": 30,
-                "noun": "nights",
-                "outcome": "ran low overnight",
-                "sentence": "0 of 30 nights ran low overnight"
-              }
-            ],
-            "current": null,
-            "direction": null,
-            "episodes": null,
-            "estimate": null,
-            "event_chart": null,
-            "evidence": null,
-            "fold_sentences": null,
-            "headline": "Overnight lows with no insulin on board in 0 of 30 nights",
-            "id": "pattern:overnight_lows_no_iob",
-            "kind": "pattern",
-            "label": null,
-            "lean": null,
-            "lever": null,
-            "members": null,
-            "parameter": null,
-            "past_setting": null,
-            "pattern": {
-              "action": "basal_rate",
-              "admission_route": "setting_staging",
-              "collapse": "remain_pattern",
-              "harm_low_overlap": [],
-              "k": 0,
-              "key": "overnight_lows_no_iob",
-              "member_set_fingerprint": "be01b57ca95abd31",
-              "members": [
-                {
-                  "action": "basal_rate",
-                  "admitted": true,
-                  "hi": null,
-                  "k": 0,
-                  "kind": "setting",
-                  "lo": null,
-                  "price": 97,
-                  "producer": "tuning_levers",
-                  "seriousness": null,
-                  "seriousness_segments": [],
-                  "subject": "setting:basal_rate"
-                }
-              ],
-              "n": 30,
-              "overlap_counts": {
-                "highs_after_meals": {
-                  "count": null,
-                  "reason": "no_habit_exposure_identity",
-                  "status": "not_comparable"
-                },
-                "highs_after_treating_lows": {
-                  "count": null,
-                  "reason": "no_habit_exposure_identity",
-                  "status": "not_comparable"
-                },
-                "lows_after_correcting_highs": {
-                  "count": null,
-                  "reason": "no_habit_exposure_identity",
-                  "status": "not_comparable"
-                },
-                "lows_after_meals": {
-                  "count": null,
-                  "reason": "no_habit_exposure_identity",
-                  "status": "not_comparable"
-                }
-              },
-              "rate": 0.0,
-              "rate_levers": [],
-              "rate_producer": "harm_band_source_nights",
-              "readiness": {
-                "count": 30,
-                "gate": 12,
-                "verdict": "ready"
-              },
-              "seriousness": null,
-              "settled_price": 97,
-              "subject": "pattern:overnight_lows_no_iob",
-              "title": "Overnight lows with no insulin on board",
-              "wide": false,
-              "wilson": {
-                "hi": 0.0519,
-                "lo": 0.0
-              }
-            },
-            "pattern_chart": null,
-            "priority": 97,
-            "programmed_now": null,
-            "rank_note": "Ranked with its setting",
-            "reason": null,
-            "recommended": null,
-            "regime_end": null,
-            "register": "finding",
-            "run_ids": null,
-            "span": null,
-            "support": null,
-            "tier": "next_in_line",
-            "title": "Overnight lows with no insulin on board",
-            "verdict_counts": null,
-            "verdict_counts_by_family": null,
-            "window_scope": "whole_day"
           },
           {
             "anchored_by": null,
@@ -119403,36 +118443,6 @@
               "action": null,
               "admission_route": "none",
               "collapse": "remain_pattern",
-              "harm_low_overlap": [
-                {
-                  "count": null,
-                  "habit_subject": "habit:carb_undercount",
-                  "reason": "different_identity_spaces",
-                  "setting_subject": "setting:carb_ratio",
-                  "status": "not_comparable"
-                },
-                {
-                  "count": null,
-                  "habit_subject": "habit:late_bolus",
-                  "reason": "different_identity_spaces",
-                  "setting_subject": "setting:carb_ratio",
-                  "status": "not_comparable"
-                },
-                {
-                  "count": null,
-                  "habit_subject": "habit:high_carb_sequence",
-                  "reason": "different_identity_spaces",
-                  "setting_subject": "setting:carb_ratio",
-                  "status": "not_comparable"
-                },
-                {
-                  "count": null,
-                  "habit_subject": "habit:repeat_eating",
-                  "reason": "different_identity_spaces",
-                  "setting_subject": "setting:carb_ratio",
-                  "status": "not_comparable"
-                }
-              ],
               "k": 0,
               "key": "highs_after_meals",
               "member_set_fingerprint": "13141e472c40a768",
@@ -119452,33 +118462,10 @@
                 }
               ],
               "n": 1,
-              "overlap_counts": {
-                "highs_after_treating_lows": {
-                  "count": null,
-                  "reason": "different_exposure_families",
-                  "status": "not_comparable"
-                },
-                "lows_after_correcting_highs": {
-                  "count": null,
-                  "reason": "different_exposure_families",
-                  "status": "not_comparable"
-                },
-                "lows_after_meals": {
-                  "count": 0,
-                  "reason": "shared_meals_exposure",
-                  "status": "comparable"
-                },
-                "overnight_lows_no_iob": {
-                  "count": null,
-                  "reason": "no_habit_exposure_identity",
-                  "status": "not_comparable"
-                }
-              },
               "rate": 0.0,
               "rate_levers": [
                 "habit:carb_undercount",
-                "habit:late_bolus",
-                "habit:meal_bolus_short"
+                "habit:late_bolus"
               ],
               "rate_producer": "exposures",
               "readiness": {
@@ -119544,63 +118531,11 @@
               "action": null,
               "admission_route": "none",
               "collapse": "remain_pattern",
-              "harm_low_overlap": [
-                {
-                  "count": 0,
-                  "habit_subject": "habit:correction_stacking",
-                  "reason": "shared_low_episode_nadir",
-                  "setting_subject": "setting:isf",
-                  "status": "comparable"
-                },
-                {
-                  "count": 1,
-                  "habit_subject": "habit:correction_on_iob",
-                  "reason": "shared_low_episode_nadir",
-                  "setting_subject": "setting:isf",
-                  "status": "comparable"
-                }
-              ],
               "k": 1,
               "key": "lows_after_correcting_highs",
-              "member_set_fingerprint": "72e37bdefcacb6d7",
-              "members": [
-                {
-                  "action": null,
-                  "admitted": false,
-                  "hi": null,
-                  "k": 1,
-                  "kind": "setting",
-                  "lo": null,
-                  "price": 0,
-                  "producer": "tuning_levers",
-                  "seriousness": null,
-                  "seriousness_segments": [],
-                  "subject": "setting:isf"
-                }
-              ],
+              "member_set_fingerprint": "e3b0c44298fc1c14",
+              "members": [],
               "n": 6,
-              "overlap_counts": {
-                "highs_after_meals": {
-                  "count": null,
-                  "reason": "different_exposure_families",
-                  "status": "not_comparable"
-                },
-                "highs_after_treating_lows": {
-                  "count": 0,
-                  "reason": "shared_lows_exposure",
-                  "status": "comparable"
-                },
-                "lows_after_meals": {
-                  "count": null,
-                  "reason": "different_exposure_families",
-                  "status": "not_comparable"
-                },
-                "overnight_lows_no_iob": {
-                  "count": null,
-                  "reason": "no_habit_exposure_identity",
-                  "status": "not_comparable"
-                }
-              },
               "rate": 0.1667,
               "rate_levers": [
                 "habit:correction_stacking",
@@ -119809,15 +118744,6 @@
               "action": null,
               "admission_route": "none",
               "collapse": "remain_pattern",
-              "harm_low_overlap": [
-                {
-                  "count": 0,
-                  "habit_subject": "habit:meal_over_delivery",
-                  "reason": "shared_low_episode_nadir",
-                  "setting_subject": "setting:carb_ratio",
-                  "status": "comparable"
-                }
-              ],
               "k": 0,
               "key": "lows_after_meals",
               "member_set_fingerprint": "13141e472c40a768",
@@ -119837,28 +118763,6 @@
                 }
               ],
               "n": 1,
-              "overlap_counts": {
-                "highs_after_meals": {
-                  "count": 0,
-                  "reason": "shared_meals_exposure",
-                  "status": "comparable"
-                },
-                "highs_after_treating_lows": {
-                  "count": null,
-                  "reason": "different_exposure_families",
-                  "status": "not_comparable"
-                },
-                "lows_after_correcting_highs": {
-                  "count": null,
-                  "reason": "different_exposure_families",
-                  "status": "not_comparable"
-                },
-                "overnight_lows_no_iob": {
-                  "count": null,
-                  "reason": "no_habit_exposure_identity",
-                  "status": "not_comparable"
-                }
-              },
               "rate": 0.0,
               "rate_levers": [
                 "habit:meal_over_delivery"
@@ -119899,10 +118803,6 @@
         ],
         "schema": "diagnose-findings-v2",
         "selection": null,
-        "uncaused_highs": {
-          "count": 0,
-          "text": null
-        },
         "window": {
           "end_min": null,
           "label": null,
@@ -138118,7 +137018,6 @@
                 "insulin_acting": 0,
                 "other": 0
               },
-              "harm_band_source_nights": 30,
               "night_roster": [
                 {
                   "date": "2024-05-03",
@@ -141528,7 +140427,6 @@
                 "insulin_acting": 0,
                 "other": 0
               },
-              "harm_band_source_nights": 30,
               "night_roster": [
                 {
                   "date": "2024-05-03",
@@ -181221,121 +180119,6 @@
         "window_scope": "window"
       },
       {
-        "anchored_by": "basal:180-240",
-        "annotation": null,
-        "appearances": null,
-        "asserts_move": null,
-        "chips": [
-          "lows"
-        ],
-        "claimed_by": null,
-        "count_sentences": [
-          {
-            "count": 0,
-            "denominator": 30,
-            "noun": "nights",
-            "outcome": "ran low overnight",
-            "sentence": "0 of 30 nights ran low overnight"
-          }
-        ],
-        "current": null,
-        "direction": null,
-        "episodes": null,
-        "estimate": null,
-        "event_chart": null,
-        "evidence": null,
-        "fold_sentences": null,
-        "headline": "Overnight lows with no insulin on board in 0 of 30 nights",
-        "id": "pattern:overnight_lows_no_iob",
-        "kind": "pattern",
-        "label": null,
-        "lean": null,
-        "lever": null,
-        "members": null,
-        "parameter": null,
-        "past_setting": null,
-        "pattern": {
-          "action": "basal_rate",
-          "admission_route": "setting_staging",
-          "collapse": "remain_pattern",
-          "harm_low_overlap": [],
-          "k": 0,
-          "key": "overnight_lows_no_iob",
-          "member_set_fingerprint": "be01b57ca95abd31",
-          "members": [
-            {
-              "action": "basal_rate",
-              "admitted": true,
-              "hi": null,
-              "k": 0,
-              "kind": "setting",
-              "lo": null,
-              "price": 97,
-              "producer": "tuning_levers",
-              "seriousness": null,
-              "seriousness_segments": [],
-              "subject": "setting:basal_rate"
-            }
-          ],
-          "n": 30,
-          "overlap_counts": {
-            "highs_after_meals": {
-              "count": null,
-              "reason": "no_habit_exposure_identity",
-              "status": "not_comparable"
-            },
-            "highs_after_treating_lows": {
-              "count": null,
-              "reason": "no_habit_exposure_identity",
-              "status": "not_comparable"
-            },
-            "lows_after_correcting_highs": {
-              "count": null,
-              "reason": "no_habit_exposure_identity",
-              "status": "not_comparable"
-            },
-            "lows_after_meals": {
-              "count": null,
-              "reason": "no_habit_exposure_identity",
-              "status": "not_comparable"
-            }
-          },
-          "rate": 0.0,
-          "rate_levers": [],
-          "rate_producer": "harm_band_source_nights",
-          "readiness": {
-            "count": 30,
-            "gate": 12,
-            "verdict": "ready"
-          },
-          "seriousness": null,
-          "settled_price": 97,
-          "subject": "pattern:overnight_lows_no_iob",
-          "title": "Overnight lows with no insulin on board",
-          "wide": false,
-          "wilson": {
-            "hi": 0.0519,
-            "lo": 0.0
-          }
-        },
-        "pattern_chart": null,
-        "priority": 97,
-        "programmed_now": null,
-        "rank_note": "Ranked with its setting",
-        "reason": null,
-        "recommended": null,
-        "regime_end": null,
-        "register": "finding",
-        "run_ids": null,
-        "span": null,
-        "support": null,
-        "tier": "next_in_line",
-        "title": "Overnight lows with no insulin on board",
-        "verdict_counts": null,
-        "verdict_counts_by_family": null,
-        "window_scope": "whole_day"
-      },
-      {
         "anchored_by": null,
         "annotation": null,
         "appearances": [
@@ -181496,36 +180279,6 @@
           "action": null,
           "admission_route": "none",
           "collapse": "remain_pattern",
-          "harm_low_overlap": [
-            {
-              "count": null,
-              "habit_subject": "habit:carb_undercount",
-              "reason": "different_identity_spaces",
-              "setting_subject": "setting:carb_ratio",
-              "status": "not_comparable"
-            },
-            {
-              "count": null,
-              "habit_subject": "habit:late_bolus",
-              "reason": "different_identity_spaces",
-              "setting_subject": "setting:carb_ratio",
-              "status": "not_comparable"
-            },
-            {
-              "count": null,
-              "habit_subject": "habit:high_carb_sequence",
-              "reason": "different_identity_spaces",
-              "setting_subject": "setting:carb_ratio",
-              "status": "not_comparable"
-            },
-            {
-              "count": null,
-              "habit_subject": "habit:repeat_eating",
-              "reason": "different_identity_spaces",
-              "setting_subject": "setting:carb_ratio",
-              "status": "not_comparable"
-            }
-          ],
           "k": 0,
           "key": "highs_after_meals",
           "member_set_fingerprint": "13141e472c40a768",
@@ -181545,33 +180298,10 @@
             }
           ],
           "n": 1,
-          "overlap_counts": {
-            "highs_after_treating_lows": {
-              "count": null,
-              "reason": "different_exposure_families",
-              "status": "not_comparable"
-            },
-            "lows_after_correcting_highs": {
-              "count": null,
-              "reason": "different_exposure_families",
-              "status": "not_comparable"
-            },
-            "lows_after_meals": {
-              "count": 0,
-              "reason": "shared_meals_exposure",
-              "status": "comparable"
-            },
-            "overnight_lows_no_iob": {
-              "count": null,
-              "reason": "no_habit_exposure_identity",
-              "status": "not_comparable"
-            }
-          },
           "rate": 0.0,
           "rate_levers": [
             "habit:carb_undercount",
-            "habit:late_bolus",
-            "habit:meal_bolus_short"
+            "habit:late_bolus"
           ],
           "rate_producer": "exposures",
           "readiness": {
@@ -181637,63 +180367,11 @@
           "action": null,
           "admission_route": "none",
           "collapse": "remain_pattern",
-          "harm_low_overlap": [
-            {
-              "count": 0,
-              "habit_subject": "habit:correction_stacking",
-              "reason": "shared_low_episode_nadir",
-              "setting_subject": "setting:isf",
-              "status": "comparable"
-            },
-            {
-              "count": 1,
-              "habit_subject": "habit:correction_on_iob",
-              "reason": "shared_low_episode_nadir",
-              "setting_subject": "setting:isf",
-              "status": "comparable"
-            }
-          ],
           "k": 1,
           "key": "lows_after_correcting_highs",
-          "member_set_fingerprint": "72e37bdefcacb6d7",
-          "members": [
-            {
-              "action": null,
-              "admitted": false,
-              "hi": null,
-              "k": 1,
-              "kind": "setting",
-              "lo": null,
-              "price": 0,
-              "producer": "tuning_levers",
-              "seriousness": null,
-              "seriousness_segments": [],
-              "subject": "setting:isf"
-            }
-          ],
+          "member_set_fingerprint": "e3b0c44298fc1c14",
+          "members": [],
           "n": 6,
-          "overlap_counts": {
-            "highs_after_meals": {
-              "count": null,
-              "reason": "different_exposure_families",
-              "status": "not_comparable"
-            },
-            "highs_after_treating_lows": {
-              "count": 0,
-              "reason": "shared_lows_exposure",
-              "status": "comparable"
-            },
-            "lows_after_meals": {
-              "count": null,
-              "reason": "different_exposure_families",
-              "status": "not_comparable"
-            },
-            "overnight_lows_no_iob": {
-              "count": null,
-              "reason": "no_habit_exposure_identity",
-              "status": "not_comparable"
-            }
-          },
           "rate": 0.1667,
           "rate_levers": [
             "habit:correction_stacking",
@@ -181902,15 +180580,6 @@
           "action": null,
           "admission_route": "none",
           "collapse": "remain_pattern",
-          "harm_low_overlap": [
-            {
-              "count": 0,
-              "habit_subject": "habit:meal_over_delivery",
-              "reason": "shared_low_episode_nadir",
-              "setting_subject": "setting:carb_ratio",
-              "status": "comparable"
-            }
-          ],
           "k": 0,
           "key": "lows_after_meals",
           "member_set_fingerprint": "13141e472c40a768",
@@ -181930,28 +180599,6 @@
             }
           ],
           "n": 1,
-          "overlap_counts": {
-            "highs_after_meals": {
-              "count": 0,
-              "reason": "shared_meals_exposure",
-              "status": "comparable"
-            },
-            "highs_after_treating_lows": {
-              "count": null,
-              "reason": "different_exposure_families",
-              "status": "not_comparable"
-            },
-            "lows_after_correcting_highs": {
-              "count": null,
-              "reason": "different_exposure_families",
-              "status": "not_comparable"
-            },
-            "overnight_lows_no_iob": {
-              "count": null,
-              "reason": "no_habit_exposure_identity",
-              "status": "not_comparable"
-            }
-          },
           "rate": 0.0,
           "rate_levers": [
             "habit:meal_over_delivery"
@@ -182688,7 +181335,6 @@
             "insulin_acting": 0,
             "other": 0
           },
-          "harm_band_source_nights": 30,
           "night_roster": [
             {
               "date": "2024-05-03",
@@ -186098,7 +184744,6 @@
             "insulin_acting": 0,
             "other": 0
           },
-          "harm_band_source_nights": 30,
           "night_roster": [
             {
               "date": "2024-05-03",
@@ -208264,36 +206909,6 @@
                 "action": null,
                 "admission_route": "none",
                 "collapse": "remain_pattern",
-                "harm_low_overlap": [
-                  {
-                    "count": null,
-                    "habit_subject": "habit:carb_undercount",
-                    "reason": "different_identity_spaces",
-                    "setting_subject": "setting:carb_ratio",
-                    "status": "not_comparable"
-                  },
-                  {
-                    "count": null,
-                    "habit_subject": "habit:late_bolus",
-                    "reason": "different_identity_spaces",
-                    "setting_subject": "setting:carb_ratio",
-                    "status": "not_comparable"
-                  },
-                  {
-                    "count": null,
-                    "habit_subject": "habit:high_carb_sequence",
-                    "reason": "different_identity_spaces",
-                    "setting_subject": "setting:carb_ratio",
-                    "status": "not_comparable"
-                  },
-                  {
-                    "count": null,
-                    "habit_subject": "habit:repeat_eating",
-                    "reason": "different_identity_spaces",
-                    "setting_subject": "setting:carb_ratio",
-                    "status": "not_comparable"
-                  }
-                ],
                 "k": 0,
                 "key": "highs_after_meals",
                 "member_set_fingerprint": "13141e472c40a768",
@@ -208313,33 +206928,10 @@
                   }
                 ],
                 "n": 1,
-                "overlap_counts": {
-                  "highs_after_treating_lows": {
-                    "count": null,
-                    "reason": "different_exposure_families",
-                    "status": "not_comparable"
-                  },
-                  "lows_after_correcting_highs": {
-                    "count": null,
-                    "reason": "different_exposure_families",
-                    "status": "not_comparable"
-                  },
-                  "lows_after_meals": {
-                    "count": 0,
-                    "reason": "shared_meals_exposure",
-                    "status": "comparable"
-                  },
-                  "overnight_lows_no_iob": {
-                    "count": null,
-                    "reason": "no_habit_exposure_identity",
-                    "status": "not_comparable"
-                  }
-                },
                 "rate": 0.0,
                 "rate_levers": [
                   "habit:carb_undercount",
-                  "habit:late_bolus",
-                  "habit:meal_bolus_short"
+                  "habit:late_bolus"
                 ],
                 "rate_producer": "exposures",
                 "readiness": {
@@ -208405,63 +206997,11 @@
                 "action": null,
                 "admission_route": "none",
                 "collapse": "remain_pattern",
-                "harm_low_overlap": [
-                  {
-                    "count": 0,
-                    "habit_subject": "habit:correction_stacking",
-                    "reason": "shared_low_episode_nadir",
-                    "setting_subject": "setting:isf",
-                    "status": "comparable"
-                  },
-                  {
-                    "count": 1,
-                    "habit_subject": "habit:correction_on_iob",
-                    "reason": "shared_low_episode_nadir",
-                    "setting_subject": "setting:isf",
-                    "status": "comparable"
-                  }
-                ],
                 "k": 1,
                 "key": "lows_after_correcting_highs",
-                "member_set_fingerprint": "72e37bdefcacb6d7",
-                "members": [
-                  {
-                    "action": null,
-                    "admitted": false,
-                    "hi": null,
-                    "k": 1,
-                    "kind": "setting",
-                    "lo": null,
-                    "price": 0,
-                    "producer": "tuning_levers",
-                    "seriousness": null,
-                    "seriousness_segments": [],
-                    "subject": "setting:isf"
-                  }
-                ],
+                "member_set_fingerprint": "e3b0c44298fc1c14",
+                "members": [],
                 "n": 6,
-                "overlap_counts": {
-                  "highs_after_meals": {
-                    "count": null,
-                    "reason": "different_exposure_families",
-                    "status": "not_comparable"
-                  },
-                  "highs_after_treating_lows": {
-                    "count": 0,
-                    "reason": "shared_lows_exposure",
-                    "status": "comparable"
-                  },
-                  "lows_after_meals": {
-                    "count": null,
-                    "reason": "different_exposure_families",
-                    "status": "not_comparable"
-                  },
-                  "overnight_lows_no_iob": {
-                    "count": null,
-                    "reason": "no_habit_exposure_identity",
-                    "status": "not_comparable"
-                  }
-                },
                 "rate": 0.1667,
                 "rate_levers": [
                   "habit:correction_stacking",
@@ -208670,15 +207210,6 @@
                 "action": null,
                 "admission_route": "none",
                 "collapse": "remain_pattern",
-                "harm_low_overlap": [
-                  {
-                    "count": 0,
-                    "habit_subject": "habit:meal_over_delivery",
-                    "reason": "shared_low_episode_nadir",
-                    "setting_subject": "setting:carb_ratio",
-                    "status": "comparable"
-                  }
-                ],
                 "k": 0,
                 "key": "lows_after_meals",
                 "member_set_fingerprint": "13141e472c40a768",
@@ -208698,28 +207229,6 @@
                   }
                 ],
                 "n": 1,
-                "overlap_counts": {
-                  "highs_after_meals": {
-                    "count": 0,
-                    "reason": "shared_meals_exposure",
-                    "status": "comparable"
-                  },
-                  "highs_after_treating_lows": {
-                    "count": null,
-                    "reason": "different_exposure_families",
-                    "status": "not_comparable"
-                  },
-                  "lows_after_correcting_highs": {
-                    "count": null,
-                    "reason": "different_exposure_families",
-                    "status": "not_comparable"
-                  },
-                  "overnight_lows_no_iob": {
-                    "count": null,
-                    "reason": "no_habit_exposure_identity",
-                    "status": "not_comparable"
-                  }
-                },
                 "rate": 0.0,
                 "rate_levers": [
                   "habit:meal_over_delivery"
@@ -208753,113 +207262,6 @@
               "support": null,
               "tier": "noted",
               "title": "Lows after meals",
-              "verdict_counts": null,
-              "verdict_counts_by_family": null,
-              "window_scope": "whole_day"
-            },
-            {
-              "anchored_by": null,
-              "annotation": null,
-              "appearances": null,
-              "asserts_move": null,
-              "chips": [
-                "lows"
-              ],
-              "claimed_by": null,
-              "count_sentences": null,
-              "current": null,
-              "direction": null,
-              "episodes": null,
-              "estimate": null,
-              "event_chart": null,
-              "evidence": null,
-              "fold_sentences": null,
-              "headline": "Overnight lows with no insulin on board",
-              "id": "pattern:overnight_lows_no_iob",
-              "kind": "pattern",
-              "label": null,
-              "lean": null,
-              "lever": null,
-              "members": null,
-              "parameter": null,
-              "past_setting": null,
-              "pattern": {
-                "action": null,
-                "admission_route": "none",
-                "collapse": "remain_pattern",
-                "harm_low_overlap": [],
-                "k": 0,
-                "key": "overnight_lows_no_iob",
-                "member_set_fingerprint": "be01b57ca95abd31",
-                "members": [
-                  {
-                    "action": null,
-                    "admitted": false,
-                    "hi": null,
-                    "k": 0,
-                    "kind": "setting",
-                    "lo": null,
-                    "price": 0,
-                    "producer": "tuning_levers",
-                    "seriousness": null,
-                    "seriousness_segments": [],
-                    "subject": "setting:basal_rate"
-                  }
-                ],
-                "n": 29,
-                "overlap_counts": {
-                  "highs_after_meals": {
-                    "count": null,
-                    "reason": "no_habit_exposure_identity",
-                    "status": "not_comparable"
-                  },
-                  "highs_after_treating_lows": {
-                    "count": null,
-                    "reason": "no_habit_exposure_identity",
-                    "status": "not_comparable"
-                  },
-                  "lows_after_correcting_highs": {
-                    "count": null,
-                    "reason": "no_habit_exposure_identity",
-                    "status": "not_comparable"
-                  },
-                  "lows_after_meals": {
-                    "count": null,
-                    "reason": "no_habit_exposure_identity",
-                    "status": "not_comparable"
-                  }
-                },
-                "rate": 0.0,
-                "rate_levers": [],
-                "rate_producer": "harm_band_source_nights",
-                "readiness": {
-                  "count": 29,
-                  "gate": 12,
-                  "verdict": "ready"
-                },
-                "seriousness": null,
-                "settled_price": 0,
-                "subject": "pattern:overnight_lows_no_iob",
-                "title": "Overnight lows with no insulin on board",
-                "wide": false,
-                "wilson": {
-                  "hi": 0.0536,
-                  "lo": -0.0
-                }
-              },
-              "pattern_chart": null,
-              "priority": null,
-              "programmed_now": null,
-              "rank_note": null,
-              "reason": null,
-              "recommended": null,
-              "regime_end": null,
-              "register": "finding",
-              "run_ids": null,
-              "span": null,
-              "support": null,
-              "tier": "noted",
-              "title": "Overnight lows with no insulin on board",
               "verdict_counts": null,
               "verdict_counts_by_family": null,
               "window_scope": "whole_day"
@@ -211266,36 +209668,6 @@
             "action": null,
             "admission_route": "none",
             "collapse": "remain_pattern",
-            "harm_low_overlap": [
-              {
-                "count": null,
-                "habit_subject": "habit:carb_undercount",
-                "reason": "different_identity_spaces",
-                "setting_subject": "setting:carb_ratio",
-                "status": "not_comparable"
-              },
-              {
-                "count": null,
-                "habit_subject": "habit:late_bolus",
-                "reason": "different_identity_spaces",
-                "setting_subject": "setting:carb_ratio",
-                "status": "not_comparable"
-              },
-              {
-                "count": null,
-                "habit_subject": "habit:high_carb_sequence",
-                "reason": "different_identity_spaces",
-                "setting_subject": "setting:carb_ratio",
-                "status": "not_comparable"
-              },
-              {
-                "count": null,
-                "habit_subject": "habit:repeat_eating",
-                "reason": "different_identity_spaces",
-                "setting_subject": "setting:carb_ratio",
-                "status": "not_comparable"
-              }
-            ],
             "k": 0,
             "key": "highs_after_meals",
             "member_set_fingerprint": "13141e472c40a768",
@@ -211315,33 +209687,10 @@
               }
             ],
             "n": 1,
-            "overlap_counts": {
-              "highs_after_treating_lows": {
-                "count": null,
-                "reason": "different_exposure_families",
-                "status": "not_comparable"
-              },
-              "lows_after_correcting_highs": {
-                "count": null,
-                "reason": "different_exposure_families",
-                "status": "not_comparable"
-              },
-              "lows_after_meals": {
-                "count": 0,
-                "reason": "shared_meals_exposure",
-                "status": "comparable"
-              },
-              "overnight_lows_no_iob": {
-                "count": null,
-                "reason": "no_habit_exposure_identity",
-                "status": "not_comparable"
-              }
-            },
             "rate": 0.0,
             "rate_levers": [
               "habit:carb_undercount",
-              "habit:late_bolus",
-              "habit:meal_bolus_short"
+              "habit:late_bolus"
             ],
             "rate_producer": "exposures",
             "readiness": {
@@ -211407,63 +209756,11 @@
             "action": null,
             "admission_route": "none",
             "collapse": "remain_pattern",
-            "harm_low_overlap": [
-              {
-                "count": 0,
-                "habit_subject": "habit:correction_stacking",
-                "reason": "shared_low_episode_nadir",
-                "setting_subject": "setting:isf",
-                "status": "comparable"
-              },
-              {
-                "count": 1,
-                "habit_subject": "habit:correction_on_iob",
-                "reason": "shared_low_episode_nadir",
-                "setting_subject": "setting:isf",
-                "status": "comparable"
-              }
-            ],
             "k": 1,
             "key": "lows_after_correcting_highs",
-            "member_set_fingerprint": "72e37bdefcacb6d7",
-            "members": [
-              {
-                "action": null,
-                "admitted": false,
-                "hi": null,
-                "k": 1,
-                "kind": "setting",
-                "lo": null,
-                "price": 0,
-                "producer": "tuning_levers",
-                "seriousness": null,
-                "seriousness_segments": [],
-                "subject": "setting:isf"
-              }
-            ],
+            "member_set_fingerprint": "e3b0c44298fc1c14",
+            "members": [],
             "n": 6,
-            "overlap_counts": {
-              "highs_after_meals": {
-                "count": null,
-                "reason": "different_exposure_families",
-                "status": "not_comparable"
-              },
-              "highs_after_treating_lows": {
-                "count": 0,
-                "reason": "shared_lows_exposure",
-                "status": "comparable"
-              },
-              "lows_after_meals": {
-                "count": null,
-                "reason": "different_exposure_families",
-                "status": "not_comparable"
-              },
-              "overnight_lows_no_iob": {
-                "count": null,
-                "reason": "no_habit_exposure_identity",
-                "status": "not_comparable"
-              }
-            },
             "rate": 0.1667,
             "rate_levers": [
               "habit:correction_stacking",
@@ -211672,15 +209969,6 @@
             "action": null,
             "admission_route": "none",
             "collapse": "remain_pattern",
-            "harm_low_overlap": [
-              {
-                "count": 0,
-                "habit_subject": "habit:meal_over_delivery",
-                "reason": "shared_low_episode_nadir",
-                "setting_subject": "setting:carb_ratio",
-                "status": "comparable"
-              }
-            ],
             "k": 0,
             "key": "lows_after_meals",
             "member_set_fingerprint": "13141e472c40a768",
@@ -211700,28 +209988,6 @@
               }
             ],
             "n": 1,
-            "overlap_counts": {
-              "highs_after_meals": {
-                "count": 0,
-                "reason": "shared_meals_exposure",
-                "status": "comparable"
-              },
-              "highs_after_treating_lows": {
-                "count": null,
-                "reason": "different_exposure_families",
-                "status": "not_comparable"
-              },
-              "lows_after_correcting_highs": {
-                "count": null,
-                "reason": "different_exposure_families",
-                "status": "not_comparable"
-              },
-              "overnight_lows_no_iob": {
-                "count": null,
-                "reason": "no_habit_exposure_identity",
-                "status": "not_comparable"
-              }
-            },
             "rate": 0.0,
             "rate_levers": [
               "habit:meal_over_delivery"
@@ -211755,113 +210021,6 @@
           "support": null,
           "tier": "noted",
           "title": "Lows after meals",
-          "verdict_counts": null,
-          "verdict_counts_by_family": null,
-          "window_scope": "whole_day"
-        },
-        {
-          "anchored_by": null,
-          "annotation": null,
-          "appearances": null,
-          "asserts_move": null,
-          "chips": [
-            "lows"
-          ],
-          "claimed_by": null,
-          "count_sentences": null,
-          "current": null,
-          "direction": null,
-          "episodes": null,
-          "estimate": null,
-          "event_chart": null,
-          "evidence": null,
-          "fold_sentences": null,
-          "headline": "Overnight lows with no insulin on board",
-          "id": "pattern:overnight_lows_no_iob",
-          "kind": "pattern",
-          "label": null,
-          "lean": null,
-          "lever": null,
-          "members": null,
-          "parameter": null,
-          "past_setting": null,
-          "pattern": {
-            "action": null,
-            "admission_route": "none",
-            "collapse": "remain_pattern",
-            "harm_low_overlap": [],
-            "k": 0,
-            "key": "overnight_lows_no_iob",
-            "member_set_fingerprint": "be01b57ca95abd31",
-            "members": [
-              {
-                "action": null,
-                "admitted": false,
-                "hi": null,
-                "k": 0,
-                "kind": "setting",
-                "lo": null,
-                "price": 0,
-                "producer": "tuning_levers",
-                "seriousness": null,
-                "seriousness_segments": [],
-                "subject": "setting:basal_rate"
-              }
-            ],
-            "n": 29,
-            "overlap_counts": {
-              "highs_after_meals": {
-                "count": null,
-                "reason": "no_habit_exposure_identity",
-                "status": "not_comparable"
-              },
-              "highs_after_treating_lows": {
-                "count": null,
-                "reason": "no_habit_exposure_identity",
-                "status": "not_comparable"
-              },
-              "lows_after_correcting_highs": {
-                "count": null,
-                "reason": "no_habit_exposure_identity",
-                "status": "not_comparable"
-              },
-              "lows_after_meals": {
-                "count": null,
-                "reason": "no_habit_exposure_identity",
-                "status": "not_comparable"
-              }
-            },
-            "rate": 0.0,
-            "rate_levers": [],
-            "rate_producer": "harm_band_source_nights",
-            "readiness": {
-              "count": 29,
-              "gate": 12,
-              "verdict": "ready"
-            },
-            "seriousness": null,
-            "settled_price": 0,
-            "subject": "pattern:overnight_lows_no_iob",
-            "title": "Overnight lows with no insulin on board",
-            "wide": false,
-            "wilson": {
-              "hi": 0.0536,
-              "lo": -0.0
-            }
-          },
-          "pattern_chart": null,
-          "priority": null,
-          "programmed_now": null,
-          "rank_note": null,
-          "reason": null,
-          "recommended": null,
-          "regime_end": null,
-          "register": "finding",
-          "run_ids": null,
-          "span": null,
-          "support": null,
-          "tier": "noted",
-          "title": "Overnight lows with no insulin on board",
           "verdict_counts": null,
           "verdict_counts_by_family": null,
           "window_scope": "whole_day"

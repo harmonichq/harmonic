@@ -431,7 +431,7 @@ const overlap404 = (left, right) => ({
   y: Math.max(0, Math.min(left.bottom, right.bottom) - Math.max(left.top, right.top)),
 });
 
-// #432: the served-description contract S148, S150 and amended S107 read. A row
+// #432: the served-description contract S150 and amended S107 read. A row
 // whose anchor serves carbs reads its carbs, its dose and its served outcome; a
 // row with a dose and no carbs reads that dose then its anchor label; any other
 // row reads its anchor glucose then its label. Carbs and glucose print whole and
@@ -467,15 +467,12 @@ export function assertServedRowDescriptions432(id, served, rendered) {
 // The selected block against its served detail: the anchor figure, the outcome
 // line, the served cause and every served habit with its band label, and no line
 // that only counts readings or markers or describes the canvas.
-export function assertSelectedFacts432(id, detail, block, { outcome = null } = {}) {
+export function assertSelectedFacts432(id, detail, block) {
   assert.ok(detail && block, `${id} premise: a selected Occurrence and its rendered block`);
   assert.ok(detail.anchor?.carbs != null && detail.anchor.insulin != null,
     `${id} the selected meal must serve its carbs and dose; it serves ${JSON.stringify(detail.anchor)}`);
   assert.ok(block.figure.startsWith(figure432(detail.anchor)),
     `${id} the figure line must read the served carbs and dose: ${block.figure}`);
-  if (outcome) {
-    assert.equal(detail.outcome?.kind, outcome, `${id} the selected meal must serve its Arc ${outcome}`);
-  }
   const outcomeLines = block.lines.filter(line => line.kind === 'outcome').map(line => line.text);
   assert.deepEqual(outcomeLines, detail.outcome ? [`${detail.outcome.kind === 'peak' ? 'Peak' : 'Nadir'} `
     + `${whole432(detail.outcome.bg)} mg/dL, ${Math.round(detail.outcome.minute)} min after the bolus`] : [],
@@ -536,12 +533,6 @@ async function expandRoster432(page) {
     await settled(page);
   }
 }
-async function mealBolusShortCase432(page) {
-  await fullDayDiagnose(page);
-  await page.getByRole('button', { name: 'All charts', exact: true }).click();
-  await page.locator('#chart-headacts button[aria-label="Close"]').waitFor({ timeout: 30000 });
-  return (await drillMeal404(page, 'event')).served;
-}
 // The chartable Highs after meals Pattern, drilled from All charts to its event case;
 // returns that case's coordinate.
 async function highsAfterMealsCase432(page, id) {
@@ -598,13 +589,19 @@ export function assertS107RosterGeometry({ comparison, tierRows, expectedCohorts
   assertS107TierGeometry(tierRows, served);
 }
 
+// The showcase's served meals Finding with an event chart, read off the served
+// preparation rather than named here.
 async function drillMeal404(page, alignment) {
-  const meal = page.locator('#tile-row .evidence-tile[data-chart-id="finding:meal_bolus_short"]');
+  const preparation = await read(page, '/api/diagnose/finding-case-file-preparation');
+  const finding = preparation.rendered_rows.find(row => row.register === 'finding' && row.event_chart
+    && (row.appearances || []).some(appearance => appearance.family === 'meals'));
+  assert.ok(finding, 'S107 premise: showcase supplies a meals Finding with a long meal cohort chart');
+  const meal = page.locator(`#tile-row .evidence-tile[data-chart-id="${finding.id}"]`);
   assert.ok(await meal.count(), 'S107 premise: showcase supplies the long meal cohort chart');
   const response = page.waitForResponse(reply => {
     const url = new URL(reply.url());
     return url.pathname === '/api/diagnose/finding-case-file'
-      && url.searchParams.get('finding_id') === 'finding:meal_bolus_short'
+      && url.searchParams.get('finding_id') === finding.id
       && url.searchParams.get('alignment') === alignment && reply.ok();
   }, { timeout: 30000 });
   await meal.click();
@@ -612,7 +609,7 @@ async function drillMeal404(page, alignment) {
   assert.equal(served.projection.alignment, alignment,
     `S107 meal drill must use the served ${alignment} case`);
   await page.waitForFunction(id => document.querySelector('#tile-focal .evidence-tile')?.dataset.chartId === id,
-    'finding:meal_bolus_short', { timeout: 30000 });
+    finding.id, { timeout: 30000 });
   await settled(page); await page.locator('#level .case-occurrence').first().waitFor({ timeout: 30000 });
   return { served, geometry: await geometry404(page) };
 }
@@ -2158,8 +2155,10 @@ async function servedLead451(page, id) {
   const guidance = await read(page, '/api/guidance');
   assert.equal(guidance.disposition, 'eligible_action', `${id} premise: the case must serve an eligible action`);
   const action = Array.isArray(guidance.selected?.action) ? guidance.selected.action[0] : null;
-  assert.equal(action?.parameter, 'isf',
-    `${id} premise: the selected concern must carry a correction-factor instruction`);
+  // The correction factor never leads (ADR 499); a basal Setting no Pattern
+  // carries does, through the same lead.
+  assert.equal(action?.parameter, 'basal_rate',
+    `${id} premise: the selected concern must carry a basal instruction`);
   return { guidance, action };
 }
 /** Changes' nameplate sub-line and its Action heading's words, as rendered. */
@@ -2830,7 +2829,11 @@ export const C4_STORIES = {
     // Undrilled: a drilled pane fits its viewport exactly at 1440x900 (the
     // overflow is on the factors roster itself, not every level), so this
     // scrolls #level before any row is picked, at whatever bounded offset its
-    // own overflow allows.
+    // own overflow allows. Since #499 cut four rows from the showcase's
+    // roster it fits a 900 px pane, so the story pins a 720 px height (the
+    // other ledger size) to keep its premise — a scrolled pane — reachable.
+    const viewport = page.viewportSize();
+    await page.setViewportSize({ width: viewport.width, height: Math.min(viewport.height, 720) });
     await fullDayDiagnose(page);
     // The rail's own tile reads (diagnose-workstation.js fetchTile -> paint ->
     // paintLevel) land after the main read and each repaint the roster from
@@ -3803,7 +3806,7 @@ export const C4_STORIES = {
     const parent = rows.find(row => row.id === 'pattern:lows_after_correcting_highs');
     const members = rows.filter(row => parent && row.claimed_by === parent.id);
     assert.ok(members.some(member => member.id === 'finding:correction_stacking'),
-      'S126 premise: the correction-stacking case must fold Correction stacking under Lows after correcting highs');
+      'S126 premise: the correction-fold case must fold Correction stacking under Lows after correcting highs');
     assertServedFold424('S126', members);
     const [own] = parent.count_sentences || [];
     assert.ok(own, 'S126 premise: Lows after correcting highs must serve its own count');
@@ -3825,28 +3828,6 @@ export const C4_STORIES = {
       assert.equal(shares.reduce((sum, [, count]) => sum + Number(count), 0), own.count,
         "S126 the cause lines' shares must add up to the Pattern's served count");
     }, 'S126 a folded cause shows its share of the Pattern first');
-  },
-  // #432: fail-first on a4d374a7, where every Meal bolus short row reads a dash
-  // and its constant anchor label, and the served case file carries no dose,
-  // carbs, outcome or reason.
-  async S148(page) {
-    const served = await mealBolusShortCase432(page);
-    await expandRoster432(page);
-    await waitForReplayAssertion(async seen => {
-      assertServedRowDescriptions432('S148', served, seen(await renderedRows432(page)));
-    }, 'S148 every Meal bolus short row names its own meal');
-  },
-  async S149(page) {
-    const served = await mealBolusShortCase432(page);
-    const matched = page.locator('#level .case-occurrence[data-comparison-cohort="matched"]').first();
-    assert.ok(await matched.count(), 'S149 premise: the Meal bolus short case serves a matched meal');
-    const occ = await selectOccurrence(page, matched);
-    const file = await read(page, '/api/diagnose/finding-case-file', {
-      projection_id: served.projection_id, finding_id: served.finding.id, alignment: 'event', occ,
-    });
-    await waitForReplayAssertion(async seen => {
-      assertSelectedFacts432('S149', file.selection.detail, seen(await selectedBlock432(page)), { outcome: 'peak' });
-    }, 'S149 the selected matched meal reads as its facts and served reason');
   },
   async S150(page) {
     const coordinate = await highsAfterMealsCase432(page, 'S150');
@@ -3883,8 +3864,8 @@ export const C4_STORIES = {
     await waitForReplayAssertion(async seen => {
       const figure = seen(await page.locator('.gf-reading .gf-figure')
         .evaluate(node => node.firstChild?.textContent ?? ''));
-      assert.equal(figure, `${action.direction} to ${correctionFactor451(action.recommended)}`,
-        'S177 the Action figure reads the served instruction, the correction factor insulin first');
+      assert.equal(figure, `${action.direction} to ${action.recommended} U/h`,
+        'S177 the Action figure reads the served basal instruction in its user unit');
       assert.deepEqual(seen(await changesWords451(page)), { sub: `${priority} · Ready to stage`, action: 'Ready to stage' },
         'S177 an eligible setting instruction reads Ready to stage on the nameplate and the Action heading');
       assert.doesNotMatch(seen(await page.locator('.gf-desk').innerText()), ENGINE_WORDS_451,
@@ -3979,8 +3960,19 @@ export const C4_STORIES = {
     }, 'S178 the staged dock');
   },
   async S179(page) {
-    await servedLead451(page, 'S179');
-    await C2_STORIES.stageIntoPlan(page);
+    // The correction factor never leads Changes (ADR 499), so the Plan is staged
+    // from its Diagnose panel, as S178 stages it, and recorded from Changes.
+    await fullDayDiagnose(page);
+    const preparation = await read(page, '/api/diagnose/finding-case-file-preparation');
+    const row = preparation.rendered_rows.find(candidate => candidate.parameter === 'isf');
+    assert.ok(row && row.asserts_move === true,
+      'S179 premise: the case must serve an asserting, stageable correction-factor row');
+    await page.locator(`#level .qrow[data-id="${row.id}"]`).click();
+    await settled(page);
+    await press(page, '#level .stagebtn[data-staged="false"]');
+    await page.locator('.inspector > .watch[data-state="plan"]').waitFor({ timeout: 30000 });
+    await press(page, '.inspector > .watch[data-state="plan"] .go');
+    await page.locator('.gf-plan').waitFor({ timeout: 30000 });
     await press(page, '[data-set="record"]');
     await page.locator('[data-set="withdraw"]').waitFor({ timeout: 30000 });
     const context = (await read(page, '/api/plan/history')).history[0]?.decision_context;
@@ -4381,26 +4373,8 @@ export const C4_STORIES = {
     }
     failOnce('S191', 'a recurring-lows slot must say what owns its move and show its lows', failures);
   },
-  // #467: a scoped window serves a Pattern when its outcomes land in it. The
-  // overnight Pattern owns no chart, so it draws no mini at 24 h, and Overnight
-  // keeps it with the band's counts; Afternoon, clear of the band, lists none.
-  // It asserts no rank numeral, tier or position (#469 moves those).
-  async S192(page) {
-    const id = 'pattern:overnight_lows_no_iob';
-    await openDiagnoseRail(page);
-    await patternRow467(page, id, '2 of 30 nights ran low overnight', '24 h');
-    await page.getByRole('button', { name: 'Overnight', exact: true }).click(); await settled(page);
-    await patternRow467(page, id, '2 of 30 nights ran low between 00:00 and 06:00', 'Overnight');
-    await page.getByRole('button', { name: 'Afternoon', exact: true }).click(); await settled(page);
-    await waitForReplayAssertion(async seen => {
-      assert.equal(seen(await page.locator('#seg-window [aria-pressed="true"]').innerText()).trim(), 'Afternoon',
-        'S192 premise: the Afternoon preset must be pressed');
-      assert.equal(seen(await page.locator(`#level .qrow[data-id="${id}"]`).count()), 0,
-        'S192 Afternoon must list no overnight Pattern row');
-    }, 'S192 Afternoon lists no overnight Pattern');
-  },
   // #469: the rail follows the one urgency ranking. Leg 1 reads the showcase's
-  // 24 h rail, where the overnight Pattern shares its basal row's position; leg 2
+  // 24 h rail; leg 2
   // opens isf-direction-only-weaken, whose correction factor gives its own reason
   // it cannot stage rather than sitting under the tail note. Each leg runs; the
   // story fails once, naming each failed leg.
@@ -4557,23 +4531,13 @@ const readRail469 = page => page.evaluate(() => [...document.querySelectorAll('#
   };
 }));
 
-// #469 leg 1: on the showcase at 24 h the overnight Pattern follows the
-// 03:00–04:00 basal row with no numeral and no stripe, "Worth a look" prints once,
-// Over-treated low is numeral 2, and the stripe marks one leading run.
+// #469 leg 1: on the showcase at 24 h "Worth a look" prints once, Over-treated
+// low is numeral 2, and the stripe marks one leading run.
 async function oneRanking469(page) {
   await openDiagnoseRail(page);
   await waitForReplayAssertion(async seen => {
     const rail = seen(await readRail469(page));
     const items = rail.filter(entry => entry.id);
-    const basal = items.findIndex(entry => entry.id === 'basal:180-240');
-    assert.ok(basal >= 0, 'S193 premise: the showcase must serve the 03:00–04:00 basal row');
-    const pattern = items[basal + 1];
-    assert.equal(pattern?.id, 'pattern:overnight_lows_no_iob',
-      `S193 the overnight Pattern must follow the 03:00–04:00 basal row; ${pattern?.id} does`);
-    assert.equal(pattern.numeral, '', 'S193 the overnight Pattern must carry no numeral');
-    assert.equal(pattern.urgent, false, 'S193 the overnight Pattern must carry no stripe');
-    assert.ok(pattern.note.includes('Ranked with its setting'),
-      `S193 the overnight Pattern must print "Ranked with its setting"; it prints "${pattern.note}"`);
     const words = rail.filter(entry => entry.line === 'qtier' ? entry.text === 'Worth a look' : entry.tier === 'Worth a look');
     assert.equal(words.length, 1, `S193 "Worth a look" must print once; it prints ${words.length} times`);
     assert.equal(items.find(entry => entry.id === 'finding:over_treated_low')?.numeral, '2',
@@ -4598,21 +4562,6 @@ async function stageRefusal469(page) {
     assert.ok(!rail.slice(0, isf).some(entry => entry.line === 'tailnote'),
       'S193 no tail note may precede the correction factor row');
   }, 'S193 the correction factor gives its own reason');
-}
-
-// #467: the overnight Pattern's row in the pressed window prints its served
-// count sentence and draws no mini.
-async function patternRow467(page, id, sentence, preset) {
-  await waitForReplayAssertion(async seen => {
-    assert.equal(seen(await page.locator('#seg-window [aria-pressed="true"]').innerText()).trim(), preset,
-      `S192 premise: the ${preset} preset must be pressed`);
-    const row = page.locator(`#level .qrow[data-id="${id}"]`);
-    assert.equal(seen(await row.count()), 1, `S192 ${preset} must list the overnight Pattern row`);
-    const text = seen(await row.locator('.den').innerText()).replace(/\s+/g, ' ').trim();
-    assert.ok(text.includes(sentence), `S192 ${preset}'s overnight Pattern row must print "${sentence}"; it prints "${text}"`);
-    assert.equal(seen(await row.locator('.mini canvas').count()), 0,
-      `S192 ${preset}'s overnight Pattern row must draw no mini`);
-  }, `S192 the ${preset} overnight Pattern row`);
 }
 
 // #466: open the 24 h rail's 03:00 slot and read the served harm evidence it
@@ -4783,10 +4732,11 @@ export async function historicalAbsence(page) {
     }, "absent");
   };
   await absent();
-  // This case publishes five Pattern rows, one current basal row and one
-  // historical I:C row. The last must enter neither visible nor Watching counts.
+  // This case publishes four Pattern rows (the overnight-lows Pattern left the
+  // roster, ADR 499), one current basal row and one historical I:C row. The last
+  // must enter neither visible nor Watching counts.
   await waitForReplayAssertion(async seen => {
-    assert.equal((seen(await page.locator('#crumb-meta').innerText())).trim(), '6 findings · 30 days');
+    assert.equal((seen(await page.locator('#crumb-meta').innerText())).trim(), '5 findings · 30 days');
     const watching = page.getByRole('button', { name: /Watching/ });
     assert.equal(seen(await watching.count()), 0, 'no historical read may create a Watching disclosure');
   }, "historicalAbsence");
@@ -5029,3 +4979,49 @@ export const C4_RETIREMENTS = {
     }, "R17");
   },
 };
+
+// RETIRED:Connor Griffin:2026-10-14 — ADR 499 removed Meal bolus fell short from
+// the engine. S148 and S149 read its event case; this is the proof it is gone
+// while the Highs after meals Pattern it fed is still served.
+export async function mealBolusShortAbsence(page) {
+  process.stdout.write('RETIRED R20 — Connor Griffin · 2026-10-14 · "I don\'t understand the point of \'meal bolus fell short\'… It\'s the exact same concept as carb undercount…"\n');
+  const payload = await read(page, '/api/diagnose/finding-case-file-preparation');
+  const ids = new Set([...payload.findings.rows, ...payload.rendered_rows].map(row => row.id));
+  assert.ok(ids.has('pattern:highs_after_meals'),
+    'R20 premise failed: the showcase must still serve Highs after meals — re-settle, not a fail');
+  assert.ok(!ids.has('finding:meal_bolus_short'), 'R20 replayed-fail: a Meal bolus fell short Finding is served again');
+  const catalog = await read(page, '/api/catalog');
+  assert.ok(!catalog.levers.some(lever => lever.value === 'meal_bolus_short'),
+    'R20 replayed-fail: the lever catalog names Meal bolus fell short again');
+  await openDiagnoseRail(page);
+  await waitForReplayAssertion(async seen => {
+    assert.equal(seen(await page.locator('[data-id="finding:meal_bolus_short"]').count()), 0,
+      'R20 replayed-fail: a Meal bolus fell short row is drawn again');
+  }, 'R20');
+}
+
+// RETIRED:Connor Griffin:2026-10-14 — ADR 499 removed the overnight-lows Pattern.
+// S192 read it in the 24 h and Overnight windows; this is the proof it is gone in
+// both while the basal Setting that answers the same lows is still served.
+export async function overnightPatternAbsence(page) {
+  process.stdout.write('RETIRED R21 — Connor Griffin · 2026-10-14 · "that\'d for SURE get captured by a basal recommendation, otherwise it should be cut from the engine as silly and redundant"\n');
+  for (const params of [{}, { start_min: 0, end_min: 360 }]) {
+    const findings = await read(page, '/api/diagnose/findings', params);
+    assert.ok(findings.rows.some(row => row.kind === 'setting' && row.parameter === 'basal_rate'
+      && row.register === 'assert'),
+    'R21 premise failed: the basal Setting must still be served for these overnight lows — re-settle, not a fail');
+    assert.ok(!findings.rows.some(row => row.id === 'pattern:overnight_lows_no_iob'),
+      'R21 replayed-fail: the overnight-lows Pattern is served again');
+    assert.ok(!findings.outcome_patterns.some(row => row.key === 'overnight_lows_no_iob'),
+      'R21 replayed-fail: the outcome roster carries the overnight-lows Pattern again');
+  }
+  await openDiagnoseRail(page);
+  for (const name of ['24 h', 'Overnight']) {
+    await page.getByRole('button', { name, exact: true }).click();
+    await settled(page);
+    await waitForReplayAssertion(async seen => {
+      assert.equal(seen(await page.locator('[data-id="pattern:overnight_lows_no_iob"]').count()), 0,
+        `R21 replayed-fail: the overnight-lows Pattern row is drawn again in ${name}`);
+    }, 'R21');
+  }
+}

@@ -34,7 +34,7 @@ test('a fresh Diagnose payload without input data age passes through unchanged',
     analysis: { revision: 7, covers_to: '2026-08-24 08:00:00' },
     scenarios: { revision: 7, covers_to: '2026-08-24 08:00:00' },
   };
-  const payload = { schema: 'eating-sequence-report-v1' };
+  const payload = { schema: 'diagnose-analysis-v1' };
   assert.equal(recordDiagnoseAge(ages, 'analysis', payload), payload);
   assert.deepEqual(ages, { scenarios: { revision: 7, covers_to: '2026-08-24 08:00:00' } });
 });

@@ -62,8 +62,8 @@ function lineSeries(surface, cohort, rows, selectedCohort, support) {
 /* A median is an observation, not a promise of a trajectory. Keep lines for
  * adjacent readings, and paint a shaped mark only where a point would otherwise
  * vanish into a missing neighbour. The same shared renderer serves every event
- * response; a High-carb singleton therefore remains visible without joining it
- * to invented glucose between observations. */
+ * response; a singleton therefore remains visible without joining it to
+ * invented glucose between observations. */
 function isolatedPointSeries(surface, cohort, rows, selectedCohort, support) {
   const points = rows.filter((row, index) => row.support === support
     && rows[index - 1]?.support !== support && rows[index + 1]?.support !== support);
@@ -140,13 +140,6 @@ function legend(surface, caseFile, selected) {
           : `${count} · unavailable for an average`;
     return `<span class="ec-key-item" data-cohort="${cohort.key}" data-support="${cohort.support}" data-selected-cohort="${selectedCohort}"><i class="ec-key-mark" aria-hidden="true"></i><strong>${cohort.name}</strong><small>${state}${selectedCohort ? ' · selected cohort' : ''}</small></span>`;
   }).join('');
-  if (caseFile.projection.schema === 'high-carb-sequence-response-v1') {
-    const period = caseFile.projection.period === 'in_sequence' ? 'During eating'
-      : caseFile.projection.period === 'post_4h' ? 'Next 4 h' : 'Next 6 h';
-    const window = caseFile.projection.source_window;
-    const scope = caseFile.projection.scope === 'evening' ? 'Evening sequences' : 'Sequences at all times of day';
-    key.insertAdjacentHTML('beforeend', `<span class="ec-comparison-unavailable">Source population · ${scope} · ${window.days} days · ${period}</span>`);
-  }
   if (caseFile.projection.comparison.state === 'unavailable') key.insertAdjacentHTML('beforeend',
     `<span class="ec-comparison-unavailable" role="status">${caseFile.projection.comparison.name} is unavailable for comparison.</span>`);
   if (selected) key.insertAdjacentHTML('beforeend', `<span class="ec-key-item" data-cohort="selected"><i class="ec-key-mark" aria-hidden="true"></i><strong>Selected trace</strong><small>${dateLabel(selected.date)} · observed</small></span>`);
@@ -203,20 +196,10 @@ function option(surface, caseFile, selected, range, mini = false) {
      diagnose-evidence-charts' MINI_GRID: 6px of air on all four sides, no tick
      labels, no split lines, no axis line, and no hover readout of any kind.
      Reading happens on the stage; the cell's only verbs are the strip's own. */
-  // A short during-eating window must still place a tick at the end anchor.
-  const tickInterval = projection.schema === 'high-carb-sequence-response-v1'
-    && projection.window_min[0] < 0 && projection.window_min[1] - projection.window_min[0] < 60 ? 30 : 60;
   return { animation: false, backgroundColor: 'transparent',
     grid: mini ? { left: 6, right: 6, top: 6, bottom: 6 } : { left: GRID.left, right: 34, top: 26, bottom: 42 },
     tooltip: mini ? { show: false } : { trigger: 'axis', showContent: false },
-    xAxis: { type: 'value', min: projection.window_min[0], max: projection.window_min[1], interval: tickInterval, axisLine: { show: !mini, onZero: false, lineStyle: { color: css(surface, '--mk-line') } }, axisTick: { show: false }, splitLine: { show: !mini, lineStyle: { color: css(surface, '--mk-line'), opacity: .48 } }, axisLabel: { show: !mini, color: css(surface, '--mk-muted'), fontSize: 10, formatter: (minute) => {
-      if (projection.schema === 'high-carb-sequence-response-v1') {
-        if (minute === 0) return 'End of eating\nsequence';
-        // Keep the end anchor readable in narrow cells; the +2 h tick remains.
-        if (minute === 60 && surface?.clientWidth < 420) return '';
-      }
-      return axisLabel(minute, projection.anchor.label);
-    } } },
+    xAxis: { type: 'value', min: projection.window_min[0], max: projection.window_min[1], interval: 60, axisLine: { show: !mini, onZero: false, lineStyle: { color: css(surface, '--mk-line') } }, axisTick: { show: false }, splitLine: { show: !mini, lineStyle: { color: css(surface, '--mk-line'), opacity: .48 } }, axisLabel: { show: !mini, color: css(surface, '--mk-muted'), fontSize: 10, formatter: (minute) => axisLabel(minute, projection.anchor.label) } },
     yAxis: { type: 'value', min: drawn[0], max: drawn[1], interval: 60, name: mini ? undefined : 'mg/dL', nameLocation: 'end', nameTextStyle: { color: css(surface, '--mk-muted'), fontSize: 9 }, nameGap: 8, axisLine: { show: false }, axisTick: { show: false }, splitLine: { show: !mini, lineStyle: { color: css(surface, '--mk-line'), opacity: .58 } }, axisLabel: { show: !mini, color: css(surface, '--mk-muted'), fontSize: 10 } }, series };
 }
 
@@ -329,7 +312,6 @@ export function renderEventSurface(surface, caseFile,
        digits, its pair spacing and its tabular values all hang off that class. */
     readout.className = 'head-live ec-lent-readout';
     readout.id = 'ec-readout';
-    if (caseFile.projection.schema === 'high-carb-sequence-response-v1') readout.classList.add('high-carb-readout');
     headline.append(readout);
     return readout;
   })();

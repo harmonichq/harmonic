@@ -582,7 +582,6 @@ class HonestDenominatorTest(unittest.TestCase):
         )
         self.assertEqual(by_lever["over_treated_low"], Exposure.LOWS.value)
         self.assertEqual(by_lever["late_bolus"], Exposure.MEALS.value)
-        self.assertEqual(by_lever["meal_bolus_short"], Exposure.MEALS.value)
 
     def test_correction_pairs_denominate_stacking(self):
         now = datetime(2026, 7, 2, 12, 0, 0)
@@ -597,39 +596,6 @@ class HonestDenominatorTest(unittest.TestCase):
         stacking = next(b for b in trend.behaviors if b.lever == "correction_stacking")
         # Newest window carries all four corrections → 3 pairs.
         self.assertEqual(stacking.series[-1].exposure_n, 3)
-
-    def test_custom_meal_floor_is_shared_by_attribution_and_trend_denominator(self):
-        now = datetime(2026, 7, 2, 12, 0, 0)
-        meal = BolusEvent(
-            now - timedelta(hours=2), insulin=1.0, carbs=7.0,
-            completion="Completed", seq_num=71,
-        )
-        config = ScenarioConfig(anchor_meal_min_carbs=5.0)
-        counts = {family: 0 for family in Exposure}
-
-        with mock.patch(
-            "ciq_autotune.outcomes_trend.tally_attributions",
-            return_value=(counts, {Lever.MEAL_BOLUS_SHORT: 1}),
-        ):
-            trend = summarize_trend(
-                _FakeStore(
-                    cgm=[CgmReading(now - timedelta(hours=3), 120.0)],
-                    bolus=[meal],
-                ),
-                window_days=14,
-                now=now,
-                scenario_config=config,
-            )
-
-        behavior = next(
-            item for item in trend.behaviors
-            if item.lever == Lever.MEAL_BOLUS_SHORT.value
-        )
-        self.assertEqual(
-            (behavior.series[-1].attributed, behavior.series[-1].exposure_n),
-            (1, 1),
-        )
-
 
     def test_the_trend_attributes_on_the_same_meal_floor_it_denominates_on(self):
         """k and n must be measured against one carb floor, not two.
@@ -952,13 +918,13 @@ class PayloadShapeTest(unittest.TestCase):
         self.assertEqual(older["observed_days"], 0)
         self.assertFalse(older["fully_observed"])
 
-    def test_eight_behaviors_in_locked_order(self):
+    def test_seven_behaviors_in_locked_order(self):
         levers = [b["lever"] for b in json.loads(self._trend().to_json())["behaviors"]]
         self.assertEqual(
             levers,
             ["late_bolus", "carb_undercount", "meal_over_delivery", "over_treated_low",
              "correction_on_iob",
-             "correction_stacking", "missed_meal", "meal_bolus_short"],
+             "correction_stacking", "missed_meal"],
         )
 
     def test_metrics_in_locked_order_with_polarity(self):
@@ -1007,7 +973,7 @@ class PayloadShapeTest(unittest.TestCase):
         trend = summarize_trend(_FakeStore(), window_days=14, now=datetime(2026, 7, 2))
         self.assertIsInstance(trend, OutcomesTrend)
         self.assertEqual(len(trend.windows), 1)
-        self.assertEqual(len(trend.behaviors), 8)
+        self.assertEqual(len(trend.behaviors), 7)
         # No data → metric series is a single None, not a fabricated zero.
         tir = next(m for m in trend.metrics if m.key == "tir")
         self.assertEqual(tir.series, [None])
@@ -1641,13 +1607,3 @@ class ComparisonMeasurementTest(unittest.TestCase):
         self.assertEqual(sum(r['k'] for r in result['rows']),1)
         self.assertEqual(sum(r['measured'] for r in result['rows']),1)
         self.assertEqual(result['reason'],'missing_override_provenance')
-
-
-class SequenceTrendExclusionTest(unittest.TestCase):
-    def test_supported_sequences_add_no_behavior_trend_series(self):
-        from tests.eating_sequence_streams import sequence_episode_stream
-        for lever in ("high_carb_sequence", "repeat_eating"):
-            b, c, log, basal = sequence_episode_stream(lever)
-            result = summarize_trend(_FakeStore(cgm=c, bolus=b, basal=basal, carbs=log), window_days=30)
-            self.assertNotIn("high_carb_sequence", {row.lever for row in result.behaviors})
-            self.assertNotIn("repeat_eating", {row.lever for row in result.behaviors})

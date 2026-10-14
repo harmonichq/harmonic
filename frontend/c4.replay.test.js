@@ -33,7 +33,7 @@ test('R18 is a unique app-only registry function with a manufactured history cas
 });
 
 test('S106 and S107 are unique app-only C4 stories with their required manufactured cases', () => {
-  for (const [id, expectedCase, term] of [['S106', 'pattern-near-tie', 'HV2-17'], ['S107', 'showcase', 'HV2-11']]) {
+  for (const [id, expectedCase, term] of [['S106', 'pattern-near-tie', 'HV2-17'], ['S107', 'ic-block-evidence', 'HV2-11']]) {
     const entries = REGISTRY.filter(([entry]) => entry === id);
     assert.equal(entries.length, 1, `${id} is registered once`);
     assert.equal(entries[0][1].deferred.term, term);
@@ -87,8 +87,8 @@ test('S107 keeps a grouped comparison heading distinct from readable mixed-tier 
   }), /fully readable/);
 });
 
-test('S148–S150 are unique app-only #432 stories with their required manufactured cases', () => {
-  for (const [id, expectedCase] of [['S148', 'showcase'], ['S149', 'showcase'], ['S150', 'pattern-near-tie']]) {
+test('S150 is a unique app-only #432 story with its required manufactured case', () => {
+  for (const [id, expectedCase] of [['S150', 'pattern-near-tie']]) {
     const entries = REGISTRY.filter(([entry]) => entry === id);
     assert.equal(entries.length, 1, `${id} is registered once`);
     assert.equal(entries[0][1].deferred.term, 'ADR 432');
@@ -96,12 +96,14 @@ test('S148–S150 are unique app-only #432 stories with their required manufactu
   }
 });
 
-test('S177–S179 are unique app-only #451 stories on the isf-strengthen store', () => {
-  for (const id of ['S177', 'S178', 'S179']) {
+test('S177–S179 are unique app-only #451 stories; the correction-factor two on isf-strengthen', () => {
+  // ADR 499: the correction factor never leads Changes, so S177 reads the basal lead.
+  for (const [id, expectedCase] of [['S177', 'basal-lower'], ['S178', 'isf-strengthen'],
+    ['S179', 'isf-strengthen']]) {
     const entries = REGISTRY.filter(([entry]) => entry === id);
     assert.equal(entries.length, 1, `${id} is registered once`);
     assert.equal(entries[0][1].deferred.term, 'ADR 451');
-    assert.equal(storyCase(id), 'isf-strengthen');
+    assert.equal(storyCase(id), expectedCase);
   }
 });
 
@@ -145,13 +147,6 @@ test('S191 is a unique app-only #466 story on the basal-recurring-low-spread sto
   assert.equal(entries.length, 1, 'S191 is registered once');
   assert.equal(entries[0][1].deferred.term, 'ADR 466');
   assert.equal(storyCase('S191'), 'basal-recurring-low-spread');
-});
-
-test('S192 is a unique app-only #467 story on the basal-recurring-low-lower store', () => {
-  const entries = REGISTRY.filter(([entry]) => entry === 'S192');
-  assert.equal(entries.length, 1, 'S192 is registered once');
-  assert.equal(entries[0][1].deferred.term, 'ADR 467');
-  assert.equal(storyCase('S192'), 'basal-recurring-low-lower');
 });
 
 test('S193 is a unique app-only #469 story on the showcase', () => {
@@ -213,7 +208,7 @@ test('S178 expects the numbers line the queue prints, served scope note included
 
 const servedCaseFiles432 = JSON.parse(readFileSync(new URL(
   '../mockups/diagnose-workstation.synthetic/finding-case-files.json', import.meta.url), 'utf8'));
-const mealCase432 = () => JSON.parse(JSON.stringify(servedCaseFiles432.cases['finding:meal_bolus_short'].event));
+const mealCase432 = () => JSON.parse(JSON.stringify(servedCaseFiles432.cases['finding:carb_undercount'].event));
 // The base server's shape: an anchor with no dose or carbs, and no outcome.
 const baseShaped432 = (served) => {
   for (const row of served.occurrences) {
@@ -222,32 +217,32 @@ const baseShaped432 = (served) => {
   return served;
 };
 
-test('S148/S150 row descriptions pass when each rendered row reads its own served meal', () => {
+test('S150 row descriptions pass when each rendered row reads its own served meal', () => {
   const served = mealCase432();
   const [first] = served.occurrences;
   assert.deepEqual([first.anchor.carbs, first.anchor.insulin, first.outcome.kind, first.outcome.bg],
     [40, 4, 'peak', 147.5]);
-  assert.doesNotThrow(() => assertServedRowDescriptions432('S148', served,
+  assert.doesNotThrow(() => assertServedRowDescriptions432('S150', served,
     [{ occurrenceId: first.id, text: '40 g · 4 U · peak 148' }]));
 });
 
-test('S148/S150 reach their feature assertion on the base server shape, never a premise', () => {
+test('S150 reaches its feature assertion on the base server shape, never a premise', () => {
   const served = baseShaped432(mealCase432());
   const [first] = served.occurrences;
-  assert.throws(() => assertServedRowDescriptions432('S148', served,
-    [{ occurrenceId: first.id, text: '— · Completed carb bolus' }]), /S148 every meal row must serve its carbs and dose/);
-  assert.throws(() => assertServedRowDescriptions432('S148', mealCase432(),
-    [{ occurrenceId: first.id, text: '— · Completed carb bolus' }]), /S148 no meal row may lead with a dash/);
+  assert.throws(() => assertServedRowDescriptions432('S150', served,
+    [{ occurrenceId: first.id, text: '— · Completed carb bolus' }]), /S150 every meal row must serve its carbs and dose/);
+  assert.throws(() => assertServedRowDescriptions432('S150', mealCase432(),
+    [{ occurrenceId: first.id, text: '— · Completed carb bolus' }]), /S150 no meal row may lead with a dash/);
   assert.throws(() => assertServedRowDescriptions432('S150', mealCase432(),
     [{ occurrenceId: first.id, text: '40 g · 4 U' }]), /S150 .* must read its own served carbs, dose and outcome/);
 });
 
-test('S148/S150 separate a setup error from the feature', () => {
+test('S150 separates a setup error from the feature', () => {
   const served = mealCase432();
-  assert.throws(() => assertServedRowDescriptions432('S148', served, []),
-    /S148 premise: the drilled case renders Occurrence rows/);
-  assert.throws(() => assertServedRowDescriptions432('S148', served,
-    [{ occurrenceId: `o_${'9'.repeat(32)}`, text: '40 g · 4 U' }]), /S148 premise: rendered row .* is a served Occurrence/);
+  assert.throws(() => assertServedRowDescriptions432('S150', served, []),
+    /S150 premise: the drilled case renders Occurrence rows/);
+  assert.throws(() => assertServedRowDescriptions432('S150', served,
+    [{ occurrenceId: `o_${'9'.repeat(32)}`, text: '40 g · 4 U' }]), /S150 premise: rendered row .* is a served Occurrence/);
 });
 
 const claimedDetail432 = () => {
@@ -269,36 +264,36 @@ const block432 = (detail) => {
       ...lines.map((line) => line.text)].join(' ') };
 };
 
-test('S149/S150 selected facts pass on the served detail and its rendered block', () => {
+test('S150 selected facts pass on the served detail and its rendered block', () => {
   const detail = claimedDetail432();
-  assert.doesNotThrow(() => assertSelectedFacts432('S149', detail, block432(detail), { outcome: 'peak' }));
+  assert.doesNotThrow(() => assertSelectedFacts432('S150', detail, block432(detail)));
 });
 
-test('S149 reaches its feature assertion on the base server shape, never a premise', () => {
+test('S150 selected facts reach their feature assertion on the base server shape, never a premise', () => {
   const detail = claimedDetail432();
   delete detail.anchor.insulin; delete detail.anchor.carbs; delete detail.outcome; delete detail.reason;
   const base = { figure: '— at completed carb bolus', text: 'The canvas shows the selected glucose trace and evidence markers.',
     lines: [{ kind: null, text: '37 glucose readings' }, { kind: null, text: '4 event markers' }] };
-  assert.throws(() => assertSelectedFacts432('S149', detail, base, { outcome: 'peak' }),
-    /S149 the selected meal must serve its carbs and dose/);
-  assert.throws(() => assertSelectedFacts432('S149', null, base), /S149 premise/);
+  assert.throws(() => assertSelectedFacts432('S150', detail, base),
+    /S150 the selected meal must serve its carbs and dose/);
+  assert.throws(() => assertSelectedFacts432('S150', null, base), /S150 premise/);
 });
 
-test('S149/S150 refuse a count-only line, the canvas sentence, or a reason that disagrees', () => {
+test('S150 refuses a count-only line, the canvas sentence, or a reason that disagrees', () => {
   const detail = claimedDetail432();
   const counted = block432(detail);
   counted.lines.push({ kind: null, text: '37 glucose readings' });
-  assert.throws(() => assertSelectedFacts432('S149', detail, counted), /no line may be only a count/);
+  assert.throws(() => assertSelectedFacts432('S150', detail, counted), /no line may be only a count/);
   const canvas = block432(detail);
   canvas.text += ' The canvas shows the selected glucose trace and evidence markers.';
-  assert.throws(() => assertSelectedFacts432('S149', detail, canvas), /no sentence may describe the canvas/);
+  assert.throws(() => assertSelectedFacts432('S150', detail, canvas), /no sentence may describe the canvas/);
   const silent = block432(detail);
   silent.lines = silent.lines.filter((line) => line.kind !== 'habit');
   assert.throws(() => assertSelectedFacts432('S150', detail, silent), /S150 the block must list each served habit/);
   const noPeak = block432(detail);
   noPeak.lines = noPeak.lines.filter((line) => line.kind !== 'outcome');
-  assert.throws(() => assertSelectedFacts432('S149', detail, noPeak, { outcome: 'peak' }),
-    /S149 the outcome line must equal the served outcome/);
+  assert.throws(() => assertSelectedFacts432('S150', detail, noPeak),
+    /S150 the outcome line must equal the served outcome/);
 });
 
 test('S182 is a unique app-only #454 story on pattern-near-tie', () => {
@@ -735,6 +730,8 @@ function qa414Page({ crumb = 'Finding X', extraRequest = null } = {}) {
     getByRole: (_role, { name }) => node(String(name)),
     waitForFunction: async () => { actions.push('waitForFunction'); },
     waitForLoadState: async state => { actions.push(`waitForLoadState:${state}`); },
+    viewportSize: () => ({ width: 1440, height: 900 }),
+    setViewportSize: async size => { actions.push(`viewport:${size.width}x${size.height}`); },
     route: async (pattern, handler) => { routes.set(pattern, handler); },
     unroute: async pattern => { routes.delete(pattern); },
     on: (type, listener) => { if (type === 'request') requestListeners.add(listener); },
@@ -788,6 +785,8 @@ test('S109 settles the network before scrolling, then preserves the offset acros
   const scrollWaitIndex = page._actions.indexOf('wait:#level');
   assert.ok(waitIndex >= 0 && scrollWaitIndex > waitIndex,
     'S109 must wait for the settled network before touching the reading pane');
+  assert.equal(page._actions[0], 'viewport:1440x720',
+    'S109 must pin a 720 px height before opening Diagnose, so the pane can scroll');
 });
 
 function qa414EditChainPage({ summary = '3 setting changes · Basal · Sep 8 – Sep 10', editKey = 'edit-1',
@@ -1407,7 +1406,7 @@ function loadingRailPage(id) {
 }
 
 test('railRowLocator waits for a settled Findings rail before it reads the row shape', async () => {
-  const id = 'finding:high_carb_sequence';
+  const id = 'finding:carb_undercount';
   const page = loadingRailPage(id);
   const row = await railRowLocator(page, id);
   assert.equal(row.selector, `#level .qmember[data-id="${id}"]`, 'the claimed cause resolves to its folded line');
@@ -2387,7 +2386,7 @@ test('S124–S126 are unique app-only #424 stories on their manufactured case st
   for (const [id, expectedCase, term] of [
     ['S124', 'behavioral-carb-undercount', 'HV2-18'],
     ['S125', 'behavioral-missed-meal', 'HV2-18'],
-    ['S126', 'behavioral-correction-stacking', '#413 design lock'],
+    ['S126', 'pattern-correction-fold', '#413 design lock'],
   ]) {
     const entries = REGISTRY.filter(([entry]) => entry === id);
     assert.equal(entries.length, 1, `${id} is registered once`);

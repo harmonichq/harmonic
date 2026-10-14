@@ -43,22 +43,6 @@ def _low_rebound(day, *, nadir=48, rebound=189, hour=11, minute=30):
             + segment(80, rebound, -1.5, 60))
 
 
-def _trace(day, points):
-    result = []
-    for (hour1, minute1, bg1), (hour2, minute2, bg2) in zip(points, points[1:]):
-        start = datetime(2026, 6, day, hour1, minute1)
-        end = datetime(2026, 6, day, hour2, minute2)
-        steps = int((end - start).total_seconds() // 300)
-        result.extend(
-            (start + timedelta(minutes=5 * index),
-             bg1 + (bg2 - bg1) * index / steps)
-            for index in range(steps)
-        )
-    hour, minute, bg = points[-1]
-    result.append((datetime(2026, 6, day, hour, minute), bg))
-    return result
-
-
 def _seed_events(path, cgm, bolus=(), basal=()):
     with Store.open(path) as store:
         store.upsert_settings_snapshot(
@@ -119,15 +103,15 @@ class FindingCaseFileRouteTest(unittest.TestCase):
         self.assertRegex(payload["projection_id"], r"^fp_[0-9a-f]{32}$")
         self.assertEqual(payload["coordinates"]["source_window_days"], 30)
         self.assertEqual([row["kind"] for row in payload["rendered_rows"]],
-                         ["pattern"] * 5)
+                         ["pattern"] * 4)
         self.assertTrue(all(row["pattern_chart"] is None
                             for row in payload["rendered_rows"]))
         self.assertEqual(set(payload), {"schema", "projection_id", "coordinates",
                                        "findings", "rendered_rows",
-                                       "behavioral_case_headers", "withheld_findings", "eating_sequence_report"})
+                                       "behavioral_case_headers", "withheld_findings"})
         self.assertEqual(set(payload["findings"]), {
             "schema", "analysis_generation", "window", "findings_window", "rows",
-            "selection", "counts", "chip_counts", "uncaused_highs",
+            "selection", "counts", "chip_counts",
             "outcome_patterns",
         })
         self.assertEqual(payload["findings"]["analysis_generation"], "case-http:0")
@@ -256,7 +240,6 @@ class FindingCaseFileRouteTest(unittest.TestCase):
                                "finding": 0, "history": 1},
                     "chip_counts": {"highs": 0, "lows": 0, "meals": 1,
                                     "corrections": 0},
-                    "uncaused_highs": {"count": 0, "text": "None"},
                 }
 
         projection = Projection()
@@ -712,14 +695,14 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
     def assert_preparation_tree(self, prepared):
         self.assertEqual(set(prepared), {
             "schema", "projection_id", "coordinates", "findings", "rendered_rows",
-            "behavioral_case_headers", "withheld_findings", "eating_sequence_report",
+            "behavioral_case_headers", "withheld_findings",
         })
         self.assertEqual(set(prepared["coordinates"]), {"source_window_days", "window"})
         self.assert_window_tree(prepared["coordinates"]["window"])
         findings = prepared["findings"]
         self.assertEqual(set(findings), {
             "schema", "analysis_generation", "window", "findings_window", "rows",
-            "selection", "counts", "chip_counts", "uncaused_highs",
+            "selection", "counts", "chip_counts",
             "outcome_patterns",
         })
         self.assert_window_tree(findings["window"])
@@ -730,7 +713,6 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
         self.assertEqual(set(findings["chip_counts"]), {
             "highs", "lows", "meals", "corrections",
         })
-        self.assertEqual(set(findings["uncaused_highs"]), {"count", "text"})
         for header in prepared["behavioral_case_headers"].values():
             self.assertEqual(set(header), {
                 "finding_id", "lever", "title", "family", "summary",
@@ -1172,7 +1154,7 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
             [row["finding_id"] for row in prepared["withheld_findings"]],
         )
 
-    def test_remaining_four_levers_reach_http_from_real_analyzer_output(self):
+    def test_remaining_three_levers_reach_http_from_real_analyzer_output(self):
         undercount_cgm = []
         undercount_bolus = []
         for day in range(1, 5):
@@ -1225,21 +1207,6 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
         )
         self.assertEqual(active_iob["summary"]["claimed"], 4)
 
-        short_cgm = []
-        short_bolus = []
-        for day in range(1, 5):
-            short_cgm.extend(_trace(day, [
-                (9, 0, 110), (12, 0, 112), (12, 20, 120),
-                (14, 0, 265), (16, 0, 150),
-            ]))
-            short_bolus.extend([
-                (500 + day * 10, datetime(2026, 6, day, 12), 5.0, 85.0,
-                 {"carb_ratio": 12.0, "isf": 45.0, "target_bg": 110.0}),
-                (501 + day * 10, datetime(2026, 6, day, 13, 40), 2.5, None),
-            ])
-        short, _ = self._real_case("meal_bolus_short", short_cgm, short_bolus)
-        self.assertEqual(short["summary"]["claimed"], 4)
-
     def test_real_attribution_can_claim_fewer_opportunities_than_its_classifier_fired(self):
         cgm = []
         bolus = []
@@ -1284,52 +1251,6 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
         day = source_seq[1] // 100
         self.assertEqual(source_seq, [day * 100 + 11, day * 100 + 12])
 
-    def test_meal_bolus_short_uses_latest_high_for_scoped_membership(self):
-        readings = _trace(14, [
-            (9, 0, 110), (12, 0, 112), (12, 20, 120), (13, 0, 255),
-            (13, 35, 120), (13, 50, 120), (14, 35, 305), (15, 30, 145),
-        ])
-        bolus = [
-            (7001, datetime(2026, 6, 14, 12), 5.0, 85.0,
-             {"carb_ratio": 12.0}),
-            (7002, datetime(2026, 6, 14, 13, 20), 2.5, None),
-        ]
-        windows = (
-            ("earlier High", {"start_min": 12 * 60 + 30, "end_min": 13 * 60 + 30}, 0),
-            ("later High", {"start_min": 14 * 60 + 25, "end_min": 14 * 60 + 45}, 1),
-            ("episode end", {"start_min": 14 * 60 + 45, "end_min": 15 * 60}, 0),
-        )
-
-        with tempfile.NamedTemporaryFile(suffix=".sqlite") as database:
-            _seed_events(database.name, readings, bolus)
-            with TestClient(create_app(
-                    db_path=database.name, token=None, enable_fetch_loop=False)) as client:
-                for label, query, expected in windows:
-                    findings_response = client.get("/api/diagnose/findings", params=query)
-                    self.assertEqual(findings_response.status_code, 200, label)
-                    finding = next((
-                        row for row in findings_response.json()["rows"]
-                        if row.get("lever") == "meal_bolus_short"
-                    ), None)
-                    queue_count = finding["episodes"] if finding is not None else 0
-
-                    preparation_response = client.get(
-                        "/api/diagnose/finding-case-file-preparation", params=query,
-                    )
-                    self.assertEqual(preparation_response.status_code, 200,
-                                     preparation_response.text)
-                    case_response = client.get(
-                        "/api/diagnose/finding-case-file",
-                        params={
-                            "projection_id": preparation_response.json()["projection_id"],
-                            "lever": "meal_bolus_short", "alignment": "clock",
-                        },
-                    )
-                    self.assertEqual(case_response.status_code, 200, case_response.text)
-                    fired = [row for row in case_response.json()["occurrences"]
-                             if row["verdict"] == "fired"]
-                    self.assertEqual((queue_count, len(fired)), (expected, expected), label)
-
     def test_caused_low_uses_rebound_relative_membership_in_a_wrapping_window(self):
         base = datetime(2026, 6, 1, 20, 40)
 
@@ -1367,51 +1288,3 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
             "finding:over_treated_low",
             [row["id"] for row in crash_only["rendered_rows"]],
         )
-
-
-@unittest.skipUnless(HAS_API, "api extra is installed")
-class SequenceFindingCaseFileRouteTest(unittest.TestCase):
-    def test_both_empty_target_causes_drill_and_recover_on_generation_change(self):
-        from tests.eating_sequence_streams import sequence_episode_stream
-        from tests.test_findings_projection import seed_sequence_store
-        for lever in ("high_carb_sequence", "repeat_eating"):
-            with self.subTest(lever=lever), tempfile.NamedTemporaryFile(suffix=".sqlite") as database:
-                bolus, cgm, _, _ = sequence_episode_stream(lever)
-                with Store.open(database.name) as store:
-                    seed_sequence_store(store, bolus, cgm)
-                app = create_app(db_path=database.name, token=None, enable_fetch_loop=False,
-                                 analysis_incarnation="sequence-http")
-                with TestClient(app) as client:
-                    response = client.get("/api/diagnose/finding-case-file-preparation")
-                    self.assertEqual(response.status_code, 200, response.text)
-                    prepared = response.json()
-                    row = next(r for r in prepared["rendered_rows"] if r["id"] == f"finding:{lever}")
-                    self.assertEqual(row["claimed_by"], "pattern:highs_after_meals")
-                    params = {"projection_id": prepared["projection_id"], "finding_id": row["id"],
-                              "alignment": "event"}
-                    response = client.get("/api/diagnose/finding-case-file", params=params)
-                    self.assertEqual(response.status_code, 200, response.text)
-                    case = response.json()
-                    self.assertEqual(case["summary"]["claimed"], 8)
-                    self.assertEqual(case["analysis_generation"], prepared["findings"]["analysis_generation"])
-                    occurrence = next(r for r in case["occurrences"] if r["attributed"])
-                    selected = client.get("/api/diagnose/finding-case-file", params={**params, "occ": occurrence["id"]})
-                    self.assertEqual(selected.status_code, 200, selected.text)
-                    self.assertEqual(selected.json()["selection"]["detail"]["sequence"], occurrence["sequence"])
-                    app.state.result_cache.bump()
-                    stale = client.get("/api/diagnose/finding-case-file", params=params)
-                    self.assertEqual(stale.status_code, 409)
-                    self.assertEqual(stale.json()["detail"]["code"], "stale_projection")
-                    fresh = client.get("/api/diagnose/finding-case-file-preparation").json()
-                    self.assertNotEqual(fresh["projection_id"], prepared["projection_id"])
-                    self.assertEqual(fresh["findings"]["analysis_generation"], "sequence-http:1")
-                    fresh_case = client.get("/api/diagnose/finding-case-file", params={
-                        **params, "projection_id": fresh["projection_id"],
-                    })
-                    self.assertEqual(fresh_case.status_code, 200, fresh_case.text)
-                    fresh_generation = fresh_case.json()["analysis_generation"]
-                    self.assertEqual(fresh_generation, fresh["findings"]["analysis_generation"])
-                    # The case file carries the report that used to answer at its own
-                    # route (#417): a fresh case reads a fresh report.
-                    for key in ("high_carb_sequence", "repeat_eating_amplifier"):
-                        self.assertIn(key, fresh_case.json()["projection"]["report"])

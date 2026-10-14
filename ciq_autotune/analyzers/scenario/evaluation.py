@@ -1,20 +1,15 @@
-"""Shared episode geometry, candidate prices, ownership and recurrence (#342).
+"""Shared episode geometry, ownership and recurrence (#342).
 
-Event streams in; bounded episodes and owned identities out. Candidate pricing
-precedes ownership and never resizes the episode it measured.
+Event streams in; bounded episodes and owned identities out.
 """
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
 from datetime import datetime, timedelta
-from statistics import fmean
 from typing import Optional, Sequence
 
 from ...events import CgmReading
-from ..eating_sequences import evaluate_sequences, SequenceEvaluation, EligibleSequence
-from ..eating_sequence_config import EatingSequenceConfig
 from ..scenario_config import ScenarioConfig
-from ..classifiers.evidence import EvidenceTier
 from .anchors import collect_anchors
 from .attribute import (
     Attribution,
@@ -25,12 +20,9 @@ from .attribute import (
 )
 from .evidence_population import policy_for
 from .levers import Lever, Exposure
-from .payload import Step, event_ref, window_ref
 from .segment import EpisodeAnchors, segment, split_double_humps, split_low_rebounds
-from .severity import severity_score, normalized_severity, worst_bg
+from .severity import severity_score, worst_bg
 from . import opportunities
-
-SEQUENCE_LEVERS = frozenset({Lever.HIGH_CARB_SEQUENCE, Lever.REPEAT_EATING})
 
 def _slice(events, start, end):
     return [e for e in events if start <= e.t <= end]
@@ -130,22 +122,6 @@ def _resolve_end(
 
 
 @dataclass(frozen=True)
-class Candidate:
-    attribution: Attribution
-    occurrence_id: str
-    sequence: Optional[EligibleSequence] = None
-    impact: float = 0.0
-
-    @property
-    def lever(self):
-        return self.attribution.lever
-
-    def to_dict(self):
-        return {"lever": self.lever.value, "occurrence_id": self.occurrence_id,
-                "impact": self.impact,
-                "sequence": self.sequence.to_dict() if self.sequence is not None else None}
-
-@dataclass(frozen=True)
 class EvaluatedEpisode:
     id: str
     anchors: EpisodeAnchors
@@ -155,16 +131,13 @@ class EvaluatedEpisode:
     severity: float
     worst_bg: Optional[float]
     outcome_t: Optional[datetime]
-    candidates: tuple[Candidate, ...] = ()
     occurrence_id: Optional[str] = None
 
 @dataclass(frozen=True)
 class Evaluation:
     episodes: tuple[EvaluatedEpisode, ...]
     families: dict
-    sequences: SequenceEvaluation
     recurrence_counts: dict
-    candidate_impacts: dict
     attributed: tuple[AttributedOccurrence, ...]
 
 def bounded_episode(index, group, attr, cgm, *, next_start=None,
@@ -194,28 +167,8 @@ def bounded_episode(index, group, attr, cgm, *, next_start=None,
                             severity_score(measured, start, end, scenario_config=scenario_config),
                             worst, witness)
 
-def _sequence_candidates(episode, sequences):
-    if episode.outcome_t is None or episode.severity <= 0:
-        return ()
-    out = []
-    for lever in (Lever.HIGH_CARB_SEQUENCE, Lever.REPEAT_EATING):
-        detector = (sequences.report.high_carb_sequence if lever is Lever.HIGH_CARB_SEQUENCE
-                    else sequences.report.repeat_eating_amplifier)
-        for row in sequences.populations.get(lever.value, ()):
-            if not row.candidate or not row.start <= episode.outcome_t < row.end:
-                continue
-            step = Step(row.t, detector.finding.summary, EvidenceTier.INFERRED,
-                        cited_event_refs=[event_ref(b.t) for b in row.sequence.members],
-                        cited_window=window_ref(row.start, row.end),
-                        citation={"operation": f"scenario.attribution.{lever.value}",
-                                  "tier": "inferred", "facts": {"sequence_id": row.id,
-                                  "period": row.period, "outcome_at": event_ref(episode.outcome_t)}})
-            attr = Attribution(lever, "eating sequence", row.t, [step])
-            out.append(Candidate(attr, row.id, row))
-    return tuple(out)
-
 def evaluate(bolus, cgm, basal=(), *, isf=None, scenario_config=ScenarioConfig(),
-             low_answers=(), carb_entries=(), window_start=None, window_end=None,
+             low_answers=(), window_start=None, window_end=None,
              bound_classifier_context=True):
     """Evaluate source-window events once, preserving the caller's context contract.
 
@@ -229,10 +182,7 @@ def evaluate(bolus, cgm, basal=(), *, isf=None, scenario_config=ScenarioConfig()
     times = [e.t for e in (*bolus, *cgm, *basal)]
     end = window_end or max(times, default=datetime.min)
     start = window_start or min(times, default=end)
-    bolus, cgm, basal, carb_entries = (_slice(rows, start, end)
-                                      for rows in (bolus, cgm, basal, carb_entries))
-    sequences = evaluate_sequences(bolus, cgm, carb_entries, window_start=start,
-                                   window_end=end, config=EatingSequenceConfig())
+    bolus, cgm, basal = (_slice(rows, start, end) for rows in (bolus, cgm, basal))
     groups, families = _context(bolus, cgm, basal, isf, scenario_config, low_answers)
     # A fired over-treated low owns every real High its guarded rebound reaches, in
     # its own episode or a later one (ADR 422). Episodes are walked in order and a
@@ -255,60 +205,19 @@ def evaluate(bolus, cgm, basal=(), *, isf=None, scenario_config=ScenarioConfig()
         attrs.append(attr)
         known.extend(owner for owner in attr.fired_rebounds if owner not in known)
     owned_end = _owned_ends(attrs, bolus, scenario_config)
-    # Ordinary bounds establish whether a formerly leverless group can own a
-    # sequence. It then clamps an earlier rebound in the same pre-pass.
     bearing = [a.lever is not None for a in attrs]
-    for i, (group, attr) in enumerate(zip(groups, attrs)):
-        if not bearing[i] and any(sequences.populations.values()):
-            provisional = bounded_episode(i, group, attr, cgm,
-                next_start=groups[i + 1].start if i + 1 < len(groups) else None,
-                scenario_config=scenario_config)
-            bearing[i] = bool(_sequence_candidates(provisional, sequences))
-    episodes = []
-    impacts = {}
+    owned = []
     for i, (group, attr) in enumerate(zip(groups, attrs)):
         ep = bounded_episode(i, group, attr, cgm,
             next_start=groups[i + 1].start if i + 1 < len(groups) else None,
             next_lever_start=next((g.start for j, g in enumerate(groups) if j > i and bearing[j]), None),
             owned_end=owned_end.get(i), scenario_config=scenario_config)
-        candidates = [Candidate(match, policy_for(match.lever).occurrence_for_episode(
-            ep.id, bolus, match.trigger_t, scenario_config=scenario_config))
-            for match in attr.matches]
-        seq_candidates = _sequence_candidates(ep, sequences)
-        candidates.extend(seq_candidates)
-        for candidate in candidates:
-            population = impacts.setdefault(candidate.lever, {})
-            population[candidate.occurrence_id] = max(population.get(candidate.occurrence_id, 0), ep.severity)
-        episodes.append(replace(ep, candidates=tuple(candidates)))
-    prices = {lever: fmean(normalized_severity(s, scenario_config=scenario_config) for s in rows.values())
-              for lever, rows in impacts.items()}
-    owned = []
-    for ep in episodes:
-        candidates = tuple(replace(c, impact=prices[c.lever]) for c in ep.candidates)
-        attr = ep.attribution
-        winner = None
-        if any(c.sequence is not None for c in candidates):
-            # Stable max retains chronological classifier order on ordinary ties;
-            # Repeat eating wins an exact tie with High-carb sequence only.
-            winner = max(candidates, key=lambda c: c.impact)
-            if winner.lever is Lever.HIGH_CARB_SEQUENCE:
-                winner = next((c for c in candidates if c.lever is Lever.REPEAT_EATING
-                               and c.impact == winner.impact), winner)
-            # The winner's attribution replaces the Episode's; the Episode keeps its
-            # anchor verdicts and owned Highs (ADR 448).
-            attr = replace(winner.attribution, anchor_verdicts=attr.anchor_verdicts,
-                           owned_highs=attr.owned_highs, steps=winner.attribution.steps + [
-                c.attribution.steps[0] for c in candidates if c is not winner])
-        elif attr.lever is not None:
-            winner = next(c for c in candidates if c.lever is attr.lever)
-        owned.append(replace(ep, attribution=attr, candidates=candidates,
-                             occurrence_id=winner.occurrence_id if winner else None))
+        owned.append(replace(ep, occurrence_id=ep.id if attr.lever is not None else None))
     counts = {lever: len(policy_for(lever).recurrence_population(
-        families, bolus, scenario_config=scenario_config,
-        sequence_populations=sequences.populations)) for lever in Lever}
-    recurrences = tuple(_recurrence(ep, families, bolus, scenario_config) for ep in owned
+        families, scenario_config=scenario_config)) for lever in Lever}
+    recurrences = tuple(_recurrence(ep, families) for ep in owned
                         if ep.attribution.lever is not None)
-    return Evaluation(tuple(owned), families, sequences, counts, prices, recurrences)
+    return Evaluation(tuple(owned), families, counts, recurrences)
 
 def _owned_ends(attrs, bolus, scenario_config):
     """Per owning episode index, where its owned High runs stop counting (ADR 422).
@@ -329,12 +238,9 @@ def _owned_ends(attrs, bolus, scenario_config):
     return ends
 
 
-def _recurrence(ep, families, bolus, scenario_config):
+def _recurrence(ep, families):
     attr = ep.attribution
     policy = policy_for(attr.lever)
-    if attr.lever in SEQUENCE_LEVERS:
-        selected = next(c.sequence for c in ep.candidates if c.lever is attr.lever)
-        return AttributedOccurrence(attr.lever, ep.id, ep.occurrence_id, None, None, selected.t)
     driver = attr.driver_anchor
     family, key = opportunities.canonical_anchor_key(driver) if driver is not None else (None, None)
     if attr.correction_pair is not None:
@@ -345,12 +251,7 @@ def _recurrence(ep, families, bolus, scenario_config):
         family, key = Exposure.LOWS, matches[0].source_key if len(matches) == 1 else None
     matches = [item for item in families.get(family, ()) if item.source_key == key]
     owned = None
-    if policy.recurrence_family is None:
-        population = policy.recurrence_population(families, bolus, scenario_config=scenario_config)
-        matches = [item for item in population if policy.occurrence_id(item) == ep.occurrence_id]
-        if len(matches) == 1:
-            owned = matches[0].t
-    elif family is policy.recurrence_family and len(matches) == 1:
+    if family is policy.recurrence_family and len(matches) == 1:
         owned = matches[0].anchor_t
     return AttributedOccurrence(attr.lever, ep.id, ep.occurrence_id, family, key, owned,
                                 None if owned is not None else "unassociated_recurrence_anchor")

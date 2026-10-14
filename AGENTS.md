@@ -73,7 +73,10 @@ for `/`, the app's script, a tab's page path and `/api/status`. The image's own
 smoke step runs the same probe against the container with `--url`.
 
 The backend job also runs eleven **drift checks**, so a committed
-generator-authored artifact can never silently diverge from its generator:
+generator-authored artifact can never silently diverge from its generator. Ten
+are listed below; the component library's fixture generator reads inputs the
+public tree excludes (the redesign lock and the QA store), so its `--check`
+command lives in `.github/workflows/ci.yml`:
 
 ```sh
 uv run python scripts/gen_chart_builder_fixtures.py --check
@@ -86,7 +89,6 @@ uv run python scripts/gen_basal_night_evidence_fixtures.py --check
 uv run python scripts/gen_isf_rest_window_evidence_fixtures.py --check
 uv run python scripts/gen_missed_meal_comparison_fixtures.py --check
 uv run python scripts/gen_eating_sequence_fixtures.py --check
-uv run python scripts/gen_ui_fixtures.py --check   # the component library's served answers
 ```
 
 The frontend job runs one drift check in Node: the event-comparison synthetic
@@ -218,8 +220,8 @@ including for isolated chart layout or interaction.
   set is closed — every served page path is named, and any other path is a 404.
 - `frontend/` — the one Vite source root: the app, built with `base: '/'` and
   served by the Python process (ADR 416, #495). It is the component library in
-  `frontend/ui/` — React components and the five screens locked in
-  `docs/design/recommendations-redesign.md`, each with its Storybook stories —
+  `frontend/ui/` — React components and the five screens locked in the
+  redesign's lock doc, each with its Storybook stories —
   and the app that serves those screens (`frontend/ui/app/`). One
   authenticated client (`data.js`) and one router (`tab-routing.js`); a second
   client or router here is a duplicate implementation, not a convenience. Every

@@ -139,7 +139,7 @@ authorized-synthetic mockups/diagnose-workstation.synthetic/settings-audit.captu
 # which prints the full delta first. Never edit it by hand: the digest is
 # checked at parse time and a hand edit fails the config closed.
 # BEGIN dose-ratio baseline
-dose-ratio-baseline 292 da9a8c3e6a3662fe1adfb9cf20e90f07d0105682ef64739c460cacab628b82f7
+dose-ratio-baseline 288 b8b87cf03f83c16cdc451e25257a688365c1f8d0df54ede531733b421c3faf2c
 dose-ratio-ack CONTEXT.md:557 | 0.2 U
 dose-ratio-ack CONTEXT.md:77 | 1 U : 36 mg/dL
 dose-ratio-ack CONTEXT.md:99 | 0.5 U

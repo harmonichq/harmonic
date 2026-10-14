@@ -55,3 +55,23 @@
 
 /* A disclosure row's chevron: down closed, up open. */
 .ui-row__disclosure { display: flex; flex: none; color: var(--wk-ink-meta); }
+
+/* A form row: the label, then its input filling the rest of the row. */
+.ui-row--field { cursor: text; }
+.ui-row--field .ui-row__label { flex: none; }
+.ui-row__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 32px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--wk-ink);
+  caret-color: var(--primary);
+  font: var(--ui-weight-regular) var(--ui-type-body) / 1 var(--ui-font);
+  text-align: right;
+}
+.ui-row__input:disabled { color: var(--wk-ink-meta); }
+.ui-row--field:focus-within { box-shadow: inset 0 -2px 0 var(--primary); }

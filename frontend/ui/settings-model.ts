@@ -46,7 +46,8 @@ export type PumpSegment = {
 
 export type PumpProfileData = {
   name: string;
-  fetched: Sourced<string>;
+  /** When the profile was read. */
+  fetched: When;
   dia: Sourced<number>;
   maxBolus: Sourced<number>;
   target: Sourced<number>;
@@ -62,7 +63,7 @@ export function pumpProfile(store: PumpStore): PumpProfileData {
   const root = `settings.pump_settings.${store}`;
   return {
     name: answer.profile.name,
-    fetched: sourced(`${root}.fetched_at`, 'date'),
+    fetched: when(`${root}.fetched_at`),
     dia: sourced(`${root}.profile.dia_hours`, 'round'),
     maxBolus: sourced(`${root}.profile.max_bolus`, 'round'),
     // The engine serves a target per segment; the profile line shows the first's.

@@ -1,0 +1,37 @@
+.ui-settings { box-sizing: border-box; position: relative; background: var(--wk-canvas); font-family: var(--ui-font); }
+
+/* Phone: the fixed header, the page that scrolls under it, the tab bar. */
+.ui-settings--phone { display: flex; flex-direction: column; height: 100%; }
+.ui-settings__head { flex: none; padding: 8px 16px 0; }
+.ui-settings__main { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 0 16px 16px; }
+.ui-settings__body { display: flex; flex-direction: column; margin-top: 8px; }
+.ui-settings__body > .ui-list + .ui-list { margin-top: 24px; }
+.ui-settings__none { margin: 16px 0 0; color: var(--wk-ink-meta); font-size: var(--ui-type-body); }
+.ui-settings__unit { text-transform: none; }
+
+/* Desktop: the rail and one pane, up to a reading width. */
+.ui-settings--desktop { display: grid; grid-template-columns: auto 1fr; height: 100%; }
+.ui-settings__pane { box-sizing: border-box; min-height: 0; overflow-y: auto; padding: 24px 32px; }
+.ui-settings--desktop .ui-header,
+.ui-settings--desktop .ui-settings__body { max-width: 720px; }
+
+/* The account form: on phone a sheet over a scrim, on desktop a popover under
+   Update, at its trailing edge. */
+.ui-settings__scrim {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  background: rgb(0 0 0 / .5);
+}
+.ui-settings__form-title {
+  margin: 0 0 12px;
+  color: var(--wk-ink);
+  font-size: var(--ui-type-body);
+  font-weight: var(--ui-weight-strong);
+  line-height: 22px;
+}
+.ui-settings__form-foot { display: flex; flex-direction: column; margin-top: 32px; }
+.ui-settings__anchor { position: relative; display: flex; flex-direction: column; }
+.ui-popover.ui-settings__form--desktop { position: absolute; top: 100%; right: 0; z-index: 1; width: 360px; }

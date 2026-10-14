@@ -6,6 +6,10 @@
 // for the Pump profile's segment table. A Glossary row adds its one-line
 // definition beneath the term.
 //
+// A field row is a form's row: the label on the left and its text input on
+// the right, named by the label, the system keyboard for its kind (an email
+// address, or a password the screen never shows back).
+//
 // A disclosure row expands what it names in place, beneath it: its chevron
 // points down when closed and up when open, and it says which to assistive
 // tech (aria-expanded). It never navigates.
@@ -32,6 +36,8 @@ export type ListRowProps = {
   definition?: string;
   /** A disclosure row: open or closed, toggled in place. */
   disclosure?: { expanded: boolean; onToggle?: () => void };
+  /** A form row: a text input of this kind, named by the label. */
+  field?: { kind: 'email' | 'password'; onChange?: (text: string) => void; disabled?: boolean };
 };
 
 function Value({ value, alert }: Pick<ListRowProps, 'value' | 'alert'>) {
@@ -44,7 +50,17 @@ function Value({ value, alert }: Pick<ListRowProps, 'value' | 'alert'>) {
   );
 }
 
-export function ListRow({ label, value, alert = false, onOpen, action, definition, disclosure }: ListRowProps) {
+export function ListRow({ label, value, alert = false, onOpen, action, definition, disclosure, field }: ListRowProps) {
+  if (field) {
+    return (
+      <label className="ui-row ui-row--field">
+        <span className="ui-row__label">{label}</span>
+        <input className="ui-row__input" type={field.kind} aria-label={typeof label === 'string' ? label : undefined}
+          autoComplete={field.kind === 'email' ? 'username' : 'current-password'} spellCheck={false}
+          disabled={field.disabled} onChange={field.onChange && ((event) => field.onChange!(event.currentTarget.value))} />
+      </label>
+    );
+  }
   if (disclosure) {
     return (
       <button type="button" className="ui-row ui-row--open" data-role="row" aria-expanded={disclosure.expanded}

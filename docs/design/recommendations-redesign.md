@@ -178,7 +178,7 @@ in §2.
 | Glucose 181–250 (library, clinical AGP) | `--glucose-high` | #efcf4c |
 | Glucose >250 (library, clinical AGP) | `--glucose-very-high` | #f08a3c |
 | In range, quiet (library; a day's trace and other large in-range areas) | `--glucose-in-range-quiet` | `--glucose-in-range` mixed 50% with `--wk-ink-body` (oklab) |
-| Meal (library; meal bolus and logged-carb glyphs and their grams, the one coloured day-event family) | `--ui-meal` | #3cc8c8 |
+| Meal (library; meal bolus and logged-carb glyphs and their grams, the one coloured day-event family) | `--ui-meal` | #86bdbd (a quiet teal: 7.90:1 on `--wk-surface`, 9.26:1 on `--wk-canvas`) |
 
 - **Glucose bands follow the clinical AGP colours** (the 2019 international
   consensus on time in range, as Dexcom Clarity and LibreView draw them): very
@@ -400,6 +400,12 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   kind glyph names it, for assistive tech; the word stays allowed for that
   name), and the metrics Pre-meal and Post-meal 2 h (no screen shows them).
   The answers' definition no longer leans on "Prompt".
+- **2026-10-13 — a quieter teal.** The operator: "I'm not loving the teal.
+  The day tab especially on desktop looks like a candyland … just limit the
+  saturation of the teal a bit." `--ui-meal` keeps its hue and lightness at
+  half its chroma (OKLCH 0.76, 0.116 → 0.057): #3cc8c8 becomes #86bdbd, still
+  7.90:1 on `--wk-surface` and 9.26:1 on `--wk-canvas` (§2.1). Only Day draws
+  it: the meal and logged-carb marks and grams, and the insulin bar's Meal.
 
 ### 2.6 Deferred (not cut)
 Not built in the current screens. The engine still serves what each needs, and

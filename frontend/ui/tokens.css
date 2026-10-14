@@ -64,9 +64,11 @@
   --on-primary: #0d1522;
   --ring: color-mix(in srgb, var(--primary) 34%, transparent);
   /* Food, the one coloured event family on a day (2026-10-13): the meal bolus
-     and logged-carb glyphs and their grams. Teal, clear of every glucose zone hue and the blue accent;
-     8.10:1 on --wk-surface. Every other event is neutral ink. */
-  --ui-meal: #3cc8c8;
+     and logged-carb glyphs and their grams. A quiet teal (OKLCH chroma 0.057,
+     half the first one's), clear of every glucose zone hue and the blue
+     accent; 7.90:1 on --wk-surface, 9.26:1 on --wk-canvas. Every other event
+     is neutral ink. */
+  --ui-meal: #86bdbd;
   --ui-estimate: var(--primary);
   --ui-estimate-band: color-mix(in srgb, var(--ui-estimate) 16%, transparent);
 

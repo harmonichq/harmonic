@@ -13,13 +13,14 @@ import { DayScreen, type DayScreenProps } from './DayScreen';
 //   once the person has answered them all, no row and no badge.
 // - Empty: the first day after the history ends ("No data"); Loading;
 //   Unavailable.
-// - Month sheet (phone; desktop always shows the month).
+// - Month open: the header's day dropped down to the month's weeks.
 // - Prompts: the wearer's two lows before any answer, "1 / 2"; Yes recorded;
 //   phone mid-swipe over Not sure, the shortcut for the Not sure text action
 //   beneath the answers (desktop's fourth answer is in every desktop Prompts
 //   story); Not saved, the bar with Retry.
 // - Log carbs: open, filled, saving, not saved, Time edited.
-// Plays per size: picking another day; the Month sheet picking one (phone);
+// Plays per size: picking another day from the dropped-down month, and on
+// desktop from the week in view;
 // Log carbs saved, closed with Escape, and retried after a failed save; the
 // Prompts walked through (Yes, Recorded, Next, the second, ‹ Day); a Yes not
 // saved, then retried; Not sure on the phone. Desktop fits its panes without scrolling.
@@ -44,9 +45,8 @@ const story = (layout: 'phone' | 'desktop', args: Omit<DayScreenProps, 'layout'>
 const { latest, with_carbs: withCarbs, default: siteDay, no_data: noData } = fixtures.day.states;
 /** The header's printed day: "25 May". */
 const printed = (iso: string) => formatValue(dayDate(iso).date.value, 'date');
-/** The DayTile for a day, found by the navigator day its date is served from. */
-const tile = (root: HTMLElement, iso: string) =>
-  root.querySelector(`button.ui-day [data-source*="[iso=${iso}]"]`)?.closest('button') ?? null;
+/** A day's accessible name, as the header's control and a ribbon's day carry it: "Sat 17 May". */
+const named = (iso: string) => `${dayDate(iso).weekday} ${printed(iso)}`;
 const headerDay = (canvas: ReturnType<typeof within>) =>
   canvas.getByRole('heading', { level: 1, name: 'Day' }).parentElement as HTMLElement;
 
@@ -70,7 +70,8 @@ export const LoadingPhone = story('phone', LOADING);
 export const LoadingDesktop = story('desktop', LOADING);
 export const UnavailablePhone = story('phone', UNAVAILABLE);
 export const UnavailableDesktop = story('desktop', UNAVAILABLE);
-export const MonthSheetPhone = story('phone', { ...DEFAULT, monthOpen: true });
+export const MonthOpenPhone = story('phone', { ...DEFAULT, monthOpen: true });
+export const MonthOpenDesktop = story('desktop', { ...DEFAULT, monthOpen: true });
 
 export const PromptsPhone = story('phone', PROMPTS);
 export const PromptsDesktop = story('desktop', PROMPTS);
@@ -91,33 +92,41 @@ export const LogCarbsNotSavedDesktop = story('desktop', { ...DEFAULT, logCarbs: 
 export const LogCarbsTimeEditedPhone = story('phone', { ...DEFAULT, logCarbs: 'filled', timeEdited: true });
 export const LogCarbsTimeEditedDesktop = story('desktop', { ...DEFAULT, logCarbs: 'filled', timeEdited: true });
 
-// Picking another day: the header names it and the chart is that day's.
+// Picking another day from the month: the header's day drops the month down,
+// a day there closes it, and the header and the chart are that day's.
 const pickPlay = (iso: string): Story['play'] => async ({ canvasElement }) => {
   const canvas = within(canvasElement);
   await expect(headerDay(canvas)).toHaveTextContent(printed(latest));
-  await userEvent.click(tile(canvasElement, iso)!);
-  await expect(tile(canvasElement, iso)).toHaveAttribute('aria-pressed', 'true');
+  await userEvent.click(canvas.getByRole('button', { name: named(latest), expanded: false }));
+  const month = within(canvas.getByRole('dialog', { name: 'May' }));
+  await userEvent.click(month.getByRole('button', { name: named(iso) }));
+  await expect(canvas.queryByRole('dialog')).toBeNull();
   await expect(headerDay(canvas)).toHaveTextContent(printed(iso));
   await expect(canvasElement.querySelector(`[data-source^="day.days.${iso}."]`)).not.toBeNull();
 };
-export const PickDayPhone: Story = { ...story('phone', DEFAULT), play: pickPlay(siteDay) };
+export const PickDayPhone: Story = { ...story('phone', DEFAULT), play: pickPlay(withCarbs) };
 export const PickDayDesktop: Story = { ...story('desktop', DEFAULT), play: pickPlay(withCarbs) };
 
-// Phone: ‹ steps the strip a week back; the month label opens the Month sheet,
-// and a day picked there closes it, selected, with its week in the strip.
-export const MonthSheetPickPhone: Story = {
-  ...story('phone', DEFAULT),
+// Escape closes the month as it was.
+const closeMonthPlay: Story['play'] = async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  await userEvent.click(canvas.getByRole('button', { name: named(latest), expanded: false }));
+  await expect(canvas.getByRole('dialog', { name: 'May' })).toBeInTheDocument();
+  await userEvent.keyboard('{Escape}');
+  await expect(canvas.queryByRole('dialog')).toBeNull();
+  await expect(headerDay(canvas)).toHaveTextContent(printed(latest));
+};
+export const CloseMonthPhone: Story = { ...story('phone', DEFAULT), play: closeMonthPlay };
+export const CloseMonthDesktop: Story = { ...story('desktop', DEFAULT), play: closeMonthPlay };
+
+// Desktop: the week in view picks a day too.
+export const PickInWeekDesktop: Story = {
+  ...story('desktop', DEFAULT),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByRole('button', { name: 'Previous' }));
-    await expect(tile(canvasElement, latest)).toBeNull();
-    await userEvent.click(canvas.getByRole('button', { name: 'Next' }));
-    await expect(tile(canvasElement, latest)).toHaveAttribute('aria-pressed', 'true');
-    await userEvent.click(canvas.getByRole('button', { name: 'May' }));
-    await userEvent.click(tile(canvas.getByRole('dialog', { name: 'May' }), withCarbs)!);
-    await expect(canvas.queryByRole('dialog')).toBeNull();
-    await expect(headerDay(canvas)).toHaveTextContent(printed(withCarbs));
-    await expect(tile(canvasElement, withCarbs)).toHaveAttribute('aria-pressed', 'true');
+    await userEvent.click(canvas.getByRole('button', { name: named(siteDay) }));
+    await expect(canvas.getByRole('button', { name: named(siteDay), pressed: true })).toBeInTheDocument();
+    await expect(headerDay(canvas)).toHaveTextContent(printed(siteDay));
   },
 };
 

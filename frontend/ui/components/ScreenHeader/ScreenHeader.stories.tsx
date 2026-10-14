@@ -9,7 +9,8 @@ import { ScreenHeader } from './ScreenHeader';
 // "+ Log carbs"; with a control (the window choice); and unavailable (§1.2).
 // Desktop is the same header at the top of a wide pane. A drill-down
 // sub-screen adds "‹ Parent" above its title (§2.2 Drill-down). Day names the
-// day it shows beside its title, with "+ Log carbs"; its Prompts drill-down
+// day it shows beside its title as the control that drops the month down,
+// closed and open, with "+ Log carbs"; its Prompts drill-down
 // counts its place, the first of the two lows the wearer had not yet answered.
 const meta = {
   title: 'ScreenHeader',
@@ -40,6 +41,11 @@ export const Desktop: Story = {
 export const DrillDown: Story = { args: { title: 'Snoozed', back: { label: 'Queue' } } };
 export const WithDay: Story = {
   args: { title: 'Day', day: dayDate(fixtures.day.states.latest), trailing: 'action', label: '+ Log carbs' },
+};
+export const WithDayOpen: Story = {
+  args: {
+    title: 'Day', day: { ...dayDate(fixtures.day.states.latest), open: true }, trailing: 'action', label: '+ Log carbs',
+  },
 };
 export const WithCount: Story = {
   args: { title: 'Lows', back: { label: 'Day' }, trailing: 'count', ...promptPlace('wearer-pending') },

@@ -3,8 +3,9 @@
 // labelled action ("+ Log carbs"). An unavailable engine (§1.2) keeps the title
 // and puts the label "Unavailable" and a compact Retry in the slot. The title is
 // the one dominant line; the slot is quieter, on the same line. Day names the
-// day it shows beside its title, on the title's baseline ("Day Sun 25 May"),
-// and keeps its slot for "+ Log carbs". A sub-screen that steps through items
+// day it shows beside its title, on the title's baseline ("Day Sun 25 May ⌄"),
+// as the text-action control that drops the month down (its chevron turns up
+// while open), and keeps its slot for "+ Log carbs". A sub-screen that steps through items
 // one at a time counts its place in the slot ("1 / 2").
 //
 // A drill-down sub-screen (§2.2 Drill-down) adds a back control on its own row
@@ -13,6 +14,7 @@
 // sub-screen.
 import type { ReactNode } from 'react';
 import type { Sourced } from '../../fixtures';
+import { Icon } from '../../icons';
 import { Num } from '../../Num';
 import { Button } from '../Button/Button';
 import './ScreenHeader.css';
@@ -22,8 +24,9 @@ export type ScreenHeaderProps = {
   layout?: 'phone' | 'desktop';
   /** A drill-down sub-screen: back to the parent screen, named. */
   back?: { label: string; onBack?: () => void };
-  /** The day the screen shows, beside the title: its weekday and served date. */
-  day?: { weekday: string; date: Sourced<string> };
+  /** The day the screen shows, beside the title: its weekday and served date,
+   *  as the control that opens and closes the month. */
+  day?: { weekday: string; date: Sourced<string>; open?: boolean; onToggle?: () => void };
 } & (
   | { trailing?: undefined }
   | { trailing: 'date'; date: Sourced<string> }
@@ -67,7 +70,11 @@ export function ScreenHeader(props: ScreenHeaderProps) {
         {props.day ? (
           <span className="ui-header__titles">
             <h1 className="ui-header__title">{props.title}</h1>
-            <span className="ui-header__date">{props.day.weekday} <Num value={props.day.date} /></span>
+            <button type="button" className="ui-header__day" data-role="text" aria-expanded={props.day.open ?? false}
+              onClick={props.day.onToggle}>
+              {props.day.weekday} <Num value={props.day.date} />
+              <Icon name={props.day.open ? 'collapse' : 'expand'} />
+            </button>
           </span>
         ) : <h1 className="ui-header__title">{props.title}</h1>}
         <Slot {...props} />

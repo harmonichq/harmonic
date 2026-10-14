@@ -121,9 +121,6 @@ export function weekOf(iso: string): string[] | null {
   return week.every((d) => served.has(d)) ? week : null;
 }
 
-/** The week before (-1) or after (1) one, when the navigator serves all of it. */
-export const adjacentWeek = (week: string[], direction: 1 | -1) => weekOf(shift(week[0], 7 * direction));
-
 /** The served month's name, as a date prints its month ("May"). */
 export const monthName = () => MONTHS[Number(navigator().month.slice(5, 7)) - 1];
 

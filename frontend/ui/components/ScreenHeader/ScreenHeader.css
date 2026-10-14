@@ -42,7 +42,29 @@
   line-height: 28px;
 }
 /* The title and the day it shows, on one baseline. */
-.ui-header__titles { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.ui-header__titles { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
+/* The day as a text action that drops the month down. */
+.ui-header__day {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: var(--ui-size-text);
+  margin: 0;
+  padding: 0 4px 0 6px;
+  border: 0;
+  border-radius: var(--wk-radius);
+  background: none;
+  color: var(--primary);
+  font: var(--ui-weight-regular) var(--ui-type-body) / 1 var(--ui-font);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.ui-header__day svg { width: 18px; height: 18px; }
+.ui-header__day[aria-expanded='true'] { background: var(--wk-surface); }
+.ui-header__day:focus { outline: none; }
+.ui-header__day:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
 .ui-header__date,
 .ui-header__label {
   color: var(--wk-ink-meta);

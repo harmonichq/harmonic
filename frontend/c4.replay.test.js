@@ -33,7 +33,7 @@ test('R18 is a unique app-only registry function with a manufactured history cas
 });
 
 test('S106 and S107 are unique app-only C4 stories with their required manufactured cases', () => {
-  for (const [id, expectedCase, term] of [['S106', 'pattern-near-tie', 'HV2-17'], ['S107', 'showcase', 'HV2-11']]) {
+  for (const [id, expectedCase, term] of [['S106', 'pattern-near-tie', 'HV2-17'], ['S107', 'ic-block-evidence', 'HV2-11']]) {
     const entries = REGISTRY.filter(([entry]) => entry === id);
     assert.equal(entries.length, 1, `${id} is registered once`);
     assert.equal(entries[0][1].deferred.term, term);
@@ -96,12 +96,14 @@ test('S150 is a unique app-only #432 story with its required manufactured case',
   }
 });
 
-test('S177–S179 are unique app-only #451 stories on the isf-strengthen store', () => {
-  for (const id of ['S177', 'S178', 'S179']) {
+test('S177–S179 are unique app-only #451 stories; the correction-factor two on isf-strengthen', () => {
+  // ADR 499: the correction factor never leads Changes, so S177 reads the basal lead.
+  for (const [id, expectedCase] of [['S177', 'basal-lower'], ['S178', 'isf-strengthen'],
+    ['S179', 'isf-strengthen']]) {
     const entries = REGISTRY.filter(([entry]) => entry === id);
     assert.equal(entries.length, 1, `${id} is registered once`);
     assert.equal(entries[0][1].deferred.term, 'ADR 451');
-    assert.equal(storyCase(id), 'isf-strengthen');
+    assert.equal(storyCase(id), expectedCase);
   }
 });
 
@@ -2380,7 +2382,7 @@ test('S124–S126 are unique app-only #424 stories on their manufactured case st
   for (const [id, expectedCase, term] of [
     ['S124', 'behavioral-carb-undercount', 'HV2-18'],
     ['S125', 'behavioral-missed-meal', 'HV2-18'],
-    ['S126', 'behavioral-correction-stacking', '#413 design lock'],
+    ['S126', 'pattern-correction-fold', '#413 design lock'],
   ]) {
     const entries = REGISTRY.filter(([entry]) => entry === id);
     assert.equal(entries.length, 1, `${id} is registered once`);

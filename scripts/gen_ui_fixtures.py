@@ -141,6 +141,10 @@ MARK_FIELDS = ("current", "estimate")
 # §4.2 GlucoseProfile's insufficient-data label, quoted there; "data" is not yet
 # in glossary §1.5.
 STATE_LABELS = ("No data",)
+# §4.2 SettingCard's captions, quoted in §2 ("Nights / Range"); Range is in
+# glossary §1.5. Nights was once also an engine noun, the overnight-lows
+# Pattern's, which ADR 499 cut.
+SETTING_CAPTIONS = ("Nights",)
 # §1.3 Queue's empty-state label, "0 patterns".
 QUEUE_LABELS = ("patterns",)
 # §4.2 DayTile: "a weekday and date". The weekday abbreviations are not yet in
@@ -893,6 +897,7 @@ def allowlist(data: dict) -> dict:
         "units §4.2": list(UNITS),
         "connectives §4.2": list(CONNECTIVES),
         "state labels §4.2": list(STATE_LABELS),
+        "SettingCard captions §4.2": list(SETTING_CAPTIONS),
         "Queue labels §1.3": list(QUEUE_LABELS),
         "weekdays §4.2": list(WEEKDAYS),
         "months §1.1": list(MONTHS),

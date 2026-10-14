@@ -335,8 +335,11 @@ def comparison_evidence(*, parameter, slot, block, changed_at, before, after,
 
     owned_cgm = [r for r in cgm if start <= r.t < end and r.bg is not None]
     # Each meal as its first bolus (ADR 470), so a top-up is never a meal of its own.
+    # A carb-ratio block is a meal cohort (#581); a basal block (#506) bounds the
+    # clock hours its readings come from and leaves the meals as period context.
+    meal_block = block if parameter == "carb_ratio" else None
     meals = [meal.first for meal in group_meals(bolus) if start <= meal.t < end
-             and (block is None or _in_block(meal.t, block))]
+             and (meal_block is None or _in_block(meal.t, meal_block))]
     intervals = []
     occurrences = []
     steps = []
@@ -355,10 +358,15 @@ def comparison_evidence(*, parameter, slot, block, changed_at, before, after,
             })
     elif parameter in ("basal_rate", "isf"):
         rest = [w for w in detect_rest_windows(cgm, bolus) if start <= w.start < end]
+        # A basal block Trial reads its whole captured block (#506), wrapping
+        # past midnight when its end precedes its start; a slotted Trial with no
+        # block reads its one 30-minute slot.
         span = block
         if span is None and slot:
             minute = int(slot[:2]) * 60 + int(slot[3:5])
             span = (minute, minute + 30)
+        if span is not None and span[1] <= span[0]:
+            span = (span[0], span[1] + 1440)
         for window in rest:
             lo, hi = max(start, window.start), min(end, window.end)
             windows.append({"id": f"rest:{window.date}", "start": str(lo), "end": str(hi)})

@@ -40,7 +40,7 @@ from ciq_autotune.analyzers.scenario.model_view import _KIND_LABEL
 from ciq_autotune.analyzers.scenario_config import ScenarioConfig
 from ciq_autotune.analyzers.scenario.opportunities import Opportunity, build_opportunities
 from ciq_autotune.events import BasalEvent, BolusEvent, CarbEntry, CgmReading
-from ciq_autotune.finding_case_file import Member, PreparedCases, _opaque, wrap
+from ciq_autotune.finding_case_file import Member, PreparedCases, wrap
 from ciq_autotune.findings_projection import _occurrence_verdict
 from ciq_autotune.safety import _MIN_SUPPORTED_NIGHTS
 from ciq_autotune.store import Store
@@ -103,7 +103,7 @@ ANCHOR_KIND = {family: kind for kind, family in _FAMILY_FOR_KIND.items()}
 JUDGED = {
     Exposure.LOWS: (Lever.OVER_TREATED_LOW, Lever.CORRECTION_ON_IOB),
     Exposure.MEALS: (Lever.CARB_UNDERCOUNT, Lever.LATE_BOLUS, Lever.MEAL_OVER_DELIVERY),
-    Exposure.HIGHS: (Lever.MISSED_MEAL, Lever.MEAL_BOLUS_SHORT),
+    Exposure.HIGHS: (Lever.MISSED_MEAL,),
     Exposure.CORRECTION_CLUSTERS: (Lever.CORRECTION_STACKING,),
 }
 # Each claiming lever's cause, in words that carry no dose or ratio. A claim's recorded
@@ -228,10 +228,8 @@ def recorded_reason(lever, verdict):
     driver = None
     if verdict == 'outranked':
         driver = next((other for other in Lever if other is not lever
-                       and policy_for(other).sequence_lever is None
                        and exposure(other) is exposure(lever)),
-                      next(other for other in Lever if other is not lever
-                           and policy_for(other).sequence_lever is None)).value
+                      next(other for other in Lever if other is not lever)).value
     assert _occurrence_verdict({'verdicts': recorded, 'cause_lever': driver},
                                lever.value) == verdict
     return recorded, driver
@@ -561,27 +559,11 @@ def build_case_file_capture():
     opportunities = tuple(item for family in Exposure for item in families[family])
     bolus = tuple(sorted((dose for item in opportunities for dose in item.members),
                          key=lambda dose: dose.seq_num))
-    meal_opportunities = {
-        item.members[0].seq_num: item for item in families[Exposure.MEALS]
-    }
-
     all_members, associations, recurrence = {}, {}, {}
     rows = []
     for priority, lever in enumerate(Lever, start=1):
-        policy = policy_for(lever)
-        # Sequence cases come from the dedicated event-grounded #342 generator.
-        # This legacy capture has only Exposure opportunities.
-        if policy.sequence_lever is not None:
-            continue
-        population = policy.recurrence_population(families, bolus)
-        if policy.recurrence_family is None:
-            roster = tuple(meal_opportunities[item.seq_num] for item in population)
-            occurrence_ids = tuple(
-                _opaque('m_', policy.occurrence_id(item)) for item in population
-            )
-        else:
-            roster = population
-            occurrence_ids = (None,) * len(roster)
+        roster = policy_for(lever).recurrence_population(families)
+        occurrence_ids = (None,) * len(roster)
         reasons = [recorded_reason(lever, verdict) for verdict in verdicts]
         members = tuple(Member(
             item,
@@ -627,13 +609,12 @@ def build_case_file_capture():
         'findings_window': {'start': WINDOW['start'], 'end': WINDOW['end'], 'days': 30},
         'rows': rows, 'counts': {'total': len(rows)},
         'chip_counts': {'meals': 10, 'lows': 10, 'highs': 10, 'corrections': 10},
-        'uncaused_highs': {'count': 1, 'text': '1 high had no cause detected by the app'},
     }
     prepared = PreparedCases(
         'fp_' + '7' * 32, 79, WindowQuery.whole_day(), findings, recurrence,
         all_members, associations, {lever: () for lever in Lever}, frozenset(),
         tuple(sorted(cgm, key=lambda row: row.t)), basal, bolus, carbs,
-        time.monotonic() + 60, sequence_cgm=tuple(sorted(cgm, key=lambda row: row.t)),
+        time.monotonic() + 60, judged_cgm=tuple(sorted(cgm, key=lambda row: row.t)),
     )
     cases = {}
     for lever in all_members:
@@ -690,7 +671,7 @@ def build_case_file_capture():
         'fp_' + '8' * 32, 79, WindowQuery.clock(0, 360), overnight_findings, recurrence,
         all_members, associations, {lever: () for lever in Lever}, frozenset(),
         tuple(sorted(cgm, key=lambda row: row.t)), basal, bolus, carbs,
-        time.monotonic() + 60, sequence_cgm=tuple(sorted(cgm, key=lambda row: row.t)),
+        time.monotonic() + 60, judged_cgm=tuple(sorted(cgm, key=lambda row: row.t)),
     )
     return {
         '_generated_by': '.claude/qa/gen_synthetic_fixtures.py',

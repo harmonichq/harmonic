@@ -13,7 +13,6 @@ import pathlib
 import random
 import tempfile
 import unittest
-from dataclasses import replace
 from datetime import datetime, timedelta
 from unittest.mock import patch
 
@@ -24,9 +23,7 @@ except ImportError:  # pragma: no cover
     _HAS_FASTAPI = False
 
 from ciq_autotune.analyzers.isf import analyze_isf
-from ciq_autotune.analyzers.scenario.evaluation import SEQUENCE_LEVERS
 from ciq_autotune.analyzers.scenario.levers import Lever, outcome_kind
-from ciq_autotune.analyzers.scenario.evidence_population import policy_for
 from ciq_autotune.analyzers.scenario.outcome_patterns import _ROSTER, outcome_window_population
 from ciq_autotune.analyzers.tuning_priority import build_tuning_levers
 from ciq_autotune.explore_exposures import _FAMILY_FOR_KIND
@@ -270,7 +267,7 @@ class OutcomeAnchoredMembershipTest(unittest.TestCase):
         # The closed set stays closed: a new lever has to answer the anchoring
         # question rather than silently falling back to its trigger.
         for lever in Lever:
-            self.assertIn(outcome_kind(lever), {"low", "high", "meal", "correction", "sequence"},
+            self.assertIn(outcome_kind(lever), {"low", "high", "meal", "correction"},
                           f"{lever.value} declares no outcome anchor")
 
     def test_a_family_denominator_never_undercounts_what_it_denominates(self):
@@ -323,31 +320,13 @@ class CountSentenceTest(unittest.TestCase):
         from fixture output (coordinator decision, #413 review round 2).
 
         The four exposure families come from ``explore_exposures._FAMILY_FOR_KIND``.
-        A lever is narrowed off that full set only when its OWN policy or the
-        sequence-lever exclusion makes the narrower set structural:
-
-        * ``evidence_population.policy_for(lever).recurrence_family is None`` means
-          ``_finding_rows``'s override unconditionally replaces that lever's
-          appearances with its one ``recurrence_noun`` family — never any of the
-          four exposure families (``Lever.MEAL_BOLUS_SHORT``, and the two
-          ``SEQUENCE_LEVERS``, whose ``recurrence_noun`` is ``"sequences"``).
-        * ``SEQUENCE_LEVERS`` (``model_view._is_driver``) are additionally excluded
-          from ever being attributed on an exposure-family anchor at all, so their
-          only served family is the sequence branch's hardcoded ``"sequences"``.
-
-        Every other lever's policy leaves ``recurrence_family`` set to its own
-        exposure — no override fires, so `_finding_rows` can file its appearances
-        under any of the four exposure families and each needs its own entry.
+        Every lever's policy sets ``recurrence_family`` to an exposure (ADR 499), so
+        `_finding_rows` can file its appearances under any of the four exposure
+        families and each needs its own entry.
         """
         expected = set()
         for lever in Lever:
-            policy = policy_for(lever)
-            if lever in SEQUENCE_LEVERS:
-                expected.add((lever.value, "sequences"))
-            elif policy.recurrence_family is None:
-                expected.add((lever.value, policy.recurrence_noun))
-            else:
-                expected.update((lever.value, family) for family in _FAMILY_FOR_KIND.values())
+            expected.update((lever.value, family) for family in _FAMILY_FOR_KIND.values())
         self.assertEqual(set(_CAUSE_OUTCOME), expected)
 
     def test_headline_is_computed_independently_of_count_sentences(self):
@@ -538,7 +517,7 @@ class ChipProjectionTest(unittest.TestCase):
                          ["lows"])
 
     def test_episode_levers_chip_by_their_closed_outcome_kind(self):
-        levers = [lever for lever in Lever if policy_for(lever).recurrence_noun != "sequences"]
+        levers = list(Lever)
         occurrences = []
         for index, lever in enumerate(levers):
             occurrences.append({
@@ -561,194 +540,10 @@ class ChipProjectionTest(unittest.TestCase):
         self.assertEqual(len(rows), len(levers))
         for row in rows:
             expected = "highs" if outcome_kind(row["lever"]) == "high" else "lows"
-            if row["lever"] == Lever.MEAL_BOLUS_SHORT.value:
-                self.assertEqual(row["chips"], ["highs", "meals"], row["lever"])
-            else:
-                self.assertEqual(row["chips"], [expected], row["lever"])
+            self.assertEqual(row["chips"], [expected], row["lever"])
 
 
-class MealBolusShortPopulationProjectionTest(unittest.TestCase):
-    def test_one_off_keeps_its_attributed_meal_occurrence_below_the_pattern_gate(self):
-        from tests.test_meal_bolus_short_attribution import (
-            UNDERDOSED_BOLUS, UNDERDOSED_CGM, _projection, _seed,
-        )
-
-        with tempfile.NamedTemporaryFile(suffix=".sqlite") as database:
-            with Store.open(database.name) as store:
-                _seed(store, UNDERDOSED_BOLUS, UNDERDOSED_CGM)
-                projection = _projection(store)
-                rows = projection.project(WindowQuery.whole_day())["rows"]
-                scoped_rows = projection.project(WindowQuery.clock(810, 900))["rows"]
-
-        row = next(
-            item for item in rows
-            if item["lever"] == Lever.MEAL_BOLUS_SHORT.value
-        )
-        self.assertEqual(row["appearances"], [{
-            "family": "meals", "noun": "meals", "n": 1, "m": 1,
-        }])
-        self.assertEqual(row["episodes"], 1)
-        scoped = next(
-            item for item in scoped_rows
-            if item["lever"] == Lever.MEAL_BOLUS_SHORT.value
-        )
-        self.assertEqual(scoped["appearances"], [{
-            "family": "meals", "noun": "meals", "n": 1, "m": 1,
-        }])
-        self.assertEqual(scoped["episodes"], 1)
-
-    def test_two_highs_from_one_meal_count_as_one_served_meal_occurrence(self):
-        from tests.test_meal_bolus_short_attribution import (
-            DOUBLE_HIGH_BOLUS, DOUBLE_HIGH_CGM, _projection, _seed, next_day,
-        )
-        from ciq_autotune import finding_case_file
-        from ciq_autotune.analyze import analyze
-        from ciq_autotune.analyzers.scenario import build_scenarios
-        from ciq_autotune.explore_exposures import build_exposures
-
-        with tempfile.NamedTemporaryFile(suffix=".sqlite") as database:
-            with Store.open(database.name) as store:
-                bolus = DOUBLE_HIGH_BOLUS + next_day(DOUBLE_HIGH_BOLUS)
-                cgm = DOUBLE_HIGH_CGM + next_day(DOUBLE_HIGH_CGM)
-                _seed(store, bolus, cgm)
-                rows = _projection(store).project(WindowQuery.whole_day())["rows"]
-                prepared = finding_case_file.prepare(
-                    store, query=WindowQuery.whole_day(), version=0,
-                    analysis=analyze(
-                        store, pool_agreeing_basal_regimes=True,
-                        carb_entries=store.carb_entries(),
-                        prompt_responses=store.prompt_responses(),
-                    ).to_dict(),
-                    exposures=build_exposures(store), scenarios=build_scenarios(store).to_dict(),
-                )
-
-        row = next(item for item in rows if item["lever"] == Lever.MEAL_BOLUS_SHORT.value)
-        self.assertEqual(row["appearances"], [{
-            "family": "meals", "noun": "meals", "n": 2, "m": 2,
-        }])
-        self.assertEqual(row["episodes"], 2)
-        case = prepared.case("finding:meal_bolus_short", "event", None)
-        self.assertIsNotNone(case)
-
-    def test_public_producers_dedup_meal_bolus_short_against_carb_undercount(self):
-        from ciq_autotune.analyzers.scenario import build_scenarios
-        from ciq_autotune.analyzers.scenario.outcome_patterns import build_outcome_patterns
-        from ciq_autotune.explore_exposures import build_exposures
-        from tests.test_meal_bolus_short_attribution import (
-            LATE_SECOND_MEAL_BOLUS, LATE_SECOND_MEAL_CGM, _seed, next_day,
-        )
-
-        with tempfile.NamedTemporaryFile(suffix=".sqlite") as database:
-            with Store.open(database.name) as store:
-                _seed(
-                    store,
-                    LATE_SECOND_MEAL_BOLUS + next_day(LATE_SECOND_MEAL_BOLUS),
-                    LATE_SECOND_MEAL_CGM + next_day(LATE_SECOND_MEAL_CGM),
-                )
-                with (
-                    patch("ciq_autotune.explore_exposures._effective_isf", return_value=45.0),
-                    patch("ciq_autotune.analyzers.scenario.engine._effective_isf", return_value=45.0),
-                ):
-                    exposures = build_exposures(store)
-                    scenarios = build_scenarios(store).to_dict()
-
-        outcome_patterns = build_outcome_patterns({}, exposures, scenarios)
-        pattern = next(item for item in outcome_patterns
-                       if item["key"] == "highs_after_meals")
-        meals = exposures["exposures"]["meals"]["occurrences"]
-        shared = [item for item in meals if {
-            "carb_undercount", "meal_bolus_short",
-        }.issubset(item["attributed_levers"])]
-        self.assertEqual(len(shared), 2)
-        self.assertEqual((pattern["k"], pattern["n"]), (4, 4))
-        self.assertNotIn("habit:meal_bolus_short",
-                         {member["subject"] for member in pattern["members"]})
-        self.assertNotEqual(pattern["action"], "habit:meal_bolus_short")
-        self.assertIsNone(next(item for item in scenarios["patterns"]
-                               if item["lever"] == "meal_bolus_short")
-                          ["guidance"]["action_id"])
-
-    def test_public_meal_bolus_short_row_is_claimed_by_its_pattern(self):
-        from ciq_autotune import finding_case_file
-        from ciq_autotune.analyzers.scenario import build_scenarios
-        from ciq_autotune.analyzers.scenario.outcome_patterns import build_outcome_patterns
-        from ciq_autotune.explore_exposures import build_exposures
-        from tests.test_meal_bolus_short_attribution import (
-            LATE_SECOND_MEAL_BOLUS, LATE_SECOND_MEAL_CGM, _seed, next_day,
-        )
-        from tests.test_scenario_engine import cgm_flat, cgm_ramp
-
-        short_bolus = [
-            replace(LATE_SECOND_MEAL_BOLUS[0], carbs=100, carb_ratio=5),
-            LATE_SECOND_MEAL_BOLUS[1],
-            replace(LATE_SECOND_MEAL_BOLUS[2], carbs=100, carb_ratio=5),
-        ]
-        other_cgm = []
-        other_bolus = []
-        for day in (14, 15):
-            other_cgm.extend(
-                cgm_flat(day, 5, 40, 120, 30)
-                + cgm_ramp(day, 6, 10, 120, 2, 60)
-                + cgm_ramp(day, 7, 10, 360, -2, 60)
-                + cgm_flat(day, 20, 30, 120, 30)
-                + cgm_ramp(day, 21, 0, 120, 2, 60)
-                + cgm_ramp(day, 22, 0, 360, -2, 60)
-            )
-            other_bolus.extend([
-                BolusEvent(datetime(2026, 6, day, 6, 40), completion="Completed",
-                           insulin=20, carbs=100, carb_ratio=5),
-                BolusEvent(datetime(2026, 6, day, 21), completion="Completed",
-                           insulin=3, carbs=30, carb_ratio=10),
-            ])
-
-        with tempfile.NamedTemporaryFile(suffix=".sqlite") as database:
-            with Store.open(database.name) as store:
-                _seed(
-                    store,
-                    short_bolus + next_day(short_bolus) + other_bolus,
-                    LATE_SECOND_MEAL_CGM + next_day(LATE_SECOND_MEAL_CGM) + other_cgm,
-                )
-                with (
-                    patch("ciq_autotune.explore_exposures._effective_isf", return_value=45.0),
-                    patch("ciq_autotune.analyzers.scenario.engine._effective_isf", return_value=45.0),
-                    patch("ciq_autotune.finding_case_file._effective_isf", return_value=45.0),
-                ):
-                    exposures = build_exposures(store)
-                    scenarios = build_scenarios(store).to_dict()
-                    case = finding_case_file.prepare(
-                        store, query=WindowQuery.whole_day(), version=0,
-                        analysis={"window_days": 30}, exposures=exposures,
-                        scenarios=scenarios,
-                    ).case("pattern:highs_after_meals", "event", None)
-                outcome_patterns = build_outcome_patterns({}, exposures, scenarios)
-                projection = FindingsProjection(
-                    _analysis={"window_days": 30}, _exposures=exposures,
-                    _scenarios=scenarios, _outcome_patterns=outcome_patterns,
-                ).project(WindowQuery.whole_day())
-
-        pattern = next(item for item in outcome_patterns
-                       if item["key"] == "highs_after_meals")
-        row = next(item for item in projection["rows"]
-                   if item.get("lever") == Lever.MEAL_BOLUS_SHORT.value)
-
-        self.assertEqual((pattern["k"], pattern["n"]), (6, 8))
-        self.assertEqual(row["claimed_by"], "pattern:highs_after_meals")
-        self.assertEqual(
-            sum("meal_bolus_short" in item["attributed_levers"]
-                for item in exposures["exposures"]["meals"]["occurrences"]),
-            2,
-        )
-        self.assertEqual(
-            [item["member"] for item in case["occurrences"]].count(
-                "habit:meal_bolus_short"
-            ),
-            2,
-        )
-        self.assertEqual(projection["counts"]["finding"], sum(
-            item["register"] == "finding" and not item.get("claimed_by")
-            for item in projection["rows"]
-        ))
-
+class PublicProducerPopulationProjectionTest(unittest.TestCase):
     def test_public_correction_stacking_producer_claims_the_lows_it_reaches(self):
         from ciq_autotune import finding_case_file
         from ciq_autotune.analyzers.scenario.outcome_patterns import build_outcome_patterns
@@ -787,15 +582,14 @@ class MealBolusShortPopulationProjectionTest(unittest.TestCase):
                 for item in lows["occurrences"]),
             2,
         )
-        self.assertEqual(pattern_case["family"], pattern_case["population"])
-        self.assertEqual(pattern_case["summary"], {
-            "claimed": 2, "denominator": 2, "noun": "lows",
-        })
+        # The correction factor is no member (ADR 499), so the one admitted habit
+        # carries the Pattern: it collapses to that member and serves no case file.
         self.assertEqual(
-            {item["member"] for item in pattern_case["occurrences"]},
-            {"habit:correction_stacking"},
+            [(item["subject"], item["admitted"]) for item in pattern["members"]],
+            [("habit:correction_stacking", True)],
         )
-        self.assertEqual(pattern_case["projection"]["window_min"], [-60, 120])
+        self.assertEqual(pattern["collapse"], "collapse_to_member")
+        self.assertIsNone(pattern_case)
         self.assertEqual((clusters["n"], clusters["attributed"]), (8, 2))
         self.assertEqual(
             sum(item["cause_lever"] == "correction_stacking"
@@ -964,7 +758,6 @@ class QueueOrderTest(unittest.TestCase):
         anchors = {
             "pattern:highs_after_meals": "ic:720",
             "pattern:lows_after_meals": "ic:720",
-            "pattern:overnight_lows_no_iob": "basal:30-90",
         }
         for pattern, anchor in anchors.items():
             with self.subTest(pattern=pattern):
@@ -1001,57 +794,6 @@ class QueueOrderTest(unittest.TestCase):
         highs = rows["pattern:highs_after_meals"]
         self.assertIsNone(highs.get("anchored_by"))
         self.assertEqual(highs.get("rank_note"), "Ranked on all 30 days")
-
-    def test_the_overnight_pattern_never_anchors_to_a_daytime_basal_row(self):
-        """ADR 469 decision 7: in 05:00–08:00 the only asserting basal row is the
-        06:30 raise, outside the 00:00–06:00 band, so the overnight Pattern keeps
-        its own rank rather than sitting beneath it."""
-        whole_day = gen.basal_rows
-
-        def daytime_raise():
-            rows = whole_day()
-            rows[11] = gen._slot(11, current=1.00, value=1.00, lo=0.96, hi=1.04, n=20)
-            rows[13] = gen._slot(13, current=0.80, value=0.998, lo=0.816, hi=1.259,
-                                 n=22, supported=1)
-            return rows
-
-        with patch.object(gen, "basal_rows", daytime_raise):
-            analysis = gen.analysis()
-        rows = {row["id"]: row for row in prepare_findings_projection(
-            analysis=analysis, exposures=gen.exposures(), scenarios=gen.scenarios(),
-        ).project(WindowQuery.clock(5 * 60, 8 * 60))["rows"]}
-        self.assertEqual(rows["basal:390-420"]["register"], "assert")
-        self.assertNotIn("basal:330-360", rows)
-        overnight = rows["pattern:overnight_lows_no_iob"]
-        self.assertEqual(overnight["pattern"]["admission_route"], "setting_staging")
-        self.assertIsNone(overnight["anchored_by"])
-        self.assertEqual(overnight["rank_note"], "Ranked on all 30 days")
-
-    def test_the_overnight_pattern_anchors_to_the_basal_run_that_admitted_it(self):
-        """ADR 469 decision 7: a basal run that starts inside 00:00–06:00 and
-        crosses 06:00 admits the overnight Pattern, so the Pattern sits beneath it."""
-        whole_day = gen.basal_rows
-
-        def run_across_six():
-            rows = whole_day()
-            for index in (1, 2):
-                rows[index] = gen._slot(index, current=1.00, value=1.00, lo=0.96, hi=1.04, n=20)
-            for index in (11, 12):
-                rows[index] = gen._slot(index, current=0.80, value=0.998, lo=0.816, hi=1.259,
-                                        n=22, supported=1)
-            return rows
-
-        with patch.object(gen, "basal_rows", run_across_six):
-            analysis = gen.analysis()
-        rows = {row["id"]: row for row in prepare_findings_projection(
-            analysis=analysis, exposures=gen.exposures(), scenarios=gen.scenarios(),
-        ).project(WindowQuery.whole_day())["rows"]}
-        overnight = rows["pattern:overnight_lows_no_iob"]
-        self.assertEqual(rows["basal:330-390"]["register"], "assert")
-        self.assertEqual(overnight["pattern"]["admission_route"], "setting_staging")
-        self.assertEqual(overnight["anchored_by"], "basal:330-390")
-        self.assertEqual(overnight["rank_note"], "Ranked with its setting")
-        self.assertEqual(overnight["tier"], rows["basal:330-390"]["tier"])
 
     def test_an_asserting_row_that_cannot_stage_sorts_before_unranked_findings(self):
         rows = FindingsProjection(
@@ -1244,11 +986,6 @@ class PatternProjectionTest(unittest.TestCase):
         self.assertGreater(pattern["k"], 0)
         self.assertFalse(any(member["kind"] == "habit" for member in pattern["members"]))
 
-        overnight = next(row for row in self.result["rows"]
-                         if row["id"] == "pattern:overnight_lows_no_iob")
-        self.assertEqual(overnight["chips"], ["lows"])
-        self.assertIsNone(overnight["pattern_chart"])
-
     def test_count_status_has_an_explicit_headline_and_no_blank_rate(self):
         source = next(row for row in self.projection._outcome_patterns
                       if row["key"] == "highs_after_meals")
@@ -1282,7 +1019,6 @@ class PatternProjectionTest(unittest.TestCase):
             "lows_after_meals": "meals",
             "highs_after_treating_lows": "lows",
             "lows_after_correcting_highs": "lows",
-            "overnight_lows_no_iob": "nights",
         }
         for key, noun in nouns.items():
             pattern = rows[key]["pattern"]
@@ -1297,7 +1033,6 @@ class PatternProjectionTest(unittest.TestCase):
             "meal_over_delivery": ["meals"], "over_treated_low": ["lows"],
             "correction_on_iob": ["lows"],
             "correction_stacking": ["correction_clusters"],
-            "high_carb_sequence": ["sequences"], "repeat_eating": ["sequences"],
         }
         for key, _title, members, _rate_levers, _setting, _family in _ROSTER:
             with self.subTest(key=key):
@@ -1308,8 +1043,6 @@ class PatternProjectionTest(unittest.TestCase):
                         appearances=[{"family": family} for family in member_rows[lever]],
                     ))
                     union.extend(chip for chip in chips if chip not in union)
-                if key == "overnight_lows_no_iob":
-                    union = ["lows"]
                 self.assertEqual(list(_PATTERN_CHIPS[key]), union)
 
     def test_stacking_finding_keeps_its_correction_cluster_population(self):
@@ -1331,53 +1064,6 @@ class PatternProjectionTest(unittest.TestCase):
 class ScopedPatternMembershipTest(unittest.TestCase):
     """#467: a scoped window serves a Pattern when its outcomes land in it, whether or
     not it owns a chart (ADR 467)."""
-
-    @classmethod
-    def setUpClass(cls):
-        from scripts.qa_e2e_cases import QA_CASES, execute_case, materialize_case
-
-        case = next(item for item in QA_CASES if item.name == "basal-recurring-low-lower")
-        with Store.open(":memory:") as store:
-            materialize_case(store, case)
-            execution = execute_case(store, case)
-        cls.prepared = prepare_findings_projection(
-            analysis=execution.analysis, exposures=execution.exposures,
-            scenarios=execution.scenarios,
-        )
-
-    def _overnight(self, query):
-        body = self.prepared.project(query)
-        row = next((item for item in body["rows"]
-                    if item["id"] == "pattern:overnight_lows_no_iob"), None)
-        return body, row
-
-    def test_the_whole_day_says_overnight(self):
-        _body, row = self._overnight(WindowQuery.whole_day())
-        self.assertEqual([item["sentence"] for item in row["count_sentences"]],
-                         ["2 of 30 nights ran low overnight"])
-
-    def test_a_window_overlapping_the_band_serves_the_overnight_pattern(self):
-        _body, whole = self._overnight(WindowQuery.whole_day())
-        for bounds in ((0, 360), (120, 300)):
-            with self.subTest(bounds=bounds):
-                _body, row = self._overnight(WindowQuery.clock(*bounds))
-                self.assertIsNotNone(row)
-                self.assertEqual(
-                    (row["pattern"]["k"], row["pattern"]["n"],
-                     row["pattern"]["admission_route"], row["priority"]),
-                    (whole["pattern"]["k"], whole["pattern"]["n"],
-                     whole["pattern"]["admission_route"], whole["priority"]),
-                )
-                self.assertEqual(row["window_scope"], "window")
-                self.assertIsNone(row["pattern_chart"])
-                self.assertEqual([item["sentence"] for item in row["count_sentences"]],
-                                 ["2 of 30 nights ran low between 00:00 and 06:00"])
-
-    def test_a_window_clear_of_the_band_serves_no_overnight_pattern(self):
-        body, row = self._overnight(WindowQuery.clock(840, 1260))
-        self.assertIsNone(row)
-        self.assertNotIn("overnight_lows_no_iob",
-                         [pattern["key"] for pattern in body["outcome_patterns"]])
 
     def test_the_explicit_whole_day_scope_folds_causes_under_served_patterns(self):
         projection = gen.projection()
@@ -1418,9 +1104,26 @@ class FoldSentenceTest(unittest.TestCase):
         return [sentence | {"scope": "outside"} for sentence in row["count_sentences"]]
 
     def test_a_cause_counted_in_another_family_leads_with_its_share_of_the_pattern(self):
-        case, execution = self._execution("behavioral-correction-stacking")
-        whole_day = execution.findings["whole_day"]
-        rows = {row["id"]: row for row in whole_day["rows"]}
+        """One extra scenario Pattern for Correction on IOB is injected, the way the
+        findings-projection generator injects its out-of-family member. Cut 6 (ADR
+        499) removed the correction-factor member that kept Lows after correcting
+        highs from collapsing onto Correction stacking alone; a second admitted habit
+        keeps it a Pattern, so the stacking cause still folds beneath it."""
+        from ciq_autotune.analyzers.scenario.levers import recommendation
+        from ciq_autotune.analyzers.scenario.payload import Pattern
+        from ciq_autotune.uncertainty import Confidence
+
+        _case, execution = self._execution("behavioral-correction-stacking")
+        extra = Lever.CORRECTION_ON_IOB
+        scenarios = {**execution.scenarios, "patterns": [
+            *execution.scenarios["patterns"],
+            Pattern(lever=extra, confidence=Confidence(n=40, k=5, effect=0.3), rank=5,
+                    recommendation=recommendation(extra), hero_episode="ep1",
+                    occurrences=["ep1"], admission_basis="low_confidence").to_dict(),
+        ]}
+        rows = {row["id"]: row for row in prepare_findings_projection(
+            analysis=execution.analysis, exposures=execution.exposures, scenarios=scenarios,
+        ).project(WindowQuery.whole_day())["rows"]}
         pattern = rows["pattern:lows_after_correcting_highs"]
         cause = rows["finding:correction_stacking"]
 
@@ -1435,13 +1138,17 @@ class FoldSentenceTest(unittest.TestCase):
              "scope": "pattern"},
             clusters | {"scope": "outside"},
         ])
-        # The cause's own count, the Pattern's count and the roster stay as served.
+        # The cause's own count and the Pattern's count stay as served.
         self.assertEqual(cause["count_sentences"], [clusters])
         self.assertEqual(cause["appearances"], [{
             "family": "correction_clusters", "noun": "correction clusters", "n": 2, "m": 8,
         }])
-        self.assertEqual(tuple(whole_day["outcome_patterns"]),
-                         case.expectation.outcome_patterns)
+        self.assertEqual(
+            [(item["subject"], item["admitted"]) for item in pattern["pattern"]["members"]],
+            [("habit:correction_stacking", True), ("habit:correction_on_iob", True)],
+        )
+        self.assertEqual((pattern["pattern"]["k"], pattern["pattern"]["n"],
+                          pattern["pattern"]["collapse"]), (2, 2, "remain_pattern"))
 
     def test_two_causes_shares_add_up_to_their_pattern(self):
         case, execution = self._execution("behavioral-carb-undercount")
@@ -1512,18 +1219,6 @@ class FoldSentenceTest(unittest.TestCase):
         self.assertEqual(cause["claimed_by"], "pattern:highs_after_meals")
         self.assertEqual(cause.get("fold_sentences"), self._outside(cause))
 
-    def test_a_folded_sequence_habit_is_outside_its_patterns_count(self):
-        _case, execution = self._execution("high-carb-sequence-covered")
-        rows = {row["id"]: row for row in execution.findings["whole_day"]["rows"]}
-        pattern = rows["pattern:highs_after_meals"]
-        cause = rows["finding:high_carb_sequence"]
-
-        # The Pattern serves a count, and the Sequence habit is not one of its rate levers.
-        self.assertIsNotNone(pattern["count_sentences"])
-        self.assertNotIn("habit:high_carb_sequence", pattern["pattern"]["rate_levers"])
-        self.assertEqual(cause["claimed_by"], pattern["id"])
-        self.assertEqual(cause.get("fold_sentences"), self._outside(cause))
-
     def test_only_folded_rows_serve_fold_sentences(self):
         for window, bounds in gen.WINDOWS.items():
             query = WindowQuery.whole_day() if bounds is None else WindowQuery.clock(*bounds)
@@ -1587,11 +1282,11 @@ class PreparedFromStoreTest(unittest.TestCase):
         )
         result = projection.project(WindowQuery.whole_day())
         self.assertEqual([row["kind"] for row in result["rows"]],
-                         ["pattern"] * 5)
+                         ["pattern"] * 4)
         self.assertEqual(
             [pattern["key"] for pattern in result["outcome_patterns"]],
             ["highs_after_meals", "lows_after_meals", "highs_after_treating_lows",
-             "lows_after_correcting_highs", "overnight_lows_no_iob"],
+             "lows_after_correcting_highs"],
         )
         self.assertEqual(result["window"]["scoped"], False)
         self.assertEqual(result["findings_window"]["days"], 30)
@@ -2550,13 +2245,6 @@ class ExplicitOutcomeWitnessTest(unittest.TestCase):
                           "t": "2026-08-01 12:00:00", "outcome_minute": minute}
             self.assertEqual(outcome_minute(occurrence, {"exposures": {}}), minute)
 
-    def test_missing_sequence_witness_has_no_trigger_fallback(self):
-        from ciq_autotune.window_membership import outcome_minute
-        with patch("ciq_autotune.window_membership.outcome_kind", return_value="sequence"):
-            for extra in ({}, {"outcome_minute": None}):
-                self.assertIsNone(outcome_minute(
-                    {"cause_lever": "high_carb_sequence", "t": "2026-08-01 12:00:00", **extra}, {}))
-
     def test_fallback_uses_latest_timestamp_across_midnight_not_largest_clock_minute(self):
         from ciq_autotune.window_membership import outcome_minute
 
@@ -2586,134 +2274,6 @@ class ExplicitOutcomeWitnessTest(unittest.TestCase):
         projection._pattern_rows([source], WindowQuery.whole_day())
         self.assertEqual(source["claimed_by"], "pattern:highs_after_meals")
         self.assertNotIn("habit:missed_meal", pattern["rate_levers"])
-
-
-def seed_sequence_store(store, bolus, cgm, log=()):
-    """A manufactured programmed I:C keeps the parent Pattern above collapse."""
-    from tests.test_meal_bolus_short_attribution import _seed
-    from tests.test_outcomes_trend import _snapshot_with_ic
-    _seed(store, bolus, cgm)
-    store.upsert_settings_snapshot(bolus[0].t.strftime("%Y-%m-%d %H:%M:%S"),
-                                   _snapshot_with_ic(10).settings)
-    for entry in log:
-        store.upsert_carb_entry(entry)
-
-
-def sequence_products(lever, *, covered=False, competitor="mild", multi=False, thin=None, low=False):
-    """Manufactured public-producer inputs; requires the c1 integration contract."""
-    from ciq_autotune.store import Store
-    from ciq_autotune.analyze import analyze
-    from ciq_autotune.analyzers.scenario import build_scenarios
-    from ciq_autotune.explore_exposures import build_exposures
-    from ciq_autotune.analyzers.eating_sequences import evaluate_sequences
-    from ciq_autotune.analyzers.eating_sequence_config import EatingSequenceConfig
-    from ciq_autotune.events import CarbEntry
-    from tests.eating_sequence_streams import sequence_episode_stream
-    b, c, log, basal = sequence_episode_stream(lever, covered=covered,
-                                               competitor=competitor, multi=multi)
-    if low:
-        initial = evaluate_sequences(b, c, log, window_start=c[0].t, window_end=c[-1].t,
-                                     config=EatingSequenceConfig())
-        nadirs = {reading.t for row in initial.populations[lever] if row.candidate
-                  for reading in c
-                  if row.sequence.end + timedelta(minutes=80) <= reading.t
-                  < row.sequence.end + timedelta(minutes=90)}
-        c = [replace(r, bg=55) if r.t in nadirs else r for r in c]
-    if thin is not None:
-        evaluation = evaluate_sequences(b, c, log, window_start=c[0].t, window_end=c[-1].t,
-                                        config=EatingSequenceConfig())
-        cohort = [r for r in evaluation.populations[lever] if r.candidate == thin]
-        log = [CarbEntry(r.sequence.end + timedelta(minutes=1), 17.3, "exact", "manual")
-               for r in cohort[7:]]
-    with Store.open(":memory:") as store:
-        seed_sequence_store(store, b, c, log)
-        analysis = analyze(store, window_days=30, pool_agreeing_basal_regimes=True).to_dict()
-        scenarios = build_scenarios(store, window_days=30).to_dict()
-        exposures = build_exposures(store, window_days=30)
-    projection = prepare_findings_projection(analysis=analysis, exposures=exposures, scenarios=scenarios)
-    return projection, (b, c, log, basal)
-
-
-class SequenceProducerProjectionTest(unittest.TestCase):
-    def test_empty_and_covered_winners_keep_their_own_counts_and_nesting(self):
-        for lever, expected_n in (("high_carb_sequence", 40), ("repeat_eating", 16)):
-            for covered in (False, True):
-                with self.subTest(lever=lever, covered=covered):
-                    projection, _ = sequence_products(lever, covered=covered)
-                    result = projection.project(WindowQuery.whole_day())
-                    rows = {row["id"]: row for row in result["rows"]}
-                    cause = rows[f"finding:{lever}"]
-                    parent = rows["pattern:highs_after_meals"]
-                    self.assertEqual(cause["episodes"], 8)
-                    self.assertEqual(cause["appearances"], [{"family": "sequences", "noun": "sequences",
-                                                           "n": 8, "m": expected_n}])
-                    self.assertEqual(cause["chips"], ["highs", "meals"])
-                    self.assertEqual(cause["claimed_by"], parent["id"])
-                    member = next(m for m in parent["pattern"]["members"] if m["subject"] == f"habit:{lever}")
-                    self.assertTrue(member["admitted"])
-                    self.assertNotIn(f"habit:{lever}", parent["pattern"]["rate_levers"])
-                    meals = projection._exposures["exposures"]["meals"]["occurrences"]
-                    associated = [m for m in meals if f"habit:{lever}" in m.get("member_associations", [])]
-                    self.assertEqual(bool(associated), covered)
-                    self.assertEqual(parent["pattern"]["n"], len(meals))
-                    self.assertTrue(all(lever not in m["attributed_levers"] for m in meals))
-
-    def test_each_cohort_floor_withholds_the_served_finding(self):
-        for lever in ("high_carb_sequence", "repeat_eating"):
-            for candidate in (True, False):
-                with self.subTest(lever=lever, candidate=candidate):
-                    projection, _ = sequence_products(lever, covered=True, thin=candidate)
-                    rows = projection.project(WindowQuery.whole_day())["rows"]
-                    self.assertNotIn(f"finding:{lever}", {r["id"] for r in rows})
-
-    def test_scoped_membership_uses_witness_with_source_price_and_no_parent(self):
-        for lever in ("high_carb_sequence", "repeat_eating"):
-            projection, _ = sequence_products(lever, multi=True)
-            whole = projection.project(WindowQuery.whole_day())
-            source = next(r for r in whole["rows"] if r["id"] == f"finding:{lever}")
-            occurrence = next(e for e in projection._exposures["sequence_evidence"][lever]["occurrences"]
-                              if e["attributed"])
-            minute = occurrence["outcome_minute"]
-            query = WindowQuery.clock(minute, (minute + 1) % 1440)
-            scoped = projection.project(query)
-            cause = next(r for r in scoped["rows"] if r["id"] == source["id"])
-            self.assertEqual(cause["priority"], source["priority"])
-            self.assertLessEqual(cause["episodes"], 8)
-            self.assertGreater(cause["episodes"], 0)
-            self.assertIsNone(cause["claimed_by"])
-            # A Pattern whose outcomes land in the window may be served (ADR 467),
-            # but none rosters this cause as its member.
-            self.assertFalse(any(
-                member["subject"] == f"habit:{lever}"
-                for r in scoped["rows"] if r["kind"] == "pattern"
-                for member in r["pattern"]["members"]
-            ))
-            for evidence in projection._exposures["sequence_evidence"][lever]["occurrences"]:
-                evidence.pop("outcome_minute", None)
-            self.assertNotIn(source["id"], {r["id"] for r in projection.project(query)["rows"]})
-
-    def test_losing_sequence_matches_remain_evidence_without_ownership(self):
-        from ciq_autotune.findings_projection import sequence_population
-        for lever in ("high_carb_sequence", "repeat_eating"):
-            projection, _ = sequence_products(lever, competitor="severe")
-            roster = sequence_population(projection._exposures, lever, WindowQuery.whole_day())
-            matched = [r for r in roster if r["verdict"] == "fired"]
-            self.assertEqual(len(matched), 8)
-            self.assertTrue(all(not r["attributed"] for r in matched))
-            self.assertNotIn(f"finding:{lever}", {r["id"] for r in projection.project(WindowQuery.whole_day())["rows"]})
-
-    def test_low_witness_uses_the_same_sequence_membership_as_highs(self):
-        for lever in ("high_carb_sequence", "repeat_eating"):
-            projection, (_, cgm, _, _) = sequence_products(lever, covered=True, low=True)
-            episodes = projection._exposures["sequence_evidence"][lever]["occurrences"]
-            low_minutes = {r.t.hour * 60 + r.t.minute for r in cgm if r.bg == 55}
-            winners = [r for r in episodes if r["attributed"] and r["outcome_minute"] in low_minutes]
-            self.assertTrue(winners)
-            minute = winners[0]["outcome_minute"]
-            rows = projection.project(WindowQuery.clock(minute, (minute + 1) % 1440))["rows"]
-            cause = next(r for r in rows if r["id"] == f"finding:{lever}")
-            self.assertGreater(cause["episodes"], 0)
-            self.assertEqual(cause["chips"], ["highs", "meals"])
 
 
 class LateBolusCauseRowTest(unittest.TestCase):

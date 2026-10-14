@@ -332,13 +332,13 @@ test('a `from` naming no destination returns plainly to Diagnose and prints no l
 });
 
 test('each attributed Episode Log row ends with its episode\'s served Lever name', () => {
-  // Four Levers the desk once had no word for, each with the name the model
-  // read serves, and one unattributed episode whose row names no Lever.
+  // Four Levers, each with the name the model read serves, and one
+  // unattributed episode whose row names no Lever.
   const served = [
     ['missed_meal', 'Missed / unannounced meal', '07:10', 'high'],
-    ['meal_bolus_short', 'Meal bolus fell short', '09:30', 'meal'],
-    ['high_carb_sequence', 'High-carb sequence', '12:15', 'meal'],
-    ['repeat_eating', 'Repeat eating', '16:40', 'meal'],
+    ['late_bolus', 'Late bolus', '09:30', 'meal'],
+    ['carb_undercount', 'Carb undercount', '12:15', 'meal'],
+    ['meal_over_delivery', 'Meal over-delivery', '16:40', 'meal'],
   ];
   const anchor = (t, kind, state, verdict) => ({ t, kind, bg: kind === 'meal' ? null : 210, insulin: null, carbs: null, state, verdicts: [verdict] });
   const model = {
@@ -422,15 +422,15 @@ test('#423 · the Findings caption counts Findings, and names claimed anchors ap
   again.anchors = [{ ...again.anchors[0], t: '2024-06-26 07:30:00' }];
   const twoEpisodes = { ...MODEL, episodes: [again, { ...CLAIMED.episodes[0], anchors: [CLAIMED.episodes[0].anchors[0]] }] };
   assert.equal(findings(twoEpisodes), 'Findings · 1');
-  // A high-carb sequence Finding has no fired anchor; its two claimed meals still count one Finding.
+  // A Finding with no fired anchor; its two claimed meals still count one Finding.
   const claimedMeal = (t) => ({ t, kind: 'meal', bg: null, insulin: 4, carbs: 60, state: 'outranked',
     verdicts: [verdict('carb_undercount', 'Carb undercount', true)] });
-  const sequence = { ...MODEL, episodes: [{
+  const unfired = { ...MODEL, episodes: [{
     id: '2024-06-26-ep5', start: '2024-06-26 12:00:00', end: '2024-06-26 15:00:00',
-    lever: 'high_carb_sequence', lever_title: 'High-carb sequence', spans_midnight: false,
+    lever: 'late_bolus', lever_title: 'Late bolus', spans_midnight: false,
     anchors: [claimedMeal('2024-06-26 12:00:00'), claimedMeal('2024-06-26 13:30:00')],
   }] };
-  assert.equal(findings(sequence), 'Findings · 1 · 2 claimed');
+  assert.equal(findings(unfired), 'Findings · 1 · 2 claimed');
 });
 
 test('#423 · each band caption carries a Glossary control named for its band', () => {

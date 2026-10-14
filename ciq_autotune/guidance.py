@@ -457,7 +457,13 @@ def build_guidance(*, analysis, exposures, scenarios, preferences=(), active_wat
                                                 else None)},
                "decision": {key: row[key] for key in ("decided_at", "reason", "comparison_version", "state")}}
               for row in preferences if row["subject"] not in known]
-    selection_rows = [row for row in all_candidates if row["kind"] != "setting"
+    # A setting a Pattern carries is selected through that Pattern; one no Pattern
+    # carries (basal, since ADR 499) is selected as itself. ISF is never selected.
+    carried = {member["subject"] for row in all_candidates if row["kind"] == "pattern"
+               for member in row["members"] if member["kind"] == "setting"}
+    selection_rows = [row for row in all_candidates
+                      if (row["kind"] != "setting"
+                          or row["subject"] not in carried | _UNQUEUED_SUBJECTS)
                       and (row["kind"] != "pattern" or row.get("action") is not None
                            or row.get("unavailable") or row.get("has_concern"))]
     available = sorted((row for row in selection_rows

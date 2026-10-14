@@ -306,32 +306,9 @@ Flat by default with exactly one shadow token (`--shadow`) reused everywhere ele
 - **Don't** rely on hover-only interaction for any state-carrying element (flag lists, calendar heat-map cells currently do this) — pair with `:focus-visible` and a keyboard path, per the existing `.has-tooltip` precedent.
 
 
-### Eating-sequence evidence (#342)
+### Chart revision surface
 
-High-carb sequence and Repeat eating are habit causes nested under Highs after
-meals. Each retains its own sequence count and canonical evidence chart, including
-when its winning episode covers no meal. The parent keeps its meals denominator
-and Pattern case chart.
-
-The sixth registry family, eating-sequence, reuses the shared tile, mini mount,
-All charts and fullscreen shell. Repeat eating uses cohort aggregate dots with
-the shipped comparison/matched colors and diamond/circle redundancy. High-carb
-sequence uses the backend-owned title “Glucose after high-carb eating” (or
-“Glucose during high-carb eating” for an in-sequence comparison) and the shared
-response renderer: observed glucose in mg/dL over time
-from the end of eating, the target range, named highest-carb and other-sequence
-curves, cohort support and source scope. The legend names “Sequences at all times
-of day” or “Evening sequences” within the source population, independently of the
-clock-filtered roster. A selected singleton paints one focus-colored marker;
-dense selected traces retain lines without markers. Its supporting detail retains the full numerical comparison summary and all three
-served aggregate intervals, including explicit unavailable cells. The mini rank
-omits axis furniture and interaction. The end anchor keeps two lines; narrow
-High-carb charts omit the adjacent +1 h label to leave reading space. Short
-during-eating windows retain a tick at the zero-minute end anchor. The shared
-readout overlays the High-carb headline without moving its Full control, with
-three reserved rows in narrow stage and fullscreen headers. Pattern alignment is unchanged.
-The dedicated fixture retains producer preparations (including findings.rows), rendered rows and cases for global and 0–360 windows, interns repeated JSON values as $ref entries, and expands them unchanged through frontend/eating-sequence-fixture.js. It losslessly retains every roster selection, including clean reference sequences, through shared JSON values.
-Chart-level revision of these surfaces happens in the served desk, not in a
+Chart-level revision of Diagnose evidence surfaces happens in the served desk, not in a
 second composition of it: ADR 416 deleted the component harness, and AGENTS.md's
 no-fetch QA copy-then-serve over a generator-owned synthetic case store is the
 safe surface that replaced it. A chart revised there is the shipped chart. The

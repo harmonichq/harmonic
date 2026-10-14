@@ -17,7 +17,6 @@ const labels = {
   carb_undercount: 'Carb undercount', late_bolus: 'Late bolus',
   meal_over_delivery: 'Meal over-delivery', over_treated_low: 'Over-treated low',
   correction_on_iob: 'Correction on active insulin', correction_stacking: 'Correction stacking',
-  meal_bolus_short: 'Meal bolus fell short',
 };
 const boundaryLabels = {
   implied_carbs_g: ['Implied carbs', 'g'], logged_carbs_g: ['Logged carbs', 'g'],

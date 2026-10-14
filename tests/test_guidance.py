@@ -82,13 +82,13 @@ class GuidanceTest(unittest.TestCase):
         self.assertEqual(rows[0], rows[1])
         self.assertEqual(
             len([row for row in rows[0]["candidates"] if row["kind"] == "pattern"]),
-            5,
+            4,
         )
 
     def test_every_pattern_publishes_named_readiness(self):
         result, _execution = _qa("showcase")
         patterns = [row for row in result["candidates"] if row["kind"] == "pattern"]
-        self.assertEqual(len(patterns), 5)
+        self.assertEqual(len(patterns), 4)
         for row in patterns:
             self.assertIn(row["readiness"]["verdict"], ("ready", "withheld"))
             self.assertIsInstance(row["readiness"]["count"], int)
@@ -116,20 +116,22 @@ class GuidanceTest(unittest.TestCase):
         self.assertNotIn("recommended", rows["setting:basal_rate"]["members"][0])
 
     def test_analyzer_held_and_thin_verdicts_are_evidenced_without_advice(self):
+        # The correction factor is no Pattern member and never queues (ADR 499), so
+        # its held evidence leads no investigation.
         expected = {
-            "basal-insufficient-seven-night": ("setting:basal_rate", None),
-            "basal-recurring-low-gate": ("setting:basal_rate", None),
-            "isf-direction-only-weaken": ("setting:isf", "weaken"),
-            "isf-held": ("setting:isf", None),
-            "ic-collecting": ("setting:carb_ratio", None),
-            "ic-held": ("setting:carb_ratio", None),
+            "basal-insufficient-seven-night": ("setting:basal_rate", None, "guided_investigation"),
+            "basal-recurring-low-gate": ("setting:basal_rate", None, "guided_investigation"),
+            "isf-direction-only-weaken": ("setting:isf", "weaken", "quiet"),
+            "isf-held": ("setting:isf", None, "quiet"),
+            "ic-collecting": ("setting:carb_ratio", None, "guided_investigation"),
+            "ic-held": ("setting:carb_ratio", None, "guided_investigation"),
         }
-        for case_name, (subject, direction) in expected.items():
+        for case_name, (subject, direction, disposition) in expected.items():
             with self.subTest(case=case_name):
                 result, execution = _qa(case_name)
                 row = next(row for row in result["candidates"]
                            if row["subject"] == subject)
-                self.assertEqual(result["disposition"], "guided_investigation")
+                self.assertEqual(result["disposition"], disposition)
                 self.assertIsNone(row["action"])
                 self.assertEqual(row["members"][0]["direction"], direction)
                 self.assertTrue(row["members"][0]["support"])
@@ -244,7 +246,7 @@ class GuidanceTest(unittest.TestCase):
         self.assertEqual(first["selected"]["subject"], "habit:missed_meal")
         self.assertEqual(second["selected"]["subject"], first["selected"]["subject"])
 
-    def test_low_confidence_and_observation_only_patterns_remain_investigations(self):
+    def test_low_confidence_patterns_remain_investigations(self):
         bolus, cgm = PatternScoringAndPayloadTest()._recurring_missed_meals(2)
         low_scenarios = assemble(bolus, cgm, [], isf=ISF).to_dict()
         analysis = gen.empty_projection()._analysis
@@ -252,17 +254,10 @@ class GuidanceTest(unittest.TestCase):
             analysis=analysis, exposures={"exposures": {}},
             scenarios=low_scenarios,
         ).guidance()
-        observation, execution = _qa("behavioral-meal-bolus-short")
         self.assertEqual(low["disposition"], "guided_investigation")
         self.assertEqual(low["selected"]["subject"], "habit:missed_meal")
         self.assertTrue(low["selected"]["evidence"])
-        self.assertEqual(observation["disposition"], "guided_investigation")
-        self.assertEqual(observation["selected"]["subject"],
-                         "habit:meal_bolus_short")
-        self.assertIsNone(execution.scenarios["patterns"][0]["guidance"]["action_id"])
-        self.assertTrue(observation["selected"]["evidence"])
-        self.assertTrue(all(row["action"] is None
-                            for row in (low["candidates"] + observation["candidates"])))
+        self.assertTrue(all(row["action"] is None for row in low["candidates"]))
 
     def test_set_aside_ignores_priority_refresh_and_restore_returns_selection(self):
         analysis, exposures, scenarios = _producer()
@@ -338,9 +333,10 @@ class GuidanceTest(unittest.TestCase):
                     self.assertNotIn("action_title", member)
                 else:
                     self.assertEqual(member["action_title"], member["title"])
-        correction_factor = next(member for member in members
-                                 if member["subject"] == "setting:isf")
-        self.assertEqual(correction_factor["title"], "Correction factor")
+        self.assertNotIn("setting:isf", {member["subject"] for member in members})
+        carb_ratio = next(member for member in members
+                          if member["subject"] == "setting:carb_ratio")
+        self.assertEqual(carb_ratio["title"], "Carb ratio")
         identified = [row for row in patterns if isinstance(row["action"], dict)]
         self.assertTrue(identified, "the producer must serve an identified action")
         for row in identified:
@@ -402,7 +398,6 @@ class GuidanceTest(unittest.TestCase):
         names = {
             "setting:isf": "Correction factor",
             "habit:correction_stacking": "Correction stacking",
-            "investigation:uncaused_highs": "Highs without a detected cause",
             "habit:retired_lever": None,
         }
         carried = {row["subject"] for row in current["candidates"]}
@@ -421,13 +416,6 @@ class GuidanceTest(unittest.TestCase):
         self.assertNotIn("absent", served)
         self.assertEqual(served["title"], "Lows after correcting highs")
         self.assertIs(served["preference"]["set_aside"], True)
-
-    def test_setting_source_before_habit_source_is_safe(self):
-        result, _execution = _qa("basal-raise")
-        pattern = next(row for row in result["candidates"]
-                       if row["subject"] == "pattern:overnight_lows_no_iob")
-        self.assertEqual(pattern["chosen_member"]["kind"], "setting")
-        self.assertIsInstance(pattern["action"], list)
 
     def test_habit_returns_for_semantic_action_or_worse_owner_seriousness(self):
         saved = {"comparison_version": COMPARISON_VERSION,
@@ -465,22 +453,3 @@ class GuidanceTest(unittest.TestCase):
                 self.assertIsNotNone(result["unavailable"])
                 self.assertTrue(result["candidates"][0]["unavailable"])
 
-
-class SequenceGuidanceExclusionTest(unittest.TestCase):
-    def test_supported_habit_members_have_no_setting_instruction(self):
-        from tests.test_findings_projection import sequence_products
-        from ciq_autotune.window_membership import WindowQuery
-        for lever in ("high_carb_sequence", "repeat_eating"):
-            projection, _ = sequence_products(lever)
-            rows = projection.project(WindowQuery.whole_day())["rows"]
-            cause = next(row for row in rows if row["id"] == f"finding:{lever}")
-            self.assertIsNone(cause["parameter"])
-            self.assertIsNone(cause.get("asserts_move"))
-            self.assertEqual(cause["kind"], "habit")
-            guidance = build_guidance(analysis=projection._analysis, exposures=projection._exposures,
-                                      scenarios=projection._scenarios)
-            candidate = next(row for row in guidance["candidates"]
-                             if row["subject"] == "pattern:highs_after_meals")
-            self.assertEqual(_treatment_fields(candidate), [])
-            member = next(row for row in candidate["members"] if row["subject"] == f"habit:{lever}")
-            self.assertEqual(member["kind"], "habit")

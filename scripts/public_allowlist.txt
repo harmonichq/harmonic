@@ -150,10 +150,6 @@ scripts/public_scan_config.txt
 ! frontend/c4.replay.test.js
 ! frontend/follow-up.browser.test.mjs
 
-# Generated design-capture parity requires private artifacts. Public analyzer
-# fixture coverage remains in the separate public test module.
-! tests/test_eating_sequence_finding_fixture.py
-
 # The component library's fixture generator (#483) reads two inputs the public
 # tree excludes: the redesign lock it takes the glossary from, and the QA
 # showcase store it serves the fixtures from. Its stamped outputs under

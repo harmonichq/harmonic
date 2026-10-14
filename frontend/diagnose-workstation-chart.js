@@ -309,7 +309,7 @@ export function queuePreviewOption(descriptor, range, colors, row) {
   /* Term "Every ranked rail row draws one mini instrument" (#413) — a row that
      serves a count sentence draws the rail instrument: the claimed cohort in
      the rail's miss ink, TYPICAL in body ink with its muted band as the only
-     band, unmarked solid medians. Pattern, Cause and High-carb minis all reach
+     band, unmarked solid medians. Pattern and Cause minis both reach
      this one inking; the By-event stage keeps its own `--ec-*` cohort inks. */
   const sentence = row?.count_sentences?.[0];
   const cohortInk = sentence

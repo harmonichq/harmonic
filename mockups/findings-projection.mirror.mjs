@@ -46,22 +46,20 @@ const VERDICT_CATEGORIES = ['fired', 'outranked', 'near_miss', 'no_data', 'clean
 const OUTCOME_KIND = {
   carb_undercount: 'high', late_bolus: 'high', meal_over_delivery: 'low',
   over_treated_low: 'high', correction_stacking: 'low', correction_on_iob: 'low',
-  missed_meal: 'high', meal_bolus_short: 'high',
-  high_carb_sequence: 'sequence', repeat_eating: 'sequence',
+  missed_meal: 'high',
 };
 const EXPOSURE_FAMILY = {
   carb_undercount: 'meals', late_bolus: 'meals', meal_over_delivery: 'meals',
   over_treated_low: 'lows', correction_stacking: 'correction_clusters',
-  correction_on_iob: 'lows', missed_meal: 'highs', meal_bolus_short: 'highs',
+  correction_on_iob: 'lows', missed_meal: 'highs',
 };
 const PATTERN_RATE_FAMILY = {
   highs_after_meals: 'meals', lows_after_meals: 'meals',
   highs_after_treating_lows: 'lows', lows_after_correcting_highs: 'lows',
-  overnight_lows_no_iob: null,
 };
 
 function patternRateFamily(pattern) {
-  return PATTERN_RATE_FAMILY[pattern.key] ?? null;
+  return PATTERN_RATE_FAMILY[pattern.key];
 }
 
 function patternChartable(pattern, exposures) {
@@ -70,11 +68,6 @@ function patternChartable(pattern, exposures) {
     .some((member) => member.kind === 'habit' && member.admitted);
   return hasAdmittedHabit && Number(exposures.exposures?.[family]?.n || 0) > 0;
 }
-// evidence_population.policy_for — Meal bolus fell short recurs over eligible
-// meal groups even though each member episode lands in the Highs family.
-const RECURRENCE_GROUP_POLICY = {
-  meal_bolus_short: { noun: 'meals' },
-};
 // Carb ratio is grams per unit, so raising it removes insulin and answers lows.
 const SETTINGS_CHIPS = {
   basal_rate: { raise: ['highs'], lower: ['lows'] },
@@ -84,12 +77,8 @@ const SETTINGS_CHIPS = {
 const PATTERN_CHIPS = {
   highs_after_meals: ['highs', 'meals'], lows_after_meals: ['lows', 'meals'],
   highs_after_treating_lows: ['highs'],
-  lows_after_correcting_highs: ['lows', 'corrections'], overnight_lows_no_iob: ['lows'],
+  lows_after_correcting_highs: ['lows', 'corrections'],
 };
-// findings_projection.UNCAUSED_HIGHS_COPY — the operator-confirmed sentence, with
-// the noun's number as its only variation (a surface printing '1 highs' is a defect).
-const uncausedHighsCopy = (n) => `${n} ${n === 1 ? 'high' : 'highs'} had no cause `
-  + 'detected by the app';
 
 // findings_projection._PATTERN_OUTCOME / _CAUSE_OUTCOME — the one closed outcome
 // table the count sentence is served from (#413), transcribed here, never
@@ -100,22 +89,10 @@ const PATTERN_OUTCOME = {
   lows_after_meals: 'ran low',
   highs_after_treating_lows: 'rebounded high',
   lows_after_correcting_highs: 'followed a correction',
-  overnight_lows_no_iob: 'ran low overnight',
-};
-// harm.HarmConfig's overnight band: in a scoped window the harm-band Pattern keeps
-// its whole-band counts, so its outcome names the band (ADR 467 decision 3).
-const HARM_BAND = { start_min: 0, end_min: 6 * 60 };
-// outcome_patterns.starts_in_harm_band — the one rule that admits the overnight
-// Pattern through its basal setting and seats it beneath that setting's row.
-const startsInHarmBand = (span) => {
-  const start = span?.start_min ?? -1;
-  return HARM_BAND.start_min <= start && start < HARM_BAND.end_min;
 };
 // Closed over the code-derived cross product (coordinator decision, #413 review
-// round 2): every lever x every family a Cause appearance can be filed under,
-// narrowed off the full four-family set only where the lever's own policy or the
-// sequence-lever exclusion makes that structural (findings_projection.py's
-// _CAUSE_OUTCOME comment carries the full reasoning).
+// round 2): every lever x every family a Cause appearance can be filed under —
+// the four exposure families (findings_projection.py's _CAUSE_OUTCOME comment).
 const CAUSE_OUTCOME = {
   'carb_undercount,meals': 'ran high',
   'carb_undercount,highs': 'followed an undercounted meal',
@@ -145,9 +122,6 @@ const CAUSE_OUTCOME = {
   'missed_meal,meals': 'had no bolus nearby',
   'missed_meal,lows': 'had no bolus nearby',
   'missed_meal,correction_clusters': 'had no bolus nearby',
-  'meal_bolus_short,meals': 'needed a correction after',
-  'high_carb_sequence,sequences': 'ran less in range',
-  'repeat_eating,sequences': 'ran less in range',
 };
 
 function countSentence(count, denominator, noun, outcome) {
@@ -160,16 +134,12 @@ function countSentence(count, denominator, noun, outcome) {
 function patternCountSentences(r) {
   const pattern = r.pattern;
   if (pattern.count_status || pattern.admission_route === 'none') return null;
-  const noun = pattern.rate_producer === 'harm_band_source_nights'
-    ? 'nights' : FAMILY_NOUN[patternRateFamily(pattern)];
+  const noun = FAMILY_NOUN[patternRateFamily(pattern)];
   const key = pattern.key;
   if (!Object.hasOwn(PATTERN_OUTCOME, key)) {
     throw new Error(`no outcome word for pattern ${key}`);
   }
-  const outcome = pattern.rate_producer === 'harm_band_source_nights' && r.window_scope === 'window'
-    ? `ran low between ${hhmm(HARM_BAND.start_min)} and ${hhmm(HARM_BAND.end_min)}`
-    : PATTERN_OUTCOME[key];
-  return [countSentence(pattern.k, pattern.n, noun, outcome)];
+  return [countSentence(pattern.k, pattern.n, noun, PATTERN_OUTCOME[key])];
 }
 
 function causeCountSentences(r) {
@@ -290,7 +260,6 @@ function chipsFor(row) {
 
   const chips = [];
   const kind = OUTCOME_KIND[row.lever] ?? null;
-  if (kind === 'sequence') return ['highs', 'meals'];
   if (kind === 'high') chips.push('highs');
   else if (kind === 'low') chips.push('lows');
   const families = new Set(row.appearances.map((appearance) => appearance.family));
@@ -490,7 +459,6 @@ function episodeAnchors(families) {
 function outcomeMinute(occurrence, anchors) {
   if (occurrence.outcome_minute != null) return occurrence.outcome_minute;
   const kind = OUTCOME_KIND[occurrence.cause_lever] ?? null;
-  if (kind === 'sequence') return null;
   if (kind != null) {
     const landings = (anchors.get(occurrence.ep_id) || [])
       .filter(([, anchorKind]) => anchorKind === kind).map(([minute]) => minute);
@@ -581,10 +549,6 @@ function findingRows(exposures, scenarios, query) {
   const window = query.pieces;
   const families = exposures.exposures || {};
   const anchors = episodeAnchors(families);
-  const patterns = Object.fromEntries(
-    [...(scenarios.patterns || []), ...(scenarios.low_confidence || [])]
-      .map((pattern) => [pattern.lever, pattern]),
-  );
   const inWindow = new Map();
   const byLever = new Map();
   for (const [family, payload] of Object.entries(families)) {
@@ -614,25 +578,6 @@ function findingRows(exposures, scenarios, query) {
   const priced = patternPriorities(scenarios);
   const rows = [];
   for (const [lever, entry] of byLever) {
-    const recurrence = RECURRENCE_GROUP_POLICY[lever];
-    if (recurrence) {
-      const groupIds = new Set(
-        (inWindow.get('highs') || [])
-          .filter((hit) => hit.cause_lever === lever)
-          .map((hit) => hit.cause_occurrence_id),
-      );
-      const groups = new Map(
-        ((patterns[lever] || {}).occurrence_groups || []).map((group) => [group.id, group]),
-      );
-      for (const groupId of groupIds) if (!groups.has(groupId)) groupIds.delete(groupId);
-      entry.appearances = [{
-        family: recurrence.noun,
-        noun: recurrence.noun,
-        n: groupIds.size,
-        m: ((patterns[lever] || {}).confidence || {}).n || 0,
-      }];
-      entry.episodes = groupIds;
-    }
     entry.appearances.sort((a, b) => (a.family < b.family ? -1 : a.family > b.family ? 1 : 0));
     const { evidence, counts, countsByFamily } = leverEvidence(lever, entry.families, inWindow);
     rows.push(stampedRow({
@@ -655,55 +600,7 @@ function findingRows(exposures, scenarios, query) {
       event_chart: eventChartCoordinate(lever, query, entry.families),
     }));
   }
-  for (const lever of Object.keys(exposures.sequence_evidence || {})) {
-    if (!Object.hasOwn(patterns, lever)) continue;
-    const population = sequencePopulation(exposures, lever, query, anchors);
-    const claimed = population.filter((item) => item.attributed);
-    if (!claimed.length) continue;
-    const counts = Object.fromEntries(VERDICT_CATEGORIES.map((state) =>
-      [state, population.filter((item) => item.verdict === state).length]));
-    const response = exposures.sequence_evidence[lever].response;
-    rows.push(stampedRow({
-      id: `finding:${lever}`, register: 'finding', kind: 'habit', lever,
-      title: { high_carb_sequence: 'High-carb sequence', repeat_eating: 'Repeat eating' }[lever],
-      priority: priced.get(lever) ?? null,
-      appearances: [{ family: 'sequences', noun: 'sequences', n: claimed.length, m: population.length }],
-      episodes: claimed.length, evidence: population, verdict_counts: counts,
-      verdict_counts_by_family: { sequences: counts },
-      event_chart: { lever, window: { ...query.dict } },
-      response_headline: response ? (response.period === 'in_sequence'
-        ? 'Glucose during high-carb eating' : 'Glucose after high-carb eating') : null,
-    }));
-  }
   return rows;
-}
-
-// findings_projection.sequence_population: retain the producer's identities and
-// witnessed matches. Losing matches remain row-relative fired evidence.
-function sequencePopulation(exposures, lever, query, anchors) {
-  const evidence = exposures.sequence_evidence?.[lever] || {};
-  const matches = new Map();
-  for (const occurrence of evidence.occurrences || []) {
-    const minute = outcomeMinute({ ...occurrence, cause_lever: lever }, anchors);
-    if (minute != null && (!query.scoped || contains(minute, query.pieces))) {
-      const episodes = matches.get(occurrence.id) || [];
-      episodes.push(occurrence);
-      matches.set(occurrence.id, episodes);
-    }
-  }
-  const result = [];
-  for (const record of evidence.population || []) {
-    const episodes = matches.get(record.id) || [];
-    if (query.scoped && !episodes.length) continue;
-    const winners = episodes.filter((episode) => episode.attributed);
-    result.push({
-      id: record.id, sequence: structuredClone(record), episodes: structuredClone(episodes),
-      attributed: winners.length > 0,
-      outcome_minute: episodes.length ? (winners.length ? winners : episodes)[0].outcome_minute : null,
-      verdict: episodes.length ? 'fired' : 'clean',
-    });
-  }
-  return result;
 }
 
 function historyRows(analysis, query) {
@@ -867,7 +764,6 @@ function icHeadline(r) {
 }
 
 export function findingHeadline(r) {
-  if (r.response_headline != null) return r.response_headline;
   // findRows in this mirror never publishes a row without an appearance
   // (transcribed from `_finding_rows`'s `by_lever` construction), so this
   // is never null.
@@ -894,8 +790,7 @@ function headlineFor(r) {
   if (r.kind === 'pattern') {
     if (r.pattern.count_status) return `${r.title}: counts under review`;
     if (r.pattern.admission_route === 'none') return r.title;
-    const noun = r.pattern.rate_producer === 'harm_band_source_nights'
-      ? 'nights' : FAMILY_NOUN[patternRateFamily(r.pattern)];
+    const noun = FAMILY_NOUN[patternRateFamily(r.pattern)];
     return `${r.title} in ${r.pattern.k} of ${r.pattern.n} ${noun}`;
   }
   if (r.kind === 'habit') return findingHeadline(r);
@@ -1019,9 +914,8 @@ export function projectFindings(inputs, bounds = null, selectedId = null) {
     if (projected.pattern.admission_route !== 'setting_staging') continue;
     const member = projected.pattern.members.find((item) => item.kind === 'setting');
     const parameter = member.subject.replace('setting:', '');
-    const inBand = projected.pattern.rate_producer === 'harm_band_source_nights';
     const anchors = rows.filter((r) => r.register === 'assert' && r.parameter === parameter
-      && r.priority != null && (!inBand || startsInHarmBand(r.span)));
+      && r.priority != null);
     if (anchors.length) {
       projected.anchored_by = anchors.reduce((first, r) => (
         compare(r, first, byId) < 0 ? r : first)).id;
@@ -1069,12 +963,6 @@ export function projectFindings(inputs, bounds = null, selectedId = null) {
     counts[r.register] += 1;
     for (const chip of r.chips) chip_counts[chip] += 1;
   }
-  /* findings_projection._uncaused_highs — WHOLE-WINDOW, never scoped by the query.
-     A clock scope narrows which rows show; it does not change how many highs the
-     engine explained nothing about, and re-counting it per window would let an empty
-     scope read as "0 highs had no cause". Read off the exposures rollup, which counts
-     it episode-wise; nothing is re-derived here. */
-  const uncaused = exposures.exposures?.highs?.uncaused || 0;
   return {
     schema: SCHEMA,
     analysis_generation: inputs.analysis_generation || 'standalone:0',
@@ -1087,7 +975,6 @@ export function projectFindings(inputs, bounds = null, selectedId = null) {
     selection: selection(analysis, query, selectedId),
     counts,
     chip_counts,
-    uncaused_highs: { count: uncaused, text: uncaused ? uncausedHighsCopy(uncaused) : null },
   };
 }
 

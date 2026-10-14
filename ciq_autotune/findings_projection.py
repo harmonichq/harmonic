@@ -868,10 +868,7 @@ def _ic_headline(row: dict) -> str:
 def _finding_headline(row: dict) -> str:
     # `_finding_rows` never publishes a row without one: `by_lever[lever]` is
     # only created in the same iteration that appends its first appearance
-    # (`findings_projection.py`'s `_finding_rows`), and the recurrence branch
-    # replaces the list with exactly one element, never empties it.
-    if row.get("response_headline") is not None:
-        return row["response_headline"]
+    # (`findings_projection.py`'s `_finding_rows`).
     appearance = row["appearances"][0]
     verdict = ("Ranks among this window's findings" if row.get("tier") in _RANKING_TIERS
                else "Not ranked in this window yet")

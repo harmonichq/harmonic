@@ -116,51 +116,6 @@ def detector_times(prompts):
     return [(p.detector, p.anchor_t) for p in prompts]
 
 
-SEQUENCE_WEEK_DAY0 = datetime(2026, 6, 1)
-
-
-def a_sequence_won_week():
-    """ADR 448's sequence-won week: a High-carb sequence wins an owned High's Episode.
-
-    Six carb-tagged meal boluses a day for 7 days (42 sequences), 3.5–4 h apart. Ten
-    are 90 g or more — every 09:30 breakfast and three 21:10 dinners — and glucose
-    sits at 230 through most of the 4-hour window after nine of them, so a High-carb
-    sequence finding is supported. On 06-06 the 99 g breakfast is followed by a
-    72 mg/dL near-low at 12:00 and a rebound crossing 250 mg/dL at 12:55.
-    """
-    slots = [(1, 15), (5, 20), (9, 30), (13, 35), (17, 40), (21, 10)]
-    special_day = 5
-    big = {(d, 2): 91.0 + d for d in range(7)} | {(1, 5): 90.0, (3, 5): 90.5, (4, 5): 90.8}
-    big[(special_day, 2)] = 99.0
-    bolus, bg = [], {}
-    t = SEQUENCE_WEEK_DAY0
-    while t < SEQUENCE_WEEK_DAY0 + timedelta(days=7, hours=6):
-        bg[t] = 110.0
-        t += timedelta(minutes=5)
-    seq = 0
-    for d in range(7):
-        for s, (h, m) in enumerate(slots):
-            at = SEQUENCE_WEEK_DAY0 + timedelta(days=d, hours=h, minutes=m)
-            carbs = big.get((d, s), 20.0 + (seq % 40))
-            seq += 1
-            bolus.append(BolusEvent(t=at, insulin=carbs / 10.0, carbs=carbs,
-                                    completion="Completed", carb_ratio=10.0, seq_num=seq))
-            if (d, s) in big and (d, s) != (special_day, 2):
-                for k in range(6, 42):               # 30 min .. 3.5 h after: a 230 plateau
-                    bg[at + timedelta(minutes=5 * k)] = 230.0
-    b = SEQUENCE_WEEK_DAY0 + timedelta(days=special_day, hours=11)
-    for k in range(13):                               # 11:00 -> 12:00: 110 -> 72
-        bg[b + timedelta(minutes=5 * k)] = 110.0 - (110.0 - 72.0) * k / 12
-    for k in range(13):                               # 12:00 -> 13:00: 72 -> 270
-        bg[b + timedelta(hours=1, minutes=5 * k)] = 72.0 + (270.0 - 72.0) * k / 12
-    for k in range(13):                               # 13:00 -> 14:00: 270 -> 180
-        bg[b + timedelta(hours=2, minutes=5 * k)] = 270.0 - 90.0 * k / 12
-    for k in range(1, 5):                             # 14:00 -> 14:20: 180 -> 110
-        bg[b + timedelta(hours=3, minutes=5 * k)] = 180.0 - 70.0 * k / 4
-    cgm = [CgmReading(t=t, bg=bg[t], type="EGV") for t in sorted(bg)]
-    return bolus, cgm
-
-
 NOW = datetime(2026, 6, 30, 12, 0, 0)
 
 
@@ -255,18 +210,6 @@ class OwnedHighTest(unittest.TestCase):
             with self.subTest(answer=answer.answer):
                 self.assertEqual(detector_times(build_candidates([], cgm, low_answers=[answer])),
                                  [(DETECTOR_LOW, REBOUND_NADIR_T)])
-
-    def test_a_sequence_won_episode_keeps_its_owned_high(self):
-        bolus, cgm = a_sequence_won_week()
-        onset = datetime(2026, 6, 6, 12, 55)
-        self.assertEqual(first_at_or_above([r for r in cgm if r.t.day == 6], 250), onset)
-        self.assertTrue(classify_missed_meal(onset, cgm, bolus).matched)
-        self.assertEqual(detector_times(c for c in build_candidates(bolus, cgm)
-                                        if c.detector == DETECTOR_MISSED_MEAL), [])
-        episode = next(ep for ep in evaluate(bolus, cgm).episodes
-                       if ep.start <= onset < ep.end)
-        self.assertIs(episode.attribution.lever, Lever.HIGH_CARB_SEQUENCE)
-        self.assertIn(onset, [high.reach_start for high, _ in episode.attribution.owned_highs])
 
 
 # --- pending_prompts: answered-match -----------------------------------------

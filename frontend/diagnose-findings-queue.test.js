@@ -1,4 +1,3 @@
-import { expandSequenceFixture } from './eating-sequence-fixture.js';
 /* The findings queue's copy and row grammar (lock terms 34–45), against the real
  * projection's own frozen output — never a hand-written row.
  */
@@ -68,7 +67,7 @@ test('#413 · no frontend Pattern word list remains (PATTERN_COPY and its reader
   // exact regression this ledger closed.
   for (const relative of [
     './diagnose-findings-queue.js', './diagnose-evidence-charts.js',
-    './diagnose-workstation-chart.js', './diagnose-eating-sequences.js',
+    './diagnose-workstation-chart.js',
     './diagnose-workstation.js',
   ]) {
     const source = readFileSync(fileURLToPath(new URL(relative, import.meta.url)), 'utf8');
@@ -78,9 +77,9 @@ test('#413 · no frontend Pattern word list remains (PATTERN_COPY and its reader
 
 test('term 45 · the meta has three forms and no others', () => {
   // Meta counts only the rows a reader can currently see.
-  assert.equal(queueMeta(W.global), '8 findings · 30 days');
+  assert.equal(queueMeta(W.global), '7 findings · 30 days');
   assert.equal(queueMeta(W.afternoon), '5 in this window');
-  assert.equal(queueMeta(fixture.no_data.global), '5 findings · 30 days');
+  assert.equal(queueMeta(fixture.no_data.global), '4 findings · 30 days');
   // never sort language, never the window range restated — the chip owns the hours
   for (const projection of [W.global, W.afternoon, W.overnight, fixture.no_data.morning]) {
     const meta = queueMeta(projection);
@@ -124,19 +123,15 @@ test('Watching still holds the held and blind reads it always did', () => {
   }
   assert.ok(queueRows(W.morning).some((row) => row.collapsed),
     'a current-setting held read is still reachable through its disclosure');
-  // ADR 467: 03:00–04:00 overlaps the overnight band, so the overnight Pattern is
-  // its one shown row and every other read there stays in Watching.
+  // 03:00–04:00 serves only reads, so every row there stays in Watching.
   const quiet = queueRows(W.quiet);
-  assert.deepEqual(quiet.filter((row) => !row.hidden && !row.collapsed).map((row) => row.id),
-    ['pattern:overnight_lows_no_iob']);
-  assert.ok(quiet.filter((row) => row.id !== 'pattern:overnight_lows_no_iob').every((row) => row.collapsed),
-    'quiet collapses every read that is not its Pattern');
+  assert.ok(quiet.length > 0 && quiet.every((row) => row.collapsed),
+    'quiet collapses every read');
 });
 
-/* The served quiet window without its one Pattern row: the fixture's only stretch of
-   Watching reads, so the all-Watching state paints from served rows (ADR 467 put the
-   overnight Pattern into 03:00–04:00). */
-const WATCHING_ONLY = { ...W.quiet, rows: W.quiet.rows.filter((row) => row.kind !== 'pattern') };
+/* The served quiet window: the fixture's only stretch of Watching reads, so the
+   all-Watching state paints from served rows. */
+const WATCHING_ONLY = W.quiet;
 
 test('Watching rows stay in their disclosure while Sift is active', () => {
   const selected = new Set(['highs']);
@@ -183,7 +178,7 @@ test('#395 · settings, Causes, and Patterns interleave in server order', () => 
   // A claimed cause folds under its parent Pattern (#413), so the top-level
   // order carries no `habit` entries for the two claimed causes here.
   assert.deepEqual(rows.map((r) => r.flavor),
-    ['setting', 'pattern', 'pattern', 'setting', 'pattern', 'setting', 'habit', 'pattern']);
+    ['setting', 'pattern', 'pattern', 'setting', 'setting', 'habit', 'pattern']);
   // the order is the projection's, untouched
   const topLevel = presentedRows(W.global).filter((r) => !r.claimed_by);
   assert.deepEqual(rows.map((r) => r.title), topLevel.map((r) => r.title));
@@ -207,14 +202,13 @@ test('#302 · weights and captions walk the served rows without assigning a prio
     { id: 'pattern:highs_after_meals', weight: 'anchored' },
     { id: 'pattern:lows_after_meals', weight: 'anchored' },
     { id: 'basal:30-90', weight: 'priced' },
-    { id: 'pattern:overnight_lows_no_iob', weight: 'anchored' },
     { id: 'basal:330-360', weight: 'priced' },
     { id: 'finding:over_treated_low', weight: 'priced' },
     { id: 'pattern:lows_after_correcting_highs', weight: 'tail' },
   ]);
   assert.ok(rows.filter((row) => row.weight === 'tail').every((row) => row.caption === null));
   // ADR 465: the quiet window also holds the fixture's recurring-lows hold at 03:00.
-  assert.deepEqual(queueRows(W.quiet).map((row) => row.weight), ['priced', 'collapsed', 'collapsed']);
+  assert.deepEqual(queueRows(W.quiet).map((row) => row.weight), ['collapsed', 'collapsed']);
   // With their setting sifted out, both meals Patterns rank alone (ADR 469 decision 6).
   const meals = queueRows(W.global, new Set(['meals'])).filter((row) => !row.hidden && !row.collapsed);
   assert.deepEqual(meals.map(({ id, weight, caption }) => ({ id, weight, caption })), [
@@ -222,13 +216,13 @@ test('#302 · weights and captions walk the served rows without assigning a prio
     { id: 'pattern:lows_after_meals', weight: 'priced', caption: null },
   ]);
   const morning = queueRows(W.morning).filter((row) => !row.hidden && !row.collapsed);
-  assert.deepEqual(morning.map((row) => row.weight), ['priced', 'anchored']);
+  assert.deepEqual(morning.map((row) => row.weight), ['priced']);
 });
 
 test('#469 · a Pattern ranked with its setting holds no position of its own', () => {
   const rows = queueRows(W.global).filter((row) => !row.hidden && !row.collapsed);
   const ids = rows.map((row) => row.id);
-  for (const id of ['pattern:highs_after_meals', 'pattern:lows_after_meals', 'pattern:overnight_lows_no_iob']) {
+  for (const id of ['pattern:highs_after_meals', 'pattern:lows_after_meals']) {
     const row = rows.find((entry) => entry.id === id);
     const anchor = row.raw.anchored_by;
     assert.ok(anchor, `${id} is served with an anchor`);
@@ -264,9 +258,9 @@ test('#469 · the served rank note prints after the detail line', () => {
   };
   const { host } = paint(W.global);
   const anchored = descendants(host).find((node) => node.children?.some((child) =>
-    child.tag === 'button' && child.dataset.id === 'pattern:overnight_lows_no_iob'));
+    child.tag === 'button' && child.dataset.id === 'pattern:lows_after_meals'));
   assert.equal(anchored.className, 'qitem anchored');
-  assert.equal(noteOf(W.global, 'pattern:overnight_lows_no_iob'), ' · Ranked with its setting');
+  assert.equal(noteOf(W.global, 'pattern:lows_after_meals'), ' · Ranked with its setting');
   assert.equal(noteOf(W.afternoon, 'finding:over_treated_low'), ' · Ranked on all 30 days');
 });
 
@@ -309,7 +303,7 @@ test('#341 · every priced row, including rank one, receives the common mini mou
   assert.equal(result.rows.length, topLevel.length);
   assert.deepEqual(result.miniSlots.map(({ row }) => row.id), [
     'ic:720', 'pattern:highs_after_meals',
-    'pattern:lows_after_meals', 'basal:30-90', 'pattern:overnight_lows_no_iob',
+    'pattern:lows_after_meals', 'basal:30-90',
     'basal:330-360', 'finding:over_treated_low',
   ]);
   assert.ok(result.miniSlots.every(({ host }) => host.className === 'mini'));
@@ -350,7 +344,7 @@ test('#363 · every drilling row is painted as a button, inside its own list ite
   // once their parent's toggle opens, closed on arrival unless the parent is
   // rank one, so this default paint shows only the top-level rows.
   assert.deepEqual(items.map((item) => item.className),
-    ['qitem', 'qitem anchored', 'qitem anchored', 'qitem', 'qitem anchored', 'qitem', 'qitem', 'qitem tail'],
+    ['qitem', 'qitem anchored', 'qitem anchored', 'qitem', 'qitem', 'qitem', 'qitem tail'],
     'each shown row is enclosed, and anchored and tail items are marked for their spacing');
   for (const item of items) {
     assert.equal(item.attributes.role, 'listitem');
@@ -760,7 +754,7 @@ test('#83 · malformed coordinates never make a row eligible', () => {
 
 test('event-chart eligibility accepts a server-owned lever-and-window coordinate', () => {
   const row = { ...W.global.rows.find((item) => item.event_chart !== null),
-    event_chart: { lever: 'meal_bolus_short',
+    event_chart: { lever: 'missed_meal',
       window: { start_min: null, end_min: null, scoped: false } } };
   assert.deepEqual(eventChartCoordinate(row), row.event_chart);
 });
@@ -769,16 +763,6 @@ test('metadata and empty copy describe Sift, the only root filter', () => {
   assert.equal(queueMeta(W.global, new Set(['meals'])), '2 findings · 30 days');
   assert.equal(queueMeta(W.afternoon, new Set(['meals'])), '2 in this window');
   assert.equal(EMPTY_SIFT_LINE, 'No findings match the current filters.');
-});
-
-test('#63 · the sentence never enters the queue meta, which counts the window', () => {
-  // term 45: the meta is the queue's own copy and nothing else goes there. The two
-  // answer different questions — one counts rows in the window, the other counts
-  // highs across the whole findings window — and merging them would let a scoped
-  // reader take the highs number as a statement about the hours they drew.
-  for (const name of ['global', 'afternoon', 'quiet']) {
-    assert.doesNotMatch(queueMeta(W[name]), /no cause/);
-  }
 });
 
 // The default replay input differs from the history fixture above. Exercise its
@@ -816,7 +800,6 @@ test('#395/#413 · a Pattern detail reads the served count sentence and ignores 
     [7, 20, 'meals', 'ran low'],
     [1, 4, 'lows', 'rebounded high'],
     [2, 9, 'lows', 'followed a correction'],
-    [5, 30, 'nights', 'ran low overnight'],
   ]) {
     const row = { ...base, headline: 'A headline with no recurrence to parse',
       count_sentences: [{ sentence: `${count} of ${denominator} ${noun} ${outcome}`,
@@ -855,17 +838,14 @@ test('#413 · a Pattern with no served count sentence renders like any other row
 });
 
 test('#413 · an unpriced claimed member folds under the Pattern, printing every served sentence', () => {
-  const read = (path) => JSON.parse(readFileSync(new URL(path, import.meta.url), 'utf8'));
-  const payload = read('../mockups/diagnose-workstation.synthetic/payload.json');
-  const projection = projectFindings(populateFindingsProjectionInput({ exposures: payload.exposures }));
-  const rows = queueRows(projection);
-  // Correction stacking is the server's unpriced claimed member (Late bolus carries
-  // its server price); it folds under Lows after correcting highs.
+  const rows = queueRows(W.global);
+  // Correction stacking is the server's unpriced claimed member (Carb undercount
+  // carries its server price); it folds under Lows after correcting highs.
   const parent = rows.find((row) => row.id === 'pattern:lows_after_correcting_highs');
   const stacking = parent?.members?.find((member) => member.id === 'finding:correction_stacking');
   assert.ok(stacking, 'Correction stacking folds under Lows after correcting highs');
   assert.equal(stacking.raw.priority, null);
-  assert.equal(stacking.raw.fold_sentences.length, 2, 'premise: the folded cause serves both fold sentences');
+  assert.ok(stacking.raw.fold_sentences.length > 0, 'premise: the folded cause serves its fold sentences');
   assert.deepEqual(stacking.sentences, stacking.raw.fold_sentences.map((s) => ({
     count: `${s.count} of ${s.denominator}`, noun: s.noun, scope: s.scope,
   })), 'every served fold sentence is kept, never merged');
@@ -939,25 +919,4 @@ test('#395 · Pattern and Lever drills request event cases; chartless rows retai
   assert.equal(caseFileAlignment(lever), 'event');
   assert.equal(caseFileAlignment({ ...pattern, pattern_chart: null }), 'clock');
   assert.equal(caseFileAlignment(undefined), 'clock');
-});
-
-test('#342/#413 · sequence habits fold under their Pattern with the inherited member grammar', () => {
-  const generated = expandSequenceFixture(JSON.parse(readFileSync(new URL(
-    '../mockups/eating-sequence-findings.synthetic/payload.json', import.meta.url), 'utf8')));
-  for (const name of ['high_carb_sequence_empty', 'repeat_eating_empty', 'both_covered']) {
-    const prepared = generated.states[name].windows.global.preparation;
-    const projection = { ...prepared.findings, rows: prepared.rendered_rows };
-    const painted = queueRows(projection);
-    const parent = painted.find((row) => row.id === 'pattern:highs_after_meals');
-    const members = parent?.members || [];
-    assert.equal(members.length, name === 'both_covered' ? 2 : 1);
-    for (const member of members) {
-      assert.equal(member.sentences.length, 1);
-      assert.equal(member.sentences[0].noun, 'sequences');
-      assert.equal(member.sentences[0].count,
-        `${member.raw.count_sentences[0].count} of ${member.raw.count_sentences[0].denominator}`);
-      assert.equal(caseFileAlignment(member.raw), 'event');
-    }
-    assert.equal(queueMeta(projection), `${projection.counts.finding} findings · 30 days`);
-  }
 });

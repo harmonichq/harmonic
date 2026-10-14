@@ -172,8 +172,7 @@ over its members; a cancelled leg's carbs, which its re-issue carries again, cou
 once. Carb-free boluses and carb boluses under 10 g are never members. Every
 meal count — Highs and Lows after meals, the meal causes and their recurrence, the
 **Post-meal arc**, Trial and follow-up meal counts, the time-of-day meal count —
-counts meals by this one rule. The eating window that High-carb sequence and Repeat
-eating read is a different grouping (chained, any carbs), and stays one.
+counts meals by this one rule.
 _Avoid_: second meal (for a top-up), split meal as two meals, meal bolus (when the
 meal is meant).
 
@@ -441,16 +440,16 @@ lever type can resolve to either flavor.
 
 **Pattern**:
 The outcome-shaped advisory-selection unit: highs after meals, lows after meals,
-highs after treating lows, lows after correcting highs, or overnight lows with no
-insulin on board. A Pattern owns members, one rate on one denominator and one
+highs after treating lows, or lows after correcting highs. Every Pattern carries at
+least one habit a Focus can pin; overnight lows reach the wearer through the basal
+setting, not through a Pattern (ADR 499). A Pattern owns members, one rate on one denominator and one
 chart; it is the subject the app prices, leads with, sets aside and follows as a
 Focus.
 _Avoid_: shape, trend, theme, cluster, problem.
 
 **Concern**:
-One thing guidance serves to **Changes**: a setting, a habit, a Pattern or an
-investigation. Changes leads with a habit, a Pattern or an investigation; a
-setting never leads, and its instruction reaches Changes through the Pattern that
+One thing guidance serves to **Changes**: a setting, a habit or a Pattern.
+Changes leads with a habit or a Pattern; a setting never leads, and its instruction reaches Changes through the Pattern that
 carries it. Each is named by its served name. A concern the wearer set aside that
 the current read no longer carries is still listed, and one with no served name
 reads "A concern no longer in this read", never its identifier. Changes says in
@@ -464,15 +463,6 @@ A group of episodes sharing one Lever, scored and ranked — the recurring behav
 user should act on. The outcome-shaped advisory-selection unit is a **Pattern**;
 ADR 391 dated 2026-09-08 superseded this former bare use.
 _Avoid_: trend, theme, cluster.
-
-**Sequence habit**:
-High-carb sequence or Repeat eating, nested as a habit cause within Highs after
-meals. Each counts its own eligible sequences and keeps its own Priority and
-sequence evidence chart. Neither is a Pattern rate lever. Covered meal
-associations are evidence only; an episode covering no meal keeps its sequence
-finding without adding a meal to the Pattern rate or case file. Clock membership
-requires the served outcome witness, never a sequence's start or nearby bolus.
-_Avoid_: meal opportunity (for a sequence identity), new Pattern, setting lever.
 
 **Exposure population**:
 A lever's **entire** Exposure denominator, occurrence by occurrence — all the lows
@@ -532,9 +522,7 @@ it shows up, as a single Wilson lower bound that fuses "how often" and "how sure
 threshold is *actionable now*; below it collapses into the "why so few?" tail.
 A Pattern admitted through its setting shares that setting's position: it sits
 beneath the setting's row, "Ranked with its setting", and takes no ranked position
-of its own, so one Priority fills one place in the queue (ADR 469). The
-overnight-lows Pattern shares only the position of a basal row that starts
-inside 00:00–06:00, the row that admits it.
+of its own, so one Priority fills one place in the queue (ADR 469).
 _Avoid_: score (overloaded — the behavioral `Confidence.score` is one input, not
 this), rank, weight, severity (that is one flavor's impact input, not the whole).
 
@@ -580,7 +568,7 @@ closed set of nine: *insufficient-data* (too little CGM to judge), *no-trigger*
 short of the bar — the near-miss), *upstream-cause* (an observable recent low or
 defensive suspend already explains the move — the context gate — or the rise is
 the rebound of an over-treated low, which owns every High its rebound reaches,
-so that High is never also a missed meal or a meal bolus that fell short), *prior-high-
+so that High is never also a missed meal), *prior-high-
 baseline* (the rise was from an already-high start, not from-flat), *owned-by-prior-
 bolus* (a recent completed carb bolus already owns the rise), *owned-by-announced-
 meal* (a substantial announced meal at the low owns its rebound), *horizon-expired*
@@ -913,10 +901,7 @@ A folded cause's served part of its Pattern's own count. Each Occurrence the
 Pattern claims is credited once, to the first of its rate levers that claims it,
 so the shares of a Pattern's causes add up to its count. The fold prints a cause's
 share first; the cause's counts on any other population are outside the Pattern's
-count and sit apart behind the words "not in this Pattern's count". A cause that is
-not a rate lever (a Sequence habit), and every cause under a Pattern that serves no
-count, has no share; under a Pattern that serves no count its counts print with no
-such words, because there is no count to be outside of (ADR 468). A
-Pattern with no rate levers, counted from harm-band nights (overnight lows with no
-insulin on board), folds no cause (ADR 424).
+count and sit apart behind the words "not in this Pattern's count". Every cause
+under a Pattern that serves no count has no share; its counts print with no such
+words, because there is no count to be outside of (ADR 468).
 _Avoid_: contribution, portion, breakdown, subtotal.

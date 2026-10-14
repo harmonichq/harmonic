@@ -233,16 +233,16 @@ test('an exact expired Trial records a later conclusion through the public clien
 
 test('an active Focus names its served behavior in its intent and its behavior row, never its key', async () => {
   kind = 'focus'; identity = 'focus-behavior-synthetic';
-  selectedExtra = { lever: 'repeat_eating', lever_title: 'Repeat eating' };
-  const measured = { lever: 'repeat_eating', numerator: 1, denominator: 'meals', opportunities: 4, rate: 0.25,
+  selectedExtra = { lever: 'late_bolus', lever_title: 'Late bolus' };
+  const measured = { lever: 'late_bolus', numerator: 1, denominator: 'meals', opportunities: 4, rate: 0.25,
     harm: 0, measured_opportunities: 4, unmeasured_opportunities: 0,
     harm_availability: { state: 'available' }, availability: { state: 'available' } };
   served = { ...comparison, adherence: { before: measured, after: measured, assessment: { state: 'unclear', unit: 'proportion' } } };
   try {
     const seat = host(); await mountActive(seat, 'focus-behavior');
-    assert.match(seat.innerHTML, /data-part="intent"><h3>What this Focus watches<\/h3>\s*<p>Repeat eating<\/p>/);
-    assert.match(seat.innerHTML, /<td>Repeat eating<small>the intended behavior/);
-    assert.doesNotMatch(seat.innerHTML.replace(/<[^>]*>/g, ' '), /repeat_eating/);
+    assert.match(seat.innerHTML, /data-part="intent"><h3>What this Focus watches<\/h3>\s*<p>Late bolus<\/p>/);
+    assert.match(seat.innerHTML, /<td>Late bolus<small>the intended behavior/);
+    assert.doesNotMatch(seat.innerHTML.replace(/<[^>]*>/g, ' '), /late_bolus/);
   } finally { selectedExtra = {}; served = comparison; }
 });
 

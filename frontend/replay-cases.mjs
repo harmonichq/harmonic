@@ -13,7 +13,7 @@ export const STORY_CASES = Object.freeze({
   ...Object.fromEntries(setting.split(',').map(id => [id, 'basal-lower'])),
   S7: 'c3-trial', S7b: 'basal-no-change', S9: 'basal-lower', S18: 'basal-no-change', S80b: 'basal-no-change', S97: 'basal-lower', S98: 'ic-lower', S99: 'basal-insufficient-seven-night',
   S101: 'showcase', S102: 'pattern-near-tie', S103: 'showcase', S104: 'showcase', S105: 'c3-trial',
-  S106: 'pattern-near-tie', S107: 'showcase',
+  S106: 'pattern-near-tie', S107: 'ic-block-evidence',
   S108: 'showcase', S109: 'showcase', S110: 'edit-chain', S111: 'edit-chain', S112: 'edit-chain',
   S113: 'basal-verdict-gallery',
   S121: 'pattern-near-tie', S122: 'pattern-near-tie',
@@ -23,8 +23,8 @@ export const STORY_CASES = Object.freeze({
   S151: 'basal-verdict-gallery', S152: 'basal-verdict-gallery', S153: 'basal-verdict-gallery',
   S183: 'basal-verdict-gallery', S184: 'basal-verdict-gallery', S185: 'basal-verdict-gallery',
   S145: 'basal-lower', S146: 'basal-lower', S147: 'pattern-near-tie',
-  S124: 'behavioral-carb-undercount', S125: 'behavioral-missed-meal', S126: 'behavioral-correction-stacking',
-  S148: 'showcase', S149: 'showcase', S150: 'pattern-near-tie',
+  S124: 'behavioral-carb-undercount', S125: 'behavioral-missed-meal', S126: 'pattern-correction-fold',
+  S150: 'pattern-near-tie',
   S166: 'basal-lower', S167: 'basal-lower', S168: 'c3-focus',
   S173: 'c3-focus', S174: 'c3-preempted', S175: 'c4-history', S176: 'c3-preempted',
   S182: 'pattern-near-tie',
@@ -35,14 +35,13 @@ export const STORY_CASES = Object.freeze({
   S189: 'showcase',
   S190: 'basal-recurring-low-within-floor',
   S191: 'basal-recurring-low-spread',
-  S192: 'basal-recurring-low-lower',
   S193: 'showcase',
   S194: 'behavioral-split-meal',
   S195: 'behavioral-late-bolus',
   S196: 'showcase',
   ...Object.fromEntries('S197,S198,S199,S200,S201,S202,S203,S204,S205,S206,S207'.split(',')
     .map(id => [id, 'ic-block-evidence'])),
-  S100: 'showcase', R18: 'c4-history', R5: 'basal-lower', R8: 'behavioral-carb-undercount', R10: 'ic-lower', R17: 'c3-trial',
+  S100: 'showcase', R18: 'c4-history', R20: 'showcase', R21: 'basal-recurring-low-lower', R5: 'basal-lower', R8: 'behavioral-carb-undercount', R10: 'ic-lower', R17: 'c3-trial',
 });
 export function storyCase(id, overrides = '') {
   const mapping = { ...STORY_CASES, ...C3_CASES };

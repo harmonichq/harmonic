@@ -57,9 +57,9 @@ t=$(mktemp -d) && python3 scripts/build_public_tree.py "$t" && \
   python3 scripts/check_public_links.py "$t" && python3 scripts/scan_public_tree.py "$t"  # public-tree scan
 ```
 
-The backend job also runs eleven **drift checks**, so a committed
+The backend job also runs ten **drift checks**, so a committed
 generator-authored artifact can never silently diverge from its generator.
-Ten are listed below; the design exploration's generator covers a private
+Nine are listed below; the design exploration's generator covers a private
 design artifact the public tree excludes, so its `--check` command lives in
 `.github/workflows/ci.yml`:
 
@@ -73,7 +73,6 @@ uv run python scripts/gen_ic_block_evidence_fixtures.py --check
 uv run python scripts/gen_basal_night_evidence_fixtures.py --check
 uv run python scripts/gen_isf_rest_window_evidence_fixtures.py --check
 uv run python scripts/gen_missed_meal_comparison_fixtures.py --check
-uv run python scripts/gen_eating_sequence_fixtures.py --check
 ```
 
 The frontend job runs one drift check in Node: the event-comparison synthetic

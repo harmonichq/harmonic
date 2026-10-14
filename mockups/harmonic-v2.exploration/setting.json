@@ -62,7 +62,6 @@
           "insulin_acting": 0,
           "other": 0
         },
-        "harm_band_source_nights": 12,
         "night_roster": [
           {
             "date": "2024-06-01",
@@ -736,7 +735,6 @@
           "insulin_acting": 0,
           "other": 0
         },
-        "harm_band_source_nights": 12,
         "night_roster": [
           {
             "date": "2024-06-01",

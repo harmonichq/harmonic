@@ -56,22 +56,10 @@ EXPECTED_CASE_NAMES = (
     "behavioral-over-treated-low",
     "behavioral-over-treated-rebound-ownership",
     "behavioral-correction-on-iob",
-    "behavioral-missed-meal", "behavioral-meal-bolus-short",
+    "behavioral-missed-meal",
     "behavioral-carb-log-fasting-exclusion",
     "behavioral-preempted-detector",
-    "pattern-near-tie", "pattern-collapse",
-    'high-carb-sequence-covered',
-    'high-carb-sequence-empty',
-    'high-carb-sequence-thin-candidate',
-    'high-carb-sequence-thin-reference',
-    'high-carb-sequence-losing',
-    'high-carb-sequence-multiple',
-    'repeat-eating-covered',
-    'repeat-eating-empty',
-    'repeat-eating-thin-candidate',
-    'repeat-eating-thin-reference',
-    'repeat-eating-losing',
-    'repeat-eating-multiple',
+    "pattern-near-tie", "pattern-collapse", "pattern-correction-fold",
     "c3-focus", "c3-trial", "c3-history", "c3-preempted", "c3-pin",
     "c4-ic", "c4-isf", "c4-profile", "c4-missing", "c4-history",
     "edit-chain",
@@ -125,7 +113,7 @@ class QaE2ECasesTest(unittest.TestCase):
             patterns = {row["key"]: row for row in projection["outcome_patterns"]}
             self.assertEqual(set(patterns), {
                 "highs_after_meals", "lows_after_meals", "highs_after_treating_lows",
-                "lows_after_correcting_highs", "overnight_lows_no_iob",
+                "lows_after_correcting_highs",
             })
             rendered_by_id = {row["id"]: row for row in wrap(prepared)["rendered_rows"]}
             rows_by_id = {row["id"]: row for row in projection["rows"]}
@@ -358,48 +346,13 @@ def _case_test(case):
         self.assertEqual(source_span, case.source_span_days)
         assert_expectation(case, execution)
         patterns = {row["key"]: row for row in execution.outcome_patterns}
-        if case.name == "pattern-near-tie":
-            setting = patterns["overnight_lows_no_iob"]["members"][0]
-            overlapping_habit = patterns["highs_after_meals"]["members"][0]
-            ordinary_habit = patterns["highs_after_treating_lows"]["members"][0]
-            self.assertGreater(overlapping_habit["price"], setting["price"])
-            self.assertIsNone(setting["lo"])
-            self.assertIsNone(setting["hi"])
-            self.assertEqual(
-                patterns["highs_after_meals"]["admission_route"], "habit_threshold",
-            )
-            self.assertEqual(setting["price"], 52)
-            self.assertLess(ordinary_habit["price"], setting["price"])
-            self.assertEqual(
-                patterns["overnight_lows_no_iob"]["admission_route"],
-                "setting_staging",
-            )
-        elif case.name == "pattern-collapse":
+        if case.name == "pattern-collapse":
             pattern = patterns["highs_after_treating_lows"]
             self.assertEqual(
                 [row["kind"] for row in pattern["members"]], ["habit"],
             )
             self.assertEqual(pattern["collapse"], "collapse_to_member")
             self.assertEqual(pattern["action"], "habit:over_treated_low")
-            correction_overlap = patterns["lows_after_correcting_highs"][
-                "harm_low_overlap"
-            ][1]
-            self.assertEqual(
-                correction_overlap,
-                {
-                    "habit_subject": "habit:correction_on_iob",
-                    "setting_subject": "setting:isf",
-                    "status": "comparable",
-                    "count": 1,
-                    "reason": "shared_low_episode_nadir",
-                },
-            )
-        elif case.name == "showcase":
-            overnight = patterns["overnight_lows_no_iob"]
-            self.assertIsNone(overnight["members"][0]["seriousness"])
-            self.assertEqual(
-                overnight["members"][0]["seriousness_segments"], [],
-            )
         if case.name == "behavioral-correction-stacking":
             target_key = ("correction_stacking", "correction_clusters")
             target_tally = case.expectation.verdict_tallies[target_key]

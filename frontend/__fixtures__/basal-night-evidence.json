@@ -3431,7 +3431,6 @@
             "insulin_acting": 0,
             "other": 0
           },
-          "harm_band_source_nights": 30,
           "night_roster": [
             {
               "date": "2026-01-01",
@@ -5938,7 +5937,6 @@
             "arm_days": 2,
             "band_nights": 2,
             "gated": true,
-            "harm_band_source_nights": 30,
             "lows": [
               {
                 "attribution_reason": "fasting",
@@ -5967,7 +5965,6 @@
             "row_days": 2,
             "slot_nights": 2
           },
-          "harm_band_source_nights": 30,
           "night_roster": [
             {
               "date": "2026-01-01",
@@ -8474,7 +8471,6 @@
             "arm_days": 2,
             "band_nights": 2,
             "gated": true,
-            "harm_band_source_nights": 30,
             "lows": [
               {
                 "attribution_reason": "fasting",
@@ -8503,7 +8499,6 @@
             "row_days": 2,
             "slot_nights": 2
           },
-          "harm_band_source_nights": 30,
           "night_roster": [
             {
               "date": "2026-01-01",

@@ -623,12 +623,12 @@ const arm = (lever, extra = {}) => ({ ...FOCUS_COMPARISON.adherence.after, lever
 const behavior = (lever, extra = {}) => ({ adherence: { before: arm(lever, extra), after: arm(lever),
   assessment: { state: 'unclear', unit: 'proportion' } } });
 
-test('the behavior row names a sequence habit by its served name, never its key', () => {
+test('the behavior row names a habit by its served name, never its key', () => {
   for (const html of [
-    adherenceTable(behavior('high_carb_sequence'), { leverTitle: 'High-carb sequence' }),
-    comparisonTables(behavior('high_carb_sequence'), 'focus', { leverTitle: 'High-carb sequence' }),
+    adherenceTable(behavior('late_bolus'), { leverTitle: 'Late bolus' }),
+    comparisonTables(behavior('late_bolus'), 'focus', { leverTitle: 'Late bolus' }),
   ]) {
-    assert.match(html, /<td>High-carb sequence<small>the intended behavior/);
+    assert.match(html, /<td>Late bolus<small>the intended behavior/);
     assert.doesNotMatch(visible(html), CODE_TOKEN);
   }
 });
@@ -640,9 +640,9 @@ test('the behavior row names a Focus the way its own served name does', () => {
 });
 
 test('with no served name the behavior row says so and prints no key', () => {
-  for (const html of [adherenceTable(behavior('overnight_drift')), comparisonTables(behavior('repeat_eating'), 'focus')]) {
+  for (const html of [adherenceTable(behavior('overnight_drift')), comparisonTables(behavior('carb_undercount'), 'focus')]) {
     assert.match(html, /<td>Watched behavior<small>the intended behavior/);
-    assert.doesNotMatch(visible(html), /overnight_drift|repeat_eating/);
+    assert.doesNotMatch(visible(html), /overnight_drift|carb_undercount/);
   }
 });
 

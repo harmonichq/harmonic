@@ -106,13 +106,6 @@
        "evidence_tier": "inferred",
        "matched": true,
        "silence_reason": null
-      },
-      {
-       "classifier": "meal_bolus_short",
-       "detail": "Synthetic meal bolus fell short judgment: this Occurrence did not meet the criteria.",
-       "evidence_tier": "observed",
-       "matched": false,
-       "silence_reason": "no_trigger"
       }
      ],
      "worst_bg": 68.2
@@ -141,13 +134,6 @@
        "evidence_tier": "inferred",
        "matched": true,
        "silence_reason": null
-      },
-      {
-       "classifier": "meal_bolus_short",
-       "detail": "Synthetic meal bolus fell short judgment: this Occurrence did not meet the criteria.",
-       "evidence_tier": "observed",
-       "matched": false,
-       "silence_reason": "no_trigger"
       }
      ],
      "worst_bg": 54.2
@@ -176,13 +162,6 @@
        "evidence_tier": "inferred",
        "matched": true,
        "silence_reason": null
-      },
-      {
-       "classifier": "meal_bolus_short",
-       "detail": "Synthetic meal bolus fell short judgment: this Occurrence did not meet the criteria.",
-       "evidence_tier": "observed",
-       "matched": false,
-       "silence_reason": "no_trigger"
       }
      ],
      "worst_bg": 67.1
@@ -206,13 +185,6 @@
       {
        "classifier": "missed_meal",
        "detail": "Synthetic missed / unannounced meal judgment: this Occurrence had too few readings to be judged.",
-       "evidence_tier": "not_in_data",
-       "matched": false,
-       "silence_reason": "insufficient_data"
-      },
-      {
-       "classifier": "meal_bolus_short",
-       "detail": "Synthetic meal bolus fell short judgment: this Occurrence had too few readings to be judged.",
        "evidence_tier": "not_in_data",
        "matched": false,
        "silence_reason": "insufficient_data"

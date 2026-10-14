@@ -730,6 +730,8 @@ function qa414Page({ crumb = 'Finding X', extraRequest = null } = {}) {
     getByRole: (_role, { name }) => node(String(name)),
     waitForFunction: async () => { actions.push('waitForFunction'); },
     waitForLoadState: async state => { actions.push(`waitForLoadState:${state}`); },
+    viewportSize: () => ({ width: 1440, height: 900 }),
+    setViewportSize: async size => { actions.push(`viewport:${size.width}x${size.height}`); },
     route: async (pattern, handler) => { routes.set(pattern, handler); },
     unroute: async pattern => { routes.delete(pattern); },
     on: (type, listener) => { if (type === 'request') requestListeners.add(listener); },
@@ -783,6 +785,8 @@ test('S109 settles the network before scrolling, then preserves the offset acros
   const scrollWaitIndex = page._actions.indexOf('wait:#level');
   assert.ok(waitIndex >= 0 && scrollWaitIndex > waitIndex,
     'S109 must wait for the settled network before touching the reading pane');
+  assert.equal(page._actions[0], 'viewport:1440x720',
+    'S109 must pin a 720 px height before opening Diagnose, so the pane can scroll');
 });
 
 function qa414EditChainPage({ summary = '3 setting changes · Basal · Sep 8 – Sep 10', editKey = 'edit-1',

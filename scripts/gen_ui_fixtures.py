@@ -167,6 +167,10 @@ MATURING_DAYS = 6
 # the account rows, the pump profile, the screen header's date ("To 30 Sep"),
 # the snooze bar ("Snoozed · Until <date>") and the screen-level "Unavailable".
 # Plain interface words (§2.5), but for DIA, a pump field the brief names.
+# The Queue row's kind glyph is named "Pattern" or "Setting" for assistive
+# tech (§2.5, 2026-10-13); "Setting" is no longer a §1.5 term, since no screen
+# prints it, so the name is allowed here.
+KIND_NAMES = ("Pattern", "Setting")
 SETTINGS_LABELS = ("State", "OK", "Failed", "Last success", "Last attempt", "Error", "Data",
                    "Email", "Region", "Password", "Set", "Not set", "Update", "Start", "Target",
                    "Max bolus", "DIA", "No profile", "Unavailable", "Snoozed", "Until", "To",
@@ -897,6 +901,7 @@ def allowlist(data: dict) -> dict:
         "engine habit titles": [f["lever_title"] for store in data["changes"].values()
                                 for f in store["focuses"] if f["lever_title"]],
         "labels Settings": list(SETTINGS_LABELS),
+        "kind glyph names §2.5": list(KIND_NAMES),
         "served pump profile names": [p["profile"]["name"] for p in data["settings"]["pump_settings"].values()
                                       if p["configured"]],
         "served account regions": [c["region"] for c in data["settings"]["credentials"].values() if c["region"]],
@@ -918,8 +923,9 @@ def allowlist(data: dict) -> dict:
                   "marks plot, the glucose profile's \"No data\", the day "
                   "tile's weekdays, the month abbreviations of a date, the "
                   "Changes and Day labels quoted in §1.2–§4.2, the "
-                  "engine's habit titles, the Settings labels, and the "
-                  "served pump profile name, account region and sync error."),
+                  "engine's habit titles, the Settings labels, the kind "
+                  "glyph's names, and the served pump profile name, account "
+                  "region and sync error."),
         "words": words,
     }
 

@@ -10122,11 +10122,6 @@
     },
     {
       "kind": "noun",
-      "meaning": "The habit the engine attributes most of a Pattern's occurrences to.",
-      "term": "Cause"
-    },
-    {
-      "kind": "noun",
       "meaning": "A Trial or a Focus. One is active at a time.",
       "term": "Change"
     },
@@ -10152,11 +10147,6 @@
     },
     {
       "kind": "noun",
-      "meaning": "A dated event the engine cites as evidence.",
-      "term": "Episode"
-    },
-    {
-      "kind": "noun",
       "meaning": "A habit you pinned, watched for adherence and outcome.",
       "term": "Focus"
     },
@@ -10173,7 +10163,7 @@
     {
       "kind": "metric",
       "meaning": "The standard CGM metrics. Below 54 and Above 250 are shown as subsets of Below 70 and Above 180, never as separate bands of the same total.",
-      "term": "In range, Below 70, Below 54, Above 180, Above 250, Mean, GMI, CV, Pre-meal, Post-meal 2 h"
+      "term": "In range, Below 70, Below 54, Above 180, Above 250, Mean, GMI, CV"
     },
     {
       "kind": "noun",
@@ -10222,11 +10212,6 @@
     },
     {
       "kind": "noun",
-      "meaning": "A question about a low, asking whether carbs were eaten.",
-      "term": "Prompt"
-    },
-    {
-      "kind": "noun",
       "meaning": "The active pump settings, read-only.",
       "term": "Pump profile"
     },
@@ -10249,11 +10234,6 @@
       "kind": "verb",
       "meaning": "Bring a snoozed item back.",
       "term": "Restore"
-    },
-    {
-      "kind": "noun",
-      "meaning": "A pump value: basal, correction factor or carb ratio.",
-      "term": "Setting"
     },
     {
       "kind": "noun",
@@ -10297,7 +10277,7 @@
     },
     {
       "kind": "answer",
-      "meaning": "A Prompt's answers. False low marks the reading itself as invalid.",
+      "meaning": "The answers to whether carbs were eaten for a low. False low marks the reading itself as invalid.",
       "term": "Yes / No / False low / Not sure"
     }
   ],

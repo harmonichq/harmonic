@@ -111,7 +111,6 @@ the system's own edge-swipe back is left to the platform, never overridden.
 |---|---|---|
 | **Queue** | noun | The ranked list of recommendations. |
 | **Pattern** | noun | A recurring glucose outcome the engine detected, such as highs after meals. |
-| **Setting** | noun | A pump value: basal, correction factor or carb ratio. |
 | **Pin** | verb | Start a Focus on a Pattern's habit. |
 | **Focus** | noun | A habit you pinned, watched for adherence and outcome. |
 | **Trial** | noun | A pump setting change the app detected, watched against its before period. |
@@ -123,18 +122,15 @@ the system's own edge-swipe back is left to the platform, never overridden.
 | **Undo** | verb | Reverse the last snooze. |
 | **Range** | noun | The engine's interval for a Setting's estimate. |
 | **Uncertain** | state | Not yet clear enough to act on: the evidence behind it is thin. |
-| **Episode** | noun | A dated event the engine cites as evidence. |
-| **Cause** | noun | The habit the engine attributes most of a Pattern's occurrences to. |
 | **Peak / Nadir** | noun | The highest or lowest glucose after an event such as a meal, as the median across the events counted, in mg/dL. |
 | **Typical** | noun | The same for the comparison events: similar events that did not end in the Pattern's outcome. |
 | **Glucose profile** | noun | Glucose by time of day over the last 30 days: the median and the 10th–90th percentile spread. |
 | **Median** | noun | The middle value of the profile at that time of day. |
-| **Prompt** | noun | A question about a low, asking whether carbs were eaten. |
-| **Yes / No / False low / Not sure** | answer | A Prompt's answers. False low marks the reading itself as invalid. |
+| **Yes / No / False low / Not sure** | answer | The answers to whether carbs were eaten for a low. False low marks the reading itself as invalid. |
 | **Log carbs** | verb | Record carbs eaten without a bolus. |
 | **End** | verb | Stop watching the active change. |
 | **Recorded** | state | An answer or entry was saved. |
-| **In range, Below 70, Below 54, Above 180, Above 250, Mean, GMI, CV, Pre-meal, Post-meal 2 h** | metric | The standard CGM metrics. Below 54 and Above 250 are shown as subsets of Below 70 and Above 180, never as separate bands of the same total. |
+| **In range, Below 70, Below 54, Above 180, Above 250, Mean, GMI, CV** | metric | The standard CGM metrics. Below 54 and Above 250 are shown as subsets of Below 70 and Above 180, never as separate bands of the same total. |
 | **Tandem Source** | noun | The vendor account the data syncs from. |
 | **Pump profile** | noun | The active pump settings, read-only. |
 | **ISF** | noun | Insulin sensitivity factor, the pump's correction factor: how far one unit of insulin lowers glucose, in mg/dL. |
@@ -394,6 +390,16 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   experience so I thought we had duplicated the [right] and left sides of a
   split pane"), and answered "yes restore the traces". The desktop week keeps
   its traces (§4.2 DayTile, InsulinBar).
+- **2026-10-13 — the glossary lists only what the app prints.** The
+  operator, on the Glossary page: "Looks good, though isn't 'cause' dropped
+  from the frontend?" No built screen prints it. An audit of the text every
+  screen renders (not names read only by assistive tech) found five more
+  terms no screen prints, and §1.5 drops all six: Cause (no screen names a
+  Pattern's cause by that word), Episode (the episode drill-in is deferred,
+  §2.6), Prompt (Day calls its prompts "Lows"), Setting (only the Queue row's
+  kind glyph names it, for assistive tech; the word stays allowed for that
+  name), and the metrics Pre-meal and Post-meal 2 h (no screen shows them).
+  The answers' definition no longer leans on "Prompt".
 
 ### 2.6 Deferred (not cut)
 Not built in the current screens. The engine still serves what each needs, and

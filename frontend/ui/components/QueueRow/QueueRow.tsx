@@ -1,10 +1,8 @@
 // QueueRow (§4.2): a collapsed recommendation. A 44 px column holds the
 // kind's glyph, which is the kind's only mark: it is named "Pattern" or
 // "Setting" for assistive tech, and no kind pill repeats it. Then the
-// title, then one quiet line: the magnitude and the leading cause joined by a
-// middle dot ("9 of 71 lows · Carb undercount"), or the magnitude alone when no
-// cause claims it or only one does (a single cause repeats the title). A
-// setting row's title is its kind word with its time block beside it in meta
+// title, then one quiet line: the magnitude alone ("9 of 71 lows"); the causes
+// are the open card's to name. A setting row's title is its kind word with its time block beside it in meta
 // ink, and current → suggested takes the magnitude's place.
 //
 // A Pattern with an impact ends both lines with a trailing value: Peak (highs)
@@ -25,7 +23,7 @@ import { Icon } from '../../icons';
 import { useSwipe } from '../../motion';
 import { Num } from '../../Num';
 import { Delta } from '../../Delta';
-import { impactChange, rowCause, type Cause, type Impact, type Magnitude, type SettingData } from '../../queue-model';
+import { impactChange, type Impact, type Magnitude, type SettingData } from '../../queue-model';
 import { Button } from '../Button/Button';
 import '../../shared.css';
 import './QueueRow.css';
@@ -53,8 +51,6 @@ export type QueueRowProps =
     } & (
       | {
           kind: 'pattern'; magnitude: Magnitude;
-          /** The Pattern's causes, largest first; the row names the leading one only when there are several. */
-          causes: Cause[];
           /** Null or absent: no trailing value. */
           impact?: Impact | null;
         }
@@ -71,11 +67,9 @@ function Meta(props: Extract<QueueRowProps, { kind: string }>) {
     );
   }
   const { magnitude } = props;
-  const cause = rowCause(props.causes);
   return (
     <span className="ui-qrow__magnitude">
       <Num value={magnitude.count} /> of <Num value={magnitude.denominator} /> {magnitude.noun}
-      {cause && <> · {cause}</>}
     </span>
   );
 }

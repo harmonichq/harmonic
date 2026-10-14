@@ -92,7 +92,7 @@ function Row({ item, layout, selected, swiping, onSelect, onSnooze, until, onRes
       selected={selected} swiping={swiping} onSelect={onSelect} onSnooze={onSnooze} snoozed={snoozed} />;
   }
   return <QueueRow kind="pattern" title={item.data.title} magnitude={item.data.magnitude!}
-    causes={item.data.causes} impact={item.data.impact} layout={layout} selected={selected} swiping={swiping} onSelect={onSelect}
+    impact={item.data.impact} layout={layout} selected={selected} swiping={swiping} onSelect={onSelect}
     onSnooze={onSnooze} snoozed={snoozed} />;
 }
 

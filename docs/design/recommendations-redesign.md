@@ -291,6 +291,8 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   like their original rows looked … we have room to show a little bit more in
   that screen." The Snoozed list draws each item with QueueRow's snoozed state
   (glyph, title, kind pill, magnitude and cause), plus Until and Restore.
+  *Amended 2026-10-14:* the cause is gone from every row, Snoozed included,
+  so a Snoozed row reads glyph, title, magnitude, plus Until and Restore.
 - **2026-10-13 — the state pill is a tinted tag, and kinds take no pill.** The
   operator: "I don't like that the restore button and the pattern pill look
   extremely similar … that goes for all of them." Of three treatments, the
@@ -456,13 +458,15 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   while its answers load, and its title, Unavailable and Retry when they
   cannot be read, as §1.2 has every other screen do. No new words.
 
-- **2026-10-14 — a single-cause row drops its cause, and the collapsed row
-  carries the impact as a delta.** On the collapsed rows the operator asked:
-  "And why are we repeating labels here? … it's the same thing". A row names
-  its leading cause only when its Pattern has more than one; a Pattern with
-  exactly one cause, or one that collapses to its one habit member, shows the
-  magnitude alone ("6 of 40 lows"). The open card's waffle and legend are
-  unchanged. On the impact, which the 2026-10-13 amendment had kept to the
+- **2026-10-14 — a collapsed row drops its cause, and carries the impact as
+  a delta.** On the collapsed rows the operator asked: "And why are we
+  repeating labels here? … it's the same thing". That first dropped the cause
+  from single-cause rows; the operator then decided: "drop the leading cause
+  entirely." No collapsed row names a cause, whatever its Pattern's causes;
+  the second line is the magnitude alone ("38 of 137 meals"), with the
+  trailing impact value as below. The Snoozed list's rows follow, as they draw
+  with QueueRow's snoozed state. The open card's waffle and legend are
+  unchanged and still name the causes. On the impact, which the 2026-10-13 amendment had kept to the
   open card: "for the impact number I want a comparison. or a delta maybe?…",
   and of three mocked rows "the format of B is more to my liking". A Pattern
   row with an impact ends in a trailing value: Peak (high) or Nadir (low) as a
@@ -558,21 +562,21 @@ unless noted. Loading is a skeleton of the component's own shape.
 7. **QueueRow**: a collapsed recommendation, with a leading 20 px kind glyph
    (Pattern: rising dots; Setting: sliders; named "Pattern" / "Setting" for
    assistive tech, and no kind pill), its title, one magnitude
-   ("9 of 71 lows") and, when the Pattern has more than one cause, the
-   leading cause's label. A Pattern with an impact ends in a trailing value:
+   ("9 of 71 lows") and no cause (§2.5, 2026-10-14: "drop the leading cause
+   entirely"; the open card names the causes). A Pattern with an impact ends in a trailing value:
    the caption Peak (high) or Nadir (low) on the title line, and beneath it
    the shared Delta (▲ / ▼ and the amount, neutral ink) of own − Typical as
    printed, with mg/dL. The row is two lines with or without it, and the
    chevron sits on the title line (§2.5, 2026-10-14).
-   - States: default (multi-cause, its leading cause); selected (desktop);
-     mid-swipe (snooze reveal); single cause or collapsed to one habit
-     (label omitted); no cause (label omitted); with impact, high (Peak) or
+   - States: default (multi-cause, no cause named); selected (desktop);
+     mid-swipe (snooze reveal); single cause and no cause (the same row);
+     with impact, high (Peak) or
      low (Nadir); without impact (no trailing value); setting (current →
      suggested replaces the magnitude); snoozed (read-only: no chevron, swipe
      or selection; a last line "Until <date>" + Restore); loading.
    - Fields: `guidance.candidates[].title, kind, priority, admitted,
      preference`; `findings.outcome_patterns[].k, n` and the noun; the
-     leading cause lever from `findings.rows[].fold_sentences`; the impact as
+     impact as
      PatternCard reads it, its delta the derived `own − typical`.
    - Desktop: a list row that selects into the detail pane. Snooze is an icon
      the open card's Snooze text action (shortcut S); there's no swipe.

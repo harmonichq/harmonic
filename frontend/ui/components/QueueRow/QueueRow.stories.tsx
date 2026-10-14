@@ -5,12 +5,12 @@ import { pattern, patternState, settingState, snoozed, type PatternData, type Qu
 import { QueueRow, type QueueRowProps } from './QueueRow';
 
 // One story per state (§4.2 QueueRow), each the simulated wearer's own
-// served answer: the multi-cause pattern by default and selected on desktop,
-// the single-cause one mid-swipe, the pattern no cause claims, and the
+// served answer: the multi-cause pattern by default (no row names a cause) and selected on
+// desktop, the single-cause one mid-swipe, the pattern no cause claims, and the
 // admitted Basal block; and a snoozed row, with its Until and Restore.
 // The trailing impact (§2.5, 2026-10-14): a high row with its Peak delta, a
-// low row with its Nadir delta, a single-cause row that drops its cause, and
-// a row whose Pattern has no case file, with no trailing value.
+// low row with its Nadir delta, and a row whose Pattern has no case file, with
+// no trailing value.
 const meta = {
   title: 'QueueRow',
   component: QueueRow,
@@ -23,7 +23,7 @@ type Story = StoryObj<typeof meta>;
 type PatternRow = Extract<QueueRowProps, { kind: 'pattern' }>;
 
 const rowOf = (data: PatternData): PatternRow =>
-  ({ kind: 'pattern', title: data.title, magnitude: data.magnitude!, causes: data.causes, impact: data.impact });
+  ({ kind: 'pattern', title: data.title, magnitude: data.magnitude!, impact: data.impact });
 
 function patternRow(name: 'multi_cause' | 'single_cause' | 'no_cause'): PatternRow {
   return rowOf(patternState(name));
@@ -43,7 +43,14 @@ async function expectDelta(canvasElement: HTMLElement, args: PatternRow, caption
   await expect(delta.className).toBe('ui-delta');
 }
 
-export const Default: Story = { args: patternRow('multi_cause') };
+export const Default: Story = {
+  args: patternRow('multi_cause'),
+  play: async ({ canvasElement }) => {
+    // Several causes, and the row names none: the second line is the magnitude.
+    await expect(canvasElement.textContent).not.toContain(patternState('multi_cause').causes[0].title);
+    await expect(canvasElement.textContent).not.toContain('·');
+  },
+};
 export const SelectedDesktop: Story = {
   args: { ...patternRow('multi_cause'), layout: 'desktop', selected: true },
   parameters: { frame: { width: 400, padding: 24 } },
@@ -54,22 +61,12 @@ export const HighWithDelta: Story = {
   args: served('wearer', 'highs_after_meals'),
   play: async ({ args, canvasElement }) => {
     await expectDelta(canvasElement, args as PatternRow, 'Peak');
-    // Several causes: the row keeps the leading one.
-    await expect(canvasElement.textContent).toContain(`· ${(args as PatternRow).causes[0].title}`);
+    await expect(canvasElement.textContent).not.toContain('·');
   },
 };
 export const LowWithDelta: Story = {
   args: served('wearer', 'lows_after_meals'),
   play: async ({ args, canvasElement }) => expectDelta(canvasElement, args as PatternRow, 'Nadir'),
-};
-export const SingleCause: Story = {
-  args: served('wearer-pinned', 'lows_after_correcting_highs'),
-  play: async ({ args, canvasElement }) => {
-    const { causes } = args as PatternRow;
-    await expect(causes).toHaveLength(1);
-    await expect(canvasElement.textContent).not.toContain(causes[0].title);
-    await expect(canvasElement.textContent).not.toContain('·');
-  },
 };
 export const NoImpact: Story = {
   args: served('wearer', 'highs_after_treating_lows'),

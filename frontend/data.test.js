@@ -56,6 +56,7 @@ test('parameterised reads encode their query', async () => {
   await api.fetchVerifyTrials({ selected: 'trial:1', kind: 'focus', assessment: 'retained' });
   await api.fetchTimeline({ start: '2026-09-29T00:00:00', end: '2026-09-30T00:00:00' });
   await api.fetchCarbs({ start: '2026-09-29T00:00:00', end: '2026-09-30T00:00:00' });
+  await api.fetchModelView('2026-09-29');
   await api.fetchDiagnoseFindingCase({ projection_id: 'p 1', finding_id: 'pattern:x', alignment: 'event' });
   assert.deepEqual(calls.map((c) => c.url), [
     '/api/outcomes?window=30',
@@ -63,6 +64,7 @@ test('parameterised reads encode their query', async () => {
     '/api/verify/trials?selected=trial%3A1&kind=focus&assessment=retained',
     '/api/timeline?start=2026-09-29T00%3A00%3A00&end=2026-09-30T00%3A00%3A00',
     '/api/carbs?start=2026-09-29T00%3A00%3A00&end=2026-09-30T00%3A00%3A00',
+    '/api/model-view?date=2026-09-29',
     '/api/diagnose/finding-case-file?projection_id=p+1&finding_id=pattern%3Ax&alignment=event',
   ]);
 });

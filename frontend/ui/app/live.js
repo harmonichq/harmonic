@@ -35,6 +35,23 @@ const WINDOWS = ['14', '30', '90'];
 const WHOLE_DAY = { start_min: 0, end_min: 1440 };
 const NO_STATUS = { last_attempt_at: null, last_success_at: null, last_error: null };
 
+/** The model-view trimmed to what the Day chart marks: each episode's habit,
+ *  and each anchor's time, kind, state, glucose and verdicts (mirrors
+ *  gen_ui_fixtures.model_view_marks). */
+export function modelViewMarks(view) {
+  return {
+    date: view.date,
+    episodes: view.episodes.map((episode) => ({
+      lever: episode.lever,
+      lever_title: episode.lever_title,
+      anchors: episode.anchors.map(({ t, kind, state, bg, verdicts }) => ({
+        t, kind, state, bg,
+        verdicts: verdicts.map(({ classifier, matched, title }) => ({ classifier, matched, title })),
+      })),
+    })),
+  };
+}
+
 /**
  * @param {{ client: object, glossary: object[] }} deps — the client namespace
  *   (frontend/data.js makeDeps) and §1.5's rows for the Glossary page.
@@ -198,11 +215,13 @@ export function createLive({ client, glossary }) {
     date.setUTCDate(date.getUTCDate() + days);
     return date.toISOString().slice(0, 10);
   };
-  /** One day's timeline and the carbs logged by hand on it, read when the day is picked. */
+  /** One day's timeline, the carbs logged by hand on it, and what the engine
+   *  counted on it, read when the day is picked. */
   const day = (iso) => once(`day ${iso}`, async () => {
     const range = { start: `${iso}T00:00:00`, end: `${shift(iso, 1)}T00:00:00` };
-    const [timeline, carbs] = await Promise.all([client.fetchTimeline(range), client.fetchCarbs(range)]);
-    answers.day.days[iso] = { timeline, carbs };
+    const [timeline, carbs, modelView] = await Promise.all([
+      client.fetchTimeline(range), client.fetchCarbs(range), client.fetchModelView(iso)]);
+    answers.day.days[iso] = { timeline, carbs, model_view: modelViewMarks(modelView) };
   });
 
   /** The answers each tab shows; the NavBar's badges read status and the Prompts on every tab. */

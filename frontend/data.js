@@ -193,6 +193,12 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
    */
   const updateCarb = (entryId, fields) => send('/api/carbs/' + encodeURIComponent(entryId), 'PATCH', fields);
 
+  /**
+   * GET /api/model-view?date=YYYY-MM-DD — every moment the engine weighed on
+   * one day, by episode, each with its state and the habits it matched.
+   */
+  const fetchModelView = (date) => api('/api/model-view?' + new URLSearchParams({ date }));
+
   /** GET /api/prompts — the unanswered and answered Prompts, oldest first. */
   const fetchPrompts = () => api('/api/prompts');
 
@@ -210,7 +216,7 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
     fetchDiagnoseFindingCasePreparation, fetchDiagnoseFindingCase,
     fetchVerifyTrials, finishTrial, fetchFocuses, pinFocus, resolveFocus,
     fetchOutcomes, fetchExploreTimeOfDay, fetchDayNavigator,
-    fetchTimeline, fetchCarbs, createCarb, updateCarb, fetchPrompts, answerPrompt,
+    fetchTimeline, fetchCarbs, fetchModelView, createCarb, updateCarb, fetchPrompts, answerPrompt,
   };
 }
 

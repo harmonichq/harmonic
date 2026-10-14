@@ -12,7 +12,9 @@ import { DayScreen, type DayScreenProps } from './DayScreen';
 // carbs, at phone (390) and desktop (1440), every value the simulated wearer's
 // served answer:
 // - Default: the latest day with readings, its insulin bar and its one
-//   unanswered low as the Prompts row; Logged carbs: the day with the most
+//   unanswered low as the Prompts row; its chart draws basal against the Pump
+//   profile with its suspends, and two meals the engine counted as Carb
+//   undercount, named in their event rows; Logged carbs: the day with the most
 //   logged carbs; No prompts: once the person has answered them all, no row
 //   and no badge.
 // - Empty: the first day after the history ends ("No data"); Loading;

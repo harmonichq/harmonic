@@ -27,15 +27,49 @@ export const targetRange = () => ({
 
 /** A bolus is a meal bolus when it carries carbs, else a correction (the
  *  timeline serves no other type); logged carbs are the manual carb log; a site
- *  change is the pump's own event. */
+ *  change is the pump's own event. A Pattern is a moment the engine counted
+ *  toward a habit (the model-view's anchors), named by the habits' served
+ *  titles; a bolus the engine counted carries those titles itself. */
 export type DayEvent =
   | { kind: 'meal' | 'correction'; minute: number; time: Sourced<string>; insulin: Sourced<number>;
-      carbs: Sourced<number> | null }
+      carbs: Sourced<number> | null; habits: string[] }
   | { kind: 'carbs'; minute: number; time: Sourced<string>; grams: Sourced<number> }
-  | { kind: 'site'; minute: number; time: Sourced<string> };
+  | { kind: 'site'; minute: number; time: Sourced<string> }
+  | { kind: 'pattern'; minute: number; time: Sourced<string>; bg: Sourced<number> | null; habits: string[] };
 
 // The pump event the glossary names, and the only one this timeline draws.
 const SITE_CHANGE = 'Site/Cartridge Change';
+// The habits the engine is cutting (#499): no Day mark is built for them.
+const CUT_HABITS = new Set(['meal_bolus_short', 'high_carb_sequence', 'repeat_eating']);
+
+type ServedModelView = ServedDay['model_view'];
+
+/** The day's moments the engine counted toward a habit, one per minute: an
+ *  anchor that drove its episode's habit (fired) names that habit; one another
+ *  habit's episode claimed (outranked) names the habits its own verdicts
+ *  matched. Anchors of the day before (an episode that crosses midnight) are
+ *  left to that day. */
+function counted(iso: string, view: ServedModelView, root: string) {
+  const byMinute = new Map<number, { t: string; path: string; bg: number | null; habits: string[] }>();
+  view.episodes.forEach((episode, e) => episode.anchors.forEach((anchor, a) => {
+    if (anchor.t.slice(0, 10) !== iso) return;
+    const habits = anchor.state === 'fired'
+      ? (episode.lever && !CUT_HABITS.has(episode.lever) && episode.lever_title ? [episode.lever_title] : [])
+      : anchor.state === 'outranked'
+        ? anchor.verdicts.filter((v) => v.matched && !CUT_HABITS.has(v.classifier)).map((v) => v.title)
+        : [];
+    if (!habits.length) return;
+    const minute = minuteOf(anchor.t);
+    const at = byMinute.get(minute);
+    if (at) {
+      for (const habit of habits) if (!at.habits.includes(habit)) at.habits.push(habit);
+      if (at.bg === null && anchor.bg !== null) Object.assign(at, { bg: anchor.bg, path: `${root}.episodes.${e}.anchors.${a}` });
+    } else {
+      byMinute.set(minute, { t: anchor.t, path: `${root}.episodes.${e}.anchors.${a}`, bg: anchor.bg, habits: [...habits] });
+    }
+  }));
+  return byMinute;
+}
 
 export type DayChartData = {
   low: Sourced<number>;
@@ -44,7 +78,7 @@ export type DayChartData = {
   basal: { minute: number; duration: number; delivered: number; programmed: number }[];
   /** The pump's sleep schedule over this day, in minutes, clipped to it. */
   sleep: { from: number; to: number }[];
-  /** Boluses, logged carbs and site changes, in time order. */
+  /** Boluses, logged carbs, site changes and the moments the engine counted, in time order. */
   events: DayEvent[];
 };
 
@@ -57,17 +91,26 @@ export function dayChartOf(iso: string): DayChartData | null {
   const root = `day.days.${iso}`;
   const day = servedDays()[iso];
   if (!day) return null;
-  const { timeline, carbs } = day;
+  const { timeline, carbs, model_view: view } = day;
+  const habits = counted(iso, view, `${root}.model_view`);
   const boluses: DayEvent[] = timeline.boluses.map((b, i) => {
     const path = `${root}.timeline.boluses.${i}`;
+    const minute = minuteOf(b.t);
+    const at = habits.get(minute);
+    habits.delete(minute);
     return {
       kind: b.carbs ? 'meal' : 'correction',
-      minute: minuteOf(b.t),
+      minute,
       time: sourced(`${path}.t`, 'time'),
       insulin: sourced(`${path}.insulin`, 'fixed2'),
       carbs: b.carbs ? sourced(`${path}.carbs`, 'round') : null,
+      habits: at?.habits ?? [],
     };
   });
+  const patterns: DayEvent[] = [...habits.entries()].map(([minute, at]) => ({
+    kind: 'pattern', minute, time: sourced(`${at.path}.t`, 'time'),
+    bg: at.bg === null ? null : sourced(`${at.path}.bg`, 'round'), habits: at.habits,
+  }));
   const logged: DayEvent[] = carbs.carb_entries.map((entry, i) => {
     const path = `${root}.carbs.carb_entries.${i}`;
     return { kind: 'carbs', minute: minuteOf(entry.t), time: sourced(`${path}.t`, 'time'),
@@ -84,7 +127,7 @@ export function dayChartOf(iso: string): DayChartData | null {
     basal: timeline.basal.map((row) => ({ minute: minuteOf(row.t), duration: row.duration_mins,
       delivered: row.basal_rate, programmed: row.profile_basal_rate })),
     sleep: timeline.sleep_windows.map((w) => ({ from: clip(w.start), to: clip(w.end) })).filter((w) => w.to > w.from),
-    events: [...boluses, ...logged, ...sites].sort((a, b) => a.minute - b.minute),
+    events: [...boluses, ...logged, ...sites, ...patterns].sort((a, b) => a.minute - b.minute),
   };
 }
 

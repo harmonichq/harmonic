@@ -54,6 +54,12 @@ function fakeClient(served = history()) {
     fetchPumpSettings: answer('pump', () => ({ configured: false })),
     fetchTimeline: answer('timeline', () => ({})),
     fetchCarbs: answer('carbs', () => ({ carb_entries: [] })),
+    fetchModelView: answer('model-view', (date) => ({
+      date, midnight: null, window: { cgm: [{ t: `${date} 00:00:00`, bg: 120 }] },
+      episodes: [{ id: 'e', lever: 'late_bolus', lever_title: 'Late bolus', steps: [{ t: 's' }],
+        anchors: [{ t: `${date} 13:10:00`, kind: 'meal', label: 'Meal bolus', bg: null, insulin: 3, carbs: 30,
+          state: 'fired', verdicts: [{ classifier: 'late_bolus', matched: true, title: 'Late bolus', detail: 'd' }] }] }],
+    })),
     setGuidancePreference: answer('snooze', () => ({})),
     answerPrompt: answer('answer', () => ({ carb_entry_id: null })),
     createCarb: answer('log', () => ({})),
@@ -153,6 +159,21 @@ test('Retry on a Settings part reads only that part again', async () => {
   assert.equal(fake.count('pump'), 2);
   assert.equal(fake.count('credentials'), 1);
   assert.equal(fake.count('status'), 1);
+});
+
+test('a picked day reads what the engine counted on it once, kept to what the chart marks', async () => {
+  const fake = fakeClient();
+  const live = createLive({ client: fake.client, glossary: [] });
+  await live.readDay('2026-01-05');
+  await live.readDay('2026-01-05');
+  assert.equal(fake.count('model-view'), 1);
+  assert.deepEqual(fake.calls.find((c) => c.name === 'model-view').args, ['2026-01-05']);
+  assert.deepEqual(live.answers.day.days['2026-01-05'].model_view, {
+    date: '2026-01-05',
+    episodes: [{ lever: 'late_bolus', lever_title: 'Late bolus',
+      anchors: [{ t: '2026-01-05 13:10:00', kind: 'meal', state: 'fired', bg: null,
+        verdicts: [{ classifier: 'late_bolus', matched: true, title: 'Late bolus' }] }] }],
+  });
 });
 
 test('Log carbs posts the time picked, today, or now when none was', async () => {

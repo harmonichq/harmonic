@@ -150,6 +150,7 @@ the system's own edge-swipe back is left to the platform, never overridden.
 | **Site change** | noun | A new infusion site and cartridge, as the pump logged it. |
 | **Insulin** | noun | Everything the pump delivered in a day, basal and boluses together, in units (U). |
 | **Basal** | noun | The insulin the pump delivered steadily through the day, including Control-IQ's changes to the programmed rate. |
+| **Suspend** | noun | A stretch when the pump delivered no basal, whether Control-IQ or you stopped it. |
 | **Meal** | noun | A bolus for carbs, or the carbs part of a bolus. |
 | **Correction** | noun | A bolus you gave to bring glucose down, or the correction part of a meal bolus. |
 | **Control-IQ** | noun | The pump's automatic boluses, as the day's insulin counts them. |
@@ -512,6 +513,60 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   month opens that day, and on desktop the week in view follows the selected
   day across month boundaries.
 
+- **2026-10-14 — the Day chart's basal lane and the engine's marks, as the
+  desk drew them.** The operator, on the redesigned Day chart: "basal lane is
+  nearly useless. can't read shit." then "honestly steal from the desk,
+  whatever we currently have for the day graph is pretty good". He added
+  "Including seeing event triggers." and "by event triggers I also mean
+  ENGINE DATA". The desk's daily chart drew basal not as a rate but as its
+  difference from the programmed rate, around a zero line, with the engine's
+  findings as marks at their time named in its Episode Log; the redesign's
+  lane drew the delivered area under a 30 px scale, where a Control-IQ change
+  of a few tenths of a unit was a pixel. §4.2 DayChart now draws:
+  - **Basal against the Pump profile.** The lane is 72 px on desktop and
+    56 px on the phone (the desk's 13 % of its chart), and its zero line is
+    the Pump profile, dashed. Where Control-IQ delivered more than programmed
+    a bar rises above the line in body ink; less, a lighter grey bar hangs
+    below; nothing delivered (any run of zero-rate rows, as the desk keyed
+    it) reaches down by the whole programmed rate, hatched, and is a
+    **Suspend**, which joins §1.5. Slots of one difference merge into one bar
+    per held command, a gap stays empty, and the linear scale is at least
+    0.3 U/h each side with 15 % headroom, its two signed ticks labelled
+    ("+1.7 U/h", "−1.4"). Above and below are told apart by side as well as
+    tone. Legend: Basal (both tones), Pump profile (the dashed line), and
+    Suspend (hatched) on a day that has one. To keep the Day pane inside
+    its 1440 × 900 frame (Appendix §2, rule 7) with the taller lane and the
+    Pattern row, the desktop glucose plot gives up 55 px (260 → 205 px),
+    close to the desk's own three to one of glucose to basal; the phone's
+    plot is unchanged.
+  - **The engine's marks.** Each moment the engine counted toward a habit on
+    that day, read from `/api/model-view?date=` (the desk's own read), takes
+    the Pattern glyph on a new top row of the marks lane, at its time, above
+    the bolus and carbs rows. A moment that drove its episode's habit
+    (`state` fired) is named by the episode's served `lever_title`; one
+    another habit's episode claimed (`outranked`) by the served titles of the
+    verdicts it matched itself. Nothing the engine only checked, or found
+    clean, is marked. The names are visible, never hovered (§1.4): a bolus
+    the engine counted carries them in its event-list row ("13:10 Meal ·
+    Carb undercount  30 g  3.53 U"), and any other moment (a low, a high) is
+    its own row, the Pattern glyph, its habits and its reading in mg/dL.
+    The habits the engine is cutting (Meal bolus fell short, High-carb
+    sequence, Repeat eating) are never marked. Legend: Pattern, on a day
+    that has one.
+  - **Not carried over.** The desk's hover tooltip (the delivered and
+    programmed rates, the command's length): §1.4 bans hover-only content,
+    and the signed scale and the bars carry the same reading. Its rate
+    source, which the timeline serves as `basal[].delivery_type`: the desk
+    drew it nowhere but the tooltip, and a zero rate already shows a
+    suspend. Its fasting and exercise ribbons and its other pump-event pins
+    (User Suspended, Exercise): fasting is not a §1.5 term, the simulated
+    wearer the stories draw serves no Exercise or User Suspended event to
+    check them against, and a user suspension already reads as a Suspend in
+    the basal lane. The phone's collapsed basal accordion: the lane stays
+    open on the phone, since nothing on Day is hover- or tap-revealed.
+    Episodes, the desk's near-miss rings and its rescue mark stay out with
+    the episode drill-in (§2.6).
+
 ### 2.6 Deferred (not cut)
 Not built in the current screens. The engine still serves what each needs, and
 nothing is removed from the engine or the fixtures for them.
@@ -704,12 +759,18 @@ unless noted. Loading is a skeleton of the component's own shape.
 
 **Day**
 
-17. **DayChart**: one day. Shows glucose with the 70–180 band, bolus markers
-    (meal / correction), basal delivered against programmed, logged-carb
-    markers, and an event list below.
+17. **DayChart**: one day. Shows glucose with the 70–180 band, a marks lane
+    (a Pattern glyph at each moment the engine counted toward a habit, above
+    the meal / correction and logged-carb markers), basal as its difference
+    from the Pump profile (above, below, Suspend hatched, on a signed U/h
+    scale; §2.5, 2026-10-14), and an event list below, where a counted bolus
+    carries its habits' titles and any other counted moment is its own
+    Pattern row with its reading.
     - States: default; no data; with logged carbs.
     - Fields: `timeline.cgm, boluses, basal, pump_events, sleep_windows`;
-      `carbs.carb_entries`.
+      `carbs.carb_entries`; `model_view.episodes[].lever, lever_title,
+      anchors[].t, state, bg, verdicts[].classifier, matched, title`
+      (`/api/model-view?date=`).
     - Desktop: wide, under the selected week's DayRibbon.
 18. **PromptCard**: one low prompt, showing "Low · <date time> · <mg/dL>",
     its sparkline, Yes · No · False low, and on phone Not sure as a text

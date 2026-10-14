@@ -69,13 +69,14 @@ test('(e) a derived or formatted number must equal its formula, as printed', () 
   assert.match(run({ texts: [{ text: '3:00', source: 'span.start_min', format: 'clock' }] })[0], /^\(e\) "3:00"/);
 });
 
-test('(e) a scale label may be a plain number, clock, range or bound, and only that', () => {
-  for (const text of ['0.45', '06:00', '54–69', '<54', '>250', '10–90%']) {
+test('(e) a scale label may be a plain or signed number, clock, range or bound, and only that', () => {
+  for (const text of ['0.45', '06:00', '54–69', '<54', '>250', '10–90%', '+1.9', '−1.4']) {
     assert.deepEqual(run({ texts: [{ text, source: null, axis: true }] }), [], text);
   }
   assert.match(run({ texts: [{ text: '06:00 d', source: null, axis: true }] })[0], /^\(e\) "06:00 d" names no fixture field/);
   assert.match(run({ texts: [{ text: '0.45 d', source: null, axis: true }] })[0], /^\(e\) "0.45 d" names no fixture field/);
   assert.match(run({ texts: [{ text: '0.45', source: null }] })[0], /^\(e\) "0.45" names no fixture field/);
+  assert.match(run({ texts: [{ text: '+1.9', source: null }] })[0], /^\(e\) "\+1.9" names no fixture field/);
 });
 
 test('(e) a difference, one decimal and a day of the month resolve like any other formula', () => {

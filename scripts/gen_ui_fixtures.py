@@ -50,7 +50,10 @@ Two committed outputs, one generator, one ``--check``:
   ``day`` holds ``/api/timeline`` and ``/api/carbs`` for four of the wearer's
   days, picked by rule: the latest day with readings, a site change and no
   logged carbs, the latest of the days with the most logged carbs, the first
-  day after the history ends, and the latest day with readings. ``day.prompts``
+  day after the history ends, and the latest day with readings, with each
+  day's ``/api/model-view`` trimmed to what the Day chart marks: every
+  episode's habit and every anchor's time, kind, state, glucose and matched
+  verdicts. ``day.prompts``
   holds ``/api/prompts`` for the Day screen's Prompts: ``wearer-pending``, read
   before the person answers the one prompt the top-level ``prompts`` shows
   answered, and ``wearer-answered``, read after every other read of the wearer
@@ -639,6 +642,7 @@ def _days(client: TestClient, navigator: dict) -> dict:
         end = (datetime.fromisoformat(start) + timedelta(days=1)).isoformat()
         timeline = _get(client, "/api/timeline", start=start, end=end)
         carbs = _get(client, "/api/carbs", start=start, end=end)
+        model_view = _get(client, "/api/model-view", date=iso)
         days[iso] = {
             "timeline": {
                 "cgm": timeline["cgm"],
@@ -654,8 +658,22 @@ def _days(client: TestClient, navigator: dict) -> dict:
             },
             "carbs": {"carb_entries": [{field: e[field] for field in ("id", "t", "grams", "certainty", "source")}
                                        for e in carbs["carb_entries"]]},
+            "model_view": model_view_marks(model_view),
         }
     return {"states": picks, "days": days}
+
+
+def model_view_marks(model_view: dict) -> dict:
+    """``/api/model-view`` trimmed to what the Day chart marks (§4.2 DayChart):
+    each episode's habit, and each anchor's time, kind, state, glucose and
+    verdicts' habit, match and title. The live adapter trims the same."""
+    return {"date": model_view["date"], "episodes": [{
+        "lever": episode["lever"], "lever_title": episode["lever_title"],
+        "anchors": [{**{field: anchor[field] for field in ("t", "kind", "state", "bg")},
+                     "verdicts": [{field: v[field] for field in ("classifier", "matched", "title")}
+                                  for v in anchor["verdicts"]]}
+                    for anchor in episode["anchors"]],
+    } for episode in model_view["episodes"]]}
 
 
 def _require_lows(stores: dict) -> dict:
@@ -902,6 +920,11 @@ def allowlist(data: dict) -> dict:
         "labels §1.2–§4.2": list(CHANGE_DAY_LABELS),
         "engine habit titles": [f["lever_title"] for store in data["changes"].values()
                                 for f in store["focuses"] if f["lever_title"]],
+        "served day habit titles": [title for day in data["day"]["days"].values()
+                                    for episode in day["model_view"]["episodes"]
+                                    for title in [episode["lever_title"]]
+                                    + [v["title"] for a in episode["anchors"] for v in a["verdicts"] if v["matched"]]
+                                    if title],
         "labels Settings": list(SETTINGS_LABELS),
         "kind glyph names §2.5": list(KIND_NAMES),
         "rail wordmark §2.5": list(BRAND),
@@ -926,7 +949,8 @@ def allowlist(data: dict) -> dict:
                   "marks plot, the glucose profile's \"No data\", the day "
                   "tile's weekdays, the month abbreviations of a date, the "
                   "Changes and Day labels quoted in §1.2–§4.2, the "
-                  "engine's habit titles, the Settings labels, the kind "
+                  "engine's habit titles, the habit titles served on the "
+                  "Day chart's days, the Settings labels, the kind "
                   "glyph's names, and the served pump profile name, account "
                   "region and sync error."),
         "words": words,

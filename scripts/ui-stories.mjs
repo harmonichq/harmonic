@@ -203,6 +203,7 @@ if (mode === 'check') {
           ...FIXTURES,
           changes: { ...variants.changes, ...FIXTURES.changes },
           queue: { ...variants.queue, ...FIXTURES.queue },
+          day: { ...FIXTURES.day, days: { ...variants.days, ...FIXTURES.day.days } },
         } : FIXTURES;
         assert.deepEqual(precheckProblems(await page.evaluate(inspect), { fixtures, allowed: ALLOWED }), []);
       } finally {

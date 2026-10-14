@@ -18,6 +18,9 @@
 //   its suggestion and range test values a tenth below it. No generated store
 //   admits either; the synthetic wearer's ISF and I:C hold.
 // - A day navigator with no readings, as a store before its first sync serves it.
+// - A day with no Control-IQ boluses: the latest day's timeline with
+//   `insulin_totals.control_iq_bolus` served as 0 and its `total` the served
+//   sum of the other three, as the engine adds them (timeline.insulin_totals).
 import { useEffect, type ReactNode } from 'react';
 import { answers } from './answers';
 import { fixtures } from './fixtures';
@@ -39,11 +42,12 @@ function trialAs(from: 'wearer' | 'wearer-ended', parameter: string): Json {
 
 /** Every store this module adds, by section: the story check (scripts/ui-stories.mjs)
  *  reads them beside the generated answers, at their own keys only. */
-const added: Record<'changes' | 'queue', Record<string, unknown>> = { changes: {}, queue: {} };
-function add(section: 'changes' | 'queue', name: string, store: unknown) {
-  if (name in fixtures[section]) throw new Error(`${section}.${name} is a generated store`);
+const added: Record<'changes' | 'queue' | 'days', Record<string, unknown>> = { changes: {}, queue: {}, days: {} };
+function add(section: 'changes' | 'queue' | 'days', name: string, store: unknown) {
+  const into = (section === 'days' ? fixtures.day.days : fixtures[section]) as Record<string, unknown>;
+  if (name in into) throw new Error(`${section}.${name} is a generated store`);
   added[section][name] = store;
-  (fixtures[section] as Record<string, unknown>)[name] = store;
+  into[name] = store;
 }
 (globalThis as { __uiVariants?: typeof added }).__uiVariants = added;
 
@@ -99,6 +103,17 @@ export const CHANGES_PROFILE = 'wearer-profile' as keyof typeof fixtures.changes
 export const CHANGES_PROFILE_ENDED = 'wearer-profile-ended' as keyof typeof fixtures.changes;
 export const CHANGES_UNNAMED = 'wearer-unnamed' as keyof typeof fixtures.changes;
 export const QUEUE_UNDRAWABLE = 'wearer-undrawable' as keyof typeof fixtures.queue;
+
+/** The latest day as served on a day Control-IQ gave no automatic bolus. */
+const noControlIq = (() => {
+  const day = clone(fixtures.day.days[fixtures.day.states.latest as keyof typeof fixtures.day.days]);
+  const totals = day.timeline.insulin_totals!;
+  totals.control_iq_bolus = 0;
+  totals.total = totals.basal + totals.meal + totals.correction + totals.control_iq_bolus;
+  return day;
+})();
+add('days', 'latest-no-control-iq', noControlIq);
+export const DAY_NO_CONTROL_IQ = 'latest-no-control-iq';
 
 /** The navigator before the first sync: every served day, none with readings. */
 const unsynced = (() => {

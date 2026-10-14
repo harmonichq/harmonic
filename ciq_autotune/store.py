@@ -26,6 +26,7 @@ import json
 import os
 import sqlite3
 from contextlib import contextmanager
+from functools import cache
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from typing import Iterable, List, Optional
@@ -578,6 +579,18 @@ _PATTERN_SCHEMA_VERSION = 393
 _PATTERN_MIGRATION_PENDING = 393
 
 
+@cache
+def _schema_objects() -> frozenset:
+    """Every table, index and trigger ``_SCHEMA`` creates, read off a scratch database."""
+    conn = sqlite3.connect(":memory:")
+    try:
+        conn.executescript(_SCHEMA)
+        return frozenset(conn.execute(
+            "SELECT type, name FROM sqlite_master WHERE name NOT LIKE 'sqlite_%'"))
+    finally:
+        conn.close()
+
+
 class Store:
     """A connection to the local SQLite store.
 
@@ -617,14 +630,37 @@ class Store:
                 ).fetchone() is not None
             )
         )
+        if not pattern_migration and self._schema_current():
+            return
         self.conn.executescript(_SCHEMA)
         self._migrate(pattern_migration=pattern_migration)
 
+    def _schema_current(self) -> bool:
+        """Whether this file already holds everything schema setup would write.
+
+        Schema setup takes SQLite's one writer even when it changes nothing (the
+        revision seed and the version stamp are writes), so every API read that
+        opened a Store queued behind the fetch loop's write and failed with
+        ``database is locked`` once that write outlasted the busy timeout. A
+        current file is therefore opened by reads alone. "Current" is checked
+        against the file itself, never assumed from the version stamp.
+        """
+        existing = {(r["type"], r["name"]) for r in self.conn.execute(
+            "SELECT type, name FROM sqlite_master")}
+        return (self.conn.execute("PRAGMA user_version").fetchone()[0] == _PATTERN_SCHEMA_VERSION
+                and _schema_objects() <= existing
+                and not self._missing_columns() and not self._stale_seq_num_tables()
+                and self.conn.execute(
+                    "SELECT 1 FROM input_data_revision WHERE id = 1").fetchone() is not None)
+
+    def _missing_columns(self) -> list[tuple[str, str, str]]:
+        return [(table, column, coltype) for table, column, coltype in _ADDED_COLUMNS
+                if column not in {r["name"] for r in
+                                  self.conn.execute(f"PRAGMA table_info({table})")}]
+
     def _migrate(self, *, pattern_migration: bool = False) -> None:
         """Add post-release columns to a database created by an earlier schema."""
-        additions = [(table, column, coltype) for table, column, coltype in _ADDED_COLUMNS
-                     if column not in {r["name"] for r in
-                                       self.conn.execute(f"PRAGMA table_info({table})")}]
+        additions = self._missing_columns()
         stale = self._stale_seq_num_tables()
         if additions or stale:
             statements = ["BEGIN"]

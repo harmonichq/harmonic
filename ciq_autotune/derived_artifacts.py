@@ -259,6 +259,13 @@ def _load_or_compute_once(db_path: str, coordinates: tuple, compute: Callable,
     try:
         with closing(_open(path)) as sidecar:
             with sidecar:
+                # Only the newest revision of a shape is ever read again, as an
+                # exact hit or as the latest prior, and an older layout or source
+                # fingerprint never is; without this the file grew by every
+                # shape at every hourly fetch, without bound.
+                sidecar.execute(
+                    "DELETE FROM artifacts WHERE coordinates=? AND json_extract(marker, '$[0]')=? "
+                    "AND (revision<? OR marker<>?)", (coords, shape_marker, revision, marker))
                 sidecar.execute("""INSERT INTO artifacts(revision,coordinates,marker,payload,digest,covers_to)
                     VALUES(?,?,?,?,?,?) ON CONFLICT(revision,coordinates,marker)
                     DO UPDATE SET payload=excluded.payload,digest=excluded.digest,covers_to=excluded.covers_to""",

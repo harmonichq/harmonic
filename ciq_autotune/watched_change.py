@@ -1899,6 +1899,10 @@ def reconcile_follow_up(store, *, now, recorded_at):
     frontier = store.follow_up_frontier()
     trials = _reviewable_trials(store, now, horizon_start=datetime.min)
     trials.sort(key=lambda t: (-datetime.fromisoformat(t.view.changed_at).timestamp(), _review_id(t.view, t.block)))
+    # Parsed once: this runs inside the one reserved writer, and the history
+    # grows by a read every hourly fetch, so a parse per Trial held the write
+    # lock long enough for every concurrent Store.open to time out.
+    snapshots = sorted(store.settings_snapshots(), key=lambda s: s.captured_at)
     for trial in trials:
         view = trial.view
         identity = _review_id(view, trial.block)
@@ -1917,7 +1921,7 @@ def reconcile_follow_up(store, *, now, recorded_at):
                 "before": view.before, "after": view.after, "block": trial.block, "members": trial.members,
                 "first_observed_at": recorded_at.strftime(_DT_FMT), "observed_context": observed,
                 "comparison_context": capture_comparison_context(store, at=now, input_revision=store.input_data_revision())})
-        _reconcile_plan(store, record, recorded_at)
+        _reconcile_plan(store, record, recorded_at, snapshots)
     _confirm_from_read(store, recorded_at)
     _link_from_read(store, recorded_at)
     _end_open_records(store, trials, now=now, recorded_at=recorded_at)
@@ -1956,14 +1960,13 @@ def active_watched_change(store, basal_events, bolus_events, snaps, *, now, cgm_
     return None
 
 
-def _reconcile_plan(store, record, recorded_at):
+def _reconcile_plan(store, record, recorded_at, snapshots):
     """A receipt needs one applied full schedule and an observed transition."""
     from dataclasses import asdict
     from .guidance import schedule_matches
     if record["reconciliation"]["state"] == "available":
         return
     changed = datetime.fromisoformat(record["changed_at"])
-    snapshots = sorted(store.settings_snapshots(), key=lambda s: s.captured_at)
     previous = next((s for s in reversed(snapshots) if s.captured_at < changed), None)
     observed = next((s for s in snapshots if s.captured_at == changed), None)
     if previous is None or observed is None or not previous.settings.active() or not observed.settings.active():

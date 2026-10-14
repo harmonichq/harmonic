@@ -2,7 +2,7 @@
 // handoff, and the app.
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { TOKEN_KEY } from '../../data.js';
+import { saveToken } from '../../data.js';
 import '../tokens.css';
 import './app.css';
 import { App } from './App';
@@ -12,7 +12,7 @@ import { App } from './App';
 // The fragment is never sent to the server, so the token rides no request line.
 const handoff = /^#token=(.+)$/.exec(window.location.hash);
 if (handoff) {
-  try { localStorage.setItem(TOKEN_KEY, decodeURIComponent(handoff[1])); } catch {}
+  saveToken(decodeURIComponent(handoff[1]));
   history.replaceState(null, '', window.location.pathname + window.location.search);
 }
 

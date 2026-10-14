@@ -86,7 +86,7 @@ Each row lists a screen's states. Labels only; no state uses prose.
 | Day | Latest day with data | "No data" for a day without readings | Chart skeleton | Unavailable + Retry | Month dropped down from the header's day; desktop: the selected week as a ribbon; Prompts row when count > 0 |
 | Day · Prompts | One prompt, "n / N" | Not reachable (the row is hidden at 0) | — | Not saved + Retry | Yes → grams field and keyboard; mid-swipe Not sure |
 | Day · Log carbs | Grams field focused, Time = now | — | Saving | Not saved + Retry | Time edited |
-| Settings | Three rows with inline status | — | Skeleton (§2.5) | Unavailable + Retry (§2.5) | Sync OK (no badge) / Failed (badge) |
+| Settings | Three rows with inline status, and the Token field (§2.5) | — | Skeleton + Token field (§2.5) | Unavailable + Retry + Token field (§2.5) | Sync OK (no badge) / Failed (badge) |
 | Settings · Tandem Source | Sync rows + account rows | Account "Not set" + Update | — | — | Updating credentials |
 | Settings · Pump profile | The active profile's segments | "No profile" label | — | — | — |
 | Settings · Glossary | Alphabetical terms | — | — | — | — |
@@ -641,6 +641,19 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
     Episodes, the desk's near-miss rings and its rescue mark stay out with
     the episode drill-in (§2.6).
 
+- **2026-10-14 — a Token field in Settings.** The server gates every read on
+  the API token it was started with, and the app learned it only from the
+  one-time `/#token=` link, so a new browser showed Unavailable on every
+  screen with nowhere to enter it. The operator: "keep it really simple:
+  token field and settings, that's it." Under the Settings root list, one
+  group holds a Token row, a password field (ListRow's field row, nothing
+  shown back), and Save beneath it, the root's one primary, disabled while
+  the field is empty. Save keeps the token where the client reads it and
+  reads the app again. The field shows in Settings' Loading and Unavailable
+  too, since a refused read is exactly when it is needed. No prompt, no
+  modal, no sign-in screen and no new route; the `/#token=` link still works
+  as before. "Token" joins the plain interface words (Settings labels).
+
 ### 2.6 Deferred (not cut)
 Not built in the current screens. The engine still serves what each needs, and
 nothing is removed from the engine or the fixtures for them.
@@ -914,13 +927,18 @@ unless noted. Loading is a skeleton of the component's own shape.
 20. **ListRow**: label, inline value or state, ›; read-only rows have no ›.
     - States: navigable; read-only; with alert ("⚠ Failed"); with a secondary
       button ("Update"); disclosure, closed or open (expands in place: the
-      Changes screen's last change).
+      Changes screen's last change); field (the account form's Email and
+      Password, and the root's Token).
     - Fields: `status`; `credentials.configured, email` (masked), `region`;
       `pump_settings.profile.segments[]`.
     - Desktop: the same.
 
 The Glossary page is ListRow plus `.glossary` definitions. The Pump profile
-segment table is ListRow in a dense variant.
+segment table is ListRow in a dense variant. The Token field (§2.5,
+2026-10-14) is a field row in its own group under the root list, with Save,
+the root's one primary, beneath it; it is on the root, in Loading and in
+Unavailable, and the token is kept in the browser, never read back from the
+engine.
 
 ## 3. Files beside this document
 - `build.py`: the exploration generator. It reads captured API answers, which are not committed.

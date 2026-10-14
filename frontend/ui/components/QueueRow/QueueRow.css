@@ -89,8 +89,9 @@
 .ui-qrow__until { color: var(--wk-ink-meta); font-size: var(--ui-type-label); font-variant-numeric: tabular-nums; }
 .ui-qrow--loading .ui-qrow__body { gap: 10px; }
 
-/* Mid-swipe: the row slides left over the Snooze reveal. */
-.ui-qrow-swipe { position: relative; overflow: hidden; }
+/* Mid-swipe: the row slides left over the Snooze reveal, which is drawn only
+   while the row is off its rest. */
+.ui-qrow-swipe--revealed { position: relative; overflow: hidden; }
 .ui-qrow-swipe__reveal {
   position: absolute;
   top: 1px;
@@ -106,4 +107,4 @@
   color: var(--wk-ink);
   font: var(--ui-weight-strong) var(--ui-type-caption) / 1 var(--ui-font);
 }
-.ui-qrow-swipe--open .ui-qrow { transform: translateX(-88px); }
+.ui-qrow-swipe--open .ui-qrow { translate: -88px 0; }

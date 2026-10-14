@@ -7,13 +7,15 @@
 // beside it in meta ink, and current → suggested takes the magnitude's place.
 //
 // Phone: a full-width row under a rule, with a ▾ to expand; mid-swipe slides
-// it aside over the Snooze reveal. Desktop: a list row that selects into the
+// it aside over the Snooze reveal, under the finger, and it settles open over
+// the reveal or back at rest. Desktop: a list row that selects into the
 // detail pane, marked by the surface and a bar at its leading edge.
 //
 // Snoozed (the Snoozed list): the same row, read-only — no chevron, no swipe,
 // no selection — with a last line holding "Until <date>" and Restore.
 import type { Sourced } from '../../fixtures';
 import { Icon } from '../../icons';
+import { useSwipe } from '../../motion';
 import { Num } from '../../Num';
 import type { Magnitude, SettingData } from '../../queue-model';
 import { Button } from '../Button/Button';
@@ -23,6 +25,8 @@ import './QueueRow.css';
 type Layout = 'phone' | 'desktop';
 
 const KIND = { pattern: 'Pattern', setting: 'Setting' } as const;
+/** The Snooze reveal's width, which a swipe opens to. */
+const REVEAL = 88;
 
 export type QueueRowProps =
   | { loading: true; layout?: Layout }
@@ -61,6 +65,7 @@ function Meta(props: Extract<QueueRowProps, { kind: string }>) {
 
 export function QueueRow(props: QueueRowProps) {
   const layout = props.layout ?? 'phone';
+  const swipe = useSwipe(REVEAL, !props.loading && Boolean(props.swiping));
   if (props.loading) {
     return (
       <div className={`ui-qrow ui-qrow--${layout} ui-qrow--loading`} aria-busy="true">
@@ -72,7 +77,7 @@ export function QueueRow(props: QueueRowProps) {
       </div>
     );
   }
-  const { title, kind, selected = false, swiping = false, onSelect, snoozed } = props;
+  const { title, kind, selected = false, onSelect, snoozed } = props;
   const body = (
     <>
       <span className="ui-qrow__glyph" role="img" aria-label={KIND[kind]}><Icon name={kind} /></span>
@@ -100,7 +105,8 @@ export function QueueRow(props: QueueRowProps) {
   const row = (
     <button
       type="button"
-      className={`ui-qrow ui-qrow--${layout}`}
+      className={`ui-qrow ui-qrow--${layout}${layout === 'phone' ? ' ui-swipe-settle' : ''}`}
+      style={layout === 'phone' ? swipe.style : undefined}
       data-role="row"
       aria-current={layout === 'desktop' && selected ? 'true' : undefined}
       aria-expanded={layout === 'phone' ? false : undefined}
@@ -109,13 +115,16 @@ export function QueueRow(props: QueueRowProps) {
       {body}
     </button>
   );
-  if (!swiping || layout !== 'phone') return row;
+  if (layout !== 'phone') return row;
   return (
-    <div className="ui-qrow-swipe ui-qrow-swipe--open">
-      <span className="ui-qrow-swipe__reveal" aria-hidden="true">
-        <Icon name="snooze" />
-        <span>Snooze</span>
-      </span>
+    <div className={`ui-qrow-swipe${swipe.revealed ? ' ui-qrow-swipe--revealed' : ''}${swipe.open ? ' ui-qrow-swipe--open' : ''}${swipe.dragging ? ' ui-swipe--dragging' : ''}`}
+      {...swipe.bind}>
+      {swipe.revealed && (
+        <span className="ui-qrow-swipe__reveal" aria-hidden="true">
+          <Icon name="snooze" />
+          <span>Snooze</span>
+        </span>
+      )}
       {row}
     </div>
   );

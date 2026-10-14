@@ -31,7 +31,9 @@
   cursor: pointer;
 }
 .ui-header__chevron { font-size: var(--ui-type-title); line-height: 1; transform: translateY(-1px); }
-.ui-header__back:active { background: var(--wk-surface); }
+.ui-header__back,
+.ui-header__day { transition: background-color var(--ui-motion-fast) var(--ui-ease-standard); }
+.ui-header__back:active { background: var(--wk-surface); transition-duration: 0s; }
 .ui-header__back:focus { outline: none; }
 .ui-header__back:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
 .ui-header__title {

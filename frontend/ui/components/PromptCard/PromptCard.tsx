@@ -11,7 +11,8 @@
 // Yes records at once: it becomes the selected segment, raised with a ✓ in the
 // accent (and "Recorded" for a screen reader), and the optional grams field
 // opens focused beside Next. Mid-swipe,
-// the card slides aside over the Not sure reveal. The "n / N" count belongs to
+// the card slides aside over the Not sure reveal: on the phone it follows the
+// finger and settles open over the reveal or back at rest. The "n / N" count belongs to
 // the Prompts screen's header, not to this card.
 import { useState } from 'react';
 import type { PromptData } from '../../day-model';
@@ -19,6 +20,7 @@ import { Num, NumSvg } from '../../Num';
 import { GramsField } from '../../GramsField';
 import { formatValue } from '../../provenance.js';
 import { useWidth } from '../../measure';
+import { useSwipe } from '../../motion';
 import { SEVERE_LOW, glucoseDomain, glucoseFraction, zones } from '../../glucose-zones';
 import { Button } from '../Button/Button';
 import '../../shared.css';
@@ -43,6 +45,8 @@ const POSTED: Record<(typeof ANSWERS)[number], Answer> = {
   Yes: 'carbs', No: 'no', 'False low': 'false-low', 'Not sure': 'not-sure',
 };
 const HEIGHT = 96;
+/** The Not sure reveal's width, which a swipe opens to. */
+const REVEAL = 96;
 const AXIS = 16;
 
 function Sparkline({ data }: { data: PromptData }) {
@@ -93,9 +97,10 @@ export function PromptCard({
   // Yes records at once; the card then holds the grams typed until Next.
   const [recorded, setRecorded] = useState(initiallyRecorded);
   const [grams, setGrams] = useState('');
+  const swipe = useSwipe(REVEAL, swiping);
   const tone = data.bg.value < SEVERE_LOW ? 'very-low' : 'low';
   const card = (
-    <section className={`ui-prompt ui-prompt--${layout}`}>
+    <section className={`ui-prompt ui-prompt--${layout}${layout === 'phone' ? ' ui-swipe-settle' : ''}`} style={swipe.style}>
       <p className="ui-prompt__head">
         <span className={`ui-prompt__glyph ui-zone--${tone}`} aria-hidden="true">▼</span>
         <span className="ui-prompt__kind">Low</span>
@@ -134,10 +139,11 @@ export function PromptCard({
       )}
     </section>
   );
-  if (!swiping || layout !== 'phone') return card;
+  if (layout !== 'phone') return card;
   return (
-    <div className="ui-prompt-swipe">
-      <span className="ui-prompt-swipe__reveal" aria-hidden="true">Not sure</span>
+    <div className={`ui-prompt-swipe${swipe.revealed ? ' ui-prompt-swipe--revealed' : ''}${swipe.open ? ' ui-prompt-swipe--open' : ''}${swipe.dragging ? ' ui-swipe--dragging' : ''}`}
+      {...(recorded ? {} : swipe.bind)}>
+      {swipe.revealed && <span className="ui-prompt-swipe__reveal" aria-hidden="true">Not sure</span>}
       {card}
     </div>
   );

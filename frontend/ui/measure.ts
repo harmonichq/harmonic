@@ -2,6 +2,9 @@
 // it sits in and lays out to that many pixels, so its type stays at its true
 // size rather than stretching with a viewBox. The width is read before the
 // first paint and again whenever the box resizes; 0 means not yet measured.
+// It reads the laid-out width, not the painted one, so a chart that mounts
+// inside something still scaling in (a popover opening) lays out to the size it
+// will rest at.
 import { useLayoutEffect, useRef, useState } from 'react';
 
 export function useWidth<T extends HTMLElement>() {
@@ -10,7 +13,7 @@ export function useWidth<T extends HTMLElement>() {
   useLayoutEffect(() => {
     const element = ref.current;
     if (!element) return undefined;
-    const read = () => setWidth(Math.floor(element.getBoundingClientRect().width));
+    const read = () => setWidth(Math.floor(parseFloat(getComputedStyle(element).width)) || 0);
     read();
     const observer = new ResizeObserver(read);
     observer.observe(element);

@@ -78,8 +78,14 @@ function serve() {
   return new Promise((ready) => server.listen(0, '127.0.0.1', () => ready(server)));
 }
 
-// What the prechecks read, gathered in the page.
+// What the prechecks read, gathered in the page. They read the render as it
+// rests: anything still moving in (a popover a play has just opened, growing
+// out of its arrow) is first finished where it will settle. The skeleton's
+// endless shimmer has no end to finish at, and moves nothing it is measured by.
 function inspect() {
+  for (const animation of document.getAnimations()) {
+    if (Number.isFinite(animation.effect?.getComputedTiming().endTime)) animation.finish();
+  }
   const primary = (() => {
     const probe = document.createElement('i');
     probe.style.background = 'var(--primary)';

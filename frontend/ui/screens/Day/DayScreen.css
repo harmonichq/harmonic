@@ -39,6 +39,19 @@
   background: var(--wk-surface);
   box-shadow: 0 12px 32px rgb(0 0 0 / .5);
 }
+/* On phone it drops down from under the header as it opens; on desktop it
+   opens as a popover. */
+[data-motion] .ui-dayscreen__month--phone {
+  transition:
+    translate var(--ui-motion-standard) var(--ui-ease-standard),
+    opacity var(--ui-motion-standard) var(--ui-ease-standard);
+}
+@starting-style {
+  [data-motion] .ui-dayscreen__month--phone {
+    translate: 0 calc(-1 * var(--ui-motion-rise) * var(--ui-motion-move));
+    opacity: 0;
+  }
+}
 .ui-popover.ui-dayscreen__month--desktop { position: absolute; top: 100%; z-index: 2; width: 600px; padding: 8px 16px 16px; }
 .ui-dayscreen__month-head { display: flex; align-items: center; justify-content: space-between; }
 .ui-dayscreen__month-name {

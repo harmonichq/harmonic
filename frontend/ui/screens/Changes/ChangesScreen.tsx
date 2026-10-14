@@ -17,9 +17,13 @@
 // Phone: the header stays put while the page scrolls under it, above the tab
 // bar. Desktop: the rail and one pane up to a reading width; the pane scrolls
 // as a whole (§2.3).
+//
+// Motion: the sheet rises over a darkening scrim, the popover opens out of
+// its arrow, and the last change's card grows open under its row.
 import { useEffect, useState } from 'react';
 import { change, lastChange, type ChangeData, type ChangesStore } from '../../changes-model';
 import { sourced } from '../../fixtures';
+import { useMotionGate } from '../../motion';
 import { Num } from '../../Num';
 import { Button } from '../../components/Button/Button';
 import { ChangeCard } from '../../components/ChangeCard/ChangeCard';
@@ -69,6 +73,7 @@ export function ChangesScreen({ layout, store, state = 'ready', end, confirming 
   const [ended, setEnded] = useState(false);
   const [asking, setAsking] = useState(confirming);
   const [lastExpanded, setLastExpanded] = useState(lastOpen);
+  const root = useMotionGate<HTMLDivElement>();
   const shown = ended && end ? end.after : store;
   const active = change(shown);
   const last = lastChange(shown);
@@ -112,7 +117,7 @@ export function ChangesScreen({ layout, store, state = 'ready', end, confirming 
                 value={last.result ? <StatePill state={last.result} /> : undefined}
                 disclosure={{ expanded: lastExpanded, onToggle: () => setLastExpanded(!lastExpanded) }} />
             </ListGroup>
-            {lastExpanded && <div className="ui-changes__last-card"><ChangeCard data={last} /></div>}
+            {lastExpanded && <div className="ui-changes__last-card ui-expand"><ChangeCard data={last} /></div>}
           </div>
         )}
       </>
@@ -120,14 +125,14 @@ export function ChangesScreen({ layout, store, state = 'ready', end, confirming 
 
   if (layout === 'phone') {
     return (
-      <div className="ui-changes ui-changes--phone">
+      <div ref={root} className="ui-changes ui-changes--phone">
         <div className="ui-changes__head">{header}</div>
         <main className="ui-changes__main" data-scroll="page">
           <div className="ui-changes__body">{content}</div>
         </main>
         <NavBar layout="tabbar" selected="changes" dayCount={dayCount} />
         {asking && state === 'ready' && (
-          <div className="ui-changes__scrim" onClick={cancel}>
+          <div className="ui-scrim ui-changes__scrim" onClick={cancel}>
             <section className="ui-sheet ui-changes__confirm" role="dialog" aria-label="End"
               onClick={(event) => event.stopPropagation()}>
               <span className="ui-sheet__grabber" aria-hidden="true" />
@@ -139,7 +144,7 @@ export function ChangesScreen({ layout, store, state = 'ready', end, confirming 
     );
   }
   return (
-    <div className="ui-changes ui-changes--desktop">
+    <div ref={root} className="ui-changes ui-changes--desktop">
       <NavBar layout="rail" selected="changes" dayCount={dayCount} />
       <section className="ui-changes__pane" data-scroll="page">
         {header}

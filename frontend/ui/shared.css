@@ -8,11 +8,24 @@
   text-transform: uppercase;
 }
 
-/* Loading: the card's own shape, in blocks. */
+/* Loading: the card's own shape, in blocks. A faint band sweeps across the
+   screen through every block at once. The band exists only while the shimmer
+   runs, so a held or reduced-motion block paints exactly as the flat block. */
 .ui-skeleton {
   display: block;
   border-radius: var(--wk-radius);
   background: var(--wk-surface-rail);
+  animation: var(--ui-motion-shimmer) 1.6s var(--ui-ease-standard) infinite;
+}
+@keyframes ui-shimmer {
+  from, to {
+    background-image: linear-gradient(90deg, transparent, color-mix(in srgb, var(--wk-ink) 6%, transparent), transparent);
+    background-size: 50% 100%;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+  }
+  from { background-position: -100% 0; }
+  to { background-position: 200% 0; }
 }
 
 /* Read by a screen reader, not shown: "Recorded" on an answered Prompt. */
@@ -97,3 +110,94 @@
 .ui-delta--favorable { color: var(--wk-status-favorable); }
 .ui-delta--adverse { color: var(--wk-status-adverse); }
 .ui-delta__unit { font-weight: var(--ui-weight-regular); }
+
+/* Motion (tokens.css, motion.ts). Under [data-motion], which a screen's root
+   takes once it has first drawn, what arrives moves in from its starting
+   style and rests where its layout already put it. */
+
+/* A sheet rises from the bottom edge; its scrim darkens behind it. Under
+   reduced motion the sheet fades instead (its starting opacity is the move). */
+[data-motion] .ui-sheet {
+  transition:
+    translate var(--ui-motion-emphasized) var(--ui-ease-emphasized),
+    opacity var(--ui-motion-fast) linear;
+}
+[data-motion] .ui-scrim { transition: background-color var(--ui-motion-standard) linear; }
+@starting-style {
+  [data-motion] .ui-sheet { translate: 0 calc(100% * var(--ui-motion-move)); opacity: var(--ui-motion-move); }
+  [data-motion] .ui-scrim { background-color: transparent; }
+}
+
+/* A popover fades in and grows slightly out of its arrow. */
+[data-motion] .ui-popover {
+  transform-origin: 29px 0;
+  transition:
+    opacity var(--ui-motion-standard) var(--ui-ease-standard),
+    scale var(--ui-motion-standard) var(--ui-ease-standard),
+    translate var(--ui-motion-standard) var(--ui-ease-standard);
+}
+[data-motion] .ui-popover--end { transform-origin: calc(100% - 29px) 0; }
+@starting-style {
+  [data-motion] .ui-popover {
+    opacity: 0;
+    scale: calc(1 - .04 * var(--ui-motion-move));
+    translate: 0 calc(-4px * var(--ui-motion-move));
+  }
+}
+
+/* A card or a disclosure opens in place: it grows from where it starts
+   (--ui-expand-from: nothing, or the row it replaces) to its own height, its
+   content fading in and clipped while it grows. It may shrink below its
+   content only while it grows (min-height: 0, as a flex item). Under reduced
+   motion it takes its height at once and only fades. */
+[data-motion] .ui-expand {
+  min-height: 0;
+  overflow: clip;
+  overflow-clip-margin: 5px;
+  interpolate-size: allow-keywords;
+  transition:
+    height calc(var(--ui-motion-emphasized) * var(--ui-motion-move)) var(--ui-ease-emphasized),
+    margin-block calc(var(--ui-motion-emphasized) * var(--ui-motion-move)) var(--ui-ease-emphasized),
+    opacity var(--ui-motion-standard) var(--ui-ease-standard);
+}
+@starting-style {
+  [data-motion] .ui-expand { height: var(--ui-expand-from, 0px); margin-block: 0; opacity: 0; }
+}
+
+/* A drill-down: a container marked [data-push] slides its header and its
+   .ui-push content in from the right going forward, from the left coming back,
+   inside the side margin. */
+[data-motion] [data-push] > :is(.ui-header, .ui-push) {
+  transition:
+    translate var(--ui-motion-emphasized) var(--ui-ease-emphasized),
+    opacity var(--ui-motion-emphasized) var(--ui-ease-emphasized);
+}
+@starting-style {
+  [data-motion] [data-push='forward'] > :is(.ui-header, .ui-push) {
+    translate: calc(var(--ui-motion-shift) * var(--ui-motion-move)) 0;
+    opacity: 0;
+  }
+  [data-motion] [data-push='back'] > :is(.ui-header, .ui-push) {
+    translate: calc(var(--ui-motion-shift) * var(--ui-motion-move) * -1) 0;
+    opacity: 0;
+  }
+}
+
+/* The next item of a sequence (the next prompt) comes in from the right. */
+[data-motion] .ui-advance {
+  transition:
+    translate var(--ui-motion-standard) var(--ui-ease-standard),
+    opacity var(--ui-motion-standard) var(--ui-ease-standard);
+}
+@starting-style {
+  [data-motion] .ui-advance { translate: calc(var(--ui-motion-shift) * var(--ui-motion-move)) 0; opacity: 0; }
+}
+
+/* A swipe settles: the row returns to rest or to its reveal. The added
+   millisecond keeps the settle an event under reduced motion, when it is
+   otherwise instant, so the reveal is taken away once the row covers it. */
+.ui-swipe-settle {
+  touch-action: pan-y;
+  transition: translate calc(var(--ui-motion-standard) * var(--ui-motion-move) + 1ms) var(--ui-ease-standard);
+}
+.ui-swipe--dragging .ui-swipe-settle { transition: none; user-select: none; }

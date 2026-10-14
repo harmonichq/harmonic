@@ -1,0 +1,112 @@
+/* The component library's tokens (#483). One source: the colours, grounds,
+   inks, rules and radius are the app's own material, imported as-is, and
+   Inter is the same vendored sheet the desk loads.
+
+   What is added here is the redesign lock's scale (§2.1 and §4.1): the
+   five type steps and the one size per control role, and the library's own
+   glucose band colours. Components read these names, never a literal. */
+@import '../material.css';
+@import '../fonts/inter.css';
+
+:root {
+  --ui-font: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  /* §4.1 type: 34 figure · 22 title · 17 body · 13 label · 11 caption. */
+  --ui-type-figure: 34px;
+  --ui-type-title: 22px;
+  --ui-type-body: 17px;
+  --ui-type-label: 13px;
+  --ui-type-caption: 11px;
+  --ui-weight-regular: 400;
+  --ui-weight-strong: 600;
+  --ui-track-caps: .06em;
+
+  /* §4.1 size per role, one each. */
+  --ui-size-primary: 50px;
+  --ui-size-secondary: 32px;
+  --ui-size-text: 32px;
+  --ui-size-icon: 44px;
+  --ui-size-glyph: 20px;
+  --ui-size-segment: 28px;
+  --ui-size-nav: 44px;
+  --ui-size-answer: 44px;
+  --ui-size-pill: 20px;
+  --ui-size-badge: 16px;
+
+  /* §2.1 glucose bands: the clinical AGP colours (the 2019 international
+     consensus on time in range, as Clarity and LibreView draw them), one hue
+     family per band, tuned for this dark ground. Library tokens only: the
+     running app keeps material.css's --low / --in-range / --high. Every band
+     clears 3:1 against --wk-surface as a fill, and lightness steps between
+     adjacent bands (OKLab L .57 · .67 · .76 · .86 · .73), so a band never
+     relies on hue alone. Contrast against #221e1b / #0f0d0b:
+       very low  <54      3.40 / 3.99   deep red, darker than low
+       low       54–69    5.20 / 6.09   red
+       in range  70–180   7.91 / 9.28   green
+       high      181–250 10.79 / 12.65  yellow
+       very high >250     6.62 / 7.76   orange, darker than high */
+  --glucose-very-low: #cc3d44;
+  --glucose-low: #ee6457;
+  --glucose-in-range: #7ec476;
+  --glucose-high: #efcf4c;
+  --glucose-very-high: #f08a3c;
+  /* In range where a chart draws a lot of it (the profile band, a day's trace):
+     the in-range green held toward the body ink, so in range reads green
+     without flooding and the excursions keep the colour. */
+  --glucose-in-range-quiet: color-mix(in oklab, var(--glucose-in-range) 50%, var(--wk-ink-body));
+  /* The one accent (chosen 2026-10-13 over the app's orange, a cyan and a
+     violet): blue. It overrides material.css's orange here, in the library
+     only, until the build ticket carries it into the app. It marks what you
+     can press (the primary fill, text actions, the focus ring) and what is
+     selected (tab, segment, the Focus pill), and the engine's estimate as data:
+     its figure, mark and range band. 6.75:1 against --wk-surface. */
+  --primary: #7aa8e6;
+  --on-primary: #0d1522;
+  --ring: color-mix(in srgb, var(--primary) 34%, transparent);
+  /* Food, the one coloured event family on a day (2026-10-13): the meal bolus
+     and logged-carb glyphs and their grams. A quiet teal (OKLCH chroma 0.057,
+     half the first one's), clear of every glucose zone hue and the blue
+     accent; 7.90:1 on --wk-surface, 9.26:1 on --wk-canvas. Every other event
+     is neutral ink. */
+  --ui-meal: #86bdbd;
+  --ui-estimate: var(--primary);
+  --ui-estimate-band: color-mix(in srgb, var(--ui-estimate) 16%, transparent);
+
+  /* Motion: three durations and two easings, neither of which overshoots.
+     Fast is a press and a fade; standard is what opens beside you (a
+     popover, the bar, the month, a swipe settling, the next prompt);
+     emphasized is what moves the view (a sheet, a drill-down, a card growing
+     to its height). A rule multiplies every distance by --ui-motion-move,
+     which reduced motion sets to 0, so what travels becomes a fade or an
+     instant change. Motion only ever ends where the layout already rests. */
+  --ui-motion-fast: 120ms;
+  --ui-motion-standard: 200ms;
+  --ui-motion-emphasized: 280ms;
+  --ui-ease-standard: cubic-bezier(.2, 0, 0, 1);
+  --ui-ease-emphasized: cubic-bezier(.05, .7, .1, 1);
+  --ui-motion-move: 1;
+  /* A drill-down's and the next prompt's travel: inside the side margin, so
+     nothing crosses the screen's edge on its way in. */
+  --ui-motion-shift: 16px;
+  /* The bar rising and the month dropping. */
+  --ui-motion-rise: 8px;
+  --ui-motion-shimmer: ui-shimmer;
+}
+
+/* Reduced motion: nothing travels, and what remains is a fade of at most the
+   fast duration; the skeleton holds still. [data-motion-reduce] holds the same
+   state for review. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --ui-motion-move: 0;
+    --ui-motion-standard: var(--ui-motion-fast);
+    --ui-motion-emphasized: var(--ui-motion-fast);
+    --ui-motion-shimmer: none;
+  }
+}
+[data-motion-reduce] {
+  --ui-motion-move: 0;
+  --ui-motion-standard: var(--ui-motion-fast);
+  --ui-motion-emphasized: var(--ui-motion-fast);
+  --ui-motion-shimmer: none;
+}

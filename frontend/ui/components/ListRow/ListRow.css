@@ -1,0 +1,85 @@
+.ui-list { font-family: var(--ui-font); font-variant-numeric: tabular-nums; }
+/* Two groups in a row are set apart by space alone: the second draws no rule
+   above its first row, so the gap never reads as an empty row. */
+.ui-list + .ui-list { margin-top: 32px; }
+.ui-list + .ui-list > .ui-list__rows { border-top: 0; }
+.ui-list__caption { margin: 0 0 6px; }
+.ui-list__rows { border-top: 1px solid var(--wk-rule); }
+
+.ui-row {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 48px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid var(--wk-rule);
+  background: none;
+  color: var(--wk-ink);
+  font: var(--ui-weight-regular) var(--ui-type-body) / 22px var(--ui-font);
+  text-align: left;
+}
+.ui-row--open { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.ui-row--open { transition: background-color var(--ui-motion-fast) var(--ui-ease-standard); }
+.ui-row--open:active { background: var(--wk-surface); transition-duration: 0s; }
+.ui-row--open:focus { outline: none; }
+.ui-row--open:focus-visible { outline: 3px solid var(--ring); outline-offset: -3px; }
+
+.ui-row__label { flex: 1 1 auto; min-width: 0; }
+.ui-row__value { flex: none; color: var(--wk-ink-meta); }
+.ui-row__value--alert { color: var(--danger); font-weight: var(--ui-weight-strong); }
+.ui-row__chevron { flex: none; color: var(--wk-ink-meta); font-size: var(--ui-type-title); line-height: 1; }
+
+/* A Glossary term: the term strong, its definition beneath in body ink. */
+.ui-row--term { align-items: flex-start; padding: 12px 0; }
+.ui-row--term .ui-row__label { font-weight: var(--ui-weight-strong); }
+.ui-row__definition {
+  display: block;
+  margin-top: 4px;
+  color: var(--wk-ink-body);
+  font-size: var(--ui-type-label);
+  font-weight: var(--ui-weight-regular);
+  line-height: 18px;
+}
+
+/* Dense: a table row in the group's shared columns. */
+.ui-row--dense {
+  display: grid;
+  grid-template-columns: var(--ui-row-columns);
+  min-height: 36px;
+  font-size: var(--ui-type-label);
+}
+.ui-row__cell { text-align: right; }
+.ui-row__cell:first-child { text-align: left; }
+.ui-row--head { min-height: 40px; align-items: end; padding-bottom: 6px; }
+.ui-row--head .ui-row__cell { color: var(--wk-ink-meta); }
+
+/* A disclosure row's chevron: down closed, up open. */
+.ui-row__disclosure { display: flex; flex: none; color: var(--wk-ink-meta); }
+
+/* A form row: the label, then its input on the right, underlined as the grams
+   field is (§2.2 numeric input): a neutral rule, the accent while focused. */
+.ui-row--field { cursor: text; }
+.ui-row--field .ui-row__label { flex: none; }
+.ui-row__input {
+  box-sizing: border-box;
+  flex: 0 1 220px;
+  min-width: 0;
+  height: 32px;
+  margin: 0 0 0 auto;
+  padding: 0 2px 4px;
+  border: 0;
+  border-bottom: 2px solid var(--wk-rule-strong);
+  border-radius: 0;
+  outline: none;
+  background: transparent;
+  color: var(--wk-ink);
+  caret-color: var(--primary);
+  font: var(--ui-weight-regular) var(--ui-type-body) / 1 var(--ui-font);
+  text-align: right;
+}
+.ui-row__input:focus { border-bottom-color: var(--primary); }
+.ui-row__input:disabled { color: var(--wk-ink-meta); }

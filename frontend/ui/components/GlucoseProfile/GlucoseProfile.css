@@ -1,0 +1,44 @@
+.ui-profile {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 12px 10px;
+  border-radius: var(--wk-radius);
+  background: var(--wk-surface);
+  font-family: var(--ui-font);
+  font-variant-numeric: tabular-nums;
+}
+
+.ui-profile__head { display: flex; align-items: baseline; gap: 8px; }
+.ui-profile__title { color: var(--wk-ink-body); }
+.ui-profile__days { color: var(--wk-ink-meta); font-size: var(--ui-type-caption); }
+
+.ui-profile__legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  color: var(--wk-ink-meta);
+  font-size: var(--ui-type-caption);
+}
+.ui-profile__key { display: flex; align-items: center; gap: 6px; }
+.ui-profile__key svg { display: block; }
+
+.ui-profile__chart { display: block; overflow: visible; }
+
+/* The band: quiet green in range, the excursions in their zone's tone, small enough
+   to mark rather than flood; the median rides on it with a halo. */
+.ui-profile__neutral { fill: var(--glucose-in-range); fill-opacity: .3; }
+/* The two spreads: the outer band faint, the inner one drawn over it in full. */
+.ui-profile__spread--outer { opacity: .5; }
+.ui-profile__band .ui-zone-area { fill-opacity: .85; }
+.ui-profile__median { fill: none; stroke: var(--wk-ink); stroke-width: 2; stroke-linejoin: round; }
+.ui-profile__halo { fill: none; stroke: var(--wk-surface); stroke-width: 5; stroke-linejoin: round; }
+.ui-profile__target { stroke: var(--glucose-in-range); stroke-opacity: .8; stroke-width: 1; stroke-dasharray: 3 3; }
+.ui-profile__tick-line { stroke: var(--wk-rule-strong); stroke-width: 1; }
+.ui-profile__rule { stroke: var(--wk-rule); stroke-width: 1; }
+.ui-profile__meal { fill: var(--wk-ink-meta); fill-opacity: .55; }
+
+.ui-profile__scale { fill: var(--wk-ink-meta); font-size: var(--ui-type-caption); }
+
+.ui-profile__empty { fill: var(--wk-ink-meta); font-size: var(--ui-type-label); }

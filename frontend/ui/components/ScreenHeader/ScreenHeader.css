@@ -1,0 +1,77 @@
+.ui-header {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--ui-font);
+  font-variant-numeric: tabular-nums;
+}
+.ui-header__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 44px;
+}
+
+/* Drill-down: the back control on its own row, a 44 px target whose label
+   lines up with the title below it. */
+.ui-header__back {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: var(--ui-size-nav);
+  margin: 0 0 0 -4px;
+  padding: 0 8px 0 4px;
+  border: 0;
+  border-radius: var(--wk-radius);
+  background: none;
+  color: var(--primary);
+  font: var(--ui-weight-regular) var(--ui-type-body) / 1 var(--ui-font);
+  cursor: pointer;
+}
+.ui-header__chevron { font-size: var(--ui-type-title); line-height: 1; transform: translateY(-1px); }
+.ui-header__back,
+.ui-header__day { transition: background-color var(--ui-motion-fast) var(--ui-ease-standard); }
+.ui-header__back:active { background: var(--wk-surface); transition-duration: 0s; }
+.ui-header__back:focus { outline: none; }
+.ui-header__back:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
+.ui-header__title {
+  margin: 0;
+  color: var(--wk-ink);
+  font-size: var(--ui-type-title);
+  font-weight: var(--ui-weight-strong);
+  line-height: 28px;
+}
+/* The title and the day it shows, on one baseline. */
+.ui-header__titles { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
+/* The day as a text action that drops the month down. */
+.ui-header__day {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: var(--ui-size-text);
+  margin: 0;
+  padding: 0 4px 0 6px;
+  border: 0;
+  border-radius: var(--wk-radius);
+  background: none;
+  color: var(--primary);
+  font: var(--ui-weight-regular) var(--ui-type-body) / 1 var(--ui-font);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.ui-header__day svg { width: 18px; height: 18px; }
+.ui-header__day[aria-expanded='true'] { background: var(--wk-surface); }
+.ui-header__day:focus { outline: none; }
+.ui-header__day:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
+.ui-header__date,
+.ui-header__label {
+  color: var(--wk-ink-meta);
+  font-size: var(--ui-type-label);
+}
+.ui-header__control { flex: 0 1 220px; }
+.ui-header__unavailable { display: flex; align-items: center; gap: 4px; }
+.ui-header__unavailable .ui-button--text { margin-right: -8px; }

@@ -1,0 +1,102 @@
+.ui-button {
+  position: relative;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  margin: 0;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: var(--wk-radius);
+  background: transparent;
+  color: var(--wk-ink);
+  font: var(--ui-weight-strong) var(--ui-type-label) / 1 var(--ui-font);
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ui-button--primary {
+  display: flex;
+  width: 100%;
+  height: var(--ui-size-primary);
+  border: 0;
+  background: var(--primary);
+  color: var(--on-primary);
+  font-size: var(--ui-type-body);
+}
+
+.ui-button--secondary {
+  height: var(--ui-size-secondary);
+  border-color: var(--wk-rule-strong);
+}
+
+.ui-button--text {
+  height: var(--ui-size-text);
+  padding: 0 8px;
+  color: var(--primary);
+}
+
+.ui-button--icon {
+  width: var(--ui-size-icon);
+  height: var(--ui-size-icon);
+  padding: 0;
+  border-color: var(--wk-rule-strong);
+}
+
+/* Pressed. The .sb-pressed hook lets a story hold the state still. The press
+   lands at once and lets go over the fast duration. */
+.ui-button { transition: background-color var(--ui-motion-fast) var(--ui-ease-standard); }
+.ui-button:active:enabled,
+.sb-pressed .ui-button { transition-duration: 0s; }
+.ui-button--primary:active:enabled,
+.sb-pressed .ui-button--primary {
+  background: color-mix(in oklab, var(--primary) 84%, var(--on-primary));
+}
+.ui-button--secondary:active:enabled,
+.ui-button--icon:active:enabled,
+.sb-pressed .ui-button--secondary,
+.sb-pressed .ui-button--icon {
+  background: var(--wk-surface-rail);
+}
+.ui-button--text:active:enabled,
+.sb-pressed .ui-button--text {
+  background: var(--wk-surface);
+}
+
+/* Focused: the --ring token, held off the control by a gap so it reads on
+   the primary fill as well as on the canvas. */
+.ui-button:focus { outline: none; }
+.ui-button:focus-visible,
+.sb-focused .ui-button {
+  outline: 3px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.ui-button:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
+
+/* Busy: the label keeps its width and gives way to a spinner. */
+.ui-button[aria-busy='true'] { cursor: progress; }
+.ui-button[aria-busy='true'] .ui-button__face { visibility: hidden; }
+.ui-button__face { display: inline-flex; align-items: center; }
+.ui-button__spinner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  box-sizing: border-box;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: ui-button-spin .8s linear infinite;
+}
+@keyframes ui-button-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .ui-button__spinner { animation-duration: 2.4s; }
+}

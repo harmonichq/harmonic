@@ -1,0 +1,86 @@
+.ui-daychart {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  color: var(--wk-ink-body);
+  font-family: var(--ui-font);
+  font-variant-numeric: tabular-nums;
+}
+
+.ui-daychart__legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  color: var(--wk-ink-meta);
+  font-size: var(--ui-type-caption);
+}
+.ui-daychart__key { display: flex; align-items: center; gap: 6px; }
+.ui-daychart__key svg { display: block; overflow: visible; }
+.ui-daychart__key-glyph { display: flex; }
+
+.ui-daychart__chart { display: block; overflow: visible; }
+.ui-daychart__grid { stroke: var(--wk-rule); stroke-opacity: .5; stroke-width: 1; }
+.ui-daychart__rule { stroke: var(--wk-rule); stroke-width: 1; }
+.ui-daychart__band { fill-opacity: .10; }
+.ui-daychart__target { stroke: var(--glucose-in-range); stroke-opacity: .6; stroke-width: 1; stroke-dasharray: 3 3; }
+
+.ui-daychart__trace { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.ui-daychart__trace--in-range { stroke: var(--glucose-in-range-quiet); }
+
+/* The marks: one glyph per event, all in neutral ink; the glyph's shape tells
+   the kinds apart. A halo of the canvas keeps a glyph clear of the grid lines
+   behind it. */
+.ui-daychart__mark { color: var(--wk-ink-body); }
+/* Food alone takes a colour: meal boluses and logged carbs. */
+.ui-daychart__mark--meal, .ui-daychart__grams--meal { color: var(--ui-meal); }
+.ui-daychart__mark svg { overflow: visible; }
+.ui-daychart__halo { fill: var(--wk-canvas); }
+
+/* Sleep: a neutral bar in the strip and a faint wash through the lanes, so it
+   never reads as a glucose tone. */
+.ui-daychart__sleep { fill: var(--wk-ink-meta); fill-opacity: .45; }
+.ui-daychart__sleep-wash { fill: var(--wk-ink); fill-opacity: .035; }
+
+.ui-daychart__basal { fill: var(--wk-ink-meta); fill-opacity: .4; }
+.ui-daychart__profile { fill: none; stroke: var(--wk-ink-body); stroke-width: 1.2; stroke-dasharray: 3 2; }
+
+.ui-daychart__scale {
+  fill: var(--wk-ink-meta);
+  font-size: var(--ui-type-caption);
+  stroke: var(--wk-canvas);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+  paint-order: stroke;
+}
+.ui-daychart__unit { fill: var(--wk-ink-meta); }
+.ui-daychart__empty { fill: var(--wk-ink-meta); font-size: var(--ui-type-label); }
+
+/* The event list: time, mark, kind, then grams and units in aligned columns. */
+.ui-daychart__events {
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--wk-rule);
+}
+.ui-daychart--desktop .ui-daychart__events {
+  display: grid;
+  grid-template-columns: repeat(var(--columns, 3), 1fr);
+  grid-auto-flow: column;
+  grid-template-rows: repeat(var(--rows, 4), auto);
+  column-gap: 32px;
+}
+.ui-daychart__event {
+  display: grid;
+  grid-template-columns: 44px 14px 1fr 48px 60px;
+  align-items: center;
+  column-gap: 8px;
+  min-height: 32px;
+  border-bottom: 1px solid var(--wk-rule);
+  font-size: var(--ui-type-label);
+}
+.ui-daychart__time { color: var(--wk-ink-meta); }
+.ui-daychart__glyph { display: flex; }
+.ui-daychart__kind { color: var(--wk-ink); }
+.ui-daychart__grams,
+.ui-daychart__units { color: var(--wk-ink); text-align: right; }

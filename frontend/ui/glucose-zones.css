@@ -1,0 +1,17 @@
+/* The five glucose zones (glucose-zones.tsx): each class sets --tone. */
+.ui-zone--very-low { --tone: var(--glucose-very-low); }
+.ui-zone--low { --tone: var(--glucose-low); }
+.ui-zone--in-range { --tone: var(--glucose-in-range); }
+.ui-zone--high { --tone: var(--glucose-high); }
+.ui-zone--very-high { --tone: var(--glucose-very-high); }
+
+/* A swatch: solid, or 1.4 px stripes of the tone at 45° for the severe ends. */
+.ui-zone { display: block; border-radius: 1px; background: var(--tone); }
+.ui-zone--hatched {
+  background: repeating-linear-gradient(-45deg, var(--tone) 0 1.4px, transparent 1.4px 2.83px);
+}
+
+/* SVG: a zone's area, a hatch stripe, a trace segment. */
+.ui-zone-area { fill: var(--tone); }
+.ui-zone-hatch { fill: var(--tone); }
+.ui-zone-stroke { stroke: var(--tone); }

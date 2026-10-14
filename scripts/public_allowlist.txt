@@ -73,6 +73,13 @@ frontend/** {.html,.js,.mjs,.ts,.css,.svg,.json}
 # the extension set above and should not be widened for one file.
 frontend/fonts/OFL.txt
 
+# --- The component library (#483, ADR 481). It ships with the desk's source
+# root: it is the source the redesigned screens are composed from. The rule
+# above already clears its .js/.ts/.css/.json/.mjs files; its React sources and
+# stories are .tsx, which that rule does not clear. Its built Storybook and its
+# per-story screenshots are untracked build output, never candidates here.
+frontend/ui/** {.tsx}
+
 # --- The public "why" (§0.2 [R5]) ---------------------------------------
 openspec/specs/** {.md}
 
@@ -146,3 +153,9 @@ scripts/public_scan_config.txt
 # Generated design-capture parity requires private artifacts. Public analyzer
 # fixture coverage remains in the separate public test module.
 ! tests/test_eating_sequence_finding_fixture.py
+
+# The component library's fixture generator (#483) reads two inputs the public
+# tree excludes: the redesign lock it takes the glossary from, and the QA
+# showcase store it serves the fixtures from. Its stamped outputs under
+# frontend/ui/__fixtures__/ ship; the generator and its --check stay here.
+! scripts/gen_ui_fixtures.py

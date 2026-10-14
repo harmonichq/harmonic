@@ -1,0 +1,44 @@
+.ui-changes { box-sizing: border-box; position: relative; background: var(--wk-canvas); font-family: var(--ui-font); }
+
+/* Phone: the fixed header, the page that scrolls under it, the tab bar. */
+.ui-changes--phone { display: flex; flex-direction: column; height: 100%; }
+.ui-changes__head { flex: none; padding: 8px 16px 0; }
+.ui-changes__main { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 0 16px 16px; }
+.ui-changes__body { display: flex; flex-direction: column; margin-top: 8px; }
+
+/* The last change, set apart from the active one under its caption. */
+.ui-changes__last { display: flex; flex-direction: column; margin-top: 32px; }
+.ui-changes__last-card { margin-top: 8px; }
+
+.ui-changes__skeleton { height: 220px; }
+
+/* Desktop: the rail and one pane, up to a reading width. */
+.ui-changes--desktop { display: grid; grid-template-columns: auto 1fr; height: 100%; }
+.ui-changes__pane { box-sizing: border-box; min-height: 0; overflow-y: auto; padding: 24px 32px; }
+.ui-changes--desktop .ui-changes__body { max-width: 720px; }
+
+/* The End confirmation: the change's name, End, and Cancel centred beneath. */
+.ui-changes__scrim {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  background: rgb(0 0 0 / .5);
+}
+.ui-changes__confirm-title {
+  margin: 0 0 20px;
+  font-size: var(--ui-type-body);
+  font-weight: var(--ui-weight-strong);
+  line-height: 22px;
+  font-variant-numeric: tabular-nums;
+}
+.ui-changes__confirm-actions { display: flex; flex-direction: column; }
+.ui-changes__cancel { display: flex; justify-content: center; margin-top: 16px; }
+.ui-change__foot:has(> .ui-changes__confirm) { position: relative; }
+/* Desktop: the popover floats under End, over what follows, not in its flow. */
+.ui-popover.ui-changes__confirm { position: absolute; top: 100%; right: 0; z-index: 1; }
+
+/* The last change as one row: its name over what changed and when. */
+.ui-changes__last-row { display: flex; flex-direction: column; gap: 2px; }
+.ui-changes__last-meta { color: var(--wk-ink-meta); font-size: var(--ui-type-label); font-variant-numeric: tabular-nums; }

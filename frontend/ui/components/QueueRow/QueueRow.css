@@ -1,0 +1,110 @@
+.ui-qrow {
+  box-sizing: border-box;
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+  min-height: 48px;
+  margin: 0;
+  border: 0;
+  color: var(--wk-ink);
+  font-family: var(--ui-font);
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* The kind's glyph, in its own 44 px column, centred on the title line. */
+.ui-qrow__glyph {
+  flex: none;
+  display: flex;
+  align-items: center;
+  width: 44px;
+  height: 22px;
+  color: var(--wk-ink-meta);
+}
+
+.ui-qrow__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ui-qrow__head { display: flex; align-items: center; gap: 8px; }
+.ui-qrow__title {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--ui-type-body);
+  font-weight: var(--ui-weight-strong);
+  line-height: 22px;
+}
+.ui-qrow__slot { color: var(--wk-ink-meta); }
+.ui-qrow__chevron { display: flex; color: var(--wk-ink-meta); }
+
+.ui-qrow__meta {
+  display: flex;
+  min-width: 0;
+  color: var(--wk-ink-body);
+  font-size: var(--ui-type-label);
+  font-variant-numeric: tabular-nums;
+}
+.ui-qrow__magnitude { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Phone: a row under a rule, the meta line clear of the chevron. */
+.ui-qrow--phone {
+  padding: 14px 0;
+  border-top: 1px solid var(--wk-rule);
+  background: var(--wk-canvas);
+}
+.ui-qrow--phone .ui-qrow__meta { padding-right: 28px; }
+
+/* Desktop: a list row; selected takes the surface and a leading bar. */
+.ui-qrow--desktop {
+  position: relative;
+  padding: 16px 16px 16px 12px;
+  border-radius: var(--wk-radius);
+  background: transparent;
+}
+.ui-qrow--desktop .ui-qrow__body { gap: 8px; }
+.ui-qrow--desktop[aria-current='true'] { background: var(--wk-surface); }
+.ui-qrow--desktop[aria-current='true']::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 16px;
+  bottom: 16px;
+  width: 2px;
+  background: var(--wk-ink);
+}
+
+.ui-qrow:focus { outline: none; }
+.ui-qrow:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
+
+.ui-qrow--loading { cursor: default; }
+
+/* Snoozed: read-only, with Until and Restore on a last line. */
+.ui-qrow--snoozed { cursor: default; }
+.ui-qrow--phone.ui-qrow--snoozed .ui-qrow__meta { padding-right: 0; }
+.ui-qrow__foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.ui-qrow__until { color: var(--wk-ink-meta); font-size: var(--ui-type-label); font-variant-numeric: tabular-nums; }
+.ui-qrow--loading .ui-qrow__body { gap: 10px; }
+
+/* Mid-swipe: the row slides left over the Snooze reveal, which is drawn only
+   while the row is off its rest. */
+.ui-qrow-swipe--revealed { position: relative; overflow: hidden; }
+.ui-qrow-swipe__reveal {
+  position: absolute;
+  top: 1px;
+  right: 0;
+  bottom: 0;
+  width: 88px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: var(--wk-surface-rail);
+  color: var(--wk-ink);
+  font: var(--ui-weight-strong) var(--ui-type-caption) / 1 var(--ui-font);
+}
+.ui-qrow-swipe--open .ui-qrow { translate: -88px 0; }

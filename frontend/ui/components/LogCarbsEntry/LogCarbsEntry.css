@@ -1,0 +1,47 @@
+.ui-logcarbs {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Phone: a sheet; desktop: a popover under its trigger (shared.css). */
+.ui-logcarbs-anchor { display: flex; flex-direction: column; align-items: flex-start; }
+.ui-logcarbs-anchor--end { align-items: flex-end; }
+
+.ui-logcarbs__title {
+  margin: 0;
+  font-size: var(--ui-type-body);
+  font-weight: var(--ui-weight-strong);
+  line-height: 22px;
+}
+.ui-logcarbs__field { display: flex; justify-content: center; margin: 20px 0 16px; }
+
+/* Time: a native-style row, label left, value and chevron right. */
+.ui-logcarbs__time {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 48px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-top: 1px solid var(--wk-rule);
+  border-bottom: 1px solid var(--wk-rule);
+  background: none;
+  color: var(--wk-ink);
+  font: var(--ui-weight-regular) var(--ui-type-body) / 1 var(--ui-font);
+  cursor: pointer;
+}
+.ui-logcarbs__time:disabled { color: var(--wk-ink-meta); cursor: default; }
+.ui-logcarbs__value { display: flex; align-items: center; gap: 8px; color: var(--wk-ink-body); }
+.ui-logcarbs__chevron { color: var(--wk-ink-meta); font-size: var(--ui-type-title); line-height: 1; }
+
+/* Save sits apart from the row above it. */
+.ui-logcarbs__foot { display: flex; flex-direction: column; gap: 12px; margin-top: 32px; }
+.ui-logcarbs__failed {
+  margin: 0;
+  color: var(--danger);
+  font-size: var(--ui-type-label);
+  font-weight: var(--ui-weight-strong);
+}

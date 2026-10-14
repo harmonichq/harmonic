@@ -1,0 +1,39 @@
+.ui-insulin {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-family: var(--ui-font);
+  font-variant-numeric: tabular-nums;
+}
+.ui-insulin__total { display: flex; align-items: baseline; gap: 10px; margin: 0; }
+.ui-insulin__value {
+  color: var(--wk-ink);
+  font-size: var(--ui-type-body);
+  font-weight: var(--ui-weight-strong);
+  line-height: 22px;
+  white-space: nowrap;
+}
+.ui-insulin__unit,
+.ui-insulin__share { color: var(--wk-ink-meta); font-size: var(--ui-type-label); font-weight: var(--ui-weight-regular); }
+.ui-insulin__share { margin-left: 8px; }
+
+.ui-insulin__bar { display: block; }
+.ui-insulin__part--basal { fill: var(--wk-ink-meta); fill-opacity: .55; }
+.ui-insulin__part--meal { fill: var(--ui-meal); }
+.ui-insulin__part--correction { fill: var(--wk-ink-body); }
+.ui-insulin__hatch-ground { fill: var(--wk-surface-rail); }
+.ui-insulin__hatch-line { stroke: var(--wk-ink); stroke-width: 2; }
+
+/* The parts, in the bar's order: two to a row in a narrow box; in a wide one,
+   one row, each part its own width. */
+.ui-insulin__parts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 16px; }
+.ui-insulin--wide .ui-insulin__parts { display: flex; flex-wrap: wrap; gap: 10px 48px; }
+.ui-insulin__part-label { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.ui-insulin__name { display: flex; align-items: center; gap: 6px; }
+.ui-insulin__swatch { flex: none; width: 10px; height: 10px; border-radius: 2px; }
+.ui-insulin__swatch--basal { background: color-mix(in oklab, var(--wk-ink-meta) 55%, transparent); }
+.ui-insulin__swatch--meal { background: var(--ui-meal); }
+.ui-insulin__swatch--correction { background: var(--wk-ink-body); }
+.ui-insulin__swatch--control_iq_bolus {
+  background: repeating-linear-gradient(135deg, var(--wk-ink) 0 2px, var(--wk-surface-rail) 2px 4px);
+}

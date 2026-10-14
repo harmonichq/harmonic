@@ -1,0 +1,87 @@
+.ui-dayscreen { box-sizing: border-box; position: relative; background: var(--wk-canvas); font-family: var(--ui-font); }
+
+/* Phone: only the header is fixed; the page scrolls under it, then the bar and
+   the tab bar, fixed below. */
+.ui-dayscreen--phone { display: flex; flex-direction: column; height: 100%; }
+.ui-dayscreen__head { position: relative; z-index: 2; flex: none; padding: 8px 16px 0; background: var(--wk-canvas); }
+.ui-dayscreen__main { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 0 16px 16px; }
+.ui-dayscreen__body { display: flex; flex-direction: column; gap: 16px; margin-top: 8px; }
+.ui-dayscreen--phone .ui-dayscreen__bar { padding: 0 16px 8px; }
+
+/* The day's insulin and the Prompts row: stacked on phone, side by side on
+   desktop so the pane still holds the whole day. */
+.ui-dayscreen__summary { display: flex; flex-direction: column; gap: 16px; }
+.ui-dayscreen__summary--desktop {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 48px;
+  align-items: start;
+}
+.ui-dayscreen__summary--desktop > :only-child { grid-column: 1 / -1; }
+
+/* The Prompts row's ▼, in the low tone beside its label. */
+.ui-dayscreen__low { margin-right: 8px; color: var(--glucose-low); font-size: var(--ui-type-label); }
+
+.ui-dayscreen__skeleton { height: 320px; }
+
+/* The month, dropped down from the header's day: on phone the screen's full
+   width under the header, over a scrim; on desktop a popover under the day. */
+.ui-dayscreen__scrim { position: absolute; inset: 0; z-index: 1; background: rgb(0 0 0 / .5); }
+.ui-dayscreen__scrim--sheet { z-index: 3; display: flex; flex-direction: column; justify-content: flex-end; }
+.ui-dayscreen__month { display: flex; flex-direction: column; gap: 4px; }
+.ui-dayscreen__month--phone {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  padding: 0 16px 12px;
+  border-bottom: 1px solid var(--wk-rule);
+  background: var(--wk-surface);
+  box-shadow: 0 12px 32px rgb(0 0 0 / .5);
+}
+/* On phone it drops down from under the header as it opens; on desktop it
+   opens as a popover. */
+[data-motion] .ui-dayscreen__month--phone {
+  transition:
+    translate var(--ui-motion-standard) var(--ui-ease-standard),
+    opacity var(--ui-motion-standard) var(--ui-ease-standard);
+}
+@starting-style {
+  [data-motion] .ui-dayscreen__month--phone {
+    translate: 0 calc(-1 * var(--ui-motion-rise) * var(--ui-motion-move));
+    opacity: 0;
+  }
+}
+.ui-popover.ui-dayscreen__month--desktop { position: absolute; top: 100%; z-index: 2; width: 600px; padding: 8px 16px 16px; }
+.ui-dayscreen__month-head { display: flex; align-items: center; justify-content: space-between; }
+.ui-dayscreen__month-name {
+  margin: 0;
+  color: var(--wk-ink);
+  font-size: var(--ui-type-body);
+  font-weight: var(--ui-weight-strong);
+  line-height: 22px;
+}
+.ui-dayscreen__steps { display: flex; gap: 4px; }
+.ui-dayscreen__weeks { display: flex; flex-direction: column; border-top: 1px solid var(--wk-rule); }
+.ui-dayscreen__weeks > * + * { border-top: 1px solid var(--wk-rule); }
+
+/* Desktop: the rail and one pane. */
+.ui-dayscreen--desktop { display: grid; grid-template-columns: auto 1fr; height: 100%; }
+.ui-dayscreen__pane {
+  position: relative;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 24px 32px;
+}
+.ui-dayscreen__pane-head { position: relative; z-index: 2; }
+.ui-dayscreen__prompt { max-width: 720px; }
+.ui-dayscreen--desktop .ui-dayscreen__bar { position: sticky; bottom: 0; margin-top: auto; padding-top: 24px; }
+
+/* Desktop: the Log carbs popover floats under its trigger at the header's
+   end, over the day, not in its flow. */
+.ui-dayscreen .ui-header__control { display: flex; justify-content: flex-end; }
+.ui-dayscreen .ui-logcarbs-anchor { position: relative; }
+.ui-dayscreen .ui-popover.ui-logcarbs { position: absolute; top: 100%; right: 0; z-index: 1; }

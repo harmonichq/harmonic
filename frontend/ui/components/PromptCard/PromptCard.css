@@ -1,0 +1,125 @@
+.ui-prompt {
+  position: relative;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  border-radius: var(--wk-radius);
+  background: var(--wk-surface);
+  color: var(--wk-ink);
+  font-family: var(--ui-font);
+  font-variant-numeric: tabular-nums;
+}
+
+/* One line at body size: Low strong, its date and time in meta, its reading
+   strong in its zone's tone. */
+.ui-prompt__head {
+  margin: 0;
+  font-size: var(--ui-type-body);
+  line-height: 22px;
+}
+.ui-prompt__glyph { margin-right: 6px; color: var(--tone); font-size: var(--ui-type-label); }
+.ui-prompt__kind { font-weight: var(--ui-weight-strong); }
+.ui-prompt__meta { color: var(--wk-ink-meta); }
+.ui-prompt__bg { color: var(--tone); font-weight: var(--ui-weight-strong); }
+
+.ui-prompt__spark { display: block; margin-top: 16px; overflow: visible; }
+.ui-prompt__target { stroke: var(--glucose-in-range); stroke-opacity: .6; stroke-width: 1; stroke-dasharray: 3 3; }
+.ui-prompt__anchor { stroke: var(--wk-rule); stroke-width: 1; }
+.ui-prompt__trace { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.ui-prompt__trace--in-range { stroke: var(--glucose-in-range-quiet); }
+.ui-prompt__low { fill: var(--wk-surface); stroke-width: 2.5; }
+.ui-prompt__scale {
+  fill: var(--wk-ink-meta);
+  font-size: var(--ui-type-caption);
+  stroke: var(--wk-surface);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+  paint-order: stroke;
+}
+
+.ui-prompt__caption { margin-top: 20px; }
+/* One answer group: a sunken track of equal segments, the segmented control's
+   family at the 44 px a touch answer needs; the recorded one raised. */
+.ui-prompt__answers {
+  box-sizing: border-box;
+  display: flex;
+  gap: 2px;
+  margin-top: 8px;
+  padding: 2px;
+  border: 1px solid var(--wk-rule);
+  border-radius: var(--wk-radius);
+  background: var(--wk-surface-sunken);
+}
+.ui-prompt__answer {
+  flex: 1 1 0;
+  min-width: 0;
+  height: var(--ui-size-answer);
+  margin: 0;
+  padding: 0 4px;
+  border: 0;
+  border-radius: calc(var(--wk-radius) - 1px);
+  background: transparent;
+  color: var(--wk-ink-body);
+  font: var(--ui-weight-regular) var(--ui-type-body) / 1 var(--ui-font);
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+/* A hairline between segments, as a segmented control divides its choices;
+   none beside the raised one. */
+.ui-prompt__answer { position: relative; }
+.ui-prompt__answer + .ui-prompt__answer::before {
+  content: '';
+  position: absolute;
+  top: 12px;
+  bottom: 12px;
+  left: -1px;
+  width: 1px;
+  background: var(--wk-rule);
+}
+.ui-prompt__answer[aria-pressed='true']::before,
+.ui-prompt__answer[aria-pressed='true'] + .ui-prompt__answer::before { display: none; }
+.ui-prompt__answer { transition: background-color var(--ui-motion-fast) var(--ui-ease-standard), color var(--ui-motion-fast) var(--ui-ease-standard); }
+.ui-prompt__answer:active { background: var(--wk-surface); transition-duration: 0s; }
+.ui-prompt__answer[aria-pressed='true'] { background: var(--wk-surface-rail); color: var(--primary); }
+.ui-prompt__answer:focus { outline: none; }
+.ui-prompt__answer:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
+.ui-prompt__check { margin-right: 6px; }
+
+/* After Yes: the optional grams field, and Next to move on. */
+.ui-prompt__grams {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-top: 16px;
+}
+.ui-prompt__grams .ui-button--text { margin-right: -8px; }
+
+/* Mid-swipe: the card slides left over the Not sure reveal, which is drawn
+   only while the card is off its rest. */
+.ui-prompt-swipe--revealed { position: relative; overflow: hidden; border-radius: var(--wk-radius); }
+.ui-prompt-swipe__reveal {
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: 96px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--wk-surface-rail);
+  color: var(--wk-ink);
+  font: var(--ui-weight-strong) var(--ui-type-label) / 1 var(--ui-font);
+}
+.ui-prompt-swipe--open .ui-prompt { translate: -96px 0; }
+
+/* Recorded: the check and the grams field arrive with the answer. */
+[data-motion] .ui-prompt__check { transition: opacity var(--ui-motion-standard) var(--ui-ease-standard); }
+[data-motion] .ui-prompt__grams {
+  transition:
+    opacity var(--ui-motion-standard) var(--ui-ease-standard),
+    translate var(--ui-motion-standard) var(--ui-ease-standard);
+}
+@starting-style {
+  [data-motion] .ui-prompt__check { opacity: 0; }
+  [data-motion] .ui-prompt__grams { opacity: 0; translate: 0 calc(-1 * var(--ui-motion-rise) * var(--ui-motion-move)); }
+}

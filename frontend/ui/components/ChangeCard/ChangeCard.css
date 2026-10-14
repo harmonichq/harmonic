@@ -1,0 +1,143 @@
+.ui-change {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  border-radius: var(--wk-radius);
+  background: var(--wk-surface);
+  color: var(--wk-ink);
+  font-family: var(--ui-font);
+  font-variant-numeric: tabular-nums;
+}
+
+.ui-change__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: var(--ui-size-pill);
+}
+
+/* One line at body size, quieter than the figure: the setting strong, its
+   slot and dates regular in meta ink. */
+.ui-change__title {
+  margin: 8px 0 0;
+  font-size: var(--ui-type-body);
+  font-weight: var(--ui-weight-strong);
+  line-height: 22px;
+}
+.ui-change__meta {
+  margin-left: 2px;
+  color: var(--wk-ink-meta);
+  font-weight: var(--ui-weight-regular);
+}
+
+/* The one dominant element: the value now on the pump strong, the one it
+   replaced regular and receded, the unit at label size on the baseline. */
+.ui-change__figure {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: var(--ui-type-figure);
+  font-weight: var(--ui-weight-strong);
+  line-height: 40px;
+  letter-spacing: -.02em;
+}
+.ui-change__before { color: var(--wk-ink-meta); font-weight: var(--ui-weight-regular); }
+.ui-change__arrow {
+  color: var(--wk-ink-meta);
+  font-size: var(--ui-type-title);
+  font-weight: var(--ui-weight-regular);
+}
+.ui-change__units {
+  margin-left: -2px;
+  color: var(--wk-ink-meta);
+  font-size: var(--ui-type-label);
+  font-weight: var(--ui-weight-regular);
+  letter-spacing: 0;
+}
+
+/* Days: the caption above, the count, then one tick per required day. */
+.ui-change__days {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: baseline;
+  column-gap: 12px;
+  row-gap: 8px;
+  margin-top: 16px;
+}
+.ui-change__days .ui-caption { grid-column: 1 / -1; }
+.ui-change__count {
+  color: var(--wk-ink);
+  font-size: var(--ui-type-body);
+  line-height: 22px;
+}
+.ui-change__of { color: var(--wk-ink-meta); }
+.ui-change__ticks {
+  display: flex;
+  gap: 3px;
+  align-self: center;
+}
+.ui-change__tick {
+  flex: 1 1 0;
+  height: 12px;
+  border-radius: 1px;
+  background: var(--wk-rule);
+}
+.ui-change__tick--on { background: var(--wk-ink-body); }
+
+/* Before and After: captions over right-aligned values, no outer border. */
+.ui-change__table {
+  width: 100%;
+  margin-top: 16px;
+  padding-top: 4px;
+  border-collapse: collapse;
+  border-top: 1px solid var(--wk-rule);
+}
+.ui-change__table thead th {
+  padding: 12px 0 6px 16px;
+  text-align: right;
+}
+.ui-change__row th,
+.ui-change__row td {
+  padding: 6px 0;
+  color: var(--wk-ink-meta);
+  font-size: var(--ui-type-label);
+  font-weight: var(--ui-weight-regular);
+  line-height: 20px;
+}
+/* The label takes what the value columns leave; nothing wraps. */
+.ui-change__row th { text-align: left; white-space: nowrap; }
+.ui-change__row td { width: 1%; padding-left: 16px; text-align: right; white-space: nowrap; }
+.ui-change__row--target th,
+.ui-change__row--target td { color: var(--wk-ink); font-weight: var(--ui-weight-strong); }
+.ui-change__unit { margin-left: 1px; color: var(--wk-ink-meta); font-weight: var(--ui-weight-regular); }
+
+.ui-change__foot {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--wk-rule);
+}
+
+/* A Focus: the habit is the dominant line; the pattern and date beneath it. */
+.ui-change__habit {
+  margin: 8px 0 0;
+  font-size: var(--ui-type-title);
+  font-weight: var(--ui-weight-strong);
+  line-height: 28px;
+}
+.ui-change__pattern {
+  margin: 4px 0 0;
+  color: var(--wk-ink-meta);
+  font-size: var(--ui-type-body);
+  line-height: 22px;
+}
+
+.ui-change--none { align-items: center; padding: 24px 16px; }
+.ui-change__none { color: var(--wk-ink-meta); font-size: var(--ui-type-body); }
+
+/* A date never breaks across lines. */
+.ui-change__date { white-space: nowrap; }

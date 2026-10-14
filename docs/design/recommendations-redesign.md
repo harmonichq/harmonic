@@ -5,6 +5,32 @@ Status: **exploring** (#481).
 - Direction approved 2026-10-12 (step 1 closed): round 3 on the design canvas,
   https://claude.ai/artifact/KHE7tPovxexxNx1ZQS8zfM, row "Current · round 3".
 - Component inventory (§4) approved 2026-10-12 (step 2 closed).
+- **Queue screen locked 2026-10-13**: Storybook `Screens/Queue` at commit
+  `1bae486d`. The operator: "I'm happy with the queue."
+- **Changes screen locked 2026-10-13**: Storybook `Screens/Changes` at commit
+  `32398383`, with a delta coloured only where the engine judged that row
+  better or worse. The operator: "Yes, that looks good to me. Let's proceed
+  with locking it."
+- **Overview screen locked 2026-10-13**: Storybook `Screens/Overview` at commit
+  `0b0b78d8`: one page with no scrolling, one time-in-ranges bar for the
+  selected window, colour only on Below 70 and Above 180. The operator:
+  "locked."
+- **Day screen locked 2026-10-13**: Storybook `Screens/Day` at commit
+  `4972898a`: the date in the header as a drop-down month of gapless weeks,
+  the current week as a gapless ribbon on desktop, the day's insulin as one
+  stacked bar (Basal delivered, Meal, Correction, Control-IQ), the day chart,
+  Prompts with Not sure visible on phone, and Log carbs. The operator,
+  approving it ahead of the last change: "pre-approving it".
+  Re-pinned to `55fee6e4` after the operator's quieter meal teal ("just
+  limit the saturation of the teal a bit"), which changes only Day's meal
+  marks and its insulin bar's Meal segment.
+- **Settings screen locked 2026-10-13**: Storybook `Screens/Settings` at
+  commit `55fee6e4`: the grouped root (Tandem Source with its inline sync
+  state, Pump profile, Glossary), the Tandem Source drill-down with its sync
+  and account groups and the Update form, the Pump profile and its segment
+  table, and the Glossary of only the terms the app prints. The operator:
+  "locked looks good."
+- **All five screens locked 2026-10-13.** Step 4 is closed.
 
 This document is the durable record of the redesign. Sections 1–3 are what the
 build will be checked against once they are approved. The appendix keeps the
@@ -47,11 +73,11 @@ Each row lists a screen's states. Labels only; no state uses prose.
 | Screen | Default | Empty | Loading | Error | Other states |
 |---|---|---|---|---|---|
 | Queue | Ranked cards, top card expanded | "0 patterns" label | Card skeletons | Unavailable + Retry | A card expanded; mid-swipe; just snoozed (bar "Snoozed · Until <date>" + Undo); Snoozed footer when N > 0 |
-| Queue · Snoozed | Rows "Until <date>" + Restore | Not reachable (the footer is hidden at 0) | — | Unavailable + Retry | Restored (row leaves) |
+| Queue · Snoozed | Each snoozed item as its Queue row, plus "Until <date>" + Restore | Not reachable (the footer is hidden at 0) | — | Unavailable + Retry | Restored (row leaves) |
 | Queue · setting detail | current → estimate, range, n, chart | — | Chart skeleton | Unavailable | — |
-| Changes | Active Trial or Focus + last change | "No active change" label | Skeleton | Unavailable + Retry | Maturing; Matured (result pill); **End** (Focus: anytime; Trial: once matured) → confirm sheet → ended |
+| Changes | Active Trial or Focus + the last change as one row | "No active change" label | Skeleton | Unavailable + Retry | Maturing; Matured (result pill); last change row expanded in place; **End** (Focus: anytime; Trial: once matured) → confirm sheet → ended |
 | Overview | 14 d selected | "No data" label per window | Skeleton | Unavailable + Retry | 30 d / 90 d selected |
-| Day | Latest day with data | "No data" for a day without readings | Chart skeleton | Unavailable + Retry | Week strip; Month sheet; Prompts row when count > 0 |
+| Day | Latest day with data | "No data" for a day without readings | Chart skeleton | Unavailable + Retry | Month dropped down from the header's day; desktop: the selected week as a ribbon; Prompts row when count > 0 |
 | Day · Prompts | One prompt, "n / N" | Not reachable (the row is hidden at 0) | — | Not saved + Retry | Yes → grams field and keyboard; mid-swipe Not sure |
 | Day · Log carbs | Grams field focused, Time = now | — | Saving | Not saved + Retry | Time edited |
 | Settings | Three rows with inline status | — | — | — | Sync OK (no badge) / Failed (badge) |
@@ -75,14 +101,19 @@ Each row lists a screen's states. Labels only; no state uses prose.
 | Touch (phone, tablet) | Desktop |
 |---|---|
 | Tap a Queue card to expand it in place | Click or ↑/↓ to select in the list; the detail shows in the right pane |
-| Swipe a Queue card to snooze it | Snooze icon button in the detail header; shortcut S |
-| Swipe a Prompt to record Not sure | A fourth button, **Not sure** |
-| Swipe the Day week strip | ‹ › buttons and a month grid that is always visible |
-| Tap the month label to open the Month sheet | Month grid in the left pane |
+| Swipe a Queue card to snooze it, or the Snooze text action beneath Pin (a Setting card: at its foot) | The same Snooze text action; shortcut S |
+| Swipe a Prompt to record Not sure, or the Not sure text action beneath its answers | A fourth button, **Not sure** |
+| Tap the day in the Day header to drop the month down, its weeks as gapless ribbons | The same drop-down, a popover under the day; the selected week stays in view as a ribbon |
+| Pick a day in the month (it closes); the scrim closes it unchanged | Pick a day in the month or the week in view; Escape closes it unchanged |
 | Bottom sheet for Log carbs, on the system keyboard | Popover anchored to "+ Log carbs" |
 | Tap Undo in the snooze bar | Same bar, clickable; ⌘Z |
+| Tap "‹ Parent" in a drill-down's header (the system edge-swipe also goes back) | The same "‹ Parent" control in the pane's header |
 
 Desktop has no hover-revealed actions, and every action has a visible control.
+Every touch gesture has a visible equivalent on the phone as well: a swipe is a
+shortcut, never the only way (Snooze is also a text action on the open
+card). Back from a drill-down is the "‹ Parent" control in the screen header;
+the system's own edge-swipe back is left to the platform, never overridden.
 
 ### 1.5 Glossary (every user-facing noun and verb)
 
@@ -90,9 +121,6 @@ Desktop has no hover-revealed actions, and every action has a visible control.
 |---|---|---|
 | **Queue** | noun | The ranked list of recommendations. |
 | **Pattern** | noun | A recurring glucose outcome the engine detected, such as highs after meals. |
-| **Setting** | noun | A pump value: basal, correction factor or carb ratio. |
-| **Current** | noun | The setting's programmed value on the pump now. |
-| **Estimate** | noun | The engine's estimate of the value that setting should have, from the evidence nights. |
 | **Pin** | verb | Start a Focus on a Pattern's habit. |
 | **Focus** | noun | A habit you pinned, watched for adherence and outcome. |
 | **Trial** | noun | A pump setting change the app detected, watched against its before period. |
@@ -102,24 +130,33 @@ Desktop has no hover-revealed actions, and every action has a visible control.
 | **Snooze** | verb | Remove from the Queue for 14 days. It returns early if the evidence changes. |
 | **Restore** | verb | Bring a snoozed item back. |
 | **Undo** | verb | Reverse the last snooze. |
-| **Range** | noun | The engine's interval for the statistic it sits next to. |
-| **Uncertain** | state | The engine flags it as not yet real enough to act on (its `wide` flag). On a Pattern: in the Queue, but the admission behind it does not hold at the low end of its evidence (ADR 485). On any other statistic: the range beside it is too broad to rely on. |
-| **Episode** | noun | A dated event the engine cites as evidence. |
-| **Cause** | noun | The habit the engine attributes most of a Pattern's occurrences to. |
+| **Range** | noun | The engine's interval for a Setting's estimate. |
+| **Uncertain** | state | Not yet clear enough to act on: the evidence behind it is thin. |
+| **Peak / Nadir** | noun | The highest or lowest glucose after an event such as a meal, as the median across the events counted, in mg/dL. |
+| **Typical** | noun | The same for the comparison events: similar events that did not end in the Pattern's outcome. |
 | **Glucose profile** | noun | Glucose by time of day over the last 30 days: the median and the 10th–90th percentile spread. |
 | **Median** | noun | The middle value of the profile at that time of day. |
-| **Prompt** | noun | A question about a low, asking whether carbs were eaten. |
-| **Yes / No / False low / Not sure** | answer | A Prompt's answers. False low marks the reading itself as invalid. |
+| **Yes / No / False low / Not sure** | answer | The answers to whether carbs were eaten for a low. False low marks the reading itself as invalid. |
 | **Log carbs** | verb | Record carbs eaten without a bolus. |
 | **End** | verb | Stop watching the active change. |
 | **Recorded** | state | An answer or entry was saved. |
-| **In range, Below 70, Below 54, Above 180, Above 250, Mean, GMI, CV, Pre-meal, Post-meal 2 h** | metric | The standard CGM metrics. Below 54 and Above 250 are shown as subsets of Below 70 and Above 180, never as separate bands of the same total. |
-| **No data** | state | No readings exist for that period. |
-| **Mon, Tue, Wed, Thu, Fri, Sat, Sun** | label | Weekday names on day tiles. |
+| **In range, Below 70, Below 54, Above 180, Above 250, Mean, GMI, CV** | metric | The standard CGM metrics. Below 54 and Above 250 are shown as subsets of Below 70 and Above 180, never as separate bands of the same total. |
 | **Tandem Source** | noun | The vendor account the data syncs from. |
 | **Pump profile** | noun | The active pump settings, read-only. |
+| **ISF** | noun | Insulin sensitivity factor, the pump's correction factor: how far one unit of insulin lowers glucose, in mg/dL. |
+| **I:C** | noun | Insulin-to-carb ratio, the pump's carb ratio: the grams of carbs one unit of insulin covers. |
+| **DIA** | noun | Duration of insulin action: how long the pump counts a bolus as still working, in hours. |
+| **Sleep** | noun | The pump's sleep schedule, when Control-IQ runs its tighter overnight target. |
+| **Site change** | noun | A new infusion site and cartridge, as the pump logged it. |
+| **Insulin** | noun | Everything the pump delivered in a day, basal and boluses together, in units (U). |
+| **Basal** | noun | The insulin the pump delivered steadily through the day, including Control-IQ's changes to the programmed rate. |
+| **Meal** | noun | A bolus for carbs, or the carbs part of a bolus. |
+| **Correction** | noun | A bolus you gave to bring glucose down, or the correction part of a meal bolus. |
+| **Control-IQ** | noun | The pump's automatic boluses, as the day's insulin counts them. |
 
-Any term not in this table may not appear in the UI.
+Any domain term not in this table may not appear in the UI. Plain interface
+words (labels, verbs, units, dates) are exempt; see the 2026-10-13 amendment
+in §2.
 
 ## 2. Lock (approved draft — binding once a direction is locked)
 
@@ -135,9 +172,9 @@ Any term not in this table may not appear in the UI.
 | Ink, body | `--wk-ink-body` | #cfc8bd |
 | Ink, meta | `--wk-ink-meta` | #a49c90 |
 | Rule | `--wk-rule` | #3f3833 |
-| Primary (interaction) | `--primary` | #e07f3f |
-| On primary | `--on-primary` | #1b1109 |
-| Focus ring | `--ring` | rgba(210,116,62,.34) |
+| Primary (library; the one accent: interaction, selection, the engine's estimate; overrides `material.css`'s orange) | `--primary` | #7aa8e6 |
+| On primary | `--on-primary` | #0d1522 |
+| Focus ring | `--ring` | `--primary` at 34% |
 | In range | `--in-range` | #86ad78 |
 | High | `--high` | #e2be4c |
 | Low | `--low` | #ec6f55 |
@@ -145,6 +182,24 @@ Any term not in this table may not appear in the UI.
 | Danger | `--danger` | #ec6f55 |
 | Manual carb | `--manual-carb` | #d2743e |
 | Radius | `--radius` | 4px |
+| Glucose <54 (library, clinical AGP) | `--glucose-very-low` | #cc3d44 |
+| Glucose 54–69 (library, clinical AGP) | `--glucose-low` | #ee6457 |
+| Glucose 70–180 (library, clinical AGP) | `--glucose-in-range` | #7ec476 |
+| Glucose 181–250 (library, clinical AGP) | `--glucose-high` | #efcf4c |
+| Glucose >250 (library, clinical AGP) | `--glucose-very-high` | #f08a3c |
+| In range, quiet (library; a day's trace and other large in-range areas) | `--glucose-in-range-quiet` | `--glucose-in-range` mixed 50% with `--wk-ink-body` (oklab) |
+| Meal (library; meal bolus and logged-carb glyphs and their grams, the one coloured day-event family) | `--ui-meal` | #86bdbd (a quiet teal: 7.90:1 on `--wk-surface`, 9.26:1 on `--wk-canvas`) |
+
+- **Glucose bands follow the clinical AGP colours** (the 2019 international
+  consensus on time in range, as Dexcom Clarity and LibreView draw them): very
+  low dark red, low red, in range green, high yellow, very high orange. These
+  are component-library tokens in `frontend/ui/tokens.css`, not
+  `material.css`; the running app keeps its own `--low` / `--in-range` /
+  `--high`. Each clears 3:1 against `--wk-surface` (3.40, 5.20, 7.91, 10.79,
+  6.62) and adjacent bands step in lightness as well as hue. <54 and >250 keep
+  their hatching as the non-colour cue. Better/worse change colours stay
+  `--wk-status-favorable` / `--wk-status-adverse`: they mean direction, not
+  glucose.
 
 - **Dark only** (`color-scheme: dark`), decided 2026-10-12. The light palette
   used by the exploration mockups is retired.
@@ -163,32 +218,223 @@ Any term not in this table may not appear in the UI.
 | Answer button (Prompt) | 44 px, outlined neutral, equal widths. |
 | List row | 48 px minimum, label left, value right, optional ›. |
 | Numeric input | Sized to 3 digits, unit inline, the system numeric keyboard. |
-| State pill | 20 px, uppercase 11 px label. |
+| State pill | Borderless tinted tag: 18 px, 2 px radius, uppercase 11 px label, the state's tone at 15% fill (Unclear on the rail surface). No outline, so it never reads as a button. Item kinds take no pill: the kind glyph carries Pattern vs Setting. |
 | Badge | 16 px; a count pill or an alert "!". |
+| Caption + value pair | A caption names the value it sits with and reads as one unit with it: stacked, the caption directly above the value, left edges aligned (Nights / Range); or inline, the caption before the value on the value's own baseline (`align-items: baseline`), never centred against it. |
 | Tab bar item / rail item | 44 px target, icon above label. |
 | Sheet | Bottom-attached, 12 px top radius, grabber. |
 | Popover | Anchored to its trigger. |
 | Transient bar | Above the tab bar, label and one text action. |
+| Drill-down (back) | A screen that opens a sub-screen pushes it: the sub-screen's ScreenHeader gains a leading back control, "‹" and the parent screen's name ("‹ Queue"), 44 px target, in the text-action blue, on its own row; the sub-screen's title sits below it at title size, left-aligned (large-title convention, the same on every drill-down). Phone: the sub-screen replaces the screen above the tab bar, which stays; back returns to the parent as it was (the same item open). Desktop: the drill-down happens inside the pane that owns it, with the same back control in that pane's header. |
+| Charts | A chart takes its container's full width at every size: it measures its box and lays out to it, so its type stays at its true px size (never a stretched viewBox), and its axis stays flush with the card's text column. No chart has a fixed width. |
+| Scrolling | A screen's content scrolls as one page: on phone the content scrolls under the fixed screen header and above the fixed tab bar and transient bar; on desktop each pane scrolls on its own, as a whole pane. |
 
 ### 2.3 Absolute bans
 1. **Microcopy:** any sentence, question, subtitle, caption, explanation,
    empty-state prose or tooltip sentence. The Glossary definitions are the only
    exception.
 2. **Predictions** of any kind.
-3. **Invented labels, actions, advice, thresholds or targets.** Every term
-   comes from §1.5.
+3. **Invented labels, actions, advice, thresholds or targets.** Every domain
+   term comes from §1.5; plain interface words are exempt (amendment
+   2026-10-13).
 4. **Colour as the only signal.** Every state carries a glyph, label or position.
 5. **More than one primary action per screen**, or any other accent-filled control.
-6. **Content not in the engine's served data.** Every value traces to an
+6. **Nested scrolling.** No scroll area inside a card, table, row or cell:
+   content inside a component never scrolls on its own; only a screen's page
+   (or a desktop pane) scrolls. The story check enforces it.
+7. **Content not in the engine's served data.** Every value traces to an
    endpoint field. The checks are `copycheck.py` and the provenance table.
 
 ### 2.4 Approved screen list
 The inventory in §1.3, with phone screens at 390 px and desktop at 1440 px.
 Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
 
+### 2.5 Amendments
+- **2026-10-13 — plain interface words are not glossary terms.** The labels
+  Before, After, Days, Next, Time, Now, Save, Not saved, Retry and Cancel, and
+  the month abbreviations of a date, may appear without a §1.5 entry. The operator:
+  "I don't think those need to be glossary terms, they're just... words."
+  §1.5 now governs domain terms only.
+- **2026-10-13 — Sleep and Site change join the glossary** so the Day chart
+  can draw the timeline's sleep windows and site changes.
+- **2026-10-13 — screens scroll as one page; nothing scrolls inside a
+  component.** The operator: "It's perfectly fine for a queue to scroll… we
+  don't want tables that have to scroll within the cell that they live in."
+  This replaces the exploration brief's "no scrolling" rule (Appendix §1, rule
+  7) for the built screens; see §2.2 Scrolling and §2.3 ban 6.
+- **2026-10-13 — one drill-down pattern for every sub-screen.** The operator:
+  "we need some kind of standard navigation framework for drill downs, and I'm
+  sure the snoozed list is going to be the same." See §2.2 Drill-down: Queue →
+  Snoozed and Settings → Tandem Source, Pump profile and Glossary use it.
+- **2026-10-13 — episodes and the other brief items are deferred, not cut.**
+  The operator, on an episodes drill-in: it "is potentially something we can
+  consider, but I'm trying to keep this lightweight for now without
+  necessarily cutting what the back end can deliver." See §2.6.
+- **2026-10-13 — Snooze has a visible control on the phone.** The operator
+  decided the phone's open card carries the same Snooze icon button as desktop,
+  in its own header row; the swipe stays as the shortcut (§1.4). Its place
+  is superseded below: Snooze is now a text action beneath Pin.
+- **2026-10-13 — the desktop detail pane is filled by its card.** The operator
+  decided the open card fills its pane up to a 720 px reading width, left-aligned
+  with the pane's margin, with Snooze in the card's own header row and no
+  collapse chevron (the card does not collapse on desktop).
+  Superseded for Snooze's place by the next amendment.
+- **2026-10-13 — Snooze is a text action beneath Pin.** The operator asked
+  "shouldn't snooze be next to pin as a little minor button", then chose
+  Apple's stacked primary-plus-lesser layout ("Continue" over "Not Now") over
+  Material's side-by-side row: Pin stays the full-width primary, Snooze is a
+  centred text action 16 px beneath it, and a Setting card carries the same
+  action at its foot. The header's Snooze icon button is removed on phone and
+  desktop; S and the phone swipe stay as shortcuts.
+- **2026-10-13 — a Snoozed item reads as its Queue row.** The operator: "I
+  think the snoozed items can have slightly more detail, kind of looking just
+  like their original rows looked … we have room to show a little bit more in
+  that screen." The Snoozed list draws each item with QueueRow's snoozed state
+  (glyph, title, kind pill, magnitude and cause), plus Until and Restore.
+- **2026-10-13 — the state pill is a tinted tag, and kinds take no pill.** The
+  operator: "I don't like that the restore button and the pattern pill look
+  extremely similar … that goes for all of them." Of three treatments, the
+  borderless tinted tag was chosen and the leading dot rejected ("I really
+  don't like the dot"); see §2.2 State pill. The Pattern and Setting pills are
+  removed: "we're already indicating patterns vs. settings with a little icon
+  next to the row." The row's kind glyph is named Pattern or Setting for
+  assistive tech, so the kind is still said in words.
+- **2026-10-13 — only settings have a range.** The operator: "Only settings
+  should have a range." The Range line leaves the Pattern card; Uncertain
+  (ADR 485) carries a pattern's confidence, and §1.5 Range now means a
+  Setting's estimate interval. On the same card's Range line the operator saw
+  the caption "looks odd, like it's off-centered and just kind of like a
+  different text than the numbers it's describing": it was centred beside a
+  larger value. §2.2 now sets the caption + value pair: stacked, or inline on
+  one baseline.
+- **2026-10-13 — the open Pattern card carries an impact line.** The operator
+  asked whether each item could carry "a very brief impact indicator for the
+  glucose impact", and chose the open card over the collapsed row. Under the
+  magnitude: "Peak 227 · Typical 164 mg/dL" for a high Pattern, Nadir for a low
+  one, read from the Pattern's case file (the matched and comparison cohorts'
+  median traces after the anchor). A Pattern the case file serves no
+  comparison for shows no line. Peak, Nadir and Typical join §1.5.
+- **2026-10-13 — a pattern with no attributed cause keeps its colour.** The
+  operator, on Overnight lows drawn in a neutral fill: "Wouldn't we just use
+  that yellow for the single cause? Like the non-striped, non-banded yellow?"
+  Its occurrences now take the solid tone a single cause takes (§4.2
+  CauseWaffle); the legend still names only the base cells.
+- **2026-10-13 — a Focus is tracked like a Trial.** The operator, seeing the
+  Focus card carry only its title: "why doesn't focus have any kind of data
+  tracking to go with it?", then "update it, just like the trial." The Focus
+  card now shows how often the habit happened before → after, its meals
+  counted against the engine's gate as ticks, the result the engine serves
+  for the habit, and Before/After for the outcomes its Pattern maps to and
+  the glossary metrics (§4.2 ChangeCard).
+- **2026-10-13 — a resolved change carries its deltas.** The operator:
+  "Resolved trials and focuses both need to carry delta values with color
+  indicators. And up-down arrows. I think we already have that in other
+  elements of the design," and asked that the two be kept in sync. One Delta
+  element (▲/▼, the amount, favourable or adverse colour) now serves both
+  MetricFigure and ChangeCard. On a change, a row is green or red only where
+  the engine judged that row better or worse; an unclear or context row moves
+  in neutral ink. Every derived difference is taken between the values as
+  printed, so a delta always equals the numbers beside it.
+- **2026-10-13 — the last change is one row.** The operator: "the previous
+  change should show as a small row that can be extended … I guess we can
+  leave a slot, like a one row small slot for previous change. but I'm not
+  trying to maintain a queue of all past changes in a historical record." The
+  most recently ended change is one disclosure row (what changed, when, its
+  result) that expands in place into its ended card; there is only ever one.
+- **2026-10-13 — the Overview never scrolls.** The operator: "No scrolling
+  for the overview page." It fits one 390 × 844 phone screen and a 1440 × 900
+  desktop pane: three metrics to a row and a shorter glucose-profile plot on
+  phone. A story fails if its page overflows. This narrows the one-page
+  scrolling amendment above for this screen only.
+- **2026-10-13 — one time-in-ranges bar, and quieter colours.** The operator
+  chose one bar for the selected window over the brief's three ("one bar for
+  the selected window as built"), and "quiet the colors down": on the Overview
+  only Below 70 and Above 180 changes take red or green; every other change
+  keeps a neutral arrow, as the brief had it.
+- **2026-10-13 — charts take their container's width.** The operator: "fix
+  the chart width to be responsive on desktop." The Setting card's evidence
+  chart had stayed at its phone width inside a wide desktop card; every chart
+  now measures its box and lays out to it (§2.2 Charts).
+- **2026-10-13 — Not sure has a visible control on the phone.** The phone's
+  Prompt reached Not sure only by a swipe, against §1.4's rule that a swipe is
+  a shortcut, never the only way. Of the options put to the operator he chose
+  the recommended one: "Your recommendations." Not sure is a text action
+  centred beneath Yes · No · False low, as Snooze sits beneath Pin; the swipe
+  stays as its shortcut, and desktop keeps its fourth answer (§1.4, §4.2
+  PromptCard).
+- **2026-10-13 — Day picks its day from a drop-down, and the days run
+  gapless.** The operator, on the built Day: "It feels cramped on the phone. I
+  think the ability to view different day … needs to be a drop-down or
+  something; it should not be always visible," and "I think the days should
+  chain together so it's like a gapless kind of view," and "on desktop, the
+  current week is always visible, and you can drop down the month." Of two
+  mocked options he chose "4. B". The week strip, the Month sheet and the
+  desktop month pane are gone. The day in the header is the control that drops
+  the month down as its weeks, each a DayRibbon (§4.2 DayTile) with every day's
+  counts and %; picking a day closes it. Desktop is one pane, the selected
+  week in view as a ribbon under the header (§1.3, §1.4).
+- **2026-10-13 — the day's insulin, split.** The operator: "it would be nice
+  to split correction from meal from Control-IQ and to really like split those
+  numbers." Of two mocked options he chose "5. A": one stacked bar for the
+  day's total, its parts labelled beneath in U and % — Basal (delivered),
+  Meal, Correction and Control-IQ (its automatic boluses only). Beside Basal,
+  outside the bar, one signed figure, delivered − Pump profile in U, which is
+  negative when Control-IQ cuts or suspends basal: "Yeah, I think B sounds
+  good because then we'll be able to see like programmed vs. delivered
+  basal." The engine serves these through #492 (basal delivered, basal
+  programmed, meal, correction, Control-IQ bolus, total); the bar waits for
+  it (§4.2 InsulinBar). Insulin, Basal, Meal, Correction and Control-IQ join
+  §1.5. The signed figure beside Basal was dropped before it shipped; see the
+  next amendment.
+- **2026-10-13 — the insulin bar as built.**
+  Decisions on the built Day. Basal shows only what was delivered, its
+  U and %, with no Pump profile figure beside it, signed or not: "for basal
+  just show delivered amount I don't need the +/-". Each part and the total
+  print their own value to one decimal, and each % is that part as printed ÷
+  the total as printed, so the %s are not forced to sum to 100 (the
+  operator: "your recs."). A third change, dropping the desktop week's
+  traces after "Let's not duplicate data on tablet view though that's silly.
+  why showing the same graphs twice", was reverted: the operator had read a
+  phone-and-desktop composite as one desktop split pane ("my bad I actually
+  misread the single screenshot with 3 renderings as a single desktop
+  experience so I thought we had duplicated the [right] and left sides of a
+  split pane"), and answered "yes restore the traces". The desktop week keeps
+  its traces (§4.2 DayTile, InsulinBar).
+- **2026-10-13 — the glossary lists only what the app prints.** The
+  operator, on the Glossary page: "Looks good, though isn't 'cause' dropped
+  from the frontend?" No built screen prints it. An audit of the text every
+  screen renders (not names read only by assistive tech) found five more
+  terms no screen prints, and §1.5 drops all six: Cause (no screen names a
+  Pattern's cause by that word), Episode (the episode drill-in is deferred,
+  §2.6), Prompt (Day calls its prompts "Lows"), Setting (only the Queue row's
+  kind glyph names it, for assistive tech; the word stays allowed for that
+  name), and the metrics Pre-meal and Post-meal 2 h (no screen shows them).
+  The answers' definition no longer leans on "Prompt".
+- **2026-10-13 — a quieter teal.** The operator: "I'm not loving the teal.
+  The day tab especially on desktop looks like a candyland … just limit the
+  saturation of the teal a bit." `--ui-meal` keeps its hue and lightness at
+  half its chroma (OKLCH 0.76, 0.116 → 0.057): #3cc8c8 becomes #86bdbd, still
+  7.90:1 on `--wk-surface` and 9.26:1 on `--wk-canvas` (§2.1). Only Day draws
+  it: the meal and logged-carb marks and grams, and the insulin bar's Meal.
+
+### 2.6 Deferred (not cut)
+Not built in the current screens. The engine still serves what each needs, and
+nothing is removed from the engine or the fixtures for them.
+- Pattern evidence drill-in: from an open Pattern, one screen with one
+  aligned-episodes chart (each episode's glucose trace aligned at its trigger —
+  the bolus for meal patterns, the treatment for treated lows, the night for
+  overnight lows — with the median on top) and the dated episode list beneath
+  (peak ▲ / nadir ▼ → resolution); the engine already serves the episodes.
+  Operator, 2026-10-13: wants to see the glucose impact without "too many
+  graphs" — one chart per drill-in.
+- A rank number on collapsed Queue rows.
+- Other statistics on their own labelled lines in the open Pattern
+  ("High-carb sequences 9 / 35 less in range · 17–36%").
+- The "(example)" caption on a Setting shown as an example.
+
 ## 4. Component inventory (approved 2026-10-12)
 
-Twenty components. Screens are composed only from these. Every state listed
+Twenty-one components. Screens are composed only from these. Every state listed
 gets a Storybook story in step 3. "Fields" are the only served data a component
 may display; derived values name their formula in the provenance table.
 
@@ -223,9 +469,11 @@ unless noted. Loading is a skeleton of the component's own shape.
      sliders glyph belongs to the Setting kind.
 2. **ScreenHeader**: the screen title plus one trailing slot (a date, a
    control, or a labelled action).
-   - States: default; with date; with action ("+ Log carbs").
+   - States: default; with date; with action ("+ Log carbs"); drill-down
+     ("‹ Parent" back control above the title, §2.2).
    - Fields: `outcomes_*.span_end` (date).
-   - Desktop: the same, at the top of each pane.
+   - Desktop: the same, at the top of each pane; a drill-down's back control
+     sits in the header of the pane that owns it.
 3. **SegmentedControl**: 14 / 30 / 90 d.
    - States: each option selected; disabled (window lacks coverage).
    - Fields: `outcomes_*.coverage.days`.
@@ -234,10 +482,11 @@ unless noted. Loading is a skeleton of the component's own shape.
    - States: default; pressed; focused; disabled; busy.
    - Fields: none.
    - Desktop: the same, with a visible focus ring.
-5. **StatePill**: a one-word state.
-   - States: Pattern, Setting, Uncertain, Maturing, Better, Worse, Unclear, Focus.
+5. **StatePill**: a one-word state, as a borderless tinted tag (§2.2).
+   - States: Uncertain, Maturing, Better, Worse, Unclear, Focus. An item's
+     kind is never a pill; its glyph carries it.
    - Words only, at the one pill size; no glyph inside a pill.
-   - Fields: `guidance.candidates[].kind`; `findings.outcome_patterns[].wide` (Uncertain: the pattern's Queue admission does not hold at its low end, ADR 485); the trial and focus lifecycle and result.
+   - Fields: `findings.outcome_patterns[].wide` (Uncertain: the pattern's Queue admission does not hold at its low end, ADR 485); the trial and focus lifecycle and result.
    - Desktop: the same.
 6. **TransientBar**: a label plus one text action, shown above the tab bar.
    - States: "Snoozed · Until <date>" + Undo; "Not saved" + Retry.
@@ -247,27 +496,37 @@ unless noted. Loading is a skeleton of the component's own shape.
 **Queue**
 
 7. **QueueRow**: a collapsed recommendation, with a leading 20 px kind glyph
-   (Pattern: rising dots; Setting: sliders), its title, one magnitude
+   (Pattern: rising dots; Setting: sliders; named "Pattern" / "Setting" for
+   assistive tech, and no kind pill), its title, one magnitude
    ("9 of 71 lows") and a cause label.
    - States: default; selected (desktop); mid-swipe (snooze reveal);
      no cause (label omitted); setting (current → suggested replaces the
-     magnitude); loading.
+     magnitude); snoozed (read-only: no chevron, swipe or selection; a last
+     line "Until <date>" + Restore); loading.
    - Fields: `guidance.candidates[].title, kind, priority, admitted,
      preference`; `findings.outcome_patterns[].k, n` and the noun; the top
      cause lever from `findings.rows[].fold_sentences`.
    - Desktop: a list row that selects into the detail pane. Snooze is an icon
-     button in the detail header (shortcut S); there's no swipe.
+     the open card's Snooze text action (shortcut S); there's no swipe.
 8. **PatternCard**: the open pattern, showing the magnitude, a CauseWaffle,
-   a Range in the magnitude's units, and Pin.
-   - States: multi-cause; **single cause**; **no attributed cause**; Uncertain;
+   and Pin. No Range: only a Setting has one; Uncertain carries a pattern's
+   confidence (ADR 485).
+   - States: multi-cause; **single cause**; **no attributed cause**; Uncertain
+     (the tag at the end of the magnitude line); with or without the impact
+     line (Peak or Nadir · Typical, mg/dL, beneath the magnitude);
      pinned (Pin replaced by a "Focus" pill); loading.
-   - Fields: `outcome_patterns[].k, n, wilson`; fold sentences (count,
-     denominator, lever title).
-   - Desktop: the detail pane.
+   - Header row: the title and (phone) the collapse chevron. Snooze is a
+     text action centred beneath Pin (or the Focus pill), 16 px below it.
+   - Fields: `outcome_patterns[].k, n, wide`; fold sentences (count,
+     denominator, lever title); the case file's `projection.cohorts[matched,
+     comparison].points[].median` (the impact line: each cohort's highest or
+     lowest median at or after minute 0).
+   - Desktop: fills the detail pane up to 720 px; no collapse chevron.
 9. **CauseWaffle**: one cell per occurrence in n, with filled cells patterned
    by cause, plus a legend.
-   - States: multi-cause; single cause (one legend entry); no cause (a
-     neutral fill, with a "Meals" or "Lows" legend only).
+   - States: multi-cause; single cause (one legend entry); no cause (the
+     occurrences in the pattern's solid tone, as a single cause draws them,
+     with a "Meals" or "Lows" legend only).
    - Fields: as PatternCard.
    - Desktop: larger cells, same rules.
 10. **SettingCard**: the open setting, showing current → suggested in figure
@@ -275,9 +534,10 @@ unless noted. Loading is a skeleton of the component's own shape.
     count ("30 nights") and one Range. No button.
     - States: default; range collapsed (lo = hi, single value shown);
       matured into a Trial (Changes link).
+    - Snooze: a text action centred at the card's foot.
     - Fields: `analyze.basal[slot].current, estimate.value, estimate.lo, hi,
       days`, plus their ISF/carb-ratio equivalents.
-    - Desktop: the detail pane.
+    - Desktop: fills the detail pane up to 720 px.
 11. **EvidenceChart**: the setting's slot evidence, showing the nights'
     delivered rate against current and suggested.
     - States: default; zero variance (a compact strip).
@@ -309,17 +569,28 @@ unless noted. Loading is a skeleton of the component's own shape.
     counts or ✓, and in-range %.
     - States: default; selected; clean (✓); no data.
     - Fields: `day_navigator.days[]`.
-    - Desktop: the Overview's recent-days strip and Day's month grid.
+    - Desktop: the Overview's recent-days strip.
+    - Day draws the same days as a **DayRibbon**: a week of them, gapless, on
+      one band with one trace that runs on from day to day, hairline dividers,
+      and each day's weekday and date above and counts and % beneath; each day
+      picks itself. States: default; selected; a week without readings. Day's
+      month is its weeks stacked; desktop keeps the selected week in view.
 
 **Changes**
 
-16. **ChangeCard**: the active Trial or Focus. Shows what changed (before →
-    after, or the habit), its days of evidence as ticks, and Before/After
-    values once matured, with End.
+16. **ChangeCard**: the active Trial or Focus. Shows what changed (the
+    setting before → after, or how often the habit happened before → after),
+    its evidence as ticks (a Trial's days, a Focus's meals), and Before/After
+    values with a Δ (the shared Delta) once matured, with End.
     - States: Trial maturing; Trial matured with a result (Better / Worse /
-      Unclear); Focus active; ended; none ("No active change").
+      Unclear); Focus with no data yet; Focus maturing; Focus matured with a
+      result (the engine's verdict on the habit); ended; none ("No active
+      change").
     - Fields: `trials.trials[]` (before, after, changed_at, maturing,
-      ending.assessment.outcomes); `focus.focuses[]`; `guidance.admission`.
+      ending.assessment.outcomes); `focus.focuses[]`; a Focus's retained
+      comparison (`readiness.after` count and required, `adherence` before and
+      after rate and assessment, `outcomes` peak, nadir, tir, tbr, tar);
+      `guidance.admission`.
     - Desktop: the same, in the Changes pane.
 
 **Day**
@@ -330,26 +601,40 @@ unless noted. Loading is a skeleton of the component's own shape.
     - States: default; no data; with logged carbs.
     - Fields: `timeline.cgm, boluses, basal, pump_events, sleep_windows`;
       `carbs.carb_entries`.
-    - Desktop: wide, with the month grid of DayTiles beside it.
+    - Desktop: wide, under the selected week's DayRibbon.
 18. **PromptCard**: one low prompt, showing "Low · <date time> · <mg/dL>",
-    its sparkline, and Yes · No · False low.
+    its sparkline, Yes · No · False low, and on phone Not sure as a text
+    action centred beneath them, as Snooze sits beneath Pin (the swipe is its
+    shortcut).
     - States: unanswered; Yes recorded (a checkmark on Yes, labelled "Recorded"
       for screen readers only, plus the optional grams field); mid-swipe (Not sure).
     - Fields: `prompts[].anchor_t, key_bg, cgm`; answers posted to
       `/api/prompts/answer`; grams via `PATCH /api/carbs/{id}`.
-    - Desktop: a fourth button, Not sure, instead of the swipe.
+    - Desktop: a fourth button, Not sure, instead of the text action and the swipe.
 19. **LogCarbsEntry**: a grams field sized to 3 digits, Time (a tappable row,
     default now), and Save.
     - States: empty; filled; saving; not saved.
     - Fields: posts `t, grams, certainty` to `/api/carbs`.
     - Desktop: a popover anchored to "+ Log carbs"; on phone, a bottom sheet
       on the system keyboard.
+21. **InsulinBar**: the selected day's insulin, "Insulin" and its total
+    above one stacked bar of it, its parts labelled beneath in U and %: Basal
+    (delivered, grey as the chart's basal), Meal (the meal teal), Correction
+    (neutral ink) and Control-IQ (its automatic boluses only, hatched). Each
+    value prints its own rounding to one decimal; each % is the part as
+    printed ÷ the total as printed.
+    - States: default; no data (no bar); loading.
+    - Fields: `timeline.insulin_totals.basal, meal, correction,
+      control_iq_bolus, total` (ADR 492); `null` serves no bar.
+    - Desktop: the same, the parts in one row, beside the Prompts row under the
+      selected week.
 
 **Settings**
 
 20. **ListRow**: label, inline value or state, ›; read-only rows have no ›.
     - States: navigable; read-only; with alert ("⚠ Failed"); with a secondary
-      button ("Update").
+      button ("Update"); disclosure, closed or open (expands in place: the
+      Changes screen's last change).
     - Fields: `status`; `credentials.configured, email` (masked), `region`;
       `pump_settings.profile.segments[]`.
     - Desktop: the same.
@@ -555,7 +840,8 @@ automatically) or a **Focus** (a habit pinned by hand). One is active at a time.
 ### Overview
 - Segmented 14 / 30 / 90 d control.
 - Hero: in range 65.9% with ▼12.2 pts vs 90 d.
-- Three five-band time-in-ranges bars with band labels.
+- Three five-band time-in-ranges bars with band labels (superseded 2026-10-13:
+  one bar, for the selected window).
 - A short designed table: Below 70, Above 180, Mean, Pre-meal, Post-meal 2 h.
   Columns are 14 / 30 / 90 plus Δ 14/90 with arrows. The selected window is
   emphasised and the others quieter. Red and green apply only to the below- and

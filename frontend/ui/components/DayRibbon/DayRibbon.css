@@ -1,0 +1,39 @@
+.ui-ribbon { position: relative; font-family: var(--ui-font); font-variant-numeric: tabular-nums; }
+.ui-ribbon__chart { display: block; }
+
+.ui-ribbon__band { fill-opacity: .10; }
+.ui-ribbon__divider { stroke: var(--wk-rule); stroke-width: 1; }
+.ui-ribbon__selected { fill: var(--wk-surface); }
+.ui-ribbon__mark { fill: var(--wk-ink); }
+.ui-ribbon__trace { fill: none; stroke-width: 1.5; stroke-linejoin: round; }
+.ui-ribbon__trace--in-range { stroke: var(--glucose-in-range-quiet); }
+
+.ui-ribbon__weekday {
+  fill: var(--wk-ink-meta);
+  font-size: var(--ui-type-caption);
+  font-weight: var(--ui-weight-strong);
+  letter-spacing: .07em;
+  text-transform: uppercase;
+}
+.ui-ribbon__date { fill: var(--wk-ink-body); font-size: var(--ui-type-label); }
+.ui-ribbon__counts { fill: var(--wk-ink-body); font-size: var(--ui-type-label); }
+.ui-ribbon__low { fill: var(--glucose-low); }
+.ui-ribbon__high { fill: var(--glucose-high); }
+.ui-ribbon__clean { fill: var(--glucose-in-range); }
+.ui-ribbon__tir { fill: var(--wk-ink); font-size: var(--ui-type-label); font-weight: var(--ui-weight-strong); }
+.ui-ribbon__unit { fill: var(--wk-ink-meta); font-weight: var(--ui-weight-regular); }
+.ui-ribbon__none { opacity: .45; }
+
+/* Each day's whole column is its button, over the drawing. */
+.ui-ribbon__days { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.ui-ribbon__day {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.ui-ribbon__day:disabled { cursor: default; }
+.ui-ribbon__day:focus { outline: none; }
+.ui-ribbon__day:focus-visible { outline: 3px solid var(--ring); outline-offset: -3px; }

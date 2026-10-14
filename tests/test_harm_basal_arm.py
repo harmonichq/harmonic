@@ -92,7 +92,6 @@ class BasalArmIntegrationTest(unittest.TestCase):
         # row-level keys are arm_days / row_days.
         self.assertEqual(s.evidence["harm"]["band_nights"], 2)
         self.assertEqual(s.evidence["harm"]["slot_nights"], 2)
-        self.assertEqual(s.evidence["harm"]["harm_band_source_nights"], 14)
         # ADR 466: the count the nudge used and the bar it met.
         self.assertEqual(s.evidence["harm"].get("recurrence_nights"), 2)
         self.assertEqual(s.evidence["harm"].get("recurrence_bar"), 2)

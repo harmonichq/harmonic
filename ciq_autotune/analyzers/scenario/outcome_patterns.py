@@ -3,27 +3,22 @@
 This module composes published source verdicts.  It deliberately does not run a
 classifier, re-price a Lever, manufacture a shared support population, or infer
 an uncertainty interval that a setting owner withheld.
-Overnight source nights come from the top-level ``harm_band_source_nights``
-evidence copy, while printed-low nights come from ``evidence["harm"]["band_nights"]``.
 A clock-scoped roster carries a Pattern only when its outcomes land in the window
-(:func:`pattern_in_window`); the overnight Pattern keeps its whole-band counts in
-any window overlapping that band.
+(:func:`pattern_in_window`). Every Pattern carries at least one pinnable habit
+(ADR 499): a Pattern only a setting could answer is that setting counted twice.
 """
 
 from __future__ import annotations
 
-from datetime import datetime
 from hashlib import sha256
 from typing import Iterable
 
-from ...harm import HarmConfig
 from ...uncertainty import wilson
 _GATES = {
     "highs_after_meals": 12,
     "lows_after_meals": 12,
     "highs_after_treating_lows": 12,
     "lows_after_correcting_highs": 12,
-    "overnight_lows_no_iob": 12,
 }
 """Derived from the #391 receipt's 90-day rates by the Wilson positive-lower-bound
 rule, floored at 12. The receipt carries no union-of-correction-stacking-and-
@@ -32,42 +27,32 @@ lows-family floor of 12 rather than a derived bound.
 """
 
 _ROSTER = (
-    ("highs_after_meals", "Highs after meals", ("carb_undercount", "late_bolus", "high_carb_sequence", "repeat_eating"), ("carb_undercount", "late_bolus", "meal_bolus_short"), "carb_ratio", "meals"),
+    ("highs_after_meals", "Highs after meals", ("carb_undercount", "late_bolus"), ("carb_undercount", "late_bolus"), "carb_ratio", "meals"),
     ("lows_after_meals", "Lows after meals", ("meal_over_delivery",), ("meal_over_delivery",), "carb_ratio", "meals"),
     ("highs_after_treating_lows", "Highs after treating lows", ("over_treated_low",), ("over_treated_low",), None, "lows"),
-    ("lows_after_correcting_highs", "Lows after correcting highs", ("correction_stacking", "correction_on_iob"), ("correction_stacking", "correction_on_iob"), "isf", "lows"),
-    ("overnight_lows_no_iob", "Overnight lows with no insulin on board", (), (), "basal_rate", "nights"),
+    # The correction factor never queues (ADR 499), so this Pattern has no setting member.
+    ("lows_after_correcting_highs", "Lows after correcting highs", ("correction_stacking", "correction_on_iob"), ("correction_stacking", "correction_on_iob"), None, "lows"),
 )
 
-_LOW_IDENTITY_LEVERS = frozenset({
-    "meal_over_delivery", "correction_stacking", "correction_on_iob",
-})
-_SETTING_ROWS = {"basal_rate": "basal", "carb_ratio": "ic_blocks", "isf": "isf"}
-_HARM_CONFIG = HarmConfig()
+_SETTING_ROWS = {"carb_ratio": "ic_blocks"}
 
 
 def opportunity_readiness(key: str, analysis: dict, exposures: dict) -> dict:
     """Read one Pattern's opportunity criterion from its published source family.
 
     Both the roster and exact-period follow-up use this gate, unit and count
-    authority. Occurrence dates are supplied by the exposure producer; the basal
-    source-night count does not currently publish its contributing dates.
+    authority. Occurrence dates are supplied by the exposure producer.
     """
     family = next(family for pattern, *_rest, family in _ROSTER if pattern == key)
-    if family == "nights":
-        count = max((row.get("evidence", {}).get("harm_band_source_nights", 0)
-                     for row in analysis.get("basal") or ()), default=0)
-        dates = None
-    else:
-        source = (exposures.get("exposures") or {}).get(family) or {}
-        count = source.get("n", 0)
-        dates = sorted({item["t"][:10] for item in source.get("occurrences") or ()
-                        if item.get("t") is not None})
+    source = (exposures.get("exposures") or {}).get(family) or {}
+    count = source.get("n", 0)
+    dates = sorted({item["t"][:10] for item in source.get("occurrences") or ()
+                    if item.get("t") is not None})
     gate = _GATES[key]
     return {"count": count, "gate": gate, "unit": family,
             "verdict": "ready" if count >= gate else "withheld",
             "reason": "zero_opportunities" if not count else "collecting" if count < gate else None,
-            **({"contributing_dates": dates} if dates is not None else {})}
+            "contributing_dates": dates}
 
 
 def _habit_members(scenarios: dict, levers: Iterable[str], *, exposures: dict | None = None,
@@ -93,10 +78,8 @@ def _habit_members(scenarios: dict, levers: Iterable[str], *, exposures: dict | 
             continue
         confidence = row.get("confidence") or {}
         if exposures is not None:
-            subject = f"habit:{lever}"
             owned = {item.get("ep_id") or item.get("t") for item in occurrences
-                     if subject in item.get("member_associations", [])
-                     or lever in item.get("attributed_levers", [])
+                     if lever in item.get("attributed_levers", [])
                      or item.get("cause_lever") == lever}
             owned.discard(None)
             if not owned:
@@ -156,28 +139,14 @@ def _setting_seriousness(
     return seriousness, segments
 
 
-def starts_in_harm_band(span: dict | None) -> bool:
-    """Whether a basal span starts inside the Harm signal's overnight band.
-
-    The one rule that admits the overnight Pattern through its basal setting and,
-    in the findings queue, seats it beneath that setting's row (ADR 469 decision 7).
-    """
-    start = (span or {}).get("start_min", -1)
-    return _HARM_CONFIG.overnight_start_min <= start < _HARM_CONFIG.overnight_end_min
-
-
 def _setting_member(
     analysis: dict, candidate_rows: Iterable[dict], parameter: str | None,
-    *, overnight: bool,
 ) -> list[dict]:
     """Compose one setting member without reclassifying its owner's verdicts.
 
-    Overnight admission uses the first asserting guidance member whose published
-    span starts inside the harm band, and its action is slot-owned.  Categorical
-    seriousness uses that member's harm when present, otherwise the first relevant
-    member harm (including an owner-published hold). Price remains the basal tuning
-    Lever's parameter-level Priority, so first-versus-greatest in-band slot is
-    irrelevant to pricing.
+    Categorical seriousness uses the first asserting member's harm when present,
+    otherwise the first relevant member harm (including an owner-published hold).
+    Price remains the tuning Lever's parameter-level Priority.
     """
     if parameter is None:
         return []
@@ -186,51 +155,26 @@ def _setting_member(
     if row is None:
         return []
     channel = row.get("recurrence_channel") or {}
-    k = channel.get("k", 0)
-    n = channel.get("n", 0)
     source_rows = analysis.get(_SETTING_ROWS[parameter]) or ()
     admitted_row = next((item for item in source_rows if item.get("asserts_move")), None)
     candidate = next((item for item in candidate_rows
                       if item.get("subject") == f"setting:{parameter}"), None)
     published_rows = (candidate or {}).get("members") or ()
-    if overnight:
-        published_rows = [
-            item for item in published_rows if starts_in_harm_band(item.get("span"))
-        ]
-        admitted_row = next((
-            item for item in published_rows if item.get("asserts_move")
-        ), None)
     admitted = admitted_row is not None
     lo, hi = channel.get("lo"), channel.get("hi")
-    if overnight:
-        harms = [((item.get("evidence") or {}).get("harm") or {})
-                 for item in analysis.get("basal") or ()]
-        k = max((item.get("band_nights", 0) for item in harms), default=0)
-        n = max((item.get("evidence", {}).get("harm_band_source_nights", 0)
-                 for item in analysis.get("basal") or ()), default=0)
     seriousness_row = admitted_row
     if (seriousness_row or {}).get("harm") is None:
         seriousness_row = next((item for item in published_rows
                                 if item.get("harm") is not None), seriousness_row)
     seriousness, seriousness_segments = _setting_seriousness(candidate, seriousness_row)
-    action = parameter if admitted else None
-    price = row.get("priority", 0)
-    if overnight:
-        span = (admitted_row or {}).get("span") or {}
-        admitted_action = next((
-            item for item in (candidate or {}).get("action") or ()
-            if item.get("start_min") == span.get("start_min")
-            and item.get("end_min") == span.get("end_min")
-        ), None)
-        action = (admitted_action or {}).get("parameter")
     return [{
-        "subject": f"setting:{parameter}", "kind": "setting", "k": k,
-        "price": price, "admitted": admitted,
+        "subject": f"setting:{parameter}", "kind": "setting", "k": channel.get("k", 0),
+        "price": row.get("priority", 0), "admitted": admitted,
         "producer": "tuning_levers", "lo": round(lo, 4) if lo is not None else None,
         "hi": round(hi, 4) if hi is not None else None,
         "seriousness": seriousness,
         "seriousness_segments": seriousness_segments,
-        "action": action,
+        "action": parameter if admitted else None,
     }]
 
 
@@ -260,130 +204,25 @@ def credited_claims(exposures: dict, family: str,
     return credits
 
 
-def _rate(exposures: dict, family: str, rate_levers: Iterable[str], *,
-          overnight_k: int, overnight_n: int) -> tuple[int, int, str]:
-    if family == "nights":
-        return overnight_k, overnight_n, "harm_band_source_nights"
-    source = (exposures.get("exposures") or {}).get(family) or {}
-    credits = credited_claims(exposures, family, rate_levers)
-    return len(credits), source.get("n", 0), "exposures"
-
-
-def _comparison(count: int, reason: str) -> dict:
-    return {"status": "comparable", "count": count, "reason": reason}
-
-
-def _not_comparable(reason: str) -> dict:
-    return {"status": "not_comparable", "count": None, "reason": reason}
-
-
-def _cross_pattern_overlaps(exposures: dict) -> dict[str, dict]:
-    identities = {}
-    families = {}
-    for key, _title, habit_levers, _rate_levers, _setting, family in _ROSTER:
-        families[key] = set() if family == "nights" else {family}
-        identities[key] = {
-            family: set().union(*(
-                _lever_identities(exposures, family, lever) for lever in habit_levers
-            ))
-            for family in families[key]
-        }
-    out = {key: {} for key in identities}
-    for left in identities:
-        for right in identities:
-            if left == right:
-                continue
-            shared = families[left] & families[right]
-            if not families[left] or not families[right]:
-                out[left][right] = _not_comparable("no_habit_exposure_identity")
-            elif not shared:
-                out[left][right] = _not_comparable("different_exposure_families")
-            else:
-                count = sum(len(identities[left][family] & identities[right][family])
-                            for family in shared)
-                reason = ("shared_meals_exposure" if shared == {"meals"}
-                          else "shared_lows_exposure")
-                out[left][right] = _comparison(count, reason)
-    return out
-
-
-def _low_instant(value: str) -> datetime:
-    return datetime.fromisoformat(value)
-
-
-def _harm_low_ids(analysis: dict, parameter: str) -> set[datetime]:
-    return {
-        _low_instant(low["t"])
-        for row in analysis.get(_SETTING_ROWS[parameter]) or ()
-        for low in ((row.get("evidence") or {}).get("harm") or {}).get("lows") or ()
-        if low.get("t") is not None
-    }
-
-
-def _scenario_low_ids(scenarios: dict) -> dict[str, set[datetime]]:
-    out = {lever: set() for lever in _LOW_IDENTITY_LEVERS}
-    for episode in (scenarios.get("episodes") or {}).values():
-        lever = episode.get("lever")
-        if lever not in out:
-            continue
-        for step in episode.get("steps") or ():
-            nadir = ((step.get("citation") or {}).get("facts") or {}).get("nadir_at")
-            if nadir is not None:
-                out[lever].add(_low_instant(nadir))
-    return out
-
-
-def _harm_low_overlaps(
-    analysis: dict, scenarios: dict, habit_levers: Iterable[str], parameter: str | None,
-) -> list[dict]:
-    if parameter is None:
-        return []
-    setting_lows = _harm_low_ids(analysis, parameter)
-    scenario_lows = _scenario_low_ids(scenarios)
-    rows = []
-    for lever in habit_levers:
-        row = {"habit_subject": f"habit:{lever}",
-               "setting_subject": f"setting:{parameter}"}
-        if lever in _LOW_IDENTITY_LEVERS:
-            row.update(_comparison(
-                len(scenario_lows[lever] & setting_lows), "shared_low_episode_nadir",
-            ))
-        else:
-            row.update(_not_comparable("different_identity_spaces"))
-        rows.append(row)
-    return rows
-
-
 def build_outcome_patterns(analysis: dict, exposures: dict, scenarios: dict, *,
                            scoped_population: bool = False) -> list[dict]:
-    """Return the closed five-pattern roster from already-published source outputs.
+    """Return the closed four-pattern roster from already-published source outputs.
 
-    Meal-bolus-short remains observation-only, but the meal opportunity attributed
-    to it contributes to highs after meals. Both correction levers contribute the
-    low opportunity attributed to them.
+    A Pattern's count is its family's Occurrences its rate levers claim. Both
+    correction levers contribute the low opportunity attributed to them.
     """
     from ...guidance import _source_candidates as guidance_candidates
 
     roster = []
     candidate_rows = guidance_candidates(analysis, exposures, scenarios)
-    overlaps = _cross_pattern_overlaps(exposures)
     for key, title, habit_levers, rate_levers, setting, family in _ROSTER:
-        habits = _habit_members(scenarios, habit_levers,
-                                exposures=exposures if scoped_population else None,
-                                family=family)
-        overnight = family == "nights"
-        members = habits + _setting_member(
-            analysis, candidate_rows, setting, overnight=overnight,
+        members = _habit_members(scenarios, habit_levers,
+                                 exposures=exposures if scoped_population else None,
+                                 family=family) + _setting_member(
+            analysis, candidate_rows, setting,
         )
-        overnight_n = max((
-            row.get("evidence", {}).get("harm_band_source_nights", 0)
-            for row in analysis.get("basal") or ()
-        ), default=0)
-        overnight_k = members[0]["k"] if overnight and members else 0
-        k, n, producer = _rate(
-            exposures, family, rate_levers,
-            overnight_k=overnight_k, overnight_n=overnight_n,
-        )
+        k = len(credited_claims(exposures, family, rate_levers))
+        n = ((exposures.get("exposures") or {}).get(family) or {}).get("n", 0)
         count_status = (None if k <= n else {
             "status": "inconsistent_counts", "k": k, "n": n,
         })
@@ -414,7 +253,7 @@ def build_outcome_patterns(analysis: dict, exposures: dict, scenarios: dict, *,
             "wilson": ({"lo": round(bounds[1], 4), "hi": round(bounds[2], 4)} if bounds else None),
             "wide": _uncertain(bounds, chosen),
             **({"count_status": count_status} if count_status else {}),
-            "rate_producer": producer, "readiness": {
+            "rate_producer": "exposures", "readiness": {
                 field: value for field, value in opportunity_readiness(key, analysis, exposures).items()
                 if field in ("count", "gate", "verdict")
             },
@@ -422,10 +261,6 @@ def build_outcome_patterns(analysis: dict, exposures: dict, scenarios: dict, *,
             "admission_route": ("setting_staging" if chosen and chosen["kind"] == "setting" else "habit_threshold" if chosen else "none"),
             "collapse": collapse, "action": chosen["action"] if chosen else None,
             "seriousness": chosen["seriousness"] if chosen else None,
-            "overlap_counts": overlaps[key],
-            "harm_low_overlap": _harm_low_overlaps(
-                analysis, scenarios, habit_levers, setting,
-            ),
             "member_set_fingerprint": fingerprint,
         })
     return roster
@@ -434,17 +269,10 @@ def build_outcome_patterns(analysis: dict, exposures: dict, scenarios: dict, *,
 def pattern_in_window(pattern: dict, query) -> bool:
     """Whether a scoped Pattern's outcomes land in the window (ADR 467).
 
-    An Exposure-family Pattern's scoped ``n`` is already its outcome-anchored count
-    in the window, so a count above zero is membership, admitted or not. The
-    harm-band Pattern's ``n`` counts band nights whatever the window, so it also
-    needs the window to overlap the Harm signal's overnight band.
+    A Pattern's scoped ``n`` is already its outcome-anchored count in the window,
+    so a count above zero is membership, admitted or not.
     """
-    if not (pattern.get("n") or 0) > 0:
-        return False
-    if pattern["rate_producer"] == "harm_band_source_nights":
-        return query.overlaps(_HARM_CONFIG.overnight_start_min,
-                              _HARM_CONFIG.overnight_end_min)
-    return True
+    return (pattern.get("n") or 0) > 0
 
 
 def outcome_window_population(analysis: dict, exposures: dict, scenarios: dict, query):

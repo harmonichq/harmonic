@@ -309,20 +309,14 @@ def compute_clean_rates(
 
     ``exposure_counts`` (``n`` per exposure) and ``attributed_by_lever`` (``k`` per
     lever) come from :func:`~ciq_autotune.analyzers.scenario.tally_attributions`.
-    Attributed occurrences are rolled up through each lever's recurrence-population
-    policy. Custom populations use their policy noun to select the matching flat
-    account, so Meal bolus fell short is charged to meals rather than highs.
-    Policies without a closed rate family contribute to none of these accounts. Then
+    Attributed occurrences are rolled up through each lever's recurrence family. Then
     ``clean = 1 − wilson_rate(k, n)`` with the interval flipped
     (``clean_lo = 1 − hi``). Rides #58's Wilson so a thin exposure is wide, never
     blank.
     """
     attributed_by_exposure: Dict[Exposure, int] = {e: 0 for e in _EXPOSURE_ORDER}
     for lever, k in attributed_by_lever.items():
-        policy = policy_for(lever)
-        exp = policy.rate_family
-        if exp is None:
-            continue
+        exp = policy_for(lever).recurrence_family
         attributed_by_exposure[exp] = attributed_by_exposure.get(exp, 0) + k
 
     out: List[CleanRate] = []

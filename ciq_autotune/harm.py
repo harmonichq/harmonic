@@ -259,10 +259,6 @@ class BasalHarm:
     slot_nights: Dict[int, int] = field(default_factory=dict)
     recurrence_nights: Dict[int, int] = field(default_factory=dict)
     recurrence_bar: int = HarmConfig.min_recurrence_nights
-    # Nights with an observed CGM point in the harm band whose *minimum* bolus
-    # IOB in that band cleared the fasting floor.  This is the overnight outcome
-    # pattern's source population, not a count inferred from printed lows.
-    harm_band_source_nights: int = 0
     lows: Tuple[PrintedLow, ...] = ()
 
 
@@ -446,7 +442,6 @@ def basal_harm_evidence(harm: BasalHarm, slot: int, slot_minutes: int) -> dict:
         aliases={
             "band_nights": harm.nights,
             "slot_nights": harm.slot_nights.get(slot, 0),
-            "harm_band_source_nights": harm.harm_band_source_nights,
             "recurrence_nights": harm.recurrence_nights.get(slot, 0),
             "recurrence_bar": harm.recurrence_bar,
         },
@@ -500,25 +495,6 @@ def basal_harm(
         lows = find_printed_lows(cgm, bolus, config)
     slot_epochs = slot_epochs or {}
 
-    # Keep the population alongside the low attribution, but do not derive it
-    # from lows: a quiet night with a sub-floor IOB is still an observed source
-    # night.  The curve has the same construction and HarmConfig as
-    # find_printed_lows(), so the fasting predicate is one curve/floor contract.
-    iob = BolusIob(list(bolus), config.peak_min, config.dia_min)
-    source_nights: set[date] = set()
-    for reading in cgm:
-        if reading.bg is None:
-            continue
-        night = _night_key(
-            reading.t, config.overnight_start_min, config.overnight_end_min,
-        )
-        if night is None or night in source_nights:
-            continue
-        # One sub-floor reading proves that this night belongs to the source
-        # population; its remaining five-minute readings cannot undo that.
-        if iob.at(reading.t) <= config.fasting_iob_floor_u:
-            source_nights.add(night)
-
     band_lows: List[PrintedLow] = []
     # slot -> set of distinct nights that slot printed a basal low
     slot_night_set: Dict[int, set] = {}
@@ -554,6 +530,5 @@ def basal_harm(
         slot_nights={s: len(ns) for s, ns in slot_night_set.items()},
         recurrence_nights=recurrence,
         recurrence_bar=config.min_recurrence_nights,
-        harm_band_source_nights=len(source_nights),
         lows=tuple(sorted(band_lows, key=lambda l: l.t)),
     )

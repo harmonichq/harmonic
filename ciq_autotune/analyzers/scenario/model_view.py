@@ -40,7 +40,7 @@ from ..scenario_config import ScenarioConfig
 from .anchors import Anchor, AnchorKind
 from .attribute import AnchorVerdict, LowPromptAnswer, attribute
 from .levers import Lever, title as lever_title
-from .evaluation import evaluate, SEQUENCE_LEVERS
+from .evaluation import evaluate
 from .severity import worst_bg
 
 _FMT = "%Y-%m-%d %H:%M:%S"
@@ -116,7 +116,7 @@ def _anchor_facts(anchor: Anchor) -> Tuple[Optional[float], Optional[float], Opt
 
 def _is_driver(anchor: Anchor, attr) -> bool:
     """Is this anchor the episode's lever driver? (trigger_t sits at ``t`` or the rise onset.)"""
-    if attr.lever is None or attr.lever in SEQUENCE_LEVERS:
+    if attr.lever is None:
         return False
     if (
         attr.lever is Lever.CORRECTION_STACKING
@@ -195,14 +195,6 @@ def _build_episode_view(
         # (unlevered) episode. Each step is {t, text, evidence_tier, …}.
         "steps": [s.to_dict() for s in attr.steps],
         "anchors": anchor_dicts,
-        **({"evaluation_id": evaluated.id,
-            "bounded_start": _fmt(evaluated.start), "bounded_end": _fmt(evaluated.end),
-            "occurrence_id": evaluated.occurrence_id,
-            "outcome_minute": (evaluated.outcome_t.hour * 60 + evaluated.outcome_t.minute
-                               if evaluated.outcome_t is not None else None),
-            "candidates": [{**c.to_dict(), "state": "fired" if c.lever is attr.lever else "outranked"}
-                           for c in evaluated.candidates]}
-           if evaluated is not None and any(c.sequence is not None for c in evaluated.candidates) else {}),
     }
 
 

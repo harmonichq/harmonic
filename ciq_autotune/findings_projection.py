@@ -63,16 +63,11 @@ from typing import Dict, List, Optional, Sequence, Tuple
 
 from .analyzers.ic import BLOCK_WINDOW_DAYS
 from .ic_history import decode_history_id
-# `_chips_for` (#61) asks each lever what kind of anchor its consequence lands
-# on. The sequence marker requires explicit witness membership while retaining
-# the habit causes' highs/meals display chips.
-from .analyzers.scenario.levers import Exposure, Lever, exposure, outcome_kind, title
-from .analyzers.scenario.evidence_population import policy_for
+# `_chips_for` (#61) asks each lever what kind of anchor its consequence lands on.
+from .analyzers.scenario.levers import Exposure, exposure, outcome_kind, title
 from .analyzers.scenario.outcome_patterns import (
     _ROSTER, build_outcome_patterns, credited_claims, outcome_window_population,
-    starts_in_harm_band,
 )
-from .harm import HarmConfig
 from .safety import Status
 from .window_membership import DAY_MINUTES, WindowQuery, outcome_minute
 
@@ -83,8 +78,6 @@ class UnknownHistorySelection(KeyError):
     """A canonical selection absent from the analyzer-published catalog."""
 
 _SLOT_MINUTES = 30
-# The Harm signal's overnight band, which the harm-band Pattern's counts cover.
-_HARM_CONFIG = HarmConfig()
 
 # The basal verdicts that WITHHOLD a move: the analyzer had something to say and
 # declined to name a direction from it. `NO_CHANGE` is deliberately not among them —
@@ -118,18 +111,6 @@ def event_chart_coordinate(lever: str, query: WindowQuery, families: Sequence[st
         return None
     return {"lever": lever, "window": query.to_dict()}
 
-# The one place the unexplained-highs sentence is written (#63). The operator-confirmed
-# wording is "N highs had no cause detected by the app"; the ONLY thing that varies is
-# the noun's number, because a surface that prints "1 highs" is a defect and inflecting
-# a noun is not rewording a confirmed sentence. The count is substituted HERE,
-# server-side, and the frontend renders the finished sentence verbatim — the same rule
-# every other line on this surface follows (term 40). Highs-only scope is explicit in
-# the words because the queue above it holds every family, and a bare "N had no cause"
-# would read as a claim about all of them. "highs" is the family noun `_FAMILY_NOUN`
-# already spells; the domain term for one of them is Occurrence, never "event"
-# (CONTEXT.md).
-UNCAUSED_HIGHS_COPY = "{n} {noun} had no cause detected by the app"
-
 # The exposure family a queue row's denominator is counted in, and the noun it is
 # counted with (term 16: every denominator names its own noun). Keyed by the family
 # names `explore_exposures` emits.
@@ -151,10 +132,9 @@ DIAGNOSE_SOURCE_WINDOW_DAYS = 30
 PATTERN_SUBJECTS = frozenset(f"pattern:{key}" for key, *_ in _ROSTER)
 
 
-def pattern_rate_family(pattern: dict) -> Exposure | None:
+def pattern_rate_family(pattern: dict) -> Exposure:
     """Return the one Exposure family the Pattern producer prices against."""
-    family = next((row[5] for row in _ROSTER if row[0] == pattern.get("key")), None)
-    return Exposure(family) if family in {item.value for item in Exposure} else None
+    return Exposure(next(row[5] for row in _ROSTER if row[0] == pattern.get("key")))
 
 
 def pattern_chartable(pattern: dict, exposures: dict) -> bool:
@@ -169,7 +149,7 @@ def pattern_chartable(pattern: dict, exposures: dict) -> bool:
         member.get("kind") == "habit" and member.get("admitted")
         for member in pattern.get("members") or ()
     )
-    source = ((exposures.get("exposures") or {}).get(family.value) or {}) if family else {}
+    source = (exposures.get("exposures") or {}).get(family.value) or {}
     return has_admitted_habit and (source.get("n") or 0) > 0
 
 
@@ -226,7 +206,7 @@ class FindingsProjection:
                 outcome_patterns.append(deepcopy(prepared) | {
                     field: deepcopy(scoped[field])
                     for field in ("n", "k", "rate", "wilson", "wide", "readiness",
-                                  "rate_producer", "overlap_counts", "harm_low_overlap")
+                                  "rate_producer")
                     if field in scoped
                 })
         else:
@@ -275,7 +255,6 @@ class FindingsProjection:
             # never be read as two different vocabularies.
             "counts": counts,
             "chip_counts": chip_counts,
-            "uncaused_highs": self._uncaused_highs(),
         }
 
     def _pattern_rows(self, rows: List[dict], query: WindowQuery,
@@ -385,30 +364,6 @@ class FindingsProjection:
                 annotation=history.get("annotation"),
             ))
         return rows
-
-    def _uncaused_highs(self) -> dict:
-        """The whole-window count of highs the engine explained nothing about, and the
-        finished sentence that reports it (#63).
-
-        **Deliberately not scoped by the query.** Every other number on this surface
-        answers "in this window", and this one answers "in the findings window" — the
-        30 days the queue was built over. A clock scope narrows which rows are shown;
-        it does not change how many highs went unexplained, and re-counting it per
-        window would let an empty scope read as "0 highs had no cause", which is the
-        opposite of what happened.
-
-        Read straight off the exposures feed, which counts it episode-wise and leaves
-        out every High an over-treated low's rebound owns (ADR 422,
-        :func:`~.explore_exposures.build_exposures`); nothing is re-derived here, the
-        same way no row's membership is. ``text`` is ``None`` at zero so the surface
-        has one thing to test and no threshold of its own — a count with nothing to
-        report publishes no sentence.
-        """
-        highs = (self._exposures.get("exposures") or {}).get("highs") or {}
-        n = highs.get("uncaused") or 0
-        text = (UNCAUSED_HIGHS_COPY.format(n=n, noun="high" if n == 1 else "highs")
-                if n else None)
-        return {"count": n, "text": text}
 
     # --- parameters: asserting / held / blind ---------------------------------
 
@@ -589,14 +544,11 @@ class FindingsProjection:
         # that outcome lands inside the window. The family denominator is filtered
         # by the same anchor, so it can never be smaller than what it denominates.
         in_window: Dict[str, List[dict]] = {}
-        all_occurrences: Dict[str, List[dict]] = {}
         for family, payload in families.items():
-            all_occurrences[family] = list(payload.get("occurrences") or [])
-            kept = [
-                occurrence for occurrence in all_occurrences[family]
+            in_window[family] = [
+                occurrence for occurrence in payload.get("occurrences") or []
                 if query.contains(outcome_minute(occurrence, self._exposures))
             ]
-            in_window[family] = kept
 
         by_lever: Dict[str, dict] = {}
         for family, occurrences in in_window.items():
@@ -627,30 +579,8 @@ class FindingsProjection:
                 entry["families"].append(family)
 
         priced = _pattern_priorities(self._scenarios)
-        patterns = {
-            row.get("lever"): row
-            for row in ((self._scenarios.get("patterns") or [])
-                        + (self._scenarios.get("low_confidence") or []))
-        }
         rows = []
         for lever, entry in by_lever.items():
-            policy = policy_for(lever)
-            recurrence_account = policy.projected_recurrence_account(
-                lever, in_window, all_occurrences, patterns.get(lever) or {},
-            )
-            if recurrence_account is not None:
-                occurrence_ids, denominator = recurrence_account
-                entry["appearances"] = [{
-                    "family": policy.recurrence_noun,
-                    "noun": policy.recurrence_noun,
-                    "n": len(occurrence_ids),
-                    "m": denominator,
-                }]
-                # This lever's recurrence identity is the eligible meal event, not
-                # each high episode it can produce.  The policy-owned groups retain
-                # their member episodes in the scenario payload; this served row
-                # counts the same occurrences its denominator and case file use.
-                entry["episodes"] = occurrence_ids
             entry["appearances"].sort(key=lambda a: a["family"])
             evidence, verdict_counts, verdict_counts_by_family = _lever_evidence(
                 lever, entry["families"], in_window,
@@ -680,58 +610,7 @@ class FindingsProjection:
                 verdict_counts_by_family=verdict_counts_by_family,
                 event_chart=event_chart_coordinate(lever, query, entry["families"]),
             ))
-        for lever in self._exposures.get("sequence_evidence") or {}:
-            if lever not in patterns:
-                continue
-            population = sequence_population(self._exposures, lever, query)
-            claimed = [item for item in population if item["attributed"]]
-            if not claimed:
-                continue
-            counts = {state: sum(item["verdict"] == state for item in population)
-                      for state in FINDING_VERDICTS}
-            response = ((self._exposures.get("sequence_evidence") or {}).get(lever) or {}).get("response")
-            rows.append(_row(
-                id=f"finding:{lever}", register="finding", kind="habit", lever=lever,
-                title=title(Lever(lever)), priority=priced.get(lever),
-                appearances=[{"family": "sequences", "noun": "sequences",
-                              "n": len(claimed), "m": len(population)}],
-                episodes=len(claimed), evidence=population,
-                verdict_counts=counts, verdict_counts_by_family={"sequences": counts},
-                event_chart={"lever": lever, "window": query.to_dict()},
-                response_headline=("Glucose during high-carb eating"
-                                   if response["period"] == "in_sequence"
-                                   else "Glucose after high-carb eating") if response is not None else None,
-            ))
         return rows
-
-
-def sequence_population(exposures: dict, lever: str, query: WindowQuery) -> List[dict]:
-    """Project the producer's eligible identities and witnessed episode matches.
-
-    A sequence counts once even when several episodes match. References have no
-    outcome witness and remain in the whole-source population only. Clock-scoped
-    rosters include exactly the sequences with a witnessed match in that window.
-    Losing matches still meet this row's criteria; only winners are attributed.
-    """
-    evidence = (exposures.get("sequence_evidence") or {}).get(lever) or {}
-    matches = {}
-    for occurrence in evidence.get("occurrences") or ():
-        minute = outcome_minute({**occurrence, "cause_lever": lever}, exposures)
-        if minute is not None and (not query.scoped or query.contains(minute)):
-            matches.setdefault(occurrence["id"], []).append(occurrence)
-    result = []
-    for record in evidence.get("population") or ():
-        episodes = matches.get(record["id"], [])
-        if query.scoped and not episodes:
-            continue
-        winners = [episode for episode in episodes if episode["attributed"]]
-        result.append({
-            "id": record["id"], "sequence": deepcopy(record),
-            "episodes": deepcopy(episodes), "attributed": bool(winners),
-            "outcome_minute": (winners or episodes)[0]["outcome_minute"] if episodes else None,
-            "verdict": "fired" if episodes else "clean",
-        })
-    return result
 
 
 # Silence reasons that keep an occurrence "calm" for a lever whose classifier
@@ -1016,8 +895,6 @@ def _pattern_noun(pattern: dict) -> str:
     """The noun a Pattern's own k-of-n count is denominated in — shared by
     ``headline`` and the count sentence so the two can never name a different
     noun for the same row."""
-    if pattern["rate_producer"] == "harm_band_source_nights":
-        return "nights"
     return _FAMILY_NOUN[pattern_rate_family(pattern).value]
 
 
@@ -1066,23 +943,14 @@ _PATTERN_OUTCOME = {
     "lows_after_meals": "ran low",
     "highs_after_treating_lows": "rebounded high",
     "lows_after_correcting_highs": "followed a correction",
-    "overnight_lows_no_iob": "ran low overnight",
 }
 
 _CAUSE_OUTCOME = {
     # Closed over the code-derived cross product (coordinator decision, #413 review
     # round 2): every `Lever` member (levers.py) x every family a Cause appearance
     # can be filed under — the four exposure families `explore_exposures._FAMILY_FOR_KIND`
-    # names (lows / meals / highs / correction_clusters), plus a lever's own
-    # recurrence/sequence family when `evidence_population.policy_for(lever)` (or,
-    # for the two sequence levers, `_finding_rows`'s dedicated sequence branch)
-    # restricts it there in code. Never widened or narrowed from fixture output.
-    #
-    # carb_undercount, late_bolus, meal_over_delivery, over_treated_low,
-    # correction_stacking, correction_on_iob and missed_meal all have
-    # `recurrence_family is not None` (an "ordinary" or ordinary-shaped policy), so
-    # `_finding_rows` never overrides their appearances — each can be filed under
-    # any of the four exposure families and gets one entry per family.
+    # names (lows / meals / highs / correction_clusters). Never widened or narrowed
+    # from fixture output.
     ("carb_undercount", "meals"): "ran high",
     ("carb_undercount", "highs"): "followed an undercounted meal",
     ("carb_undercount", "lows"): "followed an undercounted meal",
@@ -1111,17 +979,6 @@ _CAUSE_OUTCOME = {
     ("missed_meal", "meals"): "had no bolus nearby",
     ("missed_meal", "lows"): "had no bolus nearby",
     ("missed_meal", "correction_clusters"): "had no bolus nearby",
-    # meal_bolus_short: `evidence_population._POLICIES[Lever.MEAL_BOLUS_SHORT]` sets
-    # `recurrence_family=None`, so `_finding_rows`'s override unconditionally
-    # replaces its appearances with the one `recurrence_noun` family ("meals") —
-    # never any of the four exposure families.
-    ("meal_bolus_short", "meals"): "needed a correction after",
-    # high_carb_sequence / repeat_eating: `model_view._is_driver` excludes every
-    # `SEQUENCE_LEVERS` member from ever being attributed on an exposure-family
-    # anchor, so `_finding_rows`'s dedicated sequence branch is their only source
-    # of appearances, always filed under the one hardcoded "sequences" family.
-    ("high_carb_sequence", "sequences"): "ran less in range",
-    ("repeat_eating", "sequences"): "ran less in range",
 }
 
 
@@ -1138,10 +995,7 @@ def _count_sentence(count: int, denominator: int, noun: str, outcome: str) -> di
 def _pattern_count_sentences(row: dict) -> Optional[List[dict]]:
     """A count-bearing Pattern's one served sentence, or ``None`` — counts under
     review and a Pattern with no admitted k/n serve none, matching ``_headline_for``'s
-    own gating so the two fields never disagree about which rows carry counts.
-
-    In a scoped window the harm-band Pattern keeps its whole-band counts, so its
-    outcome names the band rather than the window (ADR 467 decision 3)."""
+    own gating so the two fields never disagree about which rows carry counts."""
     pattern = row["pattern"]
     if pattern.get("count_status") or pattern["admission_route"] == "none":
         return None
@@ -1149,12 +1003,7 @@ def _pattern_count_sentences(row: dict) -> Optional[List[dict]]:
     key = pattern["key"]
     if key not in _PATTERN_OUTCOME:
         raise ValueError(f"no outcome word for pattern {key!r}")
-    outcome = _PATTERN_OUTCOME[key]
-    if (pattern["rate_producer"] == "harm_band_source_nights"
-            and row["window_scope"] == "window"):
-        outcome = (f"ran low between {_hhmm(_HARM_CONFIG.overnight_start_min)} "
-                   f"and {_hhmm(_HARM_CONFIG.overnight_end_min)}")
-    return [_count_sentence(pattern["k"], pattern["n"], noun, outcome)]
+    return [_count_sentence(pattern["k"], pattern["n"], noun, _PATTERN_OUTCOME[key])]
 
 
 def _cause_count_sentences(row: dict) -> Optional[List[dict]]:
@@ -1225,7 +1074,6 @@ _PATTERN_CHIPS = {
     "lows_after_meals": ("lows", "meals"),
     "highs_after_treating_lows": ("highs",),
     "lows_after_correcting_highs": ("lows", "corrections"),
-    "overnight_lows_no_iob": ("lows",),
 }
 
 
@@ -1240,8 +1088,6 @@ def _chips_for(row: dict) -> List[str]:
 
     chips = []
     kind = outcome_kind(row["lever"])
-    if kind == "sequence":
-        return ["highs", "meals"]
     if kind == "high":
         chips.append("highs")
     elif kind == "low":
@@ -1284,10 +1130,7 @@ def _stamp_anchors(pattern_rows: Sequence[dict], rows: Sequence[dict],
 
     Its anchor is the first served, priced, asserting row of its setting member's
     parameter in queue order; every such row carries the same parameter-level
-    Priority. The harm-band Pattern anchors only to such a row whose span starts
-    inside the Harm signal's overnight band, by the rule that admitted it
-    (``starts_in_harm_band``), never beneath a daytime basal row.
-    With none served (a scoped window without the setting's row) the Pattern keeps
+    Priority. With none served (a scoped window without the setting's row) the Pattern keeps
     its own ranked position. Its own ``priority`` stays the roster's price (ADR 391).
     """
     for pattern_row in pattern_rows:
@@ -1296,11 +1139,9 @@ def _stamp_anchors(pattern_rows: Sequence[dict], rows: Sequence[dict],
             continue
         member = next(item for item in pattern["members"] if item["kind"] == "setting")
         parameter = member["subject"].removeprefix("setting:")
-        in_band = pattern["rate_producer"] == "harm_band_source_nights"
         anchors = [row for row in rows
                    if row["register"] == "assert" and row["parameter"] == parameter
-                   and row["priority"] is not None
-                   and (not in_band or starts_in_harm_band(row["span"]))]
+                   and row["priority"] is not None]
         if anchors:
             pattern_row["anchored_by"] = min(
                 anchors, key=lambda row: _sort_key(row, by_id))["id"]

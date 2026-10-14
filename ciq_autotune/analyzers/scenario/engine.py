@@ -47,9 +47,8 @@ from ...rescue_evidence import (
 )
 from ...uncertainty import Confidence
 from ..scenario_config import ScenarioConfig
-from .anchors import AnchorKind
 from .attribute import LowPromptAnswer, attribute
-from .evaluation import (AttributedOccurrence, evaluate, bounded_episode, _resolve_end, SEQUENCE_LEVERS)
+from .evaluation import (AttributedOccurrence, evaluate, bounded_episode, _resolve_end)
 from .levers import Exposure, Lever, recommendation
 from .evidence_population import policy_for
 from . import opportunities
@@ -104,11 +103,11 @@ def _exposure_counts(
 
 
 def attributed_occurrences(bolus_events, cgm_readings, basal_events=(), *, isf=None,
-                           scenario_config=ScenarioConfig(), low_answers=(), carb_entries=()):
+                           scenario_config=ScenarioConfig(), low_answers=()):
     """Read unique occurrence ownership from the shared event evaluation."""
     return evaluate(bolus_events, cgm_readings, basal_events, isf=isf,
                     scenario_config=scenario_config, low_answers=low_answers,
-                    carb_entries=carb_entries, bound_classifier_context=False).attributed
+                    bound_classifier_context=False).attributed
 
 
 def tally_attributions(
@@ -119,7 +118,6 @@ def tally_attributions(
     isf: Optional[float] = None,
     scenario_config: ScenarioConfig = ScenarioConfig(),
     low_answers: Sequence[LowPromptAnswer] = (),
-    carb_entries=(),
 ) -> Tuple[Dict[Exposure, int], Dict[Lever, int]]:
     """Exposure counts and unique attributed recurrence counts, without narration.
 
@@ -128,7 +126,7 @@ def tally_attributions(
     """
     evaluated = evaluate(bolus_events, cgm_readings, basal_events, isf=isf,
                          scenario_config=scenario_config, low_answers=low_answers,
-                         carb_entries=carb_entries, bound_classifier_context=False)
+                         bound_classifier_context=False)
     exposure_counts = {family: len(rows) for family, rows in evaluated.families.items()}
     attributed: Dict[Lever, int] = {}
     seen = set()
@@ -212,12 +210,6 @@ def _build_episode(
         steps=steps,
         window=window_builder(win_start, win_end),
         worst_bg=wb,
-        evidence=({"occurrence_id": evaluated.occurrence_id,
-                   "outcome_minute": evaluated.outcome_t.hour * 60 + evaluated.outcome_t.minute
-                                     if evaluated.outcome_t is not None else None,
-                   "outcome_at": _fmt(evaluated.outcome_t) if evaluated.outcome_t else None,
-                   "candidates": [c.to_dict() for c in evaluated.candidates]}
-                  if any(c.sequence is not None for c in evaluated.candidates) else {}),
     )
     return episode, attr.lever
 
@@ -290,17 +282,10 @@ def _score_pattern(
     (the "typical severity" that feeds both scoring and the recurrence line).
     """
     k = len(episodes)
-    n = recurrence_counts[lever]
-    if lever is Lever.MEAL_BOLUS_SHORT or lever in SEQUENCE_LEVERS:
-        if k > n:
-            raise ValueError(
-                f"{lever.value} attribution exceeds its evidence population"
-            )
-    else:
-        # Near-low rebound episodes can be actionable even where no sub-70 anchor was
-        # emitted. Those legacy Exposure populations still need this compatibility
-        # clamp; ADR 202 records the audited exception explicitly.
-        n = max(n, k)
+    # Near-low rebound episodes can be actionable even where no sub-70 anchor was
+    # emitted. Those legacy Exposure populations still need this compatibility
+    # clamp; ADR 202 records the audited exception explicitly.
+    n = max(recurrence_counts[lever], k)
     effects = [
         normalized_severity(ep.severity, scenario_config=scenario_config)
         for ep in episodes
@@ -340,7 +325,6 @@ def assemble(
 
     evaluated = evaluate(bolus_events, cgm_readings, basal_events, isf=isf,
                          scenario_config=scenario_config, low_answers=low_answers,
-                         carb_entries=carb_entries,
                          window_start=parse_t(window["start"]) if window and window.get("start") else None,
                          window_end=parse_t(window["end"]) if window and window.get("end") else None)
     recurrence_counts = evaluated.recurrence_counts
@@ -368,8 +352,7 @@ def assemble(
     scored: List[Tuple[Confidence, Lever, List[Episode]]] = []
     for lever, eps in by_lever.items():
         # Severity, hero, effect, ranking, and the occurrence gate all apply to the
-        # policy's unique occurrence.  For meal-bolus-short that is the implicated
-        # meal, represented by its worst associated episode.
+        # policy's unique occurrence, represented by its worst associated episode.
         unique = {}
         for episode in eps:
             key = occurrence_ids[episode.id]
@@ -379,8 +362,6 @@ def assemble(
         if lever is not Lever.OVER_TREATED_LOW and len(occurrence_eps) < scenario_config.engine_min_occurrences:
             continue
         conf = _score_pattern(lever, occurrence_eps, recurrence_counts, scenario_config=scenario_config)
-        if lever in SEQUENCE_LEVERS:
-            conf = replace(conf, effect=evaluated.candidate_impacts[lever])
         scored.append((conf, lever, occurrence_eps))
 
     # Split into surfaced vs low-confidence by a rate-signal gate. `wide` does NOT
@@ -429,11 +410,7 @@ def assemble(
                            if occurrence_ids.get(episode.id) == occurrence_id]
                 representative = max(members, key=lambda episode: episode.severity)
                 groups.append({"id": occurrence_id, "member_episode_ids": [episode.id for episode in members],
-                               "severity": representative.severity, "hero_episode": representative.id,
-                               **({"outcome_minute": representative.evidence.get("outcome_minute"),
-                                   "sequence": next(c["sequence"] for c in representative.evidence["candidates"]
-                                                    if c["lever"] == lever.value)}
-                                  if lever in SEQUENCE_LEVERS else {})})
+                               "severity": representative.severity, "hero_episode": representative.id})
             out.append(
                 Pattern(
                     lever=lever,
@@ -470,9 +447,6 @@ def assemble(
         episodes=episodes,
         preempted_lows=preempted_lows,
         priority_active_threshold=scenario_config.priority_active_threshold,
-        sequence_evidence={lever: {"population": [row.to_dict() for row in rows],
-                                  "candidate_impact": evaluated.candidate_impacts.get(Lever(lever))}
-                           for lever, rows in evaluated.sequences.populations.items() if rows},
     )
 
 
@@ -654,7 +628,7 @@ def observation_span_readable(cgm, start, end, *, scenario_config=ScenarioConfig
 
 
 def recurrence_observations(bolus, cgm, basal=(), *, lever, isf=None,
-                            scenario_config=ScenarioConfig(), low_answers=(), harm_cutoff=None, carb_entries=()):
+                            scenario_config=ScenarioConfig(), low_answers=(), harm_cutoff=None):
     """Policy-owned recurrence facts and independent behavior/harm availability.
 
     Classify with full context before selecting periods. The optional harm cutoff
@@ -687,15 +661,10 @@ def recurrence_observations(bolus, cgm, basal=(), *, lever, isf=None,
     lv = Lever(lever)
     policy = policy_for(lv)
     evaluated = evaluate(bolus, cgm, basal, isf=isf, scenario_config=scenario_config,
-                         low_answers=low_answers, carb_entries=carb_entries,
-                         bound_classifier_context=False)
-    groups = [ep.anchors for ep in evaluated.episodes]
-    families = evaluated.families
-    owned = policy.recurrence_population(families, bolus, scenario_config=scenario_config,
-                                         sequence_populations=evaluated.sequences.populations)
-    rows = [{"t": item.t if policy.recurrence_family is None else item.anchor_t,
-             "anchor_t": item.t if policy.recurrence_family is None else item.anchor_t,
-             "recurrence_id": policy.occurrence_id(item) if policy.recurrence_family is None else str(item.source_key),
+                         low_answers=low_answers, bound_classifier_context=False)
+    owned = policy.recurrence_population(evaluated.families, scenario_config=scenario_config)
+    rows = [{"t": item.anchor_t, "anchor_t": item.anchor_t,
+             "recurrence_id": str(item.source_key),
              "n": 1, "k": 0, "harm": 0, "measured": True,
              "harm_measured": True, "measurement_reason": None, "harm_measurement_reason": None}
             for item in owned]
@@ -754,17 +723,7 @@ def recurrence_observations(bolus, cgm, basal=(), *, lever, isf=None,
             continue
         match["k"] = 1
         match["measured"] = True
-    for item, row in zip(owned, rows):
-        if lv is Lever.MEAL_BOLUS_SHORT and not row["k"]:
-            end = item.t + timedelta(minutes=scenario_config.meal_bolus_short_digestion_lookback_min)
-            end = min([end] + [m.t for m in owned if m.t > item.t])
-            candidates = [a for group in groups for a in group.anchors
-                          if a.kind is AnchorKind.HIGH and item.t < a.reach_start <= end]
-            row["measured"] = not candidates and observation_span_readable(
-                cgm, item.t, end, scenario_config=scenario_config,
-            )
-            if candidates:
-                row["measurement_reason"] = "candidate_high_without_closed_attribution"
+    for row in rows:
         if not row["measured"] and row["measurement_reason"] is None:
             row["measurement_reason"] = "insufficient_measurement"
     if association_reason:

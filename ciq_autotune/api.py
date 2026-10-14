@@ -43,6 +43,8 @@ from .basal_night_evidence import (
     prepare_basal_night_evidence,
     rebuild_basal_night_evidence,
 )
+from .explore_time_of_day import DATA_DAYS as TIME_OF_DAY_DAYS
+from .explore_time_of_day import DEFAULT_DATA_DAYS as TIME_OF_DAY_DEFAULT_DAYS
 from .explore_time_of_day import build_time_of_day
 from .events import CarbEntry, parse_t
 from .model import ModelConfig
@@ -791,14 +793,15 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         raise HTTPException(status_code=503, detail="history inputs changed during every snapshot")
 
     @app.get("/api/explore/time-of-day")
-    def explore_time_of_day_endpoint(_: None = Depends(require_token)) -> dict:
-        """The fixed 30-day, time-of-day evidence feed for Explore (#578)."""
-        def compute() -> dict:
-            with Store.open(db_path) as store:
-                return build_time_of_day(store)
-
-        return fixed_response(fixed(("explore-time-of-day",), "time-of-day-v1",
-                                    lambda store: build_time_of_day(store)))
+    def explore_time_of_day_endpoint(days: int = TIME_OF_DAY_DEFAULT_DAYS,
+                                     _: None = Depends(require_token)) -> dict:
+        """The time-of-day evidence feed (#578) over the last 14, 30 or 90 days;
+        each window is its own fixed result."""
+        if days not in TIME_OF_DAY_DAYS:
+            raise HTTPException(status_code=400,
+                                detail=f"days must be one of {list(TIME_OF_DAY_DAYS)}")
+        return fixed_response(fixed(("explore-time-of-day", days), "time-of-day-v1",
+                                    lambda store: build_time_of_day(store, days=days)))
 
     @app.get("/api/explore/exposures")
     def explore_exposures_endpoint(_: None = Depends(require_token)) -> dict:
@@ -1856,7 +1859,12 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             ("outcomes-trend", outcomes_trend_endpoint),
             ("analyze-pooled", lambda: analyze_endpoint(window=30, ignore_changes=False, pool=True)),
             ("scenarios", lambda: scenarios_endpoint(window=30)),
-            ("explore-time-of-day", explore_time_of_day_endpoint),
+            # Every window the Overview switches between: its outcomes (each with
+            # its previous period) and its glucose profile.
+            *((f"outcomes-{days}", lambda days=days: outcomes_endpoint(window=days))
+              for days in TIME_OF_DAY_DAYS),
+            *((f"explore-time-of-day-{days}", lambda days=days: explore_time_of_day_endpoint(days=days))
+              for days in TIME_OF_DAY_DAYS),
             ("exposures", explore_exposures_endpoint),
             ("ic-block-evidence-preparation", ic_block_evidence_preparation),
             ("basal-night-evidence", lambda: basal_night_evidence_preparation(

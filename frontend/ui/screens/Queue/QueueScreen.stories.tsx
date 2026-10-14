@@ -86,6 +86,17 @@ export const PatternOpenPhone = story('phone', PATTERN_OPEN);
 export const PatternOpenDesktop = story('desktop', PATTERN_OPEN);
 export const SettingDetailPhone = story('phone', SETTING_DETAIL);
 export const SettingDetailDesktop = story('desktop', SETTING_DETAIL);
+
+// The Basal block open inside the matured Trial's block (#506): the card names
+// the Trial and links to Changes, though the block starts after the Trial's start.
+const SETTING_TRIAL = { store: fixtures.states.setting_trial.store, open: 'setting:basal_rate' } as QueueScreenProps;
+const trialPlay: Story['play'] = async ({ canvasElement }) => {
+  const canvas = within(canvasElement.querySelector('.ui-scard__trial') as HTMLElement);
+  await expect(canvas.getByText('Trial')).toBeInTheDocument();
+  await expect(canvas.getByRole('button', { name: 'Changes' })).toBeInTheDocument();
+};
+export const SettingTrialPhone: Story = { ...story('phone', SETTING_TRIAL), play: trialPlay };
+export const SettingTrialDesktop: Story = { ...story('desktop', SETTING_TRIAL), play: trialPlay };
 export const JustSnoozedPhone = story('phone', JUST_SNOOZED);
 export const JustSnoozedDesktop = story('desktop', JUST_SNOOZED);
 export const SnoozedListPhone = story('phone', SNOOZED_LIST);

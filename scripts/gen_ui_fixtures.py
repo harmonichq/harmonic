@@ -817,7 +817,7 @@ def _queue_store(client: TestClient) -> dict:
         "trials": {
             "trials": [
                 {field: t[field] for field in
-                 ("id", "parameter", "slot", "changed_at", "before", "after", "state", "maturing")}
+                 ("id", "parameter", "slot", "block", "changed_at", "before", "after", "state", "maturing")}
                 for t in trials["trials"]
             ],
         },
@@ -875,10 +875,6 @@ def _patterns(store: dict) -> list[dict]:
     return out
 
 
-def _clock_label(minute: int) -> str:
-    return f"{minute // 60:02d}:{minute % 60:02d}"
-
-
 def _blocks(store: dict) -> list[dict]:
     """Admitted basal blocks: their start, range, nights and whether a Trial matured there."""
     out = []
@@ -892,10 +888,25 @@ def _blocks(store: dict) -> list[dict]:
             "start": start,
             "collapsed": estimate["lo"] == estimate["hi"],
             "spread": len({n["delivered_rate"] for n in slot["evidence"]["night_roster"]}) > 1,
-            "trial": any(t["parameter"] == "basal_rate" and t["slot"] == _clock_label(start)
-                         and t["state"] == "complete" for t in store["trials"]["trials"]),
+            "trial": any(t["parameter"] == "basal_rate" and t["state"] == "complete"
+                         and _overlaps(row["span"], t) for t in store["trials"]["trials"]),
         })
     return out
+
+
+def _overlaps(span: dict, trial: dict) -> bool:
+    """Whether a queued basal block shares a half-hour with the block the Trial is
+    measured across (#506), either of them wrapping midnight; the rule
+    ``queue-model.ts`` ``maturedTrial`` applies. A Trial served with no block is
+    read at its one slot, or over the whole day when it has none."""
+    def minutes(start: int, end: int) -> set[int]:
+        return {m % 1440 for m in range(start, end if end > start else end + 1440, 30)}
+    block = trial["block"]
+    if block is None:
+        slot = trial["slot"]
+        start = int(slot[:2]) * 60 + int(slot[3:]) if slot else 0
+        block = (start, start + 30) if slot else (0, 1440)
+    return bool(minutes(span["start_min"], span["end_min"]) & minutes(*block))
 
 
 def states(queue: dict) -> dict:

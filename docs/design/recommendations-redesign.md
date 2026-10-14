@@ -774,7 +774,9 @@ unless noted. Loading is a skeleton of the component's own shape.
     type, the time block as its title, a compact EvidenceChart, the evidence
     count ("30 nights") and one Range. No button.
     - States: default; range collapsed (lo = hi, single value shown);
-      matured into a Trial (Changes link).
+      matured into a Trial (Changes link): the block lies in a matured basal
+      Trial's served block (#506), whether or not it starts where the Trial
+      starts.
     - Snooze: a text action centred at the card's foot.
     - Fields: `analyze.basal[slot].current, estimate.value, estimate.lo, hi,
       days`, plus their carb-ratio equivalents. A queued ISF opens into the

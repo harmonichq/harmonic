@@ -9,7 +9,6 @@ import { answers, sourced, type Sourced } from './answers';
 import { delta } from './changes-model';
 import type { Change } from './Delta';
 import { isfData, type IsfAnswer, type IsfData } from './overview-model';
-import { formatValue } from './provenance.js';
 import { PARAMETER_FORMATS } from './settings-model';
 
 export type QueueStore = keyof typeof answers.queue;
@@ -153,7 +152,7 @@ export function basalSetting(name: QueueStore, startMin: number): SettingData {
   const slotPath = `queue.${name}.analyze.basal[slot=${slot}].0`;
   const roster = s.analyze.basal.find((b) => b.slot === slot)!.evidence.night_roster;
   const candidate = s.guidance.candidates.find((c) => c.subject === 'setting:basal_rate')!;
-  const label = formatValue(startMin, 'clock');
+  const span = row.span!;
   return {
     title: candidate.title,
     units: candidate.units!,
@@ -170,8 +169,31 @@ export function basalSetting(name: QueueStore, startMin: number): SettingData {
     days: sourced(`${slotPath}.days`),
     nights: roster.map((_, i) => ({ rate: sourced(`${slotPath}.evidence.night_roster.${i}.delivered_rate`) })),
     roster: `${slotPath}.evidence.night_roster`,
-    trial: s.trials.trials.some((t) => t.parameter === 'basal_rate' && t.slot === label && t.state === 'complete'),
+    trial: s.trials.trials.some((t) => t.parameter === 'basal_rate' && t.state === 'complete'
+      && maturedTrial(span, t)),
   };
+}
+
+/** The half-hours from `start` to `end`, wrapping midnight when `end` is not after `start`. */
+function halfHours(start: number, end: number): Set<number> {
+  const out = new Set<number>();
+  for (let m = start; m < (end > start ? end : end + 1440); m += 30) out.add(m % 1440);
+  return out;
+}
+
+/** Whether a queued basal block lies in a Trial: it shares a half-hour with the
+ *  block the Trial is measured across (#506), not merely its starting slot, so a
+ *  block that starts after the Trial's start still names it. A Trial served with
+ *  no block is read at its one slot, or over the whole day when it has none. */
+export function maturedTrial(span: { start_min: number; end_min: number },
+  trial: { slot: string | null; block?: number[] | null }): boolean {
+  let block = trial.block;
+  if (!block) {
+    const start = trial.slot ? Number(trial.slot.slice(0, 2)) * 60 + Number(trial.slot.slice(3, 5)) : 0;
+    block = trial.slot ? [start, start + 30] : [0, 1440];
+  }
+  const inTrial = halfHours(block[0], block[1]);
+  return [...halfHours(span.start_min, span.end_min)].some((m) => inTrial.has(m));
 }
 
 /** The glossary's name for I:C, whose candidate title is longer (§1.5 I:C). */

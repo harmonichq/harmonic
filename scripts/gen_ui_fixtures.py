@@ -187,7 +187,7 @@ FIRST_DAYS = 5
 # Trial day, short of the engine's fourteen.
 MATURING_DAYS = 6
 # Settings (§1.1, §1.2, §1.3, and the Settings section of the brief): the root
-# list's Glossary row, the sync rows, the account rows, the pump profile, the
+# list's Glossary row, the sync rows, the account rows, the Token field, the pump profile, the
 # snooze bar ("Snoozed · Until <date>") and the screen-level "Unavailable".
 # Plain interface words (§2.5), but for DIA, a pump field the brief names.
 # The Queue row's kind glyph is named "Pattern" or "Setting" for assistive
@@ -197,7 +197,7 @@ KIND_NAMES = ("Pattern", "Setting")
 # The desktop rail's wordmark (§2.5, 2026-10-13): the H mark and the product's name.
 BRAND = ("H", "Harmonic")
 SETTINGS_LABELS = ("State", "OK", "Failed", "Last success", "Last attempt", "Error", "Data",
-                   "Email", "Region", "Password", "Set", "Not set", "Update", "Start", "Target",
+                   "Email", "Region", "Password", "Token", "Set", "Not set", "Update", "Start", "Target",
                    "Max bolus", "DIA", "No profile", "Unavailable", "Snoozed", "Until",
                    "Glossary")
 # The account the stories show as set: an invented address on a reserved

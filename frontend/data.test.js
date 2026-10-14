@@ -4,7 +4,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { ApiTransportError, TOKEN_KEY, makeDeps } from './data.js';
+import { ApiTransportError, TOKEN_KEY, makeDeps, saveToken } from './data.js';
 
 /** A fake fetch answering every call with `body` at `status`, recording each call. */
 function fakeFetch(body = {}, status = 200) {
@@ -124,4 +124,26 @@ test('a refused request rejects with its status, code and served words', async (
   });
   const plain = fakeFetch({ detail: 'guidance is unavailable' }, 503);
   await assert.rejects(makeDeps({ fetch: plain.fetch }).fetchGuidance(), { status: 503, message: 'guidance is unavailable' });
+});
+
+test('a saved token rides the next request as its Bearer', async () => {
+  const prev = globalThis.localStorage;
+  const kept = new Map();
+  globalThis.localStorage = { getItem: (key) => kept.get(key) ?? null, setItem: (key, value) => kept.set(key, value) };
+  try {
+    const { fetch, calls } = fakeFetch();
+    const api = makeDeps({ fetch });
+    await api.fetchStatus();
+    assert.equal(calls[0].opts.headers.Authorization, undefined);
+    saveToken('synthetic-token');
+    assert.equal(kept.get(TOKEN_KEY), 'synthetic-token');
+    await api.fetchStatus();
+    assert.equal(calls[1].opts.headers.Authorization, 'Bearer synthetic-token');
+  } finally { globalThis.localStorage = prev; }
+});
+
+test('saving a token where storage refuses access does not throw', () => {
+  const prev = globalThis.localStorage;
+  globalThis.localStorage = { setItem: () => { throw new Error('SecurityError'); } };
+  try { assert.doesNotThrow(() => saveToken('synthetic-token')); } finally { globalThis.localStorage = prev; }
 });

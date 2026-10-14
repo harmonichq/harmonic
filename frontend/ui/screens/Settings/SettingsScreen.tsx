@@ -1,6 +1,6 @@
 // The Settings screen (§1.1, §1.2, §1.3), composed only from the library's
 // components: Tandem Source (sync and account), the Pump profile and the
-// Glossary. No preferences the engine doesn't have.
+// Glossary, and the Token field. No preferences the engine doesn't have.
 //
 // The root is one grouped list: Tandem Source with its sync state inline
 // ("⚠ Failed" when the last sync failed, else OK), the Pump profile with its
@@ -28,6 +28,12 @@
 // that fails leaves the form open with what was typed, and "Not saved" with
 // Retry in the bar.
 //
+// Token (§2.5, 2026-10-14): under the root list, the API token the server was
+// started with, as a password field, and Save, its one primary. Save keeps it
+// through the one client (data.js) and reads the app again (`onToken`). It
+// shows in Loading and Unavailable too: a browser without the token reads
+// nothing, and this is where it is entered.
+//
 // Loading draws progressively. Until the sync status lands, the screen is its
 // title over a skeleton of the root list; when it cannot be read, its title,
 // Unavailable and Retry (§2.5, 2026-10-13), as on every other screen. Once it
@@ -46,6 +52,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { answers, sourced } from '../../answers';
+import { saveToken } from '../../../data.js';
 import { useMotionGate, usePresence } from '../../motion';
 import { Num } from '../../Num';
 import {
@@ -87,18 +94,40 @@ export type SettingsScreenProps = {
   parts?: SettingsParts;
   /** Unavailable's Retry. */
   onRetry?: () => void;
+  /** After the Token field's Save has kept the token: read the app again. */
+  onToken?: () => void;
 };
+
+/** The API token the server was started with, and Save. */
+function TokenField({ onToken }: { onToken?: () => void }) {
+  const [token, setToken] = useState('');
+  return (
+    <div className="ui-settings__token">
+      <ListGroup>
+        <ListRow label="Token" field={{ kind: 'password', onChange: setToken }} />
+      </ListGroup>
+      <div className="ui-settings__form-foot">
+        <Button kind="primary" label="Save" disabled={!token}
+          onClick={() => { saveToken(token); onToken?.(); }} />
+      </div>
+    </div>
+  );
+}
 
 /** Loading (a skeleton of the root list) or Unavailable (the title, the label
  *  and Retry): nothing read from the answers. */
-function Frame({ layout, state, nav, onRetry }: {
+function Frame({ layout, state, nav, onRetry, onToken }: {
   layout: Layout; state: 'loading' | 'unavailable'; nav?: Pick<NavHooks, 'onSelect'>; onRetry?: () => void;
+  onToken?: () => void;
 }) {
   const header = state === 'unavailable'
     ? <ScreenHeader title="Settings" trailing="unavailable" layout={layout} onRetry={onRetry} />
     : <ScreenHeader title="Settings" layout={layout} />;
-  const body = state === 'loading' && (
-    <span className="ui-skeleton ui-settings__skeleton" aria-hidden="true" />
+  const body = (
+    <>
+      {state === 'loading' && <span className="ui-skeleton ui-settings__skeleton" aria-hidden="true" />}
+      <TokenField onToken={onToken} />
+    </>
   );
   if (layout === 'phone') {
     return (
@@ -122,7 +151,7 @@ function Frame({ layout, state, nav, onRetry }: {
 
 export function SettingsScreen(props: SettingsScreenProps) {
   if (props.state && props.state !== 'ready') {
-    return <Frame layout={props.layout} state={props.state} nav={props.nav} onRetry={props.onRetry} />;
+    return <Frame layout={props.layout} state={props.state} nav={props.nav} onRetry={props.onRetry} onToken={props.onToken} />;
   }
   return <Settings {...props} />;
 }
@@ -147,19 +176,22 @@ const Pending = ({ rows }: { rows: number }) => (
   <span className="ui-skeleton" style={{ height: rows * 48 }} aria-hidden="true" />
 );
 
-function Root({ sync, pump, read, onOpen }: {
-  sync: SyncState | null; pump: PumpStore; read: Read; onOpen: (view: SettingsView) => void;
+function Root({ sync, pump, read, onOpen, onToken }: {
+  sync: SyncState | null; pump: PumpStore; read: Read; onOpen: (view: SettingsView) => void; onToken?: () => void;
 }) {
   const source = tandemSource(sync, 'set');
   const name = read === 'ready' ? pumpProfile(pump)?.name ?? 'No profile'
     : read === 'loading' ? <span className="ui-skeleton ui-settings__skeleton-value" aria-hidden="true" /> : undefined;
   return (
-    <ListGroup>
-      <ListRow label="Tandem Source" value={source.failed === null ? undefined : source.failed ? 'Failed' : 'OK'}
-        alert={Boolean(source.failed)} onOpen={() => onOpen('tandem')} />
-      <ListRow label="Pump profile" value={name} onOpen={() => onOpen('profile')} />
-      <ListRow label="Glossary" onOpen={() => onOpen('glossary')} />
-    </ListGroup>
+    <>
+      <ListGroup>
+        <ListRow label="Tandem Source" value={source.failed === null ? undefined : source.failed ? 'Failed' : 'OK'}
+          alert={Boolean(source.failed)} onOpen={() => onOpen('tandem')} />
+        <ListRow label="Pump profile" value={name} onOpen={() => onOpen('profile')} />
+        <ListRow label="Glossary" onOpen={() => onOpen('glossary')} />
+      </ListGroup>
+      <TokenField onToken={onToken} />
+    </>
   );
 }
 
@@ -249,7 +281,7 @@ function AccountForm({ saving, onSave }: { saving: boolean; onSave: (email: stri
 }
 
 function Settings({
-  layout, sync, account, pump = 'wearer', view: initialView = 'root', updating = false, writes, nav,
+  layout, sync, account, pump = 'wearer', view: initialView = 'root', updating = false, writes, nav, onToken,
   parts = { account: 'ready', pump: 'ready', onRetry: () => undefined },
 }: SettingsScreenProps) {
   const [view, setView] = useState<SettingsView>(initialView);
@@ -302,7 +334,7 @@ function Settings({
   );
 
   const content = {
-    root: <Root sync={sync} pump={pump} read={parts.pump} onOpen={setView} />,
+    root: <Root sync={sync} pump={pump} read={parts.pump} onOpen={setView} onToken={onToken} />,
     tandem: <TandemSource sync={sync} account={shownAccount} read={parts.account} form={popover}
       onUpdate={() => setForm('open')} />,
     profile: <PumpProfile pump={pump} read={parts.pump} />,

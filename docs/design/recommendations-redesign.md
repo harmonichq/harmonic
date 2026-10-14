@@ -15,6 +15,12 @@ Status: **exploring** (#481).
   `0b0b78d8`: one page with no scrolling, one time-in-ranges bar for the
   selected window, colour only on Below 70 and Above 180. The operator:
   "locked."
+- **Day screen locked 2026-10-13**: Storybook `Screens/Day` at commit
+  `4972898a`: the date in the header as a drop-down month of gapless weeks,
+  the current week as a gapless ribbon on desktop, the day's insulin as one
+  stacked bar (Basal delivered, Meal, Correction, Control-IQ), the day chart,
+  Prompts with Not sure visible on phone, and Log carbs. The operator,
+  approving it ahead of the last change: "pre-approving it".
 
 This document is the durable record of the redesign. Sections 1–3 are what the
 build will be checked against once they are approved. The appendix keeps the

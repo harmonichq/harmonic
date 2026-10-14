@@ -4,7 +4,7 @@ import { fixtures, sourced } from '../../fixtures';
 import { swipe } from '../../gesture';
 import { ranking } from '../../queue-model';
 import { failsOnce } from '../../flaky';
-import { QUEUE_IC, QUEUE_UNDRAWABLE } from '../../served-variants';
+import { QUEUE_UNDRAWABLE } from '../../served-variants';
 import { QueueScreen, type QueueScreenProps } from './QueueScreen';
 
 // The Queue screen in each state §1.3 lists, at phone (390) and desktop (1440),
@@ -267,7 +267,9 @@ export const IsfSettingDesktop: Story = { ...story('desktop', { store: ISF_STORE
 
 // An admitted I:C Setting: the SettingCard with its block, current →
 // suggested and Range, printed as the pump profile prints it, and no night
-// chart or count, since its evidence is not nights.
+// chart or count, since its evidence is not nights. The generated wearer's I:C
+// holds, so its store is a QA case whose meals support lowering it.
+const IC_STORE = 'carb-ratio-supported' as const;
 const settingPlay = (title: string, units: string): Story['play'] => async ({ canvasElement }) => {
   const canvas = within(canvasElement);
   await expect(canvas.getByRole('heading', { level: 2, name: new RegExp(`^${title}`) })).toBeInTheDocument();
@@ -275,5 +277,5 @@ const settingPlay = (title: string, units: string): Story['play'] => async ({ ca
   await expect(canvas.queryByText('Nights')).toBeNull();
   await expect(canvas.getByText('Range')).toBeInTheDocument();
 };
-export const IcSettingPhone: Story = { ...story('phone', { store: QUEUE_IC, open: 'setting:carb_ratio' }), play: settingPlay('I:C', 'g/U') };
-export const IcSettingDesktop: Story = { ...story('desktop', { store: QUEUE_IC, open: 'setting:carb_ratio' }), play: settingPlay('I:C', 'g/U') };
+export const IcSettingPhone: Story = { ...story('phone', { store: IC_STORE, open: 'setting:carb_ratio' }), play: settingPlay('I:C', 'g/U') };
+export const IcSettingDesktop: Story = { ...story('desktop', { store: IC_STORE, open: 'setting:carb_ratio' }), play: settingPlay('I:C', 'g/U') };

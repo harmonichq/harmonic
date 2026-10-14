@@ -78,7 +78,10 @@ Two committed outputs, one generator, one ``--check``:
   store's Queue is read again after its snooze (``wearer-pinned-snoozed``);
   ``wearer-first-days-snoozed`` is the first days with everything snoozed (an
   empty Queue); ``isf-supported`` is the Overview's store of the same name,
-  whose ISF the engine supports a change for and so queues; and the unsynced
+  whose ISF the engine supports a change for and so queues;
+  ``carb-ratio-supported`` is ``scripts/qa_e2e_cases.py``'s
+  ``basal-and-carb-ratio-lower`` case, whose meals support lowering the carb
+  ratio, so its I:C Setting queues; and the unsynced
   store records its guidance disposition. Each Queue store's ``analyze`` holds
   its first ISF segment, trimmed as the Overview's is, for the Queue's ISF
   card. Each
@@ -169,6 +172,7 @@ OVERVIEW_LABELS = ("vs",)
 # An ISF the engine supports a change for: qa_e2e_cases' manufactured fasting
 # nights at a true ISF of 33 mg/dL/U under 8 mg/dL of sensor noise.
 ISF_SUPPORTED = {"true_isf": 33.0, "noise_sd": 8.0}
+CARB_RATIO_CASE = "basal-and-carb-ratio-lower"
 # Dates print as "26 Sep" (§1.2 the Overview's span "30 Sep – 13 Oct", §1.3
 # "Until <date>"); the month abbreviations are plain interface words (§2.5,
 # 2026-10-13).
@@ -385,6 +389,14 @@ def fixtures() -> dict:
         supported_client = _serve(supported)
         overview["isf-supported"] = {"analyze": _isf_windows(supported_client)}
         queue["isf-supported"] = _queue_store(supported_client)
+
+        # The wearer's I:C holds, so the carb-ratio Setting is queued from the QA
+        # case whose meals support lowering it.
+        carb_ratio = scratch / "carb-ratio-supported.sqlite"
+        with Store.open(str(carb_ratio)) as store:
+            qa_e2e_cases.materialize_case(store, next(
+                case for case in qa_e2e_cases.QA_CASES if case.name == CARB_RATIO_CASE))
+        queue["carb-ratio-supported"] = _queue_store(_serve(carb_ratio))
 
         unsynced = scratch / "wearer-unsynced.sqlite"
         with Store.open(str(unsynced)):
@@ -761,7 +773,7 @@ def _pin(client: TestClient) -> None:
 
 
 ROW_FIELDS = ("id", "kind", "title", "chips", "claimed_by", "lever", "parameter",
-              "count_sentences", "fold_sentences", "span", "members")
+              "count_sentences", "fold_sentences", "span", "members", "served_as")
 
 
 def _queue_store(client: TestClient) -> dict:
@@ -1000,13 +1012,16 @@ def allowlist(data: dict) -> dict:
     text = DESIGN.read_text()
     stores = data["queue"].values()
     rows = [r for store in stores for r in store["findings"]["rows"]]
+    served = [r["served_as"] for r in rows if r.get("served_as")]
     sentences = [s for r in rows for s in (r["count_sentences"] or []) + (r["fold_sentences"] or [])]
+    sentences += [s for p in served for s in p["count_sentences"] or []]
     sources = {
         "glossary §1.5": _table_first_column(_section(text, "### 1.5 Glossary")),
         "tabs §1.1": _table_first_column(_section(text, "### 1.1 Tabs")),
         "engine titles": [c["title"] for c in data["guidance"]["candidates"]]
         + [c["title"] for store in stores for c in store["guidance"]["candidates"]]
-        + [r["title"] for r in rows if r["kind"] == "habit"],  # causes, and a collapsed pattern's member
+        + [r["title"] for r in rows if r["kind"] == "habit"]  # causes, and a collapsed pattern's member
+        + [c["title"] for p in served for c in p["cause_counts"] or []],  # a collapsed pattern's causes
         "engine nouns": [s["noun"] for s in sentences],
         "engine units": [c["units"] for store in stores for c in store["guidance"]["candidates"]
                          if c["units"]],

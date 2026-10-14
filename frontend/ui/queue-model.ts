@@ -67,7 +67,7 @@ const store = (name: QueueStore) => answers.queue[name];
 
 /** The findings row a Pattern is read through, or none. A pattern that
  *  collapses to its one member is served as that member's habit row: the Queue
- *  reads it through that row, whose habit is its cause. */
+ *  reads it through that row, which serves the pattern's own count and causes. */
 function patternRow(name: QueueStore, key: string) {
   const s = store(name);
   const outcome = s.findings.outcome_patterns.find((p) => p.key === key);
@@ -84,24 +84,28 @@ export function pattern(name: QueueStore, key: string): PatternData {
   const { outcome, member, rowId, row } = patternRow(name, key);
   if (!row) throw new Error(`${name} serves no ${rowId} row`);
   const rowPath = `${root}.rows[id=${rowId}].0`;
-  const counted = Boolean(row.count_sentences?.length);
-  const causes = member
-    ? [{ title: row.title, count: row.count_sentences![0].count }]
+  // A pattern served as its habit counts as the pattern, from the count its
+  // member row serves for it, never as the habit's own (ADR __PR__).
+  const counter = member ? row.served_as : row;
+  const countPath = member ? `${rowPath}.served_as` : rowPath;
+  const sentences = counter?.count_sentences;
+  const causes = (member
+    ? (row.served_as?.cause_counts ?? []).map((c) => ({ title: c.title, count: c.count }))
     : s.findings.rows
       .filter((r) => r.claimed_by === id)
       .flatMap((r) => (r.fold_sentences ?? [])
         .filter((f) => f.scope === 'pattern')
-        .map((f) => ({ title: r.title, count: f.count })))
-      .sort((a, b) => b.count - a.count);
+        .map((f) => ({ title: r.title, count: f.count }))))
+    .sort((a, b) => b.count - a.count);
   const tone: Tone = row.chips?.includes('highs') ? 'high' : 'low';
   return {
     title: outcome?.title ?? row.title,
     tone,
-    magnitude: counted
+    magnitude: sentences?.length
       ? {
-          count: sourced(`${rowPath}.count_sentences.0.count`),
-          denominator: sourced(`${rowPath}.count_sentences.0.denominator`),
-          noun: row.count_sentences![0].noun,
+          count: sourced(`${countPath}.count_sentences.0.count`),
+          denominator: sourced(`${countPath}.count_sentences.0.denominator`),
+          noun: sentences[0].noun,
         }
       : null,
     causes,

@@ -570,3 +570,58 @@ them through a browser buys the ledger's cost back.
 contract test's per-store literals. A new screen gets one line in the smoke's
 tab list. No synthetic store yet holds a queued basal block inside a Trial's
 block; that state is proved only by the Storybook fixtures.
+
+## ADR __PR__ — The Queue reads a carb-ratio block and a Pattern served as its habit through what the engine serves for them
+
+**Context.** A mock-up pass on the operator's own data (2026-10-14) found three
+faults in what the Queue serves. A queued carb ratio drew an empty card: the I:C
+row carried its numbers only at row level and no `members`, while the Queue reads
+a Setting's numbers off its first member, as basal's rows serve them. *Highs after
+treating lows* and *Lows after correcting highs*, each served as its one admitted
+habit, had no case file: the case file resolved a `pattern:` subject only through
+a Pattern row, and a collapsed Pattern has none, so the card drew no impact line.
+And *Lows after correcting highs* counted 3 of 65 lows on its card while its case
+evidence held 4. The card read the habit row's own count sentence, which is two
+steps removed from the Pattern: it counts only the lows that habit drove, never
+the lows another rate lever reached (Correction stacking credits the low its
+stacked pair reached), and it is the first of the habit's per-family sentences,
+alphabetical, so a habit counted in highs and lows printed its highs. The
+synthetic wearer showed the second form: *Highs after treating lows* printed
+"1 of 18 highs" where the Pattern counts 8 of 37 lows.
+
+**Decision.**
+
+1. *An I:C block is its own one member.* `_ic_rows` serves `members` as a
+   one-element list, `{start_min, current, recommended, estimate}`, the shape a
+   basal run serves per slot. A block is single-valued, so the member repeats the
+   row's numbers; the Queue reads both settings one way.
+2. *A collapsed Pattern is counted as the Pattern, on its habit's row.* The
+   findings projection stamps that habit's row with `served_as`: the Pattern's
+   subject, its count sentence and each rate lever's credited count, all from
+   `credited_claims` over the Pattern's window population — the rule its `k` and
+   its case file already read. Every row carries the key, null elsewhere. The
+   habit's own count sentences are unchanged, and the published Pattern roster
+   stays the producer's, verbatim.
+3. *A collapsed Pattern's case file is the Pattern's.* Asked for under its
+   `pattern:` subject, the case file resolves a Pattern with no row from the
+   findings answer's roster, gated by the same chartability predicate, and
+   projects the Pattern's population, so its claimed count is the card's count.
+4. *A low serves its outcome.* Beside a meal's arc reading, a low Occurrence serves
+   the peak (a high outcome) or nadir (a low one) of its own drawn trace from the
+   anchor to the comparison window's far edge, in the meal outcome's shape.
+5. *Stories read engine output.* The hand-built `wearer-ic` story variant, which
+   gave the I:C row a `members` field the engine never served, is deleted; the UI
+   fixture generator serves `carb-ratio-supported` from the
+   `basal-and-carb-ratio-lower` QA case instead.
+
+**Rejected.** Reading a collapsed Pattern's count off the case file's summary: it
+would make the Queue's row wait on a second read, and the count belongs beside the
+row the Queue already reads. Adding the count to the published roster: the
+projection publishes the producer's roster verbatim, and that is pinned.
+
+**Consequences.** The findings fixture, the workstation case-file capture and the
+UI fixtures regenerate. A new QA case, `pattern-correction-collapse`, holds a
+collapsed Pattern whose count its habit's own count understates, and the live
+contract test runs on it and on `basal-and-carb-ratio-lower`. Standalone habit
+candidates the engine queues (for example a missed or unannounced meal) are still
+dropped by the Queue's `item()`; that remains deferred.

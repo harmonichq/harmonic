@@ -80,7 +80,8 @@
 }
 .ui-prompt__answer[aria-pressed='true']::before,
 .ui-prompt__answer[aria-pressed='true'] + .ui-prompt__answer::before { display: none; }
-.ui-prompt__answer:active { background: var(--wk-surface); }
+.ui-prompt__answer { transition: background-color var(--ui-motion-fast) var(--ui-ease-standard), color var(--ui-motion-fast) var(--ui-ease-standard); }
+.ui-prompt__answer:active { background: var(--wk-surface); transition-duration: 0s; }
 .ui-prompt__answer[aria-pressed='true'] { background: var(--wk-surface-rail); color: var(--primary); }
 .ui-prompt__answer:focus { outline: none; }
 .ui-prompt__answer:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
@@ -95,8 +96,9 @@
 }
 .ui-prompt__grams .ui-button--text { margin-right: -8px; }
 
-/* Mid-swipe: the card slides left over the Not sure reveal. */
-.ui-prompt-swipe { position: relative; overflow: hidden; border-radius: var(--wk-radius); }
+/* Mid-swipe: the card slides left over the Not sure reveal, which is drawn
+   only while the card is off its rest. */
+.ui-prompt-swipe--revealed { position: relative; overflow: hidden; border-radius: var(--wk-radius); }
 .ui-prompt-swipe__reveal {
   position: absolute;
   inset: 0 0 0 auto;
@@ -108,4 +110,16 @@
   color: var(--wk-ink);
   font: var(--ui-weight-strong) var(--ui-type-label) / 1 var(--ui-font);
 }
-.ui-prompt-swipe .ui-prompt { transform: translateX(-96px); }
+.ui-prompt-swipe--open .ui-prompt { translate: -96px 0; }
+
+/* Recorded: the check and the grams field arrive with the answer. */
+[data-motion] .ui-prompt__check { transition: opacity var(--ui-motion-standard) var(--ui-ease-standard); }
+[data-motion] .ui-prompt__grams {
+  transition:
+    opacity var(--ui-motion-standard) var(--ui-ease-standard),
+    translate var(--ui-motion-standard) var(--ui-ease-standard);
+}
+@starting-style {
+  [data-motion] .ui-prompt__check { opacity: 0; }
+  [data-motion] .ui-prompt__grams { opacity: 0; translate: 0 calc(-1 * var(--ui-motion-rise) * var(--ui-motion-move)); }
+}

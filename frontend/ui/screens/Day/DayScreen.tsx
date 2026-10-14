@@ -31,12 +31,18 @@
 // Phone: only the header stays put; everything under it scrolls as one page,
 // above the tab bar. Desktop: the rail and one pane, which scrolls as a whole
 // (§2.3).
+//
+// Motion: the month drops down over a darkening scrim (on desktop, a popover
+// opening out of its arrow); Log carbs' sheet rises; the Prompts push in from
+// the right and back from the left, and each next prompt comes in from the
+// right.
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   PROMPT_STEPS, dayChartOf, dayDate, insulinBar, latestDay, loggedGrams, loggedTime, lowPrompt, monthName, monthWeeks,
   promptPlace, unanswered, weekOf, type PromptStore,
 } from '../../day-model';
 import { day as navigatorDay } from '../../overview-model';
+import { useMotionGate } from '../../motion';
 import { Num } from '../../Num';
 import { Button } from '../../components/Button/Button';
 import { DayChart } from '../../components/DayChart/DayChart';
@@ -124,11 +130,15 @@ export function DayScreen({
   const timer = useRef<number>();
   const headRef = useRef<HTMLDivElement>(null);
   const [anchor, setAnchor] = useState<number>();
+  const root = useMotionGate<HTMLDivElement>();
   useEffect(() => () => window.clearTimeout(timer.current), []);
 
   const current = PROMPT_STEPS[step];
   const count = unanswered(current);
   const shown = PROMPT_STEPS[recordedNow ? step - 1 : step];
+  // The prompt the Prompts opened on; each one after it comes in as the next.
+  const [entered, setEntered] = useState(shown);
+  const push = view === 'prompts' ? 'forward' : 'back';
 
   const select = (iso: string) => { setSelected(iso); setMonth(false); };
   // Desktop: the month's popover sits under the header's day, its arrow on it.
@@ -195,12 +205,12 @@ export function DayScreen({
   const header = state === 'unavailable'
     ? <ScreenHeader title="Day" trailing="unavailable" layout={layout} />
     : view === 'prompts'
-      ? <ScreenHeader title="Lows" layout={layout} back={{ label: 'Day', onBack: () => setView('day') }}
+      ? <ScreenHeader key={view} title="Lows" layout={layout} back={{ label: 'Day', onBack: () => setView('day') }}
           trailing="count" {...promptPlace(store, shown)} />
       : layout === 'phone'
-        ? <ScreenHeader title="Day" day={dayControl} layout={layout} trailing="action" label="+ Log carbs"
+        ? <ScreenHeader key={view} title="Day" day={dayControl} layout={layout} trailing="action" label="+ Log carbs"
             onAction={() => setCarbs('empty')} />
-        : <ScreenHeader title="Day" day={dayControl} layout={layout} trailing="control" control={
+        : <ScreenHeader key={view} title="Day" day={dayControl} layout={layout} trailing="control" control={
             <LogCarbsEntry layout="desktop" align="end" open={carbs !== null} {...entryProps}
               onToggle={() => (carbs === null ? setCarbs('empty') : closeCarbs())} />} />;
 
@@ -212,7 +222,7 @@ export function DayScreen({
         {count.value > 0 && (
           <ListGroup>
             <ListRow label={<><span className="ui-dayscreen__low" aria-hidden="true">▼</span>Lows</>}
-              value={<Num value={count} />} onOpen={() => setView('prompts')} />
+              value={<Num value={count} />} onOpen={() => { setEntered(shown); setView('prompts'); }} />
           </ListGroup>
         )}
       </div>
@@ -223,8 +233,10 @@ export function DayScreen({
   );
 
   const prompt = () => (
-    <PromptCard key={`${shown}-${attempt}`} data={lowPrompt(0, shown)} layout={layout} recorded={recordedNow}
-      swiping={swiping && !recordedNow} onAnswer={answer} onNext={() => advance(step)} />
+    <div key={shown} className={shown === entered ? 'ui-dayscreen__prompt' : 'ui-dayscreen__prompt ui-advance'}>
+      <PromptCard key={attempt} data={lowPrompt(0, shown)} layout={layout} recorded={recordedNow}
+        swiping={swiping && !recordedNow} onAnswer={answer} onNext={() => advance(step)} />
+    </div>
   );
   const bar = view === 'prompts' && failed && (
     <TransientBar kind="not_saved" layout={layout} onRetry={() => { fails.current = false; answer(failed); }} />
@@ -234,21 +246,21 @@ export function DayScreen({
 
   if (layout === 'phone') {
     return (
-      <div className="ui-dayscreen ui-dayscreen--phone">
-        {dropped && <div className="ui-dayscreen__scrim" onClick={() => setMonth(false)} />}
-        <div className="ui-dayscreen__head">
+      <div ref={root} className="ui-dayscreen ui-dayscreen--phone">
+        {dropped && <div className="ui-scrim ui-dayscreen__scrim" onClick={() => setMonth(false)} />}
+        <div className="ui-dayscreen__head" data-push={push}>
           {header}
           {dropped && <Month layout="phone" selected={selected} onSelect={select} />}
         </div>
-        <main className="ui-dayscreen__main" data-scroll="page">
-          <div className="ui-dayscreen__body">
+        <main className="ui-dayscreen__main" data-scroll="page" data-push={push}>
+          <div key={`${view}-body`} className="ui-dayscreen__body ui-push">
             {state !== 'unavailable' && (view === 'prompts' ? prompt() : dayContent)}
           </div>
         </main>
         {bar && <div className="ui-dayscreen__bar">{bar}</div>}
         <NavBar layout="tabbar" selected="day" dayCount={count} />
         {carbs !== null && state === 'ready' && view === 'day' && (
-          <div className="ui-dayscreen__scrim ui-dayscreen__scrim--sheet" onClick={closeCarbs}>
+          <div className="ui-scrim ui-dayscreen__scrim ui-dayscreen__scrim--sheet" onClick={closeCarbs}>
             <div onClick={(event) => event.stopPropagation()}>
               <LogCarbsEntry layout="phone" {...entryProps} />
             </div>
@@ -258,16 +270,16 @@ export function DayScreen({
     );
   }
   return (
-    <div className="ui-dayscreen ui-dayscreen--desktop">
+    <div ref={root} className="ui-dayscreen ui-dayscreen--desktop">
       <NavBar layout="rail" selected="day" dayCount={count} />
-      <section className="ui-dayscreen__pane" data-scroll="page">
-        <div ref={headRef} className="ui-dayscreen__pane-head">
+      <section className="ui-dayscreen__pane" data-scroll="page" data-push={push}>
+        <div ref={headRef} className="ui-dayscreen__pane-head" data-push={push}>
           {header}
           {dropped && <Month layout="desktop" selected={selected} onSelect={select} left={anchor} />}
         </div>
         {state !== 'unavailable' && (
-          <div className="ui-dayscreen__body">
-            {view === 'prompts' ? <div className="ui-dayscreen__prompt">{prompt()}</div> : (
+          <div key={`${view}-body`} className="ui-dayscreen__body ui-push">
+            {view === 'prompts' ? prompt() : (
               <>
                 <DayRibbon days={week(selected)} selected={selected} onSelect={select} />
                 {dayContent}

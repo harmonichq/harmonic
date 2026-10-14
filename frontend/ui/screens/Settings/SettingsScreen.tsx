@@ -26,9 +26,13 @@
 // Phone: the header stays put while the page scrolls under it, above the tab
 // bar. Desktop: the rail and one pane, the drill-down inside it; the pane
 // scrolls as a whole.
+//
+// Motion: each drill-down pushes in from the right and back from the left;
+// the account form's sheet rises, and its popover opens out of its arrow.
 import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { fixtures, sourced } from '../../fixtures';
+import { useMotionGate } from '../../motion';
 import { Num } from '../../Num';
 import {
   glossary, pumpProfile, tandemSource, type AccountState, type SyncState, type When,
@@ -170,6 +174,8 @@ export function SettingsScreen({
   layout, sync, account, pump = 'wearer', view: initialView = 'root', updating = false,
 }: SettingsScreenProps) {
   const [view, setView] = useState<SettingsView>(initialView);
+  const root = useMotionGate<HTMLDivElement>();
+  const push = view === 'root' ? 'back' : 'forward';
   const [form, setForm] = useState<'open' | 'saving' | null>(updating ? 'open' : null);
   const [saved, setSaved] = useState(false);
   const timer = useRef<number>();
@@ -191,8 +197,8 @@ export function SettingsScreen({
   });
 
   const header = view === 'root'
-    ? <ScreenHeader title="Settings" layout={layout} />
-    : <ScreenHeader title={TITLES[view]} layout={layout} back={{ label: 'Settings', onBack: () => { setForm(null); setView('root'); } }} />;
+    ? <ScreenHeader key={view} title="Settings" layout={layout} />
+    : <ScreenHeader key={view} title={TITLES[view]} layout={layout} back={{ label: 'Settings', onBack: () => { setForm(null); setView('root'); } }} />;
 
   const popover = layout === 'desktop' && form !== null && (
     <section className="ui-popover ui-popover--end ui-settings__form ui-settings__form--desktop" role="dialog"
@@ -210,14 +216,14 @@ export function SettingsScreen({
 
   if (layout === 'phone') {
     return (
-      <div className="ui-settings ui-settings--phone">
-        <div className="ui-settings__head">{header}</div>
-        <main className="ui-settings__main" data-scroll="page">
-          <div className="ui-settings__body">{content}</div>
+      <div ref={root} className="ui-settings ui-settings--phone">
+        <div className="ui-settings__head" data-push={push}>{header}</div>
+        <main className="ui-settings__main" data-scroll="page" data-push={push}>
+          <div key={`${view}-body`} className="ui-settings__body ui-push">{content}</div>
         </main>
         <NavBar layout="tabbar" selected="settings" dayCount={dayCount} syncFailed={failed} />
         {form !== null && view === 'tandem' && (
-          <div className="ui-settings__scrim" onClick={close}>
+          <div className="ui-scrim ui-settings__scrim" onClick={close}>
             <section className="ui-sheet ui-settings__form" role="dialog" aria-label="Tandem Source"
               onClick={(event) => event.stopPropagation()}>
               <span className="ui-sheet__grabber" aria-hidden="true" />
@@ -229,11 +235,11 @@ export function SettingsScreen({
     );
   }
   return (
-    <div className="ui-settings ui-settings--desktop">
+    <div ref={root} className="ui-settings ui-settings--desktop">
       <NavBar layout="rail" selected="settings" dayCount={dayCount} syncFailed={failed} />
-      <section className="ui-settings__pane" data-scroll="page">
+      <section className="ui-settings__pane" data-scroll="page" data-push={push}>
         {header}
-        <div className="ui-settings__body">{content}</div>
+        <div key={`${view}-body`} className="ui-settings__body ui-push">{content}</div>
       </section>
     </div>
   );

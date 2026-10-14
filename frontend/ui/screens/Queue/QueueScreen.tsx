@@ -16,12 +16,16 @@
 // (shortcut S; ↑/↓ move the selection), the bar at the foot of that pane.
 // Each pane scrolls as a whole; nothing scrolls inside a card (§2.3).
 //
+// Motion: the drill-down pushes in from the right and back from the left; a
+// row the person opens on the phone grows into its card; the bar rises.
+//
 // A snooze shows what the engine served after that snooze: the `after` store's
 // Queue, its Snoozed count, and the bar's date (the decision time plus the
 // fourteen days of a snooze). Undo shows the store as it was.
 import { useEffect, useState } from 'react';
 import type { Sourced } from '../../fixtures';
 import { sourced } from '../../fixtures';
+import { useMotionGate } from '../../motion';
 import { Num } from '../../Num';
 import {
   queuedCount, ranking, snoozed, snoozedCount, type QueueItem, type QueueStore,
@@ -80,6 +84,11 @@ export function QueueScreen({
 }: QueueScreenProps) {
   const [snoozedNow, setSnoozedNow] = useState(justSnoozed);
   const [view, setView] = useState(initialView);
+  // The row the person opened on the phone, which grows into its card.
+  const [expanded, setExpanded] = useState<string>();
+  const root = useMotionGate<HTMLDivElement>();
+  const go = (to: typeof view) => { setExpanded(undefined); setView(to); };
+  const push = view === 'snoozed' ? 'forward' : 'back';
   const shown = snoozedNow && snooze ? snooze.after : store;
   const items = state === 'ready' ? ranking(shown) : [];
   // The item a story opens must be in the Queue it opens on.
@@ -113,14 +122,14 @@ export function QueueScreen({
   });
 
   const header = state === 'unavailable'
-    ? <ScreenHeader title="Queue" trailing="unavailable" layout={layout} />
+    ? <ScreenHeader key={view} title="Queue" trailing="unavailable" layout={layout} />
     : view === 'snoozed'
-      ? <ScreenHeader title="Snoozed" layout={layout} back={{ label: 'Queue', onBack: () => setView('queue') }} />
-      : <ScreenHeader title="Queue" layout={layout} />;
+      ? <ScreenHeader key={view} title="Snoozed" layout={layout} back={{ label: 'Queue', onBack: () => go('queue') }} />
+      : <ScreenHeader key={view} title="Queue" layout={layout} />;
 
   const footer = snoozedTotal.value > 0 && (
     <ListGroup>
-      <ListRow label="Snoozed" value={<Num value={snoozedTotal} />} onOpen={() => setView('snoozed')} />
+      <ListRow label="Snoozed" value={<Num value={snoozedTotal} />} onOpen={() => go('snoozed')} />
     </ListGroup>
   );
 
@@ -131,9 +140,11 @@ export function QueueScreen({
       : items.length === 0 && state === 'ready'
         ? <p className="ui-queue__empty"><Num value={queuedCount(shown)} /> patterns</p>
         : items.map((item) => (layout === 'phone' && item.subject === current?.subject
-          ? <div key={item.subject} className="ui-queue__open"><Card item={item} layout={layout} onSnooze={doSnooze} /></div>
+          ? <div key={item.subject} className={item.subject === expanded ? 'ui-queue__open ui-expand' : 'ui-queue__open'}>
+              <Card item={item} layout={layout} onSnooze={doSnooze} />
+            </div>
           : <Row key={item.subject} item={item} layout={layout} selected={item.subject === current?.subject}
-              swiping={item.subject === swiping} onSelect={() => setSelected(item.subject)} />));
+              swiping={item.subject === swiping} onSelect={() => { setSelected(item.subject); setExpanded(item.subject); }} />));
 
   const bar = snoozedNow && snooze && (
     <TransientBar kind="snoozed" until={snooze.until} onUndo={undo} layout={layout} />
@@ -141,10 +152,10 @@ export function QueueScreen({
 
   if (layout === 'phone') {
     return (
-      <div className="ui-queue ui-queue--phone">
-        <div className="ui-queue__head">{header}</div>
-        <main className="ui-queue__main" data-scroll="page">
-          <div className="ui-queue__list">
+      <div ref={root} className="ui-queue ui-queue--phone">
+        <div className="ui-queue__head" data-push={push}>{header}</div>
+        <main className="ui-queue__main" data-scroll="page" data-push={push}>
+          <div key={`${view}-list`} className="ui-queue__list ui-push">
             {state === 'loading' && <PatternCard loading />}
             {list}
             {view === 'queue' && state === 'ready' && footer}
@@ -156,11 +167,11 @@ export function QueueScreen({
     );
   }
   return (
-    <div className="ui-queue ui-queue--desktop">
+    <div ref={root} className="ui-queue ui-queue--desktop">
       <NavBar layout="rail" selected="queue" dayCount={dayCount} />
-      <section className="ui-queue__pane ui-queue__pane--list" data-scroll="page">
+      <section className="ui-queue__pane ui-queue__pane--list" data-scroll="page" data-push={push}>
         {header}
-        <div className="ui-queue__list">
+        <div key={`${view}-list`} className="ui-queue__list ui-push">
           {list}
           {view === 'queue' && state === 'ready' && footer}
         </div>

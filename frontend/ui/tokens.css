@@ -72,4 +72,41 @@
   --ui-estimate: var(--primary);
   --ui-estimate-band: color-mix(in srgb, var(--ui-estimate) 16%, transparent);
 
+  /* Motion: three durations and two easings, neither of which overshoots.
+     Fast is a press and a fade; standard is what opens beside you (a
+     popover, the bar, the month, a swipe settling, the next prompt);
+     emphasized is what moves the view (a sheet, a drill-down, a card growing
+     to its height). A rule multiplies every distance by --ui-motion-move,
+     which reduced motion sets to 0, so what travels becomes a fade or an
+     instant change. Motion only ever ends where the layout already rests. */
+  --ui-motion-fast: 120ms;
+  --ui-motion-standard: 200ms;
+  --ui-motion-emphasized: 280ms;
+  --ui-ease-standard: cubic-bezier(.2, 0, 0, 1);
+  --ui-ease-emphasized: cubic-bezier(.05, .7, .1, 1);
+  --ui-motion-move: 1;
+  /* A drill-down's and the next prompt's travel: inside the side margin, so
+     nothing crosses the screen's edge on its way in. */
+  --ui-motion-shift: 16px;
+  /* The bar rising and the month dropping. */
+  --ui-motion-rise: 8px;
+  --ui-motion-shimmer: ui-shimmer;
+}
+
+/* Reduced motion: nothing travels, and what remains is a fade of at most the
+   fast duration; the skeleton holds still. [data-motion-reduce] holds the same
+   state for review. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --ui-motion-move: 0;
+    --ui-motion-standard: var(--ui-motion-fast);
+    --ui-motion-emphasized: var(--ui-motion-fast);
+    --ui-motion-shimmer: none;
+  }
+}
+[data-motion-reduce] {
+  --ui-motion-move: 0;
+  --ui-motion-standard: var(--ui-motion-fast);
+  --ui-motion-emphasized: var(--ui-motion-fast);
+  --ui-motion-shimmer: none;
 }

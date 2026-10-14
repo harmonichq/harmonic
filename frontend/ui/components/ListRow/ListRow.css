@@ -23,7 +23,8 @@
   text-align: left;
 }
 .ui-row--open { cursor: pointer; -webkit-tap-highlight-color: transparent; }
-.ui-row--open:active { background: var(--wk-surface); }
+.ui-row--open { transition: background-color var(--ui-motion-fast) var(--ui-ease-standard); }
+.ui-row--open:active { background: var(--wk-surface); transition-duration: 0s; }
 .ui-row--open:focus { outline: none; }
 .ui-row--open:focus-visible { outline: 3px solid var(--ring); outline-offset: -3px; }
 

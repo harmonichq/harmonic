@@ -721,7 +721,11 @@ pump-programmable value (basal / ISF / I:C / target) flipped at a known instant,
 which the app **auto-detects** from the settings-snapshot diff / setting epoch. An
 active-profile switch starts a trial on its own, at the switch instant — the diff of
 the outgoing vs incoming profile is authoritative, so the trial does not wait for the
-dose stream to re-observe the new value. A change seen only in delivery history —
+dose stream to re-observe the new value. An in-place edit of the active profile
+does the same, at the first settings read that shows it. Either is a trial whether
+or not a Plan proposed it: a change made on the pump is authoritative, ends any
+active trial or Focus, and becomes the active trial (ADR 500). An edit to an
+inactive profile is not a change the pump runs. A change seen only in delivery history —
 the dose-stamped boluses or the basal feed — is dated at the first observation
 carrying its new value on the first day that value settled, not at that day's
 first observation; a record saved under the earlier day-level dating keeps its

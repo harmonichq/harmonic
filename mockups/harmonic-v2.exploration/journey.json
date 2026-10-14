@@ -299462,7 +299462,7 @@
     "trials": {
       "active": {
         "admission": {
-          "active_id": "basal_rate-03-30-20240603033000",
+          "active_id": "basal_rate-03-00-20240603000000",
           "active_kind": "trial",
           "can_finish_trial": false,
           "ending": {
@@ -299484,13 +299484,13 @@
         },
         "edits": [
           {
-            "count": 2,
-            "first_changed_at": "2024-06-03 03:00:00",
-            "key": "edit-basal_rate-03-00-20240603030000",
-            "last_changed_at": "2024-06-03 03:30:00",
+            "count": 1,
+            "first_changed_at": "2024-06-03 00:00:00",
+            "key": "edit-basal_rate-03-00-20240603000000",
+            "last_changed_at": "2024-06-03 00:00:00",
             "parameters": [
               {
-                "count": 2,
+                "count": 1,
                 "parameter": "basal_rate"
               }
             ]
@@ -299500,7 +299500,7 @@
         "input_revision": 13,
         "selected": {
           "admission": {
-            "active_id": "basal_rate-03-30-20240603033000",
+            "active_id": "basal_rate-03-00-20240603000000",
             "active_kind": "trial",
             "can_finish_trial": false,
             "ending": {
@@ -299523,16 +299523,16 @@
           "after": 0.48,
           "before": 0.6,
           "before_period": {
-            "end": "2024-06-03 03:30:00",
-            "start": "2024-05-20 03:30:00"
+            "end": "2024-06-03 00:00:00",
+            "start": "2024-05-20 00:00:00"
           },
-          "changed_at": "2024-06-03 03:30:00",
+          "changed_at": "2024-06-03 00:00:00",
           "changes": [
             {
               "after": 0.48,
               "before": 0.6,
               "parameter": "basal_rate",
-              "slot": "03:30"
+              "slot": "03:00"
             }
           ],
           "day_rows": {
@@ -299541,8 +299541,8 @@
                 "date": "2024-05-20",
                 "meals": 0,
                 "n_below": 0,
-                "n_in_range": 246,
-                "n_readings": 246,
+                "n_in_range": 288,
+                "n_readings": 288,
                 "tbr": 0.0,
                 "tir": 100.0
               },
@@ -299667,10 +299667,10 @@
                 "date": "2024-06-03",
                 "meals": 0,
                 "n_below": 0,
-                "n_in_range": 42,
-                "n_readings": 42,
-                "tbr": 0.0,
-                "tir": 100.0
+                "n_in_range": 0,
+                "n_readings": 0,
+                "tbr": null,
+                "tir": null
               }
             ],
             "trial_period": [
@@ -299678,8 +299678,8 @@
                 "date": "2024-06-03",
                 "meals": 0,
                 "n_below": 0,
-                "n_in_range": 246,
-                "n_readings": 246,
+                "n_in_range": 288,
+                "n_readings": 288,
                 "tbr": 0.0,
                 "tir": 100.0
               },
@@ -299980,37 +299980,37 @@
             "trial_period": [
               {
                 "med": 120,
-                "n": 30,
+                "n": 36,
                 "t": "00:00"
               },
               {
                 "med": 120,
-                "n": 30,
+                "n": 36,
                 "t": "00:30"
               },
               {
                 "med": 120,
-                "n": 30,
+                "n": 36,
                 "t": "01:00"
               },
               {
                 "med": 120,
-                "n": 30,
+                "n": 36,
                 "t": "01:30"
               },
               {
                 "med": 120,
-                "n": 30,
+                "n": 36,
                 "t": "02:00"
               },
               {
                 "med": 120,
-                "n": 30,
+                "n": 36,
                 "t": "02:30"
               },
               {
                 "med": 120,
-                "n": 30,
+                "n": 36,
                 "t": "03:00"
               },
               {
@@ -300229,7 +300229,7 @@
               "key": "tir",
               "role": "guardrail",
               "trial": {
-                "n_readings": 1542,
+                "n_readings": 1584,
                 "value": 100.0
               }
             },
@@ -300241,7 +300241,7 @@
               "key": "tbr",
               "role": "target",
               "trial": {
-                "n_readings": 1542,
+                "n_readings": 1584,
                 "value": 0.0
               }
             },
@@ -300272,7 +300272,7 @@
             "message": "Focus is unavailable while a Trial is live. It will not queue behind this change.",
             "reason": "active_trial"
           },
-          "id": "basal_rate-03-30-20240603033000",
+          "id": "basal_rate-03-00-20240603000000",
           "kind": "trial",
           "limits": [
             "The evidence is limited to the selected Before and Trial periods.",
@@ -300308,11 +300308,11 @@
               ],
               "source_window": {
                 "end": "2024-06-08 12:00:00",
-                "start": "2024-06-03 03:30:00"
+                "start": "2024-06-03 00:00:00"
               },
               "state": "available",
               "subjects": [
-                "basal_rate-03-30-20240603033000"
+                "basal_rate-03-00-20240603000000"
               ],
               "support": {},
               "unknowns": [
@@ -300336,7 +300336,7 @@
             "draft": {
               "items": [
                 {
-                  "start_min": 210,
+                  "start_min": 180,
                   "type": "basal",
                   "value": 0.6
                 }
@@ -300365,52 +300365,28 @@
               "n_unknown": 0
             }
           },
-          "slot": "03:30",
+          "slot": "03:00",
           "state": "maturing",
           "target_metrics": [
             "tbr"
           ],
           "trial_period": {
             "end": "2024-06-08 12:00:00",
-            "start": "2024-06-03 03:30:00"
+            "start": "2024-06-03 00:00:00"
           }
         },
         "trials": [
           {
             "after": 0.48,
             "before": 0.6,
-            "changed_at": "2024-06-03 03:30:00",
-            "edit": "edit-basal_rate-03-00-20240603030000",
+            "changed_at": "2024-06-03 00:00:00",
+            "edit": "edit-basal_rate-03-00-20240603000000",
             "ending": {
               "reason": "not_recorded",
               "state": "unavailable",
               "version": "386:1"
             },
-            "id": "basal_rate-03-30-20240603033000",
-            "maturing": {
-              "days_elapsed": 6,
-              "days_required": 14,
-              "gap_count": 0
-            },
-            "parameter": "basal_rate",
-            "slot": "03:30",
-            "state": "maturing",
-            "target_metrics": [
-              "tbr"
-            ],
-            "watch_disposition": "active"
-          },
-          {
-            "after": 0.48,
-            "before": 0.6,
-            "changed_at": "2024-06-03 03:00:00",
-            "edit": "edit-basal_rate-03-00-20240603030000",
-            "ending": {
-              "reason": "not_recorded",
-              "state": "unavailable",
-              "version": "386:1"
-            },
-            "id": "basal_rate-03-00-20240603030000",
+            "id": "basal_rate-03-00-20240603000000",
             "maturing": {
               "days_elapsed": 6,
               "days_required": 14,
@@ -300422,13 +300398,13 @@
             "target_metrics": [
               "tbr"
             ],
-            "watch_disposition": "not_selected_for_watch"
+            "watch_disposition": "active"
           }
         ]
       },
       "ready": {
         "admission": {
-          "active_id": "basal_rate-03-30-20240603033000",
+          "active_id": "basal_rate-03-00-20240603000000",
           "active_kind": "trial",
           "can_finish_trial": true,
           "ending": {
@@ -300450,13 +300426,13 @@
         },
         "edits": [
           {
-            "count": 2,
-            "first_changed_at": "2024-06-03 03:00:00",
-            "key": "edit-basal_rate-03-00-20240603030000",
-            "last_changed_at": "2024-06-03 03:30:00",
+            "count": 1,
+            "first_changed_at": "2024-06-03 00:00:00",
+            "key": "edit-basal_rate-03-00-20240603000000",
+            "last_changed_at": "2024-06-03 00:00:00",
             "parameters": [
               {
-                "count": 2,
+                "count": 1,
                 "parameter": "basal_rate"
               }
             ]
@@ -300466,7 +300442,7 @@
         "input_revision": 13,
         "selected": {
           "admission": {
-            "active_id": "basal_rate-03-30-20240603033000",
+            "active_id": "basal_rate-03-00-20240603000000",
             "active_kind": "trial",
             "can_finish_trial": true,
             "ending": {
@@ -300489,16 +300465,16 @@
           "after": 0.48,
           "before": 0.6,
           "before_period": {
-            "end": "2024-06-03 03:30:00",
-            "start": "2024-05-20 03:30:00"
+            "end": "2024-06-03 00:00:00",
+            "start": "2024-05-20 00:00:00"
           },
-          "changed_at": "2024-06-03 03:30:00",
+          "changed_at": "2024-06-03 00:00:00",
           "changes": [
             {
               "after": 0.48,
               "before": 0.6,
               "parameter": "basal_rate",
-              "slot": "03:30"
+              "slot": "03:00"
             }
           ],
           "day_rows": {
@@ -300507,8 +300483,8 @@
                 "date": "2024-05-20",
                 "meals": 0,
                 "n_below": 0,
-                "n_in_range": 246,
-                "n_readings": 246,
+                "n_in_range": 288,
+                "n_readings": 288,
                 "tbr": 0.0,
                 "tir": 100.0
               },
@@ -300633,10 +300609,10 @@
                 "date": "2024-06-03",
                 "meals": 0,
                 "n_below": 0,
-                "n_in_range": 42,
-                "n_readings": 42,
-                "tbr": 0.0,
-                "tir": 100.0
+                "n_in_range": 0,
+                "n_readings": 0,
+                "tbr": null,
+                "tir": null
               }
             ],
             "trial_period": [
@@ -300644,8 +300620,8 @@
                 "date": "2024-06-03",
                 "meals": 0,
                 "n_below": 0,
-                "n_in_range": 246,
-                "n_readings": 246,
+                "n_in_range": 288,
+                "n_readings": 288,
                 "tbr": 0.0,
                 "tir": 100.0
               },
@@ -300770,10 +300746,10 @@
                 "date": "2024-06-17",
                 "meals": 0,
                 "n_below": 0,
-                "n_in_range": 42,
-                "n_readings": 42,
-                "tbr": 0.0,
-                "tir": 100.0
+                "n_in_range": 0,
+                "n_readings": 0,
+                "tbr": null,
+                "tir": null
               }
             ]
           },
@@ -301319,7 +301295,7 @@
             "message": "Focus is unavailable while a Trial is live. It will not queue behind this change.",
             "reason": "active_trial"
           },
-          "id": "basal_rate-03-30-20240603033000",
+          "id": "basal_rate-03-00-20240603000000",
           "kind": "trial",
           "limits": [
             "The evidence is limited to the selected Before and Trial periods.",
@@ -301355,11 +301331,11 @@
               ],
               "source_window": {
                 "end": "2024-06-08 12:00:00",
-                "start": "2024-06-03 03:30:00"
+                "start": "2024-06-03 00:00:00"
               },
               "state": "available",
               "subjects": [
-                "basal_rate-03-30-20240603033000"
+                "basal_rate-03-00-20240603000000"
               ],
               "support": {},
               "unknowns": [
@@ -301383,7 +301359,7 @@
             "draft": {
               "items": [
                 {
-                  "start_min": 210,
+                  "start_min": 180,
                   "type": "basal",
                   "value": 0.6
                 }
@@ -301412,52 +301388,28 @@
               "n_unknown": 0
             }
           },
-          "slot": "03:30",
+          "slot": "03:00",
           "state": "complete",
           "target_metrics": [
             "tbr"
           ],
           "trial_period": {
-            "end": "2024-06-17 03:30:00",
-            "start": "2024-06-03 03:30:00"
+            "end": "2024-06-17 00:00:00",
+            "start": "2024-06-03 00:00:00"
           }
         },
         "trials": [
           {
             "after": 0.48,
             "before": 0.6,
-            "changed_at": "2024-06-03 03:30:00",
-            "edit": "edit-basal_rate-03-00-20240603030000",
+            "changed_at": "2024-06-03 00:00:00",
+            "edit": "edit-basal_rate-03-00-20240603000000",
             "ending": {
               "reason": "not_recorded",
               "state": "unavailable",
               "version": "386:1"
             },
-            "id": "basal_rate-03-30-20240603033000",
-            "maturing": {
-              "days_elapsed": 15,
-              "days_required": 14,
-              "gap_count": 0
-            },
-            "parameter": "basal_rate",
-            "slot": "03:30",
-            "state": "complete",
-            "target_metrics": [
-              "tbr"
-            ],
-            "watch_disposition": "active"
-          },
-          {
-            "after": 0.48,
-            "before": 0.6,
-            "changed_at": "2024-06-03 03:00:00",
-            "edit": "edit-basal_rate-03-00-20240603030000",
-            "ending": {
-              "reason": "not_recorded",
-              "state": "unavailable",
-              "version": "386:1"
-            },
-            "id": "basal_rate-03-00-20240603030000",
+            "id": "basal_rate-03-00-20240603000000",
             "maturing": {
               "days_elapsed": 15,
               "days_required": 14,
@@ -301469,7 +301421,7 @@
             "target_metrics": [
               "tbr"
             ],
-            "watch_disposition": "not_selected_for_watch"
+            "watch_disposition": "active"
           }
         ]
       }

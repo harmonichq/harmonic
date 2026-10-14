@@ -338,6 +338,13 @@ or were computed and read by no one:
    admitted candidates. Lows after correcting highs has no setting member and admits
    only through its correction habits. The analyzer, `isf_asserts_move`, the
    findings `isf` row and the pump-profile path are unchanged.
+6. *A Setting no Pattern carries is selected as itself.* Guidance chose its next
+   concern only among Patterns and habits, so the basal Setting reached that choice
+   only as the overnight Pattern's member. With the Pattern cut, a basal move read
+   "No current concern". Guidance now also considers a Setting that no Pattern
+   carries (basal, today), never ISF. Overnight basal moves select as before, a
+   held basal slot is investigated as before, and a daytime-only basal move,
+   which the overnight Pattern never admitted, is now offered as an action too.
 
 **What changes in the counts** (habit evidence only; no setting verdict changes):
 
@@ -367,5 +374,18 @@ staging verdict are untouched.
   Restore still clears it. An active Focus on Meal bolus fell short ends through the
   existing `lever_unavailable` reconciliation.
 - The 13 QA cases for the cut levers are deleted; the rest keep their names.
+  Lows after correcting highs now remains a Pattern only when both correction
+  habits are admitted, so a new `pattern-correction-fold` case composes the two
+  correction recipes and carries the cross-family fold (ADR 424) and ledger S126.
+- The no-cause Pattern state of the locked component library existed for the
+  overnight Pattern alone; no counted Pattern can lack a claiming cause now, so it
+  is retired from the stories, the fixture states and the lock (§4.2), pending the
+  operator's approval of that lock amendment.
+- Ledger stories S148, S149 and S192 are retired as R20 and R21; S107 reads
+  `ic-block-evidence`, whose meals Findings replace the showcase's Meal bolus fell
+  short. The correction factor no longer leads Changes, so S177 reads the basal
+  lead on `basal-lower` and S179 stages its correction-factor Plan from the
+  Diagnose panel before recording it. R18's finding count drops by the one
+  overnight Pattern row.
 - The Overview report card for carbs vs post-meal response needs its own producer
   (#501). It does not revive the detector.

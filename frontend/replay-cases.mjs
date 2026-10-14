@@ -28,7 +28,7 @@ export const STORY_CASES = Object.freeze({
   S166: 'basal-lower', S167: 'basal-lower', S168: 'c3-focus',
   S173: 'c3-focus', S174: 'c3-preempted', S175: 'c4-history', S176: 'c3-preempted',
   S182: 'pattern-near-tie',
-  S177: 'isf-strengthen', S178: 'isf-strengthen', S179: 'isf-strengthen',
+  S177: 'basal-lower', S178: 'isf-strengthen', S179: 'isf-strengthen',
   S186: 'basal-lower',
   S187: 'basal-and-carb-ratio-lower',
   S188: 'c4-isf-late-read',

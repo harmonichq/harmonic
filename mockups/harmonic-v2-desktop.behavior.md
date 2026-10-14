@@ -5222,9 +5222,9 @@ S177 · On a plain arrival at Changes, the Action figure reads the served
   source:   frontend/changes.js actionLead, concernFrame, leadWords;
             frontend/guidance.js statusWords; frontend/plan.js settingValue
   lock:     none (revise; ADR 451 in openspec/changes/archive/2026-09-24-setting-concern-labels/design.md)
-  data:     isf-strengthen; guidance selects pattern:lows_after_correcting_highs,
-            eligible_action, carrying the correction factor's served
-            "strengthen" instruction
+  data:     basal-lower (amended by #499); guidance selects setting:basal_rate,
+            eligible_action, carrying the basal Setting's served "lower"
+            instruction
   evidence: C4_STORIES.S177; reads /api/guidance for the served disposition and
             first instruction, compares the figure's text and the two word
             slots, stages and undoes through [data-set="stage"] and
@@ -5281,8 +5281,8 @@ S179 · After staging the correction factor and recording the Plan, Changes' "Wh
             /api/plan/history subject_titles; ciq_autotune/guidance.py
             subject_title and the setting concern's title
   lock:     none (revise; ADR 451)
-  data:     isf-strengthen; Changes stages the served correction-factor
-            instruction and records it
+  data:     isf-strengthen; Diagnose stages the served correction-factor
+            instruction and Changes records it (amended by #499)
   evidence: C4_STORIES.S179; stages and records through the Plan, reads the
             newest record's decision_context from /api/plan/history, and
             compares the section's concern name, change value and explanation
@@ -6704,6 +6704,16 @@ because the store they named no longer serves their premise:
 - **S107** reads its long meal cohort from `ic-block-evidence` (37 meals, two
   meals Findings with event charts) instead of the showcase, whose only meals
   Finding was Meal bolus fell short.
+- **S177** reads `basal-lower` instead of `isf-strengthen`. The correction
+  factor no longer leads Changes (ADR 499: "ISF tends to suck… keep it out of
+  the queue."), so the story's lead is the basal Setting guidance now selects
+  directly; its Action figure reads "<direction> to <recommended> U/h", and
+  every word-slot, staging, Undo, set-aside and engine-word assertion is
+  unchanged.
+- **S179** stages the correction factor from its Diagnose panel, as S178 does,
+  and records the Plan from the watch dock's Changes route, instead of from the
+  Changes lead it can no longer be; everything it reads of the recorded Plan is
+  unchanged.
 - **S126** reads `pattern-correction-fold` instead of
   `behavioral-correction-stacking`. With the correction factor out of the
   Pattern (ADR 499), Lows after correcting highs collapses onto Correction

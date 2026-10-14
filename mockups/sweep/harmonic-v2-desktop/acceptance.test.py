@@ -861,8 +861,9 @@ QA_CASES = (QaCase('showcase', build), QaCase('ic-lower', build))
         # manufactured `basal-verdict-gallery` store, and the slice covers every
         # real replay case. #424: S125 and S126 join it for the same reason, as
         # the only stories on `behavioral-missed-meal` and (since #499)
-        # `pattern-correction-fold`. #451: S177 joins it as the only
-        # story on `isf-strengthen`. #459: S187 joins it as the only story on
+        # `pattern-correction-fold`. #451: S177 joined it as the only
+        # story on `isf-strengthen`; #499 moved S177 to `basal-lower`, so S178
+        # takes its place on that store. #459: S187 joins it as the only story on
         # `basal-and-carb-ratio-lower`. #462: S188 joins it as the only story on
         # `c4-isf-late-read`. #465: S190 joins it as the only story on
         # `basal-recurring-low-within-floor`. #466: S191 joins it as the only
@@ -876,7 +877,7 @@ QA_CASES = (QaCase('showcase', build), QaCase('ic-lower', build))
         # reach, making 34.
         self.assertEqual(len(set(acceptance.SMOKE_STORIES)), 34)
         self.assertEqual(hashlib.sha256(','.join(acceptance.SMOKE_STORIES).encode()).hexdigest(),
-                         '8072c557ae20e3bca4f346a92d0057d63c37ce73d7fb7c409de7abf416c0025b')
+                         'a09ce80ae91a5e71be8696919a31472ba8c0e396cb2f87157ffeca426b3d0133')
         with tempfile.TemporaryDirectory() as directory:
             run = acceptance.Run(Path(directory))
             ids = acceptance.inventory(run)

@@ -2155,8 +2155,10 @@ async function servedLead451(page, id) {
   const guidance = await read(page, '/api/guidance');
   assert.equal(guidance.disposition, 'eligible_action', `${id} premise: the case must serve an eligible action`);
   const action = Array.isArray(guidance.selected?.action) ? guidance.selected.action[0] : null;
-  assert.equal(action?.parameter, 'isf',
-    `${id} premise: the selected concern must carry a correction-factor instruction`);
+  // The correction factor never leads (ADR 499); a basal Setting no Pattern
+  // carries does, through the same lead.
+  assert.equal(action?.parameter, 'basal_rate',
+    `${id} premise: the selected concern must carry a basal instruction`);
   return { guidance, action };
 }
 /** Changes' nameplate sub-line and its Action heading's words, as rendered. */
@@ -3858,8 +3860,8 @@ export const C4_STORIES = {
     await waitForReplayAssertion(async seen => {
       const figure = seen(await page.locator('.gf-reading .gf-figure')
         .evaluate(node => node.firstChild?.textContent ?? ''));
-      assert.equal(figure, `${action.direction} to ${correctionFactor451(action.recommended)}`,
-        'S177 the Action figure reads the served instruction, the correction factor insulin first');
+      assert.equal(figure, `${action.direction} to ${action.recommended} U/h`,
+        'S177 the Action figure reads the served basal instruction in its user unit');
       assert.deepEqual(seen(await changesWords451(page)), { sub: `${priority} · Ready to stage`, action: 'Ready to stage' },
         'S177 an eligible setting instruction reads Ready to stage on the nameplate and the Action heading');
       assert.doesNotMatch(seen(await page.locator('.gf-desk').innerText()), ENGINE_WORDS_451,
@@ -3954,8 +3956,19 @@ export const C4_STORIES = {
     }, 'S178 the staged dock');
   },
   async S179(page) {
-    await servedLead451(page, 'S179');
-    await C2_STORIES.stageIntoPlan(page);
+    // The correction factor never leads Changes (ADR 499), so the Plan is staged
+    // from its Diagnose panel, as S178 stages it, and recorded from Changes.
+    await fullDayDiagnose(page);
+    const preparation = await read(page, '/api/diagnose/finding-case-file-preparation');
+    const row = preparation.rendered_rows.find(candidate => candidate.parameter === 'isf');
+    assert.ok(row && row.asserts_move === true,
+      'S179 premise: the case must serve an asserting, stageable correction-factor row');
+    await page.locator(`#level .qrow[data-id="${row.id}"]`).click();
+    await settled(page);
+    await press(page, '#level .stagebtn[data-staged="false"]');
+    await page.locator('.inspector > .watch[data-state="plan"]').waitFor({ timeout: 30000 });
+    await press(page, '.inspector > .watch[data-state="plan"] .go');
+    await page.locator('.gf-plan').waitFor({ timeout: 30000 });
     await press(page, '[data-set="record"]');
     await page.locator('[data-set="withdraw"]').waitFor({ timeout: 30000 });
     const context = (await read(page, '/api/plan/history')).history[0]?.decision_context;
@@ -4715,10 +4728,11 @@ export async function historicalAbsence(page) {
     }, "absent");
   };
   await absent();
-  // This case publishes five Pattern rows, one current basal row and one
-  // historical I:C row. The last must enter neither visible nor Watching counts.
+  // This case publishes four Pattern rows (the overnight-lows Pattern left the
+  // roster, ADR 499), one current basal row and one historical I:C row. The last
+  // must enter neither visible nor Watching counts.
   await waitForReplayAssertion(async seen => {
-    assert.equal((seen(await page.locator('#crumb-meta').innerText())).trim(), '6 findings · 30 days');
+    assert.equal((seen(await page.locator('#crumb-meta').innerText())).trim(), '5 findings · 30 days');
     const watching = page.getByRole('button', { name: /Watching/ });
     assert.equal(seen(await watching.count()), 0, 'no historical read may create a Watching disclosure');
   }, "historicalAbsence");

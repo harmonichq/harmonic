@@ -83,6 +83,16 @@ class EngineCutsTest(unittest.TestCase):
         self.assertNotIn("pattern:lows_after_correcting_highs", queued)
         self.assertNotEqual((guidance["selected"] or {}).get("subject"), "setting:isf")
 
+    def test_the_day_model_view_still_serves_after_the_sequence_detector_left(self):
+        client, _findings, _guidance = self._reads("showcase")
+        last_day = client.get("/api/day-navigator").json()
+        dates = sorted(day["date"] for day in last_day.get("days") or [] if day.get("date"))
+        target = dates[-1] if dates else "2024-06-30"
+        response = client.get("/api/model-view", params={"date": target})
+        self.assertEqual(response.status_code, 200, response.text)
+        for episode in response.json()["episodes"]:
+            self.assertNotIn(episode["lever"], _CUT_LEVERS)
+
     def test_cut_levers_and_blocks_are_absent(self):
         client, findings, guidance = self._reads("showcase")
         _c, uncaused_findings, uncaused_guidance = self._reads("behavioral-uncaused-highs")

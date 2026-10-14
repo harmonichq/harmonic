@@ -207,7 +207,6 @@ def assemble_model_view(
     isf: Optional[float] = None,
     scenario_config: ScenarioConfig = ScenarioConfig(),
     low_answers: Sequence[LowPromptAnswer] = (),
-    carb_entries=(),
     evaluated=None,
 ) -> dict:
     """The per-day model-view payload for ``target`` — the pure core (event lists in, dict out).
@@ -220,8 +219,7 @@ def assemble_model_view(
     so the chart shows it.
     """
     evaluated = evaluated or evaluate(bolus_events, cgm_readings, basal_events, isf=isf,
-                                      scenario_config=scenario_config, low_answers=low_answers,
-                                      carb_entries=carb_entries)
+                                      scenario_config=scenario_config, low_answers=low_answers)
     episodes = []
     for idx, item in enumerate(evaluated.episodes):
         if item.anchors.end.date() != target:
@@ -305,16 +303,15 @@ def build_model_view(
         snaps, settings_start, settings_end,
     )
 
-    # Sequence comparison and prices use the fixed current Diagnose source window,
-    # even though this consumer displays one day. A day outside that source window
-    # keeps its historical local attribution and cannot acquire a sequence finding.
+    # Attribution uses the fixed current Diagnose source window, even though this
+    # consumer displays one day. A day outside that source window keeps its
+    # historical local attribution.
     all_basal = store.basal_events()
     source_times = [r.t for r in all_cgm] + [b.t for b in all_basal]
     source_end = max(source_times, default=day_start)
     source_start = source_end - timedelta(days=30)
     source_evaluation = None
     if source_start.date() <= target <= source_end.date():
-        from ...rescue_evidence import eligible_carb_entries
         all_bolus = store.bolus_events()
         isf = _effective_isf(all_bolus, all_basal, all_cgm, snaps, source_start, source_end)
         source_evaluation = evaluate(
@@ -322,14 +319,12 @@ def build_model_view(
             drop_readings(_slice(all_cgm, source_start, source_end), fl_spans),
             _slice(all_basal, source_start, source_end), isf=isf,
             low_answers=low_prompt_answers(store, source_start, source_end),
-            carb_entries=_slice(eligible_carb_entries(store.carb_entries(), source_end), source_start, source_end),
             window_start=source_start, window_end=source_end,
         )
 
     day = assemble_model_view(
         bolus, cgm, basal,
-        target=target, isf=isf, low_answers=low_answers,
-        carb_entries=store.carb_entries(win_start, win_end), evaluated=source_evaluation,
+        target=target, isf=isf, low_answers=low_answers, evaluated=source_evaluation,
     )
 
     # Carb-log exclusion spans over the assembled window — the Day surface reads

@@ -3,6 +3,7 @@ import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { fixtures } from '../../fixtures';
 import { formatValue } from '../../provenance.js';
 import { dayDate, loggedGrams } from '../../day-model';
+import { swipe } from '../../gesture';
 import { DayScreen, type DayScreenProps } from './DayScreen';
 
 // The Day screen in each state §1.3 lists for Day, Day · Prompts and Day · Log
@@ -219,6 +220,15 @@ export const PromptNotSurePhone: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await userEvent.click(canvas.getByRole('button', { name: 'Not sure' }));
+    await expect(place(canvas)).toHaveTextContent('2 / 2');
+  },
+};
+// Phone: a full swipe is Not sure's shortcut, and moves to the next prompt.
+export const PromptSwipePhone: Story = {
+  ...story('phone', PROMPTS),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await swipe(canvasElement.querySelector<HTMLElement>('.ui-prompt')!, -72);
     await expect(place(canvas)).toHaveTextContent('2 / 2');
   },
 };

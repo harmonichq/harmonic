@@ -7,8 +7,8 @@
 // beside it in meta ink, and current → suggested takes the magnitude's place.
 //
 // Phone: a full-width row under a rule, with a ▾ to expand; mid-swipe slides
-// it aside over the Snooze reveal, under the finger, and it settles open over
-// the reveal or back at rest. Desktop: a list row that selects into the
+// it aside over the Snooze reveal, under the finger: released past half the
+// reveal it snoozes the row (onSnooze), short of half it settles back. Desktop: a list row that selects into the
 // detail pane, marked by the surface and a bar at its leading edge.
 //
 // Snoozed (the Snoozed list): the same row, read-only — no chevron, no swipe,
@@ -38,6 +38,8 @@ export type QueueRowProps =
       /** Phone only: the row held mid-swipe over its Snooze reveal. */
       swiping?: boolean;
       onSelect?: () => void;
+      /** Phone: a swipe released past half the reveal snoozes the row. */
+      onSnooze?: () => void;
       /** A snoozed row: its served Until date, and Restore. */
       snoozed?: { until: Sourced<string>; onRestore?: () => void };
     } & (
@@ -65,7 +67,7 @@ function Meta(props: Extract<QueueRowProps, { kind: string }>) {
 
 export function QueueRow(props: QueueRowProps) {
   const layout = props.layout ?? 'phone';
-  const swipe = useSwipe(REVEAL, !props.loading && Boolean(props.swiping));
+  const swipe = useSwipe(REVEAL, !props.loading && Boolean(props.swiping), props.loading ? undefined : props.onSnooze);
   if (props.loading) {
     return (
       <div className={`ui-qrow ui-qrow--${layout} ui-qrow--loading`} aria-busy="true">

@@ -12,7 +12,8 @@
 // accent (and "Recorded" for a screen reader), and the optional grams field
 // opens focused beside Next. Mid-swipe,
 // the card slides aside over the Not sure reveal: on the phone it follows the
-// finger and settles open over the reveal or back at rest. The "n / N" count belongs to
+// finger, and released past half the reveal it answers Not sure, as the text
+// action does; short of half it settles back. The "n / N" count belongs to
 // the Prompts screen's header, not to this card.
 import { useState } from 'react';
 import type { PromptData } from '../../day-model';
@@ -97,7 +98,7 @@ export function PromptCard({
   // Yes records at once; the card then holds the grams typed until Next.
   const [recorded, setRecorded] = useState(initiallyRecorded);
   const [grams, setGrams] = useState('');
-  const swipe = useSwipe(REVEAL, swiping);
+  const swipe = useSwipe(REVEAL, swiping, () => onAnswer?.('not-sure'));
   const tone = data.bg.value < SEVERE_LOW ? 'very-low' : 'low';
   const card = (
     <section className={`ui-prompt ui-prompt--${layout}${layout === 'phone' ? ' ui-swipe-settle' : ''}`} style={swipe.style}>

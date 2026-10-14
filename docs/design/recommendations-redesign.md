@@ -101,8 +101,8 @@ Each row lists a screen's states. Labels only; no state uses prose.
 | Touch (phone, tablet) | Desktop |
 |---|---|
 | Tap a Queue card to expand it in place | Click or ↑/↓ to select in the list; the detail shows in the right pane |
-| Swipe a Queue card to snooze it, or the Snooze text action beneath Pin (a Setting card: at its foot) | The same Snooze text action; shortcut S |
-| Swipe a Prompt to record Not sure, or the Not sure text action beneath its answers | A fourth button, **Not sure** |
+| Swipe a Queue row: it follows the finger, and released past half its Snooze reveal it snoozes, as the Snooze text action beneath Pin does (a Setting card: at its foot), with the same bar and Undo; short of half it settles back | The same Snooze text action; shortcut S |
+| Swipe a Prompt: released past half its Not sure reveal it records Not sure and moves to the next, as the Not sure text action beneath its answers does; short of half it settles back | A fourth button, **Not sure** |
 | Tap the day in the Day header to drop the month down, its weeks as gapless ribbons | The same drop-down, a popover under the day; the selected week stays in view as a ribbon |
 | Pick a day in the month (it closes); the scrim closes it unchanged | Pick a day in the month or the week in view; Escape closes it unchanged |
 | Bottom sheet for Log carbs, on the system keyboard | Popover anchored to "+ Log carbs" |
@@ -416,6 +416,25 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   half its chroma (OKLCH 0.76, 0.116 → 0.057): #3cc8c8 becomes #86bdbd, still
   7.90:1 on `--wk-surface` and 9.26:1 on `--wk-canvas` (§2.1). Only Day draws
   it: the meal and logged-carb marks and grams, and the insulin bar's Meal.
+- **2026-10-13 — motion, a full swipe acts, and what opens also closes.**
+  The library moves on three durations, 120 / 200 / 280 ms
+  (`--ui-motion-fast`, `--ui-motion-standard`, `--ui-motion-emphasized`), and
+  two easings that never overshoot (`--ui-ease-standard`,
+  `--ui-ease-emphasized`): a sheet rises, a popover opens out of its arrow, a
+  drill-down pushes in from the right and back from the left, a card or
+  disclosure grows open in place, the bar rises, the month drops down, the
+  next prompt comes in, skeletons shimmer, and a press lands at once. Motion
+  only ever ends where the layout already rests; a screen that opens with
+  something open shows it still. Under reduced motion nothing travels: every
+  movement is an instant change or a fade of at most 120 ms, and the shimmer
+  stops. Asked whether a full swipe should act, the operator chose "13. A":
+  a Queue row released past half its reveal snoozes, with the same bar and
+  Undo as Snooze; a Prompt released past half records Not sure and moves on;
+  short of half either settles back (§1.4). Asked whether what opens should
+  close in motion, he chose "14. A": sheets, popovers, the month, the bar and
+  a collapsing card or disclosure leave in about 200 ms, the reverse of their
+  opening on the standard easing, instantly or as a 120 ms fade under reduced
+  motion.
 
 ### 2.6 Deferred (not cut)
 Not built in the current screens. The engine still serves what each needs, and

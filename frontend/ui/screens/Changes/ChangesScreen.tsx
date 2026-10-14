@@ -20,10 +20,10 @@
 //
 // Motion: the sheet rises over a darkening scrim, the popover opens out of
 // its arrow, and the last change's card grows open under its row.
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { change, lastChange, type ChangeData, type ChangesStore } from '../../changes-model';
 import { sourced } from '../../fixtures';
-import { useMotionGate } from '../../motion';
+import { useMotionGate, usePresence } from '../../motion';
 import { Num } from '../../Num';
 import { Button } from '../../components/Button/Button';
 import { ChangeCard } from '../../components/ChangeCard/ChangeCard';
@@ -77,6 +77,12 @@ export function ChangesScreen({ layout, store, state = 'ready', end, confirming 
   const shown = ended && end ? end.after : store;
   const active = change(shown);
   const last = lastChange(shown);
+  // The confirmation and the last change's card stay while they close; the
+  // confirmation keeps the change it asked about.
+  const asked = usePresence(asking && state === 'ready');
+  const askedAbout = useRef(active);
+  if (asking) askedAbout.current = active;
+  const lastCard = usePresence(lastExpanded);
 
   const doEnd = () => { setAsking(false); if (end) setEnded(true); };
   const cancel = () => setAsking(false);
@@ -92,9 +98,9 @@ export function ChangesScreen({ layout, store, state = 'ready', end, confirming 
     ? <ScreenHeader title="Changes" trailing="unavailable" layout={layout} />
     : <ScreenHeader title="Changes" layout={layout} />;
 
-  const popover = layout === 'desktop' && asking && (
-    <section className="ui-popover ui-popover--end ui-changes__confirm" role="dialog" aria-label="End">
-      <Confirm data={active} onEnd={doEnd} onCancel={cancel} />
+  const popover = layout === 'desktop' && asked.value && (
+    <section className="ui-popover ui-popover--end ui-changes__confirm" role="dialog" aria-label="End" {...asked.exit}>
+      <Confirm data={askedAbout.current} onEnd={doEnd} onCancel={cancel} />
     </section>
   );
 
@@ -117,7 +123,9 @@ export function ChangesScreen({ layout, store, state = 'ready', end, confirming 
                 value={last.result ? <StatePill state={last.result} /> : undefined}
                 disclosure={{ expanded: lastExpanded, onToggle: () => setLastExpanded(!lastExpanded) }} />
             </ListGroup>
-            {lastExpanded && <div className="ui-changes__last-card ui-expand"><ChangeCard data={last} /></div>}
+            {lastCard.value && (
+              <div className="ui-changes__last-card ui-expand" {...lastCard.exit}><ChangeCard data={last} /></div>
+            )}
           </div>
         )}
       </>
@@ -131,12 +139,12 @@ export function ChangesScreen({ layout, store, state = 'ready', end, confirming 
           <div className="ui-changes__body">{content}</div>
         </main>
         <NavBar layout="tabbar" selected="changes" dayCount={dayCount} />
-        {asking && state === 'ready' && (
-          <div className="ui-scrim ui-changes__scrim" onClick={cancel}>
+        {asked.value && (
+          <div className="ui-scrim ui-changes__scrim" onClick={cancel} {...asked.exit}>
             <section className="ui-sheet ui-changes__confirm" role="dialog" aria-label="End"
               onClick={(event) => event.stopPropagation()}>
               <span className="ui-sheet__grabber" aria-hidden="true" />
-              <Confirm data={active} onEnd={doEnd} onCancel={cancel} />
+              <Confirm data={askedAbout.current} onEnd={doEnd} onCancel={cancel} />
             </section>
           </div>
         )}

@@ -2,15 +2,17 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { fixtures, sourced } from './fixtures';
+import { swipe } from './gesture';
 import { Button } from './components/Button/Button';
 import { ChangesScreen } from './screens/Changes/ChangesScreen';
 import { DayScreen } from './screens/Day/DayScreen';
+import { ranking } from './queue-model';
 import { QueueScreen } from './screens/Queue/QueueScreen';
 
 // The library's motion (tokens.css, motion.ts), one story per motion, each on
 // the screen it ships in. Replay, outside the frame, starts the screen again at
-// rest and runs the motion through the screen's own control, so what moves is
-// what ships. Reduced motion holds [data-motion-reduce] on the stage, the state
+// rest and runs the motion through the screen's own control, opening and then
+// closing what opens, so what moves is what ships. Reduced motion holds [data-motion-reduce] on the stage, the state
 // prefers-reduced-motion puts the whole library in, and replays any of them.
 
 type Frame = { width: number; height: number; padding: number };
@@ -28,23 +30,10 @@ function control(stage: HTMLElement, label: string, within = 'button'): HTMLElem
   return found;
 }
 
-/** A finger drawn across a row: down, along the path, up. */
-async function drag(target: HTMLElement, path: number[]) {
-  const box = target.getBoundingClientRect();
-  const y = box.top + box.height / 2;
-  const at = (x: number) => ({ bubbles: true, pointerId: 1, pointerType: 'touch', isPrimary: true, clientX: x, clientY: y });
-  const x0 = box.left + box.width * 0.7;
-  target.dispatchEvent(new PointerEvent('pointerdown', at(x0)));
-  for (const dx of path) {
-    await frame();
-    target.dispatchEvent(new PointerEvent('pointermove', at(x0 + dx)));
-  }
-  target.dispatchEvent(new PointerEvent('pointerup', at(x0 + path[path.length - 1])));
-}
-const along = (to: number, steps = 14) => Array.from({ length: steps }, (_, i) => (to * (i + 1)) / steps);
-
 type Motion = { name: string; frame: Frame; screen: () => ReactNode; run: (stage: HTMLElement) => Promise<void> };
 
+/** An item of the pinned store's Queue other than the one a swipe snoozes, open first. */
+const otherThanSnoozed = ranking('wearer-pinned').find((item) => item.subject !== fixtures.snooze.subject)!.subject;
 const snooze = { subject: fixtures.snooze.subject, after: 'wearer-pinned-snoozed', until: sourced<string>('snooze.decided_at', 'until') } as const;
 
 const MOTIONS = {
@@ -52,13 +41,21 @@ const MOTIONS = {
     name: 'Sheet',
     frame: PHONE,
     screen: () => <DayScreen layout="phone" store="wearer" />,
-    run: async (stage) => { control(stage, '+ Log carbs').click(); },
+    run: async (stage) => {
+      control(stage, '+ Log carbs').click();
+      await pause(900);
+      stage.querySelector<HTMLElement>('.ui-dayscreen__scrim--sheet')!.click();
+    },
   },
   popover: {
     name: 'Popover',
     frame: DESKTOP,
     screen: () => <DayScreen layout="desktop" store="wearer" />,
-    run: async (stage) => { control(stage, '+ Log carbs').click(); },
+    run: async (stage) => {
+      control(stage, '+ Log carbs').click();
+      await pause(900);
+      control(stage, '+ Log carbs').click();
+    },
   },
   drillDown: {
     name: 'Drill-down',
@@ -74,36 +71,55 @@ const MOTIONS = {
     name: 'Expand',
     frame: PHONE,
     screen: () => <QueueScreen layout="phone" store="wearer" />,
-    run: async (stage) => { stage.querySelector<HTMLElement>('.ui-queue__list .ui-qrow')!.click(); },
+    run: async (stage) => {
+      stage.querySelector<HTMLElement>('.ui-queue__list .ui-qrow')!.click();
+      await pause(900);
+      stage.querySelector<HTMLElement>('.ui-queue__list .ui-qrow')!.click();
+    },
   },
   disclosure: {
     name: 'Disclosure',
     frame: PHONE,
     screen: () => <ChangesScreen layout="phone" store="wearer-ended-pinned" />,
-    run: async (stage) => { stage.querySelector<HTMLElement>('.ui-row[aria-expanded]')!.click(); },
+    run: async (stage) => {
+      stage.querySelector<HTMLElement>('.ui-row[aria-expanded]')!.click();
+      await pause(900);
+      stage.querySelector<HTMLElement>('.ui-row[aria-expanded]')!.click();
+    },
   },
   swipe: {
     name: 'Snooze swipe',
     frame: PHONE,
-    screen: () => <QueueScreen layout="phone" store="wearer" />,
+    screen: () => <QueueScreen layout="phone" store="wearer-pinned" open={otherThanSnoozed} snooze={snooze} />,
     run: async (stage) => {
-      const row = () => stage.querySelector<HTMLElement>('.ui-queue__list .ui-qrow')!;
-      await drag(row(), along(-64));
-      await pause(900);
-      await drag(row(), along(56, 10));
+      const row = () => [...stage.querySelectorAll<HTMLElement>('.ui-queue__list .ui-qrow')]
+        .find((each) => each.textContent?.includes(fixtures.snooze.title))!;
+      await swipe(row(), -30, 8);
+      await pause(700);
+      await swipe(row(), -64);
+      await pause(1400);
+      control(stage, 'Undo').click();
     },
   },
   bar: {
     name: 'Transient bar',
     frame: PHONE,
     screen: () => <QueueScreen layout="phone" store="wearer-pinned" open={fixtures.snooze.subject} snooze={snooze} />,
-    run: async (stage) => { control(stage, 'Snooze').click(); },
+    run: async (stage) => {
+      control(stage, 'Snooze').click();
+      await pause(1400);
+      control(stage, 'Undo').click();
+    },
   },
   month: {
     name: 'Month',
     frame: PHONE,
     screen: () => <DayScreen layout="phone" store="wearer" />,
-    run: async (stage) => { stage.querySelector<HTMLElement>('.ui-header__day')!.click(); },
+    run: async (stage) => {
+      stage.querySelector<HTMLElement>('.ui-header__day')!.click();
+      await pause(900);
+      stage.querySelector<HTMLElement>('.ui-dayscreen__scrim')!.click();
+    },
   },
   nextPrompt: {
     name: 'Next prompt',

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, userEvent, within } from 'storybook/test';
+import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { fixtures } from '../../fixtures';
 import { ChangesScreen, type ChangesScreenProps } from './ChangesScreen';
 
@@ -112,6 +112,7 @@ export const ExpandLastPhone: Story = {
     await expect(row).toHaveAttribute('aria-expanded', 'true');
     await expect(canvas.getByText('Before')).toBeInTheDocument();
     await userEvent.click(row);
-    await expect(canvas.queryByText('Before')).toBeNull();
+    // It closes in place, then is gone.
+    await waitFor(() => expect(canvas.queryByText('Before')).toBeNull());
   },
 };

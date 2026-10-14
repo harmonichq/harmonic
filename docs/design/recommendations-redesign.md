@@ -372,7 +372,20 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   basal." The engine serves these through #492 (basal delivered, basal
   programmed, meal, correction, Control-IQ bolus, total); the bar waits for
   it (§4.2 InsulinBar). Insulin, Basal, Meal, Correction and Control-IQ join
-  §1.5.
+  §1.5. The signed figure beside Basal was dropped before it shipped; see the
+  next amendment.
+- **2026-10-13 — the insulin bar as built, and no graph twice on desktop.**
+  Three decisions on the built Day. Basal shows only what was delivered, its
+  U and %, with no Pump profile figure beside it, signed or not: "for basal
+  just show delivered amount I don't need the +/-". Each part and the total
+  print their own value to one decimal, and each % is that part as printed ÷
+  the total as printed, so the %s are not forced to sum to 100 (the
+  operator: "your recs."). And the desktop's selected week stops redrawing
+  the glucose the day's chart already draws: "Let's not duplicate data on
+  tablet view though that's silly. why showing the same graphs twice." The
+  week in view keeps each day's weekday, date, ▽/△ counts and %, and the
+  selection mark, with no band and no trace; the month drop-down keeps its
+  traces, since it is for choosing a day (§4.2 DayTile, InsulinBar).
 
 ### 2.6 Deferred (not cut)
 Not built in the current screens. The engine still serves what each needs, and
@@ -391,7 +404,7 @@ nothing is removed from the engine or the fixtures for them.
 
 ## 4. Component inventory (approved 2026-10-12)
 
-Twenty components, and InsulinBar pending #492. Screens are composed only from these. Every state listed
+Twenty-one components. Screens are composed only from these. Every state listed
 gets a Storybook story in step 3. "Fields" are the only served data a component
 may display; derived values name their formula in the provenance table.
 
@@ -530,8 +543,10 @@ unless noted. Loading is a skeleton of the component's own shape.
     - Day draws the same days as a **DayRibbon**: a week of them, gapless, on
       one band with one trace that runs on from day to day, hairline dividers,
       and each day's weekday and date above and counts and % beneath; each day
-      picks itself. States: default; selected; a week without readings. Day's
-      month is its weeks stacked; desktop keeps the selected week in view.
+      picks itself. States: default; selected; a week without readings;
+      without its trace (no band, no glucose line). Day's month is its weeks
+      stacked, with their traces; desktop keeps the selected week in view
+      without its trace, above the day's own chart.
 
 **Changes**
 
@@ -574,15 +589,17 @@ unless noted. Loading is a skeleton of the component's own shape.
     - Fields: posts `t, grams, certainty` to `/api/carbs`.
     - Desktop: a popover anchored to "+ Log carbs"; on phone, a bottom sheet
       on the system keyboard.
-21. **InsulinBar** (pending #492): the selected day's insulin as one stacked
-    bar for the total, its parts labelled beneath in U and %: Basal
-    (delivered), Meal, Correction and Control-IQ (its automatic boluses only).
-    Beside Basal, outside the bar, one signed figure: delivered − Pump profile,
-    in U, negative when Control-IQ cut or suspended basal.
+21. **InsulinBar**: the selected day's insulin, "Insulin" and its total
+    above one stacked bar of it, its parts labelled beneath in U and %: Basal
+    (delivered, grey as the chart's basal), Meal (the meal teal), Correction
+    (neutral ink) and Control-IQ (its automatic boluses only, hatched). Each
+    value prints its own rounding to one decimal; each % is the part as
+    printed ÷ the total as printed.
     - States: default; no data (no bar); loading.
-    - Fields: pending #492, the engine's per-day basal delivered, basal
-      programmed, meal, correction, Control-IQ bolus and total.
-    - Desktop: the same, between the selected week and the Prompts row.
+    - Fields: `timeline.insulin_totals.basal, meal, correction,
+      control_iq_bolus, total` (ADR 492); `null` serves no bar.
+    - Desktop: the same, the parts in one row, beside the Prompts row under the
+      selected week.
 
 **Settings**
 

@@ -8,9 +8,12 @@ showcase or a named case store that `scripts/gen_qa_e2e_db.py --case` emits. The
 - the CI drift step (`scripts/gen_qa_e2e_db.py --check`), which SHALL remain
   fail-closed;
 - the served-app smoke test (`scripts/smoke_app.py`), the one database-backed
-  serve in CI. It SHALL copy the committed showcase to a scratch path and serve
-  only that copy with `harmonic serve --no-fetch --token ''`, never the
-  committed path; the image's smoke step SHALL likewise serve a copy;
+  serve in CI. It SHALL copy the committed showcase to a scratch path, or have
+  the generator emit a named case store there, and serve only that store with
+  `harmonic serve --no-fetch --token ''`, never the committed path; the image's
+  smoke step SHALL likewise serve a copy;
+- the live adapter's contract tests and the app's one browser smoke test
+  (#475), which read only the serve that smoke test boots;
 - the route-level test, which SHALL copy the committed showcase into a temporary
   path, select `finding:over_treated_low`, and pin summary `{"claimed": 1,
   "denominator": 5, "noun": "lows"}`, verdict-count sum `5` and occurrence
@@ -54,8 +57,9 @@ historical records outside that surface.
 #### Scenario: The smoke test serves a copy, never the committed store
 
 - **WHEN** the served-app smoke test boots its server
-- **THEN** that server reads a scratch copy of the committed showcase with
-  `--no-fetch` and an empty token, and never the committed showcase path
+- **THEN** that server reads a scratch copy of the committed showcase, or a
+  case store the generator emitted into scratch, with `--no-fetch` and an empty
+  token, and never the committed showcase path
 
 #### Scenario: Retirement is evidence-based
 

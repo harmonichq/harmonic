@@ -50,6 +50,10 @@ uv run python -m pytest                    # backend, stdlib unittest over the b
 node --test 'frontend/**/*.test.js'        # the dependency-free frontend tests
 npm run test:ui                            # the component library's Storybook suite
 uv run python scripts/smoke_app.py         # the server serves the built app and an API answer
+# the app job: the live adapter's contract tests and the one browser smoke test
+uv run python scripts/smoke_app.py --then node --test frontend/ui/app/live.contract.test.mjs frontend/app.browser.test.mjs
+uv run python scripts/smoke_app.py --case isf-strengthen --then node --test frontend/ui/app/live.contract.test.mjs
+uv run python scripts/smoke_app.py --case c3-trial --then node --test frontend/ui/app/live.contract.test.mjs
 npx --yes @fission-ai/openspec@1.14.0 validate --all --strict # OpenSpec requirements and changes
 python3 scripts/check_adr_numbers.py       # decision-record naming guard
 python3 scripts/check_owned_identifiers.py # product-name guard
@@ -71,6 +75,29 @@ driver or build fails closed, naming what is missing.
 serve below — the synthetic QA store, `--no-fetch`, an empty token — and asks it
 for `/`, the app's script, a tab's page path and `/api/status`. The image's own
 smoke step runs the same probe against the container with `--url`.
+
+**The app against the engine: contract tests and one smoke, no ledgers** (#475,
+ADR 475). The desk's frozen behaviour ledgers and browser replays are gone. In
+their place, `smoke_app.py --then CMD` warms the scratch store's derived cache
+through the server's own warm roster, boots the same serve and runs CMD against
+it (`HARMONIC_URL`, `HARMONIC_CASE`); `--case NAME` serves a QA case store the
+generator emits instead of the showcase.
+
+- `frontend/ui/app/live.contract.test.mjs` reads the engine's real answers
+  through the app's one client and the live adapter, in Node with no browser,
+  and asserts each of the five tabs' screen models against literal values per
+  store. The showcase covers every tab; `isf-strengthen` adds a queued
+  correction factor and `c3-trial` an active Trial. A new screen-model fact is
+  asserted here.
+- `frontend/app.browser.test.mjs` is the one browser smoke test: the built app
+  opens each of its five tabs once at 1440×900, and each draws its primary
+  content with no skeleton and no Unavailable. Its context sends
+  `Connection: close` (#507). It is not where behaviour is tested; the Storybook
+  suite and the contract tests are.
+
+Both run in CI's `app` job, hand-listed. They fail closed without a serve, and
+the browser smoke fails closed without a driver. Their files are deliberately
+outside the fast gate's `*.test.js` glob, because they need a server.
 
 The backend job also runs ten **drift checks**, so a committed
 generator-authored artifact can never silently diverge from its generator. Nine
@@ -108,21 +135,21 @@ fixture without a generator is how real data gets committed.
 **Run only what a change touches; run each whole suite once, before the push.**
 While iterating, run the stories a change touches (`UI_STORY=<id part>` narrows
 `node scripts/ui-stories.mjs check` after `npm run build-storybook`) and the
-backend test files it touches. Run each complete suite exactly once per push, on
-the commit that will be pushed. Connor, 2026-09-10: "I spend all my life
+backend test files it touches; one contract-test case is one `--case` run. Run
+each complete suite exactly once per push, on the commit that will be pushed. Connor, 2026-09-10: "I spend all my life
 waiting for replays and ledgers and CI to run" — this rule is the answer, not a
 suggestion.
 
 **A sandboxed agent cannot launch Chromium — escalate, do not diagnose.** Under
 a seatbelt sandbox (Codex `workspace-write`, and anything else built on
-`sandbox-exec`), the Storybook suite dies at launch with
+`sandbox-exec`), the Storybook suite and the browser smoke die at launch with
 `bootstrap_check_in org.chromium.Chromium.MachPortRendezvousServer.<pid>:
 Permission denied (1100)`, surfacing as `browserType.launch: Target page,
 context or browser has been closed`. That is the sandbox refusing Chromium's
 Mach service registration, not a defect in the suite, the driver or the change
 under test. Re-run the same command with escalated permissions; it passes.
 There is no narrower fix: `--no-sandbox` and `--single-process` are Chromium's
-own sandbox, not the outer one. Never report the suite as failing, and never
+own sandbox, not the outer one. Never report either as failing, and never
 edit code to chase it, from a sandboxed run.
 
 ## The data boundary

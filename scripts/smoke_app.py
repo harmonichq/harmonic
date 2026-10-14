@@ -3,6 +3,7 @@
 
     uv run python scripts/smoke_app.py                 # boot the synthetic no-fetch serve
     python3 scripts/smoke_app.py --url URL [--token T] # probe a server already running
+    uv run python scripts/smoke_app.py --then CMD ...  # then run CMD against the warmed serve
 
 With no ``--url`` it boots exactly the one permitted offline serve (AGENTS.md,
 "The data boundary"): a scratch copy of the committed synthetic QA store,
@@ -16,12 +17,22 @@ fetched and no real data is read. Either way it then asks for:
 
 It exits nonzero naming the first thing missing: a build that was never made,
 a server that never answered, or an answer of the wrong shape. Stdlib only.
+
+``--then`` (#475) runs one command against the booted serve once the probe
+passes, with ``HARMONIC_URL`` naming it and ``HARMONIC_CASE`` its store, and exits with that command's status:
+the live adapter's contract tests and the app's one browser smoke test. Before
+the server starts, the scratch copy's derived cache is warmed through the
+server's own warm roster, as a running install keeps it warm, so no first read
+is a cold whole-history compute (#507). The server's output is kept in a log
+and printed when the command fails. ``--case`` serves a named QA case store
+that the generator emits into the scratch directory instead of the showcase.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import os
 import pathlib
 import re
 import shutil
@@ -83,6 +94,16 @@ def probe(base: str, token: str | None) -> list[str]:
     return ["/", script.group(1), "/day", "/api/status"]
 
 
+# The server's own warm roster, run once on the scratch copy before it serves it.
+WARM = """
+import sys
+from ciq_autotune.api import create_app
+app = create_app(db_path=sys.argv[1], token="", key_path=sys.argv[1] + ".key", enable_fetch_loop=False)
+for label, compute in app.state.recompute_roster():
+    compute()
+"""
+
+
 def free_port() -> int:
     with socket.socket() as listener:
         listener.bind(("127.0.0.1", 0))
@@ -93,7 +114,12 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--url", help="probe this running server instead of booting the synthetic serve")
     parser.add_argument("--token", help="the API token that server was started with")
+    parser.add_argument("--case", help="serve this QA case store, emitted by scripts/gen_qa_e2e_db.py, "
+                                       "instead of the committed showcase")
+    parser.add_argument("--then", nargs=argparse.REMAINDER, metavar="CMD",
+                        help="warm the synthetic serve, then run CMD against it with HARMONIC_URL set")
     args = parser.parse_args()
+    then_status = None
     if args.url:
         wait_ready(args.url.rstrip("/"), None)
         served = probe(args.url.rstrip("/"), args.token)
@@ -101,16 +127,31 @@ def main() -> int:
         require((ROOT / "frontend" / "dist" / "index.html").is_file(), "no built app; run npm ci && npm run build")
         with tempfile.TemporaryDirectory() as scratch:
             store = pathlib.Path(scratch) / "harmonic-qa-e2e.sqlite"
-            shutil.copyfile(STORE, store)
+            if args.case:
+                subprocess.run([sys.executable, str(ROOT / "scripts" / "gen_qa_e2e_db.py"), "--case", args.case,
+                                "--out", str(store)], cwd=ROOT, check=True, stdout=subprocess.DEVNULL)
+            else:
+                shutil.copyfile(STORE, store)
+            if args.then:
+                subprocess.run([sys.executable, "-c", WARM, str(store)], cwd=ROOT, check=True)
             port = free_port()
-            server = subprocess.Popen(
-                [sys.executable, "-c", "import sys; from ciq_autotune.cli import main; sys.exit(main())",
-                 "serve", "--no-fetch", "--token", "", "--db", str(store), "--port", str(port)],
-                cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+            log = pathlib.Path(scratch) / "server.log"
+            with log.open("wb") as sink:
+                server = subprocess.Popen(
+                    [sys.executable, "-c", "import sys; from ciq_autotune.cli import main; sys.exit(main())",
+                     "serve", "--no-fetch", "--token", "", "--db", str(store), "--port", str(port)],
+                    cwd=ROOT, stdout=sink, stderr=subprocess.STDOUT)
             try:
                 base = f"http://127.0.0.1:{port}"
                 wait_ready(base, server)
                 served = probe(base, None)
+                if args.then:
+                    then_status = subprocess.run(
+                        args.then, cwd=ROOT,
+                        env={**os.environ, "HARMONIC_URL": base, "HARMONIC_CASE": args.case or "showcase"},
+                    ).returncode
+                    if then_status != 0:
+                        sys.stderr.write(log.read_text(errors="replace")[-20000:])
             finally:
                 server.terminate()
                 try:
@@ -118,6 +159,9 @@ def main() -> int:
                 except subprocess.TimeoutExpired:
                     server.kill()
     print(f"smoke-app: the app and an API answer were served ({', '.join(served)})")
+    if then_status is not None:
+        print(f"smoke-app: {' '.join(args.then)} exited {then_status}")
+        return then_status
     return 0
 
 

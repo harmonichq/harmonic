@@ -517,7 +517,10 @@ the watch dock, the Episode Log and the desk's Changes.
    restated under a new title, because a MODIFIED block cannot drop one.
 3. *Desk-only harness records retire with the desk.* The warm-arrival change (#507,
    ADR 507) only made desk ledger stories arrive warm; its replay helper, test and
-   change are deleted, since nothing on this branch runs that replay. The
+   change are deleted, since nothing on this branch runs that replay. Its two
+   causes still bind the app's own smoke, so ADR 475 carries both forward: the
+   warm roster runs before the serve, and the browser context sends
+   `Connection: close`. The
    carb-ratio block-evidence change keeps its engine and API deltas but drops its
    surfaces delta, which described desk tiles the app does not draw.
 
@@ -525,3 +528,45 @@ the watch dock, the Episode Log and the desk's Changes.
 Diagnose that name an endpoint path or the fixture set
 (`/api/diagnose/...`, `mockups/diagnose-workstation.synthetic`) stay, since
 those are identifiers, not the shipped surface.
+
+## ADR 475 — Contract tests and one browser smoke replace the behaviour ledgers
+
+**Context.** #475 (Connor, 2026-09-25) cut the app to its loop and CI with it:
+replace the frozen behaviour ledgers with a handful of end-to-end journeys at one
+size, and finish a PR's CI in 15 minutes or less with no job over 10. The swap
+(#495) deleted the desk, its ledger (204 stories at two sizes), its Trial and
+Pattern Focus suite and their replay drivers. What the five-tab app needs proved
+is narrower: that the live adapter turns the engine's real answers into the
+screen models the locked screens draw, and that the built app puts them on the
+page. The screens' states and behaviours are already proved story by story in
+the Storybook suite, against the same models.
+
+**Decision** (Connor, 2026-10-14, keeping it "as lightweight as possible").
+
+1. *Contract tests, no browser.* `frontend/ui/app/live.contract.test.mjs` drives
+   the real live adapter through the app's one client against a synthetic no-fetch
+   serve, then asserts each tab's screen model against literal values per store:
+   the showcase for all five tabs, `isf-strengthen` for a queued correction factor
+   and `c3-trial` for an active Trial. Node resolves and strips the models'
+   TypeScript itself; no bundler or new dependency.
+2. *One browser smoke.* `frontend/app.browser.test.mjs` opens each of the five
+   tabs once at 1440×900 and requires each to draw its primary content with no
+   skeleton and no Unavailable. It asserts no behaviour.
+3. *One harness, the permitted serve.* `scripts/smoke_app.py --then` boots the one
+   permitted offline serve, after its existing probe, and runs either test against
+   it; `--case` serves a generator-emitted case store instead of the showcase.
+   #507's two flake causes are closed at the source: the scratch store is warmed
+   through the server's own warm roster before it serves, and every request opens
+   a fresh connection (no agent in Node, `Connection: close` in the browser).
+4. *One CI job.* The `app` job runs both, hand-listed, and takes the served-app
+   smoke step from the frontend job. Both fail closed without a serve.
+
+**Rejected.** A journey per loop step that clicks through Pin, Snooze and End:
+those writes are already played in the Storybook suite against fakes that fail
+once, and the server's side of each write has its own backend tests. Repeating
+them through a browser buys the ledger's cost back.
+
+**Consequences.** A fact a screen model reads from the engine is pinned in the
+contract test's per-store literals. A new screen gets one line in the smoke's
+tab list. No synthetic store yet holds a queued basal block inside a Trial's
+block; that state is proved only by the Storybook fixtures.

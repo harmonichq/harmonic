@@ -153,8 +153,7 @@ jobs:
           python3 scripts/scan_public_tree.py "$RUNNER_TEMP/public-tree"
 
   # The frontend gate (#495): the component library's Storybook suite, the
-  # dependency-free node tests, OpenSpec, and one smoke test that the server
-  # serves the built app.
+  # dependency-free node tests and OpenSpec. The served app is the app job's.
   frontend:
     name: frontend
     runs-on: ubuntu-latest
@@ -210,16 +209,64 @@ jobs:
           PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/ciq-playwright-browsers
           PLAYWRIGHT_MODULE: ${{ runner.temp }}/ciq-playwright/node_modules/playwright
         run: npm run test:ui
+
+  # The app against the engine (#475), in place of the desk's behaviour
+  # ledgers: the live adapter's contract tests and one browser smoke test,
+  # each run against the one permitted offline serve (a scratch copy of a
+  # synthetic QA store, warmed, --no-fetch, an empty token) that smoke_app
+  # boots after asking it for the app and an API answer. Hand-listed, never
+  # globbed.
+  app:
+    name: app contract + smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      PLAYWRIGHT_VERSION: "1.61.1"
+    steps:
+      - uses: actions/checkout@v5
+      - name: Set up Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install the frontend and build the app
+        run: npm ci && npm run build
+      - name: Restore the isolated browser runner and Chromium
+        id: browser-runner-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ runner.temp }}/ciq-playwright
+            ${{ runner.temp }}/ciq-playwright-browsers
+          key: ui-stories-${{ runner.os }}-node-22-playwright-${{ env.PLAYWRIGHT_VERSION }}-v1
+      - name: Install the isolated browser runner
+        if: steps.browser-runner-cache.outputs.cache-hit != 'true'
+        run: npm install --prefix "$RUNNER_TEMP/ciq-playwright" "playwright@$PLAYWRIGHT_VERSION"
+      - name: Install Chromium
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/ciq-playwright-browsers
+        run: npx --prefix "$RUNNER_TEMP/ciq-playwright" playwright install --with-deps chromium
       - name: Install uv
         uses: astral-sh/setup-uv@v6
         with:
           version: "0.11.25"
       - name: Sync deps (api extra, from the lockfile)
         run: uv sync --frozen --extra api
-      # Boots the one permitted offline serve (the synthetic QA store,
-      # --no-fetch, an empty token) and asks it for the app and an API answer.
-      - name: Smoke-test the served app
-        run: uv run python scripts/smoke_app.py
+      # The showcase: every tab's screen model from the live adapter, then the
+      # built app opening each of its five tabs in Chromium at one size.
+      - name: Contract-test the live adapter and smoke-test the app on the showcase
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/ciq-playwright-browsers
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/ciq-playwright/node_modules/playwright
+        run: >-
+          uv run python scripts/smoke_app.py --then
+          node --test frontend/ui/app/live.contract.test.mjs frontend/app.browser.test.mjs
+      # Two named case stores for what the showcase does not hold: a queued
+      # correction factor, and an active basal Trial in Changes.
+      - name: Contract-test the live adapter on a queued ISF and an active Trial
+        run: |
+          uv run python scripts/smoke_app.py --case isf-strengthen --then node --test frontend/ui/app/live.contract.test.mjs
+          uv run python scripts/smoke_app.py --case c3-trial --then node --test frontend/ui/app/live.contract.test.mjs
 
   docker-pr:
     name: build + smoke-test image
@@ -256,7 +303,7 @@ jobs:
 
   docker:
     name: build + push image
-    needs: [backend, docs, frontend]
+    needs: [backend, docs, frontend, app]
     # Only on a real push to main or of a version tag — never on PRs or forks.
     # A tag push runs the same full gates as main: no job above filters on the ref.
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))

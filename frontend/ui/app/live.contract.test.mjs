@@ -1,0 +1,166 @@
+// The live adapter's contract (#475): the engine's real answers, read from a
+// synthetic no-fetch serve through the app's one client and the live adapter,
+// produce the screen models each of the five tabs draws. No browser: the
+// adapter and the models are plain modules, so Node drives them directly.
+//
+// Run it against a serve that scripts/smoke_app.py boots and warms:
+//
+//   uv run python scripts/smoke_app.py --then node --test frontend/ui/app/live.contract.test.mjs
+//   uv run python scripts/smoke_app.py --case isf-strengthen --then node --test frontend/ui/app/live.contract.test.mjs
+//   uv run python scripts/smoke_app.py --case c3-trial --then node --test frontend/ui/app/live.contract.test.mjs
+//
+// smoke_app names the serve in HARMONIC_URL and the store in HARMONIC_CASE.
+// Every expected value is a literal read once from that store's served answers,
+// never derived from the adapter's output at assertion time. It fails closed:
+// without a serve it fails, and a store with no expectations here fails.
+//
+// The fast gate's glob (`frontend/**/*.test.js`) does not match this file,
+// because it needs a server.
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import http from 'node:http';
+import { registerHooks } from 'node:module';
+
+// The models are TypeScript imported without extensions, as Vite resolves
+// them; Node strips their types, and this resolves `./x` to `./x.ts`.
+registerHooks({
+  resolve(specifier, context, next) {
+    try {
+      return next(specifier, context);
+    } catch (error) {
+      if (error.code === 'ERR_MODULE_NOT_FOUND' && specifier.startsWith('.')) return next(`${specifier}.ts`, context);
+      throw error;
+    }
+  },
+});
+
+const BASE = process.env.HARMONIC_URL;
+const CASE = process.env.HARMONIC_CASE ?? 'showcase';
+
+/** The client's transport, over a fresh connection per request (no keep-alive
+ *  socket to race the server's idle close, #507). */
+function fetch(url, opts = {}) {
+  return new Promise((resolve, reject) => {
+    const request = http.request(`${BASE}${url}`, { method: opts.method ?? 'GET', headers: opts.headers, agent: false },
+      (response) => {
+        let body = '';
+        response.setEncoding('utf8');
+        response.on('data', (chunk) => { body += chunk; });
+        response.on('end', () => resolve({
+          ok: response.statusCode >= 200 && response.statusCode < 300,
+          status: response.statusCode,
+          statusText: response.statusMessage,
+          json: async () => JSON.parse(body),
+        }));
+      });
+    request.on('error', reject);
+    if (opts.body) request.write(opts.body);
+    request.end();
+  });
+}
+
+/** A model's output with every Sourced value replaced by the value it carries. */
+const values = (model) => JSON.parse(JSON.stringify(model ?? null,
+  (_, v) => (v && typeof v === 'object' && 'source' in v && 'value' in v ? v.value : v)));
+const near = (actual, expected, label) => assert.ok(Math.abs(actual - expected) < 1e-6, `${label}: ${actual} ≠ ${expected}`);
+
+const EXPECTED = {
+  showcase: {
+    queue: ['setting:basal_rate', 'pattern:highs_after_treating_lows'],
+    basal: { start: 180, end: 240, current: 0.6, suggested: 0.48, trial: false },
+    pattern: { key: 'highs_after_treating_lows', title: 'Highs after treating lows',
+      magnitude: { count: 1, denominator: 5, noun: 'lows' } },
+    isf: null,
+    change: { kind: 'none' },
+    overview: { tir: 98.6, previous: 100, isf: { current: 40, recommended: null, uncertain: true, nights: 14 } },
+    day: { latest: '2024-06-30', insulin: 19.56, firstLowBg: 48 },
+    settings: { days: 35, segments: [{ start: 0, basal: 0.6, isf: 40, carbRatio: 10 }] },
+  },
+  'isf-strengthen': {
+    queue: ['setting:isf'],
+    isf: { current: 40, recommended: 32, uncertain: false, nights: 29 },
+    change: { kind: 'none' },
+  },
+  'c3-trial': {
+    queue: ['setting:basal_rate'],
+    basal: { start: 60, end: 90, current: 0.6, suggested: 0.48, trial: false },
+    isf: null,
+    change: { kind: 'trial', title: 'Basal', slot: '03:00', before: 0.6, after: 0.54, maturing: false,
+      result: 'unclear', canEnd: true },
+  },
+};
+
+test(`the live adapter serves each tab's model from the ${CASE} store`, async (t) => {
+  assert.ok(BASE, 'HARMONIC_URL is unset: run this under scripts/smoke_app.py --then');
+  const expected = EXPECTED[CASE];
+  assert.ok(expected, `no expectations for the ${CASE} store`);
+
+  const { makeDeps } = await import('../../data.js');
+  const { createLive } = await import('./live.js');
+  const { serve } = await import('../answers.ts');
+  const queue = await import('../queue-model.ts');
+  const changes = await import('../changes-model.ts');
+  const overview = await import('../overview-model.ts');
+  const day = await import('../day-model.ts');
+  const settings = await import('../settings-model.ts');
+
+  const live = createLive({ client: makeDeps({ fetch }), glossary: [] });
+  serve(live.answers);
+
+  await t.test('Queue', async () => {
+    await live.readTab('queue');
+    const ranking = values(queue.ranking('wearer'));
+    assert.deepEqual(ranking.map((item) => item.subject), expected.queue);
+    if (expected.basal) {
+      const basal = ranking.find((item) => item.subject === 'setting:basal_rate').data;
+      for (const [key, value] of Object.entries(expected.basal)) assert.equal(basal[key], value, `basal ${key}`);
+    }
+    if (expected.pattern) {
+      const pattern = values(queue.pattern('wearer', expected.pattern.key));
+      assert.equal(pattern.title, expected.pattern.title);
+      assert.deepEqual(pattern.magnitude, expected.pattern.magnitude);
+    }
+    const isf = values(queue.isfSetting('wearer'));
+    if (expected.isf === null) assert.equal(isf, null);
+    else for (const [key, value] of Object.entries(expected.isf)) assert.equal(isf[key], value, `ISF ${key}`);
+  });
+
+  await t.test('Changes', async () => {
+    await live.readTab('changes');
+    const active = values(changes.change('wearer'));
+    const { before, after, ...rest } = expected.change;
+    for (const [key, value] of Object.entries(rest)) assert.equal(active[key], value, `change ${key}`);
+    if (before !== undefined) assert.deepEqual([active.change.before, active.change.after], [before, after]);
+  });
+
+  if (!expected.overview) return;
+
+  await t.test('Overview', async () => {
+    await live.readTab('overview');
+    const tir = values(overview.metric('wearer', '14', 'tir'));
+    assert.deepEqual([tir.value, tir.previous], [expected.overview.tir, expected.overview.previous]);
+    assert.ok(values(overview.profile('wearer', '14')).bins.length > 0, 'the glucose profile has bins');
+    const isf = values(overview.isfEstimate('wearer', '14'));
+    for (const [key, value] of Object.entries(expected.overview.isf)) assert.equal(isf[key], value, `ISF ${key}`);
+  });
+
+  await t.test('Day', async () => {
+    await live.readTab('day');
+    const latest = day.latestDay();
+    assert.equal(latest, expected.day.latest);
+    await live.readDay(latest);
+    near(values(day.insulinBar(latest)).total, expected.day.insulin, 'the day\'s insulin');
+    assert.deepEqual(values(day.insulinBar(latest)).parts.map((p) => p.key),
+      ['basal', 'meal', 'correction', 'control_iq_bolus']);
+    assert.ok(values(day.dayChartOf(latest)).cgm.length > 0, 'the day chart has readings');
+    assert.equal(values(day.lowPrompts())[0].bg, expected.day.firstLowBg);
+  });
+
+  await t.test('Settings', async () => {
+    await Promise.all(['status', 'account', 'pump'].map((part) => live.settings.read(part)));
+    const source = values(settings.tandemSource(null, live.accountState()));
+    assert.equal(source.account.configured, false);
+    assert.equal(source.data.days, expected.settings.days);
+    assert.deepEqual(values(settings.pumpProfile('wearer')).segments, expected.settings.segments);
+  });
+});

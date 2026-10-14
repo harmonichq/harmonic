@@ -19,3 +19,5 @@
 - [x] 6.1 The app replaces the desk as the only shell; the desk is preserved as v0.1.0
 - [x] 6.2 Specifications describe the five tabs, not the desk (ADR 495)
 - [ ] 6.3 The operator opens the app on real data before merge
+- [x] 6.4 Contract tests and one browser smoke replace the behaviour ledgers (#475, ADR 475)
+- [ ] 6.5 The PR's CI finishes within #475's budget, measured on its run

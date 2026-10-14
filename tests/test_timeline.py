@@ -470,8 +470,8 @@ class SiteChangeEndpointTest(unittest.TestCase):
                 # once the new set is in: still one site change.
                 _pump(15, "2026-06-11 18:00:00"),
                 _pump(16, "2026-06-11 18:12:00"),
-                # The next site change, days later, stays its own.
-                _pump(17, "2026-06-14 09:00:00"),
+                # The next site change, the next day, stays its own.
+                _pump(17, "2026-06-12 09:00:00"),
             ])
         from ciq_autotune.api import create_app
         self.client = TestClient(create_app(db_path=tmp.name, token=None,
@@ -483,13 +483,13 @@ class SiteChangeEndpointTest(unittest.TestCase):
         return r.json()["pump_events"]
 
     def test_one_site_change_per_fill_sequence(self):
-        events = self._events("2026-06-11T00:00:00", "2026-06-15T00:00:00")
+        events = self._events("2026-06-11T00:00:00", "2026-06-16T00:00:00")
         self.assertEqual(
             [(e["t"], e["event_type"]) for e in events],
             [("2026-06-11 09:00:00", "Site/Cartridge Change"),
              ("2026-06-11 12:00:00", "User Suspended"),
              ("2026-06-11 18:00:00", "Site/Cartridge Change"),
-             ("2026-06-14 09:00:00", "Site/Cartridge Change")])
+             ("2026-06-12 09:00:00", "Site/Cartridge Change")])
         # Each lasts from its first fill to its last, so a window excluded around
         # it still covers every fill.
         self.assertAlmostEqual(events[0]["duration_mins"], 8 / 60)

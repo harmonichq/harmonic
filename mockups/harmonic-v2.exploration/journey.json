@@ -300712,25 +300712,25 @@
           "evidence": [
             {
               "before": {
-                "n_readings": 3219,
-                "value": 98.8
+                "n_readings": 156,
+                "value": 100.0
               },
               "key": "tir",
               "role": "guardrail",
               "trial": {
-                "n_readings": 1584,
+                "n_readings": 72,
                 "value": 100.0
               }
             },
             {
               "before": {
-                "n_readings": 3219,
-                "value": 0.7
+                "n_readings": 156,
+                "value": 0.0
               },
               "key": "tbr",
               "role": "target",
               "trial": {
-                "n_readings": 1584,
+                "n_readings": 72,
                 "value": 0.0
               }
             },
@@ -301735,25 +301735,25 @@
           "evidence": [
             {
               "before": {
-                "n_readings": 3219,
-                "value": 98.8
+                "n_readings": 156,
+                "value": 100.0
               },
               "key": "tir",
               "role": "guardrail",
               "trial": {
-                "n_readings": 4032,
+                "n_readings": 168,
                 "value": 100.0
               }
             },
             {
               "before": {
-                "n_readings": 3219,
-                "value": 0.7
+                "n_readings": 156,
+                "value": 0.0
               },
               "key": "tbr",
               "role": "target",
               "trial": {
-                "n_readings": 4032,
+                "n_readings": 168,
                 "value": 0.0
               }
             },

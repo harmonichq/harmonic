@@ -11,3 +11,10 @@
 - [x] 2.1 Fail-first tests through `/api/verify/trials` on stores built from settings reads
 - [x] 2.2 Revise the #581 and Plan-confirmation tests whose premises the decision reverses
 - [x] 2.3 ADR 500 in `design.md`; spec deltas for outcomes and plan
+
+## 3. Basal block measurement (#506)
+
+- [x] 3.1 A targeted basal pump change carries its wrap-aware block; its id stays slotted
+- [x] 3.2 Comparison outcomes, readiness, setting history and Trial evidence read the whole block
+- [x] 3.3 A basal record saved without its block is read through its own two reads, never rewritten
+- [x] 3.4 Fail-first tests through `/api/verify/trials`; ADR 506 and the outcomes delta

@@ -10,7 +10,7 @@ moves no value, SHALL NOT be a pump change.
 A pump change confined to one setting SHALL be one targeted Trial per time block
 it moved, each block's before and after read off the two reads; a block over the
 whole day SHALL carry no slot. A carb-ratio Trial SHALL own its block's arc and
-member starts as its identity and cohort. A pump change of two or more settings,
+member starts, and a basal Trial its block's arc, as its identity and cohort. A pump change of two or more settings,
 or one whose outgoing profile the later read no longer holds, SHALL be one
 whole-profile Trial. Every such Trial SHALL be dated at the later read. An applied
 Plan SHALL NOT be required; an applied Plan group that uniquely matches a
@@ -86,6 +86,47 @@ SHALL close both. No analyzer's staging verdict SHALL change.
   without the read that shows it
 - **WHEN** that read arrives and ingestion reconciliation runs
 - **THEN** no further record is added
+
+### Requirement: A basal Trial is measured across the whole block its change moved
+
+A basal Trial whose pump change moved a block shorter than the whole day SHALL
+read every comparison outcome (time in range, time below range, time above
+range, Rest windows with a low), its readiness count of qualifying clean nights
+per slot, and the setting history bounding its periods over every slot of that
+block, across midnight when the block wraps, and not over its starting slot
+alone. Its served Trial evidence SHALL read time in range and time below range
+over the block's readings. Its id SHALL be the slotted id a basal pump change
+already had. A retained basal record saved at a pump change without a block
+SHALL keep its id, SHALL NOT be rewritten, and SHALL be measured over the block
+the two settings reads either side of its own change show moving from its slot.
+A basal Trial's maturity and meal context SHALL stay unchanged. A basal change
+seen only in delivery history, a whole-day change and a whole-profile Trial
+SHALL be read as before.
+
+#### Scenario: Lows late in the block are read into the target metric
+
+- **GIVEN** a synthetic store whose two reads lower the 02:00–05:00 basal rate,
+  with readings low from 04:00 to 05:00 every night before the change and none
+  after
+- **WHEN** the Trial's comparison is read
+- **THEN** time below range reads 33.3% before and 0% after, over every reading
+  from 02:00 to 05:00
+- **AND** readiness counts the six slots from 02:00 to 04:30
+
+#### Scenario: A block across midnight is read on both sides of it
+
+- **GIVEN** two reads that lower the 22:00–02:00 basal rate, with readings low
+  from 01:00 to 02:00 every night before the change
+- **WHEN** the Trial's comparison is read
+- **THEN** time below range reads 25% before, and readiness counts the slots
+  from 22:00 to 01:30
+
+#### Scenario: A record saved without its block keeps its id and is read across it
+
+- **GIVEN** a retained basal record at a pump change that carries no block
+- **WHEN** a reconcile runs and the Trial's comparison is read
+- **THEN** the record keeps its id and carries no block, and its comparison
+  reads the block its two reads show moving
 
 ## MODIFIED Requirements
 

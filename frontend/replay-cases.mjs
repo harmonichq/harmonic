@@ -74,6 +74,8 @@ export function createCaseServer({ directory, repo, baseURL = 'http://127.0.0.1:
       try { await boundedWait(exited, 'synthetic server shutdown', 10000); }
       catch { process.kill(-child.pid, 'SIGKILL'); await boundedWait(exited, 'synthetic server forced shutdown', 5000); }
     }
+    // A server that died mid-story says so here, not only by a failed read.
+    if (child && log) await log.write(`# synthetic server exit code=${child.exitCode} signal=${child.signalCode}\n`);
     child = null;
     if (log) { await log.close(); log = null; }
   }
@@ -91,11 +93,16 @@ export function createCaseServer({ directory, repo, baseURL = 'http://127.0.0.1:
       // own copy; preference-write reconciliation remains exercised by S16.
       await command(['python', '-c',
         'import sys; from ciq_autotune.store import Store; from ciq_autotune.watched_change import reconcile_ingested_follow_up\nwith Store.open(sys.argv[1]) as store: reconcile_ingested_follow_up(store)', source]);
+      // Warm the case's derived sidecar once, as a running install's would be
+      // (#507): a cold arrival on the showcase store outran the opener's bound
+      // on a slow runner. Every story still starts from its own fresh copy.
+      await command(['python', 'frontend/replay-warm.py', source]);
       generated.set(name, source);
     }
     for (const suffix of ['', '-wal', '-shm', '.derived.sqlite', '.derived.sqlite-wal', '.derived.sqlite-shm'])
       await rm(`${db}${suffix}`, { force: true });
     await copyFile(source, db);
+    await copyFile(`${source}.derived.sqlite`, `${db}.derived.sqlite`);
     process.stdout.write(`# case-copy ${id} case=${name} milliseconds=${(performance.now() - started).toFixed(3)}\n`);
     return { caseName: name, db };
   }

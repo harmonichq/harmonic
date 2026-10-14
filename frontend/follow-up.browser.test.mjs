@@ -4,7 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
-import { mkdtemp } from 'node:fs/promises';
+import { mkdir, mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { C3_STORIES } from './c3.replay.mjs';
@@ -13,7 +13,10 @@ import { boundedWait } from './c2.replay.mjs';
 if (!process.env.PLAYWRIGHT_MODULE) throw new Error('PLAYWRIGHT_MODULE is required; the c3 gate cannot skip browser execution.');
 for (const viewport of ['1280x720', '1440x900']) {
   test(`Trial and Pattern Focus journeys at ${viewport}`, { timeout: 1200000 }, async () => {
-    const directory = await mkdtemp(join(tmpdir(), 'harmonic-c3-browser-'));
+    // CI names CASE_STORE_ROOT so each story's server log is retained (#507).
+    const root = process.env.CASE_STORE_ROOT || tmpdir();
+    await mkdir(root, { recursive: true });
+    const directory = await mkdtemp(join(root, `harmonic-c3-browser-${viewport}-`));
     const child = spawn(process.execPath, ['frontend/desk-behavior.replay.mjs'], {
       detached: true, stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env,
         TARGET: 'app', VIEWPORT: viewport, BASE_URL: 'http://127.0.0.1:8765',

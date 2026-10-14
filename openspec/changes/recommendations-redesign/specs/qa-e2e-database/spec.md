@@ -1,3 +1,76 @@
+## ADDED Requirements
+
+### Requirement: Every QA database consumer reads the showcase or an emitted case store
+
+Every executable consumer of a synthetic QA database SHALL use the committed QA
+showcase or a named case store that `scripts/gen_qa_e2e_db.py --case` emits. The consumers are:
+
+- the CI drift step (`scripts/gen_qa_e2e_db.py --check`), which SHALL remain
+  fail-closed;
+- the served-app smoke test (`scripts/smoke_app.py`), the one database-backed
+  serve in CI. It SHALL copy the committed showcase to a scratch path and serve
+  only that copy with `harmonic serve --no-fetch --token ''`, never the
+  committed path; the image's smoke step SHALL likewise serve a copy;
+- the route-level test, which SHALL copy the committed showcase into a temporary
+  path, select `finding:over_treated_low`, and pin summary `{"claimed": 1,
+  "denominator": 5, "noun": "lows"}`, verdict-count sum `5` and occurrence
+  count `5`;
+- the public-link pin with its test, which allow the showcase's path only in the
+  agent instructions, and the public binary-policy test, which keeps the
+  `.sqlite` binary out of the public tree;
+- the agent instructions and the `harmonic-nofetch` launch entry, whose
+  documented local serve SHALL stay tokenless, isolated to a scratch copy, and
+  `--no-fetch`.
+
+The component library's Storybook suite answers from generated fixtures and is
+not a database consumer. #416 deleted the Diagnose workstation behavior ledger and
+the event-comparison, comparison-support and v1 Trial behavior replays, and the
+swap to the five-tab app (#495) deleted the desk behavior-ledger replay and the
+Trial and Pattern Focus browser suite. None of them remains a consumer.
+
+The QA case tests SHALL keep the public production-composition proof: each case
+runs through the production analysis, exposures, scenarios and findings
+projection, and an I:C history case is among them.
+`tests/test_gen_qa_e2e_db.py` SHALL assert that the generator's output leaves no
+adjacent `-wal` or `-shm` sidecar, and that `store.get_credentials()` is `None` on
+the committed showcase.
+
+The retired revise-E2E store SHALL stay retired. `scripts/gen_revise_e2e_db.py`,
+`tests/test_gen_revise_e2e_db.py` and `mockups/revise-e2e.synthetic/` stay absent.
+`tests/test_revise_e2e_retired.py` SHALL fail closed on any retired spelling in
+its executable surface: `AGENTS.md`, every file under `.claude`, `.github`,
+`scripts`, `tests` and `frontend`, and the executable `.mjs` files under
+`mockups/`. It SHALL separately require the old generator file and fixture
+directory to be absent. `docs/`, `openspec/` and the rest of `mockups/` are
+historical records outside that surface.
+
+#### Scenario: Every direct consumer has one QA successor
+
+- **WHEN** the executable consumers above are inspected
+- **THEN** each names the committed QA showcase or a case store emitted by
+  `scripts/gen_qa_e2e_db.py --case`
+- **AND** the Storybook suite reads no database
+
+#### Scenario: The smoke test serves a copy, never the committed store
+
+- **WHEN** the served-app smoke test boots its server
+- **THEN** that server reads a scratch copy of the committed showcase with
+  `--no-fetch` and an empty token, and never the committed showcase path
+
+#### Scenario: Retirement is evidence-based
+
+- **WHEN** `tests/test_revise_e2e_retired.py` runs against its executable surface
+- **THEN** any retired spelling produces a failure
+- **AND** the test separately requires the old generator and fixture directory to
+  be absent
+
+#### Scenario: The showcase and active record do not move
+
+- **WHEN** `scripts/gen_qa_e2e_db.py --check` runs
+- **THEN** the committed showcase matches what its generator produces
+- **AND** the #319 migration's decision record stays in the archived
+  `qa-e2e-coverage-eras` change, unedited
+
 ## MODIFIED Requirements
 
 ### Requirement: Behavioral eras prove occurrence states and verdict denominators exactly
@@ -149,3 +222,9 @@ suite as the projection input and the recorded 62.93 s whole-pytest baseline /
 **Reason:** ADR 499 cuts this from the engine at the operator's direction ("Drop these from the engine."). The dedicated eating-sequence payload, its generator and its twelve QA recipes are deleted.
 
 **Migration:** None; issue #501 tracks the replacement report card.
+
+### Requirement: Remaining consumers migrate before revise-E2E retires
+
+**Reason:** The swap to the five-tab app (#495, ADR 495) retired the desk scenarios this requirement carried; it is restated without them as "Every QA database consumer reads the showcase or an emitted case store".
+
+**Migration:** None; the server behavior it states is unchanged.

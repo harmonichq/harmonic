@@ -50,7 +50,7 @@ uv run python -m pytest                    # backend, stdlib unittest over the b
 node --test 'frontend/**/*.test.js'        # the dependency-free frontend tests
 npm run test:ui                            # the component library's Storybook suite
 uv run python scripts/smoke_app.py         # the server serves the built app and an API answer
-npx --yes @fission-ai/openspec@1 validate --all --strict # OpenSpec requirements and changes
+npx --yes @fission-ai/openspec@1.14.0 validate --all --strict # OpenSpec requirements and changes
 python3 scripts/check_adr_numbers.py       # decision-record naming guard
 python3 scripts/check_owned_identifiers.py # product-name guard
 python3 scripts/check_public_allowlist.py  # publishable-tree guard
@@ -140,7 +140,7 @@ your own database — never a published one, and never a live pull.**
   work.** Normal startup fires a live OAuth login against the vendor (possibly
   2FA) and pulls real data; it cannot be exercised headless. There is exactly
   one permitted offline serve: the QA copy-then-serve command below for UI
-  design and replay. `--no-fetch` and the empty token are mandatory. The QA
+  design and the smoke test. `--no-fetch` and the empty token are mandatory. The QA
   database is generated entirely by `scripts/gen_qa_e2e_db.py`:
 
   ```sh
@@ -214,8 +214,9 @@ including for isolated chart layout or interaction.
 - `ciq_autotune/result_cache.py` — the in-process cache the heavy read
   endpoints answer from.
 - `ciq_autotune/api.py` — the HTTP API (`api` extra), which also serves the one
-  built shell on the same port: `frontend/dist/index.html` at `/` and its three
-  page paths, with its fingerprinted assets under `/assets`. The non-API route
+  built shell on the same port: `frontend/dist/index.html` at `/` (the Queue)
+  and the other four tabs' page paths, with its fingerprinted assets under
+  `/assets`. The non-API route
   set is closed — every served page path is named, and any other path is a 404.
 - `frontend/` — the one Vite source root: the app, built with `base: '/'` and
   served by the Python process (ADR 416, #495). It is the component library in
@@ -229,13 +230,13 @@ including for isolated chart layout or interaction.
   (`ui/app/live.js`). Only the stories import the fixtures, so the built app
   never carries them. The library's material is committed source
   (`material.css`, `fonts/`).
-- `openspec/specs/` — twelve capability specifications: what each part of the
+- `openspec/specs/` — fifteen capability specifications: what each part of the
   system is required to do, and why. The public "why" lives here.
 
 **The result cache is coarse, and every write path must bump it.** Any write
 calls `cache.bump()`; the hourly fetch bumps through `run_fetch_loop`'s
-`on_write`, which then re-warms the fixed initial Diagnose shapes in the loop's
-worker thread, so the first visitor after a fetch lands warm. A new write
+`on_write`, which then re-warms a fixed roster of read shapes — the analysis and
+each of the Overview's windows among them — in the loop's worker thread, so the first visitor after a fetch lands warm. A new write
 endpoint that does not bump leaves a stale cache. There is exactly one
 proven-safe exception — saving a Plan draft does not bump, because the draft is
 UX-only and no cached compute reads it. Applying the plan does bump. Do not add

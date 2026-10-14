@@ -658,3 +658,15 @@ carb-ratio analyzer's meal and run ledgers SHALL be unchanged.
 **Reason:** ADR 499 cuts behavior that some of this requirement's scenarios describe ("Drop these from the engine."). Its surviving behavior is unchanged and is restated without those scenarios as "The findings queue serves a single urgency ranking": a MODIFIED block cannot drop a scenario, so the requirement takes a new header.
 
 **Migration:** Read "The findings queue serves a single urgency ranking", ADDED in this change.
+
+### Requirement: The browser-gate findings mirror serves the server's scoped Pattern list or fails
+
+**Reason:** The desk's browser gates and the fixture-only JS findings mirror they read retired with the swap to the five-tab app (#495, ADR 495).
+
+**Migration:** The desk is preserved as release v0.1.0. The five-tab app is specified in the surfaces capability.
+
+### Requirement: The browser-gate test desk projects the server's own inputs
+
+**Reason:** The desk suite this projected for retired with the swap to the five-tab app (#495, ADR 495).
+
+**Migration:** The desk is preserved as release v0.1.0. The five-tab app is specified in the surfaces capability.

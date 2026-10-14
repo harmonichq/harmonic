@@ -10,7 +10,12 @@
 - [x] 3.2 Components implemented and approved in batches
 
 ## 4. Compose
-- [ ] 4.1 Each screen composed from the library as Storybook screen stories and locked (ADR 481 amendment)
+- [x] 4.1 Each screen composed from the library as Storybook screen stories and locked (ADR 481 amendment)
 
 ## 5. Build
 - [ ] 5.1 Screens assembled from the library against real data (separate ticket)
+
+## 6. Swap (#495)
+- [x] 6.1 The app replaces the desk as the only shell; the desk is preserved as v0.1.0
+- [x] 6.2 Specifications describe the five tabs, not the desk (ADR 495)
+- [ ] 6.3 The operator opens the app on real data before merge

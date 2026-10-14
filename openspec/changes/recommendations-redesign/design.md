@@ -486,3 +486,42 @@ slowest case 20–27 s, over the 90 s and 15 s limits. Connor accepted the cost:
 "As the price of a real ISF ... it's fine. We can, the tests can take longer. If
 I get pissed off about that later, we can iterate." The limits in AGENTS.md are
 now 150 s and 30 s.
+
+## ADR 495 — The five-tab app replaces the desk, and the specifications follow it
+
+**Context.** The swap (#495) makes the five-tab app (Queue, Changes, Overview, Day,
+Settings) the only browser shell and deletes the desk. The desk is preserved as
+release v0.1.0. The surfaces specification still described the desk as the
+shipped surface: 131 requirements, nearly all about Diagnose, its rail and stage,
+the watch dock, the Episode Log and the desk's Changes.
+
+**Decision.**
+
+1. *Surfaces specify the five tabs.* This change's surfaces delta adds one
+   requirement per tab, the shell's five page paths and the per-screen error
+   rule, each drawn from the lock in `docs/design/recommendations-redesign.md`.
+   It removes every desk requirement. It keeps, unchanged, the ten that are
+   server read contracts or still hold of the app (server-owned projections, the
+   one dark theme, served headlines and their authorship, case-file denominators,
+   the carb-ratio sentence register, setting labels, recorded Plan subject names,
+   the trials roster read), and the three server-read requirements this change
+   already modified. The Purpose paragraph, which still names Diagnose, Changes
+   and Day, is rewritten for the five tabs when this change is archived.
+2. *Other capabilities drop only their desk clauses.* The warm pass is described
+   by its roster rather than "the initial Diagnose load" (http-api). The QA
+   showcase's consumers are the smoke test and the image's smoke step, since the
+   desk ledger replay and its Trial and Pattern Focus suite are gone
+   (qa-e2e-database). The browser-gate findings mirror and test desk are removed
+   (behavioral-layer). The Plan keeps its server rules and loses its staging-control
+   scenarios; the app stages no Plan (plan). A requirement losing a scenario is
+   restated under a new title, because a MODIFIED block cannot drop one.
+3. *Desk-only harness records retire with the desk.* The warm-arrival change (#507,
+   ADR 507) only made desk ledger stories arrive warm; its replay helper, test and
+   change are deleted, since nothing on this branch runs that replay. The
+   carb-ratio block-evidence change keeps its engine and API deltas but drops its
+   surfaces delta, which described desk tiles the app does not draw.
+
+**Consequences.** No engine, API or safety behavior changes. Prose mentions of
+Diagnose that name an endpoint path or the fixture set
+(`/api/diagnose/...`, `mockups/diagnose-workstation.synthetic`) stay, since
+those are identifiers, not the shipped surface.

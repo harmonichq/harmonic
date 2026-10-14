@@ -17,134 +17,152 @@ value the engine does not serve.
 - **THEN** the Settings tab carries an alert badge, Settings shows the failure,
   and no other tab shows a banner, toast or strip about it
 
-### Requirement: The Findings band counts distinct Findings, not rows
+### Requirement: The app is the only shell, built ahead of time and served at its five tab paths
 
-The Findings band lists the fired and claimed anchors, each belonging to an
-episode attributed to a Lever; which anchors it holds SHALL be unchanged. The
-Findings caption SHALL state the number of distinct Findings those anchors'
-episodes belong to: one per distinct served Lever among the band's rows,
-whether or not that Lever's episode has a fired row. Two episodes attributed to
-the same Lever SHALL count once, as one Finding, in CONTEXT.md's terms and as
-Diagnose counts it. When the band holds claimed rows, the caption SHALL name
-their count separately and SHALL never add it into the Finding number. Rows
-SHALL keep their chronological order.
+Harmonic SHALL have exactly one browser shell, the five-tab app (#495). It is
+built ahead of time, loads with no login screen, and then makes
+bearer-token-gated API calls to load data. The packaged runtime SHALL require no
+Node runtime and no CDN at run time.
 
-#### Scenario: One Finding and one claimed anchor
+The server SHALL serve the app at exactly the page paths `/` (the Queue),
+`/changes`, `/overview`, `/day` and `/settings`, and its fingerprinted built
+assets beneath `/assets/`. Programmatic interfaces live below `/api`. The
+non-API route set SHALL be closed: every served page path is named explicitly,
+and every other path SHALL answer 404 rather than the shell. No retired address
+is served or redirected: the desk's `/diagnose`, a `/v2/...` path, `/queue`, and
+a retired v1 page path such as `/plan`, `/verify` or `/guide` all answer 404. A
+fragment carries no route.
 
-- **GIVEN** a served day with one attributed episode holding one fired anchor
-  and one claimed anchor
-- **WHEN** the Episode Log renders
-- **THEN** the caption reads `Findings · 1` and names 1 claimed anchor
+The browser router and the Python route policy SHALL name the same five tabs.
 
-#### Scenario: Two episodes of one Lever are one Finding
+#### Scenario: The app answers at its five tab paths
 
-- **GIVEN** a served day with two episodes attributed to the same Lever, each
-  holding one fired anchor
-- **WHEN** the Episode Log renders
-- **THEN** the caption reads `Findings · 1`
+- **WHEN** the built app is started against a synthetic database
+- **THEN** `/`, `/changes`, `/overview`, `/day` and `/settings` each answer the
+  app shell
+- **AND** every asset the shell names is served beneath `/assets/`
+- **AND** the built output references no CDN host
 
-### Requirement: A Focus prints its watched behavior by its served name
+#### Scenario: A retired address is not served and is not redirected
 
-The Observed behavior row of the active Focus and of a Focus record, and the
-"What this Focus watches" fallback used when the retained context carries no
-explanation, SHALL print the Focus read's served `lever_title`. The desk SHALL
-keep no lever name table. When the served name is null, the row SHALL read
-"Watched behavior", the fallback paragraph SHALL be omitted, and the lever key
-SHALL NOT print.
+- **GIVEN** an address the app no longer has, such as `/diagnose`, `/queue`,
+  `/v2/`, `/plan`, `/verify` or `/guide`
+- **WHEN** that address is requested
+- **THEN** the server answers 404, not the shell and not a redirect
 
-#### Scenario: A watched habit reads as its name
+#### Scenario: A missing build fails loudly
 
-- **GIVEN** an active Focus whose served lever is `carb_undercount` and whose
-  served `lever_title` is "Carb undercount"
-- **WHEN** the Focus renders
-- **THEN** its Observed behavior row names "Carb undercount"
-- **AND** the row contains no underscore token
+- **WHEN** the app's build output is absent
+- **THEN** each page path reports that the frontend build is missing and names
+  the build command, rather than serving a blank or partial shell
+- **AND** the API remains reachable
 
-#### Scenario: The behavior row agrees with the Focus's own name
+#### Scenario: The route set cannot grow silently
 
-- **GIVEN** a Focus pinned on Correction stacking alone, whose served title and
-  served `lever_title` are both "Correction stacking"
-- **WHEN** its Observed behavior table renders
-- **THEN** the row names "Correction stacking"
-- **AND** "Stacked corrections" does not appear
+- **WHEN** the closed-set route assertion runs
+- **THEN** it names the complete non-API route set, so a route cannot be added or
+  kept without updating it
 
-#### Scenario: An unnamed behavior prints no key
+### Requirement: Queue ranks what guidance admits, and each item can be pinned or snoozed
 
-- **GIVEN** a Focus record whose served `lever_title` is null and whose saved
-  comparison carries Observed behavior rows
-- **WHEN** the record renders
-- **THEN** the row reads "Watched behavior" and the lever key does not appear
+The Queue SHALL list exactly the candidates the guidance read admits and the
+person has not snoozed, by served priority, highest first, an exact tie broken by
+subject. It SHALL re-derive no admission, floor, threshold or direction. A
+Pattern card SHALL offer Pin, which starts a Focus on its habit. A Setting card
+SHALL show the current value, the engine's estimate, its range, its count and its
+evidence chart; a queued correction factor SHALL use the Overview's ISF estimate
+card in the Queue's frame. Every item SHALL offer Snooze, which sets it aside
+until fourteen days after the engine's served decision time, with an Undo; the
+Snoozed list SHALL show each snoozed item with its until date and a Restore, and
+SHALL be reachable only while at least one item is snoozed.
 
-### Requirement: A setting value in Changes prints in the wearer's user form
+#### Scenario: A held setting is not queued
 
-Every Changes line that prints a setting value SHALL print it through the
-desk's one setting-value formatter, in its CONTEXT.md user form:
+- **GIVEN** a store whose correction factor the analyzer holds
+- **WHEN** the Queue renders
+- **THEN** no correction-factor card appears in the Queue
 
-| Setting | User form |
-|---|---|
-| Correction factor | "1 U : <value> mg/dL" |
-| Carb ratio | "<value> g/U" |
-| Basal | "<value> U/h" |
+#### Scenario: Snoozing an item moves it to the Snoozed list
 
-The Action figure of a concern whose action carries setting instructions SHALL
-print `<direction> to <value in its user form>`. This covers a setting concern
-and a Pattern carrying its chosen setting member's instructions. The form SHALL
-come from the instruction's own parameter, never from the concern's served
-`units`.
+- **WHEN** the person snoozes a Queue item
+- **THEN** it leaves the Queue, a bar offers Undo, and the Snoozed list shows it
+  with its until date and Restore
 
-The Plan's "What was known" SHALL:
+### Requirement: Changes shows the active change and the last finished one
 
-- name each recorded subject by its served name, and print nothing for a
-  subject without one;
-- never print an identifier;
-- print each recorded setting in its user form, using the parameter of the
-  recorded instruction it was captured from;
-- print the recorded explanation as recorded.
+Changes SHALL show the active change, one Trial or one Focus, and the last
+finished change as one row that expands in place. A change still collecting its
+14 days of after data SHALL read Maturing; a matured change SHALL carry its served
+result, Better, Worse or Unclear. End SHALL be a compact secondary action
+followed by a confirm sheet: a Focus can be ended at any time, and a Trial once it
+has matured. The app SHALL send no free-text conclusion. Changes SHALL keep no
+history archive.
 
-No Changes line SHALL print "mg/dL/U". Served `units` SHALL be unchanged.
+#### Scenario: A maturing Trial cannot be ended from the app
 
-#### Scenario: A Pattern carrying a carb-ratio instruction prints its unit
+- **GIVEN** an active Trial that has not matured
+- **WHEN** Changes renders
+- **THEN** it reads Maturing and offers no End
 
-- **GIVEN** a served Pattern concern whose action carries a carb-ratio instruction to lower to 9 and whose `units` are null
-- **WHEN** Changes renders it
-- **THEN** its Action figure reads "lower to 9 g/U"
+### Requirement: Overview reports the standard metrics over a chosen window
 
-#### Scenario: A correction-factor concern reads in the wearer's words
+Overview SHALL show, for the selected 14, 30 or 90 days, the selected window's
+date span, In range and the standard CGM metrics against the period of the same
+length before, one time-in-ranges bar, and the glucose profile. Below 54 and
+Above 250 SHALL read as subsets of Below 70 and Above 180. Below the summary it
+SHALL show the ISF estimate whatever the engine decides, drawing current →
+recommended only when the analyzer's ISF staging verdict supports the change.
+Overview SHALL carry nothing to act on.
 
-- **GIVEN** a served correction-factor setting concern titled "Correction factor" with its instructions
-- **WHEN** Changes renders its frame
-- **THEN** the frame names it "Correction factor"
-- **AND** the frame contains neither "ISF" nor "mg/dL/U"
+#### Scenario: A held ISF shows its estimate without a recommendation
 
-#### Scenario: What was known names the subject and prints the value insulin first
+- **GIVEN** a store whose correction factor the analyzer holds
+- **WHEN** Overview renders
+- **THEN** the ISF estimate shows its estimate and range, and no current →
+  recommended
 
-- **GIVEN** a recorded decision context with subject "setting:isf" served as "Correction factor", and a setting captured as 32 "mg/dL/U" from a correction-factor instruction
-- **WHEN** the Plan shows what was known
-- **THEN** it names "Correction factor" and the change reads "1 U : 32 mg/dL"
-- **AND** it contains no "setting:" text
-- **AND** the recorded explanation prints as recorded
+### Requirement: Day shows one day with its insulin, carb logging and Prompts
+
+Day SHALL show one day's glucose, the day's insulin as one stacked bar of Basal,
+Meal, Correction and Control-IQ, and the day chart, with a day navigator that
+drops down a month from the header's date. It SHALL offer Log carbs, which records
+carbs eaten without a bolus. While Prompts are unanswered, Day SHALL show them one
+at a time with Yes, No, False low and Not sure, and the Day tab SHALL carry their
+count as a badge. Day SHALL show no aggregate beyond that day.
+
+#### Scenario: Unanswered Prompts are counted on the tab
+
+- **GIVEN** two unanswered Prompts
+- **WHEN** the app renders
+- **THEN** the Day tab carries a count badge of 2
+
+### Requirement: Settings holds the sync state, the pump profile and the glossary
+
+Settings SHALL show three rows: Tandem Source with its inline sync state, Pump
+profile and Glossary, each opening a drill-down. Tandem Source SHALL show the sync
+and account state and an Update form for credentials. Pump profile SHALL show the
+active profile's segments read-only. The Glossary SHALL list only the terms the
+app prints.
+
+#### Scenario: The pump profile is read-only
+
+- **WHEN** the person opens Pump profile
+- **THEN** it shows the active profile's segments with no control that changes them
+
+### Requirement: A failed read or write is shown where it happened
+
+When a read endpoint is unavailable, the affected screen SHALL show its title,
+the label "Unavailable" and a Retry, and every other tab SHALL keep working. When
+a write fails (pin, snooze, answer, log), the control SHALL return to its prior
+state and a transient bar SHALL show "Not saved" with Retry.
+
+#### Scenario: An unavailable read affects only its screen
+
+- **GIVEN** the outcomes read answers 503
+- **WHEN** the person opens Overview and then Queue
+- **THEN** Overview shows Unavailable and Retry, and Queue renders its items
 
 ## MODIFIED Requirements
-
-### Requirement: Episode Log rows name the attributed Lever by its served name
-
-An Episode Log row whose episode carries a Lever SHALL end with that episode's
-served `lever_title`, for every Lever in the closed set. A row whose episode
-carries no Lever SHALL name none. The Day desk SHALL keep no Lever name table of
-its own. Which Lever an episode carries SHALL be unchanged.
-
-#### Scenario: Every attributed row reads as words
-
-- **GIVEN** a served day with episodes attributed to a missed meal, a late bolus, an over-treated low and correction stacking
-- **WHEN** the Episode Log renders
-- **THEN** each of those rows ends with its episode's served `lever_title`
-- **AND** no row contains an underscore token
-
-#### Scenario: An unattributed row names no Lever
-
-- **GIVEN** a served day with an episode that carries no Lever
-- **WHEN** the Episode Log renders
-- **THEN** that episode's rows end without a Lever name
 
 ### Requirement: The server serves a name beside every identifier the desk prints
 
@@ -178,24 +196,6 @@ set-aside comparison state.
 - **AND** every member with an action carries its `action_title`
 - **AND** a Pattern whose action is identified carries that action's `title`
 - **AND** each Pattern's set-aside baseline equals the baseline of the same candidate with its names removed
-
-### Requirement: Every ranked rail row draws one mini instrument
-
-Every ranked row's mini in the rail SHALL be the same instrument: the
-matched cohort's label with its count at the left, `TYPICAL` with the
-denominator at the right, the event named on the anchor line, the target band
-dashed, and the rail's cohort palette. No mini SHALL draw in the comparison blue.
-A row whose evidence cannot supply a cohort response SHALL keep its existing
-honest unavailable state rather than a second instrument.
-
-#### Scenario: A Cause mini matches a Pattern mini
-
-- **GIVEN** a synthetic window holding a ranked Pattern and a ranked event-comparison
-  Cause
-- **WHEN** their minis render
-- **THEN** each carries the cohort label and count, the typical denominator, the
-  named anchor and the dashed target band
-- **AND** every series colour resolves to a rail cohort token
 
 ### Requirement: The Focus read names the watched behavior
 
@@ -259,40 +259,6 @@ SHALL enter the set-aside comparison state.
 - **WHEN** the guidance read serves it
 - **THEN** the Pattern is served present, not absent, with its roster title and remains set aside
 
-### Requirement: The v2 desk preserves readable cross-destination evidence chrome
-
-The v2 desk SHALL keep the Diagnose reference rail width in Changes and Day,
-including loading and settings-table states. At both supported desktop widths,
-expanded rosters and full labels SHALL not collide. All charts and Close SHALL put their labels to the left of their icons. Those
-icons and chart expansion controls SHALL stay top-right, including in tall
-headers; a taller title SHALL NOT vertically center the control. Clock and
-chart controls SHALL use the existing compact density tokens while retaining
-accessible interaction. The desk SHALL retain the carried basal legend, verdict
-paint and stage-change accent; a thin basal slot SHALL open its own graph. A
-count-free skeleton SHALL appear while a destination loads, and a retained
-reassessment SHALL name its on-demand loading work.
-
-#### Scenario: Desk geometry survives dense evidence
-
-- **GIVEN** synthetic long-label expanded Pattern members, a tall chart header,
-  thin basal evidence and loading Changes/Day/settings-table states
-- **WHEN** the desk is rendered at each supported desktop width
-- **THEN** labels do not collide, the rail remains at the Diagnose reference,
-  header label precedes a top-right action icon, and compact controls remain
-  operable
-- **AND** basal legend/verdict/accent and named loading remain visible
-
-#### Scenario: Selected detail reaches the chart
-
-- **GIVEN** an ordinary event-comparison or Pattern case file
-  with served selected glucose and evidence markers
-- **WHEN** the reader selects its occurrence through the roster
-- **THEN** that chart displays the selected trace and supported served markers
-- **AND** changing occurrence replaces the selected evidence rather than leaving
-  the old trace or only changing the row highlight
-- **AND** a missing anchor glucose does not suppress other available detail or
-  imply that served CGM is missing
-
 ## REMOVED Requirements
 
 ### Requirement: Eating-sequence charts reuse the shipped tile and served cohort values
@@ -354,3 +320,651 @@ reassessment SHALL name its on-demand loading work.
 **Reason:** ADR 499 cuts behavior that some of this requirement's scenarios describe ("Drop these from the engine."). Its surviving behavior is unchanged and is restated without those scenarios as "A setting value in Changes prints in the wearer's user form": a MODIFIED block cannot drop a scenario, so the requirement takes a new header.
 
 **Migration:** Read "A setting value in Changes prints in the wearer's user form", ADDED in this change.
+
+### Requirement: Diagnose surface asks "what tuning moves are available now?"
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: Diagnose presents retired I:C regimes as non-actionable Watching evidence
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: Diagnose renders Finding case files without browser-owned policy.
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: Day surface asks "what happened on this day?"
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: Diagnose separates clock-window selection from basal verdict state and keeps chart evidence legible
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: Diagnose clock-window gestures work with direct tablet touch
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: Dark Diagnose material hierarchy keeps advisory evidence distinct
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: The basal evidence tile states its finding and draws each night as an independent delta
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: Every settings evidence chart opens the parameter panel its queue row opens
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: Finding occurrence lists share one roster presentation
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: Clinical attention and tappable affordance do not share a hue
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: The Diagnose stage holds the active finding's chart
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: The stage card's title is the headline's only home
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: A revision of the Diagnose left column ships with its ledger amendments and evidence
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: A revision of the Diagnose findings rail ships with its ledger amendments and evidence
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: Diagnose places selected evidence before the clock overview
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: Ranked findings share one aligned row structure
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: All charts opens fullscreen without an intermediate dock
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: A carb-ratio block names its interval the way the server labels it
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: Diagnose evidence charts seat their axis names inside the chart
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: A findings-queue row is exposed as the control it is
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: A merged parameter finding stages every member the server published
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: The desk is the only shell, built ahead of time and served at root
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: The Episode Log words an outranked anchor as claimed, and Diagnose shares the word
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: A claimed row names what the anchor matched and ends with the Finding that claimed it
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: A claimed anchor keeps its Finding's hue and size
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: The Episode Log bands are explained where a reader looks
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: The Episode Log revision ships with its ledger stories and evidence
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: A folded cause's count reads on its Pattern's population
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: The Response comparison caption reconciles with its cohorts and the band
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: The case-file counts revision ships with its ledger amendments
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: Day counts each recorded day once
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: Day names the subject it was opened from by its served name
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: Episode Log rows name the attributed Lever by its served name
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: Change records word their served facts
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: A Pattern concern in Changes names its members and action
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: The topbar's Day reopens the day last looked at until the page reloads
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: The Day desk's viewed stamp is the reader's local clock
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: Diagnose's address names the case the reader is on
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: The watch dock names Changes for a watched Trial or Focus
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: The watch dock opens Changes on the watched Trial or Focus
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: An open change record opens on its retained-context reassessment
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: An empty record figure says why it is empty
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: A change record names when Harmonic recorded it
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: Changes states a Plan's phase from its served verdict
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: Changes keeps a recorded Plan apart from a newer draft
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: The watch panel carries a recorded Plan awaiting the pump
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: The case-file header carries no pending-Plan note
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: Case-file Occurrence rows name what the Occurrence is
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: A selected Occurrence reads as its facts and served reason
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: The basal lane stays reachable on short desktop windows
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: The basal lane key names a recurring-lows lower apart from a measured lower
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: Each basal key verdict agrees with its slot's panel
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: The basal evidence names why its nights were excluded
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: A render keeps focus inside a seated Diagnose case file
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: A Pattern owns its causes in the rail
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: The rail shows served urgency
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: Every ranked rail row draws one mini instrument
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: Rail rows print the served count sentence
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: The basal lane names and paints every verdict
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: Diagnose opens on the 24 h window
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: A cold destination shows a count-free skeleton
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: Changes reads an older detected change's ending
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: A superseded ending's note names no setting
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: Changes and carb-utility Day links name their return target by identity
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: A carb utility's Day return keeps the desk it returns to
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: The Log carbs header names the reader's local date and time
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: The served active change leads every plain arrival to Changes
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: Open Plan holds for the visit in which it was pressed
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: A Plan draft stays reachable while a change is watched
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: Diagnose's return names the watched change
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: Changes follows a watched Trial or Focus through
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: The watch dock and Changes print one Trial day count
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: No authored Guide article names Verify
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: Changes' Plan asks "what will I program into my pump?"
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: Every served reason on a watched-change line prints in words
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: Served states, verdicts, modes and denominators on watched-change lines print as words
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: The Focus entry words why a Focus is not offered
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: A refused change write reads as a sentence on the desk
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: Changes lists every set-aside concern by a name
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: Changes says why its concern leads in words
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: Diagnose names the correction factor and carb ratio in the wearer's words
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: The watch dock's title names the change and its values wrap below
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: Desk copy joins no clauses with an em dash
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: A later conclusion stays with the change record it was typed on
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: The Plan lifecycle replay certifies the decision it recorded
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: The glucose overview's window caption stays whole inside the chart
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: The Spotlight's middle-rank verdict line keeps every fact inside the chart
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: The glucose overview's header keeps its title at the narrowest split
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: Chart furniture never strikes an axis label
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: The basal slot panel drills into its steady nights
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: Selecting a night draws its trace and its facts
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: A revision of the basal drill ships with its ledger amendments and evidence
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: Diagnose is retained across destination changes
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: Changes lists records by edit and names its loading
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: The desk renders served Pattern evidence and preserves selection
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: The v2 desk preserves readable cross-destination evidence chrome
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: Diagnose and Day keep the reader's navigation context
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: Changes keeps completed and expired Trial records reachable
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: Focus withholding and v2 destinations remain discoverable
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: The watch dock reports the saved Plan draft
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: Diagnose's staged marks follow the Plan draft
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: An ended record whose saved ending serves no periods draws a requested reassessment
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: The Retained reassessment names its stored context in words
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: A change record's differences and percent cells print at one decimal
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: A figure with no curve takes no chart space
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: A saved ending with clock bins draws its saved curve
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: The Episode Log's Quiet line prints no time span
+
+**Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
+
+**Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.

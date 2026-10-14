@@ -294,6 +294,10 @@ class _Cand:
     # The time block a targeted pump-read candidate moved, whatever its setting:
     # a slotted delivery observation corroborates it only inside this block.
     arc: Optional[tuple] = None
+    # A delivery-only basal block's per-slot observations, from its block's start
+    # (#510): the candidate is its first, and a saved per-slot record of any of
+    # them holds the block.
+    parts: Optional[list] = None
 
 
 def _slot_label(slot: int, slot_minutes: int = 30) -> str:
@@ -626,6 +630,20 @@ def _reviewable_trials(store, now, *, horizon_start=None):
             legacy=cand.legacy, before=cand.before, after=cand.after)), None)
         if cand is not None:
             keeper.setdefault(id(cand), record)
+    # A delivery-only basal block an earlier build saved per slot (#510) is held
+    # by the record its saved slots are served under, whichever slot first
+    # recorded it, under either dating, so the change is never recorded again.
+    saved = _saved_blocks(records, switched)
+    for cand in delivered:
+        if cand.parts is None or id(cand) in keeper:
+            continue
+        held = next((saved[record["id"]].served for record in records if record["id"] in saved
+                     and any(record["slot"] == part.slot and record.get("before") == part.before
+                             and record.get("after") == part.after
+                             and datetime.fromisoformat(record["changed_at"]) in (part.start, part.legacy)
+                             for part in cand.parts)), None)
+        if held is not None:
+            keeper[id(cand)] = held
     trials = []
     for cand in candidates:
         kept = keeper.get(id(cand))
@@ -650,7 +668,7 @@ def _reviewable_trials(store, now, *, horizon_start=None):
                 changed_at=start.strftime(_DT_FMT),
                 target_metrics=target,
                 maturing=maturing,
-                slot=cand.slot,
+                slot=kept["slot"] if kept else cand.slot,
                 before=cand.before,
                 after=cand.after,
                 deliberate=_deliberate(cand.parameter, start, plan_history),
@@ -755,8 +773,15 @@ def review_trials(store, *, now: datetime, selected=None, kind="trial", assessme
     trials = _reviewable_trials(store, now)
     by_id = {_review_id(t.view, t.block): t for t in trials}
     retained_records = store.follow_up_records("trial")
+    # A delivery-only basal change saved per slot is one Trial (#510): only the
+    # record it is served under is a roster row, and its siblings' ids open it.
+    saved = _saved_blocks(retained_records, {switch.at for switch in _pump_changes(store.settings_snapshots())})
+    alias = {rid: held.served["id"] for rid, held in saved.items() if held.served["id"] != rid}
+    retained_records = [record for record in retained_records if record["id"] not in alias]
+    for rid in alias:
+        by_id.pop(rid, None)
     for record in retained_records:
-        by_id[record["id"]] = _retained_trial(store, record, now)
+        by_id[record["id"]] = _retained_trial(store, record, now, saved=saved)
     edit_by_id, edits = _group_edits(retained_records)
     ordered = sorted(by_id.values(), key=lambda t: (
         0 if t.view.maturing.is_maturing else 1,
@@ -778,7 +803,7 @@ def review_trials(store, *, now: datetime, selected=None, kind="trial", assessme
               "input_revision": store.input_data_revision(), "admission": admission}
     if selected is None:
         return result
-    identity = int(selected) if kind == "focus" else selected
+    identity = int(selected) if kind == "focus" else alias.get(selected, selected)
     record = store.follow_up_record(kind, identity)
     if kind == "trial":
         trial = by_id.get(identity)
@@ -883,7 +908,9 @@ def _review_candidates(basal, bolus, snapshots, plan_history, *,
             for switch in switches
         )
     ]
-    raw = _coalesce_profile_changes(raw)
+    # The slots a delivery-only basal change moved together are one change (#510),
+    # grouped after corroboration so a slot a pump read already holds stays out.
+    raw = _coalesce_profile_changes(_delivery_blocks(raw))
     return [
         candidate for candidate in switches + raw
         if candidate.start > horizon_start
@@ -901,15 +928,165 @@ def _slot_in_arc(slot: Optional[str], arc: Optional[tuple]) -> bool:
     return _in_arc(hour * 60 + minute, arc)
 
 
-def retained_block(record: dict, snapshots) -> Optional[tuple]:
-    """The time block a retained Trial is measured across (#581, #506).
+# --- delivery-only basal blocks (#510) ---------------------------------------
+#
+# The basal feed names a slot, never a block. A change to one stretch of the
+# schedule shows as the same before → after in every slot it covers, each first
+# delivered within a day of its neighbour. Those adjacent slots, across midnight
+# too, are one change and one Trial, as two settings reads would show it.
+
+_SLOTS_PER_DAY = 48
+
+
+def _slot_index(slot: str) -> int:
+    hour, minute = map(int, slot.split(":"))
+    return (hour * 60 + minute) // 30
+
+
+def _contiguous_blocks(items) -> List[tuple]:
+    """Group per-slot basal changes into the wrap-aware blocks they form (#510).
+
+    ``items`` are ``(slot_index, at, before, after, payload)``. An item is
+    followed by the item in the next slot, across midnight too, that moved
+    between the same two rates and was first seen within ``_PROFILE_TOLERANCE``
+    of it — the nearest such, and each item follows at most one. Returns one
+    ``(payloads, block)`` per block, the payloads ordered from the block's first
+    slot; ``block`` is ``(start_min, end_min)``, or ``None`` when the change
+    covers the whole day.
+    """
+    ordered = sorted(items, key=lambda item: (item[1], item[0]))
+    by_slot: Dict[int, list] = {}
+    for item in ordered:
+        by_slot.setdefault(item[0], []).append(item)
+    successor: Dict[int, tuple] = {}
+    followed = set()
+    for item in ordered:
+        nearby = [other for other in by_slot.get((item[0] + 1) % _SLOTS_PER_DAY, [])
+                  if id(other) not in followed and other[2:4] == item[2:4]
+                  and abs(other[1] - item[1]) <= _PROFILE_TOLERANCE]
+        if nearby:
+            other = min(nearby, key=lambda other: abs(other[1] - item[1]))
+            successor[id(item)] = other
+            followed.add(id(other))
+    seen = set()
+
+    def run_from(head):
+        run = [head]
+        seen.add(id(head))
+        while id(run[-1]) in successor and id(successor[id(run[-1])]) not in seen:
+            run.append(successor[id(run[-1])])
+            seen.add(id(run[-1]))
+        return run
+
+    runs = [run_from(item) for item in ordered if id(item) not in followed]
+    # Whatever is left closes a ring around the whole day; it reads from midnight.
+    for item in ordered:
+        if id(item) not in seen:
+            ring = run_from(item)
+            first = min(range(len(ring)), key=lambda index: ring[index][0])
+            runs.append(ring[first:] + ring[:first])
+    return [([item[4] for item in run],
+             None if len(run) >= _SLOTS_PER_DAY else (run[0][0] * 30, (run[-1][0] + 1) * 30 % 1440))
+            for run in runs]
+
+
+def _delivery_blocks(candidates: List[_Cand]) -> List[_Cand]:
+    """One candidate per delivery-only basal block (#510); the rest pass through.
+
+    A block's candidate is its first slot's: dated at that slot's first delivery
+    of the new rate, read through that slot's history, and carrying the block
+    as a pump-read basal change does (ADR 506). A change over the whole day has
+    no slot and no block, read through midnight's slot.
+    """
+    out = [cand for cand in candidates if cand.parameter != "basal_rate"]
+    slotted = [(_slot_index(cand.slot), cand.start, cand.before, cand.after, cand)
+               for cand in candidates if cand.parameter == "basal_rate"]
+    for parts, block in _contiguous_blocks(slotted):
+        lead = parts[0]
+        out.append(_Cand("basal_rate", lead.slot if block else None, lead.start,
+                         lead.before, lead.after, lead.regimes, legacy=lead.legacy,
+                         block=block, parts=parts))
+    return out
+
+
+@dataclass(frozen=True)
+class _SavedBlock:
+    """The per-slot records an earlier build saved for one delivery-only basal
+    change, and the one record the change is served under (#510)."""
+
+    served: dict
+    block: Optional[tuple]
+
+
+def _saved_blocks(records: List[dict], switched: set) -> Dict[str, _SavedBlock]:
+    """Each per-slot delivery-only basal record's change, by record id (#510).
+
+    Before #510 a basal change seen only in delivery history was saved as one
+    record per slot, with no block. No record is rewritten: the records of one
+    change, grouped by the rule a new change is, are served as one Trial over
+    their block. That Trial is the record carrying the person's own decision —
+    a finish, else a late conclusion — or else the block's first slot's, so a
+    decision is never hidden and the served id never moves once chosen. A
+    record dated at a pump read is that read's change, never one of these.
+    """
+    def decided(record, kind):
+        if kind == "finish":
+            return (record.get("ending") or {}).get("kind") == "user_finished"
+        return (record.get("late_conclusion") or {}).get("state") == "available"
+
+    items = [(_slot_index(record["slot"]), datetime.fromisoformat(record["changed_at"]),
+              record.get("before"), record.get("after"), record)
+             for record in records
+             if record["parameter"] == "basal_rate" and record.get("block") is None
+             and record.get("slot") is not None
+             and datetime.fromisoformat(record["changed_at"]) not in switched]
+    out: Dict[str, _SavedBlock] = {}
+    for members, block in _contiguous_blocks(items):
+        served = next((record for kind in ("finish", "conclusion") for record in members
+                       if decided(record, kind)), members[0])
+        for record in members:
+            out[record["id"]] = _SavedBlock(served, block)
+    return out
+
+
+def _maybe_saved(record: dict) -> bool:
+    """Whether a record has the shape of a per-slot delivery-only basal record."""
+    return (record.get("parameter") == "basal_rate" and record.get("block") is None
+            and record.get("slot") is not None)
+
+
+def store_saved_blocks(store) -> Dict[str, _SavedBlock]:
+    """:func:`_saved_blocks` over the store's own retained records and reads."""
+    return _saved_blocks(store.follow_up_records("trial"),
+                         {switch.at for switch in _pump_changes(store.settings_snapshots())})
+
+
+def _served_frontier_record(store, frontier) -> Optional[dict]:
+    """The retained Trial the frontier admits, as the roster serves it (#510).
+
+    An earlier build admitted the newest of a delivery-only change's per-slot
+    records; that change is served as one Trial, so its admission is that one.
+    """
+    record = (store.follow_up_record("trial", frontier["trial_id"])
+              if frontier and frontier["trial_id"] else None)
+    if record is not None and _maybe_saved(record):
+        saved = store_saved_blocks(store).get(record["id"])
+        if saved is not None and saved.served["id"] != record["id"]:
+            record = store.follow_up_record("trial", saved.served["id"])
+    return record
+
+
+def retained_block(record: dict, snapshots, saved: Optional[Dict[str, _SavedBlock]] = None) -> Optional[tuple]:
+    """The time block a retained Trial is measured across (#581, #506, #510).
 
     A record's own captured block is its identity and is always read first. A
     basal record saved at a pump change before basal Trials carried their block
     keeps its id and is never rewritten; its block is the one the two settings
     reads either side of its own change show moving from its slot, with its
     before and after — the same reads, never the current settings, so a later
-    repartition cannot retarget it. Any other record has no block.
+    repartition cannot retarget it. A per-slot record of a delivery-only basal
+    change takes the block its change's records form together (``saved``, from
+    :func:`store_saved_blocks`). Any other record has no block.
     """
     block = record.get("block")
     if block is not None:
@@ -926,7 +1103,8 @@ def retained_block(record: dict, snapshots) -> Optional[tuple]:
             if (start == hour * 60 + minute and (start, end) != (0, 1440)
                     and (before, after) == (record.get("before"), record.get("after"))):
                 return start, end
-    return None
+    held = (saved or {}).get(record["id"])
+    return held.block if held is not None else None
 
 
 def _regime_candidates(parameter: str, slot: Optional[str], regimes: List[Regime],
@@ -1168,6 +1346,10 @@ def _review_summary(trial: _ReviewTrial) -> dict:
         "before": view.before,
         "after": view.after,
         "target_metrics": list(view.target_metrics),
+        # The block the Trial is measured across (#506, #510), so a reader can
+        # tell a time block inside it from one outside; None for a whole-day or
+        # whole-profile Trial.
+        "block": list(trial.block) if trial.block is not None else None,
         "state": "maturing" if view.maturing.is_maturing else "complete",
         "maturing": {
             "days_elapsed": view.maturing.days_elapsed,
@@ -1383,11 +1565,13 @@ def _unavailable(reason):
     return {"version": "386:1", "state": "unavailable", "reason": reason}
 
 
-def _retained_trial(store, record, now):
+def _retained_trial(store, record, now, *, saved=None):
     parameter = record["parameter"]
     target = _PROFILE_TARGET if parameter == "profile" else _TARGET_METRIC[parameter]
     start = datetime.fromisoformat(record["changed_at"])
-    block = retained_block(record, store.settings_snapshots())
+    if saved is None and _maybe_saved(record):
+        saved = store_saved_blocks(store)
+    block = retained_block(record, store.settings_snapshots(), saved)
     end = min(now, start + _MATURE_WINDOW)
     # Store._select is half-open [start, end); _maturing/_data_gaps filter the
     # open-start, closed-end (changed_at, end]. Request [start, end + 1s) so the
@@ -1567,7 +1751,7 @@ def follow_up_admission(store, *, now):
                "ending": _unavailable("not_recorded")}
     if frontier is None or frontier["reconciled_input_revision"] != store.input_data_revision():
         return {**verdict, "state": "unavailable", "reason": "reconciliation_required"}
-    record = store.follow_up_record("trial", frontier["trial_id"]) if frontier["trial_id"] else None
+    record = _served_frontier_record(store, frontier)
     if record:
         verdict["ending"] = record["ending"]
         if "kind" not in record["ending"]:
@@ -1662,8 +1846,8 @@ def _reversal_at(store, record, history=None):
     if record["parameter"] == "profile" or (record["parameter"] == "carb_ratio" and record.get("block")):
         return None
     if record["parameter"] == "basal_rate":
-        hour, minute = map(int, record["slot"].split(":"))
-        regimes = history.slots.get((hour * 60 + minute) // 30, [])
+        # A whole-day basal change has no slot; midnight's history is its own (#510).
+        regimes = history.slots.get(_slot_index(record.get("slot") or "00:00"), [])
     else:
         regimes = history.doses(record["parameter"])
     for previous, changed, returned in zip(regimes, regimes[1:], regimes[2:]):
@@ -1744,7 +1928,7 @@ def reconcile_follow_up(store, *, now, recorded_at):
     focus = store.active_focus()
     if focus:
         focus = _focus_identity(store, focus)
-    active_trial = store.follow_up_record("trial", frontier["trial_id"]) if frontier and frontier["trial_id"] else None
+    active_trial = _served_frontier_record(store, frontier)
     if focus and (not is_pinnable(focus["lever"], focus.get("pattern_key")) or (active_trial and "kind" not in active_trial["ending"])):
         record = store.follow_up_record("focus", focus["id"])
         preempt = is_pinnable(focus["lever"], focus.get("pattern_key"))

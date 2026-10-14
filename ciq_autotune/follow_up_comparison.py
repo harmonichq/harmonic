@@ -74,11 +74,11 @@ def capture_comparison_context(store, *, at, input_revision):
 
 
 def _block(store, record):
-    from .watched_change import retained_block
+    from .watched_change import retained_block, store_saved_blocks
     if record.get("block") is None and record.get("block_start_min") is not None \
             and record.get("block_end_min") is not None:
         return record["block_start_min"], record["block_end_min"]
-    return retained_block(record, store.settings_snapshots())
+    return retained_block(record, store.settings_snapshots(), store_saved_blocks(store))
 
 
 def _setting_period(store, record, cutoff, earliest):
@@ -123,15 +123,17 @@ def _setting_period(store, record, cutoff, earliest):
     index = prior[-1] if prior else None
     if index is None or runs[index][0] != changed:
         regimes = []
-        if parameter == "basal_rate" and slot:
-            slot_index = (int(slot[:2]) * 60 + int(slot[3:5])) // 30
+        if parameter == "basal_rate":
+            # A whole-day basal change has no slot; midnight's history is its own (#510).
+            lead = slot or "00:00"
+            slot_index = (int(lead[:2]) * 60 + int(lead[3:5])) // 30
             regimes = basal_slot_regimes([e for e in store.basal_events() if e.t <= cutoff]).get(slot_index, [])
         elif parameter in ("isf", "carb_ratio") and block is None and slot is None:
             regimes = dose_regimes([b for b in store.bolus_events() if b.t <= cutoff], parameter)
         # A record is dated at its regime's start, or, saved before ADR 463, at
         # the date that dating gave the regime; it keeps its own change time.
         matching = next((i for i, run in enumerate(regimes) if i and (run.start == changed or same_change(
-            record, parameter=parameter, slot=slot, block=block, legacy=run.legacy_start,
+            record, parameter=parameter, slot=slot, block=record.get("block"), legacy=run.legacy_start,
             before=regimes[i - 1].value, after=run.value))), None)
         if matching is not None:
             runs = [(r.start, r.value) for r in regimes]

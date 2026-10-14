@@ -18,3 +18,10 @@
 - [x] 3.2 Comparison outcomes, readiness, setting history and Trial evidence read the whole block
 - [x] 3.3 A basal record saved without its block is read through its own two reads, never rewritten
 - [x] 3.4 Fail-first tests through `/api/verify/trials`; ADR 506 and the outcomes delta
+
+## 4. Delivery-only basal blocks (#510)
+
+- [x] 4.1 Group a delivery-only basal change into one Trial per contiguous changed block, wrap-aware; a change to every slot is one whole-day Trial
+- [x] 4.2 Serve each Trial's block on the Trial roster
+- [x] 4.3 Serve saved per-slot records of one change as one Trial, never rewritten, keeping the person's decision and the admission
+- [x] 4.4 Fail-first tests through `/api/verify/trials` on QA case stores; ADR 510 and the outcomes delta

@@ -99,9 +99,8 @@ over the block's readings. Its id SHALL be the slotted id a basal pump change
 already had. A retained basal record saved at a pump change without a block
 SHALL keep its id, SHALL NOT be rewritten, and SHALL be measured over the block
 the two settings reads either side of its own change show moving from its slot.
-A basal Trial's maturity and meal context SHALL stay unchanged. A basal change
-seen only in delivery history, a whole-day change and a whole-profile Trial
-SHALL be read as before.
+A basal Trial's maturity and meal context SHALL stay unchanged. A whole-day
+change and a whole-profile Trial SHALL be read as before.
 
 #### Scenario: Lows late in the block are read into the target metric
 
@@ -127,6 +126,66 @@ SHALL be read as before.
 - **WHEN** a reconcile runs and the Trial's comparison is read
 - **THEN** the record keeps its id and carries no block, and its comparison
   reads the block its two reads show moving
+
+### Requirement: A basal change seen only in delivery history is one Trial per changed block
+
+A basal change seen only in delivery history, with no two settings reads either
+side of it, SHALL be one Trial per contiguous block of slots that moved between
+the same two rates, each slot first delivering the new rate within a day of its
+neighbour, across midnight when the block wraps. That Trial SHALL carry the
+wrap-aware block, SHALL be measured across it as a basal Trial read from two
+settings reads is, and SHALL be dated, identified and read through its first
+slot. A change over every slot SHALL be one whole-day Trial with no slot and no
+block. The Trial roster SHALL serve each Trial's block, or none for a whole-day
+or whole-profile Trial.
+
+Per-slot records an earlier build saved for one such change SHALL NOT be
+rewritten, and the change SHALL NOT be recorded again. They SHALL be served as
+one Trial over the block they form together, under the record carrying the
+person's own finish, else a late conclusion, else the block's first slot; a
+hidden record's id SHALL open that Trial, and the admission an earlier build gave
+a hidden record SHALL be that Trial's. No analyzer's staging verdict SHALL
+change.
+
+#### Scenario: A delivery-only change across a block is one Trial
+
+- **GIVEN** a synthetic case store whose basal feed alone lowers the 02:00–05:00
+  rate, first delivering it at 02:00, with readings low from 04:00 to 05:00 every
+  night before the change and none after
+- **WHEN** ingestion reconciliation runs and the Trial roster is read
+- **THEN** there is one Trial, at slot 02:00, with block 120–300, and one record
+- **AND** its comparison reads time below range 33.3% before and 0% after, and
+  readiness counts the six slots from 02:00 to 04:30
+
+#### Scenario: A delivery-only block across midnight is one Trial
+
+- **GIVEN** a basal feed that alone lowers the 22:00–02:00 rate
+- **WHEN** the Trial roster is read
+- **THEN** there is one Trial at slot 22:00 with block 1320–120, and readiness
+  counts the slots from 22:00 to 01:30
+
+#### Scenario: A delivery-only change to every slot is one whole-day Trial
+
+- **GIVEN** a basal feed that alone lowers the rate in every slot at once
+- **WHEN** the Trial roster is read
+- **THEN** there is one Trial with no slot and no block, read over every slot
+
+#### Scenario: Per-slot records of one change are served as one Trial
+
+- **GIVEN** the six per-slot records an earlier build saved for that 02:00–05:00
+  change, the 04:30 one finished by the person and the other five open
+- **WHEN** ingestion reconciliation runs and the Trial roster is read
+- **THEN** there is one Trial, the 04:30 record, with block 120–300 and its saved
+  ending, and the store still holds exactly those six records unchanged
+- **AND** the 02:00 record's id opens that same Trial
+
+#### Scenario: An open per-slot change is served from its block's first slot
+
+- **GIVEN** the six per-slot records of that change, all open, with the earlier
+  build's admission on the 04:30 record
+- **WHEN** the Trial roster is read
+- **THEN** there is one Trial, the 02:00 record, with block 120–300, and it is
+  the active Trial the person can finish
 
 ## MODIFIED Requirements
 

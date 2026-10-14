@@ -15,6 +15,7 @@
      "tir",
      "arc"
     ],
+    "block": null,
     "state": "maturing",
     "maturing": {
      "days_elapsed": 7,
@@ -37,6 +38,10 @@
     "after": 4.4,
     "target_metrics": [
      "arc"
+    ],
+    "block": [
+     720,
+     900
     ],
     "state": "complete",
     "maturing": {
@@ -61,6 +66,7 @@
     "target_metrics": [
      "arc"
     ],
+    "block": null,
     "state": "complete",
     "maturing": {
      "days_elapsed": 15,
@@ -110,6 +116,7 @@
      "tir",
      "arc"
     ],
+    "block": null,
     "state": "maturing",
     "maturing": {
      "days_elapsed": 7,
@@ -1179,6 +1186,10 @@
     "after": 4.4,
     "target_metrics": [
      "arc"
+    ],
+    "block": [
+     720,
+     900
     ],
     "state": "complete",
     "maturing": {
@@ -2307,6 +2318,7 @@
     "target_metrics": [
      "arc"
     ],
+    "block": null,
     "state": "complete",
     "maturing": {
      "days_elapsed": 15,

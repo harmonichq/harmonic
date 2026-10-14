@@ -252,6 +252,9 @@ class CaseCacheTest(unittest.TestCase):
             cached = [call for call in reconciles if Path(call[-1]).name == "generated-basal-lower.sqlite"]
             self.assertEqual(len(cached), 1, "warm copies must never reconcile again")
             self.assertEqual(len(reconciles), 1, "the check must not benchmark the removed path")
+            warms = [call for call in calls if "frontend/replay-warm.py" in call]
+            self.assertEqual([Path(call[-1]).name for call in warms], ["generated-basal-lower.sqlite"],
+                             "each case warms once, from its pristine source (#507)")
             self.assertFalse(any("serve" in call for call in calls))
             self.assertFalse((run.out / "case-times.json").exists())
 

@@ -1,4 +1,4 @@
-// NavBar: the five tabs of §1.1, an icon above a label, as the phone tab bar
+// NavBar: the five tabs of §1.1, an icon in Material 3's active-indicator pill above a label, as the phone tab bar
 // or the tablet/desktop rail. The rail opens with the wordmark (§2.5,
 // 2026-10-13): the H mark over the name, stacked like a rail item but not one,
 // and nothing to press. The tab bar has none. One badge system, top-right of the icon (§1.1):
@@ -51,16 +51,18 @@ export function NavBar({ layout, selected, dayCount, syncFailed = false, onSelec
           aria-current={id === selected ? 'page' : undefined}
           onClick={() => onSelect?.(id)}
         >
-          <Icon name={id satisfies IconName} />
+          <span className="ui-nav__icon">
+            <Icon name={id satisfies IconName} />
+            {id === 'day' && dayCount && dayCount.value > 0 && (
+              <span className="ui-badge ui-badge--count">
+                <Num value={dayCount} />
+              </span>
+            )}
+            {id === 'settings' && syncFailed && (
+              <span className="ui-badge ui-badge--alert">!</span>
+            )}
+          </span>
           <span>{label}</span>
-          {id === 'day' && dayCount && dayCount.value > 0 && (
-            <span className="ui-badge ui-badge--count">
-              <Num value={dayCount} />
-            </span>
-          )}
-          {id === 'settings' && syncFailed && (
-            <span className="ui-badge ui-badge--alert">!</span>
-          )}
         </button>
       ))}
     </nav>

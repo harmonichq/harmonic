@@ -221,7 +221,7 @@ in §2.
 | State pill | Borderless tinted tag: 18 px, 2 px radius, uppercase 11 px label, the state's tone at 15% fill (Unclear on the rail surface). No outline, so it never reads as a button. Item kinds take no pill: the kind glyph carries Pattern vs Setting. |
 | Badge | 16 px; a count pill or an alert "!". |
 | Caption + value pair | A caption names the value it sits with and reads as one unit with it: stacked, the caption directly above the value, left edges aligned (Nights / Range); or inline, the caption before the value on the value's own baseline (`align-items: baseline`), never centred against it. |
-| Tab bar item / rail item | 44 px target, icon above label. |
+| Tab bar item / rail item | 44 px target, icon above label. The selected item carries Material 3's active indicator: a pill behind the icon, 64 x 32 px on the tab bar and 56 x 32 on the rail, fully rounded, `--primary` at 18%, the icon centred in it and the label below it. The icon and label take the accent. Badges stay top-right of the icon, above the pill. The pill fades and scales in over `--ui-motion-standard` and is instant under reduced motion. |
 | Sheet | Bottom-attached, 12 px top radius, grabber. |
 | Popover | Anchored to its trigger. |
 | Transient bar | Above the tab bar, label and one text action. |
@@ -480,6 +480,21 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   file, a standalone habit, a Setting) has no trailing value. The open card
   keeps its full "Peak 227 · Typical 164 mg/dL" line.
 
+- **2026-10-14 — the selected tab's indicator is Material 3's pill.** The
+  selected item showed a short bar above its icon. The operator: "this
+  selected indicator should I think be underneath the icon on phone, and left
+  or right on tablet and desktop. Unless apple or google design standards have
+  other options which I'm open to." Of the options put to him he chose "A",
+  Material 3's active indicator. A tinted pill sits behind the selected icon,
+  64 x 32 px on the phone tab bar and 56 x 32 on the tablet/desktop rail, fully
+  rounded, `--primary` at 18%, the icon centred in it and the label below.
+  The icon and label keep the accent. The bar above the icon is gone. Targets
+  stay 44 px, the badges stay top-right of the icon above the pill, and the
+  rail wordmark is untouched. The pill fades and scales in over
+  `--ui-motion-standard` on a selection change and is instant under reduced
+  motion. The pill and label overflow the 44 px target by a few px, inside the
+  existing spacing (§2.2 Tab bar / rail item).
+
 ### 2.6 Deferred (not cut)
 Not built in the current screens. The engine still serves what each needs, and
 nothing is removed from the engine or the fixtures for them.
@@ -523,7 +538,8 @@ unless noted. Loading is a skeleton of the component's own shape.
 **Shell**
 
 1. **NavBar**: the phone tab bar and the desktop/tablet rail; five items, an
-   icon above a label.
+   icon above a label; the selected item has a pill behind its icon (§2.5,
+   2026-10-14).
    - States: default; item selected; with a count badge; with an alert badge.
    - Fields: `prompts` length (Day count); `status.last_error` and
      `status.last_success_at` (Settings alert).

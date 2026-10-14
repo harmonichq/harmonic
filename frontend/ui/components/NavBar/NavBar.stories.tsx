@@ -27,6 +27,18 @@ function story(layout: NavBarProps['layout'], selected: NavItem, extra: Partial<
   return {
     args: { layout, selected, ...extra },
     parameters: { frame: FRAMES[layout] },
+    play: async ({ canvasElement }) => {
+      const current = canvasElement.querySelectorAll('[aria-current="page"]');
+      await expect(current).toHaveLength(1);
+      // The active indicator (§2.5, 2026-10-14): a pill behind the icon, 32 px
+      // tall and 64 wide on the tab bar, 56 on the rail, tinted not solid.
+      const icon = current[0].querySelector('.ui-nav__icon')!;
+      const box = icon.getBoundingClientRect();
+      await expect([box.width, box.height]).toEqual([layout === 'rail' ? 56 : 64, 32]);
+      const pill = getComputedStyle(icon, '::before');
+      await expect(pill.backgroundColor).not.toBe('rgba(0, 0, 0, 0)');
+      await expect(pill.borderTopLeftRadius).toBe('16px');
+    },
   };
 }
 
@@ -37,6 +49,8 @@ export const TabBarDay = story('tabbar', 'day');
 export const TabBarSettings = story('tabbar', 'settings');
 export const TabBarCountBadge = story('tabbar', 'queue', { dayCount });
 export const TabBarAlertBadge = story('tabbar', 'queue', { syncFailed });
+export const TabBarDayBadgeSelected = story('tabbar', 'day', { dayCount });
+export const TabBarSettingsAlertSelected = story('tabbar', 'settings', { syncFailed });
 
 export const RailQueue = story('rail', 'queue');
 export const RailChanges = story('rail', 'changes');
@@ -45,6 +59,8 @@ export const RailDay = story('rail', 'day');
 export const RailSettings = story('rail', 'settings');
 export const RailCountBadge = story('rail', 'queue', { dayCount });
 export const RailAlertBadge = story('rail', 'queue', { syncFailed });
+export const RailDayBadgeSelected = story('rail', 'day', { dayCount });
+export const RailSettingsAlertSelected = story('rail', 'settings', { syncFailed });
 
 // The rail's wordmark (§2.5, 2026-10-13): above Queue, and not a control.
 export const RailWordmark: Story = {

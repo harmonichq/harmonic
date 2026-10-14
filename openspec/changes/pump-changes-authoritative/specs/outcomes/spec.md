@@ -101,7 +101,11 @@ SHALL keep its id, SHALL NOT be rewritten, and SHALL be measured over the block
 the two settings reads either side of its own change show moving from its slot.
 A basal Trial's maturity and meal context SHALL stay unchanged. A basal change
 seen only in delivery history, a whole-day change and a whole-profile Trial
-SHALL be read as before.
+SHALL be read as before. Each served Trial SHALL carry the block it is measured
+across as `block`, `[start_min, end_min]` (a retained record without one is served
+with the block its two reads show), or null when it has none, so a reader can
+tell a time block inside the Trial's block from one outside it rather than
+comparing starting slots.
 
 #### Scenario: Lows late in the block are read into the target metric
 
@@ -127,6 +131,14 @@ SHALL be read as before.
 - **WHEN** a reconcile runs and the Trial's comparison is read
 - **THEN** the record keeps its id and carries no block, and its comparison
   reads the block its two reads show moving
+
+#### Scenario: The served Trial names its block
+
+- **GIVEN** two reads that lower the 02:00–05:00 basal rate, or a retained record
+  of that change saved without its block
+- **WHEN** the Trials are read
+- **THEN** the Trial is served with `block` `[120, 300]`, and a 22:00–02:00 change
+  with `[1320, 120]`
 
 ## MODIFIED Requirements
 

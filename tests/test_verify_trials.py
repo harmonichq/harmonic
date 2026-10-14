@@ -569,6 +569,7 @@ class VerifyTrialsApiTest(unittest.TestCase):
             "before": None,
             "after": None,
             "target_metrics": ["tir", "arc"],
+            "block": None,
             "state": "complete",
             "maturing": {"days_elapsed": 14, "days_required": 14, "gap_count": 0},
         }])

@@ -171,6 +171,8 @@ MATURING_DAYS = 6
 # tech (§2.5, 2026-10-13); "Setting" is no longer a §1.5 term, since no screen
 # prints it, so the name is allowed here.
 KIND_NAMES = ("Pattern", "Setting")
+# The desktop rail's wordmark (§2.5, 2026-10-13): the H mark and the product's name.
+BRAND = ("H", "Harmonic")
 SETTINGS_LABELS = ("State", "OK", "Failed", "Last success", "Last attempt", "Error", "Data",
                    "Email", "Region", "Password", "Set", "Not set", "Update", "Start", "Target",
                    "Max bolus", "DIA", "No profile", "Unavailable", "Snoozed", "Until", "To",
@@ -902,6 +904,7 @@ def allowlist(data: dict) -> dict:
                                 for f in store["focuses"] if f["lever_title"]],
         "labels Settings": list(SETTINGS_LABELS),
         "kind glyph names §2.5": list(KIND_NAMES),
+        "rail wordmark §2.5": list(BRAND),
         "served pump profile names": [p["profile"]["name"] for p in data["settings"]["pump_settings"].values()
                                       if p["configured"]],
         "served account regions": [c["region"] for c in data["settings"]["credentials"].values() if c["region"]],

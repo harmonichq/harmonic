@@ -1,9 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { expect, within } from 'storybook/test';
 import { fixtures, sourced } from '../../fixtures';
 import { NavBar, type NavBarProps, type NavItem } from './NavBar';
 
 // Each layout × each item selected, then the count badge and the alert badge
-// (§4.2 NavBar). The count is the fixture's unanswered Prompts; the alert reads
+// (§4.2 NavBar). Every rail story opens with the wordmark (§2.5, 2026-10-13);
+// RailWordmark holds it alone with nothing selected but Queue. The count is the fixture's unanswered Prompts; the alert reads
 // the fixture's failed sync status.
 const meta = {
   title: 'NavBar',
@@ -15,7 +17,7 @@ type Story = StoryObj<typeof meta>;
 
 const FRAMES = {
   tabbar: { width: 390, padding: 0 },
-  rail: { width: 88, height: 440, padding: 0 },
+  rail: { width: 88, height: 500, padding: 0 },
 } as const;
 
 const dayCount = sourced<number>('prompts[answer=null].length');
@@ -43,3 +45,15 @@ export const RailDay = story('rail', 'day');
 export const RailSettings = story('rail', 'settings');
 export const RailCountBadge = story('rail', 'queue', { dayCount });
 export const RailAlertBadge = story('rail', 'queue', { syncFailed });
+
+// The rail's wordmark (§2.5, 2026-10-13): above Queue, and not a control.
+export const RailWordmark: Story = {
+  ...story('rail', 'queue'),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByText('Harmonic')).toBeInTheDocument();
+    await expect(canvas.queryByRole('button', { name: /Harmonic/ })).toBeNull();
+    const [first] = canvas.getAllByRole('button');
+    await expect(canvas.getByText('Harmonic').compareDocumentPosition(first) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  },
+};

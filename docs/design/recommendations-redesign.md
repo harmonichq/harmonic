@@ -436,6 +436,19 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   opening on the standard easing, instantly or as a 120 ms fade under reduced
   motion.
 
+- **2026-10-13 — a wordmark on the desktop rail, and the mark in the new
+  colours.** No built screen printed "Harmonic", and the desk's orange mark
+  went with the desk (#495). Of the options put to the operator, he chose a
+  wordmark at the top of the desktop rail only: "B but I guess we should
+  change from the existing orange huh?", then, for its colours, "A". The rail
+  opens with the existing mark, an Inter capital H in a 24 px square of 6 px
+  radius, with "Harmonic" at 11 px semibold beneath it, stacked like a rail
+  item above Queue but not one: nothing to press. The square is `--wk-ink`
+  with the H in `--wk-canvas`, and the name is `--wk-ink`, never the accent,
+  which means interactive or selected. The phone's tab bar has no wordmark.
+  The favicon is the same mark in `--primary` with the H in `--on-primary`;
+  the page title stays "Harmonic" (§4.2 NavBar).
+
 ### 2.6 Deferred (not cut)
 Not built in the current screens. The engine still serves what each needs, and
 nothing is removed from the engine or the fixtures for them.
@@ -483,7 +496,8 @@ unless noted. Loading is a skeleton of the component's own shape.
    - States: default; item selected; with a count badge; with an alert badge.
    - Fields: `prompts` length (Day count); `status.last_error` and
      `status.last_success_at` (Settings alert).
-   - Desktop: the rail, with the same items and badges.
+   - Desktop: the rail, with the same items and badges, opened by the
+     wordmark (§2.5, 2026-10-13).
    - Glyphs: Queue, Changes, Overview, Day, and a gear for Settings. The
      sliders glyph belongs to the Setting kind.
 2. **ScreenHeader**: the screen title plus one trailing slot (a date, a

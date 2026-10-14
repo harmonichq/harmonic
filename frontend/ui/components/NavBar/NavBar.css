@@ -24,6 +24,33 @@
 }
 .ui-nav--rail .ui-nav__item { width: 72px; }
 
+/* The rail's wordmark: the H mark in ink with the canvas cut through it, the
+   name beneath. Ink, not the accent: on screen the accent means interactive or
+   selected, and this is neither. */
+.ui-nav__brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin: -12px 0 -2px;
+  color: var(--wk-ink);
+}
+.ui-nav__mark {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: var(--wk-ink);
+  color: var(--wk-canvas);
+  font: 630 15px / 1 var(--ui-font);
+  letter-spacing: -.3px;
+}
+.ui-nav__name {
+  font: var(--ui-weight-strong) var(--ui-type-caption) / 1.2 var(--ui-font);
+  letter-spacing: .02em;
+}
+
 .ui-nav__item {
   position: relative;
   display: flex;

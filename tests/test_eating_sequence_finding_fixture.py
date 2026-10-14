@@ -101,20 +101,6 @@ class EatingSequenceFindingFixtureTest(unittest.TestCase):
                 self.assertEqual(expected["state"], "selected")
                 self.assertEqual(stored["selections"].get(row["id"]), expected, row["id"])
 
-    def test_browser_expansion_equals_python_transport(self):
-        import subprocess
-        script = """
-          import { readFileSync } from 'node:fs';
-          import { expandSequenceFixture } from './frontend/eating-sequence-fixture.js';
-          const payload = expandSequenceFixture(JSON.parse(readFileSync(
-            'mockups/eating-sequence-findings.synthetic/payload.json', 'utf8')));
-          delete payload.shared;
-          process.stdout.write(JSON.stringify(payload));
-        """
-        result = subprocess.run(["node", "--input-type=module", "-e", script],
-                                cwd=self.root, capture_output=True, text=True, check=True)
-        self.assertEqual(json.loads(result.stdout), self.fixture)
-
     def test_limited_support_and_missing_points_keep_literal_observed_values(self):
         def response(name):
             return self.fixture["states"][f"high_carb_sequence_{name}"]["windows"]["global"][

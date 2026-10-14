@@ -41,7 +41,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY vite.config.mjs tsconfig.json ./
-# The one source root: the desk's page, its modules and its stylesheets.
+# The one source root: the app's page, the component library and its screens.
 COPY frontend ./frontend
 RUN npm run build
 

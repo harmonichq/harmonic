@@ -122,7 +122,7 @@ class IcBlockEvidenceRowsTest(unittest.TestCase):
 
     def setUp(self):
         self.cases = json.loads(BLOCK_EVIDENCE.read_text())["cases"]
-        # `frontend/desk.browser.test.mjs` serves this case as the endpoint.
+        # The generator's cross-midnight block, which every check below covers.
         self.assertIn("cross_midnight", self.cases)
 
     def test_every_case_carries_the_v2_payload(self):

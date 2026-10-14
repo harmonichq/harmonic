@@ -42,14 +42,15 @@ adds the live pull; the `api` extra adds the HTTP API and the web UI.
 **Run.** `uv run harmonic serve` starts the API and the web UI on one port.
 `README.md` has the full command set and the Docker path.
 
-**The pull-request gate:** the dependency-free frontend Node test line and guard
-scripts below are the **fast gate**. Its backend delivery leg needs a built shell.
+**The pull-request gate.** The backend runs over a built app, so build it first:
 
 ```sh
-npm ci && npm run build                    # required before backend delivery tests
-uv run python -m pytest                    # backend, stdlib unittest over the built shell
-node --test 'frontend/**/*.test.js'        # fast gate: the one source root
-npx --yes @fission-ai/openspec@1.14.0 validate --all --strict # OpenSpec requirements and changes
+npm ci && npm run build                    # required before the backend and the smoke test
+uv run python -m pytest                    # backend, stdlib unittest over the built app
+node --test 'frontend/**/*.test.js'        # the dependency-free frontend tests
+npm run test:ui                            # the component library's Storybook suite
+uv run python scripts/smoke_app.py         # the server serves the built app and an API answer
+npx --yes @fission-ai/openspec@1 validate --all --strict # OpenSpec requirements and changes
 python3 scripts/check_adr_numbers.py       # decision-record naming guard
 python3 scripts/check_owned_identifiers.py # product-name guard
 python3 scripts/check_public_allowlist.py  # publishable-tree guard
@@ -57,15 +58,26 @@ t=$(mktemp -d) && python3 scripts/build_public_tree.py "$t" && \
   python3 scripts/check_public_links.py "$t" && python3 scripts/scan_public_tree.py "$t"  # public-tree scan
 ```
 
+**The Storybook suite is the frontend gate** (#495). `npm run test:ui`
+type-checks `frontend/ui`, builds its Storybook and renders every story in
+Chromium, after its play, against the prechecks in `frontend/ui/prechecks.js`:
+no sentence, only allowed words, one size per control role, one primary, every
+number traced to the served field it prints, and nothing scrolling but a page.
+Its Playwright comes from `PLAYWRIGHT_MODULE`, or, unset, from
+`scripts/ensure_browser_gate_env.py`, which provisions one cached copy. A missing
+driver or build fails closed, naming what is missing.
+
+**The smoke test** (`scripts/smoke_app.py`) boots the one permitted offline
+serve below — the synthetic QA store, `--no-fetch`, an empty token — and asks it
+for `/`, the app's script, a tab's page path and `/api/status`. The image's own
+smoke step runs the same probe against the container with `--url`.
+
 The backend job also runs eleven **drift checks**, so a committed
-generator-authored artifact can never silently diverge from its generator.
-Ten are listed below; the design exploration's generator covers a private
-design artifact the public tree excludes, so its `--check` command lives in
-`.github/workflows/ci.yml`:
+generator-authored artifact can never silently diverge from its generator:
 
 ```sh
 uv run python scripts/gen_chart_builder_fixtures.py --check
-uv run python scripts/check_demo_fixtures.py   # the committed synthetic demo sets
+uv run python scripts/check_demo_fixtures.py   # the Diagnose synthetic set the projection fixtures read
 uv run python scripts/gen_qa_e2e_db.py --check
 uv run python scripts/gen_findings_projection_fixtures.py --check
 uv run python scripts/gen_ic_history_event_fixtures.py --check
@@ -74,34 +86,15 @@ uv run python scripts/gen_basal_night_evidence_fixtures.py --check
 uv run python scripts/gen_isf_rest_window_evidence_fixtures.py --check
 uv run python scripts/gen_missed_meal_comparison_fixtures.py --check
 uv run python scripts/gen_eating_sequence_fixtures.py --check
+uv run python scripts/gen_ui_fixtures.py --check   # the component library's served answers
 ```
 
 The frontend job runs one drift check in Node: the event-comparison synthetic
-capture.
+capture, which the findings-projection generator reads.
 
 ```sh
 node mockups/diagnose-event-comparison.synthetic/generate.mjs --check
 ```
-
-**A mockup that extracts from the app is a generated artifact, and the same
-`--check` rule binds it.** Such a build typically commits a stylesheet lifted
-verbatim out of the app's own material (`frontend/material.css`), a module
-lifted out of a shipped source file (`frontend/glossary.js`), and a data file
-run through the shipped producers — all three move when the app moves. When the app's light theme was relit (decision record 37) one
-such extract was not regenerated, and that exploration's own contrast guard went
-on measuring the retired palette for an entire round, reporting zero failures
-the whole time. The guard was sound; its input was stale, which is a failure no
-amount of auditing the guard would have revealed. If you add a mockup that
-extracts from shipped source, add its `--check` and its CI step in the same
-change.
-
-The findings-projection fixture also freezes the three payloads it projected
-FROM. The browser gates have no Python, so they answer `/api/diagnose/findings` from
-a fixture-only JS mirror of that projection, kept beside the synthetic fixture
-sets, and `frontend/findings-projection-mirror.test.js` deep-compares the mirror
-against those frozen answers window for window. The mirror is a transcription
-held identical by a test, never a second source of truth — if that test ever goes,
-so must the mirror (decision record 735).
 
 Every committed fixture in this repository is synthetic, and the contamination
 scan will not let one ship unless it carries a provenance stamp from that scan's
@@ -111,95 +104,25 @@ only for the paths `scripts/public_scan_config.txt` names one by one. If you add
 a fixture, add its generator and its `--check` step in the same change — a
 fixture without a generator is how real data gets committed.
 
-**This is not the whole merge bar.** A separate `browser gates` CI job runs the
-browser-dependent work the fast gate cannot: the `*.browser.test.mjs` suites
-(the desk, its Trial and Pattern Focus follow-up, and the shared browser-runner
-lifecycle regression), and the desk's behaviour-ledger replay against the built
-app. Browser suites are **never discovered by a glob** here — each is
-a hand-listed matrix entry, so a new one that is not added to `ci.yml` is a
-suite no runner ever looks at. Reproduce it locally:
-
-```sh
-# One-time setup — an isolated Playwright + Chromium. On a machine that
-# runs the gates repeatedly, skip the mktemp lines and instead provision a
-# persistent cache once with
-#   eval "$(python3 scripts/ensure_browser_gate_env.py)"
-# which sets PLAYWRIGHT_MODULE for the legs below and costs
-# one stat per piece on reruns.
-PW=$(mktemp -d)
-npm install --prefix "$PW" playwright@1.61.1
-npx --prefix "$PW" playwright install --with-deps chromium
-
-# Rebuild the shell after any frontend/ change, before the three suite legs.
-npm ci && npm run build
-
-# Two of the three suite legs, as CI runs them. The third — the desk's Trial and
-# Pattern Focus follow-up suite — reads private design inputs, so it is a file
-# the public tree excludes and its command lives in
-# `.github/workflows/ci.yml`. It drives a real no-fetch server, so it also needs
-# `uv sync --frozen --extra api`.
-PLAYWRIGHT_MODULE="$PW/node_modules/playwright" node --test frontend/browser-runner.browser.test.mjs
-PLAYWRIGHT_MODULE="$PW/node_modules/playwright" node --test frontend/desk.browser.test.mjs
-```
-
-**2026-09-10 — #406 gate scheduling.** On pull requests, the desk ledger runs the
-fixed smoke slice and stories affected by replay/helper or case-recipe changes,
-at both sizes. A PR selecting the complete ledger uses the same shards as main
-and nightly runs; smaller selections use one job per size. The other explicit
-browser suites and inherited ledgers keep running
-on every event. The PR `latest nightly` check and scheduled publisher read the
-same `nightly result` job aggregate. A result older than 36 hours from the
-scheduled run's start does not satisfy either reader. Both retain the consulted
-run and age as an artifact. Before any scheduled run completes, the PR check
-passes with a bootstrap warning. The scheduled completion job also refreshes that
-status on open PR commits, so an earlier green PR check cannot hide a later
-failed nightly. The backend runs all test files across its matrix partitions
-while a separate generator job checks drift. The CI workflow owns the matrices
-and commands; the private acceptance record states the selection rules and
-measured ceilings.
-
-**All four legs fail closed** — the three suites and the ledger replay. Each
-carries its own preflight, which exits nonzero naming the missing driver, built
-shell or fixture rather than skipping. A green step that silently ran zero
-assertions is the exact failure mode that design guards against.
-
-**One of those four preflights is under regression guard, not four.**
-`frontend/browser-gates-fail-closed.test.js` spawns a leg against an empty
-`HARMONIC_DIST` and asserts it names what is missing, so it can only drive a leg
-that serves a built shell that way. The desk suite is the only one: the
-follow-up suite and the browser-runner regression serve no shell, and the ledger
-replay reads no `HARMONIC_DIST` at all — it needs an already-running no-fetch
-server, which that spawn harness does not stand up. #416 took the guarded list
-from nine legs to one, and the other three preflights are held by reading alone.
-Do not shrink that list to zero: it is asserted non-empty, because an empty list
-is itself a green step that ran zero assertions.
-
-**Run only what a change touches; run the whole ledger once, before the push.**
-A full frozen-ledger replay is the whole registry — 204 stories — at each of two
-sizes, each story on a fresh synthetic store and a fresh server. Running that
-after every commit turns a one-line story fix into an hour, and running it in
-parallel with itself on one machine only collides on the case-store port. So,
-while iterating: run the stories the change touches (`ONLY=S20b,S32` on the desk
-replay; the wrapper's `--story` selection; a single `--test-name-pattern` on a
-browser suite), at the one size that reproduces the problem. Run each complete
-ledger exactly once per push, on the commit that will be pushed, and never two
-port-bound legs at the same time. Connor, 2026-09-10: "I spend all my life
+**Run only what a change touches; run each whole suite once, before the push.**
+While iterating, run the stories a change touches (`UI_STORY=<id part>` narrows
+`node scripts/ui-stories.mjs check` after `npm run build-storybook`) and the
+backend test files it touches. Run each complete suite exactly once per push, on
+the commit that will be pushed. Connor, 2026-09-10: "I spend all my life
 waiting for replays and ledgers and CI to run" — this rule is the answer, not a
 suggestion.
 
 **A sandboxed agent cannot launch Chromium — escalate, do not diagnose.** Under
 a seatbelt sandbox (Codex `workspace-write`, and anything else built on
-`sandbox-exec`), every browser leg above dies at launch with
+`sandbox-exec`), the Storybook suite dies at launch with
 `bootstrap_check_in org.chromium.Chromium.MachPortRendezvousServer.<pid>:
 Permission denied (1100)`, surfacing as `browserType.launch: Target page,
 context or browser has been closed`. That is the sandbox refusing Chromium's
 Mach service registration, not a defect in the suite, the driver or the change
-under test — the `ThermalStateObserverMac` and `DnsConfig` lines above it are
-cosmetic and appear on passing runs too. Re-run the same command with escalated
-permissions; it passes. There is no narrower fix: `--no-sandbox` and
-`--single-process` are Chromium's own sandbox, not the outer one, and the
-seatbelt profile exposes only disk roots and network. Never report a browser
-gate as failing, and never edit code to chase one, from a sandboxed run.
+under test. Re-run the same command with escalated permissions; it passes.
+There is no narrower fix: `--no-sandbox` and `--single-process` are Chromium's
+own sandbox, not the outer one. Never report the suite as failing, and never
+edit code to chase it, from a sandboxed run.
 
 ## The data boundary
 
@@ -230,10 +153,9 @@ your own database — never a published one, and never a live pull.**
   
   Exercise every other model path through tests and fixtures instead.
 
-  For chart-level UI revision rounds, that same no-fetch serve of the built
-  desk is the safe surface (ADR 416). The dev-only component harness it
-  replaced is deleted: a chart revised in the served desk is the shipped
-  chart, with no second composition to drift from.
+  For UI revision rounds, that same no-fetch serve of the built app is the
+  safe surface for the live screens, beside the component library's Storybook
+  for their locked states (#495).
 - **Committed fixtures come from a committed generator**, and carry a
   provenance stamp saying so. Do not hand-write a fixture out of real data, and
   do not paste real values into a test.
@@ -294,14 +216,18 @@ including for isolated chart layout or interaction.
   built shell on the same port: `frontend/dist/index.html` at `/` and its three
   page paths, with its fingerprinted assets under `/assets`. The non-API route
   set is closed — every served page path is named, and any other path is a 404.
-- `frontend/` — the one Vite source root: the desk, built with `base: '/'` and
-  served by the Python process (ADR 416). It is plain DOM rather than a
-  framework app, ported from the locked desktop prototype. ECharts renders the
-  Day chart. One authenticated client (`data.js`, re-exported by `client.js`)
-  and one router (`tab-routing.js`); a second client or router here is a
-  duplicate implementation, not a convenience. Its material, Day legend and
-  glossary are committed source (`material.css`, `glossary.js`), read by the
-  design exploration's generator rather than lifted at build time.
+- `frontend/` — the one Vite source root: the app, built with `base: '/'` and
+  served by the Python process (ADR 416, #495). It is the component library in
+  `frontend/ui/` — React components and the five screens locked in
+  `docs/design/recommendations-redesign.md`, each with its Storybook stories —
+  and the app that serves those screens (`frontend/ui/app/`). One
+  authenticated client (`data.js`) and one router (`tab-routing.js`); a second
+  client or router here is a duplicate implementation, not a convenience. Every
+  model reads one seam (`frontend/ui/answers.ts`) with two adapters: the
+  stories' generated answers (`fixtures.ts`) and the live engine's
+  (`ui/app/live.ts`). Only the stories import the fixtures, so the built app
+  never carries them. The library's material is committed source
+  (`material.css`, `fonts/`).
 - `openspec/specs/` — twelve capability specifications: what each part of the
   system is required to do, and why. The public "why" lives here.
 
@@ -483,13 +409,15 @@ Hard-won, and expensive to re-derive.
 ## Conventions
 
 - **Backend tests** use stdlib `unittest`, run under pytest.
-- **Frontend tests** use Node's built-in runner and take no npm dependency; CI's
-  frontend job runs them without an install. Backend pytest delivery tests need
-  `npm ci && npm run build` first. Pure logic lives in `.js` modules with no
-  DOM dependency, so tests import them directly; the modules that touch the
-  document are exercised by the browser suites instead.
-- **Browser-driven suites are named `*.browser.test.mjs`**, never `*.test.js`,
-  so the fast gate's glob can never discover them.
+- **Read or validate YAML with `yq`** (mikefarah, v4), e.g.
+  `yq '.jobs | keys' .github/workflows/ci.yml`, rather than ad-hoc PyYAML or uv
+  installs.
+- **Frontend tests** are the Storybook suite (`npm run test:ui`): every screen
+  and component state is a story, and every behaviour a play, the live writes
+  among them through fake writes that fail once. Pure logic in `.js` modules
+  with no DOM dependency is tested with Node's built-in runner and no npm
+  dependency (`node --test 'frontend/**/*.test.js'`). Backend pytest delivery
+  tests need `npm ci && npm run build` first.
 - **New behavior ships with a test through the public interface**, and — where
   it fits — one that failed first, for the right reason.
 - **Match the surrounding code**: idiom, naming, comment density. No dead code
@@ -512,7 +440,7 @@ Hard-won, and expensive to re-derive.
 - **The product name is guarded.** `scripts/check_owned_identifiers.py` rejects
   the retired pre-Harmonic name in the identifiers Harmonic owns — the
   distribution and command names, the container image, the browser title, the
-  page wordmark, the design-system and glossary titles. It is deliberately not a
+  rail wordmark, the design-system and glossary titles. It is deliberately not a
   repository-wide word search: the internal Python package path, the local data
   directory, upstream dependency and environment names, and factual
   vendor-compatibility prose all keep their existing spellings. The local
@@ -546,11 +474,10 @@ reviewer-memory digest. Check a change against these before asking for review.
 - **`frontend/index.html` is a consumer.** It imports frontend modules directly
   and no node test loads it. A negative claim ("nothing imports this") needs an
   unfiltered whole-tree grep, not an `--include='*.js'` one.
-- **Generated artifacts pin bytes.** `generate.py --check` and `build.mjs
-  --check` read the app stylesheet; a stylesheet edit must regenerate them.
-  `chrome.extracted.html` is regenerated by hand and can drift silently.
-- **Synthetic state is fragile.** A replay serve mutates the committed synthetic
-  database; restore it through the generator before committing, and stage by
+- **Generated artifacts pin bytes.** A `--check` compares bytes, so an input
+  edit must regenerate its output in the same change.
+- **Synthetic state is fragile.** A serve over the committed synthetic
+  database mutates it; restore it through the generator before committing, and stage by
   path, never `git add -A`.
 - **Real data leaks through prose.** Never narrate the operator's own history in
   comments or pick test constants near a real reading; the contamination scan is

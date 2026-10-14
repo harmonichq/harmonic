@@ -75,7 +75,6 @@ span-start 2025-07-01
 uv.lock | 77 in-span dates, package upload stamps (§3.1 [R6])
 tests/test_store.py | 16 invented round test dates (§3.1 [R6])
 tests/test_verify_trials.py | 8 invented round test dates (§3.1 [R6])
-frontend/daily-nav.test.js | 16 invented round test dates (§3.1 [R6])
 tests/test_api.py | 8 invented round test dates (§3.1 [R6])
 tests/test_findings_projection.py | 8 seeded synthetic analyzer dates from the committed generator's public-input contract (§3.1 [R6])
 
@@ -270,10 +269,6 @@ dose-ratio-ack frontend/__fixtures__/findings-projection.json:85952 | 0.1 g/U
 dose-ratio-ack frontend/__fixtures__/findings-projection.json:86913 | 6 g/U
 dose-ratio-ack frontend/__fixtures__/findings-projection.json:94561 | 0.1 g/U
 dose-ratio-ack frontend/__fixtures__/findings-projection.json:95522 | 6 g/U
-dose-ratio-ack frontend/kb.test.js:187 | 0.5 U
-dose-ratio-ack frontend/kb.test.js:207 | 0.5 U
-dose-ratio-ack frontend/plan.js:476 | 0.001 U
-dose-ratio-ack frontend/plan.js:478 | 0.1 g/U
 dose-ratio-ack mockups/diagnose-workstation.synthetic/ic-block-evidence.capture.json:2486 | 0.1 g/U
 dose-ratio-ack mockups/diagnose-workstation.synthetic/ic-history-events.capture.json:2288 | 6 g/U
 dose-ratio-ack openspec/specs/behavioral-layer/spec.md:1125 | 4.5 U

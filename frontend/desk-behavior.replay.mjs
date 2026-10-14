@@ -20,6 +20,9 @@
 // landing after the focus detached or moved it, and the story timed out on
 // three of main's last six runs. Claim and tolerance remain unchanged; the
 // probe's two idempotent actions repeat per attempt.
+// AMENDED 2026-10-14 · #499: S109 pins a 720 px height. The engine cut left
+// the showcase roster short enough to fit a 900 px pane, so its premise (a
+// scrollable reading pane) was unreachable at 1440x900. Claim unchanged.
 //
 // WHY THIS EXISTS: mockups/harmonic-v2-desktop.lock.md says what the surface
 // looks like across 34 terms. It does not say that pressing the destination

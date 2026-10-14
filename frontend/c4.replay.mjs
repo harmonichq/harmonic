@@ -2829,7 +2829,11 @@ export const C4_STORIES = {
     // Undrilled: a drilled pane fits its viewport exactly at 1440x900 (the
     // overflow is on the factors roster itself, not every level), so this
     // scrolls #level before any row is picked, at whatever bounded offset its
-    // own overflow allows.
+    // own overflow allows. Since #499 cut four rows from the showcase's
+    // roster it fits a 900 px pane, so the story pins a 720 px height (the
+    // other ledger size) to keep its premise — a scrolled pane — reachable.
+    const viewport = page.viewportSize();
+    await page.setViewportSize({ width: viewport.width, height: Math.min(viewport.height, 720) });
     await fullDayDiagnose(page);
     // The rail's own tile reads (diagnose-workstation.js fetchTile -> paint ->
     // paintLevel) land after the main read and each repaint the roster from

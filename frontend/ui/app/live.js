@@ -31,6 +31,9 @@
 /** The account rows never print the address (lock, Settings: "never show a real email"). */
 const MASK = '••••••••';
 const WINDOWS = ['14', '30', '90'];
+/** The Overview's first window, and the analysis window the engine answers by default. */
+const FIRST_WINDOW = '14';
+const DEFAULT_ANALYSIS = '30';
 /** A Pattern Focus is pinned over the whole day, the window the Queue's findings read. */
 const WHOLE_DAY = { start_min: 0, end_min: 1440 };
 const NO_STATUS = { last_attempt_at: null, last_success_at: null, last_error: null };
@@ -62,7 +65,7 @@ export function createLive({ client, glossary }) {
     prompts: [],
     outcomes: {},
     queue: { wearer: { guidance: { candidates: [] } } },
-    overview: { wearer: {} },
+    overview: { wearer: { time_of_day: {}, analyze: {} } },
     changes: {},
     day: { states: {}, days: {}, prompts: {}, months: {} },
     settings: { credentials: {}, status: {}, pump_settings: {} },
@@ -97,6 +100,7 @@ export function createLive({ client, glossary }) {
     return answer;
   });
   const findings = () => once('findings', () => client.fetchDiagnoseFindings());
+  /** The analysis at the engine's default window, 30 days: the Queue's, and the Overview's 30 d ISF. */
   const analyze = () => once('analyze', () => client.fetchAnalysis());
   const trials = () => once('trials', () => client.fetchVerifyTrials());
   const focus = () => once('focus', () => client.fetchFocuses());
@@ -115,9 +119,18 @@ export function createLive({ client, glossary }) {
     if (answers.overview.wearer.day_navigator.month === iso) return;
     answers.day.months[iso] = await client.fetchDayNavigator(iso);
   });
-  const timeOfDay = () => once('time-of-day', async () => {
-    answers.overview.wearer.time_of_day = await client.fetchExploreTimeOfDay();
+  /** The glucose profile over one window, read when the Overview first shows it. */
+  const timeOfDay = (window) => once(`time-of-day ${window}`, async () => {
+    answers.overview.wearer.time_of_day[window] = await client.fetchExploreTimeOfDay(Number(window));
   });
+  /** gen_ui_fixtures._isf_windows: one window's first ISF segment, for the Overview's ISF estimate. The 30 d
+   *  analysis is the Queue's own read, shared. */
+  const isf = (window) => once(`isf ${window}`, async () => {
+    const answer = window === DEFAULT_ANALYSIS ? await analyze() : await client.fetchAnalysis(Number(window));
+    answers.overview.wearer.analyze[window] = { isf: answer.isf.slice(0, 1) };
+  });
+  /** What the Overview reads for a window it shows: its profile and its ISF estimate. */
+  const overviewWindow = (window) => Promise.all([timeOfDay(window), isf(window)]);
   const outcomes = () => once('outcomes', async () => {
     const served = await Promise.all(WINDOWS.map((w) => client.fetchOutcomes(Number(w))));
     answers.outcomes = Object.fromEntries(WINDOWS.map((w, i) => [w, served[i]]));
@@ -228,9 +241,11 @@ export function createLive({ client, glossary }) {
   const TABS = {
     queue: { read: queue, keys: ['queue', 'findings', 'guidance', 'analyze', 'trials', 'focus'] },
     changes: { read: changes, keys: ['changes', 'trials', 'guidance'] },
-    overview: { read: () => Promise.all([outcomes(), timeOfDay(), navigator()]),
-      keys: ['outcomes', 'time-of-day', 'navigator'] },
-    day: { read: () => Promise.all([navigator(), timeOfDay()]), keys: ['navigator', 'time-of-day'] },
+    overview: { read: () => Promise.all([outcomes(), overviewWindow(FIRST_WINDOW)]),
+      keys: ['outcomes', ...WINDOWS.flatMap((w) => [`time-of-day ${w}`, `isf ${w}`])] },
+    // Day reads the engine's one target range, which every window's profile serves; the Overview's first.
+    day: { read: () => Promise.all([navigator(), timeOfDay(FIRST_WINDOW)]),
+      keys: ['navigator', `time-of-day ${FIRST_WINDOW}`] },
   };
   const BADGES = ['status', 'prompts'];
 
@@ -371,6 +386,8 @@ export function createLive({ client, glossary }) {
     readDay: day,
     /** The weeks of one month (`YYYY-MM`), read once; Retry is a second call after a failure. */
     readMonth: month,
+    /** The Overview's profile and ISF estimate for a window it switched to. */
+    readWindow: overviewWindow,
     /** The account the Settings screen shows: set, or not. */
     accountState: () => (answers.settings.credentials.set?.configured ? 'set' : 'unset'),
     queueWrites,

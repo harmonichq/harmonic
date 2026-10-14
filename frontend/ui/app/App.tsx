@@ -101,7 +101,8 @@ export function App() {
       return <ChangesScreen key={tab} layout={layout} store="wearer" state={state} nav={nav} onRetry={retry}
         writes={{ end: drawn(changesWrites.end) }} />;
     case 'overview':
-      return <OverviewScreen key={tab} layout={layout} store="wearer" state={state} nav={nav} onRetry={retry} />;
+      return <OverviewScreen key={tab} layout={layout} store="wearer" state={state} nav={nav} onRetry={retry}
+        onWindow={(window) => { live.readWindow(window).then(redraw, redraw); }} />;
     case 'day':
       return <DayScreen key={tab} layout={layout} store="wearer" state={state} nav={nav} onRetry={retry}
         onDay={(iso) => { live.readDay(iso).then(redraw, redraw); }}

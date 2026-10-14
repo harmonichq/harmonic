@@ -15,6 +15,11 @@ Status: **exploring** (#481).
   `0b0b78d8`: one page with no scrolling, one time-in-ranges bar for the
   selected window, colour only on Below 70 and Above 180. The operator:
   "locked."
+  Revised 2026-10-14 by the operator's decisions in §2.5: one scrolling page,
+  the summary as its first screenful; the glucose profile follows the window
+  switch and the recent-days strip is gone; an ISF estimate card below the
+  summary; each window compared with the period of the same length before it,
+  its date span on the line under the window switch.
 - **Day screen locked 2026-10-13**: Storybook `Screens/Day` at commit
   `4972898a`: the date in the header as a drop-down month of gapless weeks,
   the current week as a gapless ribbon on desktop, the day's insulin as one
@@ -44,7 +49,7 @@ consolidated brief from the first exploration (2026-10-12) as decision history.
 |---|---|---|
 | **Queue** | The ranked recommendations, from Patterns and Settings, and the Snoozed list. | No logging, no status, no counters. |
 | **Changes** | The active watched change (one Trial or one Focus) and the last finished change. | No history archive. |
-| **Overview** | Standard metrics over 14, 30 and 90 days, the time-in-ranges bars and the time-of-day strip. | No recommendations. |
+| **Overview** | Standard metrics over 14, 30 or 90 days against the period of the same length before, the selected window's time-in-ranges bar and glucose profile, and the ISF estimate. | No Queue items and nothing to act on: the ISF estimate shows the engine's supported change as the Queue's card does, but changes nothing. |
 | **Day** | One day's glucose, insulin and carbs, the day navigator, carb logging and Prompts. | No aggregates beyond that day. |
 | **Settings** | Tandem Source (sync and account), Pump profile and the Glossary. | No preferences the engine doesn't have. |
 
@@ -59,8 +64,9 @@ Phone uses a bottom tab bar, and tablet and desktop use a left rail, with the sa
   - The Settings badge and the root row's inline "⚠ Failed" are the only
     signals elsewhere.
   - No banner, toast or strip on any other screen.
-- **Data as of** is content, not status. It appears as "To 30 Sep" on Overview
-  and as the date on Day.
+- **Data as of** is content, not status. It appears as the selected window's
+  date span on Overview ("30 Sep – 13 Oct", §2.5 2026-10-14) and as the date on
+  Day.
 - **Engine unavailable** (a read endpoint returns 503 or "unavailable"): the
   affected screen shows its title, the label "Unavailable" and a compact
   **Retry**. Other tabs keep working.
@@ -76,7 +82,7 @@ Each row lists a screen's states. Labels only; no state uses prose.
 | Queue · Snoozed | Each snoozed item as its Queue row, plus "Until <date>" + Restore | Not reachable (the footer is hidden at 0) | — | Unavailable + Retry | Restored (row leaves) |
 | Queue · setting detail | current → estimate, range, n, chart | — | Chart skeleton | Unavailable | — |
 | Changes | Active Trial or Focus + the last change as one row | "No active change" label | Skeleton | Unavailable + Retry | Maturing; Matured (result pill); last change row expanded in place; **End** (Focus: anytime; Trial: once matured) → confirm sheet → ended |
-| Overview | 14 d selected | "No data" label per window | Skeleton | Unavailable + Retry | 30 d / 90 d selected |
+| Overview | 14 d selected; one scrolling page, the summary (window switch, date span, In range, metrics, glucose profile) its first screenful, the ISF estimate below | "No data" label per window, and in the ISF estimate when none is served | Skeleton; a window not yet read shows its profile's and ISF estimate's skeletons | Unavailable + Retry | 30 d / 90 d selected; a previous period without data (the span alone, no changes); the ISF estimate with a supported change (current → recommended), held, Uncertain, with nights beyond its axis |
 | Day | Latest day with data | "No data" for a day without readings | Chart skeleton | Unavailable + Retry | Month dropped down from the header's day; desktop: the selected week as a ribbon; Prompts row when count > 0 |
 | Day · Prompts | One prompt, "n / N" | Not reachable (the row is hidden at 0) | — | Not saved + Retry | Yes → grams field and keyboard; mid-swipe Not sure |
 | Day · Log carbs | Grams field focused, Time = now | — | Saving | Not saved + Retry | Time edited |
@@ -134,7 +140,8 @@ the system's own edge-swipe back is left to the platform, never overridden.
 | **Uncertain** | state | Not yet clear enough to act on: the evidence behind it is thin. |
 | **Peak / Nadir** | noun | The highest or lowest glucose after an event such as a meal, as the median across the events counted, in mg/dL. |
 | **Typical** | noun | The same for the comparison events: similar events that did not end in the Pattern's outcome. |
-| **Glucose profile** | noun | Glucose by time of day over the last 30 days: the median and the 10th–90th percentile spread. |
+| **Glucose profile** | noun | Glucose by time of day over the selected window (14, 30 or 90 days): the median and the 10th–90th percentile spread. |
+| **Fasting** | state | No food and no recent bolus: the nights an ISF estimate is read from. |
 | **Median** | noun | The middle value of the profile at that time of day. |
 | **Yes / No / False low / Not sure** | answer | The answers to whether carbs were eaten for a low. False low marks the reading itself as invalid. |
 | **Log carbs** | verb | Record carbs eaten without a bolus. |
@@ -344,7 +351,7 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   trying to maintain a queue of all past changes in a historical record." The
   most recently ended change is one disclosure row (what changed, when, its
   result) that expands in place into its ended card; there is only ever one.
-- **2026-10-13 — the Overview never scrolls.** The operator: "No scrolling
+- **2026-10-13 — the Overview never scrolls** (reversed 2026-10-14, below). The operator: "No scrolling
   for the overview page." It fits one 390 × 844 phone screen and a 1440 × 900
   desktop pane: three metrics to a row and a shorter glucose-profile plot on
   phone. A story fails if its page overflows. This narrows the one-page
@@ -373,7 +380,7 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   current week is always visible, and you can drop down the month." Of two
   mocked options he chose "4. B". The week strip, the Month sheet and the
   desktop month pane are gone. The day in the header is the control that drops
-  the month down as its weeks, each a DayRibbon (§4.2 DayTile) with every day's
+  the month down as its weeks, each a DayRibbon (§4.2 DayRibbon) with every day's
   counts and %; picking a day closes it. Desktop is one pane, the selected
   week in view as a ribbon under the header (§1.3, §1.4).
 - **2026-10-13 — the day's insulin, split.** The operator: "it would be nice
@@ -402,7 +409,7 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   misread the single screenshot with 3 renderings as a single desktop
   experience so I thought we had duplicated the [right] and left sides of a
   split pane"), and answered "yes restore the traces". The desktop week keeps
-  its traces (§4.2 DayTile, InsulinBar).
+  its traces (§4.2 DayRibbon, InsulinBar).
 - **2026-10-13 — the glossary lists only what the app prints.** The
   operator, on the Glossary page: "Looks good, though isn't 'cause' dropped
   from the frontend?" No built screen prints it. An audit of the text every
@@ -505,13 +512,65 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   its glucose zone colours are unchanged and run on across the column, the
   tint behind them. The fill and the blue date both mark it, so selection
   keeps a position as well as a colour. It applies in the month drop-down and
-  the desktop week alike (§4.2 DayTile). On the same screen: "and month
+  the desktop week alike (§4.2 DayRibbon). On the same screen: "and month
   left/right buttons are disabled." ‹ and › now step a month: ‹ is enabled
   while the month is after the first month with readings, › up to the latest.
   A month shows the drop-down's skeleton while it is read and, when it cannot
   be, Unavailable with Retry inside the drop-down. A day picked in another
   month opens that day, and on desktop the week in view follows the selected
   day across month boundaries.
+- **2026-10-14 — the glucose profile follows the window; the recent-days strip
+  is gone.** The operator, on a profile fixed at 30 days under a 14 / 30 / 90 d
+  switch: "but then 30d and 90d don't switch it so it feels odd to me", then
+  "21. B". The engine serves the profile for 14, 30 or 90 days
+  (`/api/explore/time-of-day?days=`), the profile shows the selected window's,
+  and the desktop's recent-days strip is removed. Day draws its days as
+  DayRibbon, so the standalone DayTile goes with it (§4.2 DayRibbon,
+  GlucoseProfile).
+- **2026-10-14 — the Overview scrolls as one page.** The operator: "25. B for
+  now sure. We can rethink later". This reverses the 2026-10-13 amendment "the
+  Overview never scrolls": the Overview scrolls as every other screen does
+  (§2.2 Scrolling), and the one-page rule stands, so nothing inside a component
+  scrolls (§2.3 ban 6). The summary (the window switch and its date line, In
+  range, the metrics and the glucose profile) is the first screenful at 390 ×
+  844 and 1440 × 900; what follows it scrolls. The stories that failed on an
+  overflowing page are removed.
+- **2026-10-14 — an ISF estimate on the Overview.** Of the options put to the
+  operator he chose "24 A", "26 B" and "28 A": a card below the summary, titled
+  "ISF" with "estimate", drawing the selected window's evidence as an
+  EvidenceChart: a dot per night's ISF fit, the Estimate line in its Range
+  band, and the Current line. Beneath it, Estimate, Range and Fasting nights
+  (the nights the estimate counts). The Uncertain tag when the engine flags the
+  estimate wide. When the engine supports a change (its one ISF staging verdict),
+  "current → recommended" stands above the chart as on the Queue's Setting card;
+  otherwise there is no figure. The axis goes below 0 only when the Range does.
+  Fasting joins §1.5; Estimate is a plain word, as the chart already prints it
+  (§4.2 IsfCard).
+- **2026-10-14 — edge counts sit outside the plot.** The operator, on the
+  nights beyond the axis ("‹ 3", "2 ›"): "clean up how those edge counts are
+  handled, they collide with the data". A count now takes a gutter reserved at
+  its end of the axis, which the axis and every mark stop short of, so it can
+  never touch a dot, the band or a line. The EvidenceChart is shared, and the
+  locked basal Setting card had the same collision (its counts were lifted
+  over the end stacks, inside the plot), so it takes the same rule; a chart
+  with no night beyond its axis reserves no gutter and draws as before (§4.2
+  EvidenceChart).
+- **2026-10-14 — each window against the period before it.** The operator:
+  "do we even need those deltas? I think 14d should compare previous 14 MAYBE?"
+  then "31 A, with the comparison named once in a place that makes sense." Each
+  metric's change is now against the period of the same length just before the
+  window (14 d against the 14 days before it, 30 against 30, 90 against 90),
+  which the engine serves with each window's outcomes, by the same definitions.
+  The colour rule is unchanged: only Below 70 and Above 180 take favourable or
+  adverse colour. A previous period without data shows no changes (§4.2
+  MetricFigure).
+- **2026-10-14 — the window's date span, and the comparison named once.** The
+  operator: "Name a date span entirely, not just a single 'to'". The header's
+  "To 13 Oct" is gone; on the line under the window switch the window's first
+  and last served days print as a span, then the comparison:
+  "30 Sep – 13 Oct · vs previous 14 d". With no data before the window, the
+  span stands alone. "vs" and "previous" are plain words (§1.2, §4.2
+  ScreenHeader).
 
 - **2026-10-14 — the Day chart's basal lane and the engine's marks, as the
   desk drew them.** The operator, on the redesigned Day chart: "basal lane is
@@ -584,7 +643,7 @@ nothing is removed from the engine or the fixtures for them.
 
 ## 4. Component inventory (approved 2026-10-12)
 
-Twenty-one components. Screens are composed only from these. Every state listed
+Twenty-two components. Screens are composed only from these. Every state listed
 gets a Storybook story in step 3. "Fields" are the only served data a component
 may display; derived values name their formula in the provenance table.
 
@@ -619,16 +678,21 @@ unless noted. Loading is a skeleton of the component's own shape.
      wordmark (§2.5, 2026-10-13).
    - Glyphs: Queue, Changes, Overview, Day, and a gear for Settings. The
      sliders glyph belongs to the Setting kind.
-2. **ScreenHeader**: the screen title plus one trailing slot (a date, a
-   control, or a labelled action).
-   - States: default; with date; with action ("+ Log carbs"); drill-down
-     ("‹ Parent" back control above the title, §2.2).
-   - Fields: `outcomes_*.span_end` (date).
+2. **ScreenHeader**: the screen title plus one trailing slot (a control, or a
+   labelled action).
+   - States: default; with action ("+ Log carbs"); drill-down
+     ("‹ Parent" back control above the title, §2.2). The Overview's date
+     moved under its window switch (§2.5, 2026-10-14).
+   - Fields: none of its own.
    - Desktop: the same, at the top of each pane; a drill-down's back control
      sits in the header of the pane that owns it.
 3. **SegmentedControl**: 14 / 30 / 90 d.
    - States: each option selected; disabled (window lacks coverage).
    - Fields: `outcomes_*.coverage.days`.
+   - On the Overview, the line beneath it is the window's date span and its
+     comparison: "30 Sep – 13 Oct · vs previous 14 d", or the span alone when
+     the previous period has no data. Fields: `outcomes_*.span_start,
+     span_end`, `outcomes_*.previous.window_days, span_start`.
    - Desktop: the same, full width of its group.
 4. **Button**, in the roles from §4.1.
    - States: default; pressed; focused; disabled; busy.
@@ -698,20 +762,27 @@ unless noted. Loading is a skeleton of the component's own shape.
     - Fields: `analyze.basal[slot].current, estimate.value, estimate.lo, hi,
       days`, plus their ISF/carb-ratio equivalents.
     - Desktop: fills the detail pane up to 720 px.
-11. **EvidenceChart**: the setting's slot evidence, showing the nights'
-    delivered rate against current and suggested.
-    - States: default; zero variance (a compact strip).
-    - Fields: `analyze.basal[slot].evidence.night_roster`.
+11. **EvidenceChart**: a setting's evidence, one dot per night against current
+    and the estimate in its range: a basal slot's delivered rate, or an ISF
+    fasting night's fit.
+    - States: default; zero variance (a compact strip); nights beyond the
+      axis, counted ("‹ 3", "2 ›") in a gutter reserved at that end, outside
+      the plot (§2.5, 2026-10-14).
+    - The axis covers the marks, padded; it goes below 0 only when the range
+      does.
+    - Fields: `analyze.basal[slot].evidence.night_roster`;
+      `analyze.isf[0].evidence.night_fits[].isf`.
     - Desktop: wider, same marks.
 
 **Overview**
 
-12. **GlucoseProfile**: 24 h, 30 d. Shows the median, the 10–90% spread, the
-    above-180 tint, the 70/180 lines with a 250 tick, meal density, and one
-    Median callout.
-    - States: default; insufficient data ("No data").
-    - Fields: `time_of_day.pooled.bins[]` (median, p10, p90), `pooled.meals`,
-      `target_range`.
+12. **GlucoseProfile**: 24 h over the selected window (14, 30 or 90 d). Shows
+    the median, the 10–90% spread, the above-180 tint, the 70/180 lines with a
+    250 tick, meal density, and one Median callout.
+    - States: default; insufficient data ("No data"); not yet read (its
+      skeleton).
+    - Fields: `time_of_day[days].window.data_days`, `pooled.bins[]` (median,
+      p10, p90), `pooled.meals`, `target_range`.
     - Desktop: full pane width.
 13. **TimeInRangeBar**: five AGP bands, each labelled; 70–180 labelled
     "In range".
@@ -719,26 +790,38 @@ unless noted. Loading is a skeleton of the component's own shape.
     - Fields: `outcomes_*.metrics.tbr_lvl1, tbr_lvl2, tir, tar_lvl1, tar_lvl2`
       (bands derived as differences).
     - Desktop: the same.
-14. **MetricFigure**: a value, its unit, and its change against 90 d (arrow,
-    better/worse colour, units).
-    - States: better; worse; unchanged (neutral); not available.
+14. **MetricFigure**: a value, its unit, and its change against the previous
+    period of the same length (arrow, units; better/worse colour only on Below
+    70 and Above 180), the difference taken between the values as printed.
+    - States: better; worse; unchanged (neutral); not available; no previous
+      data (no change).
     - Fields: `outcomes_*.metrics.tir, mean_glucose, gmi, cv, tbr_lvl1,
-      tar_lvl1`.
+      tar_lvl1`, and the same under `outcomes_*.previous.metrics`.
     - Desktop: the same, in a row.
-15. **DayTile**: a weekday and date, sparkline over the 70–180 band, ▽/△
-    counts or ✓, and in-range %.
-    - States: default; selected; clean (✓); no data.
+15. **DayRibbon**: a week of days, gapless, on one band with one trace that
+    runs on from day to day, hairline dividers, and each day's weekday and
+    date above and ▽/△ counts or ✓ and in-range % beneath; each day picks
+    itself.
+    - States: default; selected; a week without readings.
     - Fields: `day_navigator.days[]`.
-    - Desktop: the Overview's recent-days strip.
-    - Day draws the same days as a **DayRibbon**: a week of them, gapless, on
-      one band with one trace that runs on from day to day, hairline dividers,
-      and each day's weekday and date above and counts and % beneath; each day
-      picks itself. States: default; selected (the whole column takes a
-      `--primary` tint at 18%, 7 px radius, behind the trace, and its weekday
-      and date are `--primary`; no bar); a week without readings. Day's month
-      is its weeks stacked, with ‹ › stepping to the previous and next month
-      (loading, or Unavailable with Retry, while a month is not read); desktop
-      keeps the selected week in view, across months.
+    - Day's month is its weeks stacked, with ‹ › stepping to the previous and
+      next month (loading, or Unavailable with Retry, while a month is not
+      read); desktop keeps the selected week in view, across months. Selected:
+      the whole column takes a `--primary` tint at 18%, 7 px radius, behind the
+      trace, and its weekday and date are `--primary`; no bar. (The standalone
+      DayTile went with the Overview's recent-days strip, §2.5 2026-10-14.)
+
+22. **IsfCard**: the ISF estimate for the selected window, below the
+    Overview's summary. The title "ISF" with "estimate", and the Uncertain
+    pill when the estimate is wide; "current → recommended" in figure type
+    only when the engine supports the change; an EvidenceChart of the fasting
+    nights' fits; then Estimate, Range and Fasting nights as captioned values.
+    - States: supported change; held (no figure); Uncertain; nights beyond the
+      axis; no data ("No data"); not yet read (its skeleton).
+    - Fields: `analyze.isf[0].current, recommended, asserts_move,
+      estimate.value, lo, hi, wide, n_clusters,
+      evidence.night_fits[].isf`, read from `/api/analyze?window=N`.
+    - Desktop: the width of the Overview's body, below its summary.
 
 **Changes**
 

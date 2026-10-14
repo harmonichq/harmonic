@@ -52,6 +52,8 @@ test('parameterised reads encode their query', async () => {
   const { fetch, calls } = fakeFetch();
   const api = makeDeps({ fetch });
   await api.fetchOutcomes(30);
+  await api.fetchAnalysis(14);
+  await api.fetchExploreTimeOfDay(90);
   await api.fetchVerifyTrials();
   await api.fetchVerifyTrials({ selected: 'trial:1', kind: 'focus', assessment: 'retained' });
   await api.fetchTimeline({ start: '2026-09-29T00:00:00', end: '2026-09-30T00:00:00' });
@@ -60,6 +62,8 @@ test('parameterised reads encode their query', async () => {
   await api.fetchDiagnoseFindingCase({ projection_id: 'p 1', finding_id: 'pattern:x', alignment: 'event' });
   assert.deepEqual(calls.map((c) => c.url), [
     '/api/outcomes?window=30',
+    '/api/analyze?window=14',
+    '/api/explore/time-of-day?days=90',
     '/api/verify/trials',
     '/api/verify/trials?selected=trial%3A1&kind=focus&assessment=retained',
     '/api/timeline?start=2026-09-29T00%3A00%3A00&end=2026-09-30T00%3A00%3A00',

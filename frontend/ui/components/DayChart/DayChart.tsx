@@ -14,7 +14,7 @@
 // its hours washed faintly through the lanes beneath, and each site change at
 // its time. Glucose: the trace over the 70–180 band, a quiet green in range and
 // in its glucose zone's tone and hatch outside it (glucose-zones.tsx), clipped
-// per zone as the DayTile draws it, and broken where readings stop; the band's
+// per zone as the DayRibbon draws it, and broken where readings stop; the band's
 // two edges carry their served values, the unit after the upper one, so the
 // zone colours need no legend. The marks lane holds, on its top row, a Pattern
 // glyph at each moment the engine counted (the model-view's anchors), and

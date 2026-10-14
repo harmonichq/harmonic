@@ -35,8 +35,8 @@ export function SettingCard({ data, onChanges, onSnooze }: SettingCardProps) {
       </div>
       {data.nights && data.roster && (
         <div className="ui-scard__chart">
-          <EvidenceChart nights={data.nights} roster={data.roster} current={data.current} estimate={data.estimate}
-            lo={data.lo} hi={data.hi} units={data.units} />
+          <EvidenceChart nights={data.nights} roster={data.roster} field="delivered_rate" current={data.current}
+            estimate={data.estimate} lo={data.lo} hi={data.hi} units={data.units} />
         </div>
       )}
       <dl className="ui-scard__facts">

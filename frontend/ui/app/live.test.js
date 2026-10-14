@@ -40,7 +40,7 @@ function fakeClient(served = history()) {
     fetchPrompts: answer('prompts', () => []),
     fetchGuidance: answer('guidance', () => ({ analysis_generation: 'g1', candidates: served.candidates })),
     fetchDiagnoseFindings: answer('findings', () => ({ outcome_patterns: [], rows: [] })),
-    fetchAnalysis: answer('analyze', () => ({ basal: [] })),
+    fetchAnalysis: answer('analyze', () => ({ basal: [], isf: [] })),
     fetchFocuses: answer('focus', () => ({ focuses: served.focuses, input_revision: 7 })),
     fetchVerifyTrials: answer('trials', (opts = {}) => (opts.selected
       ? { selected: { title: 'Pattern', lever_title: 'Habit', reassessment: { comparison: { ...comparison, outcomes: [] } } } }
@@ -112,14 +112,33 @@ test('Retry and a write read again only what they change', async () => {
   const live = createLive({ client: fake.client, glossary: [] });
   await live.readTab('overview');
   await live.readTab('queue');
-  const navigator = fake.count('navigator');
+  const outcomes = fake.count('outcomes');
   await live.queueWrites.snooze('pattern:p0');
   assert.equal(fake.count('guidance'), 2, 'the snooze reads the guidance again');
-  assert.equal(fake.count('navigator'), navigator, 'and not the Overview');
+  assert.equal(fake.count('outcomes'), outcomes, 'and not the Overview');
   await live.dayWrites.answer({ detector: 'low', anchorT: '2026-01-01 03:00:00' }, 'no');
   assert.equal(fake.count('prompts'), 2, 'an answer reads the Prompts again');
   await live.retryTab('overview');
-  assert.equal(fake.count('navigator'), navigator + 1, 'Retry reads the tab again');
+  assert.equal(fake.count('outcomes'), outcomes + 3, 'Retry reads the tab again');
+});
+
+test('the Overview reads each window\'s profile and ISF once, when it is shown, shared with the Queue and Day', async () => {
+  const fake = fakeClient();
+  const live = createLive({ client: fake.client, glossary: [] });
+  const windows = (name) => fake.calls.filter((c) => c.name === name).map((c) => c.args[0] ?? 'default');
+  await live.readTab('overview');
+  assert.deepEqual(windows('time-of-day'), [14], 'the first window only');
+  assert.deepEqual(windows('analyze'), [14]);
+  assert.equal(fake.count('navigator'), 0, 'the Overview draws no days');
+  await live.readWindow('90');
+  await live.readWindow('14');
+  assert.deepEqual(windows('time-of-day'), [14, 90], 'a window shown again is not read again');
+  await live.readTab('queue');
+  await live.readWindow('30');
+  assert.deepEqual(windows('analyze'), [14, 90, 'default'], 'the 30 d ISF is the Queue\'s analysis');
+  assert.deepEqual(Object.keys(live.answers.overview.wearer.analyze).sort(), ['14', '30', '90']);
+  await live.readTab('day');
+  assert.deepEqual(windows('time-of-day'), [14, 90, 30], 'Day reads the target range from the first window');
 });
 
 test('concurrent tabs share one request for an answer in flight', async () => {

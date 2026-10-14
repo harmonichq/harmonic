@@ -102,8 +102,8 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
   /** GET /api/diagnose/findings — the whole-day findings projection. */
   const fetchDiagnoseFindings = () => api('/api/diagnose/findings');
 
-  /** GET /api/analyze — the analysis, at the engine's default window. */
-  const fetchAnalysis = () => api('/api/analyze');
+  /** GET /api/analyze — the analysis, at the engine's default window or over `window` days. */
+  const fetchAnalysis = (window) => api('/api/analyze' + (window ? '?window=' + encodeURIComponent(window) : ''));
 
   /** GET /api/diagnose/finding-case-file-preparation — the projection a case file is read from. */
   const fetchDiagnoseFindingCasePreparation = () => api('/api/diagnose/finding-case-file-preparation');
@@ -154,8 +154,9 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
   /** GET /api/outcomes?window=N — the standard metrics over one window. */
   const fetchOutcomes = (window) => api('/api/outcomes?window=' + encodeURIComponent(window));
 
-  /** GET /api/explore/time-of-day — the fixed 30-day glucose profile. */
-  const fetchExploreTimeOfDay = () => api('/api/explore/time-of-day');
+  /** GET /api/explore/time-of-day — the glucose profile, over 30 days or `days` (14, 30 or 90). */
+  const fetchExploreTimeOfDay = (days) =>
+    api('/api/explore/time-of-day' + (days ? '?days=' + encodeURIComponent(days) : ''));
 
   /**
    * GET /api/day-navigator[?month=YYYY-MM] — each day of the month (the latest

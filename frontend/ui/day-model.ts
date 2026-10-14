@@ -16,8 +16,9 @@ const servedDays = () => answers.day.days as Record<string, ServedDay>;
 /** Minutes since midnight of a served "YYYY-MM-DD HH:MM:SS" time. */
 export const minuteOf = (t: string) => Number(t.slice(11, 13)) * 60 + Number(t.slice(14, 16));
 
-// The engine's one clinical range, as the glucose profile serves it.
-const RANGE = 'overview.wearer.time_of_day.target_range';
+// The engine's one clinical range, as every window's glucose profile serves it;
+// Day reads the Overview's first window's.
+const RANGE = 'overview.wearer.time_of_day.14.target_range';
 export const targetRange = () => ({
   low: sourced<number>(`${RANGE}.low`),
   high: sourced<number>(`${RANGE}.high`),

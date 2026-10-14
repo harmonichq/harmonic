@@ -1,28 +1,36 @@
 // The Overview screen (§1.1, §1.3), composed only from the library's
-// components: standard metrics over the selected window, its time-in-ranges
-// bar and the 30-day glucose profile. No recommendations.
+// components: standard metrics over the selected window against the period of
+// the same length before it, its time-in-ranges bar, its glucose profile, and
+// the ISF estimate. Nothing to act on.
 //
 // The window control picks 14, 30 or 90 d (a window the served coverage falls
-// short of is disabled); time in range leads, with its change against 90 d,
-// then its five-band bar, then the other metrics, each with its change. The
-// header dates the window's end ("To 30 Sep", §1.2). The glucose profile is the
-// engine's fixed 30 days whatever the window. A store with no readings shows
-// dashes for the metrics and "No data" for the bar and the profile.
+// short of is disabled). The line under it is the window's date span and,
+// when the period before it has data, the comparison every change is against,
+// named once ("30 Sep – 13 Oct · vs previous 14 d", §1.2, §2.5 2026-10-14).
+// Time in range leads, with its change, then its five-band bar, then the other
+// metrics, each with its change; then the window's glucose profile. A store
+// with no readings shows dashes for the metrics and "No data" for the bar and
+// the profile.
 //
-// The Overview never scrolls (operator, 2026-10-13: "No scrolling for the
-// overview page"): phone fits one 390 × 844 screen, three metrics to a row and
-// a shorter profile plot. Phone: one column under the fixed header, above the tab bar. Desktop: the
-// rail and one pane, the metrics beside the profile, and the recent days as
-// tiles beneath (§4.2 DayTile).
-import { useState } from 'react';
+// One scrolling page (§2.2 Scrolling, §2.5 2026-10-14): the summary — the
+// window switch and its date line, In range, the metrics and the profile — is
+// the first screenful, and the ISF estimate follows it. Phone: one column under
+// the fixed header, above the tab bar, with a shorter profile plot so the
+// summary fits. Desktop: the rail and one pane, the metrics beside the
+// profile, the ISF estimate beneath both.
+//
+// The profile and the ISF estimate are read per window: choosing a window
+// reports it (`onWindow`), and until its answers land each shows its skeleton.
+import { useEffect, useState } from 'react';
 import { answers, sourced } from '../../answers';
 import {
-  day, metric, profile, tirBands, type MetricKey, type Window,
+  isfEstimate, metric, period, profile, tirBands, type MetricKey, type Window,
 } from '../../overview-model';
-import { DayTile } from '../../components/DayTile/DayTile';
 import { GlucoseProfile } from '../../components/GlucoseProfile/GlucoseProfile';
+import { IsfCard } from '../../components/IsfCard/IsfCard';
 import { MetricFigure } from '../../components/MetricFigure/MetricFigure';
 import { NavBar, type NavHooks } from '../../components/NavBar/NavBar';
+import { Num } from '../../Num';
 import { ScreenHeader } from '../../components/ScreenHeader/ScreenHeader';
 import { lacksCoverage, SegmentedControl } from '../../components/SegmentedControl/SegmentedControl';
 import { TimeInRangeBar } from '../../components/TimeInRangeBar/TimeInRangeBar';
@@ -38,6 +46,9 @@ export type OverviewScreenProps = {
   state?: 'ready' | 'loading' | 'unavailable';
   /** The window selected first. */
   window?: Window;
+  /** The selected window, each time it is chosen (and the first), so its
+   *  profile and ISF estimate can be read. */
+  onWindow?: (window: Window) => void;
   nav?: NavHooks;
   /** Unavailable's Retry. */
   onRetry?: () => void;
@@ -45,10 +56,8 @@ export type OverviewScreenProps = {
 
 const WINDOWS: Window[] = ['14', '30', '90'];
 const OTHER_METRICS: MetricKey[] = ['mean_glucose', 'gmi', 'cv', 'tbr_lvl1', 'tar_lvl1'];
-/** Desktop: the recent days the navigator serves, as tiles. */
-const RECENT_DAYS = 14;
-/** Phone: the profile's plot height that lets the screen fit without scrolling. */
-const PHONE_PLOT = 170;
+/** Phone: the profile's plot height that keeps the summary on the first screen. */
+const PHONE_PLOT = 160;
 const dayCount = () => sourced<number>('prompts[answer=null].length');
 
 const outcomes = (store: Store) => (store === 'wearer'
@@ -56,12 +65,6 @@ const outcomes = (store: Store) => (store === 'wearer'
     window_days: number; coverage: { days: number }; metrics: { tir: number | null };
   }>;
 const outcomesRoot = (store: Store) => (store === 'wearer' ? 'outcomes' : 'overview.wearer-unsynced.outcomes');
-
-function recentDays() {
-  const days = answers.overview.wearer.day_navigator.days;
-  const last = days.map((d) => d.has_data).lastIndexOf(true);
-  return days.slice(Math.max(0, last + 1 - RECENT_DAYS), last + 1).map((d) => day(d.iso));
-}
 
 /** Loading (the screen's skeleton) or Unavailable (its title, the label and
  *  Retry): the frame, with nothing read from the answers. */
@@ -101,26 +104,32 @@ function Frame({ layout, state, nav, onRetry }: {
 }
 
 export function OverviewScreen({
-  layout, store, state = 'ready', window: initial = '14', nav, onRetry,
+  layout, store, state = 'ready', window: initial = '14', onWindow, nav, onRetry,
 }: OverviewScreenProps) {
   const [window, setWindow] = useState<Window>(initial);
+  useEffect(() => { onWindow?.(window); }, [window]);
   if (state !== 'ready') return <Frame layout={layout} state={state} nav={nav} onRetry={onRetry} />;
   const served = outcomes(store);
   const hasData = served[window].metrics.tir !== null;
-
-  const header = hasData
-    ? <ScreenHeader title="Overview" trailing="date" layout={layout}
-        date={sourced(`${outcomesRoot(store)}.${window}.span_end`, 'date')} />
-    : <ScreenHeader title="Overview" layout={layout} />;
+  const header = <ScreenHeader title="Overview" layout={layout} />;
+  const span = period(store, window);
 
   const control = (
-    <SegmentedControl
-      options={WINDOWS.map((w) => ({
-        days: sourced<number>(`${outcomesRoot(store)}.${w}.window_days`),
-        disabled: hasData && lacksCoverage(served[w]),
-      }))}
-      selected={served[window].window_days}
-      onChange={(days) => setWindow(String(days) as Window)} />
+    <div className="ui-overview__control">
+      <SegmentedControl
+        options={WINDOWS.map((w) => ({
+          days: sourced<number>(`${outcomesRoot(store)}.${w}.window_days`),
+          disabled: hasData && lacksCoverage(served[w]),
+        }))}
+        selected={served[window].window_days}
+        onChange={(days) => setWindow(String(days) as Window)} />
+      {span && (
+        <p className="ui-overview__period">
+          <Num value={span.start} /> – <Num value={span.end} />
+          {span.previous && <> · vs previous <Num value={span.previous} /> d</>}
+        </p>
+      )}
+    </div>
   );
 
   const metrics = (
@@ -135,10 +144,19 @@ export function OverviewScreen({
     </section>
   );
 
+  const servedProfile = store === 'wearer' ? profile('wearer', window) : undefined;
   const glucoseProfile = (
     <section className="ui-overview__profile">
-      {store === 'wearer' ? <GlucoseProfile data={profile('wearer')} plotHeight={layout === 'phone' ? PHONE_PLOT : undefined} /> : <p className="ui-overview__none">No data</p>}
+      {servedProfile === undefined ? <p className="ui-overview__none">No data</p>
+        : servedProfile === null ? <span className="ui-skeleton ui-overview__skeleton" aria-hidden="true" />
+          : <GlucoseProfile data={servedProfile} plotHeight={layout === 'phone' ? PHONE_PLOT : undefined} />}
     </section>
+  );
+
+  const isf = (
+    <div className="ui-overview__isf">
+      <IsfCard data={store === 'wearer' ? isfEstimate('wearer', window) : 'none'} />
+    </div>
   );
 
   if (layout === 'phone') {
@@ -147,7 +165,7 @@ export function OverviewScreen({
         <div className="ui-overview__head">{header}</div>
         <main className="ui-overview__main" data-scroll="page">
           <div className="ui-overview__body">
-            {control}{metrics}{glucoseProfile}
+            {control}{metrics}{glucoseProfile}{isf}
           </div>
         </main>
         <NavBar layout="tabbar" selected="overview" dayCount={dayCount()} {...nav} />
@@ -160,13 +178,9 @@ export function OverviewScreen({
       <section className="ui-overview__pane" data-scroll="page">
         <div className="ui-overview__width">{header}</div>
         <div className="ui-overview__body">
-          <div className="ui-overview__control">{control}</div>
+          {control}
           <div className="ui-overview__columns">{metrics}{glucoseProfile}</div>
-          {store === 'wearer' && (
-            <section className="ui-overview__days">
-              {recentDays().map((d) => <DayTile key={d.date.value} day={d} />)}
-            </section>
-          )}
+          {isf}
         </div>
       </section>
     </div>

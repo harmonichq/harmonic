@@ -1,8 +1,16 @@
 """Tests for ciq_autotune.timeline — the raw event-stream slice behind the
 Daily report's ECharts treatment timeline (#14)."""
 
+import os
+import tempfile
 import unittest
 from datetime import datetime, timedelta, timezone
+
+try:
+    from fastapi.testclient import TestClient
+    _HAS_FASTAPI = True
+except ImportError:  # pragma: no cover
+    _HAS_FASTAPI = False
 
 from ciq_autotune.events import CarbEntry
 from ciq_autotune.settings import SleepSchedule
@@ -320,6 +328,117 @@ class HoistedInputsTest(unittest.TestCase):
         spans = result["false_low_exclusion_spans"]
         self.assertEqual(len(spans), 1)
         self.assertEqual(spans[0]["start"], "2026-06-11 02:55:00")
+
+
+def _basal(seq, t, dur, rate, programmed):
+    return {"seq_num": seq, "time": t, "delivery_type": "algorithmDelivery",
+            "duration_mins": dur, "basal_rate": rate, "profile_basal_rate": programmed}
+
+
+def _bolus(seq, t, insulin, *, carbs=None, options=None, food=None, correction=None,
+           requested=None):
+    return {"seq_num": seq, "request_time": t, "description": "Standard",
+            "insulin": str(insulin),
+            "requested_insulin": str(requested if requested is not None else insulin),
+            "carbs": None if carbs is None else str(carbs), "completion": "Completed",
+            "bolus_options": options, "food_insulin": food,
+            "correction_insulin": correction}
+
+
+@unittest.skipUnless(_HAS_FASTAPI, "needs the api extra")
+class InsulinTotalsEndpointTest(unittest.TestCase):
+    """#492: the Day timeline serves the window's insulin split in units —
+    delivered basal, meal, correction and Control-IQ automatic boluses, summing to
+    ``total`` — plus the programmed basal beside it, outside ``total``."""
+
+    def setUp(self):
+        tmp = tempfile.NamedTemporaryFile(suffix=".db", delete=False)
+        tmp.close()
+        self.addCleanup(os.unlink, tmp.name)
+        with Store.open(tmp.name) as store:
+            store.upsert_basal([
+                # Before the day: sets the programmed rate a suspension carries.
+                _basal(1, "2026-06-10 12:00:00", 5, 0.6, 0.6),
+                # Straddles midnight: only its last 5 of 10 minutes are the day's.
+                _basal(2, "2026-06-10 23:55:00", 10, 1.2, 0.6),
+                _basal(3, "2026-06-11 00:05:00", 5, 0.6, 0.6),
+                # A Control-IQ suspension: nothing delivered, and the pump reports
+                # no programmed rate (its 0xFFFF sentinel, stored as None).
+                _basal(4, "2026-06-11 03:00:00", 5, 0.0, None),
+                _basal(5, "2026-06-11 03:05:00", 5, 0.0, None),
+                # Control-IQ delivering below the programmed rate.
+                _basal(6, "2026-06-11 03:10:00", 5, 0.3, 0.6),
+                # Straddles the next midnight: only its first 5 minutes count.
+                _basal(7, "2026-06-11 23:55:00", 10, 1.2, 1.2),
+                # A suspension running over into the next day (seeded test below).
+                _basal(8, "2026-06-12 00:05:00", 5, 0.0, None),
+                _basal(9, "2026-06-12 00:10:00", 5, 0.0, None),
+            ])
+            store.upsert_bolus([
+                # Meal: the pump put all of it on food.
+                _bolus(1, "2026-06-11 08:00:00", 3.0, carbs=45, options=0,
+                       food=3.0, correction=0.0),
+                # Correction only.
+                _bolus(2, "2026-06-11 10:00:00", 1.5, carbs=0, options=0,
+                       food=0.0, correction=1.5),
+                # Mixed and cut short: half the requested dose was delivered, and
+                # the delivered dose keeps the recorded three-to-one food mix.
+                _bolus(3, "2026-06-11 12:00:00", 2.0, carbs=40, options=0,
+                       food=3.0, correction=1.0, requested=4.0),
+                # Control-IQ automatic boluses (options 3 and 6).
+                _bolus(4, "2026-06-11 14:00:00", 0.4, options=3),
+                _bolus(5, "2026-06-11 15:00:00", 0.2, options=6),
+                # No food/correction split recorded: carbs make it a meal, none a
+                # correction.
+                _bolus(6, "2026-06-11 18:00:00", 1.0, carbs=20),
+                _bolus(7, "2026-06-11 20:00:00", 0.5, options=2),
+                # Nothing delivered.
+                _bolus(8, "2026-06-11 21:00:00", 0.0, carbs=10, options=0,
+                       food=1.0, correction=0.0),
+            ])
+        from ciq_autotune.api import create_app
+        self.client = TestClient(create_app(db_path=tmp.name, token=None,
+                                            enable_fetch_loop=False))
+
+    def _totals(self, start, end):
+        r = self.client.get("/api/timeline", params={"start": start, "end": end})
+        self.assertEqual(r.status_code, 200)
+        return r.json()["insulin_totals"]
+
+    def test_day_serves_each_part_and_parts_sum_to_total(self):
+        t = self._totals("2026-06-11T00:00:00", "2026-06-12T00:00:00")
+        self.assertEqual(set(t), {"basal", "meal", "correction", "control_iq_bolus",
+                                  "total", "basal_programmed"})
+        # 1.2*5/60 + 0.6*5/60 + 0 + 0 + 0.3*5/60 + 1.2*5/60
+        self.assertAlmostEqual(t["basal"], 0.275)
+        self.assertAlmostEqual(t["meal"], 3.0 + 1.5 + 1.0)
+        self.assertAlmostEqual(t["correction"], 1.5 + 0.5 + 0.5)
+        self.assertAlmostEqual(t["control_iq_bolus"], 0.6)
+        # Exactly, as served: the four parts add up to the total unrounded.
+        self.assertEqual(
+            t["basal"] + t["meal"] + t["correction"] + t["control_iq_bolus"], t["total"])
+        self.assertAlmostEqual(t["total"], 8.875)
+
+    def test_programmed_basal_is_beside_the_total_and_covers_a_suspension(self):
+        t = self._totals("2026-06-11T00:00:00", "2026-06-12T00:00:00")
+        # 0.6*5/60 (straddle) + 0.6*5/60 + two suspended rows at the carried 0.6
+        # + 0.6*5/60 + 1.2*5/60 (straddle).
+        self.assertAlmostEqual(t["basal_programmed"], 0.35)
+        self.assertLess(t["basal"], t["basal_programmed"])
+        self.assertNotAlmostEqual(
+            t["total"], t["basal_programmed"] + t["meal"] + t["correction"]
+            + t["control_iq_bolus"])
+
+    def test_suspension_at_window_start_carries_the_rate_from_before_it(self):
+        # The window opens mid-suspension: its one overlapping row reports no
+        # programmed rate, and the rate last reported comes from before it.
+        t = self._totals("2026-06-12T00:10:00", "2026-06-12T23:00:00")
+        self.assertEqual(t["basal"], 0.0)
+        self.assertAlmostEqual(t["basal_programmed"], 0.1)
+        self.assertEqual(t["total"], 0.0)
+
+    def test_window_with_no_data_serves_null(self):
+        self.assertIsNone(self._totals("2026-06-16T00:00:00", "2026-06-17T00:00:00"))
 
 
 if __name__ == "__main__":

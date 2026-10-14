@@ -227,7 +227,7 @@ including for isolated chart layout or interaction.
   client or router here is a duplicate implementation, not a convenience. Every
   model reads one seam (`frontend/ui/answers.ts`) with two adapters: the
   stories' generated answers (`fixtures.ts`) and the live engine's
-  (`ui/app/live.ts`). Only the stories import the fixtures, so the built app
+  (`ui/app/live.js`). Only the stories import the fixtures, so the built app
   never carries them. The library's material is committed source
   (`material.css`, `fonts/`).
 - `openspec/specs/` — twelve capability specifications: what each part of the

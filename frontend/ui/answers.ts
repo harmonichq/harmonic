@@ -1,7 +1,7 @@
 // The served answers every model reads (#495): the one seam between the
 // models and where their answers come from. Two adapters fill it — the
 // stories' generated answers (fixtures.ts, from ui-fixtures.json) and the live
-// engine's (app/live.ts, through the app's one client) — and the models read
+// engine's (app/live.js, through the app's one client) — and the models read
 // the same shape from either: one person's answers under the store names the
 // generator writes, the live adapter serving the person as `wearer`.
 //

@@ -73,13 +73,12 @@ def capture_comparison_context(store, *, at, input_revision):
     return context
 
 
-def _block(record):
-    block = record.get("block")
-    if block is not None:
-        return tuple(block)
-    if record.get("block_start_min") is not None and record.get("block_end_min") is not None:
+def _block(store, record):
+    from .watched_change import retained_block
+    if record.get("block") is None and record.get("block_start_min") is not None \
+            and record.get("block_end_min") is not None:
         return record["block_start_min"], record["block_end_min"]
-    return None
+    return retained_block(record, store.settings_snapshots())
 
 
 def _setting_period(store, record, cutoff, earliest):
@@ -87,7 +86,7 @@ def _setting_period(store, record, cutoff, earliest):
 
     changed = _time(record.get("detected_at") or record["changed_at"])
     parameter, slot = record["parameter"], record.get("slot")
-    block = _block(record)
+    block = _block(store, record)
     minutes = None
     if block:
         minutes = [m for m in range(1440) if _in_block(datetime(2000, 1, 1) + timedelta(minutes=m), block)]
@@ -316,7 +315,7 @@ def compare_follow_up(store, *, record, data_cutoff, input_revision, context_mod
         start, changed, end, before_reason, end_reason = _setting_period(store, record, cutoff, earliest)
         if before_reason == "missing_continuous_setting_history":
             return unavailable(before_reason)
-        parameter, block, slot = record["parameter"], _block(record), record.get("slot")
+        parameter, block, slot = record["parameter"], _block(store, record), record.get("slot")
     from .settings import changelog
     comparison["context_changes"] = [
         {"at": change.at.strftime(_FMT), "parameter": change.parameter,

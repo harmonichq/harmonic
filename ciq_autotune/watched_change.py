@@ -54,6 +54,10 @@ _TARGET_METRIC: Dict[str, List[str]] = {
 # A whole-profile switch or untargeted raw edit has no single target — overall
 # TIR + the post-meal arc (CONTEXT.md "Trial"; ADR 0029 §3).
 _PROFILE_TARGET = ["tir", "arc"]
+# The settings whose targeted pump change owns its changed time block as its
+# identity and cohort: a carb-ratio block (#581, ADR 500) and a basal block
+# (#506), each measured across the block rather than at its starting slot.
+_BLOCK_SCOPED = ("carb_ratio", "basal_rate")
 
 # A Trial's maturing window is a fixed backend fact — 14 days of target-metric
 # data-days — never a caller's trend or analysis window (#18): the dock and the
@@ -277,8 +281,9 @@ class _Cand:
     # its settled day's first observation (for a whole-profile one, the latest of
     # its parts'). ``None`` for a pump-read switch, which that dating never moved.
     legacy: Optional[datetime] = None
-    # A block-scoped I:C candidate carries the wrap-aware arc and member list the
-    # settings reads either side of its change recorded (#581, #500). The arc is
+    # A block-scoped I:C or basal candidate carries the wrap-aware arc (and, for
+    # I:C, the member list) the settings reads either side of its change recorded
+    # (#581, #500, #506). The arc is
     # Trial-owned identity: later profile repartitions cannot retarget it, because
     # the retained record keeps it, never re-reading current settings.
     block: Optional[tuple] = None
@@ -449,9 +454,10 @@ def _switch_candidates(snapshots, plan_history, mature_window: timedelta) -> Lis
     shows it rather than waiting for the dose stream to re-observe the new value
     across two days, and no Plan is needed for it. A change confined to one
     setting is one targeted candidate per changed time block; zero or two-plus
-    changed settings is one whole-profile candidate. A carb-ratio block owns its
-    arc and member starts (#581); an applied Plan group that matches the change
-    uniquely only supplies its own member list.
+    changed settings is one whole-profile candidate. A carb-ratio or basal block
+    owns its wrap-aware arc as its identity and cohort (#581, #506); a carb-ratio
+    block also owns its member starts, and an applied Plan group that matches the
+    change uniquely only supplies its own member list.
     """
     cands: List[_Cand] = []
     switches = _pump_changes(snapshots)
@@ -473,8 +479,8 @@ def _switch_candidates(snapshots, plan_history, mature_window: timedelta) -> Lis
                  if parameter == "carb_ratio" else None)
         for start, end, before, after in blocks:
             whole_day = (start, end) == (0, 1440)
-            block = (start, end) if parameter == "carb_ratio" and not whole_day else None
-            if block is None:
+            block = (start, end) if parameter in _BLOCK_SCOPED and not whole_day else None
+            if block is None or parameter != "carb_ratio":
                 members = None
             elif group is not None and tuple(group["block"]) == block:
                 members = list(group["members"])
@@ -628,12 +634,11 @@ def _reviewable_trials(store, now, *, horizon_start=None):
         # A block-bound I:C Trial accrues only from meals inside its captured arc
         # (#581): out-of-block meals never mature it, fill its gaps, or feed its
         # evidence — the same one wrap-aware cohort the detail and breakdown read.
-        if cand.block is not None:
-            data_times = [t for t in meal_times if _in_block(t, cand.block)]
-        elif target[0] == "arc":
-            data_times = meal_times
-        else:
-            data_times = [r.t for r in cgm]
+        # A basal Trial matures on the clock, block or not (#506): a change read
+        # after its block's hours would otherwise count its own day as a gap.
+        data_times = meal_times if target[0] == "arc" else [r.t for r in cgm]
+        if cand.block is not None and target[0] == "arc":
+            data_times = [t for t in data_times if _in_block(t, cand.block)]
         # Maturity accrues only from the same bounded Trial period displayed in
         # the selected detail.  Later observations cannot complete an otherwise
         # empty Trial or make its ready-to-judge state imply unavailable evidence.
@@ -896,6 +901,34 @@ def _slot_in_arc(slot: Optional[str], arc: Optional[tuple]) -> bool:
     return _in_arc(hour * 60 + minute, arc)
 
 
+def retained_block(record: dict, snapshots) -> Optional[tuple]:
+    """The time block a retained Trial is measured across (#581, #506).
+
+    A record's own captured block is its identity and is always read first. A
+    basal record saved at a pump change before basal Trials carried their block
+    keeps its id and is never rewritten; its block is the one the two settings
+    reads either side of its own change show moving from its slot, with its
+    before and after — the same reads, never the current settings, so a later
+    repartition cannot retarget it. Any other record has no block.
+    """
+    block = record.get("block")
+    if block is not None:
+        return tuple(block)
+    if record.get("parameter") != "basal_rate" or record.get("slot") is None:
+        return None
+    # Dated as the comparison dates it (``_setting_period``).
+    at = datetime.fromisoformat(record.get("detected_at") or record["changed_at"])
+    hour, minute = map(int, record["slot"].split(":"))
+    for switch in _pump_changes(snapshots):
+        if switch.at != at or set(switch.blocks) != {"basal_rate"}:
+            continue
+        for start, end, before, after in switch.blocks["basal_rate"]:
+            if (start == hour * 60 + minute and (start, end) != (0, 1440)
+                    and (before, after) == (record.get("before"), record.get("after"))):
+                return start, end
+    return None
+
+
 def _regime_candidates(parameter: str, slot: Optional[str], regimes: List[Regime],
                        mature_window: timedelta) -> List[_Cand]:
     """Every non-reverted transition in one setting's settled value history."""
@@ -1103,11 +1136,13 @@ def _review_id(view: TrialView, block: Optional[tuple] = None) -> str:
     end minute is folded into the id alongside the parameter/slot/changed-at stamp
     so two block groups that happen to share a start at the same instant (same
     parameter, slot, changed_at) cannot collide on one id — the roster's dedupe key
-    is ``(at, start, end)``, and the id must be at least as specific.
+    is ``(at, start, end)``, and the id must be at least as specific. A basal
+    block (#506) keeps the slotted id a basal pump change has always had, so a
+    record saved before basal Trials carried their block keeps its identity.
     """
     stamp = datetime.strptime(view.changed_at, _DT_FMT).strftime("%Y%m%d%H%M%S")
     slot = (view.slot or "all").replace(":", "-")
-    suffix = f"-{block[1]}" if block is not None else ""
+    suffix = f"-{block[1]}" if block is not None and view.parameter == "carb_ratio" else ""
     return f"{view.parameter}-{slot}-{stamp}{suffix}"
 
 
@@ -1202,12 +1237,14 @@ def _trial_evidence(store, view: TrialView, changed_at: datetime, now: datetime,
                     *, block: Optional[tuple] = None) -> List[dict]:
     """The selected Trial's period-aligned targets, guardrails, and rescue context.
 
-    ``block`` is the block-bound I:C Trial's captured wrap-aware arc (#581); when
-    set, the arc and rescue context read only meals inside it, so out-of-block
+    ``block`` is the Trial's captured wrap-aware arc. For a block-bound I:C Trial
+    (#581) the arc and rescue context read only meals inside it, so out-of-block
     meals never feed a block-scoped Trial's selected evidence — the same cohort the
-    roster maturity and breakdown use. The clock-based tir/tbr guardrails stay
-    day-wide (the change is programmed to one block, but a low it caused can land
-    outside that block).
+    roster maturity and breakdown use — while the clock-based tir/tbr guardrails
+    stay day-wide (the change is programmed to one block, but a low it caused can
+    land outside that block). For a basal block Trial (#506) the clock metrics read
+    the readings inside the block, as its comparison does, and the meal arc stays
+    day-wide context.
     """
     from .outcomes import compute_metrics
     from .outcomes_trend import post_meal_arc, post_meal_rescue_context
@@ -1220,20 +1257,26 @@ def _trial_evidence(store, view: TrialView, changed_at: datetime, now: datetime,
     carbs = store.carb_entries()
     before_cgm = [reading for reading in cgm if before_start <= reading.t < changed_at]
     trial_cgm = [reading for reading in cgm if changed_at < reading.t <= trial_end]
+    meal_block = block if view.parameter == "carb_ratio" else None
+    clock_block = block if view.parameter == "basal_rate" else None
 
     # Each meal is read at its first bolus, and only a meal's first bolus ends an
     # earlier meal's arc (ADR 470).
     meals = [meal.first for meal in group_meals(bolus)]
 
     def in_cohort(dose) -> bool:
-        return block is None or _in_block(dose.t, block)
+        return meal_block is None or _in_block(dose.t, meal_block)
 
     before_meals = [dose for dose in meals
                     if before_start <= dose.t < changed_at and in_cohort(dose)]
     trial_meals = [dose for dose in meals
                    if changed_at < dose.t <= trial_end and in_cohort(dose)]
-    before_metrics = compute_metrics(before_cgm)
-    trial_metrics = compute_metrics(trial_cgm)
+
+    def in_clock(readings):
+        return [r for r in readings if clock_block is None or _in_block(r.t, clock_block)]
+
+    before_metrics = compute_metrics(in_clock(before_cgm))
+    trial_metrics = compute_metrics(in_clock(trial_cgm))
 
     def role(key: str) -> str:
         return "target" if key in view.target_metrics else "guardrail"
@@ -1344,7 +1387,7 @@ def _retained_trial(store, record, now):
     parameter = record["parameter"]
     target = _PROFILE_TARGET if parameter == "profile" else _TARGET_METRIC[parameter]
     start = datetime.fromisoformat(record["changed_at"])
-    block = record.get("block")
+    block = retained_block(record, store.settings_snapshots())
     end = min(now, start + _MATURE_WINDOW)
     # Store._select is half-open [start, end); _maturing/_data_gaps filter the
     # open-start, closed-end (changed_at, end]. Request [start, end + 1s) so the
@@ -1451,7 +1494,8 @@ def _link_from_read(store, recorded_at):
              if plan["reconciliation"].get("state") == "available"
              and plan["reconciliation"].get("trial_id") is None and plan["id"] not in named]
     unlinked = [trial for trial in trials
-                if trial["reconciliation"].get("state") != "available" and not trial.get("block")]
+                if trial["reconciliation"].get("state") != "available"
+                and not (trial["parameter"] == "carb_ratio" and trial.get("block"))]
 
     def qualifies(trial, plan):
         read = datetime.fromisoformat(plan["reconciliation"]["observed_snapshot"]["captured_at"])
@@ -1615,7 +1659,7 @@ def _reversal_at(store, record, history=None):
     for previous, current in zip(switches, switches[1:]):
         if previous.at == start and _switch_reverts(previous, current, _MATURE_WINDOW):
             return current.at
-    if record["parameter"] == "profile" or record.get("block"):
+    if record["parameter"] == "profile" or (record["parameter"] == "carb_ratio" and record.get("block")):
         return None
     if record["parameter"] == "basal_rate":
         hour, minute = map(int, record["slot"].split(":"))
@@ -1752,7 +1796,7 @@ def _reconcile_plan(store, record, recorded_at):
         if not source or not rows or schedule_matches(rows, old):
             continue
         if schedule_matches(source["segments"], old) and schedule_matches(rows, actual):
-            if record.get("block"):
+            if record["parameter"] == "carb_ratio" and record.get("block"):
                 groups = _annotated_ic_groups([plan])
                 group = _match_unique_group(
                     [(s["start_min"], s["carb_ratio"]) for s in old],

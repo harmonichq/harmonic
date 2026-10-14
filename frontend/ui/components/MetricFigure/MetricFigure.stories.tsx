@@ -3,10 +3,11 @@ import { metricState } from '../../overview-model';
 import { MetricFigure } from './MetricFigure';
 
 // §4.2 MetricFigure, one story per state, each the first served metric in that
-// state (overview-model.ts metricState): the wearer's 30 d In range rose
-// against 90 d (better) and its 14 d In range fell (worse); the pinned store's
-// 30 d Below 70 equals its 90 d value (unchanged); a store before its first
-// sync serves no metric (not available).
+// state against the period before its window (overview-model.ts metricState):
+// better; worse; a window whose previous period holds no readings (no change);
+// and a store before its first sync, which serves no metric (not available).
+// No served metric prints the same as its previous period, so the unchanged
+// state (no arrow, neutral ink) has no story.
 const meta = {
   title: 'MetricFigure',
   component: MetricFigure,
@@ -18,5 +19,5 @@ type Story = StoryObj<typeof meta>;
 
 export const Better: Story = { args: { data: metricState('better') } };
 export const Worse: Story = { args: { data: metricState('worse') } };
-export const Unchanged: Story = { args: { data: metricState('unchanged') } };
+export const NoPrevious: Story = { args: { data: metricState('no_previous') } };
 export const NotAvailable: Story = { args: { data: metricState('unavailable') } };

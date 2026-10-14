@@ -1,16 +1,20 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, userEvent, waitFor, within } from 'storybook/test';
+import { expect, fireEvent, userEvent, waitFor, within } from 'storybook/test';
 import { fixtures } from '../../fixtures';
 import { formatValue } from '../../provenance.js';
 import { dayDate, loggedGrams } from '../../day-model';
 import { swipe } from '../../gesture';
+import { failsOnce } from '../../flaky';
+import { WithoutReadings, monthReader } from '../../served-variants';
 import { DayScreen, type DayScreenProps } from './DayScreen';
 
 // The Day screen in each state §1.3 lists for Day, Day · Prompts and Day · Log
 // carbs, at phone (390) and desktop (1440), every value the simulated wearer's
 // served answer:
 // - Default: the latest day with readings, its insulin bar and its one
-//   unanswered low as the Prompts row; Logged carbs: the day with the most
+//   unanswered low as the Prompts row; its chart draws basal against the Pump
+//   profile with its suspends, and two meals the engine counted as Carb
+//   undercount, named in their event rows; Logged carbs: the day with the most
 //   logged carbs; No prompts: once the person has answered them all, no row
 //   and no badge.
 // - Empty: the first day after the history ends ("No data"); Loading;
@@ -132,6 +136,52 @@ export const PickInWeekDesktop: Story = {
   },
 };
 
+// Stepping months: ‹ reads April once and shows its weeks, a day in it opens
+// that day (on desktop the week in view follows it), and › steps back; March is
+// the first month with readings, so ‹ is disabled there. A month the engine
+// cannot serve says Unavailable, with Retry, in the drop-down.
+const steppable = (layout: 'phone' | 'desktop', failing: string[] = []): Story => {
+  const months = monthReader(failing);
+  return { ...story(layout, { ...DEFAULT, readMonth: months.readMonth }), beforeEach: () => months.cleanup };
+};
+const openMonth = async (canvas: ReturnType<typeof within>) => {
+  await userEvent.click(canvas.getByRole('button', { name: named(latest), expanded: false }));
+  return within(canvas.getByRole('dialog', { name: 'May' }));
+};
+const stepPlay = (layout: 'phone' | 'desktop'): Story['play'] => async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  const may = await openMonth(canvas);
+  await expect(may.getByRole('button', { name: 'Next' })).toBeDisabled();
+  await userEvent.click(may.getByRole('button', { name: 'Previous' }));
+  const april = within(await canvas.findByRole('dialog', { name: 'Apr' }));
+  await expect(april.getByRole('button', { name: 'Next' })).toBeEnabled();
+  await userEvent.click(april.getByRole('button', { name: 'Previous' }));
+  const march = within(await canvas.findByRole('dialog', { name: 'Mar' }));
+  await expect(march.getByRole('button', { name: 'Previous' })).toBeDisabled();
+  await userEvent.click(march.getByRole('button', { name: 'Next' }));
+  const back = within(await canvas.findByRole('dialog', { name: 'Apr' }));
+  await userEvent.click(back.getByRole('button', { name: named('2025-04-10') }));
+  await expect(canvas.queryByRole('dialog')).toBeNull();
+  await expect(headerDay(canvas)).toHaveTextContent(printed('2025-04-10'));
+  if (layout === 'desktop') {
+    await expect(canvas.getByRole('button', { name: named('2025-04-10'), pressed: true })).toBeInTheDocument();
+  }
+};
+const unavailablePlay: Story['play'] = async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  const may = await openMonth(canvas);
+  await userEvent.click(may.getByRole('button', { name: 'Previous' }));
+  const april = within(await canvas.findByRole('dialog', { name: 'Apr' }));
+  await waitFor(() => expect(april.getByText('Unavailable')).toBeInTheDocument());
+  await expect(april.getByRole('button', { name: 'Retry' })).toBeInTheDocument();
+  await userEvent.click(april.getByRole('button', { name: 'Next' }));
+  await expect(within(await canvas.findByRole('dialog', { name: 'May' })).queryByText('Unavailable')).toBeNull();
+};
+export const StepMonthPhone: Story = { ...steppable('phone'), play: stepPlay('phone') };
+export const StepMonthDesktop: Story = { ...steppable('desktop'), play: stepPlay('desktop') };
+export const MonthUnavailablePhone: Story = { ...steppable('phone', ['2025-04']), play: unavailablePlay };
+export const MonthUnavailableDesktop: Story = { ...steppable('desktop', ['2025-04']), play: unavailablePlay };
+
 const typed = formatValue(loggedGrams().value, loggedGrams().format);
 const openCarbs = async (canvas: ReturnType<typeof within>) => {
   await userEvent.click(canvas.getByRole('button', { name: '+ Log carbs' }));
@@ -244,3 +294,56 @@ export const FitsDesktop: Story = {
     }
   },
 };
+
+// Live (#495): a Yes the engine does not save takes its check back, with
+// "Not saved", and Retry records it; then Next.
+const liveAnswerPlay: Story['play'] = async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  await userEvent.click(canvas.getByRole('button', { name: /Lows/ }));
+  await userEvent.click(canvas.getByRole('button', { name: 'Yes' }));
+  await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent(/Not saved/));
+  await expect(canvas.getByRole('button', { name: 'Yes', pressed: false })).toBeInTheDocument();
+  await userEvent.click(canvas.getByRole('button', { name: 'Retry' }));
+  await waitFor(() => expect(canvas.queryByText(/Not saved/)).toBeNull());
+  await expect(canvas.getByRole('button', { name: /Yes/, pressed: true })).toBeInTheDocument();
+};
+const liveDay = (): DayScreenProps['writes'] => ({
+  answer: failsOnce({ carbEntryId: null }), grams: failsOnce(undefined), logCarbs: failsOnce(undefined),
+});
+export const LiveAnswerNotSavedPhone: Story = { ...story('phone', { store: 'wearer', writes: liveDay() }), play: liveAnswerPlay };
+export const LiveAnswerNotSavedDesktop: Story = { ...story('desktop', { store: 'wearer', writes: liveDay() }), play: liveAnswerPlay };
+
+// Live (#495): Log carbs' Time row opens the system picker, and Save logs the
+// carbs at the time picked.
+const PICKED = '07:45';
+const logged: [number, string | undefined][] = [];
+const liveLog = (): DayScreenProps['writes'] => ({
+  answer: async () => ({ carbEntryId: null }), grams: async () => undefined,
+  logCarbs: async (grams, time) => { logged.push([grams, time]); },
+});
+const timeEditedPlay: Story['play'] = async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  logged.length = 0;
+  const entry = await openCarbs(canvas);
+  await userEvent.type(entry.getByRole('textbox', { name: 'Carbs' }), '30');
+  await expect(entry.getByRole('button', { name: /Time/ })).toHaveTextContent('Now');
+  fireEvent.change(entry.getByLabelText('Time', { selector: 'input' }), { target: { value: PICKED } });
+  await expect(entry.getByRole('button', { name: /Time/ })).toHaveTextContent(PICKED);
+  await userEvent.click(entry.getByRole('button', { name: 'Save' }));
+  await waitFor(() => expect(canvas.queryByRole('dialog', { name: 'Log carbs' })).toBeNull());
+  await expect(logged).toEqual([[30, PICKED]]);
+};
+export const LiveTimeEditedPhone: Story = { ...story('phone', { store: 'wearer', writes: liveLog() }), play: timeEditedPlay };
+export const LiveTimeEditedDesktop: Story = { ...story('desktop', { store: 'wearer', writes: liveLog() }), play: timeEditedPlay };
+
+// Before the first sync the navigator serves no day with readings: Day opens
+// on the served month's last day up to today (its timeline, not served here,
+// shows as the chart's skeleton; the live app reads it as "No data").
+const noReadings: Story['decorators'] = [(Story) => <WithoutReadings><Story /></WithoutReadings>];
+const noReadingsPlay: Story['play'] = async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  await expect(canvas.getByRole('heading', { level: 1, name: 'Day' })).toBeInTheDocument();
+  await expect(canvas.getByRole('button', { expanded: false, name: /31 May/ })).toBeInTheDocument();
+};
+export const NoReadingsPhone: Story = { ...story('phone', { store: 'wearer-answered' }), decorators: noReadings, play: noReadingsPlay };
+export const NoReadingsDesktop: Story = { ...story('desktop', { store: 'wearer-answered' }), decorators: noReadings, play: noReadingsPlay };

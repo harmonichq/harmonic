@@ -390,6 +390,55 @@ staging verdict are untouched.
 - The Overview report card for carbs vs post-meal response needs its own producer
   (#501). It does not revive the detector.
 
+## ADR 504 — The correction factor joins the Queue when its analyzer supports the change
+
+**Context.** ADR 499 kept the correction factor (ISF) out of the Queue entirely:
+guidance served the `setting:isf` candidate with its action, because the Plan
+applies an ISF draft against it, but never admitted it. The Overview's ISF estimate
+card (§2.5 of the lock, 2026-10-14) now shows the estimate whatever the engine
+decides, and draws "current → recommended" only when the analyzer's one ISF
+staging verdict, `isf_asserts_move`, supports the change.
+
+**The operator's decision** (Connor, 2026-10-14): "I think ISF can show up in the
+queue if there is an asserted change and then we just use the card design that we
+came up with basically or a slight modification thereof from the overview page.
+But I think, well, it can pretty much always exist on the overview page as an
+estimate, you know what I mean?"
+
+**Decision.** This amends ADR 499's fifth decision ("ISF is served but never
+queued").
+
+1. *The analyzer's verdict decides.* Guidance admits `setting:isf` when it carries
+   an action and a member carries `asserts_move` true, the flag the ISF analyzer
+   stamps from `isf_asserts_move`. A held, direction-only, range-held or
+   unprogrammed ISF is still served but not admitted. Nothing downstream re-derives
+   the verdict: the frontend Queue shows what guidance admits.
+2. *Selected only when admitted.* ADR 499's sixth decision lets guidance consider a
+   Setting no Pattern carries. ISF is one, but it is considered only when admitted,
+   so a held ISF never leads an investigation, as before.
+3. *Ranking follows the existing rule for every admitted candidate.* An admitted ISF
+   ranks by its served Priority (the ISF tuning lever's), highest first, an exact
+   tie broken by subject. It gets no boost and no penalty of its own.
+4. *The Queue draws it with the Overview's card.* The open card is the IsfCard in
+   the Queue's frame: titled "ISF", current → recommended, the fasting nights'
+   evidence chart with the estimate in its range and the Current line, Estimate,
+   Range and Fasting nights, and the Setting card's Snooze. Its Queue row is the
+   Setting row with no time block. The Overview's card is unchanged and always
+   shown.
+
+**Evidence.** Through `/api/guidance` on the manufactured QA stores:
+`isf-strengthen`, whose ISF asserts a strengthen, is admitted and queued;
+`isf-held`, `isf-direction-only-weaken`, `isf-range-hold`, and `isf-strengthen`
+with its pump profile removed (no programmed value) are not. No analyzer, predicate
+or `safety.py` value changes.
+
+**Consequences.**
+- A person whose fasting nights support an ISF change sees it in the Queue, and can
+  Snooze it as any Setting. Lows after correcting highs still carries no setting
+  member.
+- The hand-built "admitted ISF" Queue variant of the stories is replaced by the
+  generated `isf-supported` store, read through the same API.
+
 ## ADR 505 — The synthetic fasting lane answers insulin; the engine keeps no guard for flat fasting glucose
 
 **Context.** Every manufactured QA night held glucose flat at 120 mg/dL. The fasting
@@ -437,3 +486,87 @@ slowest case 20–27 s, over the 90 s and 15 s limits. Connor accepted the cost:
 "As the price of a real ISF ... it's fine. We can, the tests can take longer. If
 I get pissed off about that later, we can iterate." The limits in AGENTS.md are
 now 150 s and 30 s.
+
+## ADR 495 — The five-tab app replaces the desk, and the specifications follow it
+
+**Context.** The swap (#495) makes the five-tab app (Queue, Changes, Overview, Day,
+Settings) the only browser shell and deletes the desk. The desk is preserved as
+release v0.1.0. The surfaces specification still described the desk as the
+shipped surface: 131 requirements, nearly all about Diagnose, its rail and stage,
+the watch dock, the Episode Log and the desk's Changes.
+
+**Decision.**
+
+1. *Surfaces specify the five tabs.* This change's surfaces delta adds one
+   requirement per tab, the shell's five page paths and the per-screen error
+   rule, each drawn from the lock in `docs/design/recommendations-redesign.md`.
+   It removes every desk requirement. It keeps, unchanged, the ten that are
+   server read contracts or still hold of the app (server-owned projections, the
+   one dark theme, served headlines and their authorship, case-file denominators,
+   the carb-ratio sentence register, setting labels, recorded Plan subject names,
+   the trials roster read), and the three server-read requirements this change
+   already modified. The Purpose paragraph, which still names Diagnose, Changes
+   and Day, is rewritten for the five tabs when this change is archived.
+2. *Other capabilities drop only their desk clauses.* The warm pass is described
+   by its roster rather than "the initial Diagnose load" (http-api). The QA
+   showcase's consumers are the smoke test and the image's smoke step, since the
+   desk ledger replay and its Trial and Pattern Focus suite are gone
+   (qa-e2e-database). The browser-gate findings mirror and test desk are removed
+   (behavioral-layer). The Plan keeps its server rules and loses its staging-control
+   scenarios; the app stages no Plan (plan). A requirement losing a scenario is
+   restated under a new title, because a MODIFIED block cannot drop one.
+3. *Desk-only harness records retire with the desk.* The warm-arrival change (#507,
+   ADR 507) only made desk ledger stories arrive warm; its replay helper, test and
+   change are deleted, since nothing on this branch runs that replay. Its two
+   causes still bind the app's own smoke, so ADR 475 carries both forward: the
+   warm roster runs before the serve, and the browser context sends
+   `Connection: close`. The
+   carb-ratio block-evidence change keeps its engine and API deltas but drops its
+   surfaces delta, which described desk tiles the app does not draw.
+
+**Consequences.** No engine, API or safety behavior changes. Prose mentions of
+Diagnose that name an endpoint path or the fixture set
+(`/api/diagnose/...`, `mockups/diagnose-workstation.synthetic`) stay, since
+those are identifiers, not the shipped surface.
+
+## ADR 475 — Contract tests and one browser smoke replace the behaviour ledgers
+
+**Context.** #475 (Connor, 2026-09-25) cut the app to its loop and CI with it:
+replace the frozen behaviour ledgers with a handful of end-to-end journeys at one
+size, and finish a PR's CI in 15 minutes or less with no job over 10. The swap
+(#495) deleted the desk, its ledger (204 stories at two sizes), its Trial and
+Pattern Focus suite and their replay drivers. What the five-tab app needs proved
+is narrower: that the live adapter turns the engine's real answers into the
+screen models the locked screens draw, and that the built app puts them on the
+page. The screens' states and behaviours are already proved story by story in
+the Storybook suite, against the same models.
+
+**Decision** (Connor, 2026-10-14, keeping it "as lightweight as possible").
+
+1. *Contract tests, no browser.* `frontend/ui/app/live.contract.test.mjs` drives
+   the real live adapter through the app's one client against a synthetic no-fetch
+   serve, then asserts each tab's screen model against literal values per store:
+   the showcase for all five tabs, `isf-strengthen` for a queued correction factor
+   and `c3-trial` for an active Trial. Node resolves and strips the models'
+   TypeScript itself; no bundler or new dependency.
+2. *One browser smoke.* `frontend/app.browser.test.mjs` opens each of the five
+   tabs once at 1440×900 and requires each to draw its primary content with no
+   skeleton and no Unavailable. It asserts no behaviour.
+3. *One harness, the permitted serve.* `scripts/smoke_app.py --then` boots the one
+   permitted offline serve, after its existing probe, and runs either test against
+   it; `--case` serves a generator-emitted case store instead of the showcase.
+   #507's two flake causes are closed at the source: the scratch store is warmed
+   through the server's own warm roster before it serves, and every request opens
+   a fresh connection (no agent in Node, `Connection: close` in the browser).
+4. *One CI job.* The `app` job runs both, hand-listed, and takes the served-app
+   smoke step from the frontend job. Both fail closed without a serve.
+
+**Rejected.** A journey per loop step that clicks through Pin, Snooze and End:
+those writes are already played in the Storybook suite against fakes that fail
+once, and the server's side of each write has its own backend tests. Repeating
+them through a browser buys the ledger's cost back.
+
+**Consequences.** A fact a screen model reads from the engine is pinned in the
+contract test's per-store literals. A new screen gets one line in the smoke's
+tab list. No synthetic store yet holds a queued basal block inside a Trial's
+block; that state is proved only by the Storybook fixtures.

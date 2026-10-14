@@ -23,7 +23,18 @@ const { latest, default: other, no_data: noData } = fixtures.day.states;
 const week = (iso: string) => weekOf(iso)!.map(day);
 
 export const Default: Story = { args: { days: week(latest) } };
-export const Selected: Story = { args: { days: week(latest), selected: latest } };
+// Selected tints the day's whole column and sets its weekday and date in the primary colour.
+export const Selected: Story = {
+  args: { days: week(latest), selected: latest },
+  play: async ({ canvasElement }) => {
+    const { weekday, date } = dayDate(latest);
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole('button', { name: `${weekday} ${formatValue(date.value, 'date')}`, pressed: true })).toBeInTheDocument();
+    await expect(canvasElement.querySelectorAll('.ui-ribbon__selected')).toHaveLength(1);
+    await expect(canvasElement.querySelectorAll('.ui-ribbon__mark')).toHaveLength(0);
+    await expect(canvasElement.querySelectorAll('.ui-ribbon__date[data-selected]')).toHaveLength(1);
+  },
+};
 export const NoData: Story = { args: { days: week(noData) } };
 export const Desktop: Story = {
   args: { days: week(latest), selected: latest },

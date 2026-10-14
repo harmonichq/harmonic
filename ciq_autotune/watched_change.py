@@ -829,9 +829,10 @@ class _ReviewTrial:
 
     view: TrialView
     gap_count: int
-    # The captured wrap-aware arc + member starts when this is a block-bound I:C
-    # Trial (#581, #500); ``None`` for every other Trial. Trial-owned identity read
-    # off the change's own two settings reads, never off current settings.
+    # The captured wrap-aware arc when this is a block-bound I:C or basal Trial
+    # (#581, #500, #506), and an I:C Trial's member starts; ``None`` for every
+    # other Trial. Trial-owned identity read off the change's own two settings
+    # reads, never off current settings.
     block: Optional[tuple] = None
     members: Optional[list] = None
 
@@ -1168,6 +1169,10 @@ def _review_summary(trial: _ReviewTrial) -> dict:
         "before": view.before,
         "after": view.after,
         "target_metrics": list(view.target_metrics),
+        # The block the Trial is measured across (#506), so a reader can tell a
+        # time block inside it from one outside; None for a whole-day or
+        # whole-profile Trial.
+        "block": list(trial.block) if trial.block is not None else None,
         "state": "maturing" if view.maturing.is_maturing else "complete",
         "maturing": {
             "days_elapsed": view.maturing.days_elapsed,

@@ -2,7 +2,7 @@
 // LogCarbsEntry: sized to three digits, the unit inline, the system numeric
 // keyboard, the number the visual focus. A focused field carries the accent
 // underline; the value, when shown, is a served amount.
-import type { Sourced } from './fixtures';
+import type { Sourced } from './answers';
 import { formatValue } from './provenance.js';
 import './GramsField.css';
 

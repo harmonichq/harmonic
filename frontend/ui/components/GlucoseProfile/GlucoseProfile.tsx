@@ -1,4 +1,5 @@
-// GlucoseProfile (§4.2): glucose by time of day over the served 30 days.
+// GlucoseProfile (§4.2): glucose by time of day over the selected window's
+// served days (14, 30 or 90).
 //
 // The median is a line; around it two nested bands, the 25–75% spread strong
 // and the 10–90% spread faint, as an AGP draws them; both a quiet green in range.

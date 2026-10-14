@@ -1063,8 +1063,19 @@ class Store:
     def settings_snapshots(self) -> List[Snapshot]:
         """Every settings snapshot, oldest first, grouped back into typed
         :class:`~ciq_autotune.settings.Snapshot` objects (one per fetch)."""
-        rows = self.conn.execute(
-            "SELECT * FROM profile_settings ORDER BY captured_at, idp").fetchall()
+        return self._snapshots_from(self.conn.execute(
+            "SELECT * FROM profile_settings ORDER BY captured_at, idp").fetchall())
+
+    def latest_settings_snapshot(self) -> Optional[Snapshot]:
+        """The newest settings snapshot, parsed alone. The table holds one row
+        per profile per fetch, so a read that only wants the current settings
+        must not parse every capture to reach the last."""
+        return next(iter(self._snapshots_from(self.conn.execute(
+            "SELECT * FROM profile_settings WHERE captured_at = "
+            "(SELECT MAX(captured_at) FROM profile_settings) ORDER BY idp").fetchall())), None)
+
+    @staticmethod
+    def _snapshots_from(rows) -> List[Snapshot]:
         by_capture: "dict[str, list]" = {}
         active_by_capture: "dict[str, int]" = {}
         for r in rows:

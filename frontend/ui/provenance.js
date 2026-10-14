@@ -18,6 +18,10 @@
 // The 54–69 band prints tbr_lvl1 − tbr_lvl2 as fixed1; a part's share of the
 // day's insulin is part ÷ total as share. The operators are − and ÷.
 //
+// After the first operand, a formula may also take a whole-number literal, as
+// the live Prompts' place does ("n / N": N served when they opened, less the
+// prompts still to come); the first operand is always a field.
+//
 // Grammar: dot-separated keys and array indexes; `length` on an array; and one
 // filter on an array segment: equality, `prompts[answer=null]`, whose value is
 // read as JSON (null, true, false, a number) or else as a plain string; or a
@@ -77,7 +81,8 @@ export function resolveSource(root, source, format) {
   const printed = PRINTED[format] ?? ((v) => v);
   let value = printed(resolveField(root, first));
   for (let i = 0; i < rest.length; i += 2) {
-    value = OPERATORS[rest[i]](value, printed(resolveField(root, rest[i + 1])));
+    const operand = rest[i + 1];
+    value = OPERATORS[rest[i]](value, /^\d+$/.test(operand) ? Number(operand) : printed(resolveField(root, operand)));
   }
   return value;
 }

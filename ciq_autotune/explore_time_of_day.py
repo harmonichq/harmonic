@@ -1,8 +1,9 @@
-"""Fixed 30-day time-of-day evidence for Explore.
+"""Time-of-day evidence over a fixed 14-, 30- or 90-day window.
 
-The public reader has one fixed cohort and no presentation-driven filters: the
-30 pump-local calendar days ending after the newest CGM day.  It owns the
-five-minute aggregation so every Explore client reads the same evidence.
+The public reader has one cohort per window and no presentation-driven filters:
+the 14, 30 or 90 pump-local calendar days ending after the newest CGM day (30 by
+default; the Overview's glucose profile follows its window switch).  It owns the
+five-minute aggregation so every client reads the same evidence.
 """
 
 from __future__ import annotations
@@ -16,7 +17,9 @@ from .false_low import drop_readings, false_low_spans
 
 _BIN_MINUTES = 5
 _BINS_PER_DAY = 24 * 60 // _BIN_MINUTES
-_DATA_DAYS = 30
+# The windows a profile may cover, the Overview's 14 / 30 / 90 d, and the default.
+DATA_DAYS = (14, 30, 90)
+DEFAULT_DATA_DAYS = 30
 _TARGET_RANGE = {"low": 70, "high": 180}
 _POOLED_BIN_MINUTES = 15
 _POOL_MINUTES = 45
@@ -27,8 +30,9 @@ _POOLED_BINS_PER_DAY = 24 * 60 // _POOLED_BIN_MINUTES
 _MIN_SUPPORTED_CGM_DAYS = 8
 
 
-def build_time_of_day(store) -> dict:
-    """Return Explore's fixed, pump-local 30-day time-of-day evidence."""
+def build_time_of_day(store, *, days: int = DEFAULT_DATA_DAYS) -> dict:
+    """Return the pump-local time-of-day evidence over the last ``days`` days,
+    one of ``DATA_DAYS``."""
     history = store.cgm_readings()
     if not history:
         return {
@@ -41,12 +45,12 @@ def build_time_of_day(store) -> dict:
 
     latest = max(reading.t for reading in history)
     end = datetime.combine(latest.date() + timedelta(days=1), time.min)
-    start = end - timedelta(days=_DATA_DAYS)
+    start = end - timedelta(days=days)
     values = [[] for _ in range(_BINS_PER_DAY)]
     meals = [0] * _BINS_PER_DAY
 
     # A false-low span is resolved from all retained CGM before the cohort is
-    # sliced: its anchor and drop shoulder can sit before this fixed window.
+    # sliced: its anchor and drop shoulder can sit before this window.
     spans = false_low_spans(history, store.prompt_responses())
     retained = [reading for reading in drop_readings(history, spans)
                 if start <= reading.t < end and reading.bg is not None]
@@ -63,7 +67,7 @@ def build_time_of_day(store) -> dict:
         meals[_bin_index(t)] += 1
 
     return {
-        "window": {"start": format_t(start), "end": format_t(end), "data_days": _DATA_DAYS},
+        "window": {"start": format_t(start), "end": format_t(end), "data_days": days},
         "bin_minutes": _BIN_MINUTES,
         "target_range": _TARGET_RANGE,
         "bins": [_bin(minute, values[index], meals[index])

@@ -8,14 +8,16 @@
 // Not saved: the amount stays, the failure is a ⚠ label, and the primary
 // becomes Retry (§1.2).
 //
-// Time edited: the row shows the time chosen instead of Now.
+// Time edited: the row shows the time chosen instead of Now. Pressing the row
+// opens the system's own time picker (a native time input beside it), on phone
+// and in the desktop popover alike.
 //
 // Phone: a bottom sheet (12 px top radius, grabber) on the system keyboard,
 // which the story does not draw. Desktop: a popover anchored under its
 // "+ Log carbs" trigger, its arrow on the trigger; the trigger opens and closes
 // it, and at a header's trailing edge both align to that edge.
-import { useRef } from 'react';
-import type { Sourced } from '../../fixtures';
+import { useRef, type RefObject } from 'react';
+import type { Sourced } from '../../answers';
 import { Num } from '../../Num';
 import { GramsField } from '../../GramsField';
 import { Button } from '../Button/Button';
@@ -29,8 +31,12 @@ export type LogCarbsEntryProps = {
   state: LogCarbsState;
   /** The typed amount; absent while empty. */
   grams?: Sourced<number>;
-  /** The time chosen in the Time row; Now when unset. */
+  /** A served time shown in the Time row (the stories' Time edited); Now when unset. */
   time?: Sourced<string>;
+  /** The time the person picked, `HH:MM`; shown in the Time row instead of Now. */
+  chosen?: string;
+  /** The person picked a time in the system picker, `HH:MM`. */
+  onTimeChange?: (time: string) => void;
   layout?: 'phone' | 'desktop';
   /** Desktop: the popover is open (its trigger always shows). */
   open?: boolean;
@@ -44,10 +50,23 @@ export type LogCarbsEntryProps = {
   onSave?: () => void;
 };
 
-type EntryProps = Pick<LogCarbsEntryProps, 'state' | 'grams' | 'time' | 'onGramsChange' | 'onSave'>;
+type EntryProps = Pick<LogCarbsEntryProps,
+  'state' | 'grams' | 'time' | 'chosen' | 'onTimeChange' | 'onGramsChange' | 'onSave'>;
 
-function Entry({ state, grams, time, onGramsChange, onSave }: EntryProps) {
+/** Open the system time picker; where showPicker is missing, focus the input. */
+function pick(input: RefObject<HTMLInputElement | null>) {
+  const field = input.current;
+  if (!field) return;
+  try {
+    field.showPicker();
+  } catch {
+    field.focus();
+  }
+}
+
+function Entry({ state, grams, time, chosen, onTimeChange, onGramsChange, onSave }: EntryProps) {
   const failed = state === 'not_saved';
+  const picker = useRef<HTMLInputElement>(null);
   return (
     <>
       <h2 className="ui-logcarbs__title">Log carbs</h2>
@@ -55,12 +74,19 @@ function Entry({ state, grams, time, onGramsChange, onSave }: EntryProps) {
         <GramsField value={state === 'empty' ? null : grams} focused={state !== 'saving'} disabled={state === 'saving'}
           onChange={onGramsChange} />
       </div>
-      <button type="button" className="ui-logcarbs__time" data-role="row" disabled={state === 'saving'}>
-        <span>Time</span>
-        <span className="ui-logcarbs__value">
-          {time ? <Num value={time} /> : 'Now'}<span className="ui-logcarbs__chevron" aria-hidden="true">›</span>
-        </span>
-      </button>
+      <div className="ui-logcarbs__time-row">
+        <button type="button" className="ui-logcarbs__time" data-role="row" disabled={state === 'saving'}
+          onClick={() => pick(picker)}>
+          <span>Time</span>
+          <span className="ui-logcarbs__value">
+            {chosen ?? (time ? <Num value={time} /> : 'Now')}
+            <span className="ui-logcarbs__chevron" aria-hidden="true">›</span>
+          </span>
+        </button>
+        <input ref={picker} className="ui-logcarbs__picker" type="time" aria-label="Time" tabIndex={-1}
+          value={chosen ?? ''} disabled={state === 'saving'}
+          onChange={(event) => { if (event.currentTarget.value) onTimeChange?.(event.currentTarget.value); }} />
+      </div>
       <div className="ui-logcarbs__foot">
         {failed && <p className="ui-logcarbs__failed"><span aria-hidden="true">⚠</span> Not saved</p>}
         <Button kind="primary" label={failed ? 'Retry' : 'Save'} disabled={state === 'empty'} busy={state === 'saving'}

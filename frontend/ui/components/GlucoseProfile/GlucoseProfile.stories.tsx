@@ -14,5 +14,6 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = { args: { data: profile('wearer') } };
-export const NoData: Story = { args: { data: profile('wearer-first-days') } };
+export const Default: Story = { args: { data: profile('wearer', '14')! } };
+export const Window90: Story = { args: { data: profile('wearer', '90')! } };
+export const NoData: Story = { args: { data: profile('wearer-first-days', '14')! } };

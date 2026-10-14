@@ -1,8 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, userEvent, within } from 'storybook/test';
+import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { fixtures, sourced } from '../../fixtures';
 import { swipe } from '../../gesture';
 import { ranking } from '../../queue-model';
+import { failsOnce } from '../../flaky';
+import { QUEUE_IC, QUEUE_UNDRAWABLE } from '../../served-variants';
 import { QueueScreen, type QueueScreenProps } from './QueueScreen';
 
 // The Queue screen in each state §1.3 lists, at phone (390) and desktop (1440),
@@ -60,12 +62,41 @@ const EMPTY = { store: 'wearer-first-days-snoozed' } as const;
 const LOADING = { store: 'wearer', state: 'loading' } as const;
 const UNAVAILABLE = { store: 'wearer', state: unavailable ? 'unavailable' : 'ready' } as const;
 
-export const DefaultPhone = story('phone', DEFAULT);
-export const DefaultDesktop = story('desktop', DEFAULT);
+// A row is the same height with or without its trailing impact (§2.5,
+// 2026-10-14), and its chevron stays centred on its title line.
+const rowsLevel: Story['play'] = async ({ canvasElement }) => {
+  const rows = [...canvasElement.querySelectorAll<HTMLElement>('.ui-qrow[data-role="row"]')];
+  const trailing = rows.filter((row) => row.querySelector('.ui-qrow__impact'));
+  await expect(trailing.length).toBeGreaterThan(0);
+  await expect(trailing.length).toBeLessThan(rows.length);
+  const heights = new Set(rows.map((row) => row.getBoundingClientRect().height));
+  await expect([...heights]).toHaveLength(1);
+  for (const row of rows) {
+    const chevron = row.querySelector('.ui-qrow__chevron');
+    if (!chevron) continue;
+    const title = row.querySelector('.ui-qrow__title')!.getBoundingClientRect();
+    const box = chevron.getBoundingClientRect();
+    await expect(Math.abs((box.top + box.bottom) / 2 - (title.top + title.bottom) / 2)).toBeLessThanOrEqual(1);
+  }
+};
+
+export const DefaultPhone: Story = { ...story('phone', DEFAULT), play: rowsLevel };
+export const DefaultDesktop: Story = { ...story('desktop', DEFAULT), play: rowsLevel };
 export const PatternOpenPhone = story('phone', PATTERN_OPEN);
 export const PatternOpenDesktop = story('desktop', PATTERN_OPEN);
 export const SettingDetailPhone = story('phone', SETTING_DETAIL);
 export const SettingDetailDesktop = story('desktop', SETTING_DETAIL);
+
+// The Basal block open inside the matured Trial's block (#506): the card names
+// the Trial and links to Changes, though the block starts after the Trial's start.
+const SETTING_TRIAL = { store: fixtures.states.setting_trial.store, open: 'setting:basal_rate' } as QueueScreenProps;
+const trialPlay: Story['play'] = async ({ canvasElement }) => {
+  const canvas = within(canvasElement.querySelector('.ui-scard__trial') as HTMLElement);
+  await expect(canvas.getByText('Trial')).toBeInTheDocument();
+  await expect(canvas.getByRole('button', { name: 'Changes' })).toBeInTheDocument();
+};
+export const SettingTrialPhone: Story = { ...story('phone', SETTING_TRIAL), play: trialPlay };
+export const SettingTrialDesktop: Story = { ...story('desktop', SETTING_TRIAL), play: trialPlay };
 export const JustSnoozedPhone = story('phone', JUST_SNOOZED);
 export const JustSnoozedDesktop = story('desktop', JUST_SNOOZED);
 export const SnoozedListPhone = story('phone', SNOOZED_LIST);
@@ -179,3 +210,70 @@ export const SnoozedDrillDownDesktop: Story = {
     await expect(canvas.getByRole('heading', { level: 2, name: new RegExp(open.data.title) })).toBeInTheDocument();
   },
 };
+
+// Live (#495): a Snooze the engine does not save puts the item back with
+// "Not saved", and Retry saves it.
+const liveSnoozePlay: Story['play'] = async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  const title = ranking('wearer')[0].data.title;
+  await userEvent.click(canvas.getByRole('button', { name: 'Snooze' }));
+  await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent(/Not saved/));
+  await expect(canvas.getByRole('heading', { level: 2, name: new RegExp(title) })).toBeInTheDocument();
+  await userEvent.click(canvas.getByRole('button', { name: 'Retry' }));
+  await waitFor(() => expect(canvas.queryByText(/Not saved/)).toBeNull());
+};
+const liveWrites = (): QueueScreenProps['writes'] => ({
+  snooze: failsOnce(undefined), restore: failsOnce(undefined), pin: failsOnce(undefined),
+});
+export const LiveSnoozeNotSavedPhone: Story = { ...story('phone', { store: 'wearer', writes: liveWrites() }), play: liveSnoozePlay };
+export const LiveSnoozeNotSavedDesktop: Story = { ...story('desktop', { store: 'wearer', writes: liveWrites() }), play: liveSnoozePlay };
+
+// A ranking holding candidates the Queue cannot draw (an ISF and an I:C
+// Setting with no admitted row, a Pattern the findings serve no row for, and a
+// kind the app does not know): they are left out, and the Queue draws the rest.
+const undrawablePlay: Story['play'] = async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  await expect(canvas.getByRole('heading', { level: 1, name: 'Queue' })).toBeInTheDocument();
+  await expect(canvas.queryByText('Unserved')).toBeNull();
+  await expect(canvas.queryByText('Unknown')).toBeNull();
+  await expect(canvas.getAllByRole('img', { name: 'Pattern' }).length).toBeGreaterThan(0);
+};
+export const UndrawablePhone: Story = { ...story('phone', { store: QUEUE_UNDRAWABLE }), play: undrawablePlay };
+export const UndrawableDesktop: Story = { ...story('desktop', { store: QUEUE_UNDRAWABLE }), play: undrawablePlay };
+
+// A queued ISF (§2.5, 2026-10-14): the store whose ISF the engine supports a
+// change for. Its row prints current → recommended with no time block; open,
+// it is the Overview's ISF card in the Queue's frame: titled "ISF" alone,
+// current → recommended above the fasting nights' chart (one dot per night),
+// Estimate, Range and Fasting nights beneath, and Snooze at its foot.
+const ISF_STORE = 'isf-supported' as const;
+const isfPlay: Story['play'] = async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  const isf = ranking(ISF_STORE).find((i) => i.subject === 'setting:isf')!;
+  if (isf.kind !== 'isf') throw new Error('the queued ISF is not drawn as the ISF card');
+  await expect(canvas.getByRole('heading', { level: 2, name: 'ISF' })).toBeInTheDocument();
+  await expect(canvasElement.querySelector('.ui-isf [data-source$=".analyze.isf.0.recommended"]')).not.toBeNull();
+  // Every fasting night is a dot, or counted at the end of the axis it lies beyond.
+  const beyond = [...canvasElement.querySelectorAll('.ui-isf [data-edge]')]
+    .reduce((sum, edge) => sum + Number(edge.textContent!.replace(/\D/g, '')), 0);
+  await expect(canvasElement.querySelectorAll('.ui-isf .ui-evidence__night').length + beyond).toBe(isf.data.fits.length);
+  const captions = [...canvasElement.querySelectorAll('.ui-isf__facts dt')].map((dt) => dt.textContent);
+  await expect(captions).toEqual(['Estimate', 'Range', 'Fasting nights']);
+  await expect(within(canvasElement.querySelector('.ui-isf') as HTMLElement).getByRole('button', { name: 'Snooze' }))
+    .toBeInTheDocument();
+};
+export const IsfSettingPhone: Story = { ...story('phone', { store: ISF_STORE, open: 'setting:isf' }), play: isfPlay };
+export const IsfSettingDesktop: Story = { ...story('desktop', { store: ISF_STORE, open: 'setting:isf' }), play: isfPlay };
+
+// An admitted I:C Setting: the SettingCard with its block, current →
+// suggested and Range, printed as the pump profile prints it, and no night
+// chart or count, since its evidence is not nights.
+const settingPlay = (title: string, units: string): Story['play'] => async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  await expect(canvas.getByRole('heading', { level: 2, name: new RegExp(`^${title}`) })).toBeInTheDocument();
+  await expect(canvas.getAllByText(units).length).toBeGreaterThan(0);
+  await expect(canvas.queryByText('Nights')).toBeNull();
+  await expect(canvas.getByText('Range')).toBeInTheDocument();
+};
+export const IcSettingPhone: Story = { ...story('phone', { store: QUEUE_IC, open: 'setting:carb_ratio' }), play: settingPlay('I:C', 'g/U') };
+export const IcSettingDesktop: Story = { ...story('desktop', { store: QUEUE_IC, open: 'setting:carb_ratio' }), play: settingPlay('I:C', 'g/U') };

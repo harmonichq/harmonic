@@ -149,6 +149,25 @@ direction, and the ISF analyzer still owns its half-gap cap. ISF does
 not inherit basal's `Status`, evidence floors, or consolidated-profile path merely
 because it now shares the one-verdict staging invariant.
 
+The same verdict decides whether ISF reaches the Queue (ADR 504). Guidance always
+serves the `setting:isf` candidate, but admits it, and considers it as its next
+concern, only when a member carries `asserts_move = true`. An admitted ISF ranks
+among the other admitted candidates by its served Priority, an exact tie broken by
+subject. Every other ISF row stays out of the Queue and leads no investigation.
+
+#### Scenario: An asserted ISF joins the Queue
+
+- **GIVEN** synthetic fasting nights whose ISF row asserts a strengthen
+- **WHEN** guidance is read
+- **THEN** the `setting:isf` candidate is admitted with that member's action
+
+#### Scenario: An ISF the analyzer does not assert stays out of the Queue
+
+- **GIVEN** a held, a direction-only, a range-held, or an unprogrammed ISF row
+- **WHEN** guidance is read
+- **THEN** the `setting:isf` candidate is served but not admitted, and guidance
+  never selects it
+
 #### Scenario: No programmed ISF exists
 
 - **GIVEN** a trustworthy fasting measurement but no programmed ISF

@@ -188,6 +188,28 @@ class CleanRate:
 
 
 @dataclass(frozen=True)
+class PreviousPeriod:
+    """The window of the same length that ends where the summary's window starts:
+    the glycemic panel and coverage only, by the same definitions, so the
+    Overview compares each window against the one before it."""
+
+    window_days: int
+    span_start: Optional[str]
+    span_end: Optional[str]
+    metrics: GlycemicMetrics
+    coverage: Coverage
+
+    def to_dict(self) -> dict:
+        return {
+            "window_days": self.window_days,
+            "span_start": self.span_start,
+            "span_end": self.span_end,
+            "metrics": self.metrics.to_dict(),
+            "coverage": self.coverage.to_dict(),
+        }
+
+
+@dataclass(frozen=True)
 class OutcomeSummary:
     """The whole outcome summary — one flat window, versioned, JSON-serializable."""
 
@@ -198,6 +220,7 @@ class OutcomeSummary:
     span_end: Optional[str]
     metrics: GlycemicMetrics
     coverage: Coverage
+    previous: PreviousPeriod
     clean_rates: List[CleanRate] = field(default_factory=list)
     disclaimer: str = DISCLAIMER
 
@@ -211,6 +234,7 @@ class OutcomeSummary:
             "metrics": self.metrics.to_dict(),
             "coverage": self.coverage.to_dict(),
             "clean_rates": [c.to_dict() for c in self.clean_rates],
+            "previous": self.previous.to_dict(),
             "disclaimer": self.disclaimer,
         }
 
@@ -404,6 +428,17 @@ def summarize_outcomes(
 
     fmt = "%Y-%m-%d %H:%M:%S"
     cgm_times = [r.t for r in w_cgm]
+    # The previous period: the same length, ending just before the window starts.
+    before = start - timedelta(days=window_days)
+    p_cgm = [r for r in cgm if before <= r.t < start]
+    p_times = [r.t for r in p_cgm]
+    previous = PreviousPeriod(
+        window_days=window_days,
+        span_start=min(p_times).strftime(fmt) if p_times else None,
+        span_end=max(p_times).strftime(fmt) if p_times else None,
+        metrics=compute_metrics(p_cgm),
+        coverage=compute_coverage(p_cgm, span_days=_span_days(p_cgm, before, start)),
+    )
     return OutcomeSummary(
         schema_version=SCHEMA_VERSION,
         generated_at=now.strftime(fmt),
@@ -413,6 +448,7 @@ def summarize_outcomes(
         metrics=metrics,
         coverage=coverage,
         clean_rates=clean_rates,
+        previous=previous,
     )
 
 

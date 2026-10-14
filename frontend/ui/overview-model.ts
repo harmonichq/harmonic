@@ -3,13 +3,15 @@
 // Sourced value naming its field or formula; nothing here invents a value.
 //
 // The wearer's own outcomes are the top-level `outcomes`; the other stores'
-// answers sit under `overview.<store>`.
-import { fixtures, sourced, type Format, type Sourced } from './fixtures';
+// answers sit under `overview.<store>`. The glucose profile and the ISF
+// estimate are served per window, under `time_of_day.<window>` and
+// `analyze.<window>`; a window the live adapter has not read yet is absent.
+import { answers, sourced, type Format, type Sourced } from './answers';
 import { formatValue } from './provenance.js';
+import { PARAMETER_FORMATS } from './settings-model';
 
-export type OverviewStore = keyof typeof fixtures.overview;
+export type OverviewStore = keyof typeof answers.overview;
 export type Window = '14' | '30' | '90';
-export const COMPARE_WINDOW: Window = '90';
 
 // --- GlucoseProfile ----------------------------------------------------------
 
@@ -18,7 +20,7 @@ export type ProfileBin = {
 };
 
 export type ProfileData = {
-  /** `window.data_days`; null when the store has no readings at all. */
+  /** `window.data_days`, the selected window; null when the store has no readings at all. */
   days: Sourced<number> | null;
   low: Sourced<number>;
   high: Sourced<number>;
@@ -33,10 +35,12 @@ type TimeOfDay = {
   pooled: { bin_minutes: number; bins: ProfileBin[]; meals: { minute: number; count: number }[] } | null;
 };
 
-export function profile(store: OverviewStore): ProfileData {
-  const root = `overview.${store}.time_of_day`;
-  const answer = (fixtures.overview[store] as { time_of_day?: TimeOfDay }).time_of_day;
-  if (!answer) throw new Error(`${store} serves no time of day`);
+/** The glucose profile over `window`, or null when it has not been read yet. */
+export function profile(store: OverviewStore, window: Window): ProfileData | null {
+  const root = `overview.${store}.time_of_day.${window}`;
+  const answer = (answers.overview[store] as { time_of_day?: Partial<Record<Window, TimeOfDay>> })
+    .time_of_day?.[window];
+  if (!answer) return null;
   const bins = answer.pooled?.bins ?? [];
   return {
     days: answer.window ? sourced(`${root}.window.data_days`) : null,
@@ -90,8 +94,8 @@ export const METRICS: Record<MetricKey, { format: Format; better: 'up' | 'down' 
 export type MetricData = {
   metric: MetricKey;
   value: Sourced<number | null>;
-  /** The same metric over the 90 d window. */
-  baseline: Sourced<number | null>;
+  /** The same metric over the period of the same length just before the window. */
+  previous: Sourced<number | null>;
 };
 
 function outcomesPath(store: OverviewStore | 'wearer'): string {
@@ -104,21 +108,43 @@ export function metric(store: OverviewStore, window: Window, key: MetricKey): Me
   return {
     metric: key,
     value: sourced(`${root}.${window}.metrics.${key}`, format),
-    baseline: sourced(`${root}.${COMPARE_WINDOW}.metrics.${key}`, format),
+    previous: sourced(`${root}.${window}.previous.metrics.${key}`, format),
+  };
+}
+
+export type PeriodData = {
+  /** The window's first and last served days. */
+  start: Sourced<string>;
+  end: Sourced<string>;
+  /** The previous period's length, or null when it holds no readings. */
+  previous: Sourced<number> | null;
+};
+
+/** The line under the window switch: the window's date span and, when the
+ *  period before it has data, the comparison. Null when the window has none. */
+export function period(store: OverviewStore | 'wearer', window: Window): PeriodData | null {
+  const root = `${outcomesPath(store)}.${window}`;
+  const served = (store === 'wearer' ? answers.outcomes : (answers.overview[store] as { outcomes: typeof answers.outcomes }).outcomes)[window];
+  if (served.span_start === null) return null;
+  return {
+    start: sourced(`${root}.span_start`, 'date'),
+    end: sourced(`${root}.span_end`, 'date'),
+    previous: served.previous.span_start === null ? null : sourced(`${root}.previous.window_days`),
   };
 }
 
 import type { Change } from './Delta';
 export type { Change };
 
-/** The change against 90 d, as printed: an amount that is never negative (the
- *  formula is ordered larger − smaller) and a direction; neither direction nor
- *  tone when it prints as zero. Null when either side is not served. */
-export function change({ metric: key, value, baseline }: MetricData): Change | null {
-  if (value.value === null || baseline.value === null) return null;
+/** The change against the previous period, as printed: an amount that is never
+ *  negative (the formula is ordered larger − smaller) and a direction; neither
+ *  direction nor tone when it prints as zero. Null when either side is not
+ *  served. */
+export function change({ metric: key, value, previous }: MetricData): Change | null {
+  if (value.value === null || previous.value === null) return null;
   const { format, better } = METRICS[key];
-  const rises = value.value >= baseline.value;
-  const amount = sourced<number>(rises ? `${value.source} − ${baseline.source}` : `${baseline.source} − ${value.source}`,
+  const rises = value.value >= previous.value;
+  const amount = sourced<number>(rises ? `${value.source} − ${previous.source}` : `${previous.source} − ${value.source}`,
     format);
   if (formatValue(amount.value, format) === formatValue(0, format)) return { direction: null, tone: null, amount };
   const direction = rises ? 'up' : 'down';
@@ -129,17 +155,17 @@ export function change({ metric: key, value, baseline }: MetricData): Change | n
 }
 
 const SCANNED_STORES = ['wearer', 'wearer-pinned', 'wearer-worse', 'wearer-unsynced'] as const;
-const SCANNED_WINDOWS: Window[] = ['14', '30'];
+const SCANNED_WINDOWS: Window[] = ['14', '30', '90'];
 
 /** The first served metric, over the stores and windows above, in each state. */
-export function metricState(state: 'better' | 'worse' | 'unchanged' | 'unavailable'): MetricData {
+export function metricState(state: 'better' | 'worse' | 'unavailable' | 'no_previous'): MetricData {
   for (const store of SCANNED_STORES) {
     for (const window of SCANNED_WINDOWS) {
       for (const key of Object.keys(METRICS) as MetricKey[]) {
         const data = metric(store as OverviewStore, window, key);
         const shown = change(data);
         const found = state === 'unavailable' ? data.value.value === null
-          : state === 'unchanged' ? shown?.direction === null
+          : state === 'no_previous' ? data.value.value !== null && data.previous.value === null
             : shown?.tone === (state === 'better' ? 'favorable' : 'adverse');
         if (found) return data;
       }
@@ -148,7 +174,74 @@ export function metricState(state: 'better' | 'worse' | 'unchanged' | 'unavailab
   throw new Error(`no served metric is ${state}`);
 }
 
-// --- DayTile -----------------------------------------------------------------
+// --- IsfCard -----------------------------------------------------------------
+
+export type IsfData = {
+  current: Sourced<number>;
+  /** The engine's one ISF staging verdict (`asserts_move`): only then is
+   *  "current → recommended" shown. */
+  recommended: Sourced<number> | null;
+  estimate: Sourced<number>;
+  lo: Sourced<number>;
+  hi: Sourced<number>;
+  /** The engine flags the estimate wide: Uncertain. */
+  uncertain: boolean;
+  /** The fasting nights the estimate counts. */
+  nights: Sourced<number>;
+  fits: { rate: Sourced<number> }[];
+  roster: string;
+  units: string;
+};
+
+export type IsfAnswer = {
+  current: number | null;
+  recommended: number | null;
+  asserts_move: boolean;
+  estimate: { value: number; lo: number; hi: number; wide: boolean; n_clusters: number } | null;
+  evidence: { night_fits: { date: string; isf: number }[] };
+};
+
+/** The ISF estimate over `window`: null when it has not been read yet, 'none'
+ *  when the engine serves no estimate (or no programmed value to draw it
+ *  against). */
+export function isfEstimate(store: OverviewStore, window: Window): IsfData | 'none' | null {
+  const served = (answers.overview[store] as { analyze?: Partial<Record<Window, { isf: IsfAnswer[] }>> })
+    .analyze?.[window];
+  if (!served) return null;
+  return isfData(`overview.${store}.analyze.${window}.isf`, served.isf);
+}
+
+/** The ISF card's data from one served `isf` list at `path`: its first
+ *  segment, or 'none' when the engine serves no estimate or no programmed
+ *  value. The Overview and the Queue draw the same card from it. */
+export function isfData(path: string, isf: IsfAnswer[]): IsfData | 'none' {
+  const row = isf[0];
+  if (!row?.estimate || row.current === null) return 'none';
+  const root = `${path}.0`;
+  const format = PARAMETER_FORMATS.isf;
+  return {
+    current: sourced(`${root}.current`, format),
+    recommended: row.asserts_move === true ? sourced(`${root}.recommended`, format) : null,
+    estimate: sourced(`${root}.estimate.value`, format),
+    lo: sourced(`${root}.estimate.lo`, format),
+    hi: sourced(`${root}.estimate.hi`, format),
+    uncertain: row.estimate.wide === true,
+    nights: sourced(`${root}.estimate.n_clusters`),
+    fits: row.evidence.night_fits.map((_, i) => ({ rate: sourced(`${root}.evidence.night_fits.${i}.isf`) })),
+    roster: `${root}.evidence.night_fits`,
+    units: 'mg/dL/U',
+  };
+}
+
+/** The story states the generator found in the served ISF answers, by name. */
+export function isfState(name: 'supported' | 'held' | 'uncertain' | 'edges'): IsfData {
+  const { store, window } = answers.states.isf[name];
+  const data = isfEstimate(store as OverviewStore, window as Window);
+  if (!data || data === 'none') throw new Error(`${store} serves no ISF estimate at ${window} d`);
+  return data;
+}
+
+// --- DayRibbon ---------------------------------------------------------------
 
 export type DayData = {
   /** The served date, printed as its day of the month. */
@@ -163,12 +256,27 @@ export type DayData = {
 };
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const navigatorDays = () => fixtures.overview.wearer.day_navigator.days;
+const navigatorDays = () => answers.overview.wearer.day_navigator.days;
+
+type Navigator = typeof answers.overview.wearer.day_navigator;
+/** The other months the Day screen has read (live only), by `YYYY-MM`. */
+export const otherMonths = () => (answers.day as { months?: Record<string, Navigator> }).months ?? {};
+
+/** Where the navigator serves a day: the Overview's month first, then any other month read. */
+export function servedDay(iso: string): { path: string; found: Navigator['days'][number] } | null {
+  const first = navigatorDays().find((d) => d.iso === iso);
+  if (first) return { path: `overview.wearer.day_navigator.days[iso=${iso}].0`, found: first };
+  for (const [month, navigator] of Object.entries(otherMonths())) {
+    const found = navigator.days.find((d) => d.iso === iso);
+    if (found) return { path: `day.months.${month}.days[iso=${iso}].0`, found };
+  }
+  return null;
+}
 
 export function day(iso: string): DayData {
-  const found = navigatorDays().find((d) => d.iso === iso);
-  if (!found) throw new Error(`the day navigator serves no ${iso}`);
-  const path = `overview.wearer.day_navigator.days[iso=${iso}].0`;
+  const served = servedDay(iso);
+  if (!served) throw new Error(`the day navigator serves no ${iso}`);
+  const { found, path } = served;
   return {
     date: sourced(`${path}.iso`, 'day'),
     weekday: WEEKDAYS[new Date(`${iso}T12:00:00Z`).getUTCDay()],
@@ -182,16 +290,3 @@ export function day(iso: string): DayData {
 
 /** A day with no lows and no highs is clean (✓). */
 export const isClean = (d: DayData) => d.hasData && d.lows.value === 0 && d.highs.value === 0;
-
-/** The latest served day in each state; "default" is the latest day with data
- *  that is not clean. */
-export function dayState(state: 'default' | 'clean' | 'no_data'): DayData {
-  const withData = navigatorDays().filter((d) => d.has_data);
-  const last = withData[withData.length - 1].iso;
-  const days = navigatorDays().map((d) => day(d.iso));
-  const pick = state === 'no_data'
-    ? days.find((d) => !d.hasData && d.date.value > last)
-    : [...days].reverse().find((d) => (state === 'clean' ? isClean(d) : d.hasData && !isClean(d)));
-  if (!pick) throw new Error(`the day navigator serves no ${state} day`);
-  return pick;
-}

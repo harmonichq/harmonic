@@ -1,15 +1,13 @@
 #!/usr/bin/env python3
-"""Fail CI when a committed demo fixture set no longer matches its generator (#716).
+"""Fail CI when a committed synthetic fixture set no longer matches its generator (#716).
 
-Two synthetic fixture sets are committed under `mockups/` so the browser gates can
-render a deterministic demo without touching real PHI: the Trial roster capture
-`verify-660-story.synthetic/`, which the desk replay and browser suite read, and
-the Diagnose workstation's
-`diagnose-workstation.synthetic/`. Both are produced by running a real generator
-script, not hand-written — the same "fixture encodes the assumption under test"
-trap `CLAUDE.md` records for the thin-slot hold applies here: if a generator's
-output drifts from what's committed, the browser suites replay a fixture the
-generator no longer produces, silently.
+One synthetic set is committed under `mockups/`: the Diagnose workstation's
+`diagnose-workstation.synthetic/`, which scripts/gen_findings_projection_fixtures.py
+reads as its input (the desk that also drew it is gone, #495). It is produced by
+running a real generator script, not hand-written — the same "fixture encodes the
+assumption under test" trap `CLAUDE.md` records for the thin-slot hold applies
+here: if a generator's output drifts from what's committed, the projection
+fixtures are built from a payload the generator no longer produces, silently.
 
 This regenerates each set into a temporary directory and byte-compares it against
 the committed copy. Byte-exact: no parsing/normalization, so even an
@@ -17,7 +15,7 @@ indentation-only or key-order change fails.
 
     python3 scripts/check_demo_fixtures.py
 
-Both generators run as SUBPROCESSES, never via import —
+The generator runs as a SUBPROCESS, never via import —
 `.claude/qa/gen_synthetic_fixtures.py` has no `if __name__ == "__main__"` guard
 and writes files at import time, defaulting to the real committed mockups dir.
 """
@@ -34,16 +32,6 @@ import tempfile
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[1]
 
 
-def _verify_cmd(outdir: pathlib.Path) -> list[str]:
-    return [
-        sys.executable,
-        str(REPO_ROOT / ".claude" / "qa" / "gen_verify_payload.py"),
-        "--synthetic",
-        "--out",
-        str(outdir),
-    ]
-
-
 def _diagnose_cmd(outdir: pathlib.Path) -> list[str]:
     return [
         sys.executable,
@@ -53,15 +41,6 @@ def _diagnose_cmd(outdir: pathlib.Path) -> list[str]:
 
 
 ENTRIES = [
-    {
-        "name": "verify-660-story",
-        "cmd_fn": _verify_cmd,
-        "committed_dir": "mockups/verify-660-story.synthetic",
-        "regen_cmd": (
-            "python3 .claude/qa/gen_verify_payload.py --synthetic "
-            "--out mockups/verify-660-story.synthetic"
-        ),
-    },
     {
         "name": "diagnose-workstation",
         "cmd_fn": _diagnose_cmd,

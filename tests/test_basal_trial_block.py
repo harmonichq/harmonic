@@ -137,6 +137,27 @@ class BasalTrialBlockTest(unittest.TestCase):
         self.assertEqual(list(record["block"]), [120, 300])
         self.assertIsNone(record["members"])
 
+    def test_the_served_trial_carries_its_block(self):
+        # A reader matches a queued basal block to the Trial whose block it lies
+        # in, so the served Trial names its block, not only its starting slot.
+        self._store(_SMALL_HOURS_BEFORE, _SMALL_HOURS_AFTER, low_minutes=(240, 300))
+        self.assertEqual(self._trial()["block"], [120, 300])
+
+    def test_the_served_trial_carries_a_block_across_midnight(self):
+        self._store(_ACROSS_MIDNIGHT_BEFORE, _ACROSS_MIDNIGHT_AFTER, low_minutes=(60, 120))
+        self.assertEqual(self._trial()["block"], [1320, 120])
+
+    def test_a_record_saved_without_its_block_is_served_with_it(self):
+        self._store(_SMALL_HOURS_BEFORE, _SMALL_HOURS_AFTER, low_minutes=(240, 300))
+        trial_id = self._trial()["id"]
+        with Store.open(self.path) as store:
+            row = store.conn.execute("SELECT record_json FROM follow_up_records WHERE kind = 'trial' AND id = ?",
+                                     (trial_id,)).fetchone()
+            store.conn.execute("UPDATE follow_up_records SET record_json = ? WHERE kind = 'trial' AND id = ?",
+                               (json.dumps({**json.loads(row["record_json"]), "block": None}), trial_id))
+            store.conn.commit()
+        self.assertEqual(self._trial()["block"], [120, 300])
+
     def test_a_record_saved_without_its_block_is_measured_across_the_block(self):
         # A record an earlier build saved at the pump change carries no block. It
         # keeps its id and is measured over the block its own two reads show.

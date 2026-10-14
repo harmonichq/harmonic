@@ -353,5 +353,59 @@ class ApiRendererTest(unittest.TestCase):
         self.assertEqual(r.json()["window_days"], 30)
 
 
+@unittest.skipUnless(_HAS_FASTAPI, "api extra not installed")
+class PreviousPeriodApiTest(unittest.TestCase):
+    """Each window carries the window of the same length before it (Q31)."""
+
+    def setUp(self):
+        import tempfile
+
+        from ciq_autotune.store import Store
+        self.tmp = tempfile.NamedTemporaryFile(suffix=".db")
+        # 28 days at full cadence: 200 mg/dL until the last fortnight, 100 within it.
+        end = datetime(2026, 6, 28, 23, 55)
+        boundary = end - timedelta(days=14)
+        cgm = []
+        t = datetime(2026, 6, 1)
+        while t <= end:
+            cgm.append({"EventDateTime": t.strftime("%Y-%m-%dT%H:%M:%S"),
+                        "Readings (CGM / BGM)": 100 if t >= boundary else 200, "Description": "EGV"})
+            t += timedelta(minutes=5)
+        with Store.open(self.tmp.name) as store:
+            store.upsert_cgm(cgm)
+        from ciq_autotune.api import create_app
+        self.client = TestClient(create_app(db_path=self.tmp.name, token=None, enable_fetch_loop=False))
+
+    def tearDown(self):
+        self.tmp.close()
+
+    def _get(self, window):
+        response = self.client.get("/api/outcomes", params={"window": window})
+        self.assertEqual(response.status_code, 200, response.text)
+        return response.json()
+
+    def test_the_previous_period_is_the_same_length_ending_where_the_window_starts(self):
+        body = self._get(14)
+        self.assertEqual(body["metrics"]["mean_glucose"], 100)
+        previous = body["previous"]
+        self.assertEqual(previous["window_days"], 14)
+        self.assertEqual(previous["span_start"], "2026-06-01 00:00:00")
+        self.assertEqual(previous["span_end"], "2026-06-14 23:50:00",
+                         "the previous period ends before the window's first instant")
+        self.assertEqual(previous["metrics"]["mean_glucose"], 200)
+        self.assertEqual(previous["metrics"]["tar_lvl1"], 100.0)
+        self.assertEqual(set(previous["metrics"]), set(body["metrics"]), "the same metric definitions")
+        self.assertTrue(previous["coverage"]["consensus"])
+
+    def test_a_previous_period_without_readings_serves_no_metrics(self):
+        for window in (30, 90):
+            previous = self._get(window)["previous"]
+            self.assertEqual(previous["window_days"], window)
+            self.assertIsNone(previous["span_start"])
+            self.assertIsNone(previous["span_end"])
+            self.assertIsNone(previous["metrics"]["tir"])
+            self.assertIsNone(previous["metrics"]["mean_glucose"])
+
+
 if __name__ == "__main__":
     unittest.main()

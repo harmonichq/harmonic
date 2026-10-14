@@ -36,9 +36,19 @@ _SETTING_SUBJECTS = frozenset({
 _HABIT_SUBJECTS = frozenset(f"habit:{lever.value}" for lever in Lever)
 _PATTERN_SUBJECTS = frozenset(f"pattern:{key}" for key in _GATES)
 _PREFERENCE_SUBJECTS = _SETTING_SUBJECTS | _HABIT_SUBJECTS | _PATTERN_SUBJECTS
-# Served as a candidate, because the Plan applies an ISF draft against it, but never
-# admitted to the Queue: the correction-factor estimate is shown, not queued (ADR 499).
-_UNQUEUED_SUBJECTS = frozenset({"setting:isf"})
+# Always served as a candidate, because the Plan applies an ISF draft against it, but
+# admitted to the Queue, and selected, only when its analyzer's one staging verdict
+# (`isf_asserts_move`, stamped as each member's `asserts_move`) supports the change.
+# A held, direction-only or unprogrammed estimate is shown on the Overview, never
+# queued (ADR 499, amended by ADR 504).
+_ASSERTED_ONLY_SUBJECTS = frozenset({"setting:isf"})
+
+
+def _admitted(row):
+    if row.get("action") is None:
+        return False
+    return (row["subject"] not in _ASSERTED_ONLY_SUBJECTS
+            or any(member["asserts_move"] is True for member in row["members"]))
 # The name served beside each Pattern member subject: a habit by its Lever's
 # title, a setting by its reader-facing name (ADR 426).
 _MEMBER_TITLES = {
@@ -440,8 +450,7 @@ def build_guidance(*, analysis, exposures, scenarios, preferences=(), active_wat
     all_candidates, stored = candidates(analysis, exposures, scenarios), {row["subject"]: row for row in preferences}
     for row in all_candidates:
         row["preference"] = preference_status(row, stored.get(row["subject"]))
-        row["admitted"] = (row.get("action") is not None
-                           and row["subject"] not in _UNQUEUED_SUBJECTS)
+        row["admitted"] = _admitted(row)
         if row["subject"] in stored:
             row["decision"] = {key: stored[row["subject"]][key] for key in ("decided_at", "reason", "comparison_version", "state")}
     known = {row["subject"] for row in all_candidates}
@@ -458,12 +467,15 @@ def build_guidance(*, analysis, exposures, scenarios, preferences=(), active_wat
                "decision": {key: row[key] for key in ("decided_at", "reason", "comparison_version", "state")}}
               for row in preferences if row["subject"] not in known]
     # A setting a Pattern carries is selected through that Pattern; one no Pattern
-    # carries (basal, since ADR 499) is selected as itself. ISF is never selected.
+    # carries (basal, since ADR 499) is selected as itself. ISF is selected only when
+    # admitted (ADR 504), so its held evidence never leads an investigation.
     carried = {member["subject"] for row in all_candidates if row["kind"] == "pattern"
                for member in row["members"] if member["kind"] == "setting"}
     selection_rows = [row for row in all_candidates
                       if (row["kind"] != "setting"
-                          or row["subject"] not in carried | _UNQUEUED_SUBJECTS)
+                          or (row["subject"] not in carried
+                              and (row["subject"] not in _ASSERTED_ONLY_SUBJECTS
+                                   or row["admitted"])))
                       and (row["kind"] != "pattern" or row.get("action") is not None
                            or row.get("unavailable") or row.get("has_concern"))]
     available = sorted((row for row in selection_rows

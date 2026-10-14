@@ -34,6 +34,21 @@
   cursor: pointer;
 }
 .ui-logcarbs__time:disabled { color: var(--wk-ink-meta); cursor: default; }
+/* The system picker the row opens: present, so showPicker can anchor it to
+   the row, but drawn by the row, never by itself. */
+.ui-logcarbs__time-row { position: relative; display: flex; flex-direction: column; }
+.ui-logcarbs__picker {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+}
 .ui-logcarbs__value { display: flex; align-items: center; gap: 8px; color: var(--wk-ink-body); }
 .ui-logcarbs__chevron { color: var(--wk-ink-meta); font-size: var(--ui-type-title); line-height: 1; }
 

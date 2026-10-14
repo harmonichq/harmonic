@@ -1,19 +1,13 @@
 /* =========================================================================
-   #102 DATA-ACCESS MODULE — consolidated fetch transport + per-operation API.
-
-   Extracted from index.html's api() helper and its 11 call sites so there is
-   a single place that knows endpoint paths, query-param encoding, and the
-   Bearer-token attach / error-unwrap contract.
+   The app's one client (#102, #495): every endpoint path, the query-param
+   encoding, the Bearer-token attach and the error unwrap, in one place. No
+   other module in frontend/ fetches.
 
    SEAM: the default fetch implementation is the browser's globalThis.fetch.
-   Tests (node --test) inject a fake via the second argument of each exported
-   function or, more ergonomically, by calling makeDeps({ fetch: fakeFetch })
-   and destructuring the returned namespace.  Callers in index.html use the
-   zero-argument form and get the real browser fetch.
+   Tests (node --test) inject a fake through makeDeps({ fetch: fakeFetch }) and
+   destructure the returned namespace; the app imports the bound defaults.
 
-   VUE-FREE and DOM-FREE at import time so `node --test` can import with no
-   importmap and no DOM.  The request-id race guard in loadAnalysis stays in
-   index.html — the app owns staleness; only the transport belongs here.
+   DOM-free at import time, so `node --test` imports it with no DOM.
    ========================================================================= */
 
 export class ApiTransportError extends Error {
@@ -21,7 +15,7 @@ export class ApiTransportError extends Error {
     const structured = detail && typeof detail === 'object' ? detail : null;
     // Only served words become the message: a validation list never prints as
     // "[object Object]". With none, the message is the status text, which an
-    // HTTP/2 answer leaves empty; each line supplies its own words then.
+    // HTTP/2 answer leaves empty.
     super((typeof structured?.message === 'string' && structured.message)
       || (typeof detail === 'string' && detail) || fallback || '');
     this.name = 'ApiTransportError';
@@ -31,36 +25,28 @@ export class ApiTransportError extends Error {
   }
 }
 
-/** A failed or refused write in words: the server's own sentence for a coded
-    refusal (ADR 450), never its code or status, else the transport's own
-    failure. Every failure line that follows a colon prints through it. */
-export const failureMessage = (error) => (error && error.message) || 'no response from the store';
+/** Where the browser keeps the API token the server was started with. */
+export const TOKEN_KEY = 'ciq_token';
 
 /**
  * Build a bound API namespace whose transport can be replaced.
  *
  * @param {{ fetch?: Function }} [deps={}]
- * @returns {{ fetchCredentials, saveCredentials, fetchStatus,
- *             fetchPumpSettings, fetchAnalysis, fetchScenarios,
- *             fetchTimeline, fetchVerifyTrials, fetchExploreTimeOfDay, loadPlan, savePlanDraft,
- *             loadPlanHistory, applyPlan }}
  */
 export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
   /**
    * Internal transport: attaches the Bearer token from localStorage when
-   * present and unwraps the `detail` string on non-2xx responses.
+   * present and unwraps the `detail` on non-2xx responses.
    *
    * @param {string} url
    * @param {RequestInit} [opts]
    * @returns {Promise<any>} parsed JSON body
    */
-  async function _send(url, opts) {
+  async function api(url, opts) {
     const headers = Object.assign({}, opts && opts.headers);
-    // localStorage may not exist in non-browser environments (node tests).
-    const token =
-      typeof localStorage !== 'undefined'
-        ? localStorage.getItem('ciq_token')
-        : null;
+    // localStorage may not exist (node tests) or may refuse access.
+    let token = null;
+    try { token = typeof localStorage !== 'undefined' ? localStorage.getItem(TOKEN_KEY) : null; } catch {}
     if (token) headers['Authorization'] = 'Bearer ' + token;
     const res = await _fetch(url, Object.assign({}, opts, { headers }));
     if (!res.ok) {
@@ -68,142 +54,73 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
       try { detail = (await res.json()).detail ?? null; } catch (e) {}
       throw new ApiTransportError(res.status, detail, res.statusText);
     }
-    return res;
+    return res.json();
   }
-  /** @returns {Promise<any>} parsed JSON body */
-  async function api(url, opts) { return (await _send(url, opts)).json(); }
-  /** @returns {Promise<string>} raw text body (e.g. #269 raw markdown) */
-  async function apiText(url, opts) { return (await _send(url, opts)).text(); }
 
-  // --- credentials -------------------------------------------------------
+  const send = (url, method, body) => api(url, body === undefined ? { method } : {
+    method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+  });
 
-  /** GET /api/credentials */
-  function fetchCredentials() {
-    return api('/api/credentials');
-  }
+  // --- Settings: credentials, sync status, the pump profile ----------------
+
+  /** GET /api/credentials — `{configured, email, region}`. */
+  const fetchCredentials = () => api('/api/credentials');
 
   /**
    * POST /api/credentials
    * @param {{ email: string, password: string, region?: string }} form
    */
-  function saveCredentials(form) {
-    return api('/api/credentials', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
-    });
-  }
+  const saveCredentials = (form) => send('/api/credentials', 'POST', form);
 
-  // --- status / fetch-now -------------------------------------------------
+  /** GET /api/status — the last sync attempt and success, and the data's span. */
+  const fetchStatus = () => api('/api/status');
 
-  /** GET /api/status */
-  function fetchStatus() {
-    return api('/api/status');
-  }
+  /** GET /api/pump-settings — the active pump profile, or `{configured: false}`. */
+  const fetchPumpSettings = () => api('/api/pump-settings');
 
-  // --- pump settings ------------------------------------------------------
-
-  /** GET /api/pump-settings */
-  function fetchPumpSettings() {
-    return api('/api/pump-settings');
-  }
-
-  // --- analysis -----------------------------------------------------------
+  // --- Queue: guidance, findings, the analysis, case files ----------------
 
   /**
-   * GET /api/analyze
-   * @param {{ window?: number, ignoreChanges?: boolean, pool?: boolean }} [opts]
-   *   `pool` (#85 / #246) pools a changed basal slot's agreeing pre-edit nights
-   *   back into its estimate — the mode the Diagnose queue ranks levers in (ADR 0032).
+   * GET /api/guidance — every candidate with its admission, priority and
+   * set-aside preference, and the `analysis_generation` a snooze quotes back.
    */
-  function fetchAnalysis({ window: win, ignoreChanges = false, pool = false } = {}) {
-    const params = new URLSearchParams();
-    if (win != null) params.set('window', win);
-    if (ignoreChanges) params.set('ignore_changes', '1');
-    if (pool) params.set('pool', '1');
-    const qs = params.toString();
-    return api('/api/analyze' + (qs ? '?' + qs : ''));
-  }
-
-  // --- scenarios ----------------------------------------------------------
+  const fetchGuidance = () => api('/api/guidance');
 
   /**
-   * GET /api/scenarios?window=N
-   * @param {number} window - look-back window in days
+   * PUT /api/guidance/preferences/<subject> — snooze a candidate. A plain
+   * `detail` on 409/404, and no receipt: re-read the guidance after it.
+   * @param {string} subject
+   * @param {{ generation: string, reason?: string|null }} body
    */
-  function fetchScenarios(window) {
-    return api('/api/scenarios?window=' + encodeURIComponent(window));
-  }
+  const setGuidancePreference = (subject, { generation, reason = null } = {}) =>
+    send('/api/guidance/preferences/' + encodeURIComponent(subject), 'PUT', { generation, reason });
 
-  // --- guide / about catalog (#157) ---------------------------------------
+  /** DELETE /api/guidance/preferences/<subject> — restore a snoozed candidate. */
+  const restoreGuidancePreference = (subject) =>
+    send('/api/guidance/preferences/' + encodeURIComponent(subject), 'DELETE');
+
+  /** GET /api/diagnose/findings — the whole-day findings projection. */
+  const fetchDiagnoseFindings = () => api('/api/diagnose/findings');
+
+  /** GET /api/analyze — the analysis, at the engine's default window or over `window` days. */
+  const fetchAnalysis = (window) => api('/api/analyze' + (window ? '?window=' + encodeURIComponent(window) : ''));
+
+  /** GET /api/diagnose/finding-case-file-preparation — the projection a case file is read from. */
+  const fetchDiagnoseFindingCasePreparation = () => api('/api/diagnose/finding-case-file-preparation');
 
   /**
-   * GET /api/catalog — the type-level Guide payload: the lever catalog, the
-   * SilenceReason taxonomy, evidence tiers, the pipeline, and one worked
-   * example. Static and DB-free; the Guide tab fetches it lazily on open.
+   * GET /api/diagnose/finding-case-file — one Finding's event-aligned case
+   * file. The identifiers are opaque transport coordinates.
    */
-  function fetchCatalog() {
-    return api('/api/catalog');
-  }
+  const fetchDiagnoseFindingCase = ({ projection_id, finding_id, alignment }) =>
+    api('/api/diagnose/finding-case-file?' + new URLSearchParams({ projection_id, finding_id, alignment }));
+
+  // --- Changes: the Trial roster and Focus --------------------------------
 
   /**
-   * GET /api/kb/<slug> — the RAW markdown of one authored Guide-KB how-to
-   * (#269). Returns markdown text (not JSON); the frontend renders it (kb.js).
-   * The article pane fetches it lazily when its article opens.
-   * @param {string} slug
-   * @returns {Promise<string>} raw markdown
-   */
-  function fetchKbArticle(slug) {
-    return apiText('/api/kb/' + encodeURIComponent(slug));
-  }
-
-  // --- per-day model-view (#152 / ADR 0019) -------------------------------
-
-  /**
-   * GET /api/model-view?date=YYYY-MM-DD — the per-day introspection feed: every
-   * anchor the engine saw that day, each with all its classifier verdicts +
-   * state (fired/outranked/near-miss/clean/no-data). The Daily-tab model-view
-   * panel binds this.
-   * @param {string} date - a pump-local 'YYYY-MM-DD' calendar day
-   * @param {RequestInit} [opts]
-   */
-  function fetchModelView(date, opts) {
-    return api('/api/model-view?date=' + encodeURIComponent(date), opts);
-  }
-
-  // --- Day navigator (#248 / ADR 0031) ------------------------------------
-
-  /**
-   * GET /api/day-navigator[?month=YYYY-MM] — the Day surface navigator feed: per-day
-   * glycemic severity (lows / highs / TIR) + a downsampled glucose sparkline curve
-   * for every day in the calendar month (± a week of pad). `month` omitted defaults
-   * to the month of the latest day with data.
-   * @param {string} [month] - a 'YYYY-MM' calendar month
-   */
-  function fetchDayNavigator(month) {
-    return api('/api/day-navigator' + (month ? '?month=' + encodeURIComponent(month) : ''));
-  }
-
-  // --- outcomes trend (#131) ----------------------------------------------
-
-  /**
-   * GET /api/outcomes/trend — the one watched change, `{ watched_change }` (a
-   * Trial or Focus view, or null), plus the input-data age any fixed read adds
-   * while it serves a prior answer (#447). Diagnose's watch dock reads it. The
-   * trend's rolling-window series stay on the CLI, and the watched change takes
-   * no window (#18).
-   */
-  function fetchOutcomesTrend() {
-    return api('/api/outcomes/trend');
-  }
-
-  // --- Trial roster (#587) -----------------------------------------------
-
-  /**
-   * GET /api/verify/trials?selected=derived-id — the bounded server-derived Trial
-   * roster.  An optional selected id returns only that Trial's aligned detail.
-   * The Trial's maturing window is a backend fact — no window knob exists here.
-   * @param {{ selected?: string }} [opts]
+   * GET /api/verify/trials — the admission, the Trials and the Focus records;
+   * with `selected` (and `kind`, `assessment`), that one change's detail.
+   * @param {{ selected?: string, kind?: string, assessment?: string }} [opts]
    */
   function fetchVerifyTrials({ selected, kind, assessment } = {}) {
     const params = new URLSearchParams();
@@ -214,422 +131,95 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
     return api('/api/verify/trials' + (qs ? '?' + qs : ''));
   }
 
-  /** Record a Trial ending with the durable retry identity and read revision. */
-  function finishTrial(id, durable) {
-    return api('/api/verify/trials/' + encodeURIComponent(id) + '/finish', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(durable),
-    });
-  }
+  /** POST /api/verify/trials/<id>/finish — end a matured Trial, with its durable retry identity. */
+  const finishTrial = (id, durable) =>
+    send('/api/verify/trials/' + encodeURIComponent(id) + '/finish', 'POST', durable);
 
-  /** Record an additive conclusion on one expired Trial. */
-  function concludeTrial(id, durable) {
-    return api('/api/verify/trials/' + encodeURIComponent(id) + '/conclusion', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(durable),
-    });
-  }
+  /** GET /api/focus — the Focus records and the follow-up input revision. */
+  const fetchFocuses = () => api('/api/focus');
 
-  /** GET /api/explore/time-of-day — fixed server-owned 30-day aggregate. */
-  function fetchExploreTimeOfDay() { return api('/api/explore/time-of-day'); }
-  /** GET /api/explore/exposures — every exposure in the window with each
-   *  classifier's verdict; the Diagnose inspector's own feed (#654). */
-  function fetchExploreExposures() { return api('/api/explore/exposures'); }
-
-  /** Analyzer-owned delivered-versus-programmed evidence for one basal slot. */
-  function fetchDiagnoseBasalNightEvidence({ slot } = {}) {
-    const params = new URLSearchParams();
-    if (slot != null) params.set('slot', slot);
-    return api('/api/diagnose/basal-night-evidence?' + params.toString());
-  }
-  /** Analyzer-owned rest windows and qualifying fasting steps. */
-  function fetchDiagnoseIsfRestWindowEvidence() {
-    return api('/api/diagnose/isf-rest-window-evidence');
-  }
-  /** Current I:C block's published meal-run roster and bounded CGM series. */
-  async function fetchDiagnoseCarbRatioBlockEvidence({ block_id, analysis_generation } = {}) {
-    const params = new URLSearchParams();
-    if (block_id != null) params.set('block_id', block_id);
-    if (analysis_generation != null) params.set('analysis_generation', analysis_generation);
-    try {
-      return await api('/api/diagnose/carb-ratio-block-evidence?' + params.toString());
-    } catch (error) {
-      if (error instanceof ApiTransportError && error.status === 409
-          && error.code === 'analysis_generation_mismatch') {
-        return { stale: true, message: error.message };
-      }
-      throw error;
-    }
-  }
   /**
-   * GET /api/diagnose/findings — the Diagnose findings queue for one clock window
-   * (#730, ADR 730). Omit the window for the global (24 h) queue; send both bounds
-   * for a pressed preset or a drawn brace. Everything the queue shows — register,
-   * merged spans, outcome anchoring, window-local denominators, order — is decided
-   * server-side and rendered verbatim (lock term 40).
-   * @param {{ start_min: number, end_min: number }|null} [window]
-   * @param {string|null} [selectedHistoryId]
+   * POST /api/focus — pin a Pattern's habit as the active Focus.
+   * @param {{ pattern_key: string, outcome_window: {start_min: number, end_min: number},
+   *           request_id: string, input_revision: number, subject: string,
+   *           analysis_generation: string }} body
    */
-  function fetchDiagnoseFindings(window = null, selectedHistoryId = null) {
-    const params = new URLSearchParams();
-    if (window) {
-      params.set('start_min', window.start_min);
-      params.set('end_min', window.end_min);
-    }
-    if (selectedHistoryId) params.set('selected_id', selectedHistoryId);
-    const query = params.toString();
-    return api('/api/diagnose/findings' + (query ? '?' + query : ''));
-  }
-  /** Exact active analyzer-run evidence for one retired I:C history item. */
-  function fetchDiagnoseCarbRatioHistoryEvents({
-    historyId, analysisGeneration, selectedRunId,
-  } = {}) {
-    const params = new URLSearchParams();
-    if (historyId) params.set('history_id', historyId);
-    if (analysisGeneration) params.set('analysis_generation', analysisGeneration);
-    if (selectedRunId) params.set('selected_run_id', selectedRunId);
-    return api('/api/diagnose/carb-ratio-history/events?' + params.toString());
-  }
-  /**
-   * GET /api/diagnose/finding-case-file-preparation — one retained server-owned
-   * Finding generation. The optional clock window is the preparation's only
-   * membership coordinate; history selection passes through to the wrapped queue.
-   */
-  function fetchDiagnoseFindingCasePreparation(window = null, selectedHistoryId = null) {
-    const params = new URLSearchParams();
-    if (window) {
-      params.set('start_min', window.start_min);
-      params.set('end_min', window.end_min);
-    }
-    if (selectedHistoryId) params.set('selected_id', selectedHistoryId);
-    const query = params.toString();
-    return api('/api/diagnose/finding-case-file-preparation' + (query ? '?' + query : ''));
-  }
-  /**
-   * GET /api/diagnose/finding-case-file — project one retained Finding population.
-   * All identifiers are opaque transport coordinates; the browser never parses
-   * or reconstructs them.
-   */
-  function fetchDiagnoseFindingCase({ projection_id, finding_id, alignment, occ } = {}) {
-    const params = new URLSearchParams({ projection_id, finding_id, alignment });
-    if (occ) params.set('occ', occ);
-    return api('/api/diagnose/finding-case-file?' + params.toString());
-  }
+  const pinFocus = (body) => send('/api/focus', 'POST', body);
 
-  // --- timeline -----------------------------------------------------------
+  /** POST /api/focus/<id>/resolve — end the active Focus. */
+  const resolveFocus = (id) => send('/api/focus/' + encodeURIComponent(id) + '/resolve', 'POST');
+
+  // --- Overview -----------------------------------------------------------
+
+  /** GET /api/outcomes?window=N — the standard metrics over one window. */
+  const fetchOutcomes = (window) => api('/api/outcomes?window=' + encodeURIComponent(window));
+
+  /** GET /api/explore/time-of-day — the glucose profile, over 30 days or `days` (14, 30 or 90). */
+  const fetchExploreTimeOfDay = (days) =>
+    api('/api/explore/time-of-day' + (days ? '?days=' + encodeURIComponent(days) : ''));
+
+  /**
+   * GET /api/day-navigator[?month=YYYY-MM] — each day of the month (the latest
+   * with data when none is named), ± a week of pad: its lows, highs, in-range
+   * share and sparkline.
+   */
+  const fetchDayNavigator = (month) => api('/api/day-navigator' + (month ? `?month=${encodeURIComponent(month)}` : ''));
+
+  // --- Day: one day, the carb log, Prompts --------------------------------
 
   /**
    * GET /api/timeline?start=...&end=...
    * @param {{ start: string, end: string }} range - ISO wall-clock strings
-   * @param {RequestInit} [opts]
    */
-  function fetchTimeline({ start, end }, opts) {
-    return api(
-      '/api/timeline?start=' + encodeURIComponent(start) +
-      '&end=' + encodeURIComponent(end),
-      opts,
-    );
-  }
-
-  // --- carb log (#126) ----------------------------------------------------
+  const fetchTimeline = ({ start, end }) =>
+    api('/api/timeline?start=' + encodeURIComponent(start) + '&end=' + encodeURIComponent(end));
 
   /**
-   * GET /api/carbs[?start=&end=] — the user-entered carb_entries (#125 shape),
-   * id-bearing so the caller can edit/delete by id.
-   * @param {{ start?: string, end?: string }} [range] - ISO wall-clock strings
-   * @param {RequestInit} [opts]
+   * GET /api/carbs?start=&end= — the carbs logged by hand over a range.
+   * @param {{ start: string, end: string }} range - ISO wall-clock strings
    */
-  function fetchCarbs({ start, end } = {}, opts) {
-    const params = new URLSearchParams();
-    if (start) params.set('start', start);
-    if (end) params.set('end', end);
-    const qs = params.toString();
-    return api('/api/carbs' + (qs ? '?' + qs : ''), opts);
-  }
+  const fetchCarbs = ({ start, end }) => api('/api/carbs?' + new URLSearchParams({ start, end }));
 
   /**
-   * POST /api/carbs — create one carb entry.
-   * @param {{ t: string, grams: ?number, certainty: string, source?: string, note?: ?string }} entry
+   * POST /api/carbs — log carbs eaten without a bolus.
+   * @param {{ t: string, grams: number, certainty: string, source: string }} entry
    */
-  function createCarb(entry) {
-    return api('/api/carbs', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(entry),
-    });
-  }
+  const createCarb = (entry) => send('/api/carbs', 'POST', entry);
 
   /**
-   * DELETE /api/carbs/<id> — remove one carb entry by id. A prompt-sourced
-   * entry takes its prompt_responses row with it (the #125 store rule), so the
-   * question that logged it resurrects in the queue.
+   * PATCH /api/carbs/<id> — merge fields into one logged entry (a Prompt's
+   * grams, typed after its Yes).
    * @param {number} entryId
+   * @param {{ grams: number, certainty: string }} fields
    */
-  function deleteCarb(entryId) {
-    return api('/api/carbs/' + encodeURIComponent(entryId), { method: 'DELETE' });
-  }
-
-  // --- carb-log prompt queue (#128) --------------------------------------
-
-  /** GET /api/prompts — the live review queue (List[Prompt], oldest-first). */
-  function fetchPrompts() {
-    return api('/api/prompts');
-  }
+  const updateCarb = (entryId, fields) => send('/api/carbs/' + encodeURIComponent(entryId), 'PATCH', fields);
 
   /**
-   * POST /api/prompts/answer — answer one prompt.
-   * When answer === 'carbs' the server creates the carb entry (pinned to the
-   * anchor, tagged rise-prompt / low-prompt) AND the response row atomically.
+   * GET /api/model-view?date=YYYY-MM-DD — every moment the engine weighed on
+   * one day, by episode, each with its state and the habits it matched.
+   */
+  const fetchModelView = (date) => api('/api/model-view?' + new URLSearchParams({ date }));
+
+  /** GET /api/prompts — the unanswered and answered Prompts, oldest first. */
+  const fetchPrompts = () => api('/api/prompts');
+
+  /**
+   * POST /api/prompts/answer — answer one Prompt. `carbs` (Yes) creates the
+   * carb entry and the answer together and returns `carb_entry_id`.
    * @param {{ detector: string, anchor_t: string, answer: string,
-   *           entry?: { grams: ?number, certainty: string, note?: ?string } }} body
+   *           entry?: { grams: ?number, certainty: string } }} body
    */
-  function answerPrompt(body) {
-    return api('/api/prompts/answer', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-  }
-
-  /**
-   * DELETE /api/prompts/answer — clear a prompt's answer so it resurrects.
-   * @param {{ detector: string, anchor_t: string }} body
-   */
-  function clearPrompt(body) {
-    return api('/api/prompts/answer', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-  }
-
-  // --- Focus: the pinned watched behavioral lever (#244) ------------------
-
-  /**
-   * GET /api/focus — every Focus ever pinned (active + closed, newest first) plus
-   * the pinnable-lever universe. Its one caller, `focus-entry.js` (through
-   * `client.js`), reads the served pin admission, pinnable Patterns and input
-   * revision to offer and write a Pattern Focus pin.
-   */
-  function fetchFocuses() {
-    return api('/api/focus');
-  }
-
-  /**
-   * POST /api/focus/{id}/resolve — unpin (retire) the active Focus by id.
-   * @param {number} id
-   */
-  function resolveFocus(id, durable) {
-    return api('/api/focus/' + encodeURIComponent(id) + '/resolve', durable ? {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(durable),
-    } : { method: 'POST' });
-  }
-
-  /**
-   * POST /api/focus — pin a behavioral lever as the active Focus (#246's Pin as
-   * Focus disposition). Rejected (409) while a Trial is live or
-   * another Focus is active, (400) for a non-pinnable tuning lever — the caller
-   * surfaces the message. Returns the pinned Focus row (with its id, for undo).
-   * @param {string} lever
-   */
-  function pinFocus(lever, durable) {
-    return api('/api/focus', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(durable ? { ...(lever ? { lever } : {}), ...durable } : { lever }),
-    });
-  }
-
-  // --- plan ---------------------------------------------------------------
-
-  /** GET /api/plan */
-  function loadPlan() {
-    return api('/api/plan');
-  }
-
-  /**
-   * PUT /api/plan
-   * @param {{ items: Array }} draft
-   */
-  function savePlanDraft(draft) {
-    return api('/api/plan', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(draft),
-    });
-  }
-
-  /** GET /api/plan/history */
-  function loadPlanHistory() {
-    return api('/api/plan/history');
-  }
-
-  /**
-   * POST /api/plan/apply — record the decision this Plan carries.
-   *
-   * Called with no argument the request is bodyless, which is the shape v1 has
-   * always sent and which the endpoint treats as a non-durable apply. A `request`
-   * makes it durable: `{request_id, input_revision, subject, analysis_generation,
-   * draft_updated_at}`, replayable under the same `request_id`, and answering 409
-   * with `detail: {code, input_revision, admission}` when the store moved under it.
-   *
-   * @param {object|null} [request]
-   */
-  function applyPlan(request = null) {
-    if (!request) return api('/api/plan/apply', { method: 'POST' });
-    return api('/api/plan/apply', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(request),
-    });
-  }
-
-  /**
-   * POST /api/plan/history/withdraw — withdraw a Plan still awaiting the pump.
-   * Durable only: `{request_id, input_revision, applied_at, reason?}`.
-   * @param {object} request
-   */
-  function withdrawPlan(request) {
-    return api('/api/plan/history/withdraw', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(request),
-    });
-  }
-
-  // --- guidance: the backend-selected concern, and set aside (#383/#384) ---
-
-  /**
-   * GET /api/guidance — the one backend-owned read of what leads: the selected
-   * concern, the disposition it was selected under, every candidate with its
-   * evidence and set-aside preference, and the `analysis_generation` /
-   * `input_revision` a write must quote back.
-   */
-  function fetchGuidance() {
-    return api('/api/guidance');
-  }
-
-  /**
-   * PUT /api/guidance/preferences/<subject> — set a concern aside.
-   *
-   * Outside the durable-receipt envelope: no `request_id`, no `input_revision`
-   * in the body, and a plain-string `detail` on 409/404. It is not idempotent by
-   * receipt, so the caller re-reads `/api/guidance` after it rather than trusting
-   * the `{subject, set_aside}` answer to describe the whole read.
-   *
-   * @param {string} subject   a canonical guidance subject
-   * @param {{ generation: string, reason?: string|null }} body
-   */
-  function setGuidancePreference(subject, { generation, reason = null } = {}) {
-    return api('/api/guidance/preferences/' + encodeURIComponent(subject), {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ generation, reason }),
-    });
-  }
-
-  /**
-   * DELETE /api/guidance/preferences/<subject> — restore a set-aside concern.
-   * The same non-receipt contract as `setGuidancePreference`; re-read after it.
-   * @param {string} subject
-   */
-  function restoreGuidancePreference(subject) {
-    return api('/api/guidance/preferences/' + encodeURIComponent(subject), { method: 'DELETE' });
-  }
+  const answerPrompt = (body) => send('/api/prompts/answer', 'POST', body);
 
   return {
-    fetchCredentials,
-    saveCredentials,
-    fetchStatus,
-    fetchPumpSettings,
-    fetchAnalysis,
-    fetchScenarios,
-    fetchCatalog,
-    fetchKbArticle,
-    fetchModelView,
-    fetchDayNavigator,
-    fetchOutcomesTrend,
-    fetchVerifyTrials,
-    finishTrial,
-    concludeTrial,
-    fetchExploreTimeOfDay,
-    fetchExploreExposures,
-    fetchDiagnoseBasalNightEvidence,
-    fetchDiagnoseIsfRestWindowEvidence,
-    fetchDiagnoseCarbRatioBlockEvidence,
-    fetchDiagnoseFindings,
-    fetchDiagnoseCarbRatioHistoryEvents,
-    fetchDiagnoseFindingCasePreparation,
-    fetchDiagnoseFindingCase,
-    fetchTimeline,
-    fetchCarbs,
-    createCarb,
-    deleteCarb,
-    fetchPrompts,
-    answerPrompt,
-    clearPrompt,
-    fetchFocuses,
-    resolveFocus,
-    pinFocus,
-    loadPlan,
-    savePlanDraft,
-    loadPlanHistory,
-    applyPlan,
-    withdrawPlan,
-    fetchGuidance,
-    setGuidancePreference,
-    restoreGuidancePreference,
+    fetchCredentials, saveCredentials, fetchStatus, fetchPumpSettings,
+    fetchGuidance, setGuidancePreference, restoreGuidancePreference, fetchDiagnoseFindings, fetchAnalysis,
+    fetchDiagnoseFindingCasePreparation, fetchDiagnoseFindingCase,
+    fetchVerifyTrials, finishTrial, fetchFocuses, pinFocus, resolveFocus,
+    fetchOutcomes, fetchExploreTimeOfDay, fetchDayNavigator,
+    fetchTimeline, fetchCarbs, fetchModelView, createCarb, updateCarb, fetchPrompts, answerPrompt,
   };
 }
 
-// ---------------------------------------------------------------------------
-// Default singleton — index.html imports these directly and gets the real
-// browser fetch.  Tests import makeDeps instead.
-// ---------------------------------------------------------------------------
-
-const _defaults = makeDeps();
-
-export const fetchCredentials  = _defaults.fetchCredentials;
-export const saveCredentials   = _defaults.saveCredentials;
-export const fetchStatus       = _defaults.fetchStatus;
-export const fetchPumpSettings = _defaults.fetchPumpSettings;
-export const fetchAnalysis     = _defaults.fetchAnalysis;
-export const fetchScenarios    = _defaults.fetchScenarios;
-export const fetchCatalog      = _defaults.fetchCatalog;
-export const fetchKbArticle    = _defaults.fetchKbArticle;
-export const fetchModelView    = _defaults.fetchModelView;
-export const fetchDayNavigator = _defaults.fetchDayNavigator;
-export const fetchOutcomesTrend = _defaults.fetchOutcomesTrend;
-export const fetchVerifyTrials = _defaults.fetchVerifyTrials;
-export const finishTrial = _defaults.finishTrial;
-export const concludeTrial = _defaults.concludeTrial;
-export const fetchExploreTimeOfDay = _defaults.fetchExploreTimeOfDay;
-export const fetchExploreExposures = _defaults.fetchExploreExposures;
-export const fetchDiagnoseBasalNightEvidence = _defaults.fetchDiagnoseBasalNightEvidence;
-export const fetchDiagnoseIsfRestWindowEvidence = _defaults.fetchDiagnoseIsfRestWindowEvidence;
-export const fetchDiagnoseCarbRatioBlockEvidence =
-  _defaults.fetchDiagnoseCarbRatioBlockEvidence;
-export const fetchDiagnoseFindings = _defaults.fetchDiagnoseFindings;
-export const fetchDiagnoseCarbRatioHistoryEvents =
-  _defaults.fetchDiagnoseCarbRatioHistoryEvents;
-export const fetchDiagnoseFindingCasePreparation = _defaults.fetchDiagnoseFindingCasePreparation;
-export const fetchDiagnoseFindingCase = _defaults.fetchDiagnoseFindingCase;
-export const fetchTimeline     = _defaults.fetchTimeline;
-export const fetchCarbs        = _defaults.fetchCarbs;
-export const createCarb        = _defaults.createCarb;
-export const deleteCarb        = _defaults.deleteCarb;
-export const fetchPrompts      = _defaults.fetchPrompts;
-export const answerPrompt      = _defaults.answerPrompt;
-export const clearPrompt       = _defaults.clearPrompt;
-export const fetchFocuses      = _defaults.fetchFocuses;
-export const resolveFocus      = _defaults.resolveFocus;
-export const pinFocus          = _defaults.pinFocus;
-export const loadPlan          = _defaults.loadPlan;
-export const savePlanDraft     = _defaults.savePlanDraft;
-export const loadPlanHistory   = _defaults.loadPlanHistory;
-export const applyPlan         = _defaults.applyPlan;
-
-export const withdrawPlan = _defaults.withdrawPlan;
-export const fetchGuidance = _defaults.fetchGuidance;
-export const setGuidancePreference = _defaults.setGuidancePreference;
-export const restoreGuidancePreference = _defaults.restoreGuidancePreference;
+/** The client over the browser's own fetch: what the app imports. */
+export const client = makeDeps();

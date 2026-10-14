@@ -222,7 +222,6 @@ class RealEndToEndTest(unittest.TestCase):
             result.returncode, 0,
             f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}",
         )
-        self.assertIn("verify-660-story", result.stdout)
         self.assertIn("diagnose-workstation", result.stdout)
 
 

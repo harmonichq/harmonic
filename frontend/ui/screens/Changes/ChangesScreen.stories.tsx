@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { fixtures } from '../../fixtures';
+import { failsOnce } from '../../flaky';
+import { CHANGES_PROFILE, CHANGES_PROFILE_ENDED, CHANGES_UNNAMED } from '../../served-variants';
 import { ChangesScreen, type ChangesScreenProps } from './ChangesScreen';
 
 // The Changes screen in each state §1.3 lists, at phone (390) and desktop
@@ -116,3 +118,46 @@ export const ExpandLastPhone: Story = {
     await waitFor(() => expect(canvas.queryByText('Before')).toBeNull());
   },
 };
+
+// Live (#495): an End the engine does not save leaves the change as it was,
+// with "Not saved", and Retry ends it.
+const liveEndPlay: Story['play'] = async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  await userEvent.click(canvas.getByRole('button', { name: 'End' }));
+  await userEvent.click(within(canvas.getByRole('dialog', { name: 'End' })).getByRole('button', { name: 'End' }));
+  await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent(/Not saved/));
+  await expect(canvas.getByRole('button', { name: 'End' })).toBeInTheDocument();
+  await userEvent.click(canvas.getByRole('button', { name: 'Retry' }));
+  await waitFor(() => expect(canvas.queryByText(/Not saved/)).toBeNull());
+};
+export const LiveEndNotSavedPhone: Story = { ...story('phone', { ...MATURED, writes: { end: failsOnce(undefined) } }), play: liveEndPlay };
+export const LiveEndNotSavedDesktop: Story = { ...story('desktop', { ...MATURED, writes: { end: failsOnce(undefined) } }), play: liveEndPlay };
+
+// A whole-profile Trial (the engine's `profile` parameter): named "Pump
+// profile", with no time block and no before → after, since the engine serves
+// none; its result, its outcomes and End as for any Trial; and as the last change.
+const profilePlay: Story['play'] = async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  await expect(canvas.getByRole('heading', { level: 2, name: /Pump profile/ })).toBeInTheDocument();
+  await expect(canvasElement.querySelector('.ui-change__figure')).toBeNull();
+  await expect(canvas.getByRole('button', { name: 'End' })).toBeInTheDocument();
+};
+export const ProfileTrialPhone: Story = { ...story('phone', { store: CHANGES_PROFILE }), play: profilePlay };
+export const ProfileTrialDesktop: Story = { ...story('desktop', { store: CHANGES_PROFILE }), play: profilePlay };
+const profileEndedPlay: Story['play'] = async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  await expect(canvas.getByText('No active change')).toBeInTheDocument();
+  await expect(canvas.getByText('Pump profile')).toBeInTheDocument();
+};
+export const ProfileLastChangePhone: Story = { ...story('phone', { store: CHANGES_PROFILE_ENDED }), play: profileEndedPlay };
+export const ProfileLastChangeDesktop: Story = { ...story('desktop', { store: CHANGES_PROFILE_ENDED }), play: profileEndedPlay };
+
+// A Trial whose parameter the app has no name for, as a newer engine might
+// serve: the card draws without a name or a before → after, never fails.
+const unnamedPlay: Story['play'] = async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  await expect(canvas.getByText('Trial')).toBeInTheDocument();
+  await expect(canvasElement.querySelector('.ui-change__figure')).toBeNull();
+};
+export const UnnamedTrialPhone: Story = { ...story('phone', { store: CHANGES_UNNAMED }), play: unnamedPlay };
+export const UnnamedTrialDesktop: Story = { ...story('desktop', { store: CHANGES_UNNAMED }), play: unnamedPlay };

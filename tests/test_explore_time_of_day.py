@@ -256,6 +256,53 @@ class ExploreTimeOfDayTest(unittest.TestCase):
             "bins": [], "pooled": None,
         })
 
+    def test_days_selects_the_14_30_or_90_day_window_ending_after_the_newest_day(self):
+        # One reading 20 days and one 60 days before the newest day: the 14-day
+        # profile holds only the newest, the 30-day the newest two, the 90-day all.
+        self._seed(cgm=[
+            _cgm(datetime(2026, 5, 1, 8, 0), 200),
+            _cgm(datetime(2026, 6, 10, 8, 0), 150),
+            _cgm(datetime(2026, 6, 30, 8, 0), 100),
+        ])
+
+        def get(days):
+            response = self.client.get("/api/explore/time-of-day", params={"days": days})
+            self.assertEqual(response.status_code, 200, response.text)
+            return response.json()
+
+        for days, start, readings in ((14, "2026-06-17 00:00:00", 1),
+                                      (30, "2026-06-01 00:00:00", 2),
+                                      (90, "2026-04-02 00:00:00", 3)):
+            body = get(days)
+            self.assertEqual(body["window"], {"start": start, "end": "2026-07-01 00:00:00",
+                                              "data_days": days})
+            self.assertEqual(body["bins"][96]["n"], readings, days)
+            self.assertEqual(body["pooled"]["reading_count"], readings, days)
+        self.assertEqual(self._body()["window"]["data_days"], 30, "30 days stays the default")
+
+    def test_days_other_than_14_30_or_90_is_refused(self):
+        self._seed(cgm=[_cgm(datetime(2026, 6, 30, 8, 0), 100)])
+        for days in (7, 0, 31, 365):
+            response = self.client.get("/api/explore/time-of-day", params={"days": days})
+            self.assertEqual(response.status_code, 400, days)
+
+    def test_each_window_is_cached_on_its_own(self):
+        self._seed(cgm=[_cgm(datetime(2026, 6, 30, 12, 0), 120)])
+        import ciq_autotune.api as api
+        real_build = api.build_time_of_day
+        calls = []
+
+        def counting_build(*args, **kwargs):
+            calls.append(kwargs.get("days", 30))
+            return real_build(*args, **kwargs)
+
+        with patch.object(api, "build_time_of_day", counting_build):
+            for _ in range(2):
+                for days in (14, 30, 90):
+                    self.assertEqual(self.client.get(
+                        "/api/explore/time-of-day", params={"days": days}).status_code, 200)
+            self.assertEqual(sorted(calls), [14, 30, 90], "one build per window, then cached")
+
     def test_carb_write_recomputes_but_plan_draft_does_not(self):
         self._seed(cgm=[_cgm(datetime(2026, 6, 30, 12, 0), 120)])
         import ciq_autotune.api as api

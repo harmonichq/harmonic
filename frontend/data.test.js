@@ -1,454 +1,127 @@
-// #102 — tests for the data-access module (data.js).
-// Runs under Node's built-in test runner with no npm deps:
+// The app's one client (data.js), through its public namespace with a fake
+// transport. Runs under Node's built-in test runner with no npm deps:
 //   node --test 'frontend/**/*.test.js'
-//
-// Uses makeDeps({ fetch: fakeFetch }) to inject a fake transport — no real
-// network, no DOM, no localStorage.
-
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { ApiTransportError, failureMessage, makeDeps } from './data.js';
+import { ApiTransportError, TOKEN_KEY, makeDeps } from './data.js';
 
-// ---------------------------------------------------------------------------
-// Fake-fetch helpers
-// ---------------------------------------------------------------------------
-
-/**
- * Build a fake fetch that resolves with a JSON body and the given status.
- * Records every call in `calls` for inspection.
- *
- * @param {object} [body={}]
- * @param {number} [status=200]
- * @returns {{ fetch: Function, calls: Array }}
- */
-function makeFakeFetch(body = {}, status = 200) {
+/** A fake fetch answering every call with `body` at `status`, recording each call. */
+function fakeFetch(body = {}, status = 200) {
   const calls = [];
-  const fakeFetch = async (url, opts) => {
+  const fetch = async (url, opts) => {
     calls.push({ url, opts: opts || {} });
     const ok = status >= 200 && status < 300;
-    return {
-      ok,
-      status,
-      statusText: ok ? 'OK' : 'Error',
-      json: async () => (ok ? body : { detail: 'server error detail' }),
-    };
+    return { ok, status, statusText: ok ? 'OK' : 'Error', json: async () => body };
   };
-  return { fetch: fakeFetch, calls };
+  return { fetch, calls };
 }
-
-// ---------------------------------------------------------------------------
-// Token helper: simulate localStorage.getItem via globalThis
-// ---------------------------------------------------------------------------
 
 function withToken(token, fn) {
-  // data.js reads `localStorage` from the calling scope's globalThis.
-  // We temporarily install a minimal shim so the token path is exercised.
   const prev = globalThis.localStorage;
-  globalThis.localStorage = {
-    getItem: (k) => (k === 'ciq_token' ? token : null),
-  };
-  try { return fn(); }
-  finally { globalThis.localStorage = prev; }
+  globalThis.localStorage = { getItem: (key) => (key === TOKEN_KEY ? token : null) };
+  try { return fn(); } finally { globalThis.localStorage = prev; }
 }
 
-// ---------------------------------------------------------------------------
-// URL / method / query-string construction
-// ---------------------------------------------------------------------------
+const body = (call) => JSON.parse(call.opts.body);
 
-test('fetchCredentials builds GET /api/credentials', async () => {
-  const { fetch, calls } = makeFakeFetch({ configured: true });
-  const { fetchCredentials } = makeDeps({ fetch });
-  await fetchCredentials();
-  assert.equal(calls.length, 1);
-  assert.equal(calls[0].url, '/api/credentials');
-  assert.ok(!calls[0].opts.method || calls[0].opts.method === 'GET');
-});
-
-test('saveCredentials builds POST /api/credentials with JSON body', async () => {
-  const { fetch, calls } = makeFakeFetch({ configured: true });
-  const { saveCredentials } = makeDeps({ fetch });
-  const form = { email: 'a@b.com', password: 's3cr3t', region: 'US' };
-  await saveCredentials(form);
-  assert.equal(calls[0].url, '/api/credentials');
-  assert.equal(calls[0].opts.method, 'POST');
-  assert.equal(calls[0].opts.headers['Content-Type'], 'application/json');
-  assert.deepEqual(JSON.parse(calls[0].opts.body), form);
-});
-
-test('fetchStatus builds GET /api/status', async () => {
-  const { fetch, calls } = makeFakeFetch({});
-  const { fetchStatus } = makeDeps({ fetch });
-  await fetchStatus();
-  assert.equal(calls[0].url, '/api/status');
-  assert.ok(!calls[0].opts.method || calls[0].opts.method === 'GET');
-});
-
-test('fetchPumpSettings builds GET /api/pump-settings', async () => {
-  const { fetch, calls } = makeFakeFetch({ configured: false });
-  const { fetchPumpSettings } = makeDeps({ fetch });
-  await fetchPumpSettings();
-  assert.equal(calls[0].url, '/api/pump-settings');
-});
-
-test('fetchAnalysis builds GET /api/analyze without params by default', async () => {
-  const { fetch, calls } = makeFakeFetch({ basal: [], isf: [], ic: [] });
-  const { fetchAnalysis } = makeDeps({ fetch });
-  await fetchAnalysis();
-  assert.equal(calls[0].url, '/api/analyze');
-});
-
-test('fetchAnalysis appends ?ignore_changes=1 when requested', async () => {
-  const { fetch, calls } = makeFakeFetch({});
-  const { fetchAnalysis } = makeDeps({ fetch });
-  await fetchAnalysis({ ignoreChanges: true });
-  assert.equal(calls[0].url, '/api/analyze?ignore_changes=1');
-});
-
-test('fetchAnalysis appends window param when provided', async () => {
-  const { fetch, calls } = makeFakeFetch({});
-  const { fetchAnalysis } = makeDeps({ fetch });
-  await fetchAnalysis({ window: 14 });
-  assert.equal(calls[0].url, '/api/analyze?window=14');
-});
-
-test('fetchAnalysis appends both params together', async () => {
-  const { fetch, calls } = makeFakeFetch({});
-  const { fetchAnalysis } = makeDeps({ fetch });
-  await fetchAnalysis({ window: 7, ignoreChanges: true });
-  // URLSearchParams orders by insertion: window first, then ignore_changes.
-  assert.equal(calls[0].url, '/api/analyze?window=7&ignore_changes=1');
-});
-
-test('fetchScenarios builds GET /api/scenarios?window=N', async () => {
-  const { fetch, calls } = makeFakeFetch({ patterns: [], episodes: {} });
-  const { fetchScenarios } = makeDeps({ fetch });
-  await fetchScenarios(30);
-  assert.equal(calls[0].url, '/api/scenarios?window=30');
-});
-
-test('fetchCatalog builds GET /api/catalog', async () => {
-  const { fetch, calls } = makeFakeFetch({ levers: [] });
-  const { fetchCatalog } = makeDeps({ fetch });
-  await fetchCatalog();
-  assert.equal(calls[0].url, '/api/catalog');
-});
-
-test('fetchVerifyTrials builds the bounded roster request with selection', async () => {
-  const { fetch, calls } = makeFakeFetch({ trials: [], selected: null });
-  const { fetchVerifyTrials } = makeDeps({ fetch });
-  await fetchVerifyTrials({ selected: 'carb_ratio-12-00-20260605090000' });
-  assert.equal(
-    calls[0].url,
-    '/api/verify/trials?selected=carb_ratio-12-00-20260605090000',
-  );
-});
-
-test('fetchTimeline builds GET /api/timeline with encoded start/end', async () => {
-  const { fetch, calls } = makeFakeFetch({ cgm: [], boluses: [], basal: [] });
-  const { fetchTimeline } = makeDeps({ fetch });
-  const start = '2025-01-01T00:00:00';
-  const end   = '2025-01-08T00:00:00';
-  await fetchTimeline({ start, end });
-  const url = calls[0].url;
-  assert.ok(url.startsWith('/api/timeline?'), `expected /api/timeline? prefix, got: ${url}`);
-  assert.ok(url.includes('start=' + encodeURIComponent(start)), `missing start param: ${url}`);
-  assert.ok(url.includes('end='   + encodeURIComponent(end)),   `missing end param: ${url}`);
-});
-
-test('per-day reads forward an abort signal', async () => {
-  const { fetch, calls } = makeFakeFetch({ cgm: [], boluses: [], basal: [] });
-  const { fetchModelView, fetchTimeline, fetchCarbs } = makeDeps({ fetch });
-  const signal = new AbortController().signal;
-  const range = { start: '2025-01-01T00:00:00', end: '2025-01-02T00:00:00' };
-
-  await Promise.all([
-    fetchModelView('2025-01-01', { signal }),
-    fetchTimeline(range, { signal }),
-    fetchCarbs(range, { signal }),
-  ]);
-
-  assert.equal(calls.length, 3);
-  for (const call of calls) assert.equal(call.opts.signal, signal);
-});
-
-test('deleteCarb removes one entry by id', async () => {
-  const { fetch, calls } = makeFakeFetch({ deleted: 1 });
-  const { deleteCarb } = makeDeps({ fetch });
-  await deleteCarb(41);
-  assert.equal(calls[0].url, '/api/carbs/41');
-  assert.equal(calls[0].opts.method, 'DELETE');
-  // The id is encoded rather than interpolated raw: it reaches the path.
-  await deleteCarb('4 1');
-  assert.equal(calls[1].url, '/api/carbs/4%201');
-});
-
-test('loadPlan builds GET /api/plan', async () => {
-  const { fetch, calls } = makeFakeFetch({ items: [] });
-  const { loadPlan } = makeDeps({ fetch });
-  await loadPlan();
-  assert.equal(calls[0].url, '/api/plan');
-  assert.ok(!calls[0].opts.method || calls[0].opts.method === 'GET');
-});
-
-test('fetchExploreTimeOfDay builds the fixed server-owned endpoint', async () => {
-  const { fetch, calls } = makeFakeFetch({ bins: [] });
-  await makeDeps({ fetch }).fetchExploreTimeOfDay();
-  assert.equal(calls[0].url, '/api/explore/time-of-day');
-});
-
-test('fetchDiagnoseFindings omits selection when no history identity is supplied', async () => {
-  const { fetch, calls } = makeFakeFetch({ schema: 'diagnose-findings-v2' });
-  await makeDeps({ fetch }).fetchDiagnoseFindings();
-  assert.equal(calls[0].url, '/api/diagnose/findings');
-});
-
-test('fetchDiagnoseFindings carries an optional selected history identity', async () => {
-  const { fetch, calls } = makeFakeFetch({ schema: 'diagnose-findings-v2' });
-  await makeDeps({ fetch }).fetchDiagnoseFindings(
-    { start_min: 1320, end_min: 120 }, 'ich1_WzAsNzIwLCI2Il0');
-  assert.equal(calls[0].url,
-    '/api/diagnose/findings?start_min=1320&end_min=120&selected_id=ich1_WzAsNzIwLCI2Il0');
-});
-
-test('history events carries the findings generation and optional run selection', async () => {
-  const { fetch, calls } = makeFakeFetch({
-    schema: 'diagnose-carb-ratio-history-events-v1', series: [],
-  });
-  await makeDeps({ fetch }).fetchDiagnoseCarbRatioHistoryEvents({
-    historyId: 'ich1_history', analysisGeneration: 'process:4',
-    selectedRunId: 'icr1_run',
-  });
-  assert.equal(calls[0].url,
-    '/api/diagnose/carb-ratio-history/events?history_id=ich1_history&analysis_generation=process%3A4&selected_run_id=icr1_run');
-});
-
-test('Finding case-file preparation forwards the server-owned window and history selection', async () => {
-  const { fetch, calls } = makeFakeFetch({ schema: 'diagnose-finding-case-file-preparation-v1' });
+test('each read asks for its endpoint', async () => {
+  const { fetch, calls } = fakeFetch();
   const api = makeDeps({ fetch });
-  await api.fetchDiagnoseFindingCasePreparation(
-    { start_min: 1320, end_min: 120 }, 'ich1_WzAsNzIwLCI2Il0');
-  await api.fetchDiagnoseFindingCasePreparation(null);
-  assert.equal(calls[0].url,
-    '/api/diagnose/finding-case-file-preparation?start_min=1320&end_min=120&selected_id=ich1_WzAsNzIwLCI2Il0');
-  assert.equal(calls[1].url, '/api/diagnose/finding-case-file-preparation');
+  await api.fetchStatus();
+  await api.fetchCredentials();
+  await api.fetchPumpSettings();
+  await api.fetchGuidance();
+  await api.fetchDiagnoseFindings();
+  await api.fetchAnalysis();
+  await api.fetchDiagnoseFindingCasePreparation();
+  await api.fetchFocuses();
+  await api.fetchExploreTimeOfDay();
+  await api.fetchDayNavigator();
+  await api.fetchDayNavigator('2026-03');
+  await api.fetchPrompts();
+  assert.deepEqual(calls.map((c) => c.url), [
+    '/api/status', '/api/credentials', '/api/pump-settings', '/api/guidance', '/api/diagnose/findings',
+    '/api/analyze', '/api/diagnose/finding-case-file-preparation', '/api/focus', '/api/explore/time-of-day',
+    '/api/day-navigator', '/api/day-navigator?month=2026-03', '/api/prompts',
+  ]);
+  assert.ok(calls.every((c) => !c.opts.method));
 });
 
-test('Finding case-file request sends the opaque preparation and Occurrence coordinates exactly', async () => {
-  const { fetch, calls } = makeFakeFetch({ schema: 'diagnose-finding-case-file-v1' });
-  await makeDeps({ fetch }).fetchDiagnoseFindingCase({
-    projection_id: 'fp_0123456789abcdef0123456789abcdef',
-    finding_id: 'finding:correction_stacking',
-    alignment: 'event',
-    occ: 'o_fedcba9876543210fedcba9876543210',
-  });
-  assert.equal(calls[0].url,
-    '/api/diagnose/finding-case-file?projection_id=fp_0123456789abcdef0123456789abcdef'
-    + '&finding_id=finding%3Acorrection_stacking&alignment=event'
-    + '&occ=o_fedcba9876543210fedcba9876543210');
+test('parameterised reads encode their query', async () => {
+  const { fetch, calls } = fakeFetch();
+  const api = makeDeps({ fetch });
+  await api.fetchOutcomes(30);
+  await api.fetchAnalysis(14);
+  await api.fetchExploreTimeOfDay(90);
+  await api.fetchVerifyTrials();
+  await api.fetchVerifyTrials({ selected: 'trial:1', kind: 'focus', assessment: 'retained' });
+  await api.fetchTimeline({ start: '2026-09-29T00:00:00', end: '2026-09-30T00:00:00' });
+  await api.fetchCarbs({ start: '2026-09-29T00:00:00', end: '2026-09-30T00:00:00' });
+  await api.fetchModelView('2026-09-29');
+  await api.fetchDiagnoseFindingCase({ projection_id: 'p 1', finding_id: 'pattern:x', alignment: 'event' });
+  assert.deepEqual(calls.map((c) => c.url), [
+    '/api/outcomes?window=30',
+    '/api/analyze?window=14',
+    '/api/explore/time-of-day?days=90',
+    '/api/verify/trials',
+    '/api/verify/trials?selected=trial%3A1&kind=focus&assessment=retained',
+    '/api/timeline?start=2026-09-29T00%3A00%3A00&end=2026-09-30T00%3A00%3A00',
+    '/api/carbs?start=2026-09-29T00%3A00%3A00&end=2026-09-30T00%3A00%3A00',
+    '/api/model-view?date=2026-09-29',
+    '/api/diagnose/finding-case-file?projection_id=p+1&finding_id=pattern%3Ax&alignment=event',
+  ]);
 });
 
-test('Finding case-file errors retain the exact structured server envelope', async () => {
-  const fetch = async () => ({
-    ok: false, status: 409, statusText: 'Conflict',
-    json: async () => ({ detail: { code: 'stale_projection', message: 'Preparation is unavailable.' } }),
-  });
-  await assert.rejects(
-    () => makeDeps({ fetch }).fetchDiagnoseFindingCase({
-      projection_id: 'fp_0123456789abcdef0123456789abcdef',
-      finding_id: 'finding:late_bolus', alignment: 'clock',
-    }),
-    (error) => {
-      assert.equal(error.status, 409);
-      assert.deepEqual(error.detail,
-        { code: 'stale_projection', message: 'Preparation is unavailable.' });
-      assert.equal(error.message, 'Preparation is unavailable.');
-      return true;
-    },
-  );
-});
-
-test('savePlanDraft builds PUT /api/plan with JSON body', async () => {
-  const { fetch, calls } = makeFakeFetch({ items: [] });
-  const { savePlanDraft } = makeDeps({ fetch });
-  const draft = { items: [{ type: 'basal', key: 'basal:0' }] };
-  await savePlanDraft(draft);
-  assert.equal(calls[0].url, '/api/plan');
-  assert.equal(calls[0].opts.method, 'PUT');
-  assert.equal(calls[0].opts.headers['Content-Type'], 'application/json');
-  assert.deepEqual(JSON.parse(calls[0].opts.body), draft);
-});
-
-test('loadPlanHistory builds GET /api/plan/history', async () => {
-  const { fetch, calls } = makeFakeFetch({ history: [] });
-  const { loadPlanHistory } = makeDeps({ fetch });
-  await loadPlanHistory();
-  assert.equal(calls[0].url, '/api/plan/history');
-});
-
-test('applyPlan builds POST /api/plan/apply', async () => {
-  const { fetch, calls } = makeFakeFetch({});
-  const { applyPlan } = makeDeps({ fetch });
-  await applyPlan();
-  assert.equal(calls[0].url, '/api/plan/apply');
-  assert.equal(calls[0].opts.method, 'POST');
-});
-
-// ---------------------------------------------------------------------------
-// Bearer token attachment
-// ---------------------------------------------------------------------------
-
-test('Bearer token is attached when localStorage has ciq_token', async () => {
-  const { fetch, calls } = makeFakeFetch({});
-  const { fetchStatus } = makeDeps({ fetch });
-  await withToken('my-secret-token', () => fetchStatus());
-  const authHeader = calls[0].opts.headers['Authorization'];
-  assert.equal(authHeader, 'Bearer my-secret-token');
-});
-
-test('Authorization header is absent when no token is set', async () => {
-  const { fetch, calls } = makeFakeFetch({});
-  const { fetchStatus } = makeDeps({ fetch });
-  // Ensure localStorage.getItem returns null (no shim = no localStorage in Node).
-  await fetchStatus();
-  assert.ok(!calls[0].opts.headers['Authorization'],
-    'Authorization header should not be present without a token');
-});
-
-// ---------------------------------------------------------------------------
-// Non-2xx error unwrapping
-// ---------------------------------------------------------------------------
-
-test('non-2xx response surfaces the unwrapped detail error', async () => {
-  const { fetch } = makeFakeFetch({ detail: 'server error detail' }, 403);
-  const { fetchStatus } = makeDeps({ fetch });
-  await assert.rejects(
-    () => fetchStatus(),
-    (err) => {
-      assert.equal(err.message, 'server error detail');
-      return true;
-    },
-  );
-});
-
-test('structured non-2xx detail preserves status and code on a typed error', async () => {
-  const detail = { code: 'analysis_generation_mismatch',
-    message: 'Evidence changed. Refresh findings.' };
-  const fakeFetch = async () => ({
-    ok: false, status: 409, statusText: 'Conflict', json: async () => ({ detail }),
-  });
-  await assert.rejects(
-    () => makeDeps({ fetch: fakeFetch }).fetchStatus(),
-    (error) => {
-      assert.ok(error instanceof ApiTransportError);
-      assert.equal(error.status, 409);
-      assert.equal(error.code, 'analysis_generation_mismatch');
-      assert.deepEqual(error.detail, detail);
-      assert.equal(error.message, detail.message);
-      return true;
-    },
-  );
-});
-
-test('a failure with no served words prints the shared words, never empty or "[object Object]"', async () => {
-  // HTTP/2 sends no status text, a proxy error page is not JSON, and a
-  // validation error serves a list. The message carries no invented words, and
-  // a failure line that follows a colon prints the shared fallback.
-  const answers = [
-    { ok: false, status: 502, statusText: '', json: async () => { throw new Error('not json'); } },
-    { ok: false, status: 422, statusText: '', json: async () => ({ detail: [{ loc: ['body'], msg: 'bad' }] }) },
-  ];
-  for (const answer of answers) {
-    await assert.rejects(
-      () => makeDeps({ fetch: async () => answer }).fetchStatus(),
-      (error) => {
-        assert.ok(error instanceof ApiTransportError);
-        assert.equal(error.message, '');
-        assert.equal(failureMessage(error), 'no response from the store');
-        return true;
-      },
-    );
-  }
-});
-
-test('non-2xx without detail falls back to statusText', async () => {
-  // Simulate a non-JSON error body.
-  const calls = [];
-  const fakeFetch = async (url, opts) => {
-    calls.push({ url, opts });
-    return {
-      ok: false,
-      status: 500,
-      statusText: 'Internal Server Error',
-      json: async () => { throw new SyntaxError('not json'); },
-    };
-  };
-  const { fetchStatus } = makeDeps({ fetch: fakeFetch });
-  await assert.rejects(
-    () => fetchStatus(),
-    (err) => {
-      assert.equal(err.message, 'Internal Server Error');
-      return true;
-    },
-  );
-});
-
-test('guidance preferences use the legacy generation body and plain detail errors', async () => {
-  const { fetch, calls } = makeFakeFetch({ subject: 'setting:basal_rate', set_aside: true });
-  const client = makeDeps({ fetch });
-  await client.fetchGuidance();
-  await client.setGuidancePreference('setting:basal_rate', { generation: 'synthetic:r8', reason: 'Later' });
-  await client.restoreGuidancePreference('setting:basal_rate');
-  assert.equal(calls[0].url, '/api/guidance');
-  assert.equal(calls[1].opts.method, 'PUT');
-  assert.deepEqual(JSON.parse(calls[1].opts.body), { generation: 'synthetic:r8', reason: 'Later' });
-  assert.equal(calls[2].opts.method, 'DELETE');
+test('each write sends its method and JSON body', async () => {
+  const { fetch, calls } = fakeFetch();
+  const api = makeDeps({ fetch });
+  await api.saveCredentials({ email: 'a@example.invalid', password: 'p', region: 'US' });
+  await api.setGuidancePreference('pattern:highs after meals', { generation: 'g1' });
+  await api.restoreGuidancePreference('pattern:highs after meals');
+  await api.pinFocus({ pattern_key: 'k', outcome_window: { start_min: 0, end_min: 1440 } });
+  await api.resolveFocus(7);
+  await api.finishTrial('trial:1', { request_id: 'r', input_revision: 3 });
+  await api.createCarb({ t: '2026-09-29 12:00:00', grams: 30, certainty: 'exact', source: 'manual' });
+  await api.updateCarb(12, { grams: 15, certainty: 'exact' });
+  await api.answerPrompt({ detector: 'low', anchor_t: '2026-09-29 03:00:00', answer: 'no' });
+  assert.deepEqual(calls.map((c) => [c.opts.method, c.url]), [
+    ['POST', '/api/credentials'],
+    ['PUT', '/api/guidance/preferences/pattern%3Ahighs%20after%20meals'],
+    ['DELETE', '/api/guidance/preferences/pattern%3Ahighs%20after%20meals'],
+    ['POST', '/api/focus'],
+    ['POST', '/api/focus/7/resolve'],
+    ['POST', '/api/verify/trials/trial%3A1/finish'],
+    ['POST', '/api/carbs'],
+    ['PATCH', '/api/carbs/12'],
+    ['POST', '/api/prompts/answer'],
+  ]);
+  assert.deepEqual(body(calls[1]), { generation: 'g1', reason: null });
   assert.equal(calls[2].opts.body, undefined);
-  const failed = makeDeps({ fetch: makeFakeFetch({}, 409).fetch });
-  await assert.rejects(failed.setGuidancePreference('setting:basal_rate', { generation: 'old' }), error => {
+  assert.equal(calls[4].opts.body, undefined);
+  assert.deepEqual(body(calls[7]), { grams: 15, certainty: 'exact' });
+  assert.equal(calls[0].opts.headers['Content-Type'], 'application/json');
+});
+
+test('the stored token rides every request as a Bearer header', async () => {
+  const { fetch, calls } = fakeFetch();
+  const api = makeDeps({ fetch });
+  await withToken('synthetic-token', () => api.fetchStatus());
+  await api.fetchStatus();
+  assert.equal(calls[0].opts.headers.Authorization, 'Bearer synthetic-token');
+  assert.equal(calls[1].opts.headers.Authorization, undefined);
+});
+
+test('a refused request rejects with its status, code and served words', async () => {
+  const detail = { code: 'immature_trial', message: 'The Trial has not matured.' };
+  const { fetch } = fakeFetch({ detail }, 409);
+  await assert.rejects(makeDeps({ fetch }).finishTrial('t', {}), (error) => {
+    assert.ok(error instanceof ApiTransportError);
     assert.equal(error.status, 409);
-    assert.equal(error.detail, 'server error detail');
+    assert.equal(error.code, 'immature_trial');
+    assert.equal(error.message, 'The Trial has not matured.');
     return true;
   });
-});
-
-test('Plan preserves v1 bodyless apply and carries v2 durable fields unchanged', async () => {
-  const { fetch, calls } = makeFakeFetch({});
-  const client = makeDeps({ fetch });
-  const request = { request_id: 'synthetic-plan-1', input_revision: 8, subject: 'setting:basal_rate',
-    analysis_generation: 'synthetic:r8', draft_updated_at: '2024-06-02 00:00:00' };
-  await client.applyPlan();
-  await client.applyPlan(request);
-  assert.equal(calls[0].opts.body, undefined);
-  assert.deepEqual(JSON.parse(calls[1].opts.body), request);
-  const withdrawal = { request_id: 'synthetic-withdraw-1', input_revision: 9, applied_at: '2024-06-02 00:01:00', reason: null };
-  await client.withdrawPlan(withdrawal);
-  assert.equal(calls[2].url, '/api/plan/history/withdraw');
-  assert.deepEqual(JSON.parse(calls[2].opts.body), withdrawal);
-});
-
-test('retained selection and durable follow-up writes preserve caller identities', async () => {
-  const { fetch, calls } = makeFakeFetch({ record: { id: 'saved' } });
-  const api = makeDeps({ fetch });
-  await api.fetchVerifyTrials({ kind: 'focus', selected: '4', assessment: 'retained' });
-  const query = new URL(calls[0].url, 'http://synthetic').searchParams;
-  assert.equal(query.get('kind'), 'focus'); assert.equal(query.get('assessment'), 'retained');
-  assert.equal(query.get('selected'), '4');
-  const body = { request_id: 'same-retry', input_revision: 8, conclusion: 'Synthetic observation' };
-  await api.finishTrial('basal:180/2024', body);
-  await api.concludeTrial('basal:180/2024', body);
-  assert.equal(calls[1].url, '/api/verify/trials/basal%3A180%2F2024/finish');
-  assert.deepEqual(JSON.parse(calls[1].opts.body), body);
-  assert.equal(calls[2].url, '/api/verify/trials/basal%3A180%2F2024/conclusion');
-  assert.deepEqual(JSON.parse(calls[2].opts.body), body);
-  await api.resolveFocus(4, body);
-  assert.deepEqual(JSON.parse(calls[3].opts.body), body);
-  await api.resolveFocus(4);
-  assert.equal(calls[4].opts.body, undefined, 'v1 keeps its legacy bodyless request');
-  const pin = { request_id: 'pin', input_revision: 8, subject: 'pattern:served', pattern_key: 'served',
-    outcome_window: { start_min: 720, end_min: 1080 }, analysis_generation: 'g' };
-  await api.pinFocus(null, pin);
-  assert.deepEqual(JSON.parse(calls[5].opts.body), pin, 'no browser-selected member enters the Pattern pin');
-  await api.pinFocus('late_bolus');
-  assert.deepEqual(JSON.parse(calls[6].opts.body), { lever: 'late_bolus' }, 'v1 pin remains compatible');
+  const plain = fakeFetch({ detail: 'guidance is unavailable' }, 503);
+  await assert.rejects(makeDeps({ fetch: plain.fetch }).fetchGuidance(), { status: 503, message: 'guidance is unavailable' });
 });

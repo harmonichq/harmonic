@@ -3,8 +3,7 @@
 
 .ui-ribbon__band { fill-opacity: .10; }
 .ui-ribbon__divider { stroke: var(--wk-rule); stroke-width: 1; }
-.ui-ribbon__selected { fill: var(--wk-surface); }
-.ui-ribbon__mark { fill: var(--wk-ink); }
+.ui-ribbon__selected { fill: color-mix(in srgb, var(--primary) 18%, transparent); }
 .ui-ribbon__trace { fill: none; stroke-width: 1.5; stroke-linejoin: round; }
 .ui-ribbon__trace--in-range { stroke: var(--glucose-in-range-quiet); }
 
@@ -16,6 +15,7 @@
   text-transform: uppercase;
 }
 .ui-ribbon__date { fill: var(--wk-ink-body); font-size: var(--ui-type-label); }
+.ui-ribbon__weekday[data-selected], .ui-ribbon__date[data-selected] { fill: var(--primary); }
 .ui-ribbon__counts { fill: var(--wk-ink-body); font-size: var(--ui-type-label); }
 .ui-ribbon__low { fill: var(--glucose-low); }
 .ui-ribbon__high { fill: var(--glucose-high); }

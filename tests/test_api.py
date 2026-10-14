@@ -495,6 +495,39 @@ class ApiTest(unittest.TestCase):
         r = self.client.get("/api/pump-settings")
         self.assertEqual(r.json()["other_profile_count"], 1)
 
+    def test_pump_settings_answers_the_latest_capture_among_many(self):
+        # The endpoint reads only the newest capture, not every snapshot: with a
+        # long history of older captures on another active profile, the answer is
+        # the newest capture's, the one the full snapshot list ends on.
+        from ciq_autotune.settings import parse_pump_settings
+        pad = [{"startTime": 0, "basalRate": 0, "isf": 0, "carbRatio": 0, "targetBg": 0}] * 15
+
+        def raw(name, idp, active, basal):
+            return parse_pump_settings({
+                "profiles": {"activeIdp": active, "profile": [
+                    {"name": name, "idp": idp, "insulinDuration": 300, "carbEntry": 1,
+                     "maxBolus": 15000, "tDependentSegs": [
+                         {"startTime": 0, "basalRate": basal, "isf": 30, "carbRatio": 6000,
+                          "targetBg": 110}] + pad},
+                    {"name": "Other", "idp": 9, "insulinDuration": 300, "carbEntry": 1,
+                     "maxBolus": 15000, "tDependentSegs": [
+                         {"startTime": 0, "basalRate": 100, "isf": 40, "carbRatio": 8000,
+                          "targetBg": 130}] + pad},
+                ]}, "cgmSettings": {}})
+
+        with Store.open(self.tmp.name) as store:
+            store.upsert_settings_snapshot("2026-09-01 09:00:00", raw("Newest", 4, 4, 900))
+            for hour in range(40):
+                store.upsert_settings_snapshot(
+                    f"2026-08-{1 + hour // 24:02d} {hour % 24:02d}:00:00", raw("Older", 5, 9, 100 + hour))
+            expected = store.settings_snapshots()[-1]
+        body = self.client.get("/api/pump-settings").json()
+        self.assertEqual(body["fetched_at"], expected.captured_at.isoformat())
+        self.assertEqual(body["active_idp"], 4)
+        self.assertEqual(body["profile"]["name"], "Newest")
+        self.assertEqual(body["profile"]["segments"][0]["basal_rate"], 0.9)
+        self.assertEqual(body["other_profile_count"], 1)
+
     def test_pump_settings_unconfigured_with_no_snapshot(self):
         with tempfile.NamedTemporaryFile(suffix=".db") as empty_db:
             from ciq_autotune.api import create_app
@@ -697,10 +730,10 @@ class DurableArtifactApiTest(unittest.TestCase):
         app.state.result_cache.bump()
         entered, release = threading.Event(), threading.Event()
         real = api_mod.build_time_of_day
-        def blocked(store):
+        def blocked(store, **kwargs):
             entered.set()
             self.assertTrue(release.wait(3))
-            return real(store)
+            return real(store, **kwargs)
         with patch.object(api_mod, "build_time_of_day", side_effect=blocked):
             with ThreadPoolExecutor(max_workers=1) as pool:
                 future = pool.submit(client.get, "/api/explore/time-of-day")
@@ -728,9 +761,9 @@ class DurableArtifactApiTest(unittest.TestCase):
         builds = []
         crossed = False
 
-        def counting_build(store):
+        def counting_build(store, **kwargs):
             builds.append(store.input_data_revision())
-            return real_build(store)
+            return real_build(store, **kwargs)
 
         def crossed_get(key, build, **kwargs):
             def cross_after_revision_check():
@@ -828,10 +861,10 @@ class DurableArtifactApiTest(unittest.TestCase):
         entered, release = threading.Event(), threading.Event()
         real = api_mod.build_time_of_day
 
-        def blocked(store):
+        def blocked(store, **kwargs):
             entered.set()
             self.assertTrue(release.wait(3))
-            return real(store)
+            return real(store, **kwargs)
 
         with patch.object(api_mod, "build_time_of_day", side_effect=blocked):
             with ThreadPoolExecutor(max_workers=1) as pool:
@@ -1590,6 +1623,7 @@ class CachePreWarmTest(unittest.TestCase):
         ("scenarios", "ciq_autotune.analyzers.scenario", "build_scenarios"),
         ("exposures", "ciq_autotune.api", "build_exposures"),
         ("explore-time-of-day", "ciq_autotune.api", "build_time_of_day"),
+        ("outcomes", "ciq_autotune.outcomes", "summarize_outcomes"),
         ("isf-rest-window-evidence", "ciq_autotune.api", "prepare_isf_rest_window_evidence"),
         ("finding-case-file", "ciq_autotune.api", "prepare_finding_cases"),
     )
@@ -1631,6 +1665,12 @@ class CachePreWarmTest(unittest.TestCase):
             ("/api/analyze", {"window": 30, "ignore_changes": False, "pool": True}),
             ("/api/scenarios", {"window": 30}),
             ("/api/explore/time-of-day", {}),
+            # The Overview's outcomes and glucose profile, at each window it switches to.
+            ("/api/outcomes", {"window": 14}),
+            ("/api/outcomes", {"window": 30}),
+            ("/api/outcomes", {"window": 90}),
+            ("/api/explore/time-of-day", {"days": 14}),
+            ("/api/explore/time-of-day", {"days": 90}),
             ("/api/explore/exposures", {}),
             ("/api/diagnose/isf-rest-window-evidence", {}),
             ("/api/diagnose/findings", {}),
@@ -1848,7 +1888,7 @@ class CachePreWarmTest(unittest.TestCase):
                 store.upsert_cgm([{"EventDateTime": "2026-06-06 00:00:00",
                                    "Readings (CGM / BGM)": 115}])
             label, warm = next(item for item in self.app.state.recompute_roster()
-                               if item[0] == "explore-time-of-day")
+                               if item[0] == "explore-time-of-day-30")
 
             def worker_shape():
                 try:
@@ -1978,12 +2018,14 @@ class CachePreWarmTest(unittest.TestCase):
             self.assertEqual(after_warm, {"analyze": 2,
                                           "outcomes-trend": 1, "scenarios": 1,
                                           "exposures": 1,
-                                          "explore-time-of-day": 1,
+                                          "explore-time-of-day": 3, "outcomes": 3,
                                           "isf-rest-window-evidence": 1,
                                           "finding-case-file": 1})
             expected_keys = (
                 ("analyze", 30, False, False),
-                ("outcomes-trend",), ("explore-time-of-day",),
+                ("outcomes-trend",), ("explore-time-of-day", 14),
+                ("explore-time-of-day", 30), ("explore-time-of-day", 90),
+                ("outcomes", 14), ("outcomes", 30), ("outcomes", 90),
                 ("analyze", 30, False, True), ("scenarios", 30),
                 ("exposures",),
                 ("isf-rest-window-evidence", 30),

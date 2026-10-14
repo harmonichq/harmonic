@@ -27,9 +27,14 @@ Two committed outputs, one generator, one ``--check``:
     every outcome metric is served as null.
 
   ``overview`` holds the Overview components' answers by store:
-  ``/api/explore/time-of-day`` and ``/api/day-navigator`` for the wearer's
-  latest month, and ``/api/outcomes`` for each window where the top-level
-  ``outcomes`` (the wearer's) does not already hold it.
+  ``/api/explore/time-of-day`` for each window (14, 30 and 90 days), the ISF
+  estimate of ``/api/analyze`` for each window, ``/api/day-navigator`` for the
+  wearer's latest month, and ``/api/outcomes`` for each window where the
+  top-level ``outcomes`` (the wearer's) does not already hold it. Every outcomes
+  answer carries its previous period. The wearer's ISF is held at every window,
+  so one more store, ``isf-supported``, serves an ISF the engine supports a
+  change for: ``scripts/qa_e2e_cases.py``'s manufactured fasting nights (a true
+  ISF of 33 under 8 mg/dL of sensor noise), read through the same API.
 
   ``changes`` holds the Changes components' answers by store (the admission,
   the active or ended Trial, the Focus records with their served titles):
@@ -50,7 +55,10 @@ Two committed outputs, one generator, one ``--check``:
   ``day`` holds ``/api/timeline`` and ``/api/carbs`` for four of the wearer's
   days, picked by rule: the latest day with readings, a site change and no
   logged carbs, the latest of the days with the most logged carbs, the first
-  day after the history ends, and the latest day with readings. ``day.prompts``
+  day after the history ends, and the latest day with readings, with each
+  day's ``/api/model-view`` trimmed to what the Day chart marks: every
+  episode's habit and every anchor's time, kind, state, glucose and matched
+  verdicts. ``day.prompts``
   holds ``/api/prompts`` for the Day screen's Prompts: ``wearer-pending``, read
   before the person answers the one prompt the top-level ``prompts`` shows
   answered, and ``wearer-answered``, read after every other read of the wearer
@@ -69,7 +77,11 @@ Two committed outputs, one generator, one ``--check``:
   each store's candidates carry their rank, admission and snooze; the pinned
   store's Queue is read again after its snooze (``wearer-pinned-snoozed``);
   ``wearer-first-days-snoozed`` is the first days with everything snoozed (an
-  empty Queue); and the unsynced store records its guidance disposition. Each
+  empty Queue); ``isf-supported`` is the Overview's store of the same name,
+  whose ISF the engine supports a change for and so queues; and the unsynced
+  store records its guidance disposition. Each Queue store's ``analyze`` holds
+  its first ISF segment, trimmed as the Overview's is, for the Queue's ISF
+  card. Each
   Queue store also holds ``cases``: every admitted Pattern's event-aligned case
   file from ``/api/diagnose/finding-case-file``, trimmed to the median traces
   of its matched and comparison cohorts, for the open card's impact line.
@@ -79,8 +91,8 @@ Two committed outputs, one generator, one ``--check``:
   ``last_error``. The wall clock every write stamps is pinned to one hour after
   the wearer's last reading, so the output is byte-reproducible.
 
-  ``states`` names, for each story state, the store and the pattern or basal
-  block that serves it, chosen by rule from what the engine served. A state
+  ``states`` names, for each story state, the store and the pattern, basal
+  block, or ISF window that serves it, chosen by rule from what the engine served. A state
   the stories need that the engine no longer serves fails the generator; a
   state that does not arise naturally is ``null`` and its story is absent.
 * ``frontend/ui/__fixtures__/ui-allowlist.json`` is every word a story may
@@ -111,6 +123,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 
 from fastapi.testclient import TestClient  # noqa: E402
 
+import qa_e2e_cases  # noqa: E402
 import ui_patient  # noqa: E402
 from ciq_autotune.api import create_app  # noqa: E402
 from ciq_autotune.store import Store  # noqa: E402
@@ -147,11 +160,18 @@ STATE_LABELS = ("No data",)
 SETTING_CAPTIONS = ("Nights",)
 # §1.3 Queue's empty-state label, "0 patterns".
 QUEUE_LABELS = ("patterns",)
-# §4.2 DayTile: "a weekday and date". The weekday abbreviations are not yet in
-# glossary §1.5.
+# §4.2 DayRibbon: "each day's weekday and date". The weekday abbreviations are
+# not yet in glossary §1.5.
 WEEKDAYS = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
-# Dates print as "26 Sep" (§1.1 "To 30 Sep", §1.3 "Until <date>"); the month
-# abbreviations are plain interface words (§2.5, 2026-10-13).
+# The Overview's date line names its comparison once: "vs previous 14 d"
+# (§2.5, 2026-10-14). "Previous" is already a plain interface word below.
+OVERVIEW_LABELS = ("vs",)
+# An ISF the engine supports a change for: qa_e2e_cases' manufactured fasting
+# nights at a true ISF of 33 mg/dL/U under 8 mg/dL of sensor noise.
+ISF_SUPPORTED = {"true_isf": 33.0, "noise_sd": 8.0}
+# Dates print as "26 Sep" (§1.2 the Overview's span "30 Sep – 13 Oct", §1.3
+# "Until <date>"); the month abbreviations are plain interface words (§2.5,
+# 2026-10-13).
 MONTHS = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
 # Plain interface words the Changes and Day components quote from §1.2, §1.3
 # and §4.2, exempt from glossary §1.5 by the 2026-10-13 amendment (§2.5):
@@ -167,17 +187,18 @@ FIRST_DAYS = 5
 # Trial day, short of the engine's fourteen.
 MATURING_DAYS = 6
 # Settings (§1.1, §1.2, §1.3, and the Settings section of the brief): the root
-# list's Glossary row, the sync rows,
-# the account rows, the pump profile, the screen header's date ("To 30 Sep"),
-# the snooze bar ("Snoozed · Until <date>") and the screen-level "Unavailable".
+# list's Glossary row, the sync rows, the account rows, the pump profile, the
+# snooze bar ("Snoozed · Until <date>") and the screen-level "Unavailable".
 # Plain interface words (§2.5), but for DIA, a pump field the brief names.
 # The Queue row's kind glyph is named "Pattern" or "Setting" for assistive
 # tech (§2.5, 2026-10-13); "Setting" is no longer a §1.5 term, since no screen
 # prints it, so the name is allowed here.
 KIND_NAMES = ("Pattern", "Setting")
+# The desktop rail's wordmark (§2.5, 2026-10-13): the H mark and the product's name.
+BRAND = ("H", "Harmonic")
 SETTINGS_LABELS = ("State", "OK", "Failed", "Last success", "Last attempt", "Error", "Data",
                    "Email", "Region", "Password", "Set", "Not set", "Update", "Start", "Target",
-                   "Max bolus", "DIA", "No profile", "Unavailable", "Snoozed", "Until", "To",
+                   "Max bolus", "DIA", "No profile", "Unavailable", "Snoozed", "Until",
                    "Glossary")
 # The account the stories show as set: an invented address on a reserved
 # domain, posted through the API and masked before it is written anywhere.
@@ -300,7 +321,8 @@ def fixtures() -> dict:
         status_failed = _get(client, "/api/status")
 
         overview = {"wearer": {
-            "time_of_day": _time_of_day(client),
+            "time_of_day": _profiles(client),
+            "analyze": _isf_windows(client),
             "day_navigator": _day_navigator(client),
         }}
         day = _days(client, overview["wearer"]["day_navigator"])
@@ -321,7 +343,7 @@ def fixtures() -> dict:
         queue["wearer-pinned-snoozed"] = _queue_store(pinned)
 
         _, first_days = _wearer(scratch, "wearer-first-days", trial=False, days=FIRST_DAYS)
-        overview["wearer-first-days"] = {"time_of_day": _time_of_day(first_days)}
+        overview["wearer-first-days"] = {"time_of_day": _profiles(first_days)}
         changes["wearer-first-days"] = _changes_store(first_days)
         # Everything the first days admit, snoozed: an empty Queue whose
         # Snoozed list holds them all (§1.3 Queue empty, Queue · Snoozed).
@@ -357,6 +379,13 @@ def fixtures() -> dict:
         _require_result(changes["wearer"], "favorable")
         _require_result(changes["wearer-worse"], "concerning")
 
+        supported = scratch / "isf-supported.sqlite"
+        with Store.open(str(supported)) as store:
+            qa_e2e_cases._materialize_isf_coverage(store, **ISF_SUPPORTED)
+        supported_client = _serve(supported)
+        overview["isf-supported"] = {"analyze": _isf_windows(supported_client)}
+        queue["isf-supported"] = _queue_store(supported_client)
+
         unsynced = scratch / "wearer-unsynced.sqlite"
         with Store.open(str(unsynced)):
             pass
@@ -368,8 +397,10 @@ def fixtures() -> dict:
         "_generated_by": GENERATED_BY,
         "_note": ("Synthetic only: a seeded simulated Control-IQ wearer "
                   "(scripts/ui_patient.py) ingested into scratch stores and served "
-                  "by the public API, in process. status.failed adds one invented "
-                  "failed sync attempt."),
+                  "by the public API, in process. overview.isf-supported is "
+                  "scripts/qa_e2e_cases.py's manufactured fasting nights, served "
+                  "the same way. status.failed adds one invented failed sync "
+                  "attempt."),
         "status": {"ok": status_ok, "failed": status_failed},
         "prompts": prompts,
         "outcomes": {key: _outcome(answer) for key, answer in outcomes.items()},
@@ -386,7 +417,7 @@ def fixtures() -> dict:
         "settings": settings,
         "snooze": snooze,
         "glossary": glossary(),
-        "states": states(queue),
+        "states": {**states(queue), "isf": isf_states(overview)},
     }
 
 
@@ -473,18 +504,27 @@ def glossary() -> list[dict]:
     return sorted(rows, key=lambda row: row["term"].lower())
 
 
+_OUTCOME_FIELDS = ("window_days", "span_start", "span_end", "coverage", "metrics")
+
+
 def _outcome(answer: dict) -> dict:
-    return {field: answer[field] for field in
-            ("window_days", "span_start", "span_end", "coverage", "metrics")}
+    """An outcomes answer and its previous period, by the same fields."""
+    return {**{field: answer[field] for field in _OUTCOME_FIELDS},
+            "previous": {field: answer["previous"][field] for field in _OUTCOME_FIELDS}}
 
 
 def _outcomes(client: TestClient) -> dict:
     return {str(w): _outcome(_get(client, "/api/outcomes", window=w)) for w in WINDOWS}
 
 
-def _time_of_day(client: TestClient) -> dict:
+def _profiles(client: TestClient) -> dict:
+    """The glucose profile for each window the Overview switches between."""
+    return {str(w): _time_of_day(client, w) for w in WINDOWS}
+
+
+def _time_of_day(client: TestClient, days: int) -> dict:
     """The glucose profile's answer: the pooled 15-minute bins and meal buckets."""
-    answer = _get(client, "/api/explore/time-of-day")
+    answer = _get(client, "/api/explore/time-of-day", days=days)
     pooled = answer["pooled"]
     return {
         "window": answer["window"],
@@ -496,6 +536,23 @@ def _time_of_day(client: TestClient) -> dict:
             "meals": [{field: m[field] for field in ("minute", "count")} for m in pooled["meals"]],
         },
     }
+
+
+def _isf(analysis: dict) -> list[dict]:
+    """``/api/analyze``'s first ISF segment, trimmed to what the ISF card reads."""
+    return [
+        {**{field: r[field] for field in ("current", "recommended", "asserts_move")},
+         # A store too short for an estimate serves none.
+         "estimate": r["estimate"] and {field: r["estimate"][field]
+                                        for field in ("value", "lo", "hi", "wide", "n_clusters")},
+         "evidence": {"night_fits": [{field: f[field] for field in ("date", "isf")}
+                                     for f in r["evidence"]["night_fits"]]}}
+        for r in analysis["isf"][:1]]
+
+
+def _isf_windows(client: TestClient) -> dict:
+    """The Overview's ISF estimate card for each window."""
+    return {str(w): {"isf": _isf(_get(client, "/api/analyze", window=w))} for w in WINDOWS}
 
 
 def _day_navigator(client: TestClient) -> dict:
@@ -641,6 +698,7 @@ def _days(client: TestClient, navigator: dict) -> dict:
         end = (datetime.fromisoformat(start) + timedelta(days=1)).isoformat()
         timeline = _get(client, "/api/timeline", start=start, end=end)
         carbs = _get(client, "/api/carbs", start=start, end=end)
+        model_view = _get(client, "/api/model-view", date=iso)
         days[iso] = {
             "timeline": {
                 "cgm": timeline["cgm"],
@@ -656,8 +714,22 @@ def _days(client: TestClient, navigator: dict) -> dict:
             },
             "carbs": {"carb_entries": [{field: e[field] for field in ("id", "t", "grams", "certainty", "source")}
                                        for e in carbs["carb_entries"]]},
+            "model_view": model_view_marks(model_view),
         }
     return {"states": picks, "days": days}
+
+
+def model_view_marks(model_view: dict) -> dict:
+    """``/api/model-view`` trimmed to what the Day chart marks (§4.2 DayChart):
+    each episode's habit, and each anchor's time, kind, state, glucose and
+    verdicts' habit, match and title. The live adapter trims the same."""
+    return {"date": model_view["date"], "episodes": [{
+        "lever": episode["lever"], "lever_title": episode["lever_title"],
+        "anchors": [{**{field: anchor[field] for field in ("t", "kind", "state", "bg")},
+                     "verdicts": [{field: v[field] for field in ("classifier", "matched", "title")}
+                                  for v in anchor["verdicts"]]}
+                    for anchor in episode["anchors"]],
+    } for episode in model_view["episodes"]]}
 
 
 def _require_lows(stores: dict) -> dict:
@@ -714,7 +786,7 @@ def _queue_store(client: TestClient) -> dict:
                 {field: r.get(field) for field in ROW_FIELDS}
                 for r in findings["rows"]
                 if r["kind"] == "pattern" or r.get("claimed_by") or r["id"] in collapsed
-                or (r["kind"] == "setting" and r.get("parameter") == "basal_rate" and r.get("members"))
+                or (r["kind"] == "setting" and r.get("members"))
             ],
         },
         "guidance": {
@@ -739,11 +811,13 @@ def _queue_store(client: TestClient) -> dict:
                  ]}}
                 for b in analyze["basal"] if b.get("asserts_move")
             ],
+            # The Queue's ISF card is the Overview's, over the engine's default window.
+            "isf": _isf(analyze),
         },
         "trials": {
             "trials": [
                 {field: t[field] for field in
-                 ("id", "parameter", "slot", "changed_at", "before", "after", "state", "maturing")}
+                 ("id", "parameter", "slot", "block", "changed_at", "before", "after", "state", "maturing")}
                 for t in trials["trials"]
             ],
         },
@@ -801,15 +875,11 @@ def _patterns(store: dict) -> list[dict]:
     return out
 
 
-def _clock_label(minute: int) -> str:
-    return f"{minute // 60:02d}:{minute % 60:02d}"
-
-
 def _blocks(store: dict) -> list[dict]:
     """Admitted basal blocks: their start, range, nights and whether a Trial matured there."""
     out = []
     for row in store["findings"]["rows"]:
-        if row["kind"] != "setting" or not row.get("members"):
+        if row["kind"] != "setting" or row.get("parameter") != "basal_rate" or not row.get("members"):
             continue
         start = row["span"]["start_min"]
         slot = next(b for b in store["analyze"]["basal"] if b["slot"] * 30 == start)
@@ -818,10 +888,25 @@ def _blocks(store: dict) -> list[dict]:
             "start": start,
             "collapsed": estimate["lo"] == estimate["hi"],
             "spread": len({n["delivered_rate"] for n in slot["evidence"]["night_roster"]}) > 1,
-            "trial": any(t["parameter"] == "basal_rate" and t["slot"] == _clock_label(start)
-                         and t["state"] == "complete" for t in store["trials"]["trials"]),
+            "trial": any(t["parameter"] == "basal_rate" and t["state"] == "complete"
+                         and _overlaps(row["span"], t) for t in store["trials"]["trials"]),
         })
     return out
+
+
+def _overlaps(span: dict, trial: dict) -> bool:
+    """Whether a queued basal block shares a half-hour with the block the Trial is
+    measured across (#506), either of them wrapping midnight; the rule
+    ``queue-model.ts`` ``maturedTrial`` applies. A Trial served with no block is
+    read at its one slot, or over the whole day when it has none."""
+    def minutes(start: int, end: int) -> set[int]:
+        return {m % 1440 for m in range(start, end if end > start else end + 1440, 30)}
+    block = trial["block"]
+    if block is None:
+        slot = trial["slot"]
+        start = int(slot[:2]) * 60 + int(slot[3:]) if slot else 0
+        block = (start, start + 30) if slot else (0, 1440)
+    return bool(minutes(span["start_min"], span["end_min"]) & minutes(*block))
 
 
 def states(queue: dict) -> dict:
@@ -864,6 +949,37 @@ def states(queue: dict) -> dict:
     return found
 
 
+def isf_states(overview: dict) -> dict:
+    """The store and window behind each ISF card story, chosen from the served
+    answers: the engine supports a change; it holds; it is Uncertain; and the
+    window with the most nights far beyond its marks, with some on each side,
+    for the edge counts."""
+    served = {(store, window): answer["isf"][0] for store, answers in overview.items()
+              if "analyze" in answers for window, answer in answers["analyze"].items() if answer["isf"]}
+
+    def beyond(row) -> tuple[int, int]:
+        """Nights more than the marks' own span below and above them."""
+        low = min(row["estimate"]["lo"], row["current"])
+        high = max(row["estimate"]["hi"], row["current"])
+        fits = [f["isf"] for f in row["evidence"]["night_fits"]]
+        return sum(f < low - (high - low) for f in fits), sum(f > high + (high - low) for f in fits)
+
+    def pick(rule, rank=lambda row: 0):
+        found = sorted((pair for pair, row in served.items() if rule(row)), key=lambda pair: rank(served[pair]))
+        return {"store": found[0][0], "window": found[0][1]} if found else None
+
+    found = {
+        "supported": pick(lambda row: row["asserts_move"] is True),
+        "held": pick(lambda row: row["asserts_move"] is False and not row["estimate"]["wide"]),
+        "uncertain": pick(lambda row: row["estimate"]["wide"] is True),
+        "edges": pick(lambda row: min(beyond(row)) > 0, rank=lambda row: -sum(beyond(row))),
+    }
+    missing = [name for name, state in found.items() if state is None]
+    if missing:
+        raise SystemExit(f"the served ISF answers no longer serve: {', '.join(missing)}")
+    return found
+
+
 def _table_first_column(section: str) -> list[str]:
     """The bold first-column cells of the first table in ``section``."""
     cells = []
@@ -901,11 +1017,18 @@ def allowlist(data: dict) -> dict:
         "Queue labels §1.3": list(QUEUE_LABELS),
         "weekdays §4.2": list(WEEKDAYS),
         "months §1.1": list(MONTHS),
+        "Overview labels §2.5": list(OVERVIEW_LABELS),
         "labels §1.2–§4.2": list(CHANGE_DAY_LABELS),
         "engine habit titles": [f["lever_title"] for store in data["changes"].values()
                                 for f in store["focuses"] if f["lever_title"]],
+        "served day habit titles": [title for day in data["day"]["days"].values()
+                                    for episode in day["model_view"]["episodes"]
+                                    for title in [episode["lever_title"]]
+                                    + [v["title"] for a in episode["anchors"] for v in a["verdicts"] if v["matched"]]
+                                    if title],
         "labels Settings": list(SETTINGS_LABELS),
         "kind glyph names §2.5": list(KIND_NAMES),
+        "rail wordmark §2.5": list(BRAND),
         "served pump profile names": [p["profile"]["name"] for p in data["settings"]["pump_settings"].values()
                                       if p["configured"]],
         "served account regions": [c["region"] for c in data["settings"]["credentials"].values() if c["region"]],
@@ -927,7 +1050,8 @@ def allowlist(data: dict) -> dict:
                   "marks plot, the glucose profile's \"No data\", the day "
                   "tile's weekdays, the month abbreviations of a date, the "
                   "Changes and Day labels quoted in §1.2–§4.2, the "
-                  "engine's habit titles, the Settings labels, the kind "
+                  "engine's habit titles, the habit titles served on the "
+                  "Day chart's days, the Settings labels, the kind "
                   "glyph's names, and the served pump profile name, account "
                   "region and sync error."),
         "words": words,

@@ -1,10 +1,15 @@
 // QueueRow (§4.2): a collapsed recommendation. A 44 px column holds the
 // kind's glyph, which is the kind's only mark: it is named "Pattern" or
 // "Setting" for assistive tech, and no kind pill repeats it. Then the
-// title, then one quiet line: the magnitude and the top cause joined by a
-// middle dot ("9 of 71 lows · Carb undercount"), or the magnitude alone when no
-// cause claims it. A setting row's title is its kind word with its time block
-// beside it in meta ink, and current → suggested takes the magnitude's place.
+// title, then one quiet line: the magnitude alone ("9 of 71 lows"); the causes
+// are the open card's to name. A setting row's title is its kind word with its time block beside it in meta
+// ink (ISF, one fasting value, has none), and current → suggested takes the magnitude's place.
+//
+// A Pattern with an impact ends both lines with a trailing value: Peak (highs)
+// or Nadir (lows) as a caption on the title line, and beneath it the shared
+// Delta of its own value against Typical, in mg/dL, in neutral ink. The two
+// lines are the row's own, so a row is the same height with or without it,
+// and the chevron stays on the title line.
 //
 // Phone: a full-width row under a rule, with a ▾ to expand; mid-swipe slides
 // it aside over the Snooze reveal, under the finger: released past half the
@@ -13,11 +18,12 @@
 //
 // Snoozed (the Snoozed list): the same row, read-only — no chevron, no swipe,
 // no selection — with a last line holding "Until <date>" and Restore.
-import type { Sourced } from '../../fixtures';
+import type { Sourced } from '../../answers';
 import { Icon } from '../../icons';
 import { useSwipe } from '../../motion';
 import { Num } from '../../Num';
-import type { Magnitude, SettingData } from '../../queue-model';
+import { Delta } from '../../Delta';
+import { impactChange, type Impact, type Magnitude, type SettingData } from '../../queue-model';
 import { Button } from '../Button/Button';
 import '../../shared.css';
 import './QueueRow.css';
@@ -43,9 +49,18 @@ export type QueueRowProps =
       /** A snoozed row: its served Until date, and Restore. */
       snoozed?: { until: Sourced<string>; onRestore?: () => void };
     } & (
-      | { kind: 'pattern'; magnitude: Magnitude; cause?: string }
-      | { kind: 'setting'; setting: SettingData }
+      | {
+          kind: 'pattern'; magnitude: Magnitude;
+          /** Null or absent: no trailing value. */
+          impact?: Impact | null;
+        }
+      | { kind: 'setting'; setting: SettingRow }
     );
+
+/** What a setting row prints. A setting with no time block (ISF, one fasting
+ *  value) has no block beside its title. */
+export type SettingRow = Pick<SettingData, 'current' | 'suggested' | 'units'>
+  & Partial<Pick<SettingData, 'start' | 'end'>>;
 
 function Meta(props: Extract<QueueRowProps, { kind: string }>) {
   if (props.kind === 'setting') {
@@ -56,11 +71,10 @@ function Meta(props: Extract<QueueRowProps, { kind: string }>) {
       </span>
     );
   }
-  const { magnitude, cause } = props;
+  const { magnitude } = props;
   return (
     <span className="ui-qrow__magnitude">
       <Num value={magnitude.count} /> of <Num value={magnitude.denominator} /> {magnitude.noun}
-      {cause && <> · {cause}</>}
     </span>
   );
 }
@@ -80,20 +94,21 @@ export function QueueRow(props: QueueRowProps) {
     );
   }
   const { title, kind, selected = false, onSelect, snoozed } = props;
+  const impact = kind === 'pattern' ? props.impact : null;
   const body = (
     <>
       <span className="ui-qrow__glyph" role="img" aria-label={KIND[kind]}><Icon name={kind} /></span>
-      <span className="ui-qrow__body">
-        <span className="ui-qrow__head">
-          <span className="ui-qrow__title">
-            {title}
-            {kind === 'setting' && <>{' '}<span className="ui-qrow__slot">
-              <Num value={props.setting.start} />–<Num value={props.setting.end} />
-            </span></>}
-          </span>
-          {layout === 'phone' && !snoozed && <span className="ui-qrow__chevron"><Icon name="expand" /></span>}
+      <span className={`ui-qrow__body${impact ? ' ui-qrow__body--trailing' : ''}`}>
+        <span className="ui-qrow__title">
+          {title}
+          {kind === 'setting' && props.setting.start && props.setting.end && <>{' '}<span className="ui-qrow__slot">
+            <Num value={props.setting.start} />–<Num value={props.setting.end} />
+          </span></>}
         </span>
+        {impact && <span className="ui-qrow__caption ui-caption">{impact.kind === 'peak' ? 'Peak' : 'Nadir'}</span>}
+        {layout === 'phone' && !snoozed && <span className="ui-qrow__chevron"><Icon name="expand" /></span>}
         <span className="ui-qrow__meta"><Meta {...props} /></span>
+        {impact && <span className="ui-qrow__impact"><Delta change={impactChange(impact)} unit="mg/dL" /></span>}
         {snoozed && (
           <span className="ui-qrow__foot">
             <span className="ui-qrow__until">Until <Num value={snoozed.until} /></span>

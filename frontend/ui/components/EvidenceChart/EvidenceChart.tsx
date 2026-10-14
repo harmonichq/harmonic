@@ -12,7 +12,9 @@
 // and the axis and every mark stop short of it, so a count never touches a dot,
 // the band or a line (§2.5, 2026-10-14); an end with no count reserves nothing.
 // The axis otherwise runs the full width, flush with the card's text column:
-// the end tick labels anchor inward and the unit follows the last one.
+// the end tick labels anchor inward and the unit follows the last one. Every
+// tick keeps its mark, but a label that would run into its neighbour is left
+// out, the last (with the unit) always kept, so no two labels ever touch.
 // Current (dashed, top row) and Estimate (solid,
 // second row) are full-height marks labelled with their word and value; the
 // engine's range is a band behind them in the estimate colour, and the nights
@@ -48,6 +50,8 @@ const HEIGHT = AXIS_Y + 22;
 const EDGE_LABEL = 26;  // an edge count's width, "‹ 12" at 13 px
 const EDGE_GUTTER = EDGE_LABEL + 8; // the count and its clearance from the plot
 const LABEL_CHAR = 7.4; // a 13 px Inter character, generously
+const TICK_CHAR = 6.6;  // an 11 px Inter tick character, generously
+const TICK_GAP = 16;    // the least space between two tick labels, so they never read as one
 const STEPS = [0.01, 0.02, 0.025, 0.05, 0.1, 0.2, 0.25, 0.5, 1, 2, 2.5, 5, 10, 20, 25, 50, 100, 200, 250, 500];
 
 /** Round ticks covering [min, max]: the finest step that needs at most five. */
@@ -64,6 +68,19 @@ function ticks(min: number, max: number): { values: number[]; decimals: number }
     }
   }
   return { values: [min, max], decimals: 2 };
+}
+
+/** The ticks whose labels are drawn, given each label's [left, right] extent:
+ *  left to right, each that clears the last one kept; then the last tick, which
+ *  carries the unit, displacing any kept label it would touch. */
+function labelledTicks(extents: [number, number][]): Set<number> {
+  const kept: number[] = [];
+  const last = extents.length - 1;
+  for (let i = 0; i < last; i += 1) {
+    if (kept.length === 0 || extents[i][0] >= extents[kept[kept.length - 1]][1] + TICK_GAP) kept.push(i);
+  }
+  while (kept.length && extents[kept[kept.length - 1]][1] + TICK_GAP > extents[last][0]) kept.pop();
+  return new Set([...kept, last]);
 }
 
 /** A mark's label, on the side away from the other mark unless the chart's
@@ -137,6 +154,11 @@ export function EvidenceChart({ nights, roster, field, current, estimate, lo, hi
   // An edge count's baseline: level with the dots' first row, in its gutter.
   const edgeY = AXIS_Y - 2;
   const lastIndex = scale.values.length - 1;
+  const labelled = labelledTicks(scale.values.map((value, i) => {
+    const at = x(value);
+    const span = (value.toFixed(scale.decimals).length + (i === lastIndex ? 1 + units.length : 0)) * TICK_CHAR;
+    return i === 0 ? [at, at + span] : i === lastIndex ? [at - span, at] : [at - span / 2, at + span / 2];
+  }));
 
   return (
     <div ref={box} className="ui-chart">
@@ -170,11 +192,13 @@ export function EvidenceChart({ nights, roster, field, current, estimate, lo, hi
         {scale.values.map((value, i) => (
           <g key={value}>
             <line x1={x(value)} x2={x(value)} y1={AXIS_Y} y2={AXIS_Y + 4} className="ui-evidence__axis" />
-            <text x={x(value)} y={AXIS_Y + 17} textAnchor={i === 0 ? 'start' : i === lastIndex ? 'end' : 'middle'}
-              className="ui-evidence__tick">
-              {value.toFixed(scale.decimals)}
-              {i === lastIndex && <tspan className="ui-evidence__unit"> {units}</tspan>}
-            </text>
+            {labelled.has(i) && (
+              <text x={x(value)} y={AXIS_Y + 17} textAnchor={i === 0 ? 'start' : i === lastIndex ? 'end' : 'middle'}
+                className="ui-evidence__tick">
+                {value.toFixed(scale.decimals)}
+                {i === lastIndex && <tspan className="ui-evidence__unit"> {units}</tspan>}
+              </text>
+            )}
           </g>
         ))}
       </g>

@@ -8,7 +8,9 @@ import { IsfCard } from './IsfCard';
 // manufactured fasting nights' store); it holds; it flags the estimate wide
 // (Uncertain); and the window with the most nights far beyond its marks, on
 // both sides, for the edge counts. The Overview's own stories show its
-// loading and no-data cards.
+// loading and no-data cards. The frame is the phone's, so the chart is 326 px
+// wide, as on the Overview; Narrow is a 320 px phone. Every story asserts that
+// no two axis labels touch.
 const meta = {
   title: 'IsfCard',
   component: IsfCard,
@@ -18,10 +20,28 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
+const overlaps = (a: DOMRect, b: DOMRect) =>
+  a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+
+/** The least rendered space between two axis labels, so two never read as one. */
+const LABEL_SPACE = 12;
+
+/** Every two neighbouring axis labels stand at least LABEL_SPACE apart;
+ *  returns how many labels and tick marks there are. */
+async function ticksClear(canvasElement: HTMLElement) {
+  const labels = [...canvasElement.querySelectorAll<SVGTextElement>('.ui-evidence__tick')]
+    .map((label) => label.getBoundingClientRect());
+  for (let i = 1; i < labels.length; i += 1) {
+    await expect(labels[i].left - labels[i - 1].right).toBeGreaterThanOrEqual(LABEL_SPACE);
+  }
+  return { labels: labels.length, marks: canvasElement.querySelectorAll('[data-axis] g').length };
+}
+
 /** A supported change shows current → recommended; any other shows no figure. */
 const figure = (shown: boolean): Story['play'] => async ({ canvasElement }) => {
   const recommended = canvasElement.querySelector('[data-source$=".isf.0.recommended"]');
   await expect(recommended !== null).toBe(shown);
+  await ticksClear(canvasElement);
 };
 
 export const Supported: Story = { args: { data: isfState('supported') }, play: figure(true) };
@@ -30,11 +50,21 @@ export const Uncertain: Story = {
   args: { data: isfState('uncertain') },
   play: async ({ canvasElement }) => {
     await expect(canvasElement.querySelector('[data-state="uncertain"]')).not.toBeNull();
+    await ticksClear(canvasElement);
   },
 };
 
-const overlaps = (a: DOMRect, b: DOMRect) =>
-  a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+/** A 320 px phone: the axis is too short for every tick's label, so one is left
+ *  out (its mark stays) rather than running into the unit-bearing last label. */
+export const Narrow: Story = {
+  args: { data: isfState('supported') },
+  parameters: { frame: { width: 320 } },
+  play: async ({ canvasElement }) => {
+    const { labels, marks } = await ticksClear(canvasElement);
+    await expect(labels).toBeLessThan(marks);
+    await expect(canvasElement.querySelector('.ui-evidence__unit')).not.toBeNull();
+  },
+};
 
 /** Both ends carry a count, and neither touches a dot, the band or a line. */
 export const EdgeCounts: Story = {
@@ -48,6 +78,7 @@ export const EdgeCounts: Story = {
       const box = edge.getBoundingClientRect();
       await expect(marks.filter((mark) => overlaps(box, mark.getBoundingClientRect())).length).toBe(0);
     }
+    await ticksClear(canvasElement);
   },
 };
 

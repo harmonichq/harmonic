@@ -769,7 +769,8 @@ unless noted. Loading is a skeleton of the component's own shape.
       axis, counted ("‹ 3", "2 ›") in a gutter reserved at that end, outside
       the plot (§2.5, 2026-10-14).
     - The axis covers the marks, padded; it goes below 0 only when the range
-      does.
+      does. Every tick keeps its mark, but a tick label that would touch its
+      neighbour is left out; the last, which carries the unit, always shows.
     - Fields: `analyze.basal[slot].evidence.night_roster`;
       `analyze.isf[0].evidence.night_fits[].isf`.
     - Desktop: wider, same marks.

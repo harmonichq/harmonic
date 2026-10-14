@@ -1,5 +1,8 @@
 .ui-list { font-family: var(--ui-font); font-variant-numeric: tabular-nums; }
-.ui-list + .ui-list { margin-top: 24px; }
+/* Two groups in a row are set apart by space alone: the second draws no rule
+   above its first row, so the gap never reads as an empty row. */
+.ui-list + .ui-list { margin-top: 32px; }
+.ui-list + .ui-list > .ui-list__rows { border-top: 0; }
 .ui-list__caption { margin: 0 0 6px; }
 .ui-list__rows { border-top: 1px solid var(--wk-rule); }
 
@@ -56,16 +59,20 @@
 /* A disclosure row's chevron: down closed, up open. */
 .ui-row__disclosure { display: flex; flex: none; color: var(--wk-ink-meta); }
 
-/* A form row: the label, then its input filling the rest of the row. */
+/* A form row: the label, then its input on the right, underlined as the grams
+   field is (§2.2 numeric input): a neutral rule, the accent while focused. */
 .ui-row--field { cursor: text; }
 .ui-row--field .ui-row__label { flex: none; }
 .ui-row__input {
-  flex: 1 1 auto;
+  box-sizing: border-box;
+  flex: 0 1 220px;
   min-width: 0;
   height: 32px;
-  margin: 0;
-  padding: 0;
+  margin: 0 0 0 auto;
+  padding: 0 2px 4px;
   border: 0;
+  border-bottom: 2px solid var(--wk-rule-strong);
+  border-radius: 0;
   outline: none;
   background: transparent;
   color: var(--wk-ink);
@@ -73,5 +80,5 @@
   font: var(--ui-weight-regular) var(--ui-type-body) / 1 var(--ui-font);
   text-align: right;
 }
+.ui-row__input:focus { border-bottom-color: var(--primary); }
 .ui-row__input:disabled { color: var(--wk-ink-meta); }
-.ui-row--field:focus-within { box-shadow: inset 0 -2px 0 var(--primary); }

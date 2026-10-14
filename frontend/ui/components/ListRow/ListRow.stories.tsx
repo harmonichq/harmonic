@@ -58,7 +58,7 @@ export const Dense: Story = {
 export const Field: Story = {
   render: () => (
     <ListGroup>
-      <ListRow label="Email" field={{ kind: 'email' }} />
+      <ListRow label="Email" field={{ kind: 'email', focused: true }} />
       <ListRow label="Password" field={{ kind: 'password' }} />
     </ListGroup>
   ),

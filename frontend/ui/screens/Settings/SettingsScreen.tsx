@@ -156,7 +156,7 @@ function AccountForm({ saving, onSave }: { saving: boolean; onSave: () => void }
     <>
       <h2 className="ui-settings__form-title">Tandem Source</h2>
       <ListGroup>
-        <ListRow label="Email" field={{ kind: 'email', onChange: setEmail, disabled: saving }} />
+        <ListRow label="Email" field={{ kind: 'email', onChange: setEmail, disabled: saving, focused: true }} />
         <ListRow label="Password" field={{ kind: 'password', onChange: setPassword, disabled: saving }} />
       </ListGroup>
       <div className="ui-settings__form-foot">

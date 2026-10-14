@@ -736,7 +736,8 @@ unless noted. Loading is a skeleton of the component's own shape.
    printed, with mg/dL. The row is two lines with or without it, and the
    chevron sits on the title line (§2.5, 2026-10-14).
    - States: default (multi-cause, no cause named); selected (desktop);
-     mid-swipe (snooze reveal); single cause and no cause (the same row);
+     mid-swipe (snooze reveal); single cause (the same row; the no-cause
+     state is retired with the overnight Pattern, ADR 499);
      with impact, high (Peak) or
      low (Nadir); without impact (no trailing value); setting (current →
      suggested replaces the magnitude; a queued ISF's row has no time block,
@@ -751,7 +752,7 @@ unless noted. Loading is a skeleton of the component's own shape.
 8. **PatternCard**: the open pattern, showing the magnitude, a CauseWaffle,
    and Pin. No Range: only a Setting has one; Uncertain carries a pattern's
    confidence (ADR 485).
-   - States: multi-cause; **single cause**; **no attributed cause**; Uncertain
+   - States: multi-cause; **single cause**; Uncertain
      (the tag at the end of the magnitude line); with or without the impact
      line (Peak or Nadir · Typical, mg/dL, beneath the magnitude);
      pinned (Pin replaced by a "Focus" pill); loading.
@@ -764,9 +765,9 @@ unless noted. Loading is a skeleton of the component's own shape.
    - Desktop: fills the detail pane up to 720 px; no collapse chevron.
 9. **CauseWaffle**: one cell per occurrence in n, with filled cells patterned
    by cause, plus a legend.
-   - States: multi-cause; single cause (one legend entry); no cause (the
-     occurrences in the pattern's solid tone, as a single cause draws them,
-     with a "Meals" or "Lows" legend only).
+   - States: multi-cause; single cause (one legend entry). A counted Pattern
+     always has a claiming cause since ADR 499 cut the overnight Pattern, so
+     the no-cause state is retired.
    - Fields: as PatternCard.
    - Desktop: larger cells, same rules.
 10. **SettingCard**: the open setting, showing current → suggested in figure

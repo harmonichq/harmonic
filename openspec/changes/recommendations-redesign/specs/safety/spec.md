@@ -127,7 +127,6 @@ is the point.
 - **THEN** its median is 0.54 with a range of 0.45 to 0.66, and the slot is
   `HARM_GATED` at 0.60: it asserts no move, carries no setting action and keeps its
   recurring-low seriousness and its lows
-- **AND** the overnight-lows Pattern is not admitted through the basal setting
 
 ### Requirement: One backend predicate decides whether an ISF row may stage
 

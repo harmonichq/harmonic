@@ -31,9 +31,3 @@ class OutcomeTimestampTest(unittest.TestCase):
         self.assertEqual(outcome_timestamp(occurrence, exposures), "2024-05-01 18:00:00")
         self.assertEqual(outcome_minute(occurrence, exposures), 18 * 60)
 
-    def test_sequence_keeps_its_existing_no_landing_semantics(self):
-        occurrence = {"ep_id": "sequence-1", "t": "2024-05-01 06:00:00",
-                      "cause_lever": "high_carb_sequence"}
-        exposures = {"exposures": {"meals": {"occurrences": [occurrence]}}}
-        self.assertIsNone(outcome_timestamp(occurrence, exposures))
-        self.assertIsNone(outcome_minute(occurrence, exposures))

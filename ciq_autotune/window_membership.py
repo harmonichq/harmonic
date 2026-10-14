@@ -143,16 +143,13 @@ def _outcome_timestamp(occurrence: dict,
 
     def landing(lever):
         kind = outcome_kind(lever)
-        if kind is None or kind == "sequence":
+        if kind is None:
             return None
         matches = [stamp for stamp, anchor_kind
                    in anchors.get(occurrence.get("ep_id"), [])
                    if anchor_kind == kind]
         return max(matches) if matches else None
 
-    cause_kind = outcome_kind(occurrence.get("cause_lever"))
-    if cause_kind == "sequence":
-        return None
     caused = landing(occurrence.get("cause_lever"))
     if caused is not None:
         return caused

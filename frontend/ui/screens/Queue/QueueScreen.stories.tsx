@@ -53,7 +53,7 @@ const back = (canvas: ReturnType<typeof within>) =>
 
 const DEFAULT = { store: 'wearer' } as const;
 const PATTERN_OPEN = {
-  store: fixtures.states.no_cause.store, open: `pattern:${fixtures.states.no_cause.pattern}`,
+  store: fixtures.states.single_cause.store, open: `pattern:${fixtures.states.single_cause.pattern}`,
 } as QueueScreenProps;
 const SETTING_DETAIL = { store: fixtures.states.setting.store, open: 'setting:basal_rate' } as QueueScreenProps;
 const JUST_SNOOZED = { store: 'wearer-pinned', snooze, justSnoozed: true } as const;

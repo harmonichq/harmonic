@@ -48,7 +48,6 @@ from ..classifiers import (
     classify_correction_on_iob,
     classify_correction_stacking,
     classify_late_bolus,
-    classify_meal_bolus_short,
     classify_missed_meal,
 )
 from ..classifiers.evidence import EvidenceTier, SilenceReason
@@ -664,20 +663,12 @@ def _high_lever(
     the digestion window as a ``cited_window`` span so the chart shades what was
     scanned.
 
-    When missed-meal declines because a **counted meal bolus** already announced the
-    rise, the rise is handed to :func:`~...classifiers.meal_bolus_short.classify_meal_bolus_short`
-    (#63), which asks the next question: was that announcement enough? It matches only
-    when a correction was needed behind the dose, and it claims a shortfall, never a
-    carb count. The two split one population at exactly one line, so at most one of
-    them can ever fire on a given rise.
-
     ``rebound_owner`` is the fired over-treated low whose guarded rebound reaches this
-    High, if any. Both classifiers read it where they would otherwise match, so an
-    owned High attributes neither (ADR 422).
+    High, if any. The classifier reads it where it would otherwise match, so an owned
+    High attributes nothing (ADR 422).
 
-    Returns ``((lever, driver_step), None)`` when either fires, else ``(None, mm)`` —
-    the missed-meal verdict remains the high's silence reason, because it is the more
-    general judgment and every unattributed high already reports it.
+    Returns ``((lever, driver_step), None)`` when it fires, else ``(None, mm)`` — the
+    missed-meal verdict is the high's silence reason.
 
     A **rebound high-moment** (the synthesized anchor of a #155 split, marked with
     ``rebound_nadir_bg``) is the exception: it is the over-correction the crash
@@ -705,12 +696,8 @@ def _high_lever(
     onset = anchor.reach_start
     mm = classify_missed_meal(onset, cgm, bolus, basal, scenario_config=scenario_config,
                               rebound_owner=rebound_owner)
-    mbs = classify_meal_bolus_short(
-        onset, cgm, bolus, basal, scenario_config=scenario_config,
-        rebound_owner=rebound_owner,
-    )
     if verdicts is not None:
-        verdicts.extend((_mv("missed_meal", mm), _mv("meal_bolus_short", mbs)))
+        verdicts.append(_mv("missed_meal", mm))
     if mm.matched:
         cited_window = (
             window_ref(mm.digestion_window_start, onset)
@@ -722,23 +709,6 @@ def _high_lever(
             cited_window=cited_window,
             citation={"facts": {
                 "rise_slope_mgdl_min": mm.rise_slope,
-                "digestion_window": dict(cited_window) if cited_window else None,
-            }},
-        )), None
-
-    if mbs.matched:
-        cited_window = (
-            window_ref(mbs.digestion_window_start, onset)
-            if mbs.digestion_window_start is not None
-            else None
-        )
-        return (Lever.MEAL_BOLUS_SHORT, Step(
-            t=onset, text=mbs.detail, evidence_tier=mbs.evidence_tier,
-            cited_window=cited_window,
-            citation={"facts": {
-                "rise_slope_mgdl_min": mbs.rise_slope,
-                "meal_at": _event_ref_or_none(mbs.meal_t),
-                "correction_at": _event_ref_or_none(mbs.correction_t),
                 "digestion_window": dict(cited_window) if cited_window else None,
             }},
         )), None

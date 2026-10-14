@@ -73,7 +73,8 @@ def trial_breakdown(store, *, parameter: str, slot: Optional[str],
 
     ``block`` is the block-bound I:C Trial's captured wrap-aware arc (#581). When
     given it is the *only* source of the meal-arc block — the durable identity read
-    off the applied Plan provenance, never reconstructed from current settings, so
+    off the change's own two settings reads (#500), never reconstructed from current
+    settings, so
     a later profile repartition cannot silently move the arc under a live Trial.
     """
     periods = {"before_period": before_period, "trial_period": trial_period}

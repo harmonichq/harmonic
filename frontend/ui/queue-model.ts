@@ -221,7 +221,7 @@ export function isfSetting(name: QueueStore): IsfSettingData | null {
 
 /** The story states the generator found in the served answers, by name. */
 const states = () => answers.states;
-type PatternState = 'multi_cause' | 'single_cause' | 'no_cause' | 'pinned' | 'uncertain';
+type PatternState = 'multi_cause' | 'single_cause' | 'pinned' | 'uncertain';
 type SettingState = 'setting' | 'setting_trial';
 
 export function patternState(name: PatternState): PatternData {

@@ -1,12 +1,13 @@
-"""Block-scoped I:C Trial identity, matching, and cohort binding (#581).
+"""Block-scoped I:C Trial identity, Plan annotation, and cohort binding (#581, #500).
 
-ADR 581 amends ADR 579 §5: a block-scoped I:C change is admitted to the Trial
-roster only when the pump-observed schedule change *uniquely* matches one complete
-annotated applied Plan group (the ``ic_block_provenance`` slice 1 stamps onto every
-staged member). These tests drive the one public interface — ``review_trials`` /
-``GET /verify/trials`` — on fixtures built to the real event and provenance shapes.
-Nothing hand-sets a Trial: admission, rejection, and cohort all fall out of a real
-observed change matched against a real applied group.
+ADR 500 revises ADR 581: a carb-ratio change on the pump is a block-bound Trial
+whether or not a Plan proposed it, its arc, before and after read off the two
+settings reads either side of it. An applied Plan group that uniquely matches the
+change (the ``ic_block_provenance`` slice 1 stamps onto every staged member) still
+annotates it with its member starts. These tests drive the one public interface —
+``review_trials`` / ``GET /verify/trials`` — on fixtures built to the real event
+and provenance shapes. Nothing hand-sets a Trial: admission and cohort fall out of
+a real observed change.
 """
 
 import tempfile
@@ -233,9 +234,19 @@ class BlockIcAdmissionTest(unittest.TestCase):
         self.assertEqual(roster["trials"], [])
         self.assertIsNone(roster["selected"])
 
-    def test_change_that_misses_a_member_is_rejected(self):
-        # The observed change moves only the first half of the arc, leaving the
-        # 13:00–15:00 member's interval unchanged, so no group matches (fail closed).
+    def _assert_observed_block(self, block):
+        roster = self._roster()
+        self.assertEqual(len(roster["trials"]), 1, roster["trials"])
+        summary = roster["trials"][0]
+        self.assertEqual((summary["parameter"], summary["slot"]), ("carb_ratio", "12:00"))
+        self.assertEqual((summary["before"], summary["after"]), (5.0, 4.4))
+        self.assertEqual(self._detail(summary["id"])["meal_arcs"]["block"], list(block))
+        return summary
+
+    def test_change_that_misses_a_member_is_a_trial_of_the_block_it_moved(self):
+        # The observed change moves only the first half of the Plan's arc, leaving
+        # the 13:00–15:00 member's interval unchanged. No group matches, and the
+        # Trial is the block the pump actually moved (#500).
         old = _profile(1, _OLD_IC)
         partial = _profile(2, ((0, 5.0), (720, 4.4), (780, 5.0), (900, 5.0)))
         with Store.open(self.tmp.name) as store:
@@ -245,16 +256,14 @@ class BlockIcAdmissionTest(unittest.TestCase):
             _apply(store, "2026-06-04 08:00:00", _BLOCK, _MEMBERS, 5.0, 4.4)
             _cgm_span(store, SWITCH - timedelta(days=14), NOW)
 
-        roster = self._roster()
-        self.assertEqual(roster["trials"], [])
-        self.assertIsNone(roster["selected"])
+        self._assert_observed_block((720, 780))
 
-    def test_change_matched_by_two_annotated_groups_is_rejected(self):
+    def test_change_matched_by_two_annotated_groups_is_still_one_block_trial(self):
         # Two distinct complete annotated applied groups — same bounds, members,
         # and values, applied at two different instants within the 3-day
         # tolerance of the snapshot — both match the one observed change. The
-        # match is ambiguous, so it fails closed (no block-scoped roster entry),
-        # exercising the len(matches) == 1 branch in _match_unique_group.
+        # ambiguous annotation names neither (the len(matches) == 1 branch in
+        # _match_unique_group), and the change is still its one observed block.
         old, new = _profile(1, _OLD_IC), _profile(2, _NEW_IC)
         with Store.open(self.tmp.name) as store:
             store.upsert_settings_snapshot("2026-06-04 09:00:00", PumpSettings(1, (old, new)))
@@ -264,13 +273,12 @@ class BlockIcAdmissionTest(unittest.TestCase):
             _apply(store, "2026-06-04 08:30:00", _BLOCK, _MEMBERS, 5.0, 4.4)
             _cgm_span(store, SWITCH - timedelta(days=14), NOW)
 
-        roster = self._roster()
-        self.assertEqual(roster["trials"], [])
-        self.assertIsNone(roster["selected"])
+        self._assert_observed_block(_BLOCK)
 
-    def test_change_that_also_moves_ic_outside_the_arc_is_rejected(self):
+    def test_change_that_also_moves_ic_outside_the_arc_is_the_wider_block(self):
         # The whole arc moves 5.0→4.4 (a match on its own) but the evening block
-        # 15:00–18:00 also moves, so an out-of-arc interval changed → rejected.
+        # 15:00–18:00 also moves the same way. No group matches, and the Trial is
+        # the one 12:00–18:00 block the pump moved (#500).
         old = _profile(1, _OLD_IC)
         spilled = _profile(2, ((0, 5.0), (720, 4.4), (780, 4.4), (900, 4.4), (1080, 5.0)))
         with Store.open(self.tmp.name) as store:
@@ -280,9 +288,7 @@ class BlockIcAdmissionTest(unittest.TestCase):
             _apply(store, "2026-06-04 08:00:00", _BLOCK, _MEMBERS, 5.0, 4.4)
             _cgm_span(store, SWITCH - timedelta(days=14), NOW)
 
-        roster = self._roster()
-        self.assertEqual(roster["trials"], [])
-        self.assertIsNone(roster["selected"])
+        self._assert_observed_block((720, 1080))
 
 
 class BlockIcIdentityAndCohortTest(unittest.TestCase):
@@ -304,9 +310,10 @@ class BlockIcIdentityAndCohortTest(unittest.TestCase):
         return block, detail
 
     def test_later_repartition_without_a_group_cannot_retarget_the_trial(self):
-        # T1 is corroborated at the 2026-06-05 snapshot. A later snapshot moves the
-        # I:C segment (a repartition) but no new group corroborates it — T1's ID,
-        # arc, and before/after stay pinned to its captured provenance.
+        # T1 is read at the 2026-06-05 snapshot. A later snapshot moves the I:C
+        # segment (a repartition) with no Plan behind it. That repartition is a
+        # pump change and a Trial of its own (#500), while T1's ID, arc, and
+        # before/after stay pinned to what its own two reads recorded.
         old, new = _profile(1, _OLD_IC), _profile(2, _NEW_IC)
         moved = _profile(3, ((0, 5.0), (600, 4.4), (900, 5.0)))  # block now 10:00–15:00
         with Store.open(self.tmp.name) as store:
@@ -321,16 +328,16 @@ class BlockIcIdentityAndCohortTest(unittest.TestCase):
             # A later repartition snapshot on 2026-06-09 with no corroborating group.
             store.upsert_settings_snapshot(
                 "2026-06-09 09:00:00", PumpSettings(3, (old, new, moved)))
-            after_block, after_detail = self._selected(store)
-            # Still exactly one block-scoped Trial — the repartition spawned none.
             after_roster = review_trials(store, now=NOW)
+            first = next(t for t in after_roster["trials"] if t["id"] == before_block["id"])
+            first_detail = review_trials(store, now=NOW, selected=first["id"])["selected"]
 
-        self.assertEqual(after_block["id"], before_block["id"])
-        self.assertEqual(after_block["changed_at"], "2026-06-05 09:00:00")
-        self.assertEqual(after_detail["meal_arcs"]["block"], [720, 900])
-        self.assertEqual((after_block["before"], after_block["after"]), (5.0, 4.4))
-        self.assertEqual(
-            sum(1 for t in after_roster["trials"] if t["slot"] is not None), 1)
+        self.assertEqual(first["changed_at"], "2026-06-05 09:00:00")
+        self.assertEqual(first_detail["meal_arcs"]["block"], [720, 900])
+        self.assertEqual((first["before"], first["after"]), (5.0, 4.4))
+        (second,) = [t for t in after_roster["trials"] if t["id"] != before_block["id"]]
+        self.assertEqual((second["slot"], second["changed_at"]), ("10:00", "2026-06-09 09:00:00"))
+        self.assertEqual((second["before"], second["after"]), (5.0, 4.4))
 
     def test_later_repartition_matching_a_different_group_creates_its_own_trial(self):
         # Acceptance criterion 16's untested half: a later repartition may create

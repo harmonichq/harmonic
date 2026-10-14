@@ -145,7 +145,6 @@ _BEHAVIOR_ORDER = [
     Lever.CORRECTION_ON_IOB,
     Lever.CORRECTION_STACKING,
     Lever.MISSED_MEAL,
-    Lever.MEAL_BOLUS_SHORT,
 ]
 
 # The override-rate tile (#161) is NOT a scenario Lever — it is provenance, not a low
@@ -1026,13 +1025,7 @@ def summarize_trend(
             w_bolus, ctx_bolus, ctx_cgm, ctx_basal
         )
         for lever in _BEHAVIOR_ORDER:
-            policy = policy_for(lever)
-            exp = LEVER_EXPOSURE[lever]
-            n = exposure_counts.get(exp, 0)
-            if policy.recurrence_family is None:
-                n = len(policy.recurrence_population(
-                    {}, w_bolus, scenario_config=scenario_config,
-                ))
+            n = exposure_counts.get(LEVER_EXPOSURE[lever], 0)
             if lever is Lever.CORRECTION_STACKING:
                 k = min(cs_behavior, n)
                 point = BehaviorPoint(
@@ -1042,17 +1035,9 @@ def summarize_trend(
                     harm=min(cs_harm, k),
                 )
             else:
-                k = attributed.get(lever, 0)
-                if lever is Lever.MEAL_BOLUS_SHORT:
-                    if k > n:
-                        raise ValueError(
-                            f"{lever.value} attribution exceeds its evidence population"
-                        )
-                else:
-                    # Legacy Exposure opportunities can omit an actionable episode;
-                    # retain their audited served-account clamp until their policies
-                    # gain the meal lever's structural occurrence association.
-                    k = min(k, n)
+                # Legacy Exposure opportunities can omit an actionable episode;
+                # retain their audited served-account clamp.
+                k = min(attributed.get(lever, 0), n)
                 point = BehaviorPoint(
                     attributed=k, exposure_n=n, problem_rate=(k / n) if n else 0.0
                 )

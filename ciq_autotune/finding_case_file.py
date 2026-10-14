@@ -5,7 +5,6 @@ from copy import deepcopy
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from hashlib import sha256
-from math import floor
 import time
 import uuid
 
@@ -21,7 +20,6 @@ from .analyzers.scenario.model_view import _build_episode_view
 from .analyzers.scenario import opportunities
 from .analyzers.scenario_config import ScenarioConfig
 from . import event_comparison, findings_projection, outcomes_trend
-from .rescue_evidence import eligible_carb_entries
 from .false_low import drop_readings, false_low_span_records, spans_from_records
 from .result_cache import PREPARATION_LEASE_SECONDS
 from .window_membership import WindowQuery
@@ -97,8 +95,8 @@ class PreparedCases:
     exposures: dict | None = None
     scenarios: dict | None = None
     pattern_exposures: dict | None = None
-    sequence_report: dict | None = None
-    sequence_cgm: tuple = ()
+    # The readings the analyzer judged: the window's CGM without false-low spans.
+    judged_cgm: tuple = ()
 
     def _roster(self, lever):
         return tuple(
@@ -119,7 +117,7 @@ class PreparedCases:
         kind = _ARC_READINGS[outcome_kind(lever)]
         truncators = [meal.t for meal in group_meals(_window_bolus(
             self.bolus, self.cgm, self.basal, self.source_window_days))]
-        arcs = outcomes_trend.meal_arcs(anchors, self.sequence_cgm, ctx_meal_times=truncators)
+        arcs = outcomes_trend.meal_arcs(anchors, self.judged_cgm, ctx_meal_times=truncators)
         return [_arc_outcome(kind, anchor, arc) for anchor, arc in zip(anchors, arcs)]
 
     def _meal_outcomes(self, roster, lever):
@@ -150,8 +148,6 @@ class PreparedCases:
         row = self._authoritative_row(finding_id) if finding_keyed else None
         if finding_keyed and row is None:
             return None
-        if policy_for(lever).recurrence_noun == "sequences":
-            return self._sequence_case(finding_id, lever, row, alignment, occ)
         roster = self._roster(lever)
         policy = policy_for(lever)
         claimed_ids = (self.associations[lever].intersection(member.id for member in roster)
@@ -213,156 +209,6 @@ class PreparedCases:
             "projection": projection, "selection": selection,
         }
 
-    def _sequence_case(self, finding_id, lever, row, alignment, occ):
-        roster = findings_projection.sequence_population(self.exposures or {}, lever.value, self.query)
-        claimed = [item for item in roster if item["attributed"]] if finding_id else []
-        if finding_id and not claimed:
-            return None
-        counts = {state: sum(item["verdict"] == state for item in roster)
-                  for state in findings_projection.FINDING_VERDICTS}
-        if finding_id and row["episodes"] != len(claimed):
-            raise InconsistentProjection("inconsistent_projection")
-        recurrence = self.recurrence.get(lever)
-        if (finding_id and not self.query.scoped and recurrence is not None
-                and recurrence != (len(claimed), len(roster))):
-            raise InconsistentProjection("inconsistent_projection")
-        occurrences = [{
-            **item, "id": _opaque("o_", "sequences", item["id"]),
-            "date": item["sequence"]["sequence_start"][:10],
-            "anchor": {"t": item["sequence"]["sequence_start"], "kind": "sequence",
-                       "label": "Eating sequence", "bg": None},
-        } for item in roster]
-        selected = next((item for item in occurrences if item["id"] == occ), None)
-        selection = {"state": "none" if occ is None else "unavailable", "requested_id": occ,
-                     "detail": None}
-        if selected is not None:
-            selection = {"state": "selected", "requested_id": occ, "detail": deepcopy(selected)}
-        response = self._high_carb_response() if lever is Lever.HIGH_CARB_SEQUENCE else None
-        if response is not None and selection["state"] == "selected":
-            selected_source = next((item for item in response["_population"]
-                                    if item["id"] == selection["detail"]["sequence"]["id"]), None)
-            cohort_of = {
-                occurrence_id: cohort["key"]
-                for cohort in response["cohorts"]
-                for occurrence_id in cohort["occurrence_ids"]
-            }
-            source_id = (None if selected_source is None else
-                         _opaque("o_", "sequences", selected_source["id"]))
-            if source_id is None or source_id not in cohort_of:
-                raise InconsistentProjection("inconsistent_projection")
-            anchor = datetime.fromisoformat(selected_source["sequence_end"])
-            start = datetime.fromisoformat(selected_source["start"])
-            end = datetime.fromisoformat(selected_source["end"])
-            selection["detail"]["glucose"] = _sequence_comparison_trace(
-                selected_source["id"], anchor, start, end, self.sequence_cgm,
-            )["trace"]["cgm"]
-            selection["detail"]["comparison_cohort"] = cohort_of[source_id]
-        if response is not None:
-            response.pop("_population")
-        return {
-            "schema": CASE_SCHEMA, "projection_id": self.projection_id,
-            "analysis_generation": self.findings["analysis_generation"],
-            "finding": {"id": finding_id, "lever": lever.value, "title": title(lever)},
-            "window": self.query.to_dict(), "family": "sequences", "population": "sequences",
-            "cross_population": False,
-            "summary": {"claimed": len(claimed), "denominator": len(roster), "noun": "sequences"},
-            "verdict_counts": counts, "occurrences": occurrences,
-            "projection": {"alignment": alignment, "kind": "eating-sequence",
-                           "report": deepcopy(self.sequence_report),
-                           **({"response": response} if response is not None else {})},
-            "selection": selection,
-        }
-
-    def _high_carb_response(self):
-        evidence = (self.exposures or {}).get("sequence_evidence", {}).get(
-            Lever.HIGH_CARB_SEQUENCE.value, {})
-        source = evidence.get("response")
-        population = evidence.get("population") or ()
-        if source is None:
-            raise InconsistentProjection("inconsistent_projection")
-        try:
-            scope, period = source["scope"], source["period"]
-            comparisons = source["comparisons"]
-            source_window = source["source_window"]
-            summary = source["summary"]
-            report = self.sequence_report["high_carb_sequence"]
-            report_finding = report["finding"]
-            report_window = self.sequence_report["window"]
-            report_comparisons = report["comparisons"]
-            report_scope = report_finding["scope"]
-            report_period = report_finding["period"]
-            report_summary = report_finding["summary"]
-        except (KeyError, TypeError):
-            raise InconsistentProjection("inconsistent_projection") from None
-        expected_comparisons = [
-            item for item in report_comparisons
-            if isinstance(item, dict) and item.get("scope") == scope
-        ]
-        if (not isinstance(source_window, dict) or source_window != report_window
-                or (scope, period, summary) != (report_scope, report_period, report_summary)
-                or not isinstance(comparisons, list) or comparisons != expected_comparisons
-                or [item.get("period") for item in comparisons
-                    if isinstance(item, dict)] != ["in_sequence", "post_4h", "post_6h"]
-                or not population or any(not isinstance(item, dict)
-                                         or item.get("period") != period
-                                         for item in population)):
-            raise InconsistentProjection("inconsistent_projection")
-        try:
-            anchored = []
-            for item in population:
-                occurrence_id, candidate = item["id"], item["candidate"]
-                if not isinstance(occurrence_id, str) or not isinstance(candidate, bool):
-                    raise TypeError
-                anchored.append((item, datetime.fromisoformat(item["sequence_end"]),
-                                 datetime.fromisoformat(item["start"]),
-                                 datetime.fromisoformat(item["end"])))
-        except (KeyError, TypeError, ValueError):
-            raise InconsistentProjection("inconsistent_projection") from None
-        selected_comparison = next((item for item in comparisons
-                                    if item["period"] == period), None)
-        if (any(end <= start for _, _, start, end in anchored)
-                or selected_comparison is None
-                or selected_comparison.get("high_n") != sum(
-                    item["candidate"] for item in population)
-                or selected_comparison.get("reference_n") != sum(
-                    not item["candidate"] for item in population)):
-            raise InconsistentProjection("inconsistent_projection")
-        if period == "in_sequence":
-            axis_window = (_round_outward(min((start - anchor).total_seconds() / 60
-                                               for _, anchor, start, _ in anchored)), 5)
-            point_window = (axis_window[0], 0)
-        else:
-            horizon = max(round((end - anchor).total_seconds() / 60)
-                          for _, anchor, _, end in anchored)
-            axis_window = (0, horizon)
-            point_window = (0, horizon - 5)
-        if axis_window[0] >= axis_window[1] or point_window[0] > point_window[1]:
-            raise InconsistentProjection("inconsistent_projection")
-        matched = [_sequence_comparison_trace(_opaque("o_", "sequences", item["id"]),
-                                              anchor, start, end, self.sequence_cgm)
-                   for item, anchor, start, end in anchored if item["candidate"]]
-        comparison = [_sequence_comparison_trace(_opaque("o_", "sequences", item["id"]),
-                                                 anchor, start, end, self.sequence_cgm)
-                      for item, anchor, start, end in anchored if not item["candidate"]]
-        matched_cohort = event_comparison.project_cohort("matched", matched, point_window)
-        comparison_cohort = event_comparison.project_cohort("comparison", comparison, point_window)
-        matched_cohort["name"] = "Highest-carb fifth"
-        comparison_cohort["name"] = "Other sequences"
-        for cohort in (matched_cohort, comparison_cohort):
-            cohort["anchor"] = {"kind": "sequence_end", "label": "End of eating sequence"}
-        return {
-            "schema": "high-carb-sequence-response-v1", "alignment": "event",
-            "anchor": {"kind": "sequence_end", "label": "End of eating sequence"},
-            "window_min": list(axis_window), "source_window": deepcopy(source_window),
-            "scope": scope, "period": period, "summary": summary,
-            "comparisons": deepcopy(comparisons),
-            "comparison": {"name": "Other sequences",
-                           "state": "unavailable" if comparison_cohort["support"] == "withheld"
-                           else "available"},
-            "cohorts": [matched_cohort, comparison_cohort],
-            "_population": population,
-        }
-
     def _pattern_case(self, finding_id, alignment, occ):
         """Expose one Pattern's already-built Exposure population.
 
@@ -386,7 +232,7 @@ class PreparedCases:
         habits = [
             lever for lever in (Lever(member["subject"].removeprefix("habit:"))
                                 for member in pattern["members"] if member["kind"] == "habit")
-            if policy_for(lever).rate_family is family
+            if policy_for(lever).recurrence_family is family
         ]
         population_lever = next(
             Lever(subject.removeprefix("habit:"))
@@ -399,7 +245,6 @@ class PreparedCases:
         claimed_identities = set(claims_by_identity)
         claimant_of = {}
         doses = {}
-        member_associations = {}
         precedence = {"fired": 4, "near_miss": 3, "outranked": 2, "no_data": 1, "clean": 0}
         pattern_roster = []
         remaining_claims = set(claimed_identities)
@@ -407,7 +252,6 @@ class PreparedCases:
             identity = candidate.get("t")
             t = datetime.strptime(candidate["t"], FMT)
             occurrence_id = _opaque("o_", family.value, identity, candidate["t"], index)
-            member_associations[occurrence_id] = list(candidate.get("member_associations") or ())
             doses[occurrence_id] = (candidate.get("insulin"), candidate.get("carbs"))
             claimant = claims_by_identity.get(identity)
             if claimant is not None and identity in remaining_claims:
@@ -448,9 +292,7 @@ class PreparedCases:
         )
         occurrences = [(_occurrence(member, facts[member.id])
                         | {"member": (f"habit:{claimant_of[member.id]}"
-                                      if member.id in claimant_of else "clean"),
-                           **({"member_associations": member_associations[member.id]}
-                              if member_associations[member.id] else {})})
+                                      if member.id in claimant_of else "clean")})
                        for member in pattern_roster]
         return {
             "schema": CASE_SCHEMA, "projection_id": self.projection_id,
@@ -469,12 +311,7 @@ class PreparedCases:
 
 def prepare(store, *, query, version, analysis, exposures, scenarios, selected_id=None,
             analysis_generation="standalone:0"):
-    """Materialize queue, opportunities, attribution, and traces in one read snapshot.
-
-    The eating-sequence report is the one ``exposures`` carries (ADR 488): the
-    sequence evidence a high-carb case serves beside it comes from that same
-    evaluation, so the two cannot count different sequences.
-    """
+    """Materialize queue, opportunities, attribution, and traces in one read snapshot."""
     store.conn.execute("BEGIN")
     try:
         basal = tuple(store.basal_events())
@@ -507,9 +344,8 @@ def prepare(store, *, query, version, analysis, exposures, scenarios, selected_i
                          time.monotonic() + PREPARATION_LEASE_SECONDS,
                          source_window_days=window_days, exposures=deepcopy(exposures),
                          scenarios=deepcopy(scenarios),
-                         sequence_report=deepcopy(exposures["sequence_report"]),
                          pattern_exposures=deepcopy(pattern_exposures),
-                         sequence_cgm=tuple(drop_readings(cgm, spans_from_records(
+                         judged_cgm=tuple(drop_readings(cgm, spans_from_records(
                              false_low_span_records(cgm, prompt_responses)))))
 
 
@@ -536,7 +372,6 @@ def _population(
     evaluated = evaluate(
         filtered_bolus, filtered_cgm, filtered_basal, isf=isf,
         scenario_config=config, low_answers=answers,
-        carb_entries=_slice(eligible_carb_entries(store.carb_entries(), end), start, end),
         window_start=start, window_end=end, bound_classifier_context=False,
     )
     opportunity_families = evaluated.families
@@ -572,28 +407,10 @@ def _population(
                     states[lever][key] = findings_projection._occurrence_verdict(
                         occurrence, lever.value,
                     )
-        if attr.lever is None or policy_for(attr.lever).recurrence_noun == "sequences":
+        if attr.lever is None:
             continue
-        policy = policy_for(attr.lever)
         # An attribution that names a lever always leads with its driver's step.
         claim_text = view["steps"][0]["text"]
-        if policy.recurrence_family is None:
-            # The rise onset the classifier judged, not the driver anchor's peak —
-            # see the same note in `explore_exposures`. These associations are checked
-            # against the engine's occurrence groups, so a second key disagrees.
-            occurrence_id = evaluated_episode.occurrence_id
-            served_id = _opaque("m_", occurrence_id)
-            associations[attr.lever].add(served_id)
-            claim_texts[attr.lever].setdefault(served_id, claim_text)
-            landing_kind = outcome_kind(attr.lever)
-            landings = [anchor.t for anchor in episode.anchors
-                        if anchor.kind.value == landing_kind]
-            if landings:
-                landing_t = max(landings)
-                outcomes[attr.lever][served_id] = max(
-                    outcomes[attr.lever].get(served_id, landing_t), landing_t,
-                )
-            continue
         association = _association(attr, episode, by_family)
         if association is None:
             withheld.add(attr.lever)
@@ -631,31 +448,7 @@ def _population(
 
     members = {}
     for lever in Lever:
-        policy = policy_for(lever)
-        if policy.recurrence_noun == "sequences":
-            members[lever] = ()
-            continue
-        if policy.recurrence_family is None:
-            meals = {item.members[0].seq_num: item
-                     for item in opportunity_families[Exposure.MEALS]}
-            rows = []
-            for item in policy.recurrence_population(
-                opportunity_families, filtered_bolus, scenario_config=config,
-            ):
-                if item.seq_num not in meals:
-                    continue
-                meal = meals[item.seq_num]
-                served_id = _opaque("m_", policy.occurrence_id(item))
-                rows.append(Member(
-                    meal, outcomes[lever].get(served_id, item.t),
-                    "fired" if served_id in associations[lever] else "clean", served_id,
-                    recorded=recorded[Exposure.MEALS].get(meal.source_key, ()),
-                    driver=drivers[Exposure.MEALS].get(meal.source_key),
-                    claim_text=claim_texts[lever].get(served_id, ""),
-                ))
-            members[lever] = tuple(rows)
-            continue
-        family = policy.recurrence_family
+        family = policy_for(lever).recurrence_family
         members[lever] = tuple(Member(item, outcomes[lever].get(key, item.anchor_t),
                                      states[lever].get(key, "clean"),
                                      recorded=recorded[family].get(key, ()),
@@ -767,8 +560,7 @@ def wrap(prepared):
                 "window": prepared.query.to_dict(),
             },
             "findings": deepcopy(prepared.findings), "rendered_rows": rendered,
-            "behavioral_case_headers": headers, "withheld_findings": withheld,
-            "eating_sequence_report": deepcopy(prepared.sequence_report)}
+            "behavioral_case_headers": headers, "withheld_findings": withheld}
 
 
 def _noun(family):
@@ -776,8 +568,7 @@ def _noun(family):
 
 
 def _population_noun(policy):
-    return (policy.recurrence_noun if policy.recurrence_family is None
-            else _noun(policy.recurrence_family))
+    return _noun(policy.recurrence_family)
 
 
 _CASE_ANCHORS = {
@@ -791,14 +582,6 @@ def _event_anchor(family):
     if legacy is not None:
         return legacy["anchor_kind"], legacy["anchor_label"]
     return _CASE_ANCHORS[family]
-
-
-_ANCHOR_LABELS = {
-    "completed_carb_bolus": "Completed carb bolus",
-    "excursion_nadir": "Excursion nadir",
-    "correction_pair": "Correction pair",
-    "high_peak": "High peak",
-}
 
 
 _ARC_READINGS = {"high": "peak", "low": "nadir"}
@@ -957,18 +740,6 @@ def _comparison_trace(occurrence_id, anchor, cgm, window):
     ]}}
 
 
-def _sequence_comparison_trace(occurrence_id, anchor, start, end, cgm):
-    return {"id": occurrence_id, "trace": {"cgm": [
-        {"t": row.t.strftime(FMT),
-         "minute": round((row.t - anchor).total_seconds() / 60, 1), "bg": row.bg}
-        for row in cgm if start <= row.t < end and row.bg is not None
-    ]}}
-
-
-def _round_outward(minute):
-    return 5 * floor(minute / 5)
-
-
 def _window_bolus(bolus, cgm, basal, source_window_days):
     """The boluses inside the source window the retained population was built over."""
     times = [row.t for row in basal] + [row.t for row in cgm]
@@ -1065,11 +836,7 @@ def _event(lever, roster, claimed_ids, cgm, bolus, source_window_days, basal=())
         comparison_cohort["anchor"] = {"kind": "completed_carb_bolus", "label": "Completed carb bolus"}
         anchor = {"kind": "cohort_specific_meal_start", "label": "Meal start"}
     else:
-        if policy.recurrence_family is None:
-            kind, label = (policy.comparison_anchor_kind,
-                           _ANCHOR_LABELS[policy.comparison_anchor_kind])
-        else:
-            kind, label = _event_anchor(policy.recurrence_family)
+        kind, label = _event_anchor(policy.recurrence_family)
         for cohort in (matched_cohort, near_cohort, comparison_cohort):
             cohort["anchor"] = {"kind": kind, "label": label}
         anchor = {"kind": kind, "label": label}

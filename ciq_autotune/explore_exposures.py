@@ -4,13 +4,9 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 
-from .analyzers.eating_sequence_config import EatingSequenceConfig
-from .analyzers.eating_sequences import evaluate_sequences
-from .analyzers.scenario.evaluation import evaluate, SEQUENCE_LEVERS
-from .rescue_evidence import eligible_carb_entries
+from .analyzers.scenario.evaluation import evaluate
 from .analyzers.scenario.engine import _effective_isf, low_prompt_answers
 from .analyzers.scenario.levers import Lever, outcome_kind, title
-from .analyzers.scenario.evidence_population import policy_for
 from .analyzers.scenario.model_view import _build_episode_view, _is_driver
 from .analyzers.scenario_config import ScenarioConfig
 from .false_low import drop_readings, false_low_span_records, spans_from_records
@@ -63,8 +59,8 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
 
     * ``attributed`` — this occurrence is its episode's driver.
     * ``attributed_levers`` — every lever this feed maps onto this opportunity, including
-      cross-family outcomes such as the meal behind a meal-bolus-short high or the
-      low reached by correction stacking. The primary driver fields stay unchanged.
+      the cross-family low reached by correction stacking. The primary driver fields
+      stay unchanged.
     * ``clean`` = ``n - attributed`` — this occurrence is not the driver. It says
       nothing about the episode: a high in a meal-driven episode is "clean" while its
       episode carries a lever, because the meal anchor drove it.
@@ -97,9 +93,6 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
         return {
             "window": {"start": start.date().isoformat(), "end": now.date().isoformat()},
             "exposures": families,
-            "sequence_report": evaluate_sequences(
-                (), (), (), window_start=start, window_end=now,
-                config=EatingSequenceConfig()).report.to_dict(),
         }
 
     false_low_records = false_low_span_records(cgm, store.prompt_responses())
@@ -112,13 +105,11 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
 
     evaluated = evaluate(window_bolus, window_cgm, window_basal, isf=isf,
                          scenario_config=scenario_config, low_answers=low_answers,
-                         carb_entries=_slice(eligible_carb_entries(store.carb_entries(), now), start, now),
                          window_start=start, window_end=now, bound_classifier_context=False)
     # A classifier's padded context can reach an opportunity in another episode.
     # Cross-family attribution is therefore opportunistic: stamp a target only when
     # this feed also emitted that opportunity, and otherwise preserve the feed.
     target_attributions = []
-    sequence_associations = []
     for index, evaluated_episode in enumerate(evaluated.episodes):
         episode_anchors = evaluated_episode.anchors
         attribution = evaluated_episode.attribution
@@ -137,21 +128,7 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
             isf=isf, scenario_config=scenario_config,
             low_answers=low_answers, evaluated=evaluated_episode,
         )
-        if attribution.lever in SEQUENCE_LEVERS:
-            sequence_associations.append(evaluated_episode)
-        if attribution.lever is Lever.MEAL_BOLUS_SHORT:
-            policy = policy_for(attribution.lever)
-            occurrence_id = evaluated_episode.occurrence_id
-            meal = None if occurrence_id is None else next((
-                item for item in window_bolus
-                if policy.occurrence_id(item) == occurrence_id
-            ), None)
-            if meal is not None:
-                target_attributions.append(
-                    ("meals", meal.t, attribution.lever.value,
-                     outcome_minute)
-                )
-        elif attribution.lever is Lever.CORRECTION_STACKING:
+        if attribution.lever is Lever.CORRECTION_STACKING:
             reached_low = min(
                 (
                     item for item in episode_anchors.anchors
@@ -178,15 +155,6 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
             if attribution.lever is None and source_anchor not in owned_highs:
                 uncaused[_FAMILY_FOR_KIND[anchor["kind"]]] += 1
             lever = episode["lever"] if attributed else None
-            cause_occurrence_id = None
-            if lever == Lever.MEAL_BOLUS_SHORT.value:
-                policy = policy_for(lever)
-                # The implicated meal is the one the classifier judged, and it judged
-                # the rise ONSET (`attribution.trigger_t`), never the peak this anchor
-                # sits at. A second eligible meal can land between the two, and keying
-                # on the anchor then names a meal the classifier's digestion window had
-                # excluded — a different occurrence from the one the engine grouped.
-                cause_occurrence_id = evaluated_episode.occurrence_id
             cause_title = title(Lever(lever)) if lever is not None else None
             occurrence = {
                 "t": anchor["t"],
@@ -212,8 +180,6 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
             }
             if lever is not None and outcome_minute is not None:
                 occurrence["outcome_minute"] = outcome_minute
-            if cause_occurrence_id is not None:
-                occurrence["cause_occurrence_id"] = cause_occurrence_id
             family["occurrences"].append(occurrence)
 
     for family_name, target_t, lever, outcome_minute in target_attributions:
@@ -229,14 +195,6 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
             if outcome_minute is not None:
                 target["outcome_minute"] = outcome_minute
 
-    for owned in sequence_associations:
-        for meal in families["meals"]["occurrences"]:
-            if owned.start <= datetime.fromisoformat(meal["t"]) < owned.end:
-                associations = meal.setdefault("member_associations", [])
-                subject = f"habit:{owned.attribution.lever.value}"
-                if subject not in associations:
-                    associations.append(subject)
-
     for name, family in families.items():
         occurrences = family["occurrences"]
         family["n"] = len(occurrences)
@@ -251,39 +209,7 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
                 family["by_cause"][item["cause_title"]] = (
                     family["by_cause"].get(item["cause_title"], 0) + 1
                 )
-    sequence_evidence = {}
-    sequence_report = evaluated.sequences.report.to_dict()
-    for lever, rows in evaluated.sequences.populations.items():
-        if not rows:
-            continue
-        evidence = {
-            "population": [row.to_dict() for row in rows],
-            "occurrences": [{"id": candidate.occurrence_id, "ep_id": ep.id,
-                             "lever": lever, "owner": ep.attribution.lever.value,
-                             "attributed": ep.attribution.lever == lever,
-                             "start": ep.start.isoformat(), "end": ep.end.isoformat(),
-                             "outcome_minute": ep.outcome_t.hour * 60 + ep.outcome_t.minute,
-                             "candidates": [c.to_dict() for c in ep.candidates]}
-                            for ep in evaluated.episodes for candidate in ep.candidates
-                            if candidate.lever == lever],
-        }
-        if lever == Lever.HIGH_CARB_SEQUENCE.value:
-            finding = sequence_report["high_carb_sequence"]["finding"]
-            if finding is not None:
-                evidence["response"] = {
-                    "source_window": sequence_report["window"],
-                    "scope": finding["scope"], "period": finding["period"],
-                    "summary": finding["summary"],
-                    "comparisons": [row for row in sequence_report["high_carb_sequence"]["comparisons"]
-                                    if row["scope"] == finding["scope"]],
-                }
-        sequence_evidence[lever] = evidence
-    # The aggregate eating-sequence report rides this payload whole (ADR 488): it is
-    # the same evaluation the sequence evidence above was drawn from, so a reader
-    # serving the report beside that evidence never rebuilds it from other inputs.
     return {
         "window": {"start": start.date().isoformat(), "end": now.date().isoformat()},
         "exposures": families,
-        "sequence_report": sequence_report,
-        **({"sequence_evidence": sequence_evidence} if sequence_evidence else {}),
     }

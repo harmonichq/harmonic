@@ -2104,10 +2104,6 @@ class EvidencePopulationStructuralCountTest(unittest.TestCase):
     """Every behavioral analyzer output preserves its served ``k <= n`` contract."""
 
     def _events(self, lever):
-        if lever in (Lever.HIGH_CARB_SEQUENCE, Lever.REPEAT_EATING):
-            from tests.eating_sequence_streams import sequence_episode_stream
-            bolus, cgm, _, basal = sequence_episode_stream(lever.value)
-            return bolus, cgm, basal, None
         if lever is Lever.CARB_UNDERCOUNT:
             bolus, cgm = dose_stamped_ic_fixture()
             return bolus, cgm, [], ISF
@@ -2138,12 +2134,6 @@ class EvidencePopulationStructuralCountTest(unittest.TestCase):
             return bolus, cgm, [], ISF
         if lever is Lever.MISSED_MEAL:
             return [], cgm_ramp(29, 15, 0, 130, 2.2, 100), [], ISF
-        if lever is Lever.MEAL_BOLUS_SHORT:
-            cgm = (cgm_flat(30, 9, 0, 110, 180)
-                   + cgm_ramp(30, 12, 0, 112, 2.4, 65)
-                   + cgm_ramp(30, 13, 5, 268, -1.5, 100))
-            bolus = [meal(30, 12, 0, carbs=85, dose=5), corr(30, 13, 20, 2.5)]
-            return bolus, cgm, [], 45
         self.fail(f"missing synthetic analyzer fixture for {lever.value}")
 
     def _report(self, lever):
@@ -2155,7 +2145,7 @@ class EvidencePopulationStructuralCountTest(unittest.TestCase):
         )
 
     def test_every_behavioral_lever_serves_a_structural_count(self):
-        self.assertEqual(len(Lever), 10)
+        self.assertEqual(len(Lever), 7)
         for lever in Lever:
             with self.subTest(lever=lever.value):
                 report = self._report(lever)
@@ -2167,16 +2157,11 @@ class EvidencePopulationStructuralCountTest(unittest.TestCase):
                 payload = pattern.to_dict()
                 self.assertLessEqual(payload["confidence"]["k"],
                                      payload["confidence"]["n"])
-                if lever is Lever.MEAL_BOLUS_SHORT:
-                    self.assertIsNone(payload["guidance"]["action_id"])
-                else:
-                    self.assertEqual(payload["guidance"]["action_id"],
-                                     f"habit:{lever.value}")
+                self.assertEqual(payload["guidance"]["action_id"],
+                                 f"habit:{lever.value}")
 
     def test_every_behavioral_lever_exposes_owner_facts_separate_from_advice(self):
         required_facts = {
-            Lever.HIGH_CARB_SEQUENCE: {"sequence_id", "period", "outcome_at"},
-            Lever.REPEAT_EATING: {"sequence_id", "period", "outcome_at"},
             Lever.CARB_UNDERCOUNT: {
                 "logged_carbs_g", "implied_carbs_g", "baseline_glucose_mgdl",
                 "peak_glucose_mgdl",
@@ -2199,9 +2184,6 @@ class EvidencePopulationStructuralCountTest(unittest.TestCase):
                 "glucose_at_stack_mgdl", "nadir_glucose_mgdl", "nadir_at",
             },
             Lever.MISSED_MEAL: {"rise_slope_mgdl_min", "digestion_window"},
-            Lever.MEAL_BOLUS_SHORT: {
-                "rise_slope_mgdl_min", "meal_at", "correction_at", "digestion_window",
-            },
         }
 
         for lever in Lever:
@@ -2222,7 +2204,7 @@ class EvidencePopulationStructuralCountTest(unittest.TestCase):
     def test_all_behavioral_levers_leave_staging_verdict_bytes_unchanged(self):
         """Behavioral patterns cannot stage; pin invariance at the basal seam.
 
-        The ten per-lever scenario fixtures below prove that every behavioral
+        The seven per-lever scenario fixtures below prove that every behavioral
         classifier runs, but scenario findings do not own an ``asserts_move``
         predicate. A separate synthetic basal analyzer fixture therefore supplies
         real staging verdicts without hand-setting them or touching the predicate.
@@ -2268,23 +2250,20 @@ if __name__ == "__main__":
 
 
 class AttributedOccurrenceOwnershipTest(unittest.TestCase):
-    def test_completed_meal_deduplicates_two_attributed_episodes(self):
-        from ciq_autotune.analyzers.scenario import attributed_occurrences, tally_attributions
-        from tests.test_meal_bolus_short_attribution import DOUBLE_HIGH_BOLUS, DOUBLE_HIGH_CGM
-        rows = [r for r in attributed_occurrences(DOUBLE_HIGH_BOLUS, DOUBLE_HIGH_CGM, isf=45)
-                if r.lever is Lever.MEAL_BOLUS_SHORT]
-        self.assertEqual(len(rows), 2)
-        self.assertEqual({r.recurrence_id for r in rows}, {"meal-7001"})
-        self.assertEqual({r.anchor_t for r in rows}, {DOUBLE_HIGH_BOLUS[0].t})
-        self.assertEqual({r.driver_family for r in rows}, {Exposure.HIGHS})
-        self.assertEqual(tally_attributions(DOUBLE_HIGH_BOLUS, DOUBLE_HIGH_CGM, isf=45)[1][Lever.MEAL_BOLUS_SHORT], 1)
-
     def test_actual_correction_pair_owns_second_correction(self):
-        from dataclasses import replace
         from ciq_autotune.analyzers.scenario import attributed_occurrences
-        from tests.test_meal_bolus_short_attribution import CHAINED_CGM, CHAINED_BOLUS
-        bolus = [replace(b, seq_num=100+i) for i, b in enumerate(CHAINED_BOLUS)]
-        rows = [r for r in attributed_occurrences(bolus, CHAINED_CGM, isf=45)
+        # A 12:00 meal and a 13:40 correction, then, hours later, a separate pair of
+        # stacked corrections that carries glucose to 58.
+        cgm = cgm_trace(14, [(0, 110), (180, 112), (200, 120), (300, 265), (420, 150),
+                             (480, 175), (600, 190), (750, 58), (840, 110)], h=9)
+        bolus = [
+            BolusEvent(t=datetime(2026, 6, 14, 12, 0), completion="Completed",
+                       insulin=5.0, carbs=85.0, carb_ratio=12.0, seq_num=100),
+            BolusEvent(t=datetime(2026, 6, 14, 13, 40), insulin=2.5, carbs=None, seq_num=101),
+            BolusEvent(t=datetime(2026, 6, 14, 19, 10), insulin=3.0, carbs=None, seq_num=102),
+            BolusEvent(t=datetime(2026, 6, 14, 19, 50), insulin=3.0, carbs=None, seq_num=103),
+        ]
+        rows = [r for r in attributed_occurrences(bolus, cgm, isf=45)
                 if r.lever is Lever.CORRECTION_STACKING]
         self.assertEqual(len(rows), 1)
         self.assertEqual(rows[0].driver_source_key, (102, 103))
@@ -2329,33 +2308,6 @@ class AttributedOccurrenceOwnershipTest(unittest.TestCase):
 
 
 class FollowUpObservationTest(unittest.TestCase):
-    def test_no_high_meal_needs_readable_onset_domain(self):
-        from ciq_autotune.analyzers.scenario import recurrence_observations
-        dose = meal(15,12,0,carbs=45,dose=10)
-        missing = recurrence_observations([dose], [], lever="meal_bolus_short", isf=40)
-        self.assertEqual(len(missing), 1)
-        self.assertFalse(missing[0]["measured"])
-        self.assertEqual(missing[0]["n"], 1)
-        observed = recurrence_observations([dose], cgm_flat(15,11,0,120,600), lever="meal_bolus_short", isf=40)
-        self.assertTrue(observed[0]["measured"])
-        self.assertEqual(observed[0]["k"], 0)
-
-    def test_no_high_domain_rejects_internal_gap_and_candidate_high(self):
-        from ciq_autotune.analyzers.scenario import recurrence_observations
-        from ciq_autotune.analyzers.scenario_config import ScenarioConfig
-        dose=meal(15,12,0,carbs=45,dose=10)
-        full=cgm_flat(15,11,0,120,600)
-        gap=[r for r in full if not datetime(2026,6,15,13) <= r.t <= datetime(2026,6,15,14)]
-        row=recurrence_observations([dose],gap,lever='meal_bolus_short')[0]
-        self.assertFalse(row['measured'])
-        high=cgm_flat(15,11,0,120,60)+cgm_flat(15,12,5,300,600)
-        row=recurrence_observations([dose],high,lever='meal_bolus_short')[0]
-        self.assertFalse(row['measured'])
-        self.assertEqual(row['measurement_reason'],'candidate_high_without_closed_attribution')
-        sparse=full[::4]
-        self.assertFalse(recurrence_observations([dose],sparse,lever='meal_bolus_short',
-                         scenario_config=ScenarioConfig(cgm_max_stale_min=5))[0]['measured'])
-
     def test_known_positive_and_empty_domain_keep_existing_policy(self):
         from ciq_autotune.analyzers.scenario import recurrence_observations, tally_attributions, Lever
         from ciq_autotune.analyzers.scenario_config import ScenarioConfig
@@ -2367,10 +2319,6 @@ class FollowUpObservationTest(unittest.TestCase):
         self.assertEqual(sum(r['k'] for r in rows),1)
         self.assertEqual(sum(r['k'] for r in rows),tally_attributions([dose],cgm,isf=40)[1][Lever.LATE_BOLUS])
         self.assertTrue(rows[0]['measured'])
-        row=recurrence_observations([dose],[],lever='meal_bolus_short',
-             scenario_config=ScenarioConfig(meal_bolus_short_digestion_lookback_min=0))[0]
-        self.assertTrue(row['measured'])
-        self.assertEqual(row['k'],0)
 
 
 # --- #422: an over-treated low's rebound owns the High it reaches ------------
@@ -2408,13 +2356,13 @@ def flat_approach_rebound(day, *, low=True):
 class OverTreatedReboundOwnershipTest(unittest.TestCase):
     """#422 / ADR 422: a fired over-treated low owns every High its rebound reaches.
 
-    The High is then neither a missed meal nor a meal bolus that fell short, whether it
+    The High is then not a missed meal, whether it
     shares the low's Episode or splits off into its own (the 250 mg/dL crossing more
     than 90 minutes after the low), and the rebound's out-of-range time counts on the
     low's Episode. Every assertion reads analyzer output built from synthetic days.
     """
 
-    HIGH_LEVERS = {Lever.MISSED_MEAL, Lever.MEAL_BOLUS_SHORT}
+    HIGH_LEVERS = {Lever.MISSED_MEAL}
     # The over-treated low's scored span and severity, dumped from the analyzer: each
     # span reaches the later of the 17:00 guarded terminal and its owned High run's
     # end, and the flat-approach High (day 13) runs on past the terminal to 17:35.
@@ -2437,8 +2385,12 @@ class OverTreatedReboundOwnershipTest(unittest.TestCase):
     def _assert_no_high_lever_anywhere(self, evaluation):
         for episode in evaluation.episodes:
             self.assertNotIn(episode.attribution.lever, self.HIGH_LEVERS)
-            self.assertFalse({c.lever for c in episode.candidates} & self.HIGH_LEVERS)
-        self.assertFalse(set(evaluation.candidate_impacts) & self.HIGH_LEVERS)
+            self.assertFalse(self._matched(episode) & self.HIGH_LEVERS)
+
+    @staticmethod
+    def _matched(episode):
+        """Every lever the episode's walk matched, driver or not."""
+        return {match.lever for match in episode.attribution.matches}
 
     def test_split_off_rebound_high_is_owned_not_a_missed_meal(self):
         cgm = (rising_rebound(10, 120) + rising_rebound(11, 140)
@@ -2462,17 +2414,14 @@ class OverTreatedReboundOwnershipTest(unittest.TestCase):
                 verdicts = self._verdicts(high_episode, high)
                 if day == 13:
                     # Flat approach: too slow a rise to judge keeps its own reason.
-                    self.assertEqual(
-                        [verdicts[c].silence_reason for c in ("missed_meal", "meal_bolus_short")],
-                        [SilenceReason.NO_TRIGGER, SilenceReason.NO_TRIGGER])
+                    self.assertEqual(verdicts["missed_meal"].silence_reason,
+                                     SilenceReason.NO_TRIGGER)
                     continue
                 mm = verdicts["missed_meal"]
                 self.assertFalse(mm.matched)
                 self.assertEqual(mm.silence_reason, SilenceReason.UPSTREAM_CAUSE)
                 self.assertEqual(mm.evidence_tier, EvidenceTier.INFERRED)
                 self.assertIn("55 mg/dL at 14:00", mm.detail)
-                self.assertEqual(verdicts["meal_bolus_short"].silence_reason,
-                                 SilenceReason.NO_TRIGGER)
                 self.assertEqual(high_episode.attribution.silence.silence_reason,
                                  SilenceReason.UPSTREAM_CAUSE)
         report = assemble([], cgm, [])
@@ -2485,8 +2434,9 @@ class OverTreatedReboundOwnershipTest(unittest.TestCase):
         evaluation = evaluate([], cgm, [])
         [episode] = evaluation.episodes
         self.assertEqual(episode.attribution.lever, Lever.OVER_TREATED_LOW)
-        self.assertEqual([c.lever for c in episode.candidates], [Lever.OVER_TREATED_LOW])
-        self.assertNotIn(Lever.MISSED_MEAL, evaluation.candidate_impacts)
+        self.assertEqual(self._matched(episode), {Lever.OVER_TREATED_LOW})
+        self.assertNotIn(Lever.MISSED_MEAL,
+                         set().union(*(self._matched(e) for e in evaluation.episodes)))
         high = self._high(episode)
         self.assertEqual([h for h, _ in episode.attribution.owned_highs], [high])
         mm = self._verdicts(episode, high)["missed_meal"]
@@ -2528,8 +2478,7 @@ class OverTreatedReboundOwnershipTest(unittest.TestCase):
                           if e.attribution.lever is Lever.CORRECTION_ON_IOB)
         self.assertEqual([a.kind for a in low_moment.anchors.anchors],
                          [AnchorKind.LOW, AnchorKind.CORRECTION, AnchorKind.HIGH])
-        self.assertEqual([c.lever for c in low_moment.candidates],
-                         [Lever.CORRECTION_ON_IOB])
+        self.assertEqual(self._matched(low_moment), {Lever.CORRECTION_ON_IOB})
         high = self._high(low_moment)
         self.assertEqual([h for h, _ in low_moment.attribution.owned_highs], [high])
         self.assertIn(Lever.OVER_TREATED_LOW,

@@ -154,6 +154,10 @@ MARK_FIELDS = ("current", "estimate")
 # §4.2 GlucoseProfile's insufficient-data label, quoted there; "data" is not yet
 # in glossary §1.5.
 STATE_LABELS = ("No data",)
+# §4.2 SettingCard's captions, quoted in §2 ("Nights / Range"); Range is in
+# glossary §1.5. Nights was once also an engine noun, the overnight-lows
+# Pattern's, which ADR 499 cut.
+SETTING_CAPTIONS = ("Nights",)
 # §1.3 Queue's empty-state label, "0 patterns".
 QUEUE_LABELS = ("patterns",)
 # §4.2 DayRibbon: "each day's weekday and date". The weekday abbreviations are
@@ -919,7 +923,6 @@ def states(queue: dict) -> dict:
     found = {
         "multi_cause": pattern(lambda p: len(p["shares"]) >= 2),
         "single_cause": pattern(lambda p: len(p["shares"]) == 1),
-        "no_cause": pattern(lambda p: not p["shares"] and p["count"] > 0),
         "pinned": {"store": "wearer-pinned", "pattern": pinned} if pinned else None,
         "setting": block(lambda b: b["spread"] and not b["collapsed"] and not b["trial"]),
         "setting_trial": block(lambda b: b["trial"]),
@@ -928,7 +931,7 @@ def states(queue: dict) -> dict:
         "range_collapsed": block(lambda b: b["collapsed"]),
         "zero_variance": block(lambda b: not b["spread"]),
     }
-    required = ("multi_cause", "single_cause", "no_cause", "pinned", "setting", "setting_trial")
+    required = ("multi_cause", "single_cause", "pinned", "setting", "setting_trial")
     missing = [name for name in required if found[name] is None]
     if missing:
         raise SystemExit(f"the simulated wearer no longer serves: {', '.join(missing)}")
@@ -999,6 +1002,7 @@ def allowlist(data: dict) -> dict:
         "units §4.2": list(UNITS),
         "connectives §4.2": list(CONNECTIVES),
         "state labels §4.2": list(STATE_LABELS),
+        "SettingCard captions §4.2": list(SETTING_CAPTIONS),
         "Queue labels §1.3": list(QUEUE_LABELS),
         "weekdays §4.2": list(WEEKDAYS),
         "months §1.1": list(MONTHS),

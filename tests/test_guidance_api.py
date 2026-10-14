@@ -82,15 +82,6 @@ class GuidanceApiTest(unittest.TestCase):
         self.assertEqual(response.status_code, 200, response.text)
         self.assertEqual(response.json()["record"]["decision_context"]["outcome_window"], scope)
 
-    def test_all_setting_pattern_pin_is_rejected_separately(self):
-        _tmp, _app, client = self._case_client("showcase")
-        response = client.post(
-            "/api/focus", json={"pattern_key": "overnight_lows_no_iob",
-                                 "outcome_window": WHOLE_DAY_OUTCOME_WINDOW},
-        )
-        self.assertEqual(response.status_code, 400)
-        self.assertIn("not pinnable", response.json()["detail"])
-
     def test_post_refuses_every_pattern_absent_from_get_pinnable_patterns(self):
         _tmp, _app, client = self._case_client("showcase")
         listed = {row["key"] for row in client.get(

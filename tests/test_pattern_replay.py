@@ -63,23 +63,11 @@ EXPECTED_ACTIVE_KINDS = {
     "behavioral-over-treated-rebound-ownership": None,
     "behavioral-correction-on-iob": None,
     "behavioral-missed-meal": None,
-    "behavioral-meal-bolus-short": None,
     "behavioral-carb-log-fasting-exclusion": None,
     "behavioral-preempted-detector": None,
     "pattern-near-tie": None,
     "pattern-collapse": None,
-    "high-carb-sequence-covered": None,
-    "high-carb-sequence-empty": None,
-    "high-carb-sequence-thin-candidate": None,
-    "high-carb-sequence-thin-reference": None,
-    "high-carb-sequence-losing": None,
-    "high-carb-sequence-multiple": None,
-    "repeat-eating-covered": None,
-    "repeat-eating-empty": None,
-    "repeat-eating-thin-candidate": None,
-    "repeat-eating-thin-reference": None,
-    "repeat-eating-losing": None,
-    "repeat-eating-multiple": None,
+    "pattern-correction-fold": None,
     "c3-focus": "focus",
     "c3-trial": "trial",
     "c3-history": "trial",
@@ -185,7 +173,7 @@ class PatternReplayTest(unittest.TestCase):
         # cannot pass merely because the remaining literal expectations matched.
         self.assertEqual(observed, {
             "highs_after_meals", "lows_after_meals", "highs_after_treating_lows",
-            "lows_after_correcting_highs", "overnight_lows_no_iob",
+            "lows_after_correcting_highs",
         })
 
     def test_pattern_focus_and_trial_are_mutually_exclusive(self):

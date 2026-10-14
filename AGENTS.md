@@ -72,8 +72,8 @@ serve below — the synthetic QA store, `--no-fetch`, an empty token — and ask
 for `/`, the app's script, a tab's page path and `/api/status`. The image's own
 smoke step runs the same probe against the container with `--url`.
 
-The backend job also runs eleven **drift checks**, so a committed
-generator-authored artifact can never silently diverge from its generator. Ten
+The backend job also runs ten **drift checks**, so a committed
+generator-authored artifact can never silently diverge from its generator. Nine
 are listed below; the component library's fixture generator reads inputs the
 public tree excludes (the redesign lock and the QA store), so its `--check`
 command lives in `.github/workflows/ci.yml`:
@@ -88,7 +88,6 @@ uv run python scripts/gen_ic_block_evidence_fixtures.py --check
 uv run python scripts/gen_basal_night_evidence_fixtures.py --check
 uv run python scripts/gen_isf_rest_window_evidence_fixtures.py --check
 uv run python scripts/gen_missed_meal_comparison_fixtures.py --check
-uv run python scripts/gen_eating_sequence_fixtures.py --check
 ```
 
 The frontend job runs one drift check in Node: the event-comparison synthetic

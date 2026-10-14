@@ -6,8 +6,8 @@ import { QueueRow, type QueueRowProps } from './QueueRow';
 
 // One story per state (§4.2 QueueRow), each the simulated wearer's own
 // served answer: the multi-cause pattern by default (no row names a cause) and selected on
-// desktop, the single-cause one mid-swipe, the pattern no cause claims, and the
-// admitted Basal block; and a snoozed row, with its Until and Restore.
+// desktop, the single-cause one mid-swipe, and the admitted Basal block; and a
+// snoozed row, with its Until and Restore. (The no-cause state is retired, ADR 499.)
 // The trailing impact (§2.5, 2026-10-14): a high row with its Peak delta, a
 // low row with its Nadir delta, and a row whose Pattern has no case file, with
 // no trailing value.
@@ -25,7 +25,7 @@ type PatternRow = Extract<QueueRowProps, { kind: 'pattern' }>;
 const rowOf = (data: PatternData): PatternRow =>
   ({ kind: 'pattern', title: data.title, magnitude: data.magnitude!, impact: data.impact });
 
-function patternRow(name: 'multi_cause' | 'single_cause' | 'no_cause'): PatternRow {
+function patternRow(name: 'multi_cause' | 'single_cause'): PatternRow {
   return rowOf(patternState(name));
 }
 
@@ -56,7 +56,6 @@ export const SelectedDesktop: Story = {
   parameters: { frame: { width: 400, padding: 24 } },
 };
 export const MidSwipe: Story = { args: { ...patternRow('single_cause'), swiping: true } };
-export const NoCause: Story = { args: patternRow('no_cause') };
 export const HighWithDelta: Story = {
   args: served('wearer', 'highs_after_meals'),
   play: async ({ args, canvasElement }) => {

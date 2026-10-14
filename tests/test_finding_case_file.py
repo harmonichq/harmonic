@@ -56,7 +56,7 @@ def _findings(lever, episodes=1, extra_rows=()):
            "verdict_counts_by_family": {}}
     return {"schema": "diagnose-findings-v1", "window": WindowQuery().to_dict(),
             "findings_window": {}, "rows": [*extra_rows, row], "counts": {},
-            "chip_counts": {}, "uncaused_highs": {"count": 0, "text": None}}
+            "chip_counts": {}}
 
 
 def _pattern_row(key, members, *, k, n, rate_levers, chart=True):
@@ -91,7 +91,6 @@ def _pattern_findings(key, members, *, k, n, rate_levers, chart=True):
     return {
         "schema": "diagnose-findings-v1", "window": WindowQuery().to_dict(),
         "findings_window": {}, "rows": rows, "counts": {}, "chip_counts": {},
-        "uncaused_highs": {"count": 0, "text": None},
     }
 
 
@@ -105,9 +104,6 @@ def _prepared(lever, members=None, claimed=None, *, query=None, findings=None,
     if lever is Lever.MISSED_MEAL:
         times.add(opportunity.reach_start)
     bolus = tuple(opportunity.members)
-    if lever is Lever.MEAL_BOLUS_SHORT:
-        bolus += (BolusEvent(t=opportunity.reach_start - timedelta(minutes=60),
-                             insulin=4, carbs=40, completion="Completed", seq_num=99),)
     cgm = tuple(CgmReading(t=t, bg=120 + (t - opportunity.anchor_t).total_seconds() / 60,
                            type="EGV") for t in sorted(times))
     return PreparedCases(
@@ -120,18 +116,6 @@ def _prepared(lever, members=None, claimed=None, *, query=None, findings=None,
         withheld, cgm, (), bolus, (), time.monotonic() + 60,
         exposures=exposures, scenarios=scenarios,
     )
-
-
-def _analyzer_prepared_meal_bolus_short():
-    from tests.test_meal_bolus_short_attribution import (
-        DOUBLE_HIGH_BOLUS, DOUBLE_HIGH_CGM, _seed, next_day,
-    )
-
-    return _analyzer_prepared(lambda store: _seed(
-        store,
-        DOUBLE_HIGH_BOLUS + next_day(DOUBLE_HIGH_BOLUS),
-        DOUBLE_HIGH_CGM + next_day(DOUBLE_HIGH_CGM),
-    ))
 
 
 def _analyzer_prepared(recipe):
@@ -191,8 +175,8 @@ def _meal_facts_recipe(store):
     """N synthetic meals on one manufactured lane, each judged by the real analyzer.
 
     The QA catalog's six carb-undercount meals admit Carb undercount, so Highs after
-    meals publishes a chartable roster; two noon meals that Meal bolus short claims,
-    each followed by a correction (the pair is also one correction cluster); two
+    meals publishes a chartable roster; two large noon meals that run high, each
+    followed by a correction (the pair is also one correction cluster); two
     unannounced noon rises that Missed / unannounced meal claims; and two meals ninety
     minutes apart, so the first one's nadir window does not qualify.
     """
@@ -267,9 +251,8 @@ def pattern_near_tie():
     ))
 
 
-@pytest.mark.parametrize("lever", [lever for lever in Lever
-                                   if policy_for(lever).recurrence_noun != "sequences"])
-def test_all_eight_levers_publish_one_exact_case_file_population(lever):
+@pytest.mark.parametrize("lever", list(Lever))
+def test_all_seven_levers_publish_one_exact_case_file_population(lever):
     prepared = _prepared(lever)
     case = prepared.case(f"finding:{lever.value}", "event", None)
 
@@ -279,9 +262,7 @@ def test_all_eight_levers_publish_one_exact_case_file_population(lever):
                          "selection", "population", "cross_population"}
     assert case["schema"] == "diagnose-finding-case-file-v1"
     assert case["family"] == case["population"] == policy.recurrence_noun
-    expected_noun = (policy.recurrence_noun if policy.recurrence_family is None
-                     else finding_case_file._noun(policy.recurrence_family))
-    assert case["summary"]["noun"] == expected_noun
+    assert case["summary"]["noun"] == finding_case_file._noun(policy.recurrence_family)
     assert case["cross_population"] is policy.cross_population
     assert case["summary"]["claimed"] == 1
     assert case["summary"]["denominator"] == len(case["occurrences"]) == 1
@@ -323,17 +304,11 @@ def test_all_eight_levers_publish_one_exact_case_file_population(lever):
     (Lever.CORRECTION_STACKING, "correction_clusters", "correction clusters", 1,
      "Other back-to-back correction pairs", False),
     (Lever.MISSED_MEAL, "highs", "highs", 1, "Completed carb-bolus meals", True),
-    (Lever.MEAL_BOLUS_SHORT, "meals", "meals", 2,
-     "Other completed carb-bolus meals", False),
 ])
-def test_served_case_shape_matches_the_eight_lever_audit_table(
+def test_served_case_shape_matches_the_seven_lever_audit_table(
     lever, family, noun, denominator, comparison_name, cross_population,
 ):
-    prepared = (
-        _analyzer_prepared_meal_bolus_short()
-        if lever is Lever.MEAL_BOLUS_SHORT else _prepared(lever)
-    )
-    case = prepared.case(f"finding:{lever.value}", "event", None)
+    case = _prepared(lever).case(f"finding:{lever.value}", "event", None)
 
     assert (case["family"], case["summary"]["noun"],
             case["summary"]["denominator"],
@@ -427,7 +402,7 @@ def test_case_file_consumes_the_authoritative_diagnose_window(monkeypatch):
     monkeypatch.setattr(finding_case_file, "_population", fake_population)
     prepared = finding_case_file.prepare(
         Store(), query=WindowQuery.whole_day(), version=0,
-        analysis={}, exposures={"sequence_report": None}, scenarios={},
+        analysis={}, exposures={}, scenarios={},
     )
 
     assert observed == [("queue", 17), ("population", 17)]
@@ -479,7 +454,7 @@ def test_preparation_reads_one_sqlite_generation_across_constituent_reads():
 
             prepared = finding_case_file.prepare(
                 InterleavedStore(), query=WindowQuery.whole_day(), version=0,
-                analysis={}, exposures={"sequence_report": None}, scenarios={},
+                analysis={}, exposures={}, scenarios={},
             )
 
         assert writer_errors == []
@@ -516,7 +491,6 @@ def test_factor_specific_event_horizons_and_far_pair_selected_evidence():
         Lever.CORRECTION_ON_IOB: [-60, 120],
         Lever.CORRECTION_STACKING: [-120, 180],
         Lever.MISSED_MEAL: [-60, 300],
-        Lever.MEAL_BOLUS_SHORT: [-60, 300],
     }
     for lever, window in expected.items():
         prepared = _prepared(lever)
@@ -537,8 +511,6 @@ def test_factor_specific_event_horizons_and_far_pair_selected_evidence():
 
 def test_event_selection_names_its_own_cohort_and_clock_selection_names_none():
     for lever in Lever:
-        if policy_for(lever).recurrence_noun == "sequences":
-            continue
         prepared = _prepared(lever)
         member = prepared.members[lever][0]
         case = prepared.case(f"finding:{lever.value}", "event", member.id)
@@ -898,7 +870,7 @@ def test_outranked_meals_stay_outside_the_patterns_claimed_count():
     ]
     findings = _pattern_findings(
         "highs_after_meals", (Lever.CARB_UNDERCOUNT, Lever.LATE_BOLUS), k=1, n=3,
-        rate_levers=(Lever.CARB_UNDERCOUNT, Lever.LATE_BOLUS, Lever.MEAL_BOLUS_SHORT),
+        rate_levers=(Lever.CARB_UNDERCOUNT, Lever.LATE_BOLUS),
     )
     case = _prepared(
         Lever.CARB_UNDERCOUNT, findings=findings,
@@ -939,7 +911,7 @@ def test_circular_pattern_projection_and_case_share_explicit_population():
         "levers": ["carb_undercount", "late_bolus"],
         "by_cause": {"Carb Undercount": 2, "Late Bolus": 1},
         "occurrences": occurrences,
-    }}, "sequence_report": None}
+    }}}
     scenarios = {"patterns": [
         {
             "lever": lever, "priority": priority, "admission_basis": "lower_bound",
@@ -976,12 +948,12 @@ def test_circular_pattern_projection_and_case_share_explicit_population():
 
 def test_pattern_case_is_chartless_without_a_served_habit_or_population():
     setting_only = _pattern_findings(
-        "overnight_lows_no_iob", (), k=1, n=8, rate_levers=(),
+        "lows_after_meals", (), k=1, n=8, rate_levers=(),
         chart=False,
     )
     prepared = _prepared(Lever.CARB_UNDERCOUNT, findings=setting_only)
-    assert prepared.case("pattern:overnight_lows_no_iob", "event", None) is None
-    assert prepared.case("pattern:overnight_lows_no_iob", "clock", None) is None
+    assert prepared.case("pattern:lows_after_meals", "event", None) is None
+    assert prepared.case("pattern:lows_after_meals", "clock", None) is None
 
     memberless = _pattern_findings(
         "highs_after_meals", (), k=1, n=1,
@@ -1203,390 +1175,65 @@ def test_missed_meal_counts_its_highs_outside_the_announced_comparison():
     ]
 
 
-def test_pattern_member_associations_are_evidence_only():
-    lever = Lever.CARB_UNDERCOUNT
-    findings = _pattern_findings("highs_after_meals", [lever], k=0, n=1,
-                                 rate_levers=[lever])
-    source = {"t": "2026-08-01 12:30:00", "kind": "meal",
-              "bg": None, "insulin": 4, "carbs": 40,
-              "cause_lever": None, "attributed_levers": [], "verdicts": [],
-              "member_associations": ["habit:carb_undercount"]}
-    prepared = _prepared(lever, findings=findings,
-                         exposures={"exposures": {"meals": {"occurrences": [source]}}})
-    case = prepared.case("pattern:highs_after_meals", "clock", None)
-    assert case["summary"] == {"claimed": 0, "denominator": 1, "noun": "meals"}
-    assert case["occurrences"][0]["member"] == "clean"
-    assert case["occurrences"][0]["member_associations"] == ["habit:carb_undercount"]
-    assert case["occurrences"][0]["anchor"] == {
-        "t": "2026-08-01 12:30:00", "kind": "meal", "label": "Completed carb bolus",
-        "bg": None, "insulin": 4, "carbs": 40}
+def _withhold_one_inconsistent_case(prepared, finding_id):
+    """A copy of ``prepared`` whose served row for ``finding_id`` claims one more
+    episode than the case producer counts: the two retained producers disagree."""
+    perturbed = deepcopy(prepared)
+    row = next(row for row in perturbed.findings["rows"] if row["id"] == finding_id)
+    row["episodes"] += 1
+    return perturbed
 
 
-@pytest.mark.parametrize("lever", ["high_carb_sequence", "repeat_eating"])
-@pytest.mark.parametrize("covered", [False, True])
-def test_sequence_preparation_and_pattern_case_share_producer_counts(lever, covered):
-    from tests.test_findings_projection import sequence_products, seed_sequence_store
-    from ciq_autotune.analyzers.scenario import build_scenarios
-    from ciq_autotune.explore_exposures import build_exposures
-    projection, (bolus, cgm, _, _) = sequence_products(lever, covered=covered)
-    with Store.open(":memory:") as store:
-        seed_sequence_store(store, bolus, cgm)
-        scenarios = build_scenarios(store, window_days=30).to_dict()
-        exposures = build_exposures(store, window_days=30)
-        prepared = finding_case_file.prepare(
-            store, query=WindowQuery.whole_day(), version=0, analysis=projection._analysis,
-            exposures=exposures, scenarios=scenarios, analysis_generation="sequence:0",
-        )
-    report = exposures["sequence_report"]
-    body = wrap(prepared)
-    assert not any(r["finding_id"] == f"finding:{lever}" for r in body["withheld_findings"])
-    cause = prepared.case(f"finding:{lever}", "event", None)
-    assert cause["summary"]["claimed"] == 8
-    assert cause["summary"]["denominator"] == (40 if lever == "high_carb_sequence" else 16)
-    assert cause["analysis_generation"] == body["findings"]["analysis_generation"] == "sequence:0"
-    assert cause["projection"]["report"] == body["eating_sequence_report"] == report
-    assert cause["projection"]["kind"] == "eating-sequence"
-    if lever == "repeat_eating":
-        assert "response" not in cause["projection"]
-    selected_id = next(r["id"] for r in cause["occurrences"] if r["attributed"])
-    selected = prepared.case(f"finding:{lever}", "event", selected_id)
-    assert selected["selection"]["state"] == "selected"
-    assert selected["selection"]["detail"]["sequence"]["member_event_ids"]
-    assert selected["selection"]["detail"]["episodes"]
-    parent_row = next(r for r in body["rendered_rows"] if r["id"] == "pattern:highs_after_meals")
-    parent = prepared.case(parent_row["id"], "clock", None)
-    assert parent["summary"]["claimed"] == parent_row["pattern"]["k"]
-    assert parent["summary"]["denominator"] == parent_row["pattern"]["n"]
-    assert parent["population"] == "meals"
-    associated = [r for r in parent["occurrences"] if f"habit:{lever}" in r.get("member_associations", [])]
-    assert bool(associated) == covered
-    assert all(r["member"] != f"habit:{lever}" for r in parent["occurrences"])
-    assert len(parent["occurrences"]) == len(exposures["exposures"]["meals"]["occurrences"])
-
-
-def test_high_carb_sequence_case_serves_the_retained_response_evidence():
-    from tests.test_findings_projection import sequence_products, seed_sequence_store
-    from ciq_autotune.analyzers.scenario import build_scenarios
-    from ciq_autotune.explore_exposures import build_exposures
-    projection, (bolus, cgm, _, _) = sequence_products("high_carb_sequence")
-    with Store.open(":memory:") as store:
-        seed_sequence_store(store, bolus, cgm)
-        prepared = finding_case_file.prepare(
-            store, query=WindowQuery.whole_day(), version=0, analysis=projection._analysis,
-            exposures=build_exposures(store), scenarios=build_scenarios(store).to_dict(),
-            analysis_generation="sequence:0",
-        )
-
-    case = prepared.case("finding:high_carb_sequence", "event", None)
-
-    response = case["projection"]["response"]
-    assert response["schema"] == "high-carb-sequence-response-v1"
-    assert response["alignment"] == "event"
-    assert response["anchor"] == {"kind": "sequence_end", "label": "End of eating sequence"}
-    assert response["window_min"] == [0, 360]
-    assert response["scope"] == "pooled"
-    assert response["period"] == "post_6h"
-    assert response["source_window"] == prepared.sequence_report["window"]
-    assert response["summary"] == prepared.sequence_report["high_carb_sequence"]["finding"]["summary"]
-    assert response["comparisons"] == [
-        item for item in prepared.sequence_report["high_carb_sequence"]["comparisons"]
-        if item["scope"] == response["scope"]
-    ]
-    assert [item["period"] for item in response["comparisons"]] == [
-        "in_sequence", "post_4h", "post_6h",
-    ]
-    assert response["comparison"] == {"name": "Other sequences", "state": "available"}
-    assert [(cohort["key"], cohort["name"], cohort["routed_count"])
-            for cohort in response["cohorts"]] == [
-                ("matched", "Highest-carb fifth", 8),
-                ("comparison", "Other sequences", 32),
-            ]
-    selected_id = response["cohorts"][0]["occurrence_ids"][0]
-    selected = prepared.case("finding:high_carb_sequence", "event", selected_id)
-    detail = selected["selection"]["detail"]
-    assert selected["analysis_generation"] == "sequence:0"
-    assert detail["comparison_cohort"] == "matched"
-    assert detail["glucose"]
-    assert response["cohorts"][0]["points"][0]["minute"] == 0
-    assert response["cohorts"][0]["points"][-1]["minute"] == 355
-    assert all(response["window_min"][0] <= point["minute"] < response["window_min"][1]
-               for point in detail["glucose"])
-    row = next(row for row in wrap(prepared)["findings"]["rows"]
-               if row["id"] == "finding:high_carb_sequence")
-    assert row["headline"] == "Glucose after high-carb eating"
-    assert "%" in response["summary"] and "n = 8 vs 32" in response["summary"]
-
-
-def test_high_carb_response_rejects_missing_or_incoherent_retained_metadata():
-    from tests.test_findings_projection import sequence_products, seed_sequence_store
-    from ciq_autotune.analyzers.scenario import build_scenarios
-    from ciq_autotune.explore_exposures import build_exposures
-    projection, (bolus, cgm, _, _) = sequence_products("high_carb_sequence")
-    with Store.open(":memory:") as store:
-        seed_sequence_store(store, bolus, cgm)
-        prepared = finding_case_file.prepare(
-            store, query=WindowQuery.whole_day(), version=0, analysis=projection._analysis,
-            exposures=build_exposures(store), scenarios=build_scenarios(store).to_dict(),
-        )
-
-    for mutation in (
-        lambda candidate: candidate["response"].clear(),
-        lambda candidate: candidate["response"].pop("scope"),
-        lambda candidate: candidate["response"].__setitem__(
-            "comparisons", candidate["response"]["comparisons"][:2]),
-        lambda candidate: candidate["response"].__setitem__("source_window", None),
-        lambda candidate: candidate["response"]["comparisons"][0].__setitem__(
-            "period", "post_4h"),
-        lambda candidate: candidate["population"][0].pop("candidate"),
-    ):
-        malformed = deepcopy(prepared)
-        candidate = malformed.exposures["sequence_evidence"]["high_carb_sequence"]
-        mutation(candidate)
-        with pytest.raises(InconsistentProjection, match="inconsistent_projection"):
-            malformed.case("finding:high_carb_sequence", "event", None)
-
-
-def test_high_carb_response_rejects_a_report_from_another_manufactured_generation():
-    from tests.test_findings_projection import sequence_products, seed_sequence_store
-    from ciq_autotune.analyzers.scenario import build_scenarios
-    from ciq_autotune.explore_exposures import build_exposures
-    projection, (bolus, cgm, _, _) = sequence_products("high_carb_sequence")
-    _, (later_bolus, later_cgm, later_log, _) = sequence_products(
-        "high_carb_sequence", covered=True)
-    with Store.open(":memory:") as later_store:
-        seed_sequence_store(later_store, later_bolus, later_cgm, later_log)
-        later_report = build_exposures(later_store, window_days=30)["sequence_report"]
-    with Store.open(":memory:") as store:
-        seed_sequence_store(store, bolus, cgm)
-        prepared = finding_case_file.prepare(
-            store, query=WindowQuery.whole_day(), version=0, analysis=projection._analysis,
-            exposures=build_exposures(store), scenarios=build_scenarios(store).to_dict(),
-            analysis_generation="sequence:later",
-        )
-    assert later_report != prepared.sequence_report
-    prepared.sequence_report = later_report
-
-    with pytest.raises(InconsistentProjection, match="inconsistent_projection"):
-        prepared.case("finding:high_carb_sequence", "event", None)
-
-
-def _late_logged_high_carb_store(store):
-    """The high-carb sequence stream with a carb entry logged after the window end.
-
-    The entry's carbs fall inside a candidate sequence's selected period, but it was
-    recorded an hour after the last reading, as a person logging by hand before the
-    next sync does (#488). Returns the stream's projection.
-    """
-    from ciq_autotune.analyzers.eating_sequence_config import EatingSequenceConfig
-    from ciq_autotune.analyzers.eating_sequences import evaluate_sequences
-    from tests.test_findings_projection import sequence_products, seed_sequence_store
-    projection, (bolus, cgm, _, _) = sequence_products("high_carb_sequence")
-    evaluation = evaluate_sequences(bolus, cgm, (), window_start=cgm[0].t,
-                                    window_end=cgm[-1].t, config=EatingSequenceConfig())
-    candidate = next(row for row in evaluation.populations["high_carb_sequence"]
-                     if row.candidate)
-    seed_sequence_store(store, bolus, cgm, [CarbEntry(
-        candidate.start + timedelta(minutes=10), 15.0, "estimate", "manual",
-        created_at=cgm[-1].t + timedelta(hours=1),
-    )])
-    return projection
-
-
-def test_a_carb_entry_logged_after_the_window_end_counts_once_in_the_high_carb_case():
-    """#488: the served report and the case's sequence evidence are one evaluation.
-
-    A Carb log entry recorded after the window end did not exist when the window
-    closed, so it may not exclude a sequence. The report the case file served was
-    once rebuilt with it, which left seven highest-carb sequences in the six-hour
-    period and no finding, beside sequence evidence serving 8 vs 32; that
-    disagreement failed the whole preparation.
-    """
-    from ciq_autotune.analyzers.scenario import build_scenarios
-    from ciq_autotune.explore_exposures import build_exposures
-    with Store.open(":memory:") as store:
-        projection = _late_logged_high_carb_store(store)
-        prepared = finding_case_file.prepare(
-            store, query=WindowQuery.whole_day(), version=0, analysis=projection._analysis,
-            exposures=build_exposures(store, window_days=30),
-            scenarios=build_scenarios(store, window_days=30).to_dict(),
-        )
-
-    body = wrap(prepared)
-
-    assert body["withheld_findings"] == []
-    case = prepared.case("finding:high_carb_sequence", "event", None)
-    response = case["projection"]["response"]
-    finding = case["projection"]["report"]["high_carb_sequence"]["finding"]
-    assert response["summary"] == finding["summary"]
-    assert "n = 8 vs 32" in finding["summary"]
-    assert [(cohort["key"], cohort["routed_count"]) for cohort in response["cohorts"]] == [
-        ("matched", 8), ("comparison", 32),
-    ]
-    assert body["eating_sequence_report"] == case["projection"]["report"]
-
-
-def test_preparation_withholds_an_inconsistent_case_by_name_and_keeps_the_rest():
+def test_preparation_withholds_an_inconsistent_case_by_name_and_keeps_the_rest(meal_facts):
     """ADR 488: one case whose producers disagree is withheld, never served or fatal."""
-    from tests.test_findings_projection import sequence_products, seed_sequence_store
-    from ciq_autotune.analyzers.scenario import build_scenarios
-    from ciq_autotune.explore_exposures import build_exposures
-    projection, (bolus, cgm, _, _) = sequence_products("high_carb_sequence")
-    with Store.open(":memory:") as store:
-        seed_sequence_store(store, bolus, cgm)
-        prepared = finding_case_file.prepare(
-            store, query=WindowQuery.whole_day(), version=0, analysis=projection._analysis,
-            exposures=build_exposures(store), scenarios=build_scenarios(store).to_dict(),
-        )
-    consistent = wrap(prepared)
-    comparisons = prepared.sequence_report["high_carb_sequence"]["comparisons"]
-    for comparison in comparisons:
-        if comparison["high_n"]:
-            comparison["high_n"] -= 1
+    consistent = wrap(meal_facts)
+    assert consistent["withheld_findings"] == []
+    assert {"finding:carb_undercount", "finding:late_bolus"} <= set(
+        consistent["behavioral_case_headers"])
 
+    prepared = _withhold_one_inconsistent_case(meal_facts, "finding:late_bolus")
     body = wrap(prepared)
 
     assert body["withheld_findings"] == [{
-        "finding_id": "finding:high_carb_sequence",
+        "finding_id": "finding:late_bolus",
         "code": "inconsistent_projection",
         "message": "Case population is inconsistent.",
     }]
-    assert "finding:high_carb_sequence" not in [row["id"] for row in body["rendered_rows"]]
-    assert "finding:high_carb_sequence" not in body["behavioral_case_headers"]
+    assert "finding:late_bolus" not in [row["id"] for row in body["rendered_rows"]]
+    assert "finding:late_bolus" not in body["behavioral_case_headers"]
     assert [row["id"] for row in body["rendered_rows"]] == [
         row["id"] for row in consistent["rendered_rows"]
-        if row["id"] != "finding:high_carb_sequence"
+        if row["id"] != "finding:late_bolus"
     ]
-    with pytest.raises(InconsistentProjection, match="inconsistent_projection"):
-        prepared.case("finding:high_carb_sequence", "event", None)
-
-
-def test_in_sequence_response_uses_real_intervals_end_anchor_and_outward_axis():
-    from ciq_autotune.analyze import analyze
-    from ciq_autotune.analyzers.eating_sequence_config import EatingSequenceConfig
-    from ciq_autotune.analyzers.eating_sequences import evaluate_sequences
-    from ciq_autotune.analyzers.scenario import build_scenarios
-    from ciq_autotune.explore_exposures import build_exposures
-    from tests.eating_sequence_streams import sequence_episode_stream
-    from tests.test_findings_projection import seed_sequence_store
-    bolus, cgm, log, _ = sequence_episode_stream("high_carb_sequence")
-    bolus.append(BolusEvent(
-        bolus[-1].t + timedelta(minutes=31), carbs=1, insulin=.5, seq_num=99999,
-    ))
-    bolus.sort(key=lambda item: item.t)
-    initial = evaluate_sequences(
-        bolus, cgm, log, window_start=cgm[0].t, window_end=cgm[-1].t,
-        config=EatingSequenceConfig(),
-    )
-    candidate_ends = {
-        item.sequence.end
-        for item in initial.populations["high_carb_sequence"] if item.candidate
-    }
-    cgm = [
-        replace(reading, bg=270.0)
-        if any(end <= reading.t < end + timedelta(minutes=25) for end in candidate_ends)
-        else reading
-        for reading in cgm
-    ]
-    with Store.open(":memory:") as store:
-        seed_sequence_store(store, bolus, cgm, log)
-        prepared = finding_case_file.prepare(
-            store, query=WindowQuery.whole_day(), version=0,
-            analysis=analyze(
-                store, window_days=30, pool_agreeing_basal_regimes=True,
-            ).to_dict(),
-            exposures=build_exposures(store, window_days=30),
-            scenarios=build_scenarios(store, window_days=30).to_dict(),
-        )
-
-    response = prepared.case("finding:high_carb_sequence", "event", None)["projection"]["response"]
-
-    assert response["period"] == "in_sequence"
-    assert response["anchor"] == {"kind": "sequence_end", "label": "End of eating sequence"}
-    assert response["window_min"] == [-35, 5]
-    assert response["cohorts"][0]["points"][1] == {
-        "minute": -30, "n": 1, "support": "withheld",
-        "median": None, "p25": None, "p75": None,
-    }
-    assert all(point["minute"] <= 0 for cohort in response["cohorts"]
-               for point in cohort["points"])
-
-
-def test_high_carb_response_excludes_confirmed_false_low_observations(monkeypatch):
-    from ciq_autotune.analyzers.eating_sequence_config import EatingSequenceConfig
-    from ciq_autotune.analyzers.eating_sequences import evaluate_sequences
-    from tests.test_findings_projection import sequence_products, seed_sequence_store
-    from ciq_autotune.analyzers.scenario import build_scenarios
-    from ciq_autotune.explore_exposures import build_exposures
-    projection, (bolus, cgm, _, _) = sequence_products("high_carb_sequence")
-    evaluated = evaluate_sequences(
-        bolus, cgm, (), window_start=cgm[0].t, window_end=cgm[-1].t,
-        config=EatingSequenceConfig(),
-    )
-    source = next(item for item in evaluated.populations["high_carb_sequence"]
-                  if item.candidate)
-    excluded = next(row for row in cgm
-                    if row.t == source.sequence.end + timedelta(minutes=10))
-    records = lambda *_: [{"start": excluded.t, "end": excluded.t}]
-    monkeypatch.setattr("ciq_autotune.explore_exposures.false_low_span_records", records)
-    monkeypatch.setattr("ciq_autotune.finding_case_file.false_low_span_records", records)
-    with Store.open(":memory:") as store:
-        seed_sequence_store(store, bolus, cgm)
-        prepared = finding_case_file.prepare(
-            store, query=WindowQuery.whole_day(), version=0, analysis=projection._analysis,
-            exposures=build_exposures(store), scenarios=build_scenarios(store).to_dict(),
-        )
-
-    response = prepared.case(
-        "finding:high_carb_sequence", "event", None,
-    )["projection"]["response"]
-    selected = prepared.case(
-        "finding:high_carb_sequence", "event", response["cohorts"][0]["occurrence_ids"][0],
-    )
-
-    point = next(point for point in response["cohorts"][0]["points"]
-                 if point["minute"] == 10)
-    assert point["n"] == 7
-    assert all(datetime.fromisoformat(point["t"]) != excluded.t
-               for point in selected["selection"]["detail"]["glucose"])
-
-
-def test_scoped_sequence_roster_does_not_redefine_response_or_selection():
-    from tests.test_findings_projection import sequence_products, seed_sequence_store
-    from ciq_autotune.analyzers.scenario import build_scenarios
-    from ciq_autotune.explore_exposures import build_exposures
-    projection, (bolus, cgm, _, _) = sequence_products("high_carb_sequence")
-    with Store.open(":memory:") as store:
-        seed_sequence_store(store, bolus, cgm)
-        prepared = finding_case_file.prepare(
-            store, query=WindowQuery.clock(300, 420), version=0,
-            analysis=projection._analysis, exposures=build_exposures(store),
-            scenarios=build_scenarios(store).to_dict(),
-        )
-
-    case = prepared.case("finding:high_carb_sequence", "event", None)
-    response = case["projection"]["response"]
-    roster_ids = {item["id"] for item in case["occurrences"]}
-    outside_id = next(item for cohort in response["cohorts"]
-                      for item in cohort["occurrence_ids"] if item not in roster_ids)
-    unavailable = prepared.case("finding:high_carb_sequence", "event", outside_id)
-
-    assert len(case["occurrences"]) == 4
-    assert sum(cohort["routed_count"] for cohort in response["cohorts"]) == 40
-    assert response["source_window"] == prepared.sequence_report["window"]
-    assert unavailable["selection"] == {
-        "state": "unavailable", "requested_id": outside_id, "detail": None,
-    }
+    assert (body["behavioral_case_headers"]["finding:carb_undercount"]
+            == consistent["behavioral_case_headers"]["finding:carb_undercount"])
+    for alignment in ("clock", "event"):
+        with pytest.raises(InconsistentProjection, match="inconsistent_projection"):
+            prepared.case("finding:late_bolus", alignment, None)
 
 
 def test_case_file_preserves_exposure_classifier_reach():
+    """The late peak crosses the next group's short configured context bound."""
     from unittest.mock import patch
-    from tests.test_eating_sequence_findings import _crossing_reach_stream
-    from tests.test_meal_bolus_short_attribution import _seed
+    from ciq_autotune.analyzers.scenario_config import ScenarioConfig
     from tests.test_outcomes_trend import _snapshot_with_ic
     from ciq_autotune.explore_exposures import build_exposures
-    bolus, cgm, config = _crossing_reach_stream()
+    start = datetime(2040, 2, 1, 12)
+    bolus = [BolusEvent(start, carbs=20, insulin=.5, carb_ratio=40, completion="Completed")]
+    cgm = [CgmReading(start + timedelta(minutes=m),
+                      350 if 180 <= m < 200 else 250 if 130 <= m < 180 else 110)
+           for m in range(-5, 365, 5)]
+    config = ScenarioConfig(segment_max_duration_min=120, engine_context_pad_min=5,
+                            carb_undercount_runaway_peak_mgdl=260)
     with Store.open(":memory:") as store:
-        _seed(store, bolus, cgm)
+        store.upsert_cgm([
+            {"EventDateTime": r.t.strftime("%Y-%m-%dT%H:%M:%S"),
+             "Readings (CGM / BGM)": r.bg, "Description": "EGV"} for r in cgm])
+        store.upsert_bolus([
+            {"seq_num": i, "request_time": b.t.strftime("%Y-%m-%d %H:%M:%S"),
+             "description": "Bolus", "completion": b.completion, "carbs": b.carbs,
+             "insulin": b.insulin, "carb_ratio": b.carb_ratio}
+            for i, b in enumerate(bolus, start=1)])
         store.upsert_settings_snapshot(bolus[0].t.strftime("%Y-%m-%d %H:%M:%S"),
                                        _snapshot_with_ic(40).settings)
         with patch("ciq_autotune.explore_exposures.ScenarioConfig", return_value=config):
@@ -1602,39 +1249,6 @@ def test_case_file_preserves_exposure_classifier_reach():
     assert case["occurrences"][0]["verdict"] == "fired"
 
 
-@pytest.mark.parametrize("lever,meal_count", [("high_carb_sequence", 40), ("repeat_eating", 100)])
-def test_sequence_habit_preserves_clean_pattern_meal_verdicts(lever, meal_count):
-    from tests.test_findings_projection import sequence_products, seed_sequence_store
-    projection, (bolus, cgm, _, _) = sequence_products(lever)
-    with Store.open(":memory:") as store:
-        seed_sequence_store(store, bolus, cgm)
-        prepared = finding_case_file.prepare(
-            store, query=WindowQuery.whole_day(), version=0,
-            analysis=projection._analysis, exposures=projection._exposures,
-            scenarios=projection._scenarios,
-        )
-    cause = prepared.case(f"finding:{lever}", "event", None)
-    assert cause["summary"]["claimed"] == 8
-    case = prepared.case("pattern:highs_after_meals", "clock", None)
-
-    # Retain the same produced meal population, removing only the new habit
-    # from the transport roster to pin the pre-sequence Pattern verdicts.
-    baseline = deepcopy(prepared)
-    parent = next(row for row in baseline.findings["rows"]
-                  if row["id"] == "pattern:highs_after_meals")
-    parent["pattern"]["members"] = [member for member in parent["pattern"]["members"]
-                                     if member["subject"] != f"habit:{lever}"]
-    before = baseline.case("pattern:highs_after_meals", "clock", None)
-    assert before["verdict_counts"] == {
-        "fired": 0, "outranked": 0, "near_miss": 0, "no_data": 0, "clean": meal_count,
-    }
-    assert case["occurrences"][0]["verdict"] == "clean"
-    assert case["verdict_counts"] == before["verdict_counts"]
-    assert case["summary"] == before["summary"] == {
-        "claimed": 0, "denominator": meal_count, "noun": "meals",
-    }
-
-
 def _case(prepared, subject, alignment="clock", occ=None):
     if isinstance(subject, Lever):
         return prepared.case(None, alignment, occ, lever=subject)
@@ -1647,16 +1261,15 @@ def _case(prepared, subject, alignment="clock", occ=None):
 _MEAL_FACTS_ACCOUNTS = {
     "finding:carb_undercount": (2, 10, (2, 1, 3, 1, 3)),
     "finding:late_bolus": (1, 10, (1, 2, 0, 0, 7)),
-    "finding:meal_bolus_short": (2, 10, (2, 0, 0, 0, 8)),
-    "finding:missed_meal": (2, 6, (2, 2, 0, 0, 2)),
-    "pattern:highs_after_meals": (5, 10, (5, 0, 1, 1, 3)),
+    "finding:missed_meal": (2, 6, (2, 0, 0, 0, 4)),
+    "pattern:highs_after_meals": (3, 10, (3, 0, 3, 1, 3)),
     Lever.MEAL_OVER_DELIVERY: (0, 10, (0, 0, 0, 10, 0)),
     Lever.CORRECTION_STACKING: (0, 1, (0, 0, 0, 0, 1)),
 }
 _CORRECTION_STACKING_ACCOUNTS = {
     "finding:correction_stacking": (2, 7, (2, 0, 1, 0, 4)),
     "finding:missed_meal": (1, 1, (1, 0, 0, 0, 0)),
-    "pattern:lows_after_correcting_highs": (2, 2, (2, 0, 0, 0, 0)),
+    Lever.CORRECTION_ON_IOB: (0, 2, (0, 0, 0, 0, 2)),
 }
 
 
@@ -1679,7 +1292,7 @@ def test_case_file_rows_serve_their_anchor_bolus_and_post_meal_arc(
         if not arcs:
             times = sorted(_RECIPE_MEALS)
             arcs.update(zip(times, outcomes_trend.meal_arcs(
-                [datetime.strptime(t, _FMT) for t in times], meal_facts.sequence_cgm,
+                [datetime.strptime(t, _FMT) for t in times], meal_facts.judged_cgm,
             )))
         arc = arcs[anchor]
         value, t = (arc.peak, arc.peak_t) if kind == "peak" else (arc.nadir, arc.nadir_t)
@@ -1690,7 +1303,6 @@ def test_case_file_rows_serve_their_anchor_bolus_and_post_meal_arc(
 
     served = {}
     for subject, kind in (("finding:carb_undercount", "peak"), ("finding:late_bolus", "peak"),
-                          ("finding:meal_bolus_short", "peak"),
                           ("pattern:highs_after_meals", "peak"),
                           (Lever.MEAL_OVER_DELIVERY, "nadir")):
         for alignment in ("clock", "event"):
@@ -1706,7 +1318,7 @@ def test_case_file_rows_serve_their_anchor_bolus_and_post_meal_arc(
                 )
             served[subject] = {anchor: row.get("outcome") for anchor, row in rows.items()}
     # Read off the synthetic traces, independent of the arc read above.
-    assert served["finding:meal_bolus_short"]["2024-05-24 12:05:00"] == {
+    assert served["finding:late_bolus"]["2024-05-24 12:05:00"] == {
         "kind": "peak", "bg": 360.0, "t": "2024-05-24 12:30:00", "minute": 25.0}
     assert served["pattern:highs_after_meals"]["2024-05-11 12:00:00"] == {
         "kind": "peak", "bg": 350.0, "t": "2024-05-11 14:30:00", "minute": 150.0}
@@ -1729,8 +1341,7 @@ def test_case_file_rows_serve_their_anchor_bolus_and_post_meal_arc(
     ]
 
     glucose_rows = (_case(meal_facts, "finding:missed_meal")["occurrences"]
-                    + _case(correction_stacking,
-                            "pattern:lows_after_correcting_highs")["occurrences"])
+                    + _case(correction_stacking, Lever.CORRECTION_ON_IOB)["occurrences"])
     assert {row["anchor"]["kind"] for row in glucose_rows} == {"high", "low"}
     for row in glucose_rows:
         assert row["anchor"]["bg"] is not None
@@ -1757,12 +1368,9 @@ def test_case_file_rows_serve_their_anchor_bolus_and_post_meal_arc(
 
 
 _PRECEDENCE = {"fired": 4, "near_miss": 3, "outranked": 2, "no_data": 1, "clean": 0}
-# The habit members each served Pattern judges in its own rate family, in roster
-# order. Correction stacking is a Lows after correcting highs member, but it is
-# judged over correction clusters, so a claimed low carries its cause and no entry.
+# The habit members each served Pattern judges in its own rate family, in roster order.
 _PATTERN_HABITS = {
     "pattern:highs_after_meals": ["carb_undercount"],
-    "pattern:lows_after_correcting_highs": [],
 }
 
 
@@ -1881,30 +1489,6 @@ def test_every_selected_reason_agrees_with_its_row(meal_facts, correction_stacki
             assert entry["detail"], row
 
 
-def test_meal_claimed_by_meal_bolus_short_inside_highs_after_meals(meal_facts):
-    case = _case(meal_facts, "pattern:highs_after_meals")
-    row = next(item for item in case["occurrences"]
-               if item["anchor"]["t"] == "2024-05-11 12:00:00")
-    assert (row["member"], row["verdict"]) == ("habit:meal_bolus_short", "fired")
-    source = next(item for item in meal_facts.pattern_exposures["exposures"]["meals"]
-                  ["occurrences"] if item["t"] == row["anchor"]["t"])
-    # Meal bolus short is judged at the rise, so the meal's own episode has no driver.
-    assert (source["cause_lever"], source["attributed_levers"]) == (None, ["meal_bolus_short"])
-    sentence = {item["classifier"]: item["detail"] for item in source["verdicts"]}
-    detail = _case(meal_facts, "pattern:highs_after_meals", "clock",
-                   row["id"])["selection"]["detail"]
-    assert detail["reason"] == {
-        "cause": {"lever": "meal_bolus_short", "title": title(Lever.MEAL_BOLUS_SHORT),
-                  "text": ""},
-        "habits": [
-            {"lever": "carb_undercount", "title": title(Lever.CARB_UNDERCOUNT),
-             "verdict": "near_miss", "detail": sentence["carb_undercount"]},
-        ],
-    }
-    assert sentence["carb_undercount"]
-    assert detail["anchor"] == row["anchor"] and detail["outcome"] == row["outcome"]
-
-
 def test_a_cancelled_bolus_inside_the_grace_joins_its_meal_and_a_cluster_reads_its_second_dose():
     prepared = _analyzer_prepared(_edge_facts_recipe)
 
@@ -1914,7 +1498,7 @@ def test_a_cancelled_bolus_inside_the_grace_joins_its_meal_and_a_cluster_reads_i
     # reads past the cancelled leg rather than ending at it.
     noon = ("2024-05-02 12:00:00", 6.0, 40.0)
     peak = {"kind": "peak", "bg": 170.0, "t": "2024-05-02 12:50:00", "minute": 50.0}
-    for lever in (Lever.MEAL_BOLUS_SHORT, Lever.CARB_UNDERCOUNT):
+    for lever in (Lever.LATE_BOLUS, Lever.CARB_UNDERCOUNT):
         [meal] = _case(prepared, lever)["occurrences"]
         assert (meal["anchor"]["t"], meal["anchor"].get("insulin"),
                 meal["anchor"].get("carbs")) == noon
@@ -2003,7 +1587,7 @@ def test_a_reason_never_shows_a_sentence_its_row_contradicts():
 def test_a_pattern_cause_carries_only_its_claimants_own_narrative():
     findings = _pattern_findings(
         "highs_after_meals", (Lever.CARB_UNDERCOUNT,), k=2, n=2,
-        rate_levers=(Lever.CARB_UNDERCOUNT, Lever.MEAL_BOLUS_SHORT),
+        rate_levers=(Lever.CARB_UNDERCOUNT, Lever.LATE_BOLUS),
     )
 
     def meal(stamp, cause, claims, text, *, matched):
@@ -2018,9 +1602,9 @@ def test_a_pattern_cause_carries_only_its_claimants_own_narrative():
         "exposures": {"meals": {"n": 3, "occurrences": [
             meal("2026-08-01 12:30:00", "carb_undercount", ["carb_undercount"],
                  "Synthetic carb-undercount narrative.", matched=True),
-            # Another lever drove this meal's episode; Meal bolus short claims it.
+            # Another lever drove this meal's episode; Late bolus claims it.
             meal("2026-08-01 18:30:00", "meal_over_delivery",
-                 ["meal_over_delivery", "meal_bolus_short"],
+                 ["meal_over_delivery", "late_bolus"],
                  "Synthetic over-delivery narrative.", matched=False),
             # Carb undercount matched, but no rate lever claims the meal: outranked.
             meal("2026-08-02 12:30:00", "meal_over_delivery", ["meal_over_delivery"],
@@ -2032,12 +1616,12 @@ def test_a_pattern_cause_carries_only_its_claimants_own_narrative():
                for row in case["occurrences"]]
 
     assert [(row["member"], row["verdict"]) for row in case["occurrences"]] == [
-        ("habit:carb_undercount", "fired"), ("habit:meal_bolus_short", "fired"),
+        ("habit:carb_undercount", "fired"), ("habit:late_bolus", "fired"),
         ("clean", "outranked")]
     assert [item["cause"] for item in reasons] == [
         {"lever": "carb_undercount", "title": title(Lever.CARB_UNDERCOUNT),
          "text": "Synthetic carb-undercount narrative."},
-        {"lever": "meal_bolus_short", "title": title(Lever.MEAL_BOLUS_SHORT), "text": ""},
+        {"lever": "late_bolus", "title": title(Lever.LATE_BOLUS), "text": ""},
         None,
     ]
     entry = {"lever": "carb_undercount", "title": title(Lever.CARB_UNDERCOUNT)}

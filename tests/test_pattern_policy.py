@@ -3,9 +3,6 @@
 import unittest
 
 from ciq_autotune.analyzers.scenario.outcome_patterns import build_outcome_patterns
-from ciq_autotune.result import SlotEstimate
-from ciq_autotune.safety import Status
-from ciq_autotune.uncertainty import Estimate
 
 
 def _scenario(lever, *, price=20, k=2, n=12, lo=.1, hi=.3, action=True, basis="lower_bound"):
@@ -15,60 +12,17 @@ def _scenario(lever, *, price=20, k=2, n=12, lo=.1, hi=.3, action=True, basis="l
                          "seriousness": "high"}}
 
 
-def _basal_slot(slot, start_min, status, *, duration_min=30, seriousness=None):
-    actionable = status.actionable
-    return SlotEstimate(
-        slot=slot, label=f"{start_min // 60:02d}:{start_min % 60:02d}",
-        current=.6, estimate=Estimate(.5, .5, .5, 12),
-        recommended=.5, annotation="owner verdict", days=12,
-        evidence={"harm_band_source_nights": 12}, status=status,
-        guidance={
-            "action": ({
-                "kind": "setting_instruction", "parameter": "basal_rate",
-                "start_min": start_min, "end_min": start_min + duration_min,
-                "direction": "lower", "units": "U/h", "recommended": .5,
-            } if actionable else None),
-            "seriousness": seriousness,
-        },
-    ).to_dict()
-
-
 class OutcomePatternPolicyTest(unittest.TestCase):
-    def test_opportunity_owner_keeps_harm_band_nights_without_focus_admission(self):
-        import tempfile
-        from ciq_autotune.store import Store
-        from ciq_autotune.analyzers.scenario.outcome_patterns import opportunity_readiness
-        from scripts.qa_e2e_cases import QA_CASES, materialize_case, execute_case
-        from ciq_autotune.watched_change import is_pinnable
-        case = next(c for c in QA_CASES if c.name == "pattern-focus-meals")
-        with tempfile.NamedTemporaryFile(suffix=".sqlite") as database:
-            with Store.open(database.name) as store:
-                materialize_case(store, case)
-                output = execute_case(store, case)
-        readiness = opportunity_readiness("overnight_lows_no_iob", output.analysis, output.exposures)
-        self.assertEqual(readiness, {"count": 8, "gate": 12, "unit": "nights",
-                                    "verdict": "withheld", "reason": "collecting"})
-        self.assertFalse(is_pinnable("late_bolus", "overnight_lows_no_iob"))
-
     def test_returns_the_closed_roster_and_owns_no_deferred_lever(self):
         roster = build_outcome_patterns({}, {"exposures": {}}, {"patterns": [], "low_confidence": []})
         self.assertEqual([item["key"] for item in roster], [
             "highs_after_meals", "lows_after_meals", "highs_after_treating_lows",
-            "lows_after_correcting_highs", "overnight_lows_no_iob",
+            "lows_after_correcting_highs",
         ])
         self.assertEqual(roster[0]["rate_levers"], [
-            "habit:carb_undercount", "habit:late_bolus", "habit:meal_bolus_short",
+            "habit:carb_undercount", "habit:late_bolus",
         ])
-        self.assertNotIn(
-            "habit:meal_bolus_short",
-            {member["subject"] for member in roster[0]["members"]},
-        )
         self.assertNotIn("missed_meal", str(roster))
-        self.assertEqual(
-            roster[0]["overlap_counts"]["overnight_lows_no_iob"],
-            {"status": "not_comparable", "count": None,
-             "reason": "no_habit_exposure_identity"},
-        )
 
     def test_staged_setting_wins_an_interval_near_tie(self):
         analysis = {
@@ -138,170 +92,17 @@ class OutcomePatternPolicyTest(unittest.TestCase):
         self.assertEqual(high["settled_price"], 20)
         self.assertEqual(high["admission_route"], "habit_threshold")
 
-    def test_overlap_counts_and_harm_low_rows_keep_identity_spaces_separate(self):
-        analysis = {
-            "tuning_levers": [
-                {"parameter": "carb_ratio", "priority": 4,
-                 "recurrence_channel": {"kind": "ic_runs", "k": 1, "n": 12}},
-                {"parameter": "isf", "priority": 5,
-                 "recurrence_channel": {"kind": "isf_corr_lows", "k": 1, "n": 12}},
-            ],
-            "ic_blocks": [{"asserts_move": False, "safety_status": "held",
-                           "start_min": 0, "end_min": 1440, "guidance": None,
-                           "evidence": {"harm": {"lows": [
-                               {"t": "2025-06-01T12:30:00"},
-                           ]}}}],
-            "isf": [{"asserts_move": False, "safety_status": "held",
-                     "guidance": None,
-                     "evidence": {"harm": {"lows": [
-                         {"t": "2025-06-01T02:30:00"},
-                     ]}}}],
-        }
-        exposures = {"exposures": {
-            "meals": {"n": 12, "occurrences": [
-                {"attributed": True, "cause_lever": "carb_undercount",
-                 "attributed_levers": ["carb_undercount"],
-                 "ep_id": "shared-meal", "t": "2025-06-01 12:00:00"},
-                {"attributed": True, "cause_lever": "meal_over_delivery",
-                 "attributed_levers": ["meal_over_delivery"],
-                 "ep_id": "shared-meal", "t": "2025-06-01 12:00:00"},
-            ]},
-            "lows": {"n": 12, "occurrences": [
-                {"attributed": True, "cause_lever": "over_treated_low",
-                 "attributed_levers": ["over_treated_low"],
-                 "ep_id": "shared-low", "t": "2025-06-01 02:30:00"},
-                {"attributed": True, "cause_lever": "correction_on_iob",
-                 "attributed_levers": ["correction_on_iob", "correction_stacking"],
-                 "ep_id": "shared-low", "t": "2025-06-01 02:30:00"},
-            ]},
-            "correction_clusters": {"n": 12, "occurrences": [
-                {"attributed": True, "cause_lever": "correction_stacking",
-                 "attributed_levers": ["correction_stacking"],
-                 "ep_id": "stacked", "t": "2025-06-01 02:00:00"},
-            ]},
-        }}
-        scenarios = {
-            "patterns": [
-                _scenario("carb_undercount"), _scenario("meal_over_delivery"),
-                _scenario("over_treated_low"), _scenario("correction_stacking"),
-                _scenario("correction_on_iob"),
-            ],
-            "low_confidence": [],
-            "episodes": {
-                "meal": {"lever": "meal_over_delivery", "steps": [
-                    {"citation": {"facts": {
-                        "nadir_at": "2025-06-01 12:30:00",
-                    }}},
-                ]},
-                "correction": {"lever": "correction_on_iob", "steps": [
-                    {"citation": {"facts": {
-                        "nadir_at": "2025-06-01 02:30:00",
-                    }}},
-                ]},
-                "stacked": {"lever": "correction_stacking", "steps": [
-                    {"citation": {"facts": {
-                        "nadir_at": "2025-06-01 02:30:00",
-                    }}},
-                ]},
-            },
-        }
-        roster = {item["key"]: item for item in
-                  build_outcome_patterns(analysis, exposures, scenarios)}
-        self.assertEqual(
-            roster["highs_after_meals"]["overlap_counts"]["lows_after_meals"],
-            {"status": "comparable", "count": 1,
-             "reason": "shared_meals_exposure"},
-        )
-        self.assertEqual(
-            roster["highs_after_treating_lows"]["overlap_counts"]
-                  ["lows_after_correcting_highs"],
-            {"status": "comparable", "count": 1,
-             "reason": "shared_lows_exposure"},
-        )
-        self.assertEqual(
-            roster["highs_after_meals"]["overlap_counts"]
-                  ["lows_after_correcting_highs"]["reason"],
-            "different_exposure_families",
-        )
-        self.assertEqual(
-            roster["lows_after_meals"]["harm_low_overlap"], [{
-                "habit_subject": "habit:meal_over_delivery",
-                "setting_subject": "setting:carb_ratio",
-                "status": "comparable", "count": 1,
-                "reason": "shared_low_episode_nadir",
-            }],
-        )
-        correction = roster["lows_after_correcting_highs"]
-        self.assertEqual(correction["rate_levers"], [
-            "habit:correction_stacking", "habit:correction_on_iob",
-        ])
-        self.assertEqual(correction["k"], 1)
-        self.assertEqual(correction["harm_low_overlap"], [
-            {"habit_subject": "habit:correction_stacking",
-             "setting_subject": "setting:isf", "status": "comparable",
-             "count": 1, "reason": "shared_low_episode_nadir"},
-            {"habit_subject": "habit:correction_on_iob",
-             "setting_subject": "setting:isf", "status": "comparable",
-             "count": 1, "reason": "shared_low_episode_nadir"},
-        ])
-
-    def test_setting_seriousness_uses_the_admitted_slots_owner_category(self):
-        analysis = {
-            "tuning_levers": [{"parameter": "basal_rate", "priority": 10,
-                               "recurrence_channel": {"kind": "basal_lower"}}],
-            "basal": [_basal_slot(6, 180, Status.HARM_LOWER,
-                                   seriousness="recurring_low")],
-        }
-        overnight = build_outcome_patterns(
-            analysis, {"exposures": {}}, {"patterns": [], "low_confidence": []},
-        )[-1]
-        seriousness_segments = [{
-            "start_min": 180, "end_min": 210,
-            "seriousness": "recurring_low",
-        }]
-        self.assertEqual(overnight["members"][0]["seriousness"], "recurring_low")
-        self.assertEqual(overnight["members"][0]["seriousness_segments"],
-                         seriousness_segments)
-        self.assertEqual(overnight["seriousness"], "recurring_low")
-        self.assertEqual(overnight["settled_price"], 10)
-
-    def test_overnight_setting_admission_is_scoped_to_the_harm_band(self):
-        analysis = {
-            "tuning_levers": [{"parameter": "basal_rate", "priority": 10,
-                               "recurrence_channel": {"kind": "basal_lower"}}],
-            "basal": [
-                _basal_slot(28, 840, Status.LOWER),
-                _basal_slot(12, 180, Status.NO_CHANGE, duration_min=15),
-            ],
-        }
-        overnight = build_outcome_patterns(
-            analysis, {"exposures": {}}, {"patterns": [], "low_confidence": []},
-        )[-1]
-        self.assertFalse(overnight["members"][0]["admitted"])
-        self.assertIsNone(overnight["action"])
-        self.assertEqual(overnight["settled_price"], 0)
-
-        analysis["basal"][1] = _basal_slot(
-            12, 180, Status.LOWER, duration_min=15,
-        )
-        overnight = build_outcome_patterns(
-            analysis, {"exposures": {}}, {"patterns": [], "low_confidence": []},
-        )[-1]
-        self.assertTrue(overnight["members"][0]["admitted"])
-        self.assertEqual(overnight["action"], "basal_rate")
-        self.assertEqual(overnight["settled_price"], 10)
-
     def test_setting_seriousness_fallback_uses_guidance_empty_state(self):
         analysis = {
-            "tuning_levers": [{"parameter": "basal_rate", "priority": 0,
-                               "recurrence_channel": {"kind": "basal_thin"}}],
-            "basal": [{"slot": 0, "asserts_move": False,
-                       "safety_status": "no change", "evidence": {},
-                       "guidance": None}],
+            "tuning_levers": [{"parameter": "carb_ratio", "priority": 0,
+                               "recurrence_channel": {"kind": "ic_runs", "k": 0, "n": 0}}],
+            "ic_blocks": [{"asserts_move": False, "safety_status": "held",
+                           "start_min": 0, "end_min": 1440, "evidence": {},
+                           "guidance": None}],
         }
-        member = build_outcome_patterns(
+        member = next(item for item in build_outcome_patterns(
             analysis, {"exposures": {}}, {"patterns": [], "low_confidence": []},
-        )[-1]["members"][0]
+        )[0]["members"] if item["kind"] == "setting")
         self.assertIsNone(member["seriousness"])
         self.assertEqual(member["seriousness_segments"], [])
 
@@ -344,7 +145,7 @@ class OutcomePatternPolicyTest(unittest.TestCase):
             {"t": "2026-08-01 12:00:00", "cause_lever": "late_bolus",
              "attributed_levers": ["late_bolus"]},
             {"t": "2026-08-01 16:00:00", "cause_lever": None,
-             "attributed_levers": ["meal_bolus_short"]},
+             "attributed_levers": ["carb_undercount"]},
             {"t": "2026-08-01 20:00:00", "cause_lever": None,
              "attributed_levers": []},
         ]}}}
@@ -359,6 +160,6 @@ class OutcomePatternPolicyTest(unittest.TestCase):
         self.assertEqual(credits, {
             "2026-08-01 08:00:00": "carb_undercount",
             "2026-08-01 12:00:00": "late_bolus",
-            "2026-08-01 16:00:00": "meal_bolus_short",
+            "2026-08-01 16:00:00": "carb_undercount",
         })
         self.assertEqual((high["k"], high["n"]), (len(credits), 4))

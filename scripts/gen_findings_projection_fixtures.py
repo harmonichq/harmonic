@@ -150,7 +150,6 @@ def _slot(index, *, current, value=None, lo=None, hi=None, n=0, supported=0,
         recommended, status = apply_harm(current, recommended, status, _SAFETY,
                                          nudge=True, median=value, estimate=estimate)
         evidence["harm"] = {"gated": True, "nudged": True, "band_nights": 2}
-        evidence["harm_band_source_nights"] = 20
     return SlotEstimate(
         slot=index, label=_slot_label(index, SLOT_MINUTES), current=current,
         estimate=estimate, recommended=recommended,
@@ -838,29 +837,27 @@ def browser_window_answers(browser_analysis, browser_exposures, browser_scenario
 
 
 def habit_rate_families():
-    """Each habit lever's evidence-population rate family, or None (ADR 454).
+    """Each habit lever's evidence-population rate family (ADR 454).
 
     The Pattern case producer judges a habit member only when this family is its
     Pattern's; the fixture Pattern mirror reads this frozen table rather than a
     second transcription of it.
     """
-    return {lever.value: (None if policy_for(lever).rate_family is None
-                          else policy_for(lever).rate_family.value) for lever in Lever}
+    return {lever.value: policy_for(lever).recurrence_family.value for lever in Lever}
 
 
 def pattern_family_cases(browser_analysis, browser_exposures, browser_scenarios):
-    """Freeze the Python Pattern case producer over two rosters with an out-of-family
+    """Freeze the Python Pattern case producer over a roster with an out-of-family
     habit member (ADR 454): Correction stacking (correction clusters) under Lows after
-    correcting highs, and High-carb sequence (no rate family) under Highs after meals.
+    correcting highs.
 
-    Each is the browser inputs plus that one scenario Pattern, which is what admits the
-    member. Each entry holds the roster row, the whole clock case and the clock case
+    It is the browser inputs plus that one scenario Pattern, which is what admits the
+    member. The entry holds the roster row, the whole clock case and the clock case
     selected at its first Occurrence, so the fixture mirror can be held to them.
     """
     query = WindowQuery.whole_day()
     result = {}
-    for extra, key in ((Lever.CORRECTION_STACKING, "lows_after_correcting_highs"),
-                       (Lever.HIGH_CARB_SEQUENCE, "highs_after_meals")):
+    for extra, key in ((Lever.CORRECTION_STACKING, "lows_after_correcting_highs"),):
         scenarios = json.loads(json.dumps(browser_scenarios))
         scenarios["patterns"].append(Pattern(
             lever=extra, confidence=Confidence(n=40, k=5, effect=0.3), rank=5,
@@ -871,7 +868,7 @@ def pattern_family_cases(browser_analysis, browser_exposures, browser_scenarios)
         )
         roster_row = next(row for row in prepared._outcome_patterns if row["key"] == key)
         assert f"habit:{extra.value}" in {member["subject"] for member in roster_row["members"]}, key
-        assert policy_for(extra).rate_family is not pattern_rate_family(roster_row), key
+        assert policy_for(extra).recurrence_family is not pattern_rate_family(roster_row), key
         cases = _pattern_cases(query, prepared.project(
             query, analysis_generation=ANALYSIS_GENERATION), browser_exposures)
         clock = cases.case(f"pattern:{key}", "clock", None)
@@ -894,53 +891,6 @@ def pattern_clock_case(browser_analysis, browser_exposures, browser_scenarios):
     finding_id = "pattern:highs_after_meals"
     case = prepared.case(finding_id, "clock", None)
     return prepared.case(finding_id, "clock", case["occurrences"][0]["id"])
-
-
-def sequence_cases() -> dict:
-    """Freeze public QA producers and explicit-witness transport edge cases."""
-    from copy import deepcopy
-    from scripts.qa_e2e_cases import QA_CASES, materialize_case, execute_case
-    from ciq_autotune.store import Store
-
-    result = {}
-    for case in QA_CASES:
-        if not case.name.startswith(("high-carb-sequence-", "repeat-eating-")):
-            continue
-        with Store.open(":memory:") as store:
-            materialize_case(store, case)
-            execution = execute_case(store, case)
-            execution.analysis["generated_at"] = store.cgm_readings()[-1].t.strftime("%Y-%m-%d %H:%M:%S")
-        inputs = {
-            "analysis": execution.analysis, "exposures": execution.exposures,
-            "scenarios": execution.scenarios,
-            "outcome_patterns": execution.outcome_patterns,
-            "analysis_generation": "qa:0",
-        }
-        variants = {case.name: inputs}
-        if case.name.endswith("-empty"):
-            # Transport faults exercise the projection's missing-witness rule;
-            # support, ownership and cohorts remain the real producers' output.
-            for variant in ("missing-witness", "null-witness", "midnight-witness"):
-                changed = deepcopy(inputs)
-                for evidence in changed["exposures"]["sequence_evidence"].values():
-                    for occurrence in evidence["occurrences"]:
-                        if variant == "missing-witness":
-                            occurrence.pop("outcome_minute", None)
-                        else:
-                            occurrence["outcome_minute"] = 0 if variant == "midnight-witness" else None
-                variants[case.name.removesuffix("empty") + variant] = changed
-        for name, source in variants.items():
-            projection = prepare_findings_projection(
-                analysis=source["analysis"], exposures=source["exposures"],
-                scenarios=source["scenarios"],
-            )
-            result[name] = {"inputs": source, "windows": {
-                name: projection.project(
-                    WindowQuery.whole_day() if bounds is None else WindowQuery.clock(*bounds),
-                    analysis_generation="qa:0",
-                ) for name, bounds in WINDOWS.items()
-            }}
-    return result
 
 
 def payload() -> dict:
@@ -1150,10 +1100,6 @@ def main() -> int:
          patch("ciq_autotune.analyzers.scenario.build_scenarios", forbidden), \
          patch("ciq_autotune.explore_exposures.build_exposures", forbidden):
         body = payload()
-    # The legacy fixture forbids broad builders; these new event-grounded cases
-    # deliberately exercise that production composition over isolated QA stores.
-    from scripts.gen_eating_sequence_fixtures import compact_findings_payload
-    body["sequence_cases"] = compact_findings_payload({"states": sequence_cases()})
     text = json.dumps(body, indent=1, sort_keys=True, ensure_ascii=False) + "\n"
     if args.check:
         current = OUT.read_text() if OUT.exists() else ""

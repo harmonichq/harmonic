@@ -28,7 +28,6 @@
      "insulin_acting": 0,
      "other": 1
     },
-    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -3258,7 +3257,6 @@
      "insulin_acting": 0,
      "other": 1
     },
-    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -6518,7 +6516,6 @@
      "insulin_acting": 0,
      "other": 1
     },
-    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -9808,7 +9805,6 @@
      "insulin_acting": 0,
      "other": 0
     },
-    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -13210,7 +13206,6 @@
      "insulin_acting": 0,
      "other": 0
     },
-    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -16612,7 +16607,6 @@
      "insulin_acting": 0,
      "other": 0
     },
-    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -20014,7 +20008,6 @@
      "insulin_acting": 0,
      "other": 0
     },
-    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -23416,7 +23409,6 @@
      "insulin_acting": 0,
      "other": 0
     },
-    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -26818,7 +26810,6 @@
      "insulin_acting": 0,
      "other": 0
     },
-    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -30220,7 +30211,6 @@
      "insulin_acting": 0,
      "other": 0
     },
-    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -33622,7 +33612,6 @@
      "insulin_acting": 0,
      "other": 0
     },
-    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -37024,7 +37013,6 @@
      "insulin_acting": 0,
      "other": 0
     },
-    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -40426,7 +40414,6 @@
      "insulin_acting": 0,
      "other": 0
     },
-    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -43828,7 +43815,6 @@
      "insulin_acting": 0,
      "other": 0
     },
-    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -47230,7 +47216,6 @@
      "insulin_acting": 0,
      "other": 0
     },
-    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -50632,7 +50617,6 @@
      "insulin_acting": 0,
      "other": 0
     },
-    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -54034,7 +54018,6 @@
      "insulin_acting": 30,
      "other": 0
     },
-    "harm_band_source_nights": 30,
     "night_roster": [],
     "points": [],
     "roster_glucose_mean": null
@@ -54074,7 +54057,6 @@
      "insulin_acting": 30,
      "other": 0
     },
-    "harm_band_source_nights": 30,
     "night_roster": [],
     "points": [],
     "roster_glucose_mean": null
@@ -54114,7 +54096,6 @@
      "insulin_acting": 30,
      "other": 0
     },
-    "harm_band_source_nights": 30,
     "night_roster": [],
     "points": [],
     "roster_glucose_mean": null
@@ -54154,7 +54135,6 @@
      "insulin_acting": 30,
      "other": 0
     },
-    "harm_band_source_nights": 30,
     "night_roster": [],
     "points": [],
     "roster_glucose_mean": null
@@ -54194,7 +54174,6 @@
      "insulin_acting": 30,
      "other": 0
     },
-    "harm_band_source_nights": 30,
     "night_roster": [],
     "points": [],
     "roster_glucose_mean": null
@@ -54234,7 +54213,6 @@
      "insulin_acting": 0,
      "other": 0
     },
-    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -57636,7 +57614,6 @@
      "insulin_acting": 0,
      "other": 0
     },
-    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -61038,7 +61015,6 @@
      "insulin_acting": 0,
      "other": 0
     },
-    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -64440,7 +64416,6 @@
      "insulin_acting": 0,
      "other": 0
     },
-    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -67842,7 +67817,6 @@
      "insulin_acting": 30,
      "other": 0
     },
-    "harm_band_source_nights": 30,
     "night_roster": [],
     "points": [],
     "roster_glucose_mean": null
@@ -67882,7 +67856,6 @@
      "insulin_acting": 30,
      "other": 0
     },
-    "harm_band_source_nights": 30,
     "night_roster": [],
     "points": [],
     "roster_glucose_mean": null
@@ -67922,7 +67895,6 @@
      "insulin_acting": 30,
      "other": 0
     },
-    "harm_band_source_nights": 30,
     "night_roster": [],
     "points": [],
     "roster_glucose_mean": null
@@ -67962,7 +67934,6 @@
      "insulin_acting": 30,
      "other": 0
     },
-    "harm_band_source_nights": 30,
     "night_roster": [],
     "points": [],
     "roster_glucose_mean": null
@@ -68002,7 +67973,6 @@
      "insulin_acting": 30,
      "other": 0
     },
-    "harm_band_source_nights": 30,
     "night_roster": [],
     "points": [],
     "roster_glucose_mean": null
@@ -68042,7 +68012,6 @@
      "insulin_acting": 0,
      "other": 0
     },
-    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -71444,7 +71413,6 @@
      "insulin_acting": 0,
      "other": 0
     },
-    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -74846,7 +74814,6 @@
      "insulin_acting": 0,
      "other": 0
     },
-    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -78248,7 +78215,6 @@
      "insulin_acting": 0,
      "other": 0
     },
-    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -81650,7 +81616,6 @@
      "insulin_acting": 0,
      "other": 0
     },
-    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -85052,7 +85017,6 @@
      "insulin_acting": 0,
      "other": 0
     },
-    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -88454,7 +88418,6 @@
      "insulin_acting": 0,
      "other": 0
     },
-    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -91856,7 +91819,6 @@
      "insulin_acting": 30,
      "other": 0
     },
-    "harm_band_source_nights": 30,
     "night_roster": [],
     "points": [],
     "roster_glucose_mean": null
@@ -91896,7 +91858,6 @@
      "insulin_acting": 30,
      "other": 0
     },
-    "harm_band_source_nights": 30,
     "night_roster": [],
     "points": [],
     "roster_glucose_mean": null
@@ -91936,7 +91897,6 @@
      "insulin_acting": 30,
      "other": 0
     },
-    "harm_band_source_nights": 30,
     "night_roster": [],
     "points": [],
     "roster_glucose_mean": null
@@ -91976,7 +91936,6 @@
      "insulin_acting": 30,
      "other": 0
     },
-    "harm_band_source_nights": 30,
     "night_roster": [],
     "points": [],
     "roster_glucose_mean": null
@@ -92016,7 +91975,6 @@
      "insulin_acting": 30,
      "other": 0
     },
-    "harm_band_source_nights": 30,
     "night_roster": [],
     "points": [],
     "roster_glucose_mean": null
@@ -92056,7 +92014,6 @@
      "insulin_acting": 0,
      "other": 0
     },
-    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -95458,7 +95415,6 @@
      "insulin_acting": 0,
      "other": 0
     },
-    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -98860,7 +98816,6 @@
      "insulin_acting": 0,
      "other": 0
     },
-    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -102262,7 +102217,6 @@
      "insulin_acting": 0,
      "other": 1
     },
-    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -105552,7 +105506,6 @@
      "insulin_acting": 0,
      "other": 1
     },
-    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -108842,7 +108795,6 @@
      "insulin_acting": 0,
      "other": 1
     },
-    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",

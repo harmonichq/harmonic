@@ -1,44 +1,91 @@
-## MODIFIED Requirements
+## REMOVED Requirements
+
+### Requirement: Eating windows and eating sequences have one pinned construction rule
+
+**Reason:** ADR 499 cuts this from the engine at the operator's direction ("Drop these from the engine."). The whole eating-sequence detector and its report are deleted.
+
+**Migration:** Issue #501 — a future Overview report card comparing carbs with the post-meal response.
+
+### Requirement: Measured intervals have explicit eligibility and exclusion counts
+
+**Reason:** ADR 499 cuts this from the engine at the operator's direction ("Drop these from the engine."). The whole eating-sequence detector and its report are deleted.
+
+**Migration:** Issue #501 — a future Overview report card comparing carbs with the post-meal response.
+
+### Requirement: The report uses only the pinned intervals and scopes
+
+**Reason:** ADR 499 cuts this from the engine at the operator's direction ("Drop these from the engine."). The whole eating-sequence detector and its report are deleted.
+
+**Migration:** Issue #501 — a future Overview report card comparing carbs with the post-meal response.
+
+### Requirement: Interval metrics aggregate qualifying sequences by median
+
+**Reason:** ADR 499 cuts this from the engine at the operator's direction ("Drop these from the engine."). The whole eating-sequence detector and its report are deleted.
+
+**Migration:** Issue #501 — a future Overview report card comparing carbs with the post-meal response.
+
+### Requirement: Carb quintiles are deterministic and user-relative
+
+**Reason:** ADR 499 cuts this from the engine at the operator's direction ("Drop these from the engine."). The whole eating-sequence detector and its report are deleted.
+
+**Migration:** Issue #501 — a future Overview report card comparing carbs with the post-meal response.
+
+### Requirement: Insufficient evidence remains visible and non-concluding
+
+**Reason:** ADR 499 cuts this from the engine at the operator's direction ("Drop these from the engine."). The whole eating-sequence detector and its report are deleted.
+
+**Migration:** Issue #501 — a future Overview report card comparing carbs with the post-meal response.
+
+### Requirement: The separately versioned report is aggregate-only and complete
+
+**Reason:** ADR 499 cuts this from the engine at the operator's direction ("Drop these from the engine."). The whole eating-sequence detector and its report are deleted.
+
+**Migration:** Issue #501 — a future Overview report card comparing carbs with the post-meal response.
+
+### Requirement: Eating-sequence reporting is outside the tuning and safety paths
+
+**Reason:** ADR 499 cuts this from the engine at the operator's direction ("Drop these from the engine."). The whole eating-sequence detector and its report are deleted.
+
+**Migration:** Issue #501 — a future Overview report card comparing carbs with the post-meal response.
 
 ### Requirement: Store-facing report construction shares Diagnose's source window
 
-The eating-sequences module SHALL expose
-`build_report(boluses, cgm, carb_log, *, window_start, window_end, config)` as a
-pure event-list entry returning `EatingSequenceReport`. The served report SHALL be
-the report of the scenario evaluation behind the exposures payload, carried on that
-payload as `sequence_report`, so that it and the sequence evidence beside it are one
-evaluation (ADR 488). No served path SHALL rebuild the report from the store with
-other inputs. That evaluation reads basal solely to derive `span_end`, never as a
-modeling input. Its `span_end` SHALL be the latest basal-or-CGM timestamp, and its
-start SHALL be `span_end - timedelta(days=window_days)`, matching `build_scenarios`.
-It SHALL slice the bolus, CGM and Carb-log streams to `[start, span_end]` (both ends
-inclusive, the same predicate as Scenario's `_slice`), and SHALL read only the
-Carb-log entries already recorded at `span_end`. `build_report` SHALL treat the
-lists it receives as complete window content and SHALL construct no sequence from
-an event outside `[window_start, window_end]`.
+**Reason:** ADR 499 cuts this from the engine at the operator's direction ("Drop these from the engine."). The whole eating-sequence detector and its report are deleted.
 
-#### Scenario: Store wrapper reports the same fixed source bounds as Diagnose
+**Migration:** Issue #501 — a future Overview report card comparing carbs with the post-meal response.
 
-- **GIVEN** a store with CGM history
-- **WHEN** the exposures payload is built with the fixed Diagnose window
-- **THEN** its report window ends at the latest basal-or-CGM timestamp
-- **AND** its start is exactly thirty days earlier
+### Requirement: High-carb findings are supported aggregate associations only
 
-#### Scenario: A basal delivery later than the last CGM reading sets the window end
+**Reason:** ADR 499 cuts this from the engine at the operator's direction ("Drop these from the engine."). The whole eating-sequence detector and its report are deleted.
 
-- **GIVEN** a store whose latest basal delivery is later than its latest CGM reading
-- **WHEN** the exposures payload is built
-- **THEN** its report window ends at that basal delivery
+**Migration:** Issue #501 — a future Overview report card comparing carbs with the post-meal response.
 
-#### Scenario: Events before the source window build no sequence
+### Requirement: Served eating-sequence evidence is generated and parity-checked
 
-- **GIVEN** otherwise qualifying bolus, CGM, and Carb-log events before the source window
-- **WHEN** the served report is prepared
-- **THEN** those events produce no eating sequence
+**Reason:** ADR 499 cuts this from the engine at the operator's direction ("Drop these from the engine."). The whole eating-sequence detector and its report are deleted.
 
-#### Scenario: A carb entry logged after the window end excludes no sequence
+**Migration:** Issue #501 — a future Overview report card comparing carbs with the post-meal response.
 
-- **GIVEN** a Carb-log entry inside a highest-carb sequence's selected period, recorded after the latest reading
-- **WHEN** the Finding case files are prepared
-- **THEN** the served report and the high-carb sequence evidence count the same sequences
-- **AND** neither excludes that sequence for Carb-log contamination
+### Requirement: Repeat-eating amplifier compares matched carb cohorts
+
+**Reason:** ADR 499 cuts this from the engine at the operator's direction ("Drop these from the engine."). The whole eating-sequence detector and its report are deleted.
+
+**Migration:** Issue #501 — a future Overview report card comparing carbs with the post-meal response.
+
+### Requirement: Both detectors share eligibility and exclusions
+
+**Reason:** ADR 499 cuts this from the engine at the operator's direction ("Drop these from the engine."). The whole eating-sequence detector and its report are deleted.
+
+**Migration:** Issue #501 — a future Overview report card comparing carbs with the post-meal response.
+
+### Requirement: Sequence findings share one eligible occurrence population with their report
+
+**Reason:** ADR 499 cuts this from the engine at the operator's direction ("Drop these from the engine."). The whole eating-sequence detector and its report are deleted.
+
+**Migration:** Issue #501 — a future Overview report card comparing carbs with the post-meal response.
+
+### Requirement: Served summary precision preserves report values
+
+**Reason:** ADR 499 cuts this from the engine at the operator's direction ("Drop these from the engine."). The whole eating-sequence detector and its report are deleted.
+
+**Migration:** Issue #501 — a future Overview report card comparing carbs with the post-meal response.

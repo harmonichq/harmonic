@@ -281,14 +281,11 @@ def _seed_missing_baseline_trial(path):
         }])
 
 
-def _seed_missing_prior_basal_trial(path):
-    """A slot-present, non-uniform basal switch — ``before``/``after`` come back
-    ``None`` from ``diff_profiles`` because the changed slots moved to different
-    values, so no single prior setting exists to prefill. Unlike a slot-scoped I:C
-    move, a basal switch candidate isn't dropped by the block-I:C carve-out, so it
-    reaches the roster and exercises ``_prior_plan_route``'s slot-present,
-    before-is-``None`` branch (finding 4 — the block-ic rewrite repurposed the
-    original carb_ratio fixture for this branch, dropping the coverage).
+def _seed_two_block_basal_switch(path):
+    """A partial-day basal switch that moves two blocks to different values.
+
+    ``diff_profiles`` names no single prior setting for it, but the two settings
+    reads either side record each block's own before and after (#500).
     """
     with Store.open(path) as store:
         old = ProfileSettings(
@@ -504,12 +501,27 @@ class VerifyTrialsApiTest(unittest.TestCase):
         })
         self.assertNotIn("draft", detail["plan_route"])
 
+    def test_a_switch_moving_two_blocks_is_a_trial_per_block_with_its_own_prior(self):
+        # Each block the switch moved is its own Trial whose prior setting the
+        # read before the switch recorded, so each stages its own prior (#500).
+        _seed_two_block_basal_switch(self.tmp.name)
+        trials = sorted(self.client.get("/api/verify/trials").json()["trials"],
+                        key=lambda row: row["slot"])
+        self.assertEqual([(row["slot"], row["before"], row["after"]) for row in trials],
+                         [("00:00", 0.6, 0.8), ("12:00", 0.6, 0.9)])
+        for row, start in zip(trials, (0, 720)):
+            detail = self.client.get(
+                "/api/verify/trials", params={"selected": row["id"]},
+            ).json()["selected"]
+            self.assertEqual(detail["plan_route"]["mode"], "stage-prior")
+            self.assertEqual(detail["plan_route"]["draft"]["items"],
+                             [{"type": "basal", "start_min": start, "value": 0.6}])
+
     def test_missing_prior_setting_routes_to_manual_plan_review_without_a_prefill(self):
-        # A slot-present but non-uniform switch (a partial-day basal move to two
-        # different values) carries no single prior setting `diff_profiles` can name,
-        # so `_prior_plan_route`'s `before is None` branch must fall back to
-        # manual-review rather than inventing a value to stage (finding 4).
-        _seed_missing_prior_basal_trial(self.tmp.name)
+        # A retained slotted record with no prior setting (one an earlier build
+        # saved) falls back to manual review rather than inventing a value to
+        # stage (finding 4).
+        _seed_retained_trials(self.tmp.name, [("basal_rate", "00:00", "2026-06-05 09:00:00", None, None)])
         trial_id = self.client.get("/api/verify/trials").json()["trials"][0]["id"]
 
         detail = self.client.get(
@@ -521,16 +533,18 @@ class VerifyTrialsApiTest(unittest.TestCase):
         self.assertEqual(detail["plan_route"]["mode"], "manual-review")
         self.assertNotIn("draft", detail["plan_route"])
 
-    def test_uncorroborated_block_ic_change_is_not_admitted(self):
-        # A slot-scoped I:C switch (here a non-uniform multi-block move) with no
-        # corroborating annotated Plan group fails closed under #581: it no longer
-        # surfaces general, non-isolated evidence — it produces no roster entry.
+    def test_a_carb_ratio_switch_without_a_plan_is_a_trial_per_block(self):
+        # A non-uniform multi-block I:C switch with no Plan behind it is one
+        # block-bound Trial per block it moved (#500), never thrown away.
         _seed_missing_baseline_trial(self.tmp.name)
 
-        response = self.client.get("/api/verify/trials")
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual({key: response.json()[key] for key in ("trials", "selected")},
-                         {"trials": [], "selected": None})
+        trials = sorted(self.client.get("/api/verify/trials").json()["trials"],
+                        key=lambda row: row["slot"])
+        self.assertEqual([(row["parameter"], row["slot"], row["before"], row["after"]) for row in trials],
+                         [("carb_ratio", "12:00", 5.0, 4.6), ("carb_ratio", "15:00", 5.0, 4.4)])
+        blocks = [self.client.get("/api/verify/trials", params={"selected": row["id"]})
+                  .json()["selected"]["meal_arcs"]["block"] for row in trials]
+        self.assertEqual(blocks, [[720, 900], [900, 0]])
 
     def test_exact_baseline_revert_does_not_become_a_roster_record(self):
         _seed_raw_candidates(self.tmp.name, revert=True)

@@ -37,7 +37,7 @@ BLOCK_EVIDENCE = (
 JUDGED = {
     "meal": {"carb_undercount", "late_bolus", "meal_over_delivery"},
     "low": {"over_treated_low", "correction_on_iob"},
-    "high": {"missed_meal", "meal_bolus_short"},
+    "high": {"missed_meal"},
     "correction": {"correction_stacking"},
 }
 KIND_FOR_FAMILY = {family: kind for kind, family in _FAMILY_FOR_KIND.items()}

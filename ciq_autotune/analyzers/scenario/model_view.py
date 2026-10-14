@@ -40,7 +40,7 @@ from ..scenario_config import ScenarioConfig
 from .anchors import Anchor, AnchorKind
 from .attribute import AnchorVerdict, LowPromptAnswer, attribute
 from .levers import Lever, title as lever_title
-from .evaluation import evaluate, SEQUENCE_LEVERS
+from .evaluation import evaluate
 from .severity import worst_bg
 
 _FMT = "%Y-%m-%d %H:%M:%S"
@@ -116,7 +116,7 @@ def _anchor_facts(anchor: Anchor) -> Tuple[Optional[float], Optional[float], Opt
 
 def _is_driver(anchor: Anchor, attr) -> bool:
     """Is this anchor the episode's lever driver? (trigger_t sits at ``t`` or the rise onset.)"""
-    if attr.lever is None or attr.lever in SEQUENCE_LEVERS:
+    if attr.lever is None:
         return False
     if (
         attr.lever is Lever.CORRECTION_STACKING
@@ -195,14 +195,6 @@ def _build_episode_view(
         # (unlevered) episode. Each step is {t, text, evidence_tier, …}.
         "steps": [s.to_dict() for s in attr.steps],
         "anchors": anchor_dicts,
-        **({"evaluation_id": evaluated.id,
-            "bounded_start": _fmt(evaluated.start), "bounded_end": _fmt(evaluated.end),
-            "occurrence_id": evaluated.occurrence_id,
-            "outcome_minute": (evaluated.outcome_t.hour * 60 + evaluated.outcome_t.minute
-                               if evaluated.outcome_t is not None else None),
-            "candidates": [{**c.to_dict(), "state": "fired" if c.lever is attr.lever else "outranked"}
-                           for c in evaluated.candidates]}
-           if evaluated is not None and any(c.sequence is not None for c in evaluated.candidates) else {}),
     }
 
 
@@ -215,7 +207,6 @@ def assemble_model_view(
     isf: Optional[float] = None,
     scenario_config: ScenarioConfig = ScenarioConfig(),
     low_answers: Sequence[LowPromptAnswer] = (),
-    carb_entries=(),
     evaluated=None,
 ) -> dict:
     """The per-day model-view payload for ``target`` — the pure core (event lists in, dict out).
@@ -228,8 +219,7 @@ def assemble_model_view(
     so the chart shows it.
     """
     evaluated = evaluated or evaluate(bolus_events, cgm_readings, basal_events, isf=isf,
-                                      scenario_config=scenario_config, low_answers=low_answers,
-                                      carb_entries=carb_entries)
+                                      scenario_config=scenario_config, low_answers=low_answers)
     episodes = []
     for idx, item in enumerate(evaluated.episodes):
         if item.anchors.end.date() != target:
@@ -313,16 +303,15 @@ def build_model_view(
         snaps, settings_start, settings_end,
     )
 
-    # Sequence comparison and prices use the fixed current Diagnose source window,
-    # even though this consumer displays one day. A day outside that source window
-    # keeps its historical local attribution and cannot acquire a sequence finding.
+    # Attribution uses the fixed current Diagnose source window, even though this
+    # consumer displays one day. A day outside that source window keeps its
+    # historical local attribution.
     all_basal = store.basal_events()
     source_times = [r.t for r in all_cgm] + [b.t for b in all_basal]
     source_end = max(source_times, default=day_start)
     source_start = source_end - timedelta(days=30)
     source_evaluation = None
     if source_start.date() <= target <= source_end.date():
-        from ...rescue_evidence import eligible_carb_entries
         all_bolus = store.bolus_events()
         isf = _effective_isf(all_bolus, all_basal, all_cgm, snaps, source_start, source_end)
         source_evaluation = evaluate(
@@ -330,14 +319,12 @@ def build_model_view(
             drop_readings(_slice(all_cgm, source_start, source_end), fl_spans),
             _slice(all_basal, source_start, source_end), isf=isf,
             low_answers=low_prompt_answers(store, source_start, source_end),
-            carb_entries=_slice(eligible_carb_entries(store.carb_entries(), source_end), source_start, source_end),
             window_start=source_start, window_end=source_end,
         )
 
     day = assemble_model_view(
         bolus, cgm, basal,
-        target=target, isf=isf, low_answers=low_answers,
-        carb_entries=store.carb_entries(win_start, win_end), evaluated=source_evaluation,
+        target=target, isf=isf, low_answers=low_answers, evaluated=source_evaluation,
     )
 
     # Carb-log exclusion spans over the assembled window — the Day surface reads

@@ -44,7 +44,8 @@ type Layout = 'phone' | 'desktop';
 export type ChangesScreenProps = {
   layout: Layout;
   store: ChangesStore;
-  state?: 'ready' | 'loading' | 'unavailable';
+  /** `stale`: its answers are an earlier read's, since reading them again failed (§2.5, 2026-10-14). */
+  state?: 'ready' | 'loading' | 'unavailable' | 'stale';
   /** What ending the active change serves: the store read after it. */
   end?: { after: ChangesStore };
   /** Start with the End confirmation open. */
@@ -88,12 +89,12 @@ export function ChangesScreen({
   const [notSaved, setNotSaved] = useState(false);
   const root = useMotionGate<HTMLDivElement>();
   const shown = ended && end ? end.after : store;
-  const ready = state === 'ready';
+  const ready = state === 'ready' || state === 'stale';
   const active: ChangeData = ready ? change(shown) : { kind: 'none' };
   const last = ready ? lastChange(shown) : null;
   // The confirmation and the last change's card stay while they close; the
   // confirmation keeps the change it asked about.
-  const asked = usePresence(asking && state === 'ready');
+  const asked = usePresence(asking && ready);
   const askedAbout = useRef(active);
   if (asking) askedAbout.current = active;
   const lastCard = usePresence(lastExpanded);
@@ -116,7 +117,7 @@ export function ChangesScreen({
     return () => window.removeEventListener('keydown', onKey);
   });
 
-  const header = state === 'unavailable'
+  const header = state === 'unavailable' || state === 'stale'
     ? <ScreenHeader title="Changes" trailing="unavailable" layout={layout} onRetry={onRetry} />
     : <ScreenHeader title="Changes" layout={layout} />;
 
@@ -128,7 +129,7 @@ export function ChangesScreen({
 
   const content = state === 'loading'
     ? <span className="ui-skeleton ui-changes__skeleton" aria-hidden="true" />
-    : state === 'ready' && (
+    : ready && (
       <>
         <ChangeCard data={active} onEnd={() => setAsking(true)} confirm={popover} />
         {last && (

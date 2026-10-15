@@ -54,7 +54,8 @@ type Layout = 'phone' | 'desktop';
 export type QueueScreenProps = {
   layout: Layout;
   store: QueueStore;
-  state?: 'ready' | 'loading' | 'unavailable';
+  /** `stale`: its answers are an earlier read's, since reading them again failed (§2.5, 2026-10-14). */
+  state?: 'ready' | 'loading' | 'unavailable' | 'stale';
   /** The item open first; the top of the ranking when unset. */
   open?: string;
   view?: 'queue' | 'snoozed';
@@ -151,7 +152,7 @@ export function QueueScreen({
   const go = (to: typeof view) => { setExpanded(undefined); setView(to); };
   const push = view === 'snoozed' ? 'forward' : 'back';
   const shown = snoozedNow && snooze ? snooze.after : store;
-  const ready = state === 'ready';
+  const ready = state === 'ready' || state === 'stale';
   // Live: the items a snooze or restore in flight has taken out, the Pin in
   // flight, and the live bar.
   const [hidden, setHidden] = useState<ReadonlySet<string>>(new Set());
@@ -228,7 +229,7 @@ export function QueueScreen({
     return () => window.removeEventListener('keydown', onKey);
   });
 
-  const header = state === 'unavailable'
+  const header = state === 'unavailable' || (state === 'stale' && view === 'queue')
     ? <ScreenHeader key={view} title="Queue" trailing="unavailable" layout={layout} onRetry={onRetry} />
     : view === 'snoozed'
       ? <ScreenHeader key={view} title="Snoozed" layout={layout} back={{ label: 'Queue', onBack: () => go('queue') }} />

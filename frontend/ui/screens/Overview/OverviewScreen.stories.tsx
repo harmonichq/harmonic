@@ -8,7 +8,7 @@ import { OverviewScreen, type OverviewScreenProps } from './OverviewScreen';
 //   selected against the 30 days before; 90 d selected, whose previous 90 days
 //   the 84-day history does not reach: the span alone, no changes.
 // - No data: the unsynced store, which serves every metric as null.
-// - Loading, and Unavailable.
+// - Loading, and Unavailable; Stale, the last answers under Unavailable.
 // Plays per size: choosing 30 d shows that window's metrics, profile and ISF
 // estimate; each window's date line and changes name the period before it, or
 // none; and the page scrolls as one, the summary first, the ISF estimate below.
@@ -56,6 +56,10 @@ export const LoadingPhone = story('phone', { store: 'wearer', state: 'loading' }
 export const LoadingDesktop = story('desktop', { store: 'wearer', state: 'loading' });
 export const UnavailablePhone = story('phone', { store: 'wearer', state: 'unavailable' });
 export const UnavailableDesktop = story('desktop', { store: 'wearer', state: 'unavailable' });
+// Stale (§2.5, 2026-10-14): the last answers, kept on screen under Unavailable
+// and Retry, when reading them again failed.
+export const StalePhone = story('phone', { store: 'wearer', state: 'stale' });
+export const StaleDesktop = story('desktop', { store: 'wearer', state: 'stale' });
 
 /** The page scrolls as one: the summary fills the first screen (the profile
  *  ends inside it), the ISF estimate follows, and scrolled to the end the

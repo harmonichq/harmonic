@@ -624,6 +624,7 @@ class Store:
         self._follow_up_frontier_written = False
         self._follow_up_new_frontier_at = None
         self._follow_up_resolved_focuses = set()
+        self._snapshots_memo = None
         self.conn.row_factory = sqlite3.Row
         # ON DELETE CASCADE (prompt_responses -> carb_entries, #125) needs
         # foreign-key enforcement, which SQLite leaves off per-connection by
@@ -1093,6 +1094,25 @@ class Store:
         ).fetchone()
         return parse_t(row["latest"]) if row["latest"] is not None else None
 
+    def latest_data_instant(self) -> Optional[datetime]:
+        """The most recent data instant: basal, CGM, bolus and settings captures.
+
+        The ``now`` the follow-up reads and writes use (the API and the ingestion
+        reconcile alike). One scalar query: every stored instant is text in the one
+        format :func:`~ciq_autotune.events.parse_t` reads, so the text maximum is
+        the latest instant, and no event stream is materialized to find it. The
+        Outcomes trend's anchor counts no settings capture
+        (``outcomes_trend.trend_watched_change``, #447), so the two can differ.
+        """
+        row = self.conn.execute(
+            "SELECT MAX(t) AS latest FROM ("
+            "SELECT MAX(t) AS t FROM basal_events UNION ALL "
+            "SELECT MAX(t) AS t FROM cgm_readings UNION ALL "
+            "SELECT MAX(t) AS t FROM bolus_events UNION ALL "
+            "SELECT MAX(captured_at) AS t FROM profile_settings)"
+        ).fetchone()
+        return parse_t(row["latest"]) if row["latest"] is not None else None
+
     def latest_server_stamp(self) -> Optional[datetime]:
         """The latest stored pump-read capture, recorded Plan or Focus pin.
 
@@ -1114,9 +1134,18 @@ class Store:
 
     def settings_snapshots(self) -> List[Snapshot]:
         """Every settings snapshot, oldest first, grouped back into typed
-        :class:`~ciq_autotune.settings.Snapshot` objects (one per fetch)."""
-        return self._snapshots_from(self.conn.execute(
-            "SELECT * FROM profile_settings ORDER BY captured_at, idp").fetchall())
+        :class:`~ciq_autotune.settings.Snapshot` objects (one per fetch).
+
+        One request reads them several times over a history of thousands of rows,
+        so the parse is kept for this connection until the database changes: a
+        commit by any other connection advances ``PRAGMA data_version``, and this
+        connection's own writes advance ``total_changes``."""
+        stamp = (self.conn.execute("PRAGMA data_version").fetchone()[0],
+                 self.conn.total_changes)
+        if self._snapshots_memo is None or self._snapshots_memo[0] != stamp:
+            self._snapshots_memo = (stamp, self._snapshots_from(self.conn.execute(
+                "SELECT * FROM profile_settings ORDER BY captured_at, idp").fetchall()))
+        return list(self._snapshots_memo[1])
 
     def latest_settings_snapshot(self) -> Optional[Snapshot]:
         """The newest settings snapshot, parsed alone. The table holds one row
@@ -1133,10 +1162,16 @@ class Store:
         for r in rows:
             by_capture.setdefault(r["captured_at"], []).append(r)
             active_by_capture[r["captured_at"]] = r["active_idp"]
-        snaps: List[Snapshot] = []
-        for cap, group in by_capture.items():
-            profiles = tuple(
-                ProfileSettings(
+        # Every hourly fetch stores the profiles again, mostly unchanged, so one
+        # parse serves every identical row. The parsed values are frozen.
+        parsed_profiles: "dict[tuple, ProfileSettings]" = {}
+        parsed_sleep: "dict[Optional[str], tuple]" = {}
+
+        def profile(r) -> ProfileSettings:
+            key = (r["idp"], r["name"], r["dia_min"], r["carb_entry"], r["max_bolus"],
+                   r["segments_json"])
+            if key not in parsed_profiles:
+                parsed_profiles[key] = ProfileSettings(
                     idp=r["idp"], name=r["name"], dia_min=r["dia_min"],
                     carb_entry=bool(r["carb_entry"]), max_bolus=r["max_bolus"],
                     segments=tuple(
@@ -1145,15 +1180,20 @@ class Store:
                         for s in json.loads(r["segments_json"])
                     ),
                 )
-                for r in group
-            )
+            return parsed_profiles[key]
+
+        snaps: List[Snapshot] = []
+        for cap, group in by_capture.items():
+            profiles = tuple(profile(r) for r in group)
             # Pump-wide sleep schedules are the same on every row; read the first.
             raw_ciq = group[0]["control_iq_json"] if "control_iq_json" in group[0].keys() else None
-            sleep = tuple(
-                SleepSchedule(start_min=int(s[0]), end_min=int(s[1]),
-                              active_days=tuple(s[2]))
-                for s in json.loads(raw_ciq or "[]")
-            )
+            if raw_ciq not in parsed_sleep:
+                parsed_sleep[raw_ciq] = tuple(
+                    SleepSchedule(start_min=int(s[0]), end_min=int(s[1]),
+                                  active_days=tuple(s[2]))
+                    for s in json.loads(raw_ciq or "[]")
+                )
+            sleep = parsed_sleep[raw_ciq]
             snaps.append(Snapshot(
                 captured_at=parse_t(cap),
                 settings=PumpSettings(active_idp=active_by_capture[cap],

@@ -31,6 +31,14 @@
 // snooze bar dates from the served decision time, and Undo restores the item.
 // A write that fails puts the item back as it was, with "Not saved" and Retry
 // in the bar.
+//
+// Done (#518) is a Setting card's primary, where Pin sits on a Pattern card:
+// it takes the card out of the Queue at once and the bar reads "Waiting for
+// pump" with Undo (⌘Z on desktop), which puts it back. Snooze stays the text
+// action beneath it, and on the phone the row's swipe stays Snooze. A card the
+// engine serves back after a sync found the setting unchanged carries the Not
+// on pump pill, on its row and its card. In a story, Done shows the `done.after`
+// store, as Snooze shows `snooze.after`.
 import { useEffect, useState } from 'react';
 import type { Sourced } from '../../answers';
 import { sourced } from '../../answers';
@@ -65,6 +73,8 @@ export type QueueScreenProps = {
   snooze?: { subject: string; after: QueueStore; until: Sourced<string> };
   /** Start just after that snooze, with the bar showing. */
   justSnoozed?: boolean;
+  /** What a Done on `subject`'s Setting card serves: the store read after it (#518). */
+  done?: { subject: string; after: QueueStore };
   /** The live engine's writes; without them a snooze shows `snooze.after`. */
   writes?: QueueWrites;
   nav?: NavHooks;
@@ -77,6 +87,8 @@ export type QueueWrites = {
   snooze: (subject: string) => Promise<void>;
   restore: (subject: string) => Promise<void>;
   pin: (subject: string) => Promise<void>;
+  done: (subject: string) => Promise<void>;
+  undoDone: (subject: string) => Promise<void>;
 };
 
 const dayCount = () => sourced<number>('prompts[answer=null].length');
@@ -91,8 +103,8 @@ function Row({ item, layout, selected, swiping, onSelect, onSnooze, until, onRes
 }) {
   const snoozed = until && { until, onRestore };
   if (item.kind === 'isf') {
-    const { current, recommended, units } = item.data;
-    return <QueueRow kind="setting" title={item.data.title} setting={{ current, suggested: recommended, units }}
+    const { current, recommended, units, notOnPump } = item.data;
+    return <QueueRow kind="setting" title={item.data.title} setting={{ current, suggested: recommended, units, notOnPump }}
       layout={layout} selected={selected} swiping={swiping} onSelect={onSelect} onSnooze={onSnooze} snoozed={snoozed} />;
   }
   if (item.kind === 'setting') {
@@ -108,12 +120,14 @@ function Row({ item, layout, selected, swiping, onSelect, onSnooze, until, onRes
  *  Focus pill while a Pin is in flight, and a matured Trial's link to Changes. */
 type CardActions = { onPin?: () => void; pinned?: boolean; onChanges?: () => void };
 
-function Card({ item, layout, onSnooze, actions = {} }: {
-  item: QueueItem; layout: Layout; onSnooze: () => void; actions?: CardActions;
+function Card({ item, layout, onSnooze, onDone, actions = {} }: {
+  item: QueueItem; layout: Layout; onSnooze: () => void; onDone: () => void; actions?: CardActions;
 }) {
-  if (item.kind === 'isf') return <IsfCard data={item.data} queue onSnooze={onSnooze} />;
+  if (item.kind === 'isf') {
+    return <IsfCard data={item.data} queue notOnPump={item.data.notOnPump} onDone={onDone} onSnooze={onSnooze} />;
+  }
   return item.kind === 'setting'
-    ? <SettingCard data={item.data} onSnooze={onSnooze} onChanges={actions.onChanges} />
+    ? <SettingCard data={item.data} onDone={onDone} onSnooze={onSnooze} onChanges={actions.onChanges} />
     : <PatternCard data={actions.pinned ? { ...item.data, pinned: true } : item.data} onSnooze={onSnooze}
         onPin={actions.onPin} collapsible={layout === 'phone'} />;
 }
@@ -121,9 +135,9 @@ function Card({ item, layout, onSnooze, actions = {} }: {
 /** Phone: an item is its row, or its card in the row's place while open. A card
  *  the person opens grows out of its row, and a card that closes shrinks back
  *  into it before the row returns. */
-function PhoneItem({ item, open, grows, swiping, onSelect, onSnooze, actions }: {
+function PhoneItem({ item, open, grows, swiping, onSelect, onSnooze, onDone, actions }: {
   item: QueueItem; open: boolean; grows: boolean; swiping: boolean; onSelect: () => void; onSnooze: () => void;
-  actions?: CardActions;
+  onDone: () => void; actions?: CardActions;
 }) {
   const card = usePresence(open);
   if (!card.value) {
@@ -131,27 +145,30 @@ function PhoneItem({ item, open, grows, swiping, onSelect, onSnooze, actions }: 
   }
   return (
     <div className={grows || card.closing ? 'ui-queue__open ui-expand' : 'ui-queue__open'} {...card.exit}>
-      <Card item={item} layout="phone" onSnooze={onSnooze} actions={actions} />
+      <Card item={item} layout="phone" onSnooze={onSnooze} onDone={onDone} actions={actions} />
     </div>
   );
 }
 
-/** The bar: the stories' simulated snooze, a live snooze with its subject, or a failed write. */
-type Bar = { kind: 'story' } | { kind: 'snoozed'; subject: string } | { kind: 'not_saved'; retry: () => void };
+/** The bar: the stories' simulated snooze or Done, a live snooze or Done with its subject, or a failed write. */
+type Bar = { kind: 'story' } | { kind: 'story_done' } | { kind: 'snoozed'; subject: string }
+  | { kind: 'waiting'; subject: string } | { kind: 'not_saved'; retry: () => void };
 const STORY_BAR: Bar = { kind: 'story' };
+const STORY_DONE_BAR: Bar = { kind: 'story_done' };
 
 export function QueueScreen({
   layout, store, state = 'ready', open, view: initialView = 'queue', swiping, snooze, justSnoozed = false,
-  writes, nav, onRetry,
+  done, writes, nav, onRetry,
 }: QueueScreenProps) {
   const [snoozedNow, setSnoozedNow] = useState(justSnoozed);
+  const [doneNow, setDoneNow] = useState(false);
   const [view, setView] = useState(initialView);
   // The row the person opened on the phone, which grows into its card.
   const [expanded, setExpanded] = useState<string>();
   const root = useMotionGate<HTMLDivElement>();
   const go = (to: typeof view) => { setExpanded(undefined); setView(to); };
   const push = view === 'snoozed' ? 'forward' : 'back';
-  const shown = snoozedNow && snooze ? snooze.after : store;
+  const shown = snoozedNow && snooze ? snooze.after : doneNow && done ? done.after : store;
   const ready = state === 'ready' || state === 'stale';
   // Live: the items a snooze or restore in flight has taken out, the Pin in
   // flight, and the live bar.
@@ -187,6 +204,16 @@ export function QueueScreen({
   const liveUndo = (subject: string) => {
     writes!.restore(subject).then(() => { setLiveBar(null); setSelected(subject); }, notSaved(() => liveUndo(subject)));
   };
+  const liveDone = (subject: string) => {
+    hide(subject, true);
+    setLiveBar(null);
+    writes!.done(subject).then(() => setLiveBar({ kind: 'waiting', subject }), notSaved(() => liveDone(subject)))
+      .finally(() => hide(subject, false));
+  };
+  const liveUndoDone = (subject: string) => {
+    writes!.undoDone(subject).then(() => { setLiveBar(null); setSelected(subject); },
+      notSaved(() => liveUndoDone(subject)));
+  };
   const livePin = (subject: string) => {
     setPinning(subject);
     setLiveBar(null);
@@ -212,7 +239,18 @@ export function QueueScreen({
     if (subject === current?.subject) setSelected(ranking(snooze.after)[0]?.subject);
   };
   const undo = () => { setSnoozedNow(false); setSelected(before ?? snooze?.subject); };
-  const barShown = usePresence(liveBar ?? (snoozedNow && snooze ? STORY_BAR : null));
+  /** Done on the open Setting card (#518). */
+  const doDone = (subject: string) => {
+    if (writes) {
+      liveDone(subject);
+      return;
+    }
+    if (!done || subject !== done.subject) return;
+    setDoneNow(true);
+    setSelected(ranking(done.after)[0]?.subject);
+  };
+  const undoDone = () => { setDoneNow(false); setSelected(done?.subject); };
+  const barShown = usePresence(liveBar ?? (snoozedNow && snooze ? STORY_BAR : doneNow && done ? STORY_DONE_BAR : null));
 
   useEffect(() => {
     if (layout !== 'desktop' || view !== 'queue') return undefined;
@@ -253,7 +291,7 @@ export function QueueScreen({
           ? <PhoneItem key={item.subject} item={item} open={item.subject === current?.subject}
               grows={item.subject === expanded} swiping={item.subject === swiping}
               onSelect={() => { setSelected(item.subject); setExpanded(item.subject); }}
-              onSnooze={() => doSnooze(item.subject)} actions={actions(item)} />
+              onSnooze={() => doSnooze(item.subject)} onDone={() => doDone(item.subject)} actions={actions(item)} />
           : <Row key={item.subject} item={item} layout={layout} selected={item.subject === current?.subject}
               onSelect={() => setSelected(item.subject)} />));
 
@@ -264,7 +302,11 @@ export function QueueScreen({
     ? <TransientBar kind="not_saved" onRetry={shownBar.retry} layout={layout} />
     : shownBar?.kind === 'snoozed'
       ? liveUntil && <TransientBar kind="snoozed" until={liveUntil} onUndo={() => liveUndo(shownBar.subject)} layout={layout} />
-      : shownBar?.kind === 'story' && <TransientBar kind="snoozed" until={snooze!.until} onUndo={undo} layout={layout} />;
+      : shownBar?.kind === 'waiting'
+        ? <TransientBar kind="waiting" onUndo={() => liveUndoDone(shownBar.subject)} layout={layout} />
+        : shownBar?.kind === 'story_done'
+          ? <TransientBar kind="waiting" onUndo={undoDone} layout={layout} />
+          : shownBar?.kind === 'story' && <TransientBar kind="snoozed" until={snooze!.until} onUndo={undo} layout={layout} />;
   const bar = barContent && <div className="ui-queue__bar" {...barShown.exit}>{barContent}</div>;
 
   if (layout === 'phone') {
@@ -297,7 +339,8 @@ export function QueueScreen({
         {state === 'loading' && <div className="ui-queue__detail"><PatternCard loading /></div>}
         {ready && current && (
           <div className="ui-queue__detail">
-            <Card item={current} layout={layout} onSnooze={() => doSnooze()} actions={actions(current)} />
+            <Card item={current} layout={layout} onSnooze={() => doSnooze()} onDone={() => doDone(current.subject)}
+              actions={actions(current)} />
           </div>
         )}
         {bar}

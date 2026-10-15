@@ -65,26 +65,46 @@ The browser router and the Python route policy SHALL name the same five tabs.
 
 ### Requirement: Queue ranks what guidance admits, and each item can be pinned or snoozed
 
-The Queue SHALL list exactly the candidates the guidance read admits and the
-person has not snoozed, by served priority, highest first, an exact tie broken by
-subject. It SHALL re-derive no admission, floor, threshold or direction. A
-Pattern card SHALL offer Pin, which starts a Focus on its habit, and SHALL draw
-the trace chart its case file serves: the Pattern's episodes, or its median and
-band past eight, against Typical's median and band, computing no band and
-choosing no episode (ADR 523). A Setting card SHALL show the current value, the
-engine's estimate, its range, its count and its evidence chart, one dot per item
-its estimate counts, and SHALL end in one stat row in one order on every setting
-card: Estimate, Range, then the served count (Nights, Meal runs, Fasting
-nights); a queued correction factor SHALL use the Overview's ISF estimate
-card in the Queue's frame. A queued carb ratio's findings row SHALL serve its
-block as its one member, in the shape a basal run serves its slots, so its card
-draws the block, current → recommended and its range. A Pattern served as its one
-habit SHALL be drawn with the Pattern's own count and its rate levers' credited
-shares, which that habit's row serves for it, and its case file SHALL be read under
-the Pattern's subject. Every item SHALL offer Snooze, which sets it aside
-until fourteen days after the engine's served decision time, with an Undo; the
-Snoozed list SHALL show each snoozed item with its until date and a Restore, and
-SHALL be reachable only while at least one item is snoozed.
+The Queue SHALL list exactly the candidates the guidance read admits, the
+person has not snoozed and the guidance does not serve as waiting for the pump,
+by served priority, highest first, an exact tie broken by subject. It SHALL
+re-derive no admission, floor, threshold or direction. A Pattern card SHALL offer
+Pin, which starts a Focus on its habit, and SHALL draw the trace chart its case
+file serves: the Pattern's episodes, or its median and band past eight, against
+Typical's median and band, computing no band and choosing no episode (ADR 523).
+A Setting card SHALL show the current value, the engine's estimate, its range,
+its count and its evidence chart, one dot per item its estimate counts, and SHALL
+end its evidence in one stat row in one order on every setting card: Estimate,
+Range, then the served count (Nights, Meal runs, Fasting nights); a queued
+correction factor SHALL use the Overview's ISF estimate card in the Queue's
+frame. A queued carb ratio's findings row SHALL serve its block as its one
+member, in the shape a basal run serves its slots, so its card draws the block,
+current → recommended and its range. A Pattern served as its one habit SHALL be
+drawn with the Pattern's own count and its rate levers' credited shares, which
+that habit's row serves for it, and its case file SHALL be read under the
+Pattern's subject. A Setting card's primary SHALL be Done (#518), where Pin sits on a
+Pattern card: it SHALL take the card out of the Queue at once, with a bar reading
+"Waiting for pump" and an Undo that withdraws it. A Setting the guidance serves
+as `not_on_pump` SHALL carry the Not on pump pill on its row and its card. Every
+item SHALL offer Snooze, a text action beneath its primary, which sets it aside
+until fourteen days after the engine's served decision time, with an Undo; on the
+phone a row's swipe SHALL stay Snooze. The Snoozed list SHALL show each snoozed
+item with its until date and a Restore, and SHALL be reachable only while at
+least one item is snoozed.
+
+#### Scenario: Done takes a Setting card out of the Queue
+
+- **WHEN** the person presses Done on a Setting card
+- **THEN** the card leaves the Queue, and a bar reads "Waiting for pump" with
+  Undo
+- **AND** Undo puts the card back
+
+#### Scenario: A Setting back from an unchanged sync is marked
+
+- **GIVEN** a basal candidate the guidance serves as `not_on_pump`
+- **WHEN** the Queue renders
+- **THEN** its row and its open card carry the Not on pump pill, and the card
+  offers Done again
 
 #### Scenario: A queued carb ratio draws its card
 
@@ -127,15 +147,26 @@ SHALL be reachable only while at least one item is snoozed.
 - **THEN** it leaves the Queue, a bar offers Undo, and the Snoozed list shows it
   with its until date and Restore
 
-### Requirement: Changes shows the active change and the last finished one
+### Requirement: Changes shows the current change and every previous one
 
-Changes SHALL show the active change, one Trial or one Focus, and the last
-finished change as one row that expands in place. A change still collecting its
-14 days of after data SHALL read Maturing; a matured change SHALL carry its served
-result, Better, Worse or Unclear. End SHALL be a compact secondary action
-followed by a confirm sheet: a Focus can be ended at any time, and a Trial once it
-has matured. The app SHALL send no free-text conclusion. Changes SHALL keep no
-history archive.
+Changes SHALL show the current change, one Trial or one Focus, then a Previous
+row with its count that drills down to every previous change, newest first, with
+no cutoff (ADR 524). A change still collecting its 14 days of after data SHALL
+read Maturing; a matured change SHALL carry its served result, Better, Worse or
+Unclear. End SHALL be a compact secondary action followed by a confirm sheet: a
+Focus can be ended at any time, and a Trial once it has matured. The app SHALL
+send no free-text conclusion. Between the current change and Previous, Changes
+SHALL list under "Waiting for pump" each Setting the Trial roster serves as
+waiting after a Done (#518), one row each in the Previous rows' columns, with its
+name, its block and current → suggested, until the engine resolves it. Changes
+SHALL read it from the roster, not the guidance.
+
+#### Scenario: A Done waits on Changes
+
+- **GIVEN** a Done on the basal card that no sync has resolved
+- **WHEN** Changes renders
+- **THEN** a "Waiting for pump" group lists one Basal row with its block and
+  current → suggested, between the current change and Previous
 
 #### Scenario: A maturing Trial cannot be ended from the app
 

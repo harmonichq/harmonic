@@ -10,7 +10,7 @@ import { answers, sourced, type Sourced } from './answers';
 import { delta } from './changes-model';
 import type { Change } from './Delta';
 import { isfData, type IsfAnswer, type IsfData } from './overview-model';
-import { PARAMETER_FORMATS } from './settings-model';
+import { PARAMETER_FORMATS, PARAMETER_NAMES } from './settings-model';
 
 export type QueueStore = keyof typeof answers.queue;
 export type Tone = 'high' | 'low';
@@ -79,7 +79,15 @@ export type SettingData = {
   field: string;
   /** The slot's change was detected and has matured into a Trial. */
   trial: boolean;
+  /** The engine serves the card back from a Done the next sync found unchanged on the pump (#518). */
+  notOnPump: boolean;
 };
+
+type Candidate = (typeof answers.queue)[QueueStore]['guidance']['candidates'][number];
+
+/** The candidate's served Done state is Not on pump (#518). */
+const notOnPump = (candidate: Candidate | undefined) =>
+  (candidate?.acknowledgment as { state?: string } | null | undefined)?.state === 'not_on_pump';
 
 const store = (name: QueueStore) => answers.queue[name];
 
@@ -188,6 +196,7 @@ export function basalSetting(name: QueueStore, startMin: number): SettingData {
     field: 'delivered_rate',
     trial: s.trials.trials.some((t) => t.parameter === 'basal_rate' && t.state === 'complete'
       && maturedTrial(span, t)),
+    notOnPump: notOnPump(candidate),
   };
 }
 
@@ -230,8 +239,7 @@ export function carbRatioSetting(name: QueueStore): SettingData | null {
   const path = `queue.${name}.analyze.ic_blocks[block_id=${block.block_id}].0`;
   const format = PARAMETER_FORMATS.carb_ratio;
   return {
-    // The glossary's name for I:C, whose candidate title is longer (§1.5 I:C).
-    title: 'I:C',
+    title: PARAMETER_NAMES.carb_ratio,
     units: candidate.units,
     start: sourced(`${path}.start_min`, 'clock'),
     end: sourced(`${path}.end_min`, 'clock'),
@@ -246,12 +254,13 @@ export function carbRatioSetting(name: QueueStore): SettingData | null {
     roster: `${path}.evidence.counted_runs`,
     field: 'true_ic',
     trial: false,
+    notOnPump: notOnPump(candidate),
   };
 }
 
 /** A queued ISF is the Overview's ISF card (§2.5, 2026-10-14) with the change
  *  the engine stages: its row prints current → recommended. */
-export type IsfSettingData = IsfData & { title: string; recommended: Sourced<number> };
+export type IsfSettingData = IsfData & { title: string; recommended: Sourced<number>; notOnPump: boolean };
 
 /** The queued ISF, from the store's analysis (the Overview's ISF card, over the
  *  engine's default window). Null when the analysis serves no estimate, or no
@@ -259,7 +268,8 @@ export type IsfSettingData = IsfData & { title: string; recommended: Sourced<num
 export function isfSetting(name: QueueStore): IsfSettingData | null {
   const data = isfData(`queue.${name}.analyze.isf`, store(name).analyze.isf as IsfAnswer[]);
   if (data === 'none' || !data.recommended) return null;
-  return { ...data, title: 'ISF', recommended: data.recommended };
+  const candidate = store(name).guidance.candidates.find((c) => c.subject === 'setting:isf');
+  return { ...data, title: PARAMETER_NAMES.isf, recommended: data.recommended, notOnPump: notOnPump(candidate) };
 }
 
 /** The story states the generator found in the served answers, by name. */
@@ -283,8 +293,6 @@ export type QueueItem =
   | { subject: string; kind: 'pattern'; data: PatternData }
   | { subject: string; kind: 'setting'; data: SettingData }
   | { subject: string; kind: 'isf'; data: IsfSettingData };
-
-type Candidate = (typeof answers.queue)[QueueStore]['guidance']['candidates'][number];
 
 /** A candidate as its Queue component draws it, or null for one no Queue
  *  component draws (a kind the app does not know), or one whose served

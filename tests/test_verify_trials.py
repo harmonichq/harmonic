@@ -464,63 +464,18 @@ class VerifyTrialsApiTest(unittest.TestCase):
             "1 data gap remains in the post-change period.",
         ])
 
-    def test_revert_route_only_prefills_a_reconstructible_single_setting(self):
-        _seed_maturing_block_ic_trial(self.tmp.name)
-        trial_id = self.client.get("/api/verify/trials").json()["trials"][0]["id"]
-        block_ic = self.client.get(
-            "/api/verify/trials", params={"selected": trial_id},
-        ).json()["selected"]
-        self.assertEqual(block_ic["plan_route"], {
-            "mode": "stage-prior",
-            "label": "Prior setting ready for Plan",
-            "draft": {"items": [{"type": "ic", "start_min": 720, "value": 5.0}]},
-            "message": (
-                "The prior setting is staged for manual pump programming. After programming, "
-                "confirm it with a fresh pump snapshot in Plan."
-            ),
-        })
-        with Store.open(self.tmp.name) as store:
-            self.assertIsNone(store.get_plan_draft())
-
-    def test_whole_profile_trial_routes_to_manual_plan_review_without_a_prefill(self):
-        _seed_whole_profile_trial(self.tmp.name)
-        trial_id = self.client.get("/api/verify/trials").json()["trials"][0]["id"]
-
-        detail = self.client.get(
-            "/api/verify/trials", params={"selected": trial_id},
-        ).json()["selected"]
-
-        self.assertEqual(detail["parameter"], "profile")
-        self.assertEqual(detail["plan_route"], {
-            "mode": "manual-review",
-            "label": "Review this change in Plan",
-            "message": (
-                "This Trial does not have one prior setting that can be staged. Review the "
-                "change in Plan, program the pump manually, then confirm it with a fresh pump snapshot."
-            ),
-        })
-        self.assertNotIn("draft", detail["plan_route"])
-
     def test_a_switch_moving_two_blocks_is_a_trial_per_block_with_its_own_prior(self):
         # Each block the switch moved is its own Trial whose prior setting the
-        # read before the switch recorded, so each stages its own prior (#500).
+        # read before the switch recorded (#500).
         _seed_two_block_basal_switch(self.tmp.name)
         trials = sorted(self.client.get("/api/verify/trials").json()["trials"],
                         key=lambda row: row["slot"])
         self.assertEqual([(row["slot"], row["before"], row["after"]) for row in trials],
                          [("00:00", 0.6, 0.8), ("12:00", 0.6, 0.9)])
-        for row, start in zip(trials, (0, 720)):
-            detail = self.client.get(
-                "/api/verify/trials", params={"selected": row["id"]},
-            ).json()["selected"]
-            self.assertEqual(detail["plan_route"]["mode"], "stage-prior")
-            self.assertEqual(detail["plan_route"]["draft"]["items"],
-                             [{"type": "basal", "start_min": start, "value": 0.6}])
 
-    def test_missing_prior_setting_routes_to_manual_plan_review_without_a_prefill(self):
+    def test_missing_prior_setting_is_served_as_unknown(self):
         # A retained slotted record with no prior setting (one an earlier build
-        # saved) falls back to manual review rather than inventing a value to
-        # stage (finding 4).
+        # saved) serves none rather than inventing a value (finding 4).
         _seed_retained_trials(self.tmp.name, [("basal_rate", "00:00", "2026-06-05 09:00:00", None, None)])
         trial_id = self.client.get("/api/verify/trials").json()["trials"][0]["id"]
 
@@ -530,8 +485,6 @@ class VerifyTrialsApiTest(unittest.TestCase):
 
         self.assertEqual(detail["parameter"], "basal_rate")
         self.assertIsNone(detail["before"])
-        self.assertEqual(detail["plan_route"]["mode"], "manual-review")
-        self.assertNotIn("draft", detail["plan_route"])
 
     def test_a_carb_ratio_switch_without_a_plan_is_a_trial_per_block(self):
         # A non-uniform multi-block I:C switch with no Plan behind it is one

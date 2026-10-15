@@ -21,6 +21,8 @@
 .ui-pill--better { --tone: var(--wk-status-favorable); }
 .ui-pill--worse { --tone: var(--wk-status-adverse); }
 .ui-pill--focus { --tone: var(--primary); }
-.ui-pill--uncertain, .ui-pill--maturing, .ui-pill--better, .ui-pill--worse, .ui-pill--focus {
+.ui-pill--not_on_pump { --tone: var(--warn); }
+.ui-pill--uncertain, .ui-pill--maturing, .ui-pill--better, .ui-pill--worse, .ui-pill--focus,
+.ui-pill--not_on_pump {
   background: color-mix(in srgb, var(--tone) 15%, transparent);
 }

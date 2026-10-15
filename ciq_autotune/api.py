@@ -131,11 +131,9 @@ _REFUSAL_MESSAGES = {
     "stale_input_revision": "New pump or sensor data arrived since this page was read.",
     "stale_source": "The findings changed since this page was read.",
     "ineligible_source": "This finding is not offering an action from the current read.",
-    "stale_draft": "The Plan draft changed since this page was read.",
-    "occupied_admission": "Another change is already being watched, or a recorded Plan is still pending.",
-    "missing_source_profile": "No pump profile has been read to record this Plan against.",
-    "ineligible_draft": "The Plan draft no longer matches the action this read offers.",
-    "nonpending_plan": "This Plan is no longer pending.",
+    "occupied_admission": "Another change is already being watched.",
+    "missing_source_profile": "No pump profile has been read to record this Done against.",
+    "nonpending_plan": "This Done is no longer waiting for the pump.",
     "nonactive_subject": "This change is no longer the one being watched.",
     "immature_trial": "This Trial is still maturing.",
     "trial_not_expired": "This Trial did not expire unreviewed, so it takes no later conclusion.",
@@ -481,18 +479,14 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
 
     def guidance_payload():
         """Compose source guidance and the read-only lifecycle verdict at one revision."""
-        from .watched_change import (active_watched_change, follow_up_admission, pending_plan,
-                                     with_plan_verdicts)
+        from .watched_change import active_watched_change, follow_up_admission, setting_acknowledgments
         for _ in range(3):
             with Store.open_queryonly(db_path) as store:
                 revision = store.input_data_revision()
                 now = store.latest_data_instant() or datetime.now()
                 admission = follow_up_admission(store, now=now)
                 watch = active_watched_change(store, (), (), (), now=now)
-                pending = pending_plan(store)
-                if pending is not None:
-                    pending = with_plan_verdicts(store, [pending])[0]
-                draft = store.get_plan_draft()
+                acknowledgments = setting_acknowledgments(store)
                 preferences = store.guidance_preferences()
             try:
                 generation, snapshot = history_snapshot(findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS)
@@ -503,15 +497,11 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                     continue
             payload = snapshot[0].guidance(
                 active_watch=watch.to_dict() if watch is not None else None,
-                preferences=preferences,
+                preferences=preferences, acknowledgments=acknowledgments,
                 analysis_generation=f"guidance:{generation}:r{revision}")
-            payload.update(input_revision=revision, admission=admission, pending_plan=pending, draft=draft)
+            payload.update(input_revision=revision, admission=admission)
             if admission["state"] == "unavailable":
                 payload.update(disposition="unavailable", selected=None, unavailable=admission["reason"])
-            elif watch is None and pending:
-                payload.update(disposition="pending_plan", selected=None)
-            elif watch is None and draft and draft["items"]:
-                payload.update(disposition="draft", selected=None)
             return payload
         raise ResultCache.GenerationChanged("guidance inputs changed during every snapshot")
 
@@ -1516,9 +1506,9 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         return {"input_revision": store.input_data_revision(),
                 "admission": follow_up_admission(store, now=store.latest_data_instant() or datetime.now())}
 
-    def durable_request(payload, *, creation=False, apply=False, required=False):
+    def durable_request(payload, *, creation=False, required=False):
         payload = payload or {}
-        fields = {"request_id", "input_revision", "subject", "analysis_generation", "draft_updated_at"}
+        fields = {"request_id", "input_revision", "subject", "analysis_generation"}
         durable = "request_id" in payload
         if not durable:
             if required or fields.intersection(payload):
@@ -1527,8 +1517,6 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         needed = {"request_id", "input_revision"}
         if creation:
             needed |= {"subject", "analysis_generation"}
-        if apply:
-            needed.add("draft_updated_at")
         if (not needed <= payload.keys() or type(payload.get("input_revision")) is not int
                 or any(not isinstance(payload.get(key), str) or not payload[key].strip()
                        or len(payload[key]) > 512 for key in needed - {"input_revision"})):
@@ -1663,64 +1651,37 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             raise FollowUpConflict("ineligible_source", store.input_data_revision())
         return candidate
 
-    @app.get("/api/plan")
-    def get_plan_endpoint(_: None = Depends(require_token)) -> dict:
-        with Store.open_queryonly(db_path) as store:
-            store.conn.execute("BEGIN")
-            return {**(store.get_plan_draft() or {"items": [], "updated_at": None}), **follow_up_read(store)}
-
-    @app.put("/api/plan")
-    def put_plan_endpoint(items: list = Body(..., embed=True), _: None = Depends(require_token)) -> dict:
-        updated_at = wall_clock_now().strftime("%Y-%m-%d %H:%M:%S.%f")
-        with Store.open(db_path) as store:
-            try:
-                store.save_plan_draft(items, updated_at)
-            except ValueError as error:
-                raise HTTPException(status_code=400, detail=str(error))
-        return {"items": items, "updated_at": updated_at}
-
     @app.post("/api/plan/apply")
     def apply_plan_endpoint(payload: Optional[dict] = Body(None), _: None = Depends(require_token)) -> dict:
+        """Done on a Queue Setting card (ADR 518): record that the person
+        programmed the subject's served suggestion into the pump. The items are
+        the candidate's own action rows, and the decision waits for the pump."""
         from dataclasses import asdict
-        from .guidance import plan_deliverable
+        from .guidance import done_items, plan_deliverable
         from .store import FollowUpConflict
-        from .watched_change import pending_plan
         payload = payload or {}
-        durable = durable_request(payload, creation=True, apply=True)
+        durable_request(payload, creation=True, required=True)
 
         def apply(store, admission, source, now, at):
-            draft = store.get_plan_draft()
-            if not draft or not draft["items"]:
-                raise ValueError("no plan draft to apply")
-            if any(type(item.get("start_min")) is not int or not 0 <= item["start_min"] < 1440
-                   or type(item.get("value")) not in (int, float) for item in draft["items"]):
-                raise ValueError("plan items require a start_min and numeric value to apply")
-            if durable and draft["updated_at"] != payload["draft_updated_at"]:
-                raise FollowUpConflict("stale_draft", store.input_data_revision())
-            if admission["state"] != "available" or admission["active_kind"] or pending_plan(store):
-                raise FollowUpConflict("occupied_admission", store.input_data_revision())
-            family = draft["items"][0]["type"]
-            parameter = {"basal": "basal_rate", "isf": "isf", "ic": "carb_ratio", "target": "target_bg"}[family]
-            candidate = selected_source(store, source, payload, "setting:" + parameter, durable)
-            snapshots = store.settings_snapshots()
-            profile = snapshots[-1].settings.active() if snapshots else None
+            candidate = selected_source(store, source, payload, payload["subject"], True)
+            if (candidate["kind"] != "setting" or not candidate["admitted"]
+                    or (candidate.get("acknowledgment") or {}).get("state") == "waiting"):
+                raise FollowUpConflict("ineligible_source", store.input_data_revision())
+            snapshot = store.latest_settings_snapshot()
+            profile = snapshot.settings.active() if snapshot else None
             if profile is None:
                 raise FollowUpConflict("missing_source_profile", store.input_data_revision())
-            for item in draft["items"]:
-                actions = candidate["action"]
-                matched = next((action for action in actions
-                    if (item["start_min"] in action.get("member_start_mins", []) if family == "ic" else
-                        action["start_min"] <= item["start_min"] < action["end_min"])), None)
-                if matched is None:
-                    raise FollowUpConflict("ineligible_draft", store.input_data_revision())
+            # Store records a Plan from its one staging row, in this transaction.
+            stamp = at.strftime("%Y-%m-%d %H:%M:%S")
+            store.save_plan_draft(done_items(candidate), stamp)
+            applied = store.apply_plan(stamp)
             segments = [asdict(segment) for segment in profile.segments]
-            applied = store.apply_plan(at.strftime("%Y-%m-%d %H:%M:%S"))
             return store.save_follow_up_record({"kind": "plan", "id": applied["applied_at"], "version": "386:1",
                 **applied, "decision_context": source_context(source, candidate, at),
                 "deliverable": {"version": "386:1", "state": "available",
-                                "source_snapshot": snapshots[-1].captured_at.strftime("%Y-%m-%d %H:%M:%S"),
+                                "source_snapshot": snapshot.captured_at.strftime("%Y-%m-%d %H:%M:%S"),
                                 "source_profile": asdict(profile), "rows": plan_deliverable(segments, applied["items"])}})
-        return lifecycle("apply", "plan", None, payload, durable=durable, mutate=apply, creation=True)
+        return lifecycle("apply", "plan", None, payload, durable=True, mutate=apply, creation=True)
 
     @app.get("/api/plan/history")
     def plan_history_endpoint(_: None = Depends(require_token)) -> dict:
@@ -1744,8 +1705,9 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
 
     @app.post("/api/plan/history/withdraw")
     def withdraw_plan_endpoint(payload: dict = Body(...), _: None = Depends(require_token)) -> dict:
+        """Undo a Done (ADR 518): withdraw an acknowledgment still waiting for the pump."""
         from .store import FollowUpConflict
-        from .watched_change import pending_plan
+        from .watched_change import open_plans
         durable_request(payload, required=True)
         identity = payload.get("applied_at")
         if not isinstance(identity, str) or not identity:
@@ -1754,7 +1716,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             record = store.follow_up_record("plan", identity)
             if record is None:
                 raise HTTPException(status_code=404, detail="unknown Plan")
-            if not pending_plan(store) or pending_plan(store)["id"] != identity:
+            if identity not in {plan["id"] for plan in open_plans(store).values()}:
                 raise FollowUpConflict("nonpending_plan", store.input_data_revision())
             return store.save_follow_up_record({**record, "withdrawal": {
                 "version": "386:1", "state": "available", "withdrawn_at": at.strftime("%Y-%m-%d %H:%M:%S"),

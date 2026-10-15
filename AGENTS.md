@@ -271,22 +271,24 @@ the five tabs read, in visit order; a new screen read belongs in it. A new write
 endpoint that does not invalidate leaves a stale cache.
 
 **A follow-up write keeps what reads only recorded data.** A guidance preference
-(snooze, restore) and a Focus, Trial or Plan lifecycle step write only follow-up
-state: the preference, Focus and follow-up records, the frontier, the Plan
-history, and the input revision. `follow_up_written()` keeps the cached results
-named by `_reads_only_recorded_data` (outcomes, the day navigator, the
-model-view, the timeline, the analysis and scenarios at a non-default window,
-and the catalog) and drops everything else and every case-file preparation;
-revision-keyed and fixed results miss on the new revision by themselves. Add a
-result to that list only with a transitive proof that its builder reads none of
-the follow-up tables or the input revision (ADR 522), and remove it the moment
-one does.
+(snooze, restore) and a Focus, Trial or Plan lifecycle step — a Done on a Setting
+card and its Undo among them (#518) — write only follow-up state: the
+preference, Focus and follow-up records, the frontier, the Plan history, and the
+input revision. `follow_up_written()` keeps the cached results named by
+`_reads_only_recorded_data` (outcomes, the day navigator, the model-view, the
+timeline, the analysis and scenarios at a non-default window, and the catalog)
+and drops everything else and every case-file preparation; revision-keyed and
+fixed results miss on the new revision by themselves. A Setting's Done state is
+read from the store on every guidance read and never cached. Add a result to
+that list only with a transitive proof that its builder reads none of the
+follow-up tables or the input revision (ADR 522), and remove it the moment one
+does.
 
-**Two proven-safe exceptions invalidate nothing.** Saving a Plan draft is
-UX-only and no cached compute reads it (applying the Plan does invalidate).
-Saving credentials is the other: only the fetch's login and the uncached
-credentials read use them. Do not add a third without proving no cached compute
-reads the written state.
+**One proven-safe exception invalidates nothing: saving credentials.** Only the
+fetch's login and the uncached credentials read use them. The Plan draft's
+exception went with the draft routes when a Done began recording the Plan itself
+(#518). Do not add another without proving no cached compute reads the written
+state.
 
 The cache is in-process and single-`serve`: an out-of-process CLI `fetch` while
 `serve` is up will not invalidate the running server.

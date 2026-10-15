@@ -2,10 +2,13 @@
 // ("Basal", "I:C") in strong ink, then its time block in regular meta ink on
 // the same baseline; current → suggested in figure type, only the suggestion
 // in strong ink; the EvidenceChart of the evidence the estimate counts (a basal
-// slot's nights, an I:C block's meal runs); then the stat row. No button: a
-// setting is changed on the pump, not here. Once the slot's change has matured
-// into a Trial, the card names it and links to Changes. Snooze, when the
-// screen offers it, is a centred text action at the foot.
+// slot's nights, an I:C block's meal runs); then the stat row. A setting is
+// changed on the pump, not here: the card's one primary is Done (#518), which
+// says the person programmed it, where Pin sits on a Pattern card. Once the
+// slot's change has matured into a Trial, the card names it and links to
+// Changes. A card back from a Done the next sync did not show carries the Not
+// on pump pill on its title line. Snooze, when the screen offers it, is a
+// centred text action beneath Done.
 //
 // The stat row (ADR 523) is the same on every setting card, the ISF card too,
 // in the same order and place: Estimate, Range, then the count of what the
@@ -17,6 +20,7 @@ import { Num } from '../../Num';
 import type { SettingData } from '../../queue-model';
 import { Button } from '../Button/Button';
 import { EvidenceChart } from '../EvidenceChart/EvidenceChart';
+import { StatePill } from '../StatePill/StatePill';
 import '../../shared.css';
 import './SettingCard.css';
 
@@ -56,16 +60,19 @@ export function SettingFacts({ estimate, lo, hi, units, count }: SettingFactsPro
 
 export type SettingCardProps = {
   data: SettingData; onChanges?: () => void;
-  /** Snooze, the text action at the card's foot. */
+  /** Done, the card's primary action. */
+  onDone?: () => void;
+  /** Snooze, the text action beneath Done. */
   onSnooze?: () => void;
 };
 
-export function SettingCard({ data, onChanges, onSnooze }: SettingCardProps) {
+export function SettingCard({ data, onChanges, onDone, onSnooze }: SettingCardProps) {
   return (
     <section className="ui-scard">
       <h2 className="ui-scard__title">
         {data.title}{' '}
         <span className="ui-scard__slot"><Num value={data.start} />–<Num value={data.end} /></span>
+        {data.notOnPump && <StatePill state="not_on_pump" />}
       </h2>
       <div className="ui-scard__figure">
         <span className="ui-scard__current"><Num value={data.current} /></span>
@@ -84,6 +91,7 @@ export function SettingCard({ data, onChanges, onSnooze }: SettingCardProps) {
           <Button kind="text" label="Changes" onClick={onChanges} />
         </div>
       )}
+      {onDone && <div className="ui-card-done"><Button kind="primary" label="Done" onClick={onDone} /></div>}
       {onSnooze && <div className="ui-card-snooze"><Button kind="text" label="Snooze" onClick={onSnooze} /></div>}
     </section>
   );

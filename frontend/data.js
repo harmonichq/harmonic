@@ -112,6 +112,17 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
   const restoreGuidancePreference = (subject) =>
     send('/api/guidance/preferences/' + encodeURIComponent(subject), 'DELETE');
 
+  /**
+   * POST /api/plan/apply — Done on a Setting card (#518): record that the
+   * subject's served suggestion is programmed into the pump. `body` names the
+   * subject and the read it was made from, with a durable request identity
+   * (`request_id`, `input_revision`, `analysis_generation`).
+   */
+  const recordDone = (body) => send('/api/plan/apply', 'POST', body);
+
+  /** POST /api/plan/history/withdraw — Undo a Done still waiting for the pump. */
+  const withdrawDone = (body) => send('/api/plan/history/withdraw', 'POST', body);
+
   /** GET /api/diagnose/findings — the whole-day findings projection. */
   const fetchDiagnoseFindings = () => api('/api/diagnose/findings');
 
@@ -226,7 +237,8 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
 
   return {
     fetchCredentials, saveCredentials, fetchStatus, fetchPumpSettings,
-    fetchGuidance, setGuidancePreference, restoreGuidancePreference, fetchDiagnoseFindings, fetchAnalysis,
+    fetchGuidance, setGuidancePreference, restoreGuidancePreference, recordDone, withdrawDone,
+    fetchDiagnoseFindings, fetchAnalysis,
     fetchDiagnoseFindingCasePreparation, fetchDiagnoseFindingCase,
     fetchVerifyTrials, finishTrial, fetchFocuses, pinFocus, resolveFocus,
     fetchOutcomes, fetchExploreTimeOfDay, fetchDayNavigator,

@@ -186,37 +186,6 @@ class BlockIcAdmissionTest(unittest.TestCase):
         self.assertEqual(len(roster["trials"]), 1)
         self.assertEqual(roster["trials"][0]["slot"], "12:00")
 
-    def test_revert_stages_every_member_of_a_two_member_block(self):
-        # Finding 3: `_prior_plan_route` must consume the Trial's captured member
-        # starts, not just its lead slot label — reverting the pinned two-member
-        # 720/780 block must stage BOTH boundaries at the prior value, or a Revert
-        # leaves the pump split between the old and new I:C mid-block.
-        old, new = _profile(1, _OLD_IC), _profile(2, _NEW_IC)
-        with Store.open(self.tmp.name) as store:
-            store.upsert_settings_snapshot("2026-06-04 09:00:00", PumpSettings(1, (old, new)))
-            store.upsert_settings_snapshot(
-                SWITCH.strftime("%Y-%m-%d %H:%M:%S"), PumpSettings(2, (old, new)))
-            _apply(store, "2026-06-04 08:00:00", _BLOCK, _MEMBERS, 5.0, 4.4)
-            _cgm_span(store, SWITCH - timedelta(days=14), NOW)
-
-        roster = self._roster()
-        self.assertEqual(len(roster["trials"]), 1)
-        detail = self._detail(roster["trials"][0]["id"])
-        self.assertEqual(detail["plan_route"], {
-            "mode": "stage-prior",
-            "label": "Prior setting ready for Plan",
-            "draft": {
-                "items": [
-                    {"type": "ic", "start_min": 720, "value": 5.0},
-                    {"type": "ic", "start_min": 780, "value": 5.0},
-                ],
-            },
-            "message": (
-                "The prior setting is staged for manual pump programming. After programming, "
-                "confirm it with a fresh pump snapshot in Plan."
-            ),
-        })
-
     def test_only_inactive_profile_change_admits_no_block_trial(self):
         # snap2 edits the INACTIVE idp2; the active idp1 is unchanged. Even with a
         # seemingly matching applied group, no block-scoped roster entry appears.
@@ -412,55 +381,6 @@ class BlockIcIdentityAndCohortTest(unittest.TestCase):
             self.assertEqual(block["maturing"]["days_elapsed"], 1)
             self.assertEqual(block["maturing"]["gap_count"], baseline_gap - 1)
             self.assertEqual(detail["meal_arcs"]["trial_period"]["n_meals"], 1)
-
-
-class RevertDraftStaysValidTest(unittest.TestCase):
-    """The Revert route's unannotated single-row draft still saves and applies."""
-
-    @unittest.skipUnless(TestClient is not None, "api extra not installed")
-    def setUp(self):
-        self.tmp = tempfile.NamedTemporaryFile(suffix=".db")
-        with Store.open(self.tmp.name):
-            pass
-        self.client = TestClient(create_app(
-            db_path=self.tmp.name, token=None, enable_fetch_loop=False))
-
-    def tearDown(self):
-        self.tmp.close()
-
-    def test_prior_plan_route_revert_draft_saves_and_applies(self):
-        # The unannotated single-row Revert draft _prior_plan_route emits (#581 keeps
-        # it valid and unannotated) round-trips through save → apply → history.
-        from dataclasses import replace
-        from scripts.qa_e2e_cases import QA_CASES, materialize_case
-        with Store.open(self.tmp.name) as store:
-            materialize_case(store, next(c for c in QA_CASES if c.name == "ic-raise"))
-            snapshot = store.settings_snapshots()[-1]
-            profile = snapshot.settings.active()
-            # Preserve the Revert row at noon as a real member of this supported
-            # synthetic block, without adding block annotations to the draft.
-            profile = replace(profile, segments=(profile.segments[0],
-                              replace(profile.segments[0], start_min=720)))
-            store.upsert_settings_snapshot(snapshot.captured_at.isoformat(),
-                replace(snapshot.settings, profiles=(profile,)))
-        draft = {"items": [{"type": "ic", "start_min": 720, "value": 5.0}]}
-        save = self.client.put("/api/plan", json=draft)
-        self.assertEqual(save.status_code, 200)
-        apply = self.client.post("/api/plan/apply")
-        self.assertEqual(apply.status_code, 200)
-        history = self.client.get("/api/plan/history").json()["history"]
-        self.assertEqual(len(history), 1)
-        self.assertEqual(history[0]["items"], draft["items"])
-        self.assertNotIn("ic_block_provenance", history[0]["items"][0])
-
-    def test_revert_draft_without_source_saves_but_cannot_apply(self):
-        draft = {"items": [{"type": "ic", "start_min": 720, "value": 5.0}]}
-        self.assertEqual(self.client.put("/api/plan", json=draft).status_code, 200)
-        response = self.client.post("/api/plan/apply")
-        self.assertEqual(response.status_code, 409, response.text)
-        self.assertEqual(response.json()["detail"], "ineligible_source")
-        self.assertEqual(self.client.get("/api/plan/history").json()["history"], [])
-        self.assertEqual(self.client.get("/api/plan").json()["items"], draft["items"])
 
 
 if __name__ == "__main__":  # pragma: no cover

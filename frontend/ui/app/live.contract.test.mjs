@@ -79,6 +79,8 @@ const EXPECTED = {
       caseFile: { summary: { claimed: 1, denominator: 5, noun: 'lows' }, outcome: 'peak', impact: null } },
     isf: null,
     change: { kind: 'none' },
+    done: { subject: 'setting:basal_rate', waiting: { subject: 'setting:basal_rate', title: 'Basal',
+      block: { start: 180, end: 240 }, moves: [{ name: null, slot: null, before: 0.6, after: 0.48, units: 'U/h' }] } },
     // One previous change: the whole-day carb ratio move, with no saved result.
     previous: [{ title: 'I:C', block: null, moves: [[null, 12, 10, 'g/U']], result: null }],
     overview: { tir: 98.6, previous: 100, isf: { current: 40, recommended: null, uncertain: true, nights: 14 },
@@ -107,6 +109,7 @@ const EXPECTED = {
       caseFile: { summary: { claimed: 4, denominator: 7, noun: 'lows' }, outcome: 'nadir', impact: null } },
     isf: null,
     change: { kind: 'none' },
+    done: null,
     findings: {
       '2024-05-14': [['2024-05-14 22:00:00', 'pattern', ['Correction on active insulin']]],
       '2024-05-16': [['2024-05-16 13:55:00', 'pattern', ['Over-treated low']]],
@@ -119,6 +122,8 @@ const EXPECTED = {
     queue: ['setting:isf'],
     isf: { current: 40, recommended: 32, uncertain: false, nights: 29 },
     change: { kind: 'none' },
+    done: { subject: 'setting:isf', waiting: { subject: 'setting:isf', title: 'ISF', block: null,
+      moves: [{ name: null, slot: null, before: 40, after: 32, units: 'mg/dL/U' }] } },
   },
   // A queued carb ratio: its card draws the block, current → suggested and range.
   'basal-and-carb-ratio-lower': {
@@ -145,6 +150,9 @@ const EXPECTED = {
     basal: { start: 60, end: 90, current: 0.6, suggested: 0.48, trial: false },
     isf: null,
     change: { kind: 'trial', title: 'Basal', maturing: false, result: 'unclear', canEnd: true },
+    // A Done while the Trial is watched: it waits on its own (#518).
+    done: { subject: 'setting:basal_rate', waiting: { subject: 'setting:basal_rate', title: 'Basal',
+      block: { start: 60, end: 90 }, moves: [{ name: null, slot: null, before: 0.6, after: 0.48, units: 'U/h' }] } },
     // #524: its block, what moved, the trace by clock time across the block (its
     // nights before and after), every module, and Control-IQ's delivered rate.
     trial: { block: [180, 210], moves: [['03:00', 0.6, 0.54, 'U/h']], meals: null,
@@ -241,6 +249,26 @@ test(`the live adapter serves each tab's model from the ${CASE} store`, async (t
       assert.deepEqual(previous.map((row) => ({ title: row.title, block: row.block,
         moves: row.moves.map((m) => [m.slot, m.before, m.after, m.units]), result: row.result })), expected.previous);
     }
+  });
+
+  // Done (#518) on the store's queued Setting, then Undo: the card leaves the
+  // Queue for Changes' Waiting for pump, and comes back. The serve's store is a
+  // scratch copy, and Undo leaves only a withdrawn Plan behind.
+  // A store that queues no Setting declares `done: null`, and says so.
+  await t.test('Done and Undo', async () => {
+    assert.ok(expected.done !== undefined, `no Done expectation for the ${CASE} store`);
+    const queued = () => values(queue.ranking('wearer')).map((item) => item.subject);
+    if (expected.done === null) {
+      assert.deepEqual(queued().filter((s) => s.startsWith('setting:')), [], 'no Setting card is queued');
+      return;
+    }
+    const { subject, waiting } = expected.done;
+    await live.queueWrites.done(subject);
+    assert.ok(!queued().includes(subject), 'Done takes the card out of the Queue');
+    assert.deepEqual(values(changes.waiting('wearer')), [waiting]);
+    await live.queueWrites.undoDone(subject);
+    assert.deepEqual(queued(), expected.queue, 'Undo puts it back');
+    assert.deepEqual(values(changes.waiting('wearer')), []);
   });
 
   if (expected.findings) {

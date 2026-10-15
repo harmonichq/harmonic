@@ -16,7 +16,7 @@
 /* Desktop: the rail, the ranked list, the open item. */
 .ui-queue--desktop {
   display: grid;
-  grid-template-columns: auto 400px 1fr;
+  grid-template-columns: auto 440px 1fr;
   height: 100%;
 }
 .ui-queue__pane { box-sizing: border-box; min-height: 0; overflow-y: auto; padding: 24px 32px; }

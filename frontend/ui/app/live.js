@@ -118,20 +118,20 @@ export function createLive({ client, glossary }) {
   const timeOfDay = (window) => once(`time-of-day ${window}`, async () => {
     answers.overview.wearer.time_of_day[window] = await client.fetchExploreTimeOfDay(Number(window));
   });
-  /** gen_ui_fixtures._isf_windows: one window's first ISF segment, for the Overview's ISF estimate. The 30 d
-   *  analysis is the Queue's own read, shared. */
+  /** gen_ui_fixtures._windows: one window's first ISF segment and its 48 basal slots, for the Overview's ISF
+   *  and basal estimates. The 30 d analysis is the Queue's own read, shared. */
   const isf = (window) => once(`isf ${window}`, async () => {
     const answer = window === DEFAULT_ANALYSIS ? await analyze() : await client.fetchAnalysis(Number(window));
-    answers.overview.wearer.analyze[window] = { isf: answer.isf.slice(0, 1) };
+    answers.overview.wearer.analyze[window] = { isf: answer.isf.slice(0, 1), basal: answer.basal };
   });
-  /** What the Overview reads for a window it shows: its profile and its ISF estimate. */
+  /** What the Overview reads for a window it shows: its profile and its ISF and basal estimates. */
   const overviewWindow = (window) => Promise.all([timeOfDay(window), isf(window)]);
   const outcomes = () => once('outcomes', async () => {
     const served = await Promise.all(WINDOWS.map((w) => client.fetchOutcomes(Number(w))));
     answers.outcomes = Object.fromEntries(WINDOWS.map((w, i) => [w, served[i]]));
   });
 
-  /** gen_ui_fixtures._pattern_cases: each ranked Pattern's case file, its two cohorts' median traces. */
+  /** gen_ui_fixtures._pattern_cases: each ranked Pattern's case file, its trace chart (ADR 523). */
   async function cases(subjects) {
     if (subjects.length === 0) return {};
     const preparation = await client.fetchDiagnoseFindingCasePreparation();
@@ -142,14 +142,10 @@ export function createLive({ client, glossary }) {
         answer = await client.fetchDiagnoseFindingCase({
           projection_id: preparation.projection_id, finding_id: subject, alignment: 'event' });
       } catch (error) {
-        if (error?.status === 404) return; // no inspectable member: no impact line
+        if (error?.status === 404) return; // no inspectable member: no chart, no impact line
         throw error;
       }
-      const { projection } = answer;
-      out[subject.replace(/^pattern:/, '')] = {
-        comparison: { state: projection.comparison.state },
-        cohorts: projection.cohorts.filter((c) => c.key === 'matched' || c.key === 'comparison'),
-      };
+      out[subject.replace(/^pattern:/, '')] = { traces: answer.traces };
     }));
     return out;
   }
@@ -169,7 +165,9 @@ export function createLive({ client, glossary }) {
     answers.queue.wearer = {
       findings: { outcome_patterns: served.outcome_patterns, rows },
       guidance: answers.queue.wearer.guidance,
-      analyze: { basal: analysis.basal.filter((b) => b.asserts_move), isf: analysis.isf.slice(0, 1) },
+      // gen_ui_fixtures._ic_blocks: the carb-ratio blocks the engine stages a move for.
+      analyze: { basal: analysis.basal.filter((b) => b.asserts_move), isf: analysis.isf.slice(0, 1),
+        ic_blocks: analysis.ic_blocks.filter((b) => b.asserts_move) },
       trials: roster,
       focus: focused,
       cases: await cases(ranked),

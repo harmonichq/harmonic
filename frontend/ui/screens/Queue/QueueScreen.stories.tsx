@@ -53,7 +53,7 @@ const back = (canvas: ReturnType<typeof within>) =>
 
 const DEFAULT = { store: 'wearer' } as const;
 const PATTERN_OPEN = {
-  store: fixtures.states.single_cause.store, open: `pattern:${fixtures.states.single_cause.pattern}`,
+  store: fixtures.states.traces_episodes.store, open: `pattern:${fixtures.states.traces_episodes.pattern}`,
 } as QueueScreenProps;
 const SETTING_DETAIL = { store: fixtures.states.setting.store, open: 'setting:basal_rate' } as QueueScreenProps;
 const JUST_SNOOZED = { store: 'wearer-pinned', snooze, justSnoozed: true } as const;
@@ -256,8 +256,8 @@ const isfPlay: Story['play'] = async ({ canvasElement }) => {
   // Every fasting night is a dot, or counted at the end of the axis it lies beyond.
   const beyond = [...canvasElement.querySelectorAll('.ui-isf [data-edge]')]
     .reduce((sum, edge) => sum + Number(edge.textContent!.replace(/\D/g, '')), 0);
-  await expect(canvasElement.querySelectorAll('.ui-isf .ui-evidence__night').length + beyond).toBe(isf.data.fits.length);
-  const captions = [...canvasElement.querySelectorAll('.ui-isf__facts dt')].map((dt) => dt.textContent);
+  await expect(canvasElement.querySelectorAll('.ui-isf .ui-evidence__dot').length + beyond).toBe(isf.data.fits.length);
+  const captions = [...canvasElement.querySelectorAll('.ui-isf .ui-scard__facts dt')].map((dt) => dt.textContent);
   await expect(captions).toEqual(['Estimate', 'Range', 'Fasting nights']);
   await expect(within(canvasElement.querySelector('.ui-isf') as HTMLElement).getByRole('button', { name: 'Snooze' }))
     .toBeInTheDocument();
@@ -266,16 +266,18 @@ export const IsfSettingPhone: Story = { ...story('phone', { store: ISF_STORE, op
 export const IsfSettingDesktop: Story = { ...story('desktop', { store: ISF_STORE, open: 'setting:isf' }), play: isfPlay };
 
 // An admitted I:C Setting: the SettingCard with its block, current →
-// suggested and Range, printed as the pump profile prints it, and no night
-// chart or count, since its evidence is not nights. The generated wearer's I:C
-// holds, so its store is a QA case whose meals support lowering it.
+// suggested, printed as the pump profile prints it, its counted meal runs as
+// the chart's dots, and the stat row: Estimate, Range, Meal runs (ADR 523).
+// The generated wearer's I:C holds, so its store is a QA case whose meals
+// support lowering it.
 const IC_STORE = 'carb-ratio-supported' as const;
 const settingPlay = (title: string, units: string): Story['play'] => async ({ canvasElement }) => {
   const canvas = within(canvasElement);
   await expect(canvas.getByRole('heading', { level: 2, name: new RegExp(`^${title}`) })).toBeInTheDocument();
   await expect(canvas.getAllByText(units).length).toBeGreaterThan(0);
-  await expect(canvas.queryByText('Nights')).toBeNull();
-  await expect(canvas.getByText('Range')).toBeInTheDocument();
+  const captions = [...canvasElement.querySelectorAll('.ui-scard__facts dt')].map((dt) => dt.textContent);
+  await expect(captions).toEqual(['Estimate', 'Range', 'Meal runs']);
+  await expect(canvasElement.querySelectorAll('.ui-evidence__dot').length).toBeGreaterThan(0);
 };
 export const IcSettingPhone: Story = { ...story('phone', { store: IC_STORE, open: 'setting:carb_ratio' }), play: settingPlay('I:C', 'g/U') };
 export const IcSettingDesktop: Story = { ...story('desktop', { store: IC_STORE, open: 'setting:carb_ratio' }), play: settingPlay('I:C', 'g/U') };

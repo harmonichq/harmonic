@@ -12,6 +12,7 @@
 // - A Queue whose ranking holds candidates the Queue cannot draw: an ISF and an
 //   I:C Setting the findings serve no admitted row for, a Pattern the findings
 //   hold no row for, and a candidate of a kind the app does not know.
+// - A Pattern whose trace chart is served with nothing to draw (ADR 523).
 // - A day navigator with no readings, as a store before its first sync serves it.
 // - A day with no Control-IQ boluses: the latest day's timeline with
 //   `insulin_totals.control_iq_bolus` served as 0 and its `total` the served
@@ -63,10 +64,19 @@ queue.guidance.candidates.push(
 );
 add('queue', 'wearer-undrawable', queue);
 
+/** The wearer's Queue with one Pattern's trace chart served with nothing to draw
+ *  (ADR 523): no episode has its early readings and no bin of either cohort has
+ *  three readings, as a history too short or too gappy serves it. */
+const blank = clone(fixtures.queue.wearer) as typeof fixtures.queue.wearer;
+const blankKey = fixtures.states.traces_episodes.pattern as keyof typeof blank.cases;
+Object.assign(blank.cases[blankKey].traces, { pattern: { episodes: [], points: [] }, typical: { points: [] } });
+add('queue', 'wearer-traces-empty', blank);
+
 export const CHANGES_PROFILE = 'wearer-profile' as keyof typeof fixtures.changes;
 export const CHANGES_PROFILE_ENDED = 'wearer-profile-ended' as keyof typeof fixtures.changes;
 export const CHANGES_UNNAMED = 'wearer-unnamed' as keyof typeof fixtures.changes;
 export const QUEUE_UNDRAWABLE = 'wearer-undrawable' as keyof typeof fixtures.queue;
+export const QUEUE_TRACES_EMPTY = 'wearer-traces-empty' as keyof typeof fixtures.queue;
 
 /** The latest day as served on a day Control-IQ gave no automatic bolus. */
 const noControlIq = (() => {

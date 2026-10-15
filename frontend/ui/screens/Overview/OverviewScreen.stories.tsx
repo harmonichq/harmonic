@@ -11,7 +11,9 @@ import { OverviewScreen, type OverviewScreenProps } from './OverviewScreen';
 // - Loading, and Unavailable.
 // Plays per size: choosing 30 d shows that window's metrics, profile and ISF
 // estimate; each window's date line and changes name the period before it, or
-// none; and the page scrolls as one, the summary first, the ISF estimate below.
+// none; and the page scrolls as one, the summary first, the ISF and basal
+// estimates below (ADR 523). At 90 d the basal card marks the slots the engine
+// stages a move for.
 const meta: Meta<typeof OverviewScreen> = {
   title: 'Screens/Overview',
   component: OverviewScreen,
@@ -58,8 +60,8 @@ export const UnavailablePhone = story('phone', { store: 'wearer', state: 'unavai
 export const UnavailableDesktop = story('desktop', { store: 'wearer', state: 'unavailable' });
 
 /** The page scrolls as one: the summary fills the first screen (the profile
- *  ends inside it), the ISF estimate follows, and scrolled to the end the
- *  estimate is in view. */
+ *  ends inside it), the ISF and basal estimates follow, and scrolled to the end
+ *  the last of them is in view. */
 const scrolled: Story['play'] = async ({ canvasElement }) => {
   const page = canvasElement.querySelector<HTMLElement>('[data-scroll="page"]')!;
   const top = page.getBoundingClientRect();
@@ -67,7 +69,7 @@ const scrolled: Story['play'] = async ({ canvasElement }) => {
   await expect(profile.bottom).toBeLessThanOrEqual(top.bottom);
   page.scrollTop = page.scrollHeight;
   await new Promise(requestAnimationFrame);
-  const card = canvasElement.querySelector('.ui-isf')!.getBoundingClientRect();
+  const card = canvasElement.querySelector('.ui-overview__estimates > :last-child')!.getBoundingClientRect();
   await expect(card.top).toBeGreaterThanOrEqual(top.top);
   await expect(card.bottom).toBeLessThanOrEqual(top.bottom);
 };

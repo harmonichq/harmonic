@@ -1,7 +1,7 @@
 // The Overview screen (§1.1, §1.3), composed only from the library's
 // components: standard metrics over the selected window against the period of
 // the same length before it, its time-in-ranges bar, its glucose profile, and
-// the ISF estimate. Nothing to act on.
+// the ISF and basal estimates. Nothing to act on.
 //
 // The window control picks 14, 30 or 90 d (a window the served coverage falls
 // short of is disabled). The line under it is the window's date span and,
@@ -14,18 +14,20 @@
 //
 // One scrolling page (§2.2 Scrolling, §2.5 2026-10-14): the summary — the
 // window switch and its date line, In range, the metrics and the profile — is
-// the first screenful, and the ISF estimate follows it. Phone: one column under
-// the fixed header, above the tab bar, with a shorter profile plot so the
-// summary fits. Desktop: the rail and one pane, the metrics beside the
-// profile, the ISF estimate beneath both.
+// the first screenful, and the ISF and basal estimates follow it, two cards of
+// one size (ADR 523). Phone: one column under the fixed header, above the tab
+// bar, with a shorter profile plot so the summary fits, the basal card under
+// the ISF card. Desktop: the rail and one pane, the metrics beside the profile,
+// the two estimates side by side beneath both.
 //
-// The profile and the ISF estimate are read per window: choosing a window
+// The profile and the estimates are read per window: choosing a window
 // reports it (`onWindow`), and until its answers land each shows its skeleton.
 import { useEffect, useState } from 'react';
 import { answers, sourced } from '../../answers';
 import {
-  isfEstimate, metric, period, profile, tirBands, type MetricKey, type Window,
+  basalEstimate, isfEstimate, metric, period, profile, tirBands, type MetricKey, type Window,
 } from '../../overview-model';
+import { BasalCard } from '../../components/BasalCard/BasalCard';
 import { GlucoseProfile } from '../../components/GlucoseProfile/GlucoseProfile';
 import { IsfCard } from '../../components/IsfCard/IsfCard';
 import { MetricFigure } from '../../components/MetricFigure/MetricFigure';
@@ -153,9 +155,10 @@ export function OverviewScreen({
     </section>
   );
 
-  const isf = (
-    <div className="ui-overview__isf">
+  const estimates = (
+    <div className="ui-overview__estimates">
       <IsfCard data={store === 'wearer' ? isfEstimate('wearer', window) : 'none'} />
+      <BasalCard data={store === 'wearer' ? basalEstimate('wearer', window) : 'none'} />
     </div>
   );
 
@@ -165,7 +168,7 @@ export function OverviewScreen({
         <div className="ui-overview__head">{header}</div>
         <main className="ui-overview__main" data-scroll="page">
           <div className="ui-overview__body">
-            {control}{metrics}{glucoseProfile}{isf}
+            {control}{metrics}{glucoseProfile}{estimates}
           </div>
         </main>
         <NavBar layout="tabbar" selected="overview" dayCount={dayCount()} {...nav} />
@@ -180,7 +183,7 @@ export function OverviewScreen({
         <div className="ui-overview__body">
           {control}
           <div className="ui-overview__columns">{metrics}{glucoseProfile}</div>
-          {isf}
+          {estimates}
         </div>
       </section>
     </div>

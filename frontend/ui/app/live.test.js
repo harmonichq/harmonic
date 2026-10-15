@@ -40,13 +40,13 @@ function fakeClient(served = history()) {
     fetchPrompts: answer('prompts', () => []),
     fetchGuidance: answer('guidance', () => ({ analysis_generation: 'g1', candidates: served.candidates })),
     fetchDiagnoseFindings: answer('findings', () => ({ outcome_patterns: [], rows: [] })),
-    fetchAnalysis: answer('analyze', () => ({ basal: [], isf: [] })),
+    fetchAnalysis: answer('analyze', () => ({ basal: [], isf: [], ic_blocks: [] })),
     fetchFocuses: answer('focus', () => ({ focuses: served.focuses, input_revision: 7 })),
     fetchVerifyTrials: answer('trials', (opts = {}) => (opts.selected
       ? { selected: { title: 'Pattern', lever_title: 'Habit', reassessment: { comparison: { ...comparison, outcomes: [] } } } }
       : { trials: served.trials, focuses: served.focuses, admission: served.admission, input_revision: 7 })),
     fetchDiagnoseFindingCasePreparation: answer('case-preparation', () => ({ projection_id: 'fp' })),
-    fetchDiagnoseFindingCase: answer('case', () => ({ projection: { comparison: { state: 'available' }, cohorts: [] } })),
+    fetchDiagnoseFindingCase: answer('case', () => ({ traces: { anchor: 'bolus', window_min: [-30, 240], pattern: { episodes: [], points: [] }, typical: { points: [] } } })),
     fetchOutcomes: answer('outcomes', () => ({})),
     fetchExploreTimeOfDay: answer('time-of-day', () => ({})),
     fetchDayNavigator: answer('navigator', (month) => ({ month: month ?? '2026-01', days: [] })),
@@ -96,7 +96,7 @@ test('the Queue reads a case file only for each Pattern it ranks', async () => {
 test('the Queue keeps the analysis\'s first ISF segment, which its ISF card draws', async () => {
   const fake = fakeClient();
   const segments = [{ start_min: 0, current: 40, recommended: 36.2, asserts_move: true }, { start_min: 720 }];
-  fake.client.fetchAnalysis = () => Promise.resolve({ basal: [], isf: segments });
+  fake.client.fetchAnalysis = () => Promise.resolve({ basal: [], isf: segments, ic_blocks: [] });
   const live = createLive({ client: fake.client, glossary: [] });
   await live.readTab('queue');
   assert.deepEqual(live.answers.queue.wearer.analyze.isf, segments.slice(0, 1));

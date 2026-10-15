@@ -17,11 +17,11 @@ three percentage points, and a carb-ratio block's counted meal runs changed.
 ## What changes
 
 - The one CGM reader every analyzer and chart goes through returns one reading
-  per slot. Readings chained less than two minutes apart are one slot, dated at
-  its first reading.
-- A slot whose readings agree keeps that value. A slot whose readings disagree
-  carries no value, as a sensor HIGH or LOW reading already does, so no analyzer
-  trusts either series there.
+  per slot. Readings chained less than two minutes apart are one slot.
+- A slot whose glucose values agree keeps that value. A slot holding two
+  different glucose values carries no value, as a sensor HIGH or LOW reading
+  already does, so no analyzer trusts either series there. A record with no
+  value beside a reading is not a disagreement.
 - A ranged read answers exactly as the whole read does at its edges.
 - No stored row is rewritten, and the ingest key is unchanged.
 

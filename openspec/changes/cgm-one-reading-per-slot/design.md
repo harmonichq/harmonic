@@ -28,17 +28,19 @@ No staging verdict flipped on that store.
 
 1. `Store.cgm_readings`, the one reader every analyzer, chart and projection
    goes through, returns one reading per slot. Readings chained less than two
-   minutes apart are one slot, dated at its first reading. The feed's cadence is
-   five minutes, and on the measured store nothing else fell under four minutes.
-2. A slot whose readings agree keeps that value. A slot whose readings disagree
-   carries no glucose value, as a sensor HIGH or LOW reading already does.
+   minutes apart are one slot. The feed's cadence is five minutes, and on the
+   measured store nothing else fell under four minutes.
+2. A record with no glucose value adds no observation. A slot whose glucose
+   values agree is its first valued reading. A slot holding two different
+   glucose values is its first reading with no glucose value, as a sensor HIGH
+   or LOW reading already is.
    Without the dropped fields the engine cannot tell which series is right.
    Averaging would invent a reading no sensor took, and picking one would trust
    an arbitrary series. A slot with no value fails the clean-window glucose gate
    and drops out of the glycemic panel, so an ambiguous window is treated as
    missing rather than as falsely known.
-3. A ranged read looks across its edges, includes a slot by its first reading,
-   and answers exactly as the whole read does.
+3. A ranged read looks across its edges, keeps a slot by the time of the
+   reading it returns, and answers exactly as the whole read does.
 4. Nothing durable changes. No row is rewritten, no migration runs, and the
    ingest key stays. The collapse is reversible by reverting the reader, and it
    needs no dedupe of existing self-hosted stores.

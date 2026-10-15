@@ -252,6 +252,15 @@ class CgmSlotTest(unittest.TestCase):
         self.assertEqual(ranged, [(datetime(2022, 5, 27, 1, 5, 0), 140.0),
                                   (datetime(2022, 5, 27, 1, 59, 50), None)])
 
+    def test_a_record_with_no_value_beside_a_reading_leaves_the_reading(self):
+        self._put(("2022-05-27T01:04:59", None), ("2022-05-27T01:05:00", "140"),
+                  ("2022-05-27T01:05:30", None))
+        self.assertEqual([(r.t, r.bg) for r in self.store.cgm_readings()],
+                         [(datetime(2022, 5, 27, 1, 5, 0), 140.0)])
+        self.assertEqual([(r.t, r.bg) for r in self.store.cgm_readings(
+            start="2022-05-27 01:05:00", end="2022-05-27 01:06:00")],
+                         [(datetime(2022, 5, 27, 1, 5, 0), 140.0)])
+
     def test_a_normal_five_minute_stream_is_untouched(self):
         self._put(("2022-05-27T01:00:00", "120"), ("2022-05-27T01:04:43", "121"),
                   ("2022-05-27T01:10:00", "122"))

@@ -1170,16 +1170,17 @@ class Store:
         The vendor feed can carry two records for one slot seconds apart — the
         same reading twice, or two disagreeing series side by side — and the
         timestamp key keeps both. Readings chained less than two minutes apart
-        are one slot, dated at its first reading: one value when they agree, no
-        value when they disagree, so no analyzer trusts either series. A slot is
-        in range by its first reading, and a ranged read looks across its edges
-        so it answers exactly as the whole read does. Stored rows are untouched.
+        are one slot. A record with no glucose value adds no observation, so the
+        slot is its first valued reading when its values agree, and its first
+        reading with no value when two values disagree, so no analyzer trusts
+        either series. A ranged read looks across its edges and keeps a slot by
+        that reading's time, so it answers exactly as the whole read does.
+        Stored rows are untouched.
         """
         rows = [(parse_t(r["t"]), r["bg"], r["type"])
                 for r in self._select("cgm_readings", start, end)]
         if not rows:
             return []
-        first_in_range = rows[0][0]
         if start:
             while True:
                 prev = self.conn.execute(
@@ -1202,14 +1203,19 @@ class Store:
                 slots[-1].append(row)
             else:
                 slots.append([row])
+        # Bound by the stored text, exactly as the SQL range above compares it.
+        lo, hi = (str(start) if start else None), (str(end) if end else None)
         out = []
         for slot in slots:
-            t, bg, kind = slot[0]
-            if t < first_in_range:
-                continue
-            if any(other[1] != bg for other in slot[1:]):
-                bg = None
-            out.append(CgmReading(t, bg, kind))
+            valued = [row for row in slot if row[1] is not None]
+            if len({row[1] for row in valued}) > 1:
+                t, _, kind = slot[0]
+                reading = CgmReading(t, None, kind)
+            else:
+                reading = CgmReading(*(valued or slot)[0])
+            t = format_t(reading.t) if lo or hi else None
+            if (lo is None or t >= lo) and (hi is None or t < hi):
+                out.append(reading)
         return out
 
     def cgm_day_bounds(self) -> tuple:

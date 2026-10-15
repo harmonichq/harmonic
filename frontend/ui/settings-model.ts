@@ -17,6 +17,12 @@ export const PARAMETER_UNITS: Record<'basal_rate' | 'isf' | 'carb_ratio', string
   basal_rate: 'U/h', isf: 'mg/dL/U', carb_ratio: 'g/U',
 };
 
+/** Each profile setting's name, the glossary's short form (§1.5 Basal, ISF,
+ *  I:C), wherever a screen names one: the profile's columns, and Changes. */
+export const PARAMETER_NAMES: Record<'basal_rate' | 'isf' | 'carb_ratio', string> = {
+  basal_rate: 'Basal', isf: 'ISF', carb_ratio: 'I:C',
+};
+
 export type SyncState = 'synced' | 'failed';
 export type AccountState = 'set' | 'unset';
 

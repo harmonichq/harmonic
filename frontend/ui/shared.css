@@ -145,7 +145,7 @@
   }
 }
 
-/* A card or a disclosure opens in place: it grows from where it starts
+/* A card opens in place: it grows from where it starts
    (--ui-expand-from: nothing, or the row it replaces) to its own height, its
    content fading in and clipped while it grows. It may shrink below its
    content only while it grows (min-height: 0, as a flex item). Under reduced
@@ -238,4 +238,16 @@
     height calc(var(--ui-motion-standard) * var(--ui-motion-move)) var(--ui-ease-standard),
     margin-block calc(var(--ui-motion-standard) * var(--ui-motion-move)) var(--ui-ease-standard),
     opacity var(--ui-motion-standard) var(--ui-ease-standard);
+}
+
+/* Changes' value columns (§2.5, 2026-10-14): before → after, its unit and its
+   Δ in the same fixed columns wherever Changes prints a pair, so the numbers
+   align like a table in every module and in the Previous list. */
+:root {
+  --ui-col-name: 48px;
+  --ui-col-slot: 52px;
+  --ui-col-value: 52px;
+  --ui-col-arrow: 22px;
+  --ui-col-unit: 58px;
+  --ui-col-delta: 64px;
 }

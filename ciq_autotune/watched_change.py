@@ -38,7 +38,7 @@ from .analyzers.scenario.levers import (
     title as lever_title,
 )
 from .store import wall_clock_now
-from .trial_evidence import trial_breakdown
+from .trial_evidence import _constituent_changes, trial_breakdown
 
 _DT_FMT = "%Y-%m-%d %H:%M:%S"
 
@@ -787,9 +787,16 @@ def review_trials(store, *, now: datetime, selected=None, kind="trial", assessme
         0 if t.view.maturing.is_maturing else 1,
         -datetime.fromisoformat(t.view.changed_at).timestamp(), _review_id(t.view, t.block)))
     admission = follow_up_admission(store, now=now)
+    snapshots = store.settings_snapshots()
     roster = []
     for trial in ordered:
         row = _review_summary(trial)
+        if row["parameter"] == "profile":
+            # A whole-profile switch names the settings it moved, so a list of
+            # previous changes prints them without a detail read each (#524).
+            row["changes"] = _constituent_changes(
+                snapshots, parameter="profile", slot=None,
+                changed_at=datetime.strptime(row["changed_at"], _DT_FMT), before=None, after=None)
         record = store.follow_up_record("trial", row["id"])
         row.update(ending=record["ending"] if record else _unavailable("not_recorded"),
                    watch_disposition=("active" if admission["active_kind"] == "trial"

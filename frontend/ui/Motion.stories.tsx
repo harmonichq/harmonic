@@ -4,7 +4,6 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { fixtures, sourced } from './fixtures';
 import { swipe } from './gesture';
 import { Button } from './components/Button/Button';
-import { ChangesScreen } from './screens/Changes/ChangesScreen';
 import { DayScreen } from './screens/Day/DayScreen';
 import { ranking } from './queue-model';
 import { QueueScreen } from './screens/Queue/QueueScreen';
@@ -75,16 +74,6 @@ const MOTIONS = {
       stage.querySelector<HTMLElement>('.ui-queue__list .ui-qrow')!.click();
       await pause(900);
       stage.querySelector<HTMLElement>('.ui-queue__list .ui-qrow')!.click();
-    },
-  },
-  disclosure: {
-    name: 'Disclosure',
-    frame: PHONE,
-    screen: () => <ChangesScreen layout="phone" store="wearer-ended-pinned" />,
-    run: async (stage) => {
-      stage.querySelector<HTMLElement>('.ui-row[aria-expanded]')!.click();
-      await pause(900);
-      stage.querySelector<HTMLElement>('.ui-row[aria-expanded]')!.click();
     },
   },
   swipe: {
@@ -218,7 +207,6 @@ export const Sheet: Story = { ...story('sheet'), name: 'Sheet' };
 export const Popover: Story = { ...story('popover'), name: 'Popover' };
 export const DrillDown: Story = { ...story('drillDown'), name: 'Drill-down' };
 export const Expand: Story = { ...story('expand'), name: 'Expand' };
-export const Disclosure: Story = { ...story('disclosure'), name: 'Disclosure' };
 export const SnoozeSwipe: Story = { ...story('swipe'), name: 'Snooze swipe' };
 export const TransientBar: Story = { ...story('bar'), name: 'Transient bar' };
 export const Month: Story = { ...story('month'), name: 'Month' };

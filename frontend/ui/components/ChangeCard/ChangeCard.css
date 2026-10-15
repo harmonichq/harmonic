@@ -141,3 +141,63 @@
 
 /* A date never breaks across lines. */
 .ui-change__date { white-space: nowrap; }
+
+/* A Trial's head: its name and block, the pill on the same line, the date. */
+.ui-change__head:has(> .ui-change__title) { align-items: baseline; gap: 12px; }
+.ui-change__head > .ui-change__title { margin: 0; }
+.ui-change__block { color: var(--wk-ink-meta); font-weight: var(--ui-weight-regular); white-space: nowrap; }
+.ui-change > .ui-change__date { margin-top: 4px; color: var(--wk-ink-meta); font-size: var(--ui-type-label); line-height: 18px; }
+
+/* What moved: the slot, before → after and the unit in fixed columns. One
+   setting is the figure; a profile switch names each setting at body size. */
+.ui-moves {
+  display: grid;
+  grid-template-columns:
+    var(--ui-col-name) var(--ui-col-slot) var(--ui-col-value) var(--ui-col-arrow) var(--ui-col-value) auto;
+  align-items: baseline;
+  row-gap: 4px;
+  margin-top: 12px;
+  font-size: var(--ui-type-body);
+  line-height: 22px;
+  font-variant-numeric: tabular-nums;
+}
+.ui-moves__row { display: contents; }
+.ui-moves__name { color: var(--wk-ink-body); }
+.ui-moves__slot { color: var(--wk-ink-meta); }
+.ui-moves__before,
+.ui-moves__after { text-align: right; }
+.ui-moves__before { color: var(--wk-ink-meta); }
+.ui-moves__after { color: var(--wk-ink); font-weight: var(--ui-weight-strong); }
+.ui-moves__arrow { color: var(--wk-ink-meta); text-align: center; }
+.ui-moves__units { padding-left: 6px; color: var(--wk-ink-meta); font-size: var(--ui-type-label); }
+/* The figure: the value now on the pump strong in the accent, the one it
+   replaced receded, the slot and the unit at label size on the baseline. */
+.ui-moves--figure {
+  grid-template-columns: auto auto auto auto auto;
+  justify-content: start;
+  column-gap: 12px;
+  margin-top: 8px;
+  font-size: var(--ui-type-figure);
+  line-height: 40px;
+  letter-spacing: -.02em;
+}
+.ui-moves--figure .ui-moves__slot,
+.ui-moves--figure .ui-moves__units { font-size: var(--ui-type-label); letter-spacing: 0; }
+.ui-moves--figure .ui-moves__units { padding-left: 0; margin-left: -6px; }
+.ui-moves--figure .ui-moves__before { font-weight: var(--ui-weight-regular); }
+.ui-moves--figure .ui-moves__arrow { font-size: var(--ui-type-title); }
+.ui-moves--figure .ui-moves__after { color: var(--primary); }
+
+/* The data collected: captioned values in a row, caption above value. */
+.ui-change__collected {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 32px;
+  margin: 16px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--wk-rule);
+}
+.ui-change__pair { display: flex; flex-direction: column; gap: 8px; }
+.ui-change__pair dd { margin: 0; font-size: var(--ui-type-body); line-height: 22px; }
+
+.ui-change__end { position: relative; display: flex; justify-content: flex-end; margin-top: 16px; }

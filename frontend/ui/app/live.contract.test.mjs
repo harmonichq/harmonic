@@ -93,6 +93,7 @@ const EXPECTED = {
     queue: ['pattern:lows_after_correcting_highs', 'pattern:highs_after_treating_lows'],
     isf: null,
     change: { kind: 'none' },
+    done: null,
     findings: {
       '2024-05-14': [['2024-05-14 22:00:00', 'pattern', ['Correction on active insulin']]],
       '2024-05-16': [['2024-05-16 13:55:00', 'pattern', ['Over-treated low']]],
@@ -166,9 +167,15 @@ test(`the live adapter serves each tab's model from the ${CASE} store`, async (t
   // Done (#518) on the store's queued Setting, then Undo: the card leaves the
   // Queue for Changes' Waiting for pump, and comes back. The serve's store is a
   // scratch copy, and Undo leaves only a withdrawn Plan behind.
+  // A store that queues no Setting declares `done: null`, and says so.
   await t.test('Done and Undo', async () => {
-    const { subject, waiting } = expected.done;
+    assert.ok(expected.done !== undefined, `no Done expectation for the ${CASE} store`);
     const queued = () => values(queue.ranking('wearer')).map((item) => item.subject);
+    if (expected.done === null) {
+      assert.deepEqual(queued().filter((s) => s.startsWith('setting:')), [], 'no Setting card is queued');
+      return;
+    }
+    const { subject, waiting } = expected.done;
     await live.queueWrites.done(subject);
     assert.ok(!queued().includes(subject), 'Done takes the card out of the Queue');
     assert.deepEqual(values(changes.waiting('wearer')), [waiting]);

@@ -1320,3 +1320,74 @@ class OpenWithoutWriterTest(unittest.TestCase):
         with Store.open(self.path) as store:
             self.assertIsNotNone(store.conn.execute(
                 "SELECT 1 FROM sqlite_master WHERE type='table' AND name='plan_draft'").fetchone())
+
+
+def _settings(basal_rate):
+    pad = [{"startTime": 0, "basalRate": 0, "isf": 0, "carbRatio": 0, "targetBg": 0}] * 15
+    return parse_pump_settings({"profiles": {"activeIdp": 1, "profile": [
+        {"name": "A", "idp": 1, "insulinDuration": 300, "carbEntry": 1, "maxBolus": 15000,
+         "tDependentSegs": [{"startTime": 0, "basalRate": basal_rate, "isf": 40,
+                             "carbRatio": 8000, "targetBg": 110}] + pad}]}, "cgmSettings": {}})
+
+
+class LatestDataInstantTest(unittest.TestCase):
+    """#522: the follow-up reads' ``now`` — the latest basal, CGM, bolus or settings
+    capture instant — is one query, never a materialized history."""
+
+    def setUp(self):
+        self.store = Store.open(":memory:")
+
+    def tearDown(self):
+        self.store.close()
+
+    def test_empty_store_has_no_latest_instant(self):
+        self.assertIsNone(self.store.latest_data_instant())
+
+    def test_latest_instant_spans_all_four_streams(self):
+        self.store.upsert_cgm([{"EventDateTime": "2026-06-01T08:00:00",
+                                "Readings (CGM / BGM)": 110, "Description": "EGV"}])
+        self.store.upsert_basal([{"seq_num": 1, "time": "2026-06-01 08:05:00",
+                                  "delivery_type": "algorithmDelivery", "duration_mins": 5,
+                                  "basal_rate": 0.8}])
+        self.assertEqual(self.store.latest_data_instant(), datetime(2026, 6, 1, 8, 5))
+        self.store.upsert_bolus([{
+            "request_time": "2026-06-01 09:00:00", "seq_num": 1, "description": "Bolus",
+            "insulin": 1.0, "carbs": None, "bolus_options": 3,
+            "completion_time": "2026-06-01 09:00:00",
+        }])
+        self.assertEqual(self.store.latest_data_instant(), datetime(2026, 6, 1, 9, 0))
+        self.store.upsert_settings_snapshot("2026-06-01 10:30:00", _settings(600))
+        self.assertEqual(self.store.latest_data_instant(), datetime(2026, 6, 1, 10, 30))
+
+
+class SettingsSnapshotsReadTest(unittest.TestCase):
+    """#522: the parsed captures are kept per connection, and never outlive a write."""
+
+    def setUp(self):
+        self.tmp = tempfile.NamedTemporaryFile(suffix=".sqlite")
+        self.addCleanup(self.tmp.close)
+
+    def test_a_capture_written_by_another_connection_is_read(self):
+        with Store.open(self.tmp.name) as writer, Store.open(self.tmp.name) as reader:
+            writer.upsert_settings_snapshot("2026-06-01 10:00:00", _settings(600))
+            self.assertEqual(len(reader.settings_snapshots()), 1)
+            writer.upsert_settings_snapshot("2026-06-01 11:00:00", _settings(700))
+            snapshots = reader.settings_snapshots()
+        self.assertEqual([s.captured_at for s in snapshots],
+                         [datetime(2026, 6, 1, 10), datetime(2026, 6, 1, 11)])
+        self.assertEqual(snapshots[1].settings.profiles[0].segments[0].basal_rate, 0.7)
+
+    def test_a_capture_written_on_the_same_connection_is_read(self):
+        with Store.open(self.tmp.name) as store:
+            store.upsert_settings_snapshot("2026-06-01 10:00:00", _settings(600))
+            self.assertEqual(len(store.settings_snapshots()), 1)
+            store.upsert_settings_snapshot("2026-06-01 11:00:00", _settings(600))
+            self.assertEqual(len(store.settings_snapshots()), 2)
+
+    def test_identical_profiles_across_captures_parse_to_equal_values(self):
+        with Store.open(self.tmp.name) as store:
+            store.upsert_settings_snapshot("2026-06-01 10:00:00", _settings(600))
+            store.upsert_settings_snapshot("2026-06-01 11:00:00", _settings(600))
+            first, second = store.settings_snapshots()
+        self.assertEqual(first.settings, second.settings)
+        self.assertNotEqual(first.captured_at, second.captured_at)

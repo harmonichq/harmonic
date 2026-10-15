@@ -4,13 +4,16 @@
   background: var(--wk-surface-sunken);
 }
 
-/* Phone: the bottom tab bar, over the home-indicator inset. */
+/* Phone: the bottom tab bar, Material 3 Expressive's shorter bar (§2.5,
+   2026-10-14): 64 px from its rule to the device's inset, the 44 px items
+   centred in it, then the device's own bottom inset, which is 0 on a phone
+   without one. --ui-inset-bottom stands in for the inset in a story. */
 .ui-nav--tabbar {
-  height: 84px;
-  padding: 6px 8px 34px;
+  padding: 9px 8px calc(10px + var(--ui-inset-bottom, env(safe-area-inset-bottom, 0px)));
   border-top: 1px solid var(--wk-rule);
 }
-.ui-nav--tabbar .ui-nav__item { flex: 1; }
+.ui-nav--tabbar .ui-nav__item { flex: 1; justify-content: center; gap: 4px; }
+.ui-nav--tabbar .ui-nav__icon { margin-top: 0; }
 
 /* Tablet and desktop: the left rail, same items, same order. */
 .ui-nav--rail {

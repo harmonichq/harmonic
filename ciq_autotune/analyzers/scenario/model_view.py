@@ -128,6 +128,50 @@ def _is_driver(anchor: Anchor, attr) -> bool:
     return anchor.t == attr.trigger_t or anchor.reach_start == attr.trigger_t
 
 
+def stacking_reached_low(anchors: Sequence[Anchor], attr) -> Optional[Anchor]:
+    """The low a Correction stacking episode's stacked doses reached: its first low
+    at or after the stacking dose, or ``None`` for any other episode.
+
+    The Lows after correcting highs Pattern counts this low as Correction
+    stacking's Occurrence (``explore_exposures``), and Day marks it as such.
+    """
+    if attr.lever is not Lever.CORRECTION_STACKING or attr.driver_anchor is None:
+        return None
+    return min((a for a in anchors if a.kind is AnchorKind.LOW and a.t >= attr.driver_anchor.t),
+               key=lambda a: a.t, default=None)
+
+
+def day_findings(evaluated, target: date_cls) -> List[dict]:
+    """Every anchor on ``target``'s calendar day that the engine counted toward a
+    Lever, in time order, each with the Levers it counts toward.
+
+    An anchor counts when it drove its episode (its episode's Lever), when one of
+    its own classifier verdicts matched (whether it drove or another candidate
+    did: the Episode Log's claimed anchor), and when it is the low a Correction
+    stacking episode reached. Near-misses and clean anchors count toward nothing.
+    The anchors come from every episode, whichever day it resolves on, so an
+    evening anchor of an episode that resolves after midnight is served on the
+    day it happened (``episodes`` keeps the resolve-day assignment).
+    """
+    out = []
+    for item in evaluated.episodes:
+        attr = item.attribution
+        retained = {id(a): verdicts for a, verdicts in zip(item.anchors.anchors, attr.anchor_verdicts)}
+        reached = stacking_reached_low(item.anchors.anchors, attr)
+        for a in item.anchors.anchors:
+            if a.t.date() != target:
+                continue
+            levers = [attr.lever] if _is_driver(a, attr) else []
+            levers += [Lever(v.classifier) for v in retained[id(a)] if v.matched]
+            if a is reached:
+                levers.append(Lever.CORRECTION_STACKING)
+            if levers:
+                out.append({"t": _fmt(a.t), "kind": a.kind.value, "bg": a.bg,
+                            "levers": [{"lever": lever.value, "title": lever_title(lever)}
+                                       for lever in dict.fromkeys(levers)]})
+    return sorted(out, key=lambda finding: finding["t"])
+
+
 def _build_episode_view(
     idx: int,
     ep_anchors,
@@ -255,6 +299,9 @@ def assemble_model_view(
         "chart_start": _fmt(win_start),
         "chart_end": _fmt(win_end),
         "episodes": episodes,
+        # What the Day chart marks: the day's anchors the engine counted toward a
+        # Lever, from every episode that has one on this day.
+        "findings": day_findings(evaluated, target),
     }
 
 

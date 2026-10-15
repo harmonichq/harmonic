@@ -673,3 +673,37 @@ it; one whose setting has not moved since shows its card Not on pump, if that
 card is queued, until the next change or a snooze. The amendments this makes
 to the Plan, HTTP API and surfaces specifications are in this change's spec
 deltas, and the confirmation requirement ADR 500 modified moves here.
+
+## ADR 517 — The model-view serves the day's findings, and Day marks every one
+
+**Decision.** `/api/model-view?date=` serves `findings`: every anchor on the
+requested calendar day that the engine counted toward a Lever, in time order,
+each with `t`, `kind`, `bg` and `levers` (each Lever's key and served title).
+An anchor counts toward its episode's Lever when it drove the episode, toward
+each Lever whose own classifier verdict matched (the Episode Log's claimed
+anchor), and toward Correction stacking when it is the low a Correction stacking
+episode reached. Near-miss, clean and no-data anchors count toward nothing. Day
+marks each finding with the Pattern glyph and names its habits on its event row,
+and reads no anchor state of its own.
+
+**Why the server.** Day had re-derived the rule from `episodes`: fired meant the
+episode's Lever, outranked meant the matched verdicts, and a frontend list
+dropped three habits the engine no longer serves (#499; `Lever(...)` cannot name
+them). Which moments count toward which habit is policy, and its owner is the
+evaluation, so the frontend's copy, and its unreachable cut list, go.
+
+**Why every episode, not only the resolve day's.** `episodes` stays assigned to
+the day an episode resolves on (ADR 0019). Day kept only anchors on its own day,
+so an evening anchor of an episode resolving after midnight was dropped by the
+next day's read and never served by its own: on the showcase a 22:00 Correction
+on active insulin reached no day. `findings` reads every episode with an anchor
+on the day.
+
+**Why the reached low.** The Lows after correcting highs Pattern credits that
+low to Correction stacking (`explore_exposures`), so a day that hid it showed
+less than the Pattern counts. `model_view.stacking_reached_low` is now the one
+rule both read.
+
+**Consequences.** The UI fixtures are regenerated with the trimmed `findings`.
+The contract test adds `pattern-correction-fold`,
+whose days carry five kinds of finding, and checks the showcase's three days.

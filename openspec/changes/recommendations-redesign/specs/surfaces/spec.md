@@ -158,13 +158,27 @@ Meal, Correction and Control-IQ, and the day chart, with a day navigator that
 drops down a month from the header's date. It SHALL offer Log carbs, which records
 carbs eaten without a bolus. While Prompts are unanswered, Day SHALL show them one
 at a time with Yes, No, False low and Not sure, and the Day tab SHALL carry their
-count as a badge. Day SHALL show no aggregate beyond that day.
+count as a badge. Day SHALL show no aggregate beyond that day. Day SHALL mark
+every finding the per-day model read serves for that day: a Pattern glyph on the
+chart at its time, and its habits' served titles on the event row of the bolus
+it counted or, with no bolus at its time, on its own row with its reading. Day
+SHALL decide no finding itself: it reads no anchor state and keeps no list of
+habits.
 
 #### Scenario: Unanswered Prompts are counted on the tab
 
 - **GIVEN** two unanswered Prompts
 - **WHEN** the app renders
 - **THEN** the Day tab carries a count badge of 2
+
+#### Scenario: Each finding of a day is marked and named
+
+- **GIVEN** a day whose served findings are a meal counted as Carb undercount
+  and a low counted as Over-treated low
+- **WHEN** Day shows that day
+- **THEN** the chart carries two Pattern glyphs at their times
+- **AND** the meal's event row names Carb undercount, and the low is its own row
+  naming Over-treated low with its reading in mg/dL
 
 ### Requirement: Settings holds the sync state, the pump profile and the glossary
 

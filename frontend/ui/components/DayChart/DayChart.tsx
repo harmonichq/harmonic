@@ -17,7 +17,7 @@
 // per zone as the DayRibbon draws it, and broken where readings stop; the band's
 // two edges carry their served values, the unit after the upper one, so the
 // zone colours need no legend. The marks lane holds, on its top row, a Pattern
-// glyph at each moment the engine counted (the model-view's anchors), and
+// glyph at each moment the engine counted (the model-view's findings), and
 // beneath it boluses and logged carbs at one size, off the trace; marks close
 // in time stack into a second row.
 //

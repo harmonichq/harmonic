@@ -8,11 +8,11 @@ import { DayChart } from './DayChart';
 // carbs, the latest of the days with the most logged carbs, and the first day
 // after the history ends. Every day with readings shows the sleep schedule,
 // basal against the Pump profile with its suspends, and the moments the
-// engine counted toward a habit (§2.5, 2026-10-14): on the site-change day a
-// Carb undercount it drove and two it claimed for its own; on the logged-carbs
-// day a Carb undercount, a Meal over-delivery, and an Over-treated low, a low
-// with no bolus, so its own Pattern row. Desktop draws the logged-carbs day
-// across the wide pane.
+// engine counted toward a habit, as the model-view serves them (§2.5,
+// 2026-10-14): on the site-change day three meals counted as Carb undercount;
+// on the logged-carbs day a Carb undercount, two Meal over-deliveries, and an
+// Over-treated low, a low with no bolus, so its own Pattern row. Desktop draws
+// the logged-carbs day across the wide pane.
 const meta = {
   title: 'DayChart',
   component: DayChart,
@@ -38,11 +38,13 @@ export const WithLoggedCarbs: Story = {
   args: { data: dayChart('with_carbs') },
   play: async ({ canvasElement }) => {
     const list = rows(canvasElement);
+    await expect(list.some((row) => row.includes('Meal · Carb undercount'))).toBe(true);
     await expect(list.some((row) => row.includes('Meal · Meal over-delivery'))).toBe(true);
     // A low the engine counted has no bolus to ride on: its own row, with its reading.
     await expect(list.some((row) => /Over-treated low\s*\d+ mg\/dL$/.test(row))).toBe(true);
-    // The habit the engine is cutting claimed these moments; it is never named.
-    await expect(list.some((row) => row.includes('High-carb sequence'))).toBe(false);
+    // Each finding's row has its Pattern glyph on the chart.
+    const named = list.filter((row) => /Carb undercount|Meal over-delivery|Over-treated low/.test(row));
+    await expect(canvasElement.querySelectorAll('.ui-daychart__chart .ui-daychart__mark--pattern')).toHaveLength(named.length);
   },
 };
 export const NoData: Story = {

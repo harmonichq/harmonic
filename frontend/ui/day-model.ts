@@ -29,7 +29,7 @@ export const targetRange = () => ({
 /** A bolus is a meal bolus when it carries carbs, else a correction (the
  *  timeline serves no other type); logged carbs are the manual carb log; a site
  *  change is the pump's own event. A Pattern is a moment the engine counted
- *  toward a habit (the model-view's anchors), named by the habits' served
+ *  toward a habit (the model-view's findings), named by the habits' served
  *  titles; a bolus the engine counted carries those titles itself. */
 export type DayEvent =
   | { kind: 'meal' | 'correction'; minute: number; time: Sourced<string>; insulin: Sourced<number>;
@@ -40,35 +40,26 @@ export type DayEvent =
 
 // The pump event the glossary names, and the only one this timeline draws.
 const SITE_CHANGE = 'Site/Cartridge Change';
-// The habits the engine is cutting (#499): no Day mark is built for them.
-const CUT_HABITS = new Set(['meal_bolus_short', 'high_carb_sequence', 'repeat_eating']);
 
 type ServedModelView = ServedDay['model_view'];
 
-/** The day's moments the engine counted toward a habit, one per minute: an
- *  anchor that drove its episode's habit (fired) names that habit; one another
- *  habit's episode claimed (outranked) names the habits its own verdicts
- *  matched. Anchors of the day before (an episode that crosses midnight) are
- *  left to that day. */
-function counted(iso: string, view: ServedModelView, root: string) {
+/** The day's findings, one per minute, each with its habits' served titles:
+ *  the engine serves which of the day's moments count toward which habits
+ *  (model_view.day_findings), and two in one minute (a meal and the suspend
+ *  it owns) share one mark and one row. */
+function counted(view: ServedModelView, root: string) {
   const byMinute = new Map<number, { t: string; path: string; bg: number | null; habits: string[] }>();
-  view.episodes.forEach((episode, e) => episode.anchors.forEach((anchor, a) => {
-    if (anchor.t.slice(0, 10) !== iso) return;
-    const habits = anchor.state === 'fired'
-      ? (episode.lever && !CUT_HABITS.has(episode.lever) && episode.lever_title ? [episode.lever_title] : [])
-      : anchor.state === 'outranked'
-        ? anchor.verdicts.filter((v) => v.matched && !CUT_HABITS.has(v.classifier)).map((v) => v.title)
-        : [];
-    if (!habits.length) return;
-    const minute = minuteOf(anchor.t);
+  view.findings.forEach((finding, i) => {
+    const habits = finding.levers.map((lever) => lever.title);
+    const minute = minuteOf(finding.t);
     const at = byMinute.get(minute);
     if (at) {
       for (const habit of habits) if (!at.habits.includes(habit)) at.habits.push(habit);
-      if (at.bg === null && anchor.bg !== null) Object.assign(at, { bg: anchor.bg, path: `${root}.episodes.${e}.anchors.${a}` });
+      if (at.bg === null && finding.bg !== null) Object.assign(at, { bg: finding.bg, path: `${root}.findings.${i}` });
     } else {
-      byMinute.set(minute, { t: anchor.t, path: `${root}.episodes.${e}.anchors.${a}`, bg: anchor.bg, habits: [...habits] });
+      byMinute.set(minute, { t: finding.t, path: `${root}.findings.${i}`, bg: finding.bg, habits });
     }
-  }));
+  });
   return byMinute;
 }
 
@@ -93,7 +84,7 @@ export function dayChartOf(iso: string): DayChartData | null {
   const day = servedDays()[iso];
   if (!day) return null;
   const { timeline, carbs, model_view: view } = day;
-  const habits = counted(iso, view, `${root}.model_view`);
+  const habits = counted(view, `${root}.model_view`);
   const boluses: DayEvent[] = timeline.boluses.map((b, i) => {
     const path = `${root}.timeline.boluses.${i}`;
     const minute = minuteOf(b.t);

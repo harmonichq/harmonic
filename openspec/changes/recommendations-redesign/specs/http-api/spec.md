@@ -61,6 +61,35 @@ labelled by what stopped its failed window.
 - **THEN** the status read serves `last_error_label` "No connection" and the raw
   text as `last_error`
 
+### Requirement: The per-day model read serves the day's findings
+
+The per-day model read SHALL serve `findings`: every anchor whose time falls on
+the requested calendar day and that the engine counted toward a Lever, in time
+order, with its `t`, `kind`, `bg` and `levers`, each Lever's key and served
+title. An anchor SHALL count toward its episode's Lever when it drove that
+episode, toward each Lever whose classifier verdict on it matched, and toward
+Correction stacking when it is the low a Correction stacking episode reached.
+The findings SHALL be read from every episode with an anchor on that day,
+whichever day the episode resolves on. A near-miss, clean or no-data anchor
+SHALL count toward nothing. `episodes` SHALL keep their resolve-day assignment.
+
+#### Scenario: An evening finding that resolves after midnight is its own day's
+
+- **GIVEN** a 19:00 meal that drove a Meal over-delivery episode, and its 22:05
+  low claimed as Correction on active insulin, in an episode resolving the next
+  day
+- **WHEN** the per-day model read is requested for the meal's day
+- **THEN** it serves no episode, and serves both anchors as findings with their
+  Levers
+- **AND** the next day's read serves neither anchor as a finding
+
+#### Scenario: The low a Correction stacking reached is a finding
+
+- **WHEN** two stacked corrections drove a Correction stacking episode and
+  glucose reached a low after the second
+- **THEN** the second correction and that low are findings of Correction
+  stacking, and the first correction is not
+
 ## MODIFIED Requirements
 
 ### Requirement: The heavy read endpoints answer from one per-process result cache

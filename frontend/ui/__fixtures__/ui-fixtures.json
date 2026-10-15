@@ -613,185 +613,61 @@
         },
         "model_view": {
           "date": "2025-05-17",
-          "episodes": [
+          "findings": [
             {
-              "anchors": [
+              "bg": null,
+              "kind": "meal",
+              "levers": [
                 {
-                  "bg": null,
-                  "kind": "meal",
-                  "state": "no_data",
-                  "t": "2025-05-17 08:10:00",
-                  "verdicts": [
-                    {
-                      "classifier": "carb_undercount",
-                      "matched": false,
-                      "title": "Carb undercount"
-                    },
-                    {
-                      "classifier": "late_bolus",
-                      "matched": false,
-                      "title": "Late bolus"
-                    },
-                    {
-                      "classifier": "meal_over_delivery",
-                      "matched": false,
-                      "title": "Meal over-delivery"
-                    }
-                  ]
+                  "lever": "carb_undercount",
+                  "title": "Carb undercount"
                 }
               ],
-              "lever": null,
-              "lever_title": null
+              "t": "2025-05-17 12:25:00"
             },
             {
-              "anchors": [
+              "bg": null,
+              "kind": "correction",
+              "levers": [
                 {
-                  "bg": null,
-                  "kind": "meal",
-                  "state": "fired",
-                  "t": "2025-05-17 12:25:00",
-                  "verdicts": [
-                    {
-                      "classifier": "carb_undercount",
-                      "matched": true,
-                      "title": "Carb undercount"
-                    },
-                    {
-                      "classifier": "late_bolus",
-                      "matched": false,
-                      "title": "Late bolus"
-                    },
-                    {
-                      "classifier": "meal_over_delivery",
-                      "matched": false,
-                      "title": "Meal over-delivery"
-                    }
-                  ]
-                },
-                {
-                  "bg": null,
-                  "kind": "correction",
-                  "state": "fired",
-                  "t": "2025-05-17 12:25:00",
-                  "verdicts": []
+                  "lever": "carb_undercount",
+                  "title": "Carb undercount"
                 }
               ],
-              "lever": "carb_undercount",
-              "lever_title": "Carb undercount"
+              "t": "2025-05-17 12:25:00"
             },
             {
-              "anchors": [
+              "bg": null,
+              "kind": "meal",
+              "levers": [
                 {
-                  "bg": null,
-                  "kind": "meal",
-                  "state": "fired",
-                  "t": "2025-05-17 15:05:00",
-                  "verdicts": [
-                    {
-                      "classifier": "carb_undercount",
-                      "matched": false,
-                      "title": "Carb undercount"
-                    },
-                    {
-                      "classifier": "late_bolus",
-                      "matched": false,
-                      "title": "Late bolus"
-                    },
-                    {
-                      "classifier": "meal_over_delivery",
-                      "matched": true,
-                      "title": "Meal over-delivery"
-                    }
-                  ]
-                },
-                {
-                  "bg": null,
-                  "kind": "suspend",
-                  "state": "clean",
-                  "t": "2025-05-17 15:35:00",
-                  "verdicts": []
-                },
-                {
-                  "bg": 57.0,
-                  "kind": "low",
-                  "state": "clean",
-                  "t": "2025-05-17 16:35:00",
-                  "verdicts": [
-                    {
-                      "classifier": "over_treated_low",
-                      "matched": false,
-                      "title": "Over-treated low"
-                    },
-                    {
-                      "classifier": "correction_on_iob",
-                      "matched": false,
-                      "title": "Correction on active insulin"
-                    }
-                  ]
+                  "lever": "meal_over_delivery",
+                  "title": "Meal over-delivery"
                 }
               ],
-              "lever": "meal_over_delivery",
-              "lever_title": "Meal over-delivery"
+              "t": "2025-05-17 15:05:00"
             },
             {
-              "anchors": [
+              "bg": 45.0,
+              "kind": "low",
+              "levers": [
                 {
-                  "bg": null,
-                  "kind": "meal",
-                  "state": "clean",
-                  "t": "2025-05-17 16:35:00",
-                  "verdicts": [
-                    {
-                      "classifier": "carb_undercount",
-                      "matched": false,
-                      "title": "Carb undercount"
-                    },
-                    {
-                      "classifier": "late_bolus",
-                      "matched": false,
-                      "title": "Late bolus"
-                    },
-                    {
-                      "classifier": "meal_over_delivery",
-                      "matched": false,
-                      "title": "Meal over-delivery"
-                    }
-                  ]
+                  "lever": "over_treated_low",
+                  "title": "Over-treated low"
                 }
               ],
-              "lever": null,
-              "lever_title": null
+              "t": "2025-05-17 18:05:00"
             },
             {
-              "anchors": [
+              "bg": null,
+              "kind": "meal",
+              "levers": [
                 {
-                  "bg": null,
-                  "kind": "suspend",
-                  "state": "clean",
-                  "t": "2025-05-17 18:00:00",
-                  "verdicts": []
-                },
-                {
-                  "bg": 45.0,
-                  "kind": "low",
-                  "state": "fired",
-                  "t": "2025-05-17 18:05:00",
-                  "verdicts": [
-                    {
-                      "classifier": "over_treated_low",
-                      "matched": true,
-                      "title": "Over-treated low"
-                    },
-                    {
-                      "classifier": "correction_on_iob",
-                      "matched": false,
-                      "title": "Correction on active insulin"
-                    }
-                  ]
+                  "lever": "meal_over_delivery",
+                  "title": "Meal over-delivery"
                 }
               ],
-              "lever": "over_treated_low",
-              "lever_title": "Over-treated low"
+              "t": "2025-05-17 20:40:00"
             }
           ]
         },
@@ -3736,252 +3612,39 @@
         },
         "model_view": {
           "date": "2025-05-23",
-          "episodes": [
+          "findings": [
             {
-              "anchors": [
+              "bg": null,
+              "kind": "meal",
+              "levers": [
                 {
-                  "bg": null,
-                  "kind": "meal",
-                  "state": "no_data",
-                  "t": "2025-05-22 21:50:00",
-                  "verdicts": [
-                    {
-                      "classifier": "carb_undercount",
-                      "matched": false,
-                      "title": "Carb undercount"
-                    },
-                    {
-                      "classifier": "late_bolus",
-                      "matched": false,
-                      "title": "Late bolus"
-                    },
-                    {
-                      "classifier": "meal_over_delivery",
-                      "matched": false,
-                      "title": "Meal over-delivery"
-                    }
-                  ]
-                },
-                {
-                  "bg": null,
-                  "kind": "correction",
-                  "state": "clean",
-                  "t": "2025-05-22 21:50:00",
-                  "verdicts": []
+                  "lever": "carb_undercount",
+                  "title": "Carb undercount"
                 }
               ],
-              "lever": null,
-              "lever_title": null
+              "t": "2025-05-23 07:20:00"
             },
             {
-              "anchors": [
+              "bg": null,
+              "kind": "meal",
+              "levers": [
                 {
-                  "bg": null,
-                  "kind": "suspend",
-                  "state": "clean",
-                  "t": "2025-05-23 04:45:00",
-                  "verdicts": []
-                },
-                {
-                  "bg": null,
-                  "kind": "suspend",
-                  "state": "clean",
-                  "t": "2025-05-23 05:30:00",
-                  "verdicts": []
+                  "lever": "carb_undercount",
+                  "title": "Carb undercount"
                 }
               ],
-              "lever": null,
-              "lever_title": null
+              "t": "2025-05-23 12:45:00"
             },
             {
-              "anchors": [
+              "bg": null,
+              "kind": "meal",
+              "levers": [
                 {
-                  "bg": null,
-                  "kind": "meal",
-                  "state": "fired",
-                  "t": "2025-05-23 07:20:00",
-                  "verdicts": [
-                    {
-                      "classifier": "carb_undercount",
-                      "matched": true,
-                      "title": "Carb undercount"
-                    },
-                    {
-                      "classifier": "late_bolus",
-                      "matched": false,
-                      "title": "Late bolus"
-                    },
-                    {
-                      "classifier": "meal_over_delivery",
-                      "matched": false,
-                      "title": "Meal over-delivery"
-                    }
-                  ]
-                },
-                {
-                  "bg": null,
-                  "kind": "correction",
-                  "state": "clean",
-                  "t": "2025-05-23 09:20:00",
-                  "verdicts": []
+                  "lever": "carb_undercount",
+                  "title": "Carb undercount"
                 }
               ],
-              "lever": "carb_undercount",
-              "lever_title": "Carb undercount"
-            },
-            {
-              "anchors": [
-                {
-                  "bg": null,
-                  "kind": "meal",
-                  "state": "fired",
-                  "t": "2025-05-23 12:45:00",
-                  "verdicts": [
-                    {
-                      "classifier": "carb_undercount",
-                      "matched": true,
-                      "title": "Carb undercount"
-                    },
-                    {
-                      "classifier": "late_bolus",
-                      "matched": false,
-                      "title": "Late bolus"
-                    },
-                    {
-                      "classifier": "meal_over_delivery",
-                      "matched": false,
-                      "title": "Meal over-delivery"
-                    }
-                  ]
-                }
-              ],
-              "lever": "carb_undercount",
-              "lever_title": "Carb undercount"
-            },
-            {
-              "anchors": [
-                {
-                  "bg": null,
-                  "kind": "meal",
-                  "state": "fired",
-                  "t": "2025-05-23 15:30:00",
-                  "verdicts": [
-                    {
-                      "classifier": "carb_undercount",
-                      "matched": true,
-                      "title": "Carb undercount"
-                    },
-                    {
-                      "classifier": "late_bolus",
-                      "matched": false,
-                      "title": "Late bolus"
-                    },
-                    {
-                      "classifier": "meal_over_delivery",
-                      "matched": false,
-                      "title": "Meal over-delivery"
-                    }
-                  ]
-                }
-              ],
-              "lever": "carb_undercount",
-              "lever_title": "Carb undercount"
-            },
-            {
-              "anchors": [
-                {
-                  "bg": null,
-                  "kind": "meal",
-                  "state": "near_miss",
-                  "t": "2025-05-23 17:10:00",
-                  "verdicts": [
-                    {
-                      "classifier": "carb_undercount",
-                      "matched": false,
-                      "title": "Carb undercount"
-                    },
-                    {
-                      "classifier": "late_bolus",
-                      "matched": false,
-                      "title": "Late bolus"
-                    },
-                    {
-                      "classifier": "meal_over_delivery",
-                      "matched": false,
-                      "title": "Meal over-delivery"
-                    }
-                  ]
-                },
-                {
-                  "bg": null,
-                  "kind": "correction",
-                  "state": "clean",
-                  "t": "2025-05-23 17:10:00",
-                  "verdicts": []
-                }
-              ],
-              "lever": null,
-              "lever_title": null
-            },
-            {
-              "anchors": [
-                {
-                  "bg": null,
-                  "kind": "meal",
-                  "state": "no_data",
-                  "t": "2025-05-23 18:20:00",
-                  "verdicts": [
-                    {
-                      "classifier": "carb_undercount",
-                      "matched": false,
-                      "title": "Carb undercount"
-                    },
-                    {
-                      "classifier": "late_bolus",
-                      "matched": false,
-                      "title": "Late bolus"
-                    },
-                    {
-                      "classifier": "meal_over_delivery",
-                      "matched": false,
-                      "title": "Meal over-delivery"
-                    }
-                  ]
-                },
-                {
-                  "bg": null,
-                  "kind": "suspend",
-                  "state": "clean",
-                  "t": "2025-05-23 21:10:00",
-                  "verdicts": []
-                }
-              ],
-              "lever": null,
-              "lever_title": null
-            },
-            {
-              "anchors": [
-                {
-                  "bg": 60.0,
-                  "kind": "low",
-                  "state": "near_miss",
-                  "t": "2025-05-23 22:35:00",
-                  "verdicts": [
-                    {
-                      "classifier": "over_treated_low",
-                      "matched": false,
-                      "title": "Over-treated low"
-                    },
-                    {
-                      "classifier": "correction_on_iob",
-                      "matched": false,
-                      "title": "Correction on active insulin"
-                    }
-                  ]
-                }
-              ],
-              "lever": null,
-              "lever_title": null
+              "t": "2025-05-23 15:30:00"
             }
           ]
         },
@@ -6883,185 +6546,39 @@
         },
         "model_view": {
           "date": "2025-05-25",
-          "episodes": [
+          "findings": [
             {
-              "anchors": [
+              "bg": null,
+              "kind": "meal",
+              "levers": [
                 {
-                  "bg": null,
-                  "kind": "meal",
-                  "state": "near_miss",
-                  "t": "2025-05-24 19:35:00",
-                  "verdicts": [
-                    {
-                      "classifier": "carb_undercount",
-                      "matched": false,
-                      "title": "Carb undercount"
-                    },
-                    {
-                      "classifier": "late_bolus",
-                      "matched": false,
-                      "title": "Late bolus"
-                    },
-                    {
-                      "classifier": "meal_over_delivery",
-                      "matched": false,
-                      "title": "Meal over-delivery"
-                    }
-                  ]
-                },
-                {
-                  "bg": null,
-                  "kind": "suspend",
-                  "state": "clean",
-                  "t": "2025-05-24 23:10:00",
-                  "verdicts": []
+                  "lever": "carb_undercount",
+                  "title": "Carb undercount"
                 }
               ],
-              "lever": null,
-              "lever_title": null
+              "t": "2025-05-25 13:10:00"
             },
             {
-              "anchors": [
+              "bg": null,
+              "kind": "meal",
+              "levers": [
                 {
-                  "bg": null,
-                  "kind": "meal",
-                  "state": "no_data",
-                  "t": "2025-05-25 06:55:00",
-                  "verdicts": [
-                    {
-                      "classifier": "carb_undercount",
-                      "matched": false,
-                      "title": "Carb undercount"
-                    },
-                    {
-                      "classifier": "late_bolus",
-                      "matched": false,
-                      "title": "Late bolus"
-                    },
-                    {
-                      "classifier": "meal_over_delivery",
-                      "matched": false,
-                      "title": "Meal over-delivery"
-                    }
-                  ]
-                },
-                {
-                  "bg": null,
-                  "kind": "suspend",
-                  "state": "clean",
-                  "t": "2025-05-25 11:00:00",
-                  "verdicts": []
+                  "lever": "carb_undercount",
+                  "title": "Carb undercount"
                 }
               ],
-              "lever": null,
-              "lever_title": null
+              "t": "2025-05-25 14:50:00"
             },
             {
-              "anchors": [
+              "bg": null,
+              "kind": "correction",
+              "levers": [
                 {
-                  "bg": null,
-                  "kind": "meal",
-                  "state": "fired",
-                  "t": "2025-05-25 13:10:00",
-                  "verdicts": [
-                    {
-                      "classifier": "carb_undercount",
-                      "matched": true,
-                      "title": "Carb undercount"
-                    },
-                    {
-                      "classifier": "late_bolus",
-                      "matched": false,
-                      "title": "Late bolus"
-                    },
-                    {
-                      "classifier": "meal_over_delivery",
-                      "matched": false,
-                      "title": "Meal over-delivery"
-                    }
-                  ]
+                  "lever": "carb_undercount",
+                  "title": "Carb undercount"
                 }
               ],
-              "lever": "carb_undercount",
-              "lever_title": "Carb undercount"
-            },
-            {
-              "anchors": [
-                {
-                  "bg": null,
-                  "kind": "meal",
-                  "state": "fired",
-                  "t": "2025-05-25 14:50:00",
-                  "verdicts": [
-                    {
-                      "classifier": "carb_undercount",
-                      "matched": true,
-                      "title": "Carb undercount"
-                    },
-                    {
-                      "classifier": "late_bolus",
-                      "matched": false,
-                      "title": "Late bolus"
-                    },
-                    {
-                      "classifier": "meal_over_delivery",
-                      "matched": false,
-                      "title": "Meal over-delivery"
-                    }
-                  ]
-                },
-                {
-                  "bg": null,
-                  "kind": "correction",
-                  "state": "fired",
-                  "t": "2025-05-25 14:50:00",
-                  "verdicts": []
-                },
-                {
-                  "bg": null,
-                  "kind": "correction",
-                  "state": "clean",
-                  "t": "2025-05-25 17:35:00",
-                  "verdicts": [
-                    {
-                      "classifier": "correction_stacking",
-                      "matched": false,
-                      "title": "Correction stacking"
-                    }
-                  ]
-                }
-              ],
-              "lever": "carb_undercount",
-              "lever_title": "Carb undercount"
-            },
-            {
-              "anchors": [
-                {
-                  "bg": null,
-                  "kind": "meal",
-                  "state": "near_miss",
-                  "t": "2025-05-25 18:35:00",
-                  "verdicts": [
-                    {
-                      "classifier": "carb_undercount",
-                      "matched": false,
-                      "title": "Carb undercount"
-                    },
-                    {
-                      "classifier": "late_bolus",
-                      "matched": false,
-                      "title": "Late bolus"
-                    },
-                    {
-                      "classifier": "meal_over_delivery",
-                      "matched": false,
-                      "title": "Meal over-delivery"
-                    }
-                  ]
-                }
-              ],
-              "lever": null,
-              "lever_title": null
+              "t": "2025-05-25 14:50:00"
             }
           ]
         },
@@ -9902,37 +9419,7 @@
         },
         "model_view": {
           "date": "2025-05-26",
-          "episodes": [
-            {
-              "anchors": [
-                {
-                  "bg": null,
-                  "kind": "meal",
-                  "state": "near_miss",
-                  "t": "2025-05-25 21:15:00",
-                  "verdicts": [
-                    {
-                      "classifier": "carb_undercount",
-                      "matched": false,
-                      "title": "Carb undercount"
-                    },
-                    {
-                      "classifier": "late_bolus",
-                      "matched": false,
-                      "title": "Late bolus"
-                    },
-                    {
-                      "classifier": "meal_over_delivery",
-                      "matched": false,
-                      "title": "Meal over-delivery"
-                    }
-                  ]
-                }
-              ],
-              "lever": null,
-              "lever_title": null
-            }
-          ]
+          "findings": []
         },
         "timeline": {
           "basal": [],

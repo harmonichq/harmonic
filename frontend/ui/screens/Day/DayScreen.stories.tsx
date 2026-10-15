@@ -19,6 +19,8 @@ import { DayScreen, type DayScreenProps } from './DayScreen';
 //   and no badge.
 // - Empty: the first day after the history ends ("No data"); Loading;
 //   Unavailable.
+// - Findings: the logged-carbs day, which carries several kinds of finding,
+//   each named on its event row and marked on the chart.
 // - Month open: the header's day dropped down to the month's weeks.
 // - Prompts: the wearer's two lows before any answer, "1 / 2"; Yes recorded;
 //   phone mid-swipe over Not sure, the shortcut for the Not sure text action
@@ -85,6 +87,24 @@ const siteChangePlay: Story['play'] = async ({ canvasElement }) => {
 };
 export const SiteChangePhone: Story = { ...story('phone', { store: 'wearer', day: siteDay }), play: siteChangePlay };
 export const SiteChangeDesktop: Story = { ...story('desktop', { store: 'wearer', day: siteDay }), play: siteChangePlay };
+
+// A day carrying several kinds of finding (§2.5, 2026-10-14 every finding
+// marked): the logged-carbs day, whose served findings name three habits.
+// Every habit the engine served names an event row, and each named row has
+// its Pattern glyph on the chart.
+const findingsPlay: Story['play'] = async ({ canvasElement }) => {
+  const served = (fixtures.day.days as Record<string, { model_view: { findings: { levers: { title: string }[] }[] } }>)[withCarbs]
+    .model_view.findings;
+  const habits = [...new Set(served.flatMap((finding) => finding.levers.map((lever) => lever.title)))];
+  await expect(habits.length).toBeGreaterThanOrEqual(3);
+  const rows = [...canvasElement.querySelectorAll('.ui-daychart__event')]
+    .map((row) => row.textContent?.replace(/\s+/g, ' ').trim() ?? '');
+  for (const habit of habits) await expect(rows.some((row) => row.includes(habit))).toBe(true);
+  const named = rows.filter((row) => habits.some((habit) => row.includes(habit)));
+  await expect(canvasElement.querySelectorAll('.ui-daychart__chart .ui-daychart__mark--pattern')).toHaveLength(named.length);
+};
+export const FindingsPhone: Story = { ...story('phone', LOGGED_CARBS), play: findingsPlay };
+export const FindingsDesktop: Story = { ...story('desktop', LOGGED_CARBS), play: findingsPlay };
 export const MonthOpenPhone = story('phone', { ...DEFAULT, monthOpen: true });
 export const MonthOpenDesktop = story('desktop', { ...DEFAULT, monthOpen: true });
 

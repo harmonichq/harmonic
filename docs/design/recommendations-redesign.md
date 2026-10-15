@@ -627,6 +627,8 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
     The habits the engine is cutting (Meal bolus fell short, High-carb
     sequence, Repeat eating) are never marked. Legend: Pattern, on a day
     that has one.
+    *Amended 2026-10-14 (every finding of the day, below):* the engine now
+    serves which moments are marked, and the frontend reads no anchor state.
   - **Not carried over.** The desk's hover tooltip (the delivered and
     programmed rates, the command's length): §1.4 bans hover-only content,
     and the signed scale and the bars carry the same reading. Its rate
@@ -640,6 +642,37 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
     open on the phone, since nothing on Day is hover- or tap-revealed.
     Episodes, the desk's near-miss rings and its rescue mark stay out with
     the episode drill-in (§2.6).
+
+- **2026-10-14 — every finding of the day is marked.** The operator, on a Day
+  where some of the engine's findings showed and others did not: "Making sure
+  that all episode, all engine lever findings have a little marker somewhere
+  on the graph showing, or an event underneath as well, saying over-treated
+  low or carb under delivery or whatever it might be, just so the user could
+  see, oh, those are the events that the engine's finding. I think that's the
+  smallest shape of this change." No hover, no tap, no popover, no episode
+  browser.
+  - **What is marked.** Every moment on that calendar day the engine counted
+    toward a habit, as `/api/model-view?date=` now serves them in `findings`:
+    a moment that drove its episode, one whose own classifier matched while
+    another drove it (claimed), and the low a Correction stacking reached,
+    which the Lows after correcting highs Pattern counts. Each carries the
+    habits it counts toward, by their served titles. The engine serves the
+    list; Day reads no anchor state and keeps no list of habits of its own.
+  - **Two gaps closed.** A finding whose episode resolves after midnight (an
+    evening low, a late meal) reached no day: the old read placed the episode
+    on the day it resolves, and Day kept only that day's moments. It is now
+    the finding of the day it happened on. And the low a Correction stacking
+    reached was unmarked, though its Pattern counts it.
+  - **How it is drawn is unchanged** (the amendment above): the Pattern glyph
+    on the marks lane's top row at its time; a bolus it counted names the
+    habits on its event row ("12:00 Meal · Carb undercount"); any other moment
+    is its own Pattern row with its habits and its reading in mg/dL; two in
+    one minute (a meal and the suspend it owns) share one mark and one row.
+  - **Not marked**, because the engine counted nothing there: a near-miss, a
+    clean or a no-data moment. Not a habit finding, so not on this chart: the
+    Prompts (Day's Lows row already carries them), a pre-empted low, and the
+    nights and meal blocks a setting is read from. No new words: every name
+    is a served habit title.
 
 - **2026-10-14 — a Token field in Settings.** The server gates every read on
   the API token it was started with, and the app learned it only from the
@@ -897,17 +930,18 @@ unless noted. Loading is a skeleton of the component's own shape.
 **Day**
 
 17. **DayChart**: one day. Shows glucose with the 70–180 band, a marks lane
-    (a Pattern glyph at each moment the engine counted toward a habit, above
-    the meal / correction and logged-carb markers), basal as its difference
-    from the Pump profile (above, below, Suspend hatched, on a signed U/h
-    scale; §2.5, 2026-10-14), and an event list below, where a counted bolus
-    carries its habits' titles and any other counted moment is its own
-    Pattern row with its reading.
-    - States: default; no data; with logged carbs.
+    (a Pattern glyph at each of the day's findings, every moment the engine
+    counted toward a habit, above the meal / correction and logged-carb
+    markers), basal as its difference from the Pump profile (above, below,
+    Suspend hatched, on a signed U/h scale; §2.5, 2026-10-14), and an event
+    list below, where a counted bolus carries its habits' titles and any other
+    finding is its own Pattern row with its reading (§2.5, 2026-10-14, every
+    finding of the day).
+    - States: default; no data; with logged carbs, which carries findings of
+      several kinds.
     - Fields: `timeline.cgm, boluses, basal, pump_events, sleep_windows`;
-      `carbs.carb_entries`; `model_view.episodes[].lever, lever_title,
-      anchors[].t, state, bg, verdicts[].classifier, matched, title`
-      (`/api/model-view?date=`).
+      `carbs.carb_entries`; `model_view.findings[].t, kind, bg,
+      levers[].lever, title` (`/api/model-view?date=`).
     - Desktop: wide, under the selected week's DayRibbon.
 18. **PromptCard**: one low prompt, showing "Low · <date time> · <mg/dL>",
     its sparkline, Yes · No · False low, and on phone Not sure as a text

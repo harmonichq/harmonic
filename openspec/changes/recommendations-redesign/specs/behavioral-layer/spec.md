@@ -300,6 +300,66 @@ input, Pattern price, support floor, staging predicate or cap SHALL change.
 - **WHEN** the whole-day queue is published
 - **THEN** the correction-factor row, unpriced, sorts before both causes
 
+### Requirement: A Pattern case file serves its episodes and Typical aligned at one start
+
+Every Pattern case file SHALL serve `traces`: the start its episodes are aligned
+at, the minutes drawn, the Pattern's own episodes and Typical, its comparison
+episodes, each as the anchors it draws and its 5-minute bins with their median
+and 25–75 band. A bin SHALL be served only from three readings. The Pattern
+SHALL also serve each episode's readings when it draws eight or fewer, and none
+past that. An episode with no reading in the first ten minutes of its window
+SHALL be left off its cohort. A meal Pattern SHALL start at the meal's bolus, over
+−30 to 240 minutes, against its event comparison's meals; Highs after treating
+lows SHALL start at the low's nadir, over 0 to 180 minutes, against every other
+low; Lows after correcting highs SHALL start at the correction each low it counts
+followed, over 0 to 240 minutes, against every other lone correction, a user
+correction with no other within the stacking window either side (ADR 523).
+
+#### Scenario: A correction Pattern is drawn from the doses its lows followed
+
+- **GIVEN** the `pattern-correction-fold` QA case, where Correction on active
+  insulin claims two lows from 20:00 corrections and Correction stacking two from
+  14:40 stacking doses
+- **WHEN** its Lows after correcting highs case file is read
+- **THEN** its Pattern anchors are those four doses, and Typical's is the one
+  other lone correction
+
+#### Scenario: A low Pattern is compared with every other low
+
+- **GIVEN** the same case, where one low is over-treated
+- **WHEN** its Highs after treating lows case file is read
+- **THEN** its Pattern anchor is that low's nadir and Typical's are the other six
+  lows
+
+#### Scenario: An episode that starts in a gap is left off
+
+- **GIVEN** the same case with the first fifteen minutes after its Typical
+  correction removed
+- **WHEN** the case file is read
+- **THEN** Typical draws no episode and the Pattern's four are unchanged
+
+#### Scenario: Past eight episodes the Pattern is its median and band
+
+- **GIVEN** a meal Pattern counting nine meals
+- **WHEN** its case file is read
+- **THEN** it serves no episodes and serves each bin's median over the nine
+
+### Requirement: A low a correction habit claims names the dose it followed
+
+The exposures feed SHALL serve, on each low a correction habit claims, the time
+of the correction that habit names for it, keyed by the habit: the correction a
+Correction on active insulin verdict judged, or the stacking dose of the
+Correction stacking episode that reached it. It SHALL read the verdict the
+attribution retained and run no classifier again (ADR 523).
+
+#### Scenario: Each claimed low names its correction
+
+- **GIVEN** the `pattern-correction-fold` QA case
+- **WHEN** the exposures feed is built
+- **THEN** the 22:00 low Correction on active insulin claims names its 20:00
+  correction, the 16:05 low Correction stacking reached names its 14:40 stacking
+  dose, and an unclaimed low names none
+
 ## MODIFIED Requirements
 
 ### Requirement: Patterns are detected by instance classifiers that judge one behavior at a time.
@@ -645,66 +705,6 @@ carb-ratio analyzer's meal and run ledgers SHALL be unchanged.
 - **WHEN** the scenario producers run
 - **THEN** Lows after meals holds one meal opportunity for it, and Meal
   over-delivery judges the suspend for that meal, never for its top-up
-
-### Requirement: A Pattern case file serves its episodes and Typical aligned at one start
-
-Every Pattern case file SHALL serve `traces`: the start its episodes are aligned
-at, the minutes drawn, the Pattern's own episodes and Typical, its comparison
-episodes, each as the anchors it draws and its 5-minute bins with their median
-and 25–75 band. A bin SHALL be served only from three readings. The Pattern
-SHALL also serve each episode's readings when it draws eight or fewer, and none
-past that. An episode with no reading in the first ten minutes of its window
-SHALL be left off its cohort. A meal Pattern SHALL start at the meal's bolus, over
-−30 to 240 minutes, against its event comparison's meals; Highs after treating
-lows SHALL start at the low's nadir, over 0 to 180 minutes, against every other
-low; Lows after correcting highs SHALL start at the correction each low it counts
-followed, over 0 to 240 minutes, against every other lone correction, a user
-correction with no other within the stacking window either side (ADR 523).
-
-#### Scenario: A correction Pattern is drawn from the doses its lows followed
-
-- **GIVEN** the `pattern-correction-fold` QA case, where Correction on active
-  insulin claims two lows from 20:00 corrections and Correction stacking two from
-  14:40 stacking doses
-- **WHEN** its Lows after correcting highs case file is read
-- **THEN** its Pattern anchors are those four doses, and Typical's is the one
-  other lone correction
-
-#### Scenario: A low Pattern is compared with every other low
-
-- **GIVEN** the same case, where one low is over-treated
-- **WHEN** its Highs after treating lows case file is read
-- **THEN** its Pattern anchor is that low's nadir and Typical's are the other six
-  lows
-
-#### Scenario: An episode that starts in a gap is left off
-
-- **GIVEN** the same case with the first fifteen minutes after its Typical
-  correction removed
-- **WHEN** the case file is read
-- **THEN** Typical draws no episode and the Pattern's four are unchanged
-
-#### Scenario: Past eight episodes the Pattern is its median and band
-
-- **GIVEN** a meal Pattern counting nine meals
-- **WHEN** its case file is read
-- **THEN** it serves no episodes and serves each bin's median over the nine
-
-### Requirement: A low a correction habit claims names the dose it followed
-
-The exposures feed SHALL serve, on each low a correction habit claims, the time
-of the correction that habit names for it, keyed by the habit: the correction a
-Correction on active insulin verdict judged, or the stacking dose of the
-Correction stacking episode that reached it. It SHALL read the verdict the
-attribution retained and run no classifier again (ADR 523).
-
-#### Scenario: Each claimed low names its correction
-
-- **GIVEN** the `pattern-correction-fold` QA case
-- **WHEN** the exposures feed is built
-- **THEN** the 22:00 low Correction on active insulin claims names its 20:00
-  correction, the 16:05 low Correction stacking reached names its 14:40 stacking
-  dose, and an unclaimed low names none
 
 ## REMOVED Requirements
 

@@ -260,14 +260,33 @@ including for isolated chart layout or interaction.
 - `openspec/specs/` — fifteen capability specifications: what each part of the
   system is required to do, and why. The public "why" lives here.
 
-**The result cache is coarse, and every write path must bump it.** Any write
-calls `cache.bump()`; the hourly fetch bumps through `run_fetch_loop`'s
-`on_write`, which then re-warms a fixed roster of read shapes — the analysis and
-each of the Overview's windows among them — in the loop's worker thread, so the first visitor after a fetch lands warm. A new write
-endpoint that does not bump leaves a stale cache. There is exactly one
-proven-safe exception — saving a Plan draft does not bump, because the draft is
-UX-only and no cached compute reads it. Applying the plan does bump. Do not add
-a second exception without proving no cached compute reads the written state.
+**The result cache is coarse, and every write path must invalidate it.** Any
+write calls `invalidate()` (or, for a follow-up write, `follow_up_written()`),
+which bumps the cache and then starts the warm pass in the background. The
+hourly fetch invalidates through `run_fetch_loop`'s `on_write`, and `serve` also
+warms once at start (`warm_on_start`), so a restart is warm before its first
+fetch lands, or when that fetch commits nothing. The warm roster is exactly what
+the five tabs read, in visit order; a new screen read belongs in it. A new write
+endpoint that does not invalidate leaves a stale cache.
+
+**A follow-up write keeps what reads only recorded data.** A guidance preference
+(snooze, restore) and a Focus, Trial or Plan lifecycle step write only follow-up
+state: the preference, Focus and follow-up records, the frontier, the Plan
+history, and the input revision. `follow_up_written()` keeps the cached results
+named by `_reads_only_recorded_data` (outcomes, the day navigator, the
+model-view, the timeline, the analysis and scenarios at a non-default window,
+and the catalog) and drops everything else and every case-file preparation;
+revision-keyed and fixed results miss on the new revision by themselves. Add a
+result to that list only with a transitive proof that its builder reads none of
+the follow-up tables or the input revision (ADR 522), and remove it the moment
+one does.
+
+**Two proven-safe exceptions invalidate nothing.** Saving a Plan draft is
+UX-only and no cached compute reads it (applying the Plan does invalidate).
+Saving credentials is the other: only the fetch's login and the uncached
+credentials read use them. Do not add a third without proving no cached compute
+reads the written state.
+
 The cache is in-process and single-`serve`: an out-of-process CLI `fetch` while
 `serve` is up will not invalidate the running server.
 

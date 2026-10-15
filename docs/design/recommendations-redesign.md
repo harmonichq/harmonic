@@ -757,6 +757,9 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
     clean delivered rate a solid tick over its range, a slot the analyzer
     stages a move for marked ▲ or ▼ above it; legend Current, Estimate,
     Range. "Basal estimate", as the ISF card is "ISF estimate".
+  - **One chart family.** The trace chart, the dot row and the basal day
+    share one scale and path module and one stylesheet, and the Changes
+    trace (ADR 524) draws its bands and gap-broken lines with the same module.
   - **Desktop Queue list.** 440 px wide, from 400, so a row's title and its
     trailing value share one line for every Pattern title: a row stays the
     same height with or without the value.
@@ -951,8 +954,9 @@ unless noted. Loading is a skeleton of the component's own shape.
      line: each cohort's highest or lowest served median at or after minute 0).
    - Desktop: fills the detail pane up to 720 px; no collapse chevron.
 9. **TraceChart** (replaces the CauseWaffle, §2.5 2026-10-14): a Pattern's
-   episodes against Typical, aligned at their start; glucose up ("mg/dL", ticks
-   every 100), minutes across ("Minutes", ticks every 60), dotted 70 and 180
+   episodes against Typical, aligned at their start; glucose up on the one
+   glucose axis every chart uses (at least 50–220 mg/dL, "mg/dL", 100 / 200 /
+   300 labelled), minutes across ("Minutes", ticks every 60), dotted 70 and 180
    lines, a hairline at minute 0 when the window opens before it. Typical a grey
    median over its 25–75 band; the Pattern each episode's thin trace in its
    glucose colour (eight or fewer), else its coloured median over its band. A

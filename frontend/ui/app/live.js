@@ -43,6 +43,34 @@ const DEFAULT_ANALYSIS = '30';
 const WHOLE_DAY = { start_min: 0, end_min: 1440 };
 const NO_STATUS = { last_attempt_at: null, last_success_at: null, last_error: null, last_error_label: null };
 
+// The analysis and case-file answers, trimmed to what their cards draw (ADR 523), so
+// the remembered answers hold no evidence a screen does not read.
+
+/** gen_ui_fixtures._traces: a case file's trace chart, without its anchor lists. */
+const traceChart = ({ anchor, window_min, pattern, typical }) => ({
+  anchor, window_min, pattern: { episodes: pattern.episodes, points: pattern.points }, typical: { points: typical.points },
+});
+
+/** gen_ui_fixtures._ic_blocks: the carb-ratio blocks the engine stages a move for, with the runs they count. */
+const icBlocks = (blocks) => blocks.filter((b) => b.asserts_move).map((b) => ({
+  block_id: b.block_id, start_min: b.start_min, end_min: b.end_min, current_values: b.current_values,
+  recommended: b.recommended, estimate: { value: b.estimate.value, lo: b.estimate.lo, hi: b.estimate.hi },
+  evidence: { counted_runs: b.evidence.counted_runs },
+}));
+
+/** gen_ui_fixtures._queue_store's basal: the slots the engine stages a move for, with their nights. */
+const stagedSlots = (basal) => basal.filter((b) => b.asserts_move).map((b) => ({
+  slot: b.slot, label: b.label, current: b.current, recommended: b.recommended, estimate: b.estimate, days: b.days,
+  evidence: { night_roster: b.evidence.night_roster.map(({ date, delivered_rate, programmed_rate }) =>
+    ({ date, delivered_rate, programmed_rate })) },
+}));
+
+/** gen_ui_fixtures._basal_slots: the day's 48 slots, as the Overview's basal card reads them. */
+const basalSlots = (basal) => basal.map((b) => ({
+  slot: b.slot, current: b.current, asserts_move: b.asserts_move, direction: b.direction,
+  estimate: b.estimate && { value: b.estimate.value, lo: b.estimate.lo, hi: b.estimate.hi },
+}));
+
 /** The model-view trimmed to what the Day chart marks: the day's findings,
  *  each anchor's time, kind and glucose and the habits it counts toward
  *  (mirrors gen_ui_fixtures.model_view_marks). */
@@ -143,7 +171,7 @@ export function createLive({ client, glossary, memory = null }) {
    *  and basal estimates. The 30 d analysis is the Queue's own read, shared. */
   const isf = (window) => once(`isf ${window}`, async () => {
     const answer = window === DEFAULT_ANALYSIS ? await analyze() : await client.fetchAnalysis(Number(window));
-    answers.overview.wearer.analyze[window] = { isf: answer.isf.slice(0, 1), basal: answer.basal };
+    answers.overview.wearer.analyze[window] = { isf: answer.isf.slice(0, 1), basal: basalSlots(answer.basal) };
   });
   /** What the Overview reads for a window it shows: its profile and its ISF and basal estimates. */
   const overviewWindow = (window) => Promise.all([timeOfDay(window), isf(window)]);
@@ -166,7 +194,7 @@ export function createLive({ client, glossary, memory = null }) {
         if (error?.status === 404) return; // no inspectable member: no chart, no impact line
         throw error;
       }
-      out[subject.replace(/^pattern:/, '')] = { traces: answer.traces };
+      out[subject.replace(/^pattern:/, '')] = { traces: traceChart(answer.traces) };
     }));
     return out;
   }
@@ -186,9 +214,7 @@ export function createLive({ client, glossary, memory = null }) {
     answers.queue.wearer = {
       findings: { outcome_patterns: served.outcome_patterns, rows },
       guidance: answers.queue.wearer.guidance,
-      // gen_ui_fixtures._ic_blocks: the carb-ratio blocks the engine stages a move for.
-      analyze: { basal: analysis.basal.filter((b) => b.asserts_move), isf: analysis.isf.slice(0, 1),
-        ic_blocks: analysis.ic_blocks.filter((b) => b.asserts_move) },
+      analyze: { basal: stagedSlots(analysis.basal), isf: analysis.isf.slice(0, 1), ic_blocks: icBlocks(analysis.ic_blocks) },
       trials: roster,
       focus: focused,
       cases: await cases(ranked),

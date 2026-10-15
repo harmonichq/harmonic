@@ -1,7 +1,8 @@
 // The chart family's one scale (§2.2 Charts, ADR 523): the round ticks an axis
 // covers its marks with, which of them keep a label, and the paths a line or a
-// band is drawn with. EvidenceChart, TraceChart and BasalDayChart all read this
-// module, so their axes snap, label and break the same way.
+// band is drawn with. EvidenceChart, TraceChart, BasalCard's day chart and
+// ChangeTrace all read this module, so their axes snap, label and break the
+// same way; the glucose axis itself is glucose-zones' one rule.
 
 const STEPS = [0.01, 0.02, 0.025, 0.05, 0.1, 0.2, 0.25, 0.5, 1, 2, 2.5, 5, 10, 20, 25, 50, 100, 200, 250, 500];
 

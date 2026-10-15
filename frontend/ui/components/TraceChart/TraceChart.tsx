@@ -12,6 +12,7 @@
 // median and band (the engine serves a bin only from three readings). The
 // chart computes no band and chooses no episode. A Pattern with nothing to
 // draw says "No data".
+import { glucoseDomain, glucoseFraction } from '../../glucose-zones';
 import { useWidth } from '../../measure';
 import type { TraceData } from '../../queue-model';
 import { ChartLegend } from '../Chart/ChartLegend';
@@ -37,15 +38,13 @@ export function TraceChart({ data }: { data: TraceData }) {
     ...(episodes ? episodes.flatMap((episode) => episode.map((point) => point.bg))
       : pattern.flatMap((bin) => [bin.p25, bin.p75])),
     ...typical.flatMap((bin) => [bin.p25, bin.p75]),
-    ...REFERENCES,
   ];
-  const low = Math.max(0, Math.floor(Math.min(...values) / 50) * 50);
-  const high = Math.ceil(Math.max(...values) / 50) * 50;
-  const yTicks: number[] = [];
-  for (let v = Math.ceil(low / 100) * 100; v <= high; v += 100) yTicks.push(v);
+  // The one glucose axis every chart uses (glucose-zones), labelled every 100.
+  const domain = glucoseDomain(values);
+  const yTicks = [100, 200, 300].filter((v) => v > domain.low && v < domain.high);
   const right = width - 4;
   const x = (minute: number) => LEFT + (right - LEFT) * ((minute - start) / (end - start));
-  const y = (bg: number) => AXIS - PLOT * ((bg - low) / (high - low));
+  const y = (bg: number) => AXIS - PLOT * glucoseFraction(bg, domain);
   const xTicks: number[] = [];
   for (let m = Math.ceil(start / 60) * 60; m <= end; m += 60) xTicks.push(m);
 

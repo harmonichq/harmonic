@@ -410,3 +410,40 @@ test('a refresh draws Changes\' comparison from memory, kept to what the screen 
     views: { before: { trace, basal: comparison.views.before.basal }, after: { trace, basal: null } },
   });
 });
+
+test('the Queue and Overview keep only what their charts draw, so the remembered answers stay small (ADR 523)', async () => {
+  const fake = fakeClient();
+  const night = { date: '2024-05-01', delivered_rate: 0.5, programmed_rate: 0.6, points: [1, 2, 3] };
+  const slot = (n, asserts) => ({
+    slot: n, label: '00:00', current: 0.6, recommended: 0.5, asserts_move: asserts, direction: asserts ? 'lower' : null,
+    estimate: { value: 0.5, lo: 0.4, hi: 0.6, n: 9, method: 'bootstrap-median' }, days: 9, guidance: {},
+    evidence: { night_roster: [night], points: [1, 2, 3] },
+  });
+  const run = { t: '2024-05-01T08:00:00', true_ic: 8 };
+  fake.client.fetchAnalysis = () => Promise.resolve({
+    basal: [slot(0, true), slot(1, false)], isf: [],
+    ic_blocks: [{ block_id: 0, start_min: 0, end_min: 1440, current_values: [10], recommended: 9, asserts_move: true,
+      estimate: { value: 8, lo: 7, hi: 9, n: 8 }, harm: {}, evidence: { runs: [run], ledger: {}, counted_runs: [run] } }],
+  });
+  fake.client.fetchDiagnoseFindingCase = () => Promise.resolve({ projection: {}, occurrences: [], traces: {
+    anchor: 'nadir', window_min: [0, 180],
+    pattern: { anchors: ['2024-05-01 07:00:00'], episodes: [[{ minute: 0, bg: 60 }]], points: [] },
+    typical: { anchors: ['2024-05-02 07:00:00'], points: [] },
+  } });
+  fake.client.fetchGuidance = () => Promise.resolve({ analysis_generation: 'g1', candidates: [
+    { subject: 'pattern:highs_after_treating_lows', kind: 'pattern', admitted: true, preference: { set_aside: false } }] });
+  const live = createLive({ client: fake.client, glossary: [] });
+  await live.readTab('queue');
+  await live.readWindow('14');
+  const queue = live.answers.queue.wearer;
+  assert.deepEqual(queue.cases.highs_after_treating_lows.traces, {
+    anchor: 'nadir', window_min: [0, 180], pattern: { episodes: [[{ minute: 0, bg: 60 }]], points: [] }, typical: { points: [] },
+  });
+  assert.deepEqual(queue.analyze.ic_blocks, [{ block_id: 0, start_min: 0, end_min: 1440, current_values: [10],
+    recommended: 9, estimate: { value: 8, lo: 7, hi: 9 }, evidence: { counted_runs: [run] } }]);
+  assert.deepEqual(queue.analyze.basal.map((b) => [b.slot, b.evidence.night_roster]),
+    [[0, [{ date: '2024-05-01', delivered_rate: 0.5, programmed_rate: 0.6 }]]]);
+  assert.deepEqual(live.answers.overview.wearer.analyze['14'].basal[1], {
+    slot: 1, current: 0.6, asserts_move: false, direction: null, estimate: { value: 0.5, lo: 0.4, hi: 0.6 },
+  });
+});

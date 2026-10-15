@@ -260,16 +260,35 @@ including for isolated chart layout or interaction.
 - `openspec/specs/` — fifteen capability specifications: what each part of the
   system is required to do, and why. The public "why" lives here.
 
-**The result cache is coarse, and every write path must bump it.** Any write
-calls `cache.bump()`; the hourly fetch bumps through `run_fetch_loop`'s
-`on_write`, which then re-warms a fixed roster of read shapes — the analysis and
-each of the Overview's windows among them — in the loop's worker thread, so the first visitor after a fetch lands warm. A new write
-endpoint that does not bump leaves a stale cache. A write to follow-up state
-alone (snooze, restore, a Done and its Undo, a Focus or Trial step) keeps only
-the results that read recorded data (#522). The one write that invalidates
-nothing is saving credentials (#522); the Plan draft's exception went with the
-draft routes when a Done on a Setting card began recording the Plan itself
-(#518). Do not add one without proving no cached compute reads the written state.
+**The result cache is coarse, and every write path must invalidate it.** Any
+write calls `invalidate()` (or, for a follow-up write, `follow_up_written()`),
+which bumps the cache and then starts the warm pass in the background. The
+hourly fetch invalidates through `run_fetch_loop`'s `on_write`, and `serve` also
+warms once at start (`warm_on_start`), so a restart is warm before its first
+fetch lands, or when that fetch commits nothing. The warm roster is exactly what
+the five tabs read, in visit order; a new screen read belongs in it. A new write
+endpoint that does not invalidate leaves a stale cache.
+
+**A follow-up write keeps what reads only recorded data.** A guidance preference
+(snooze, restore) and a Focus, Trial or Plan lifecycle step — a Done on a Setting
+card and its Undo among them (#518) — write only follow-up state: the
+preference, Focus and follow-up records, the frontier, the Plan history, and the
+input revision. `follow_up_written()` keeps the cached results named by
+`_reads_only_recorded_data` (outcomes, the day navigator, the model-view, the
+timeline, the analysis and scenarios at a non-default window, and the catalog)
+and drops everything else and every case-file preparation; revision-keyed and
+fixed results miss on the new revision by themselves. A Setting's Done state is
+read from the store on every guidance read and never cached. Add a result to
+that list only with a transitive proof that its builder reads none of the
+follow-up tables or the input revision (ADR 522), and remove it the moment one
+does.
+
+**One proven-safe exception invalidates nothing: saving credentials.** Only the
+fetch's login and the uncached credentials read use them. The Plan draft's
+exception went with the draft routes when a Done began recording the Plan itself
+(#518). Do not add another without proving no cached compute reads the written
+state.
+
 The cache is in-process and single-`serve`: an out-of-process CLI `fetch` while
 `serve` is up will not invalidate the running server.
 

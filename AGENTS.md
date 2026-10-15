@@ -369,6 +369,12 @@ Hard-won, and expensive to re-derive.
   the correct instant, but the vendor UI labels it in a way that reads like
   local time, so eyeballing a capture makes CGM look hours later than it is.
   Reconcile CGM only by `egvTimestamp` / `pumpDateTime`.
+- **The CGM feed can carry two records for one five-minute slot.** They sit
+  seconds apart: either the same reading twice, or two disagreeing series side
+  by side for hours. Each is a distinct vendor record, stable across re-pulls,
+  so no key merges them. `Store.cgm_readings` collapses a slot to one reading
+  and withholds the value where its records disagree (ADR 519). Read CGM only
+  through it, never straight from the table.
 - **Event tables are keyed on the pump's `seqNum`, not on a timestamp.** A
   delivery's `eventTimestamp` is not stable across pulls — the vendor re-decodes
   it a few seconds off from a prior generation — so keying on it lets a re-pull

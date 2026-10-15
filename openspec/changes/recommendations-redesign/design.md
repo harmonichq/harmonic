@@ -648,6 +648,79 @@ rule both read.
 The contract test adds `pattern-correction-fold`,
 whose days carry five kinds of finding, and checks the showcase's three days.
 
+## ADR 522 — Reads answer without rescanning the history, writes re-warm in the background, and the app keeps its last answers
+
+**Context.** Connor, 2026-10-14, on his phone against the home server (two cores,
+about three times slower than the development Mac): "we definitely need some kind
+of caching ... Like hot loading on a refresh ... every little interface click is
+the longest wait". The server log showed a page load taking 43 s for Prompts and
+56 s for guidance an hour and a half after a restart, so it was not a cold start.
+Measured in-process on a snapshot of his own store (timings and endpoint names
+only), no read wrote to the store or bumped the cache. Instead:
+
+- `guidance`, `focus`, `verify/trials` and every follow-up read found their `now`
+  by reading and parsing every basal, CGM and bolus row and every settings
+  capture: 2.3–3.5 s per call on the Mac, several calls per request, never cached.
+- `prompts` read the whole history to keep seven days (2.5 s), uncached by design.
+- The timeline rebuilt its false-low records from all CGM (1.5 s), uncached.
+- Settings captures (about 9,600 rows) were parsed afresh several times a request.
+- A snooze advances the input revision and bumped the whole cache, so the
+  Overview and Day (outcomes, model-view, the 14-day analysis) recomputed after
+  any Queue action, about 30 s on the Mac.
+- Only a fetch that committed rows started the warm pass, and its roster was the
+  retired desk's: it left out the findings and guidance snapshot, the Trial
+  roster, the Overview's 14- and 90-day analyses and the Day screen.
+
+**Decision.**
+
+1. *One query for "now".* `Store.latest_data_instant` takes the maximum stored
+   instant of the four streams with one scalar query (every stored instant is the
+   one text format `parse_t` reads, so the text maximum is the latest instant).
+   Prompts reads its window only. The settings captures are parsed once per
+   connection until `PRAGMA data_version` or the connection's own `total_changes`
+   moves, and identical profiles parse once per read.
+2. *The timeline is cached*; it reads only stored rows and no clock, so every
+   write's bump keeps it current. Prompts stays uncached: its answered grace is
+   measured on the wall clock.
+3. *A follow-up write keeps what reads only recorded data.* The follow-up writes
+   and the modules behind outcomes, the day navigator, the model-view, the
+   timeline, and the analysis and scenarios at a non-default window were read
+   transitively: those builders read only recorded data, so a snooze, restore or
+   lifecycle step keeps them (`ResultCache.bump(keep=...)`). Revision-keyed and
+   fixed results miss on the new revision by themselves; case-file preparations
+   are dropped. Saving credentials invalidates nothing.
+4. *Every write re-warms, and so does start.* Each invalidation also signals the
+   warm worker, and `serve` warms once at start (`warm_on_start`, off for apps
+   built in tests). The roster is what the five tabs read, in visit order.
+5. *A log line per request* (path, status, ms, hits, computes, derived hits), so
+   the home server's own log shows where time goes.
+6. *The app keeps its last answers* (§2.5, 2026-10-14): in memory across tab
+   switches (as built), in the browser across refreshes, keyed by the build and a
+   hash of the token, and drawn at once while they are read again. A failed
+   refresh keeps them under Unavailable and Retry (`stale`).
+
+**Measured** on the real snapshot (Mac; host about three times slower):
+
+| Tab | Warm, before | Warm, after | After a snooze, before | After a snooze, after (warm pass done) |
+|---|---|---|---|---|
+| Queue | 13.2 s | 1.8 s | 62.3 s | 2.0 s |
+| Changes | 6.7 s | 0.4 s | 6.6 s | 0.5 s |
+| Overview | 1.8 s | 0.2 s | 29.0 s | 0.2 s |
+| Day | 4.2 s | 0.2 s | 19.4 s | 0.2 s |
+| Settings | 1.8 s | 0.1 s | 1.8 s | 0.2 s |
+
+**Not decided here.** A snooze still advances the input revision, which is also
+the derived-results file's key, so the findings snapshot and the 30-day analysis
+are recomputed after every follow-up write even though neither reads follow-up
+state. The warm pass after a snooze takes about 46 s on the Mac. Keying derived
+results by a revision that only recorded-data writes advance would remove that,
+but it changes the store's derivation key and the follow-up concurrency contract,
+so it is left for its own decision.
+
+**Consequences.** A new cached builder that reads follow-up state must not be
+named in the keep list. A new screen read belongs in the warm roster. The
+browser keeps answers only from its own server, under its own token.
+
 ## ADR 524 — A Trial's comparison serves the Changes screen's trace, metrics and Control-IQ activity
 
 **Decision.** The selected Trial's retained comparison

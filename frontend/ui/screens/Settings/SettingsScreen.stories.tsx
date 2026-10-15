@@ -157,6 +157,10 @@ export const LoadingPhone = story('phone', { ...SYNCED, state: 'loading' });
 export const LoadingDesktop = story('desktop', { ...SYNCED, state: 'loading' });
 export const UnavailablePhone = story('phone', { ...SYNCED, state: 'unavailable' });
 export const UnavailableDesktop = story('desktop', { ...SYNCED, state: 'unavailable' });
+// Stale (§2.5, 2026-10-14): the last answers, kept on screen under Unavailable
+// and Retry, when reading them again failed.
+export const StalePhone = story('phone', { ...SYNCED, state: 'stale' });
+export const StaleDesktop = story('desktop', { ...SYNCED, state: 'stale' });
 
 // Progressive loading: the sync status has landed, so the root's three rows
 // show; the pump profile and the account are still being read. Only those parts

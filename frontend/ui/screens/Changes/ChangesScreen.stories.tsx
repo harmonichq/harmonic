@@ -24,7 +24,8 @@ import { ChangesScreen, type ChangesScreenProps } from './ChangesScreen';
 // - Previous: three changes in turn and a Focus, all ended: "Previous · 4",
 //   and the list it opens, newest first, one with its result.
 // - Confirm: End pressed on the matured Trial, the confirmation open.
-// - Loading, and Unavailable (the unsynced store serves guidance unavailable).
+// - Loading, and Unavailable (the unsynced store serves guidance unavailable);
+//   Stale, the last answers under Unavailable, on the screen and on Previous.
 // Plays: End → End ends the Trial and shows what the engine served after it;
 // End → Cancel leaves the Focus as it was; Previous opens its list and ‹
 // Changes comes back.
@@ -93,6 +94,11 @@ export const LoadingPhone = story('phone', LOADING);
 export const LoadingDesktop = story('desktop', LOADING);
 export const UnavailablePhone = story('phone', UNAVAILABLE);
 export const UnavailableDesktop = story('desktop', UNAVAILABLE);
+// Stale (§2.5, 2026-10-14): the last answers, kept on screen under Unavailable
+// and Retry, when reading them again failed.
+export const StalePhone = story('phone', { store: 'wearer', state: 'stale' });
+export const StaleDesktop = story('desktop', { store: 'wearer', state: 'stale' });
+export const StalePreviousPhone = story('phone', { ...PREVIOUS, view: 'previous', state: 'stale' });
 
 const endPlay: Story['play'] = async ({ canvasElement }) => {
   const canvas = within(canvasElement);

@@ -436,18 +436,16 @@ def build_pending_prompts(
     with no upper bound so a treatment logged just *after* the latest pump event still
     covers a candidate near ``now``.
     """
-    basal = store.basal_events()
-    cgm = store.cgm_readings()
-    bolus = store.bolus_events()
-
-    times = [e.t for e in basal] + [r.t for r in cgm]
-    span_end = max(times) if times else None
-    now = now or span_end or datetime.now()
+    now = now or store.latest_cgm_or_basal_timestamp() or datetime.now()
     start = now - timedelta(days=window_days)
 
-    w_bolus = [b for b in bolus if start <= b.t <= now]
-    w_cgm = [r for r in cgm if start <= r.t <= now]
-    w_basal = [e for e in basal if start <= e.t <= now]
+    # Read only the window, not the whole history. The window is ``[start, now]``,
+    # closed at both ends, and a store read is half-open and to the second, so the
+    # read is bounded below and both ends are still applied here.
+    since = format_t(start)
+    w_bolus = [b for b in store.bolus_events(since) if start <= b.t <= now]
+    w_cgm = [r for r in store.cgm_readings(since) if start <= r.t <= now]
+    w_basal = [e for e in store.basal_events(since) if start <= e.t <= now]
 
     candidates = build_candidates(w_bolus, w_cgm, w_basal,
                                   low_answers=low_prompt_answers(store, start, now))

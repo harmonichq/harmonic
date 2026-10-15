@@ -56,7 +56,8 @@ type View = 'changes' | 'previous';
 export type ChangesScreenProps = {
   layout: Layout;
   store: ChangesStore;
-  state?: 'ready' | 'loading' | 'unavailable';
+  /** `stale`: its answers are an earlier read's, since reading them again failed (§2.5, 2026-10-14). */
+  state?: 'ready' | 'loading' | 'unavailable' | 'stale';
   /** What ending the active change serves: the store read after it. */
   end?: { after: ChangesStore };
   /** Start with the End confirmation open. */
@@ -129,11 +130,11 @@ export function ChangesScreen({
   const [notSaved, setNotSaved] = useState(false);
   const root = useMotionGate<HTMLDivElement>();
   const shown = ended && end ? end.after : store;
-  const ready = state === 'ready';
+  const ready = state === 'ready' || state === 'stale';
   const active: ChangeData = ready ? change(shown) : { kind: 'none' };
   const count = ready ? previousCount(shown) : null;
   // The confirmation stays while it closes, and keeps the change it asked about.
-  const asked = usePresence(asking && state === 'ready');
+  const asked = usePresence(asking && ready);
   const askedAbout = useRef(active);
   if (asking) askedAbout.current = active;
   const previous = view === 'previous' && ready;
@@ -156,11 +157,14 @@ export function ChangesScreen({
     return () => window.removeEventListener('keydown', onKey);
   });
 
+  // Stale keeps the screen it shows, with Unavailable and Retry in its title row.
+  const unavailable = { trailing: 'unavailable', onRetry } as const;
   const header = state === 'unavailable'
-    ? <ScreenHeader title="Changes" trailing="unavailable" layout={layout} onRetry={onRetry} />
+    ? <ScreenHeader title="Changes" layout={layout} {...unavailable} />
     : previous
-      ? <ScreenHeader key={view} title="Previous" layout={layout} back={{ label: 'Changes', onBack: () => setView('changes') }} />
-      : <ScreenHeader key={view} title="Changes" layout={layout} />;
+      ? <ScreenHeader key={view} title="Previous" layout={layout} back={{ label: 'Changes', onBack: () => setView('changes') }}
+          {...(state === 'stale' ? unavailable : {})} />
+      : <ScreenHeader key={view} title="Changes" layout={layout} {...(state === 'stale' ? unavailable : {})} />;
   const push = previous ? 'forward' : 'back';
 
   const popover = layout === 'desktop' && asked.value && (

@@ -69,7 +69,8 @@ import './SettingsScreen.css';
 type Layout = 'phone' | 'desktop';
 export type SettingsView = 'root' | 'tandem' | 'profile' | 'glossary';
 type PumpStore = 'wearer' | 'wearer-unsynced';
-type Read = 'ready' | 'loading' | 'unavailable';
+/** `stale`: an earlier read's answers, since reading them again failed (§2.5, 2026-10-14). */
+type Read = 'ready' | 'loading' | 'unavailable' | 'stale';
 /** The reads the root's rows wait on after the sync status: the account and the pump profile. */
 export type SettingsParts = { account: Read; pump: Read; onRetry: (part: 'account' | 'pump') => void };
 
@@ -150,7 +151,7 @@ function Frame({ layout, state, nav, onRetry, onToken }: {
 }
 
 export function SettingsScreen(props: SettingsScreenProps) {
-  if (props.state && props.state !== 'ready') {
+  if (props.state === 'loading' || props.state === 'unavailable') {
     return <Frame layout={props.layout} state={props.state} nav={props.nav} onRetry={props.onRetry} onToken={props.onToken} />;
   }
   return <Settings {...props} />;
@@ -284,7 +285,7 @@ function AccountForm({ saving, onSave }: { saving: boolean; onSave: (email: stri
 
 function Settings({
   layout, sync, account, pump = 'wearer', view: initialView = 'root', updating = false, writes, nav, onToken,
-  parts = { account: 'ready', pump: 'ready', onRetry: () => undefined },
+  parts = { account: 'ready', pump: 'ready', onRetry: () => undefined }, state, onRetry,
 }: SettingsScreenProps) {
   const [view, setView] = useState<SettingsView>(initialView);
   const root = useMotionGate<HTMLDivElement>();
@@ -320,10 +321,12 @@ function Settings({
 
   const ownPart = view === 'tandem' ? 'account' : view === 'profile' ? 'pump' : null;
   const header = view === 'root'
-    ? <ScreenHeader key={view} title="Settings" layout={layout} />
+    ? state === 'stale'
+      ? <ScreenHeader key={view} title="Settings" trailing="unavailable" layout={layout} onRetry={onRetry} />
+      : <ScreenHeader key={view} title="Settings" layout={layout} />
     : <ScreenHeader key={view} title={TITLES[view]} layout={layout}
       back={{ label: 'Settings', onBack: () => { setForm(null); setView('root'); } }}
-      {...(ownPart && parts[ownPart] === 'unavailable'
+      {...(ownPart && (parts[ownPart] === 'unavailable' || parts[ownPart] === 'stale')
         ? { trailing: 'unavailable' as const, onRetry: () => parts.onRetry(ownPart) } : {})} />;
 
   // The account form stays while it closes, as it last showed.

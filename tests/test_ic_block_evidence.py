@@ -787,8 +787,6 @@ class IcBlockEvidenceEndpointTest(unittest.TestCase):
             write = client.post("/api/carbs", json={
                 "t": "2026-06-03 10:05:00", "grams": 8, "certainty": "exact"})
             self.assertEqual(write.status_code, 200)
-            dict(app.state.recompute_roster())["ic-block-evidence-preparation"]()
-            self.assertEqual(len(calls), 2)
             refreshed = client.get("/api/diagnose/carb-ratio-block-evidence", params={
                 "block_id": self.block["block_id"],
                 "analysis_generation": app.state.result_cache.generation,

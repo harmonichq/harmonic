@@ -26,6 +26,11 @@
 // write that fails reads that again before it rejects, so a screen never shows
 // a state the engine did not serve.
 //
+// THE ANSWERS ARE REMEMBERED (#522). With a `memory` (memory.js), each tab's
+// answers are kept in the browser as they land, and a page refresh starts from
+// them: `remembered(tab)` says a tab can draw at once, while its first read
+// fetches it again behind what it shows. Saving a token `reset`s everything.
+//
 // Plain JS, with its client injected, so node --test drives it with a fake.
 
 /** The account rows never print the address (lock, Settings: "never show a real email"). */
@@ -51,11 +56,12 @@ export function modelViewMarks(view) {
 }
 
 /**
- * @param {{ client: object, glossary: object[] }} deps — the client namespace
- *   (frontend/data.js makeDeps) and §1.5's rows for the Glossary page.
+ * @param {{ client: object, glossary: object[], memory?: { load: Function, save: Function } }} deps —
+ *   the client namespace (frontend/data.js makeDeps), §1.5's rows for the
+ *   Glossary page, and where the answers are remembered (memory.js), if anywhere.
  */
-export function createLive({ client, glossary }) {
-  const answers = {
+export function createLive({ client, glossary, memory = null }) {
+  const empty = () => ({
     status: { ok: NO_STATUS },
     prompts: [],
     outcomes: {},
@@ -66,6 +72,21 @@ export function createLive({ client, glossary }) {
     settings: { credentials: {}, status: {}, pump_settings: {} },
     glossary,
     states: {},
+  });
+  const answers = empty();
+
+  // The tabs (and Settings' parts) whose answers have landed, kept with them,
+  // and those drawn from an earlier visit's answers and not yet read again.
+  const kept = memory?.load();
+  if (kept?.answers) Object.assign(answers, kept.answers, { glossary });
+  const landed = new Set(kept?.answers ? kept.tabs : []);
+  const fromMemory = new Set(landed);
+  const remember = (tab) => {
+    if (tab) {
+      landed.add(tab);
+      fromMemory.delete(tab);
+    }
+    memory?.save({ tabs: [...landed], answers });
   };
 
   // One promise per answer: in flight or landed, shared by every reader. A
@@ -186,6 +207,19 @@ export function createLive({ client, glossary }) {
     };
   }
 
+  /** gen_ui_fixtures._comparison: the active Trial's comparison, kept to what Changes draws (its availability,
+   *  outcome rows, each arm's meals, trace and Control-IQ delivery), so the browser remembers no raw episode. */
+  function trimmed(comparison) {
+    const arms = (served, pick) => Object.fromEntries(Object.entries(served ?? {}).map(([arm, value]) => [arm, pick(value)]));
+    return {
+      availability: { state: comparison.availability.state },
+      outcomes: comparison.outcomes,
+      denominators: arms(comparison.denominators, (d) => ({ contributing_meals: d.contributing_meals })),
+      views: arms(comparison.views, (view) => Object.fromEntries(
+        ['trace', 'basal'].filter((key) => key in view).map((key) => [key, view[key]]))),
+    };
+  }
+
   /** gen_ui_fixtures._changes_store, for what the screen draws: every Trial on the roster (the active one and
    *  the previous ones, #524), the active Focus and every ended one. Only the active change takes a detail
    *  read: a Trial's retained comparison (its traces, metrics and meals), or a Focus's tracking. A previous
@@ -195,8 +229,8 @@ export function createLive({ client, glossary }) {
     const { admission } = answer;
     const active = admission.active_kind === 'trial'
       ? answer.trials.find((t) => t.id === admission.active_id) : null;
-    const comparison = active && (await client.fetchVerifyTrials({ selected: active.id, assessment: 'retained' }))
-      .selected.reassessment.comparison;
+    const comparison = active && trimmed((await client.fetchVerifyTrials({
+      selected: active.id, assessment: 'retained' })).selected.reassessment.comparison);
     const pinned = admission.active_kind === 'focus'
       ? answer.focuses.find((f) => f.id === admission.active_id) : null;
     const detail = pinned && (await client.fetchVerifyTrials({
@@ -249,7 +283,7 @@ export function createLive({ client, glossary }) {
   const BADGES = ['status', 'prompts'];
 
   /** Read what `tab` shows, and the badges; whatever has landed already is not read again. */
-  const readTab = (tab) => Promise.all([TABS[tab].read(), status(), prompts()]);
+  const readTab = (tab) => Promise.all([TABS[tab].read(), status(), prompts()]).then(() => remember(tab));
 
   /** Retry: forget what `tab` shows, and the badges, and read them again. */
   const retryTab = (tab) => {
@@ -266,11 +300,11 @@ export function createLive({ client, glossary }) {
     pump: { read: pump, keys: ['pump'] },
   };
   const settings = {
-    read: (part) => SETTINGS[part].read(),
+    read: (part) => SETTINGS[part].read().then(() => remember(`settings ${part}`)),
     /** Retry: forget what `part` shows and read it again. */
     retry: (part) => {
       forget(...SETTINGS[part].keys);
-      return SETTINGS[part].read();
+      return settings.read(part);
     },
     badges: prompts,
   };
@@ -283,7 +317,7 @@ export function createLive({ client, glossary }) {
       return await run();
     } finally {
       forget(...keys);
-      await reread().catch(() => undefined);
+      await reread().then(() => remember(), () => undefined);
     }
   }
 
@@ -377,16 +411,28 @@ export function createLive({ client, glossary }) {
     },
   };
 
+  /** A read a screen makes as it is used, remembered once it lands. */
+  const remembering = (read) => (...args) => read(...args).then((value) => { remember(); return value; });
+
   return {
     answers,
     readTab,
     retryTab,
     settings,
-    readDay: day,
+    readDay: remembering(day),
     /** The weeks of one month (`YYYY-MM`), read once; Retry is a second call after a failure. */
-    readMonth: month,
+    readMonth: remembering(month),
     /** The Overview's profile and ISF estimate for a window it switched to. */
-    readWindow: overviewWindow,
+    readWindow: remembering(overviewWindow),
+    /** Whether `tab` (or `settings <part>`) draws from an earlier visit's answers, not yet read again. */
+    remembered: (tab) => fromMemory.has(tab),
+    /** Forget every answer, landed or remembered: a new token reads the app afresh. */
+    reset: () => {
+      reads.clear();
+      landed.clear();
+      fromMemory.clear();
+      Object.assign(answers, empty());
+    },
     /** The account the Settings screen shows: set, or not. */
     accountState: () => (answers.settings.credentials.set?.configured ? 'set' : 'unset'),
     queueWrites,

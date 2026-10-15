@@ -6,6 +6,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { createLive } from './live.js';
+import { createMemory } from './memory.js';
 
 function history({ activeKind = 'focus' } = {}) {
   const focuses = Array.from({ length: 40 }, (_, i) => ({
@@ -33,7 +34,8 @@ function history({ activeKind = 'focus' } = {}) {
 function fakeClient(served = history()) {
   const calls = [];
   const answer = (name, value) => (...args) => { calls.push({ name, args }); return Promise.resolve(value(...args)); };
-  const comparison = { readiness: { after: { unit: 'meals', count: 2, required: 12, criterion_met: false } },
+  const comparison = { availability: { state: 'available', reason: null },
+    readiness: { after: { unit: 'meals', count: 2, required: 12, criterion_met: false } },
     adherence: { before: {}, after: {}, assessment: { state: 'unclear' } }, outcomes: [] };
   const client = {
     fetchStatus: answer('status', () => ({ last_attempt_at: null, last_success_at: null, last_error: null })),
@@ -280,4 +282,131 @@ test('a month that cannot be read is read again on the next ask', async () => {
   fake.client.fetchDayNavigator = real;
   await live.readMonth('2025-12');
   assert.equal(live.answers.day.months['2025-12'].month, '2025-12');
+});
+
+// --- Remembered answers (#522) -------------------------------------------------
+
+/** A Storage, in memory, with a switch that refuses every access. */
+function fakeStorage() {
+  const items = new Map();
+  let refusing = false;
+  const guard = () => { if (refusing) throw new Error('SecurityError'); };
+  return {
+    get length() { guard(); return items.size; },
+    key: (i) => { guard(); return [...items.keys()][i] ?? null; },
+    getItem: (k) => { guard(); return items.has(k) ? items.get(k) : null; },
+    setItem: (k, v) => { guard(); items.set(k, String(v)); },
+    removeItem: (k) => { guard(); items.delete(k); },
+    keys: () => [...items.keys()],
+    refuse: () => { refusing = true; },
+  };
+}
+
+/** A browser's memory under one build and a token that can change. */
+function browser(storage = fakeStorage(), build = 'build-1') {
+  const holder = { token: 'token-a' };
+  const memory = createMemory({ storage, build, token: () => holder.token });
+  return { storage, memory, holder };
+}
+
+test('a refresh draws the remembered answers before the engine answers, then reads them again', async () => {
+  const { storage, memory } = browser();
+  const first = createLive({ client: fakeClient().client, glossary: [], memory });
+  await first.readTab('queue');
+  assert.equal(first.remembered('queue'), false, 'answers read this visit are not drawn from memory');
+
+  // The page is refreshed: a new adapter over the same browser, and an engine that has not answered yet.
+  let answer;
+  const pending = new Promise((resolve) => { answer = resolve; });
+  const fake = fakeClient();
+  const slow = { ...fake.client, fetchGuidance: (...args) => pending.then(() => fake.client.fetchGuidance(...args)) };
+  const refreshed = createLive({ client: slow, glossary: [], memory: createMemory({ storage, build: 'build-1', token: () => 'token-a' }) });
+  assert.equal(refreshed.remembered('queue'), true);
+  assert.equal(refreshed.remembered('overview'), false, 'a tab never read is not remembered');
+  assert.equal(refreshed.answers.queue.wearer.guidance.candidates.length, 20, 'drawn before the engine answers');
+  const read = refreshed.readTab('queue');
+  assert.equal(refreshed.remembered('queue'), true, 'still drawn from memory while it is read again');
+  answer();
+  await read;
+  assert.equal(fake.count('guidance'), 1, 'and read again behind what it shows');
+  assert.equal(refreshed.remembered('queue'), false);
+});
+
+test('remembered answers are never read under another token or another build', async () => {
+  const { storage, memory, holder } = browser();
+  await createLive({ client: fakeClient().client, glossary: [], memory }).readTab('changes');
+  holder.token = 'token-b';
+  assert.equal(createLive({ client: fakeClient().client, glossary: [], memory }).remembered('changes'), false);
+  const rebuilt = createMemory({ storage, build: 'build-2', token: () => 'token-a' });
+  assert.equal(createLive({ client: fakeClient().client, glossary: [], memory: rebuilt }).remembered('changes'), false);
+  // Saving under the new token drops what the old one kept.
+  await createLive({ client: fakeClient().client, glossary: [], memory }).readTab('day');
+  assert.equal(storage.keys().length, 1);
+  holder.token = 'token-a';
+  assert.equal(createLive({ client: fakeClient().client, glossary: [], memory }).remembered('changes'), false);
+});
+
+test('storage that refuses access keeps nothing, and every tab reads as before', async () => {
+  const { storage, memory } = browser();
+  storage.refuse();
+  const fake = fakeClient();
+  const live = createLive({ client: fake.client, glossary: [], memory });
+  await live.readTab('queue');
+  assert.equal(live.remembered('queue'), false);
+  assert.equal(fake.count('guidance'), 1);
+});
+
+test('a new token forgets every answer, and the next read asks the engine again', async () => {
+  const { memory } = browser();
+  const fake = fakeClient();
+  const live = createLive({ client: fake.client, glossary: [{ term: 'kept' }], memory });
+  await live.readTab('queue');
+  live.reset();
+  assert.deepEqual(live.answers.queue.wearer.guidance.candidates, []);
+  assert.deepEqual(live.answers.glossary, [{ term: 'kept' }]);
+  await live.readTab('queue');
+  assert.equal(fake.count('guidance'), 2);
+});
+
+test('a remembered Settings part and a picked day draw at once after a refresh', async () => {
+  const { storage, memory } = browser();
+  const live = createLive({ client: fakeClient().client, glossary: [], memory });
+  await live.settings.read('account');
+  await live.readDay('2026-01-05');
+  const refreshed = createLive({ client: fakeClient().client, glossary: [], memory: createMemory({ storage, build: 'build-1', token: () => 'token-a' }) });
+  assert.equal(refreshed.remembered('settings account'), true);
+  assert.ok(refreshed.answers.day.days['2026-01-05'].model_view);
+});
+
+test('a refresh draws Changes\' comparison from memory, kept to what the screen draws (#524)', async () => {
+  const { storage, memory } = browser();
+  const served = history({ activeKind: 'trial' });
+  const fake = fakeClient(served);
+  const trace = { alignment: 'clock', start_min: 120, start: 0, end: 180, episodes: 3, left_off: 0, bins: [], traces: null };
+  const comparison = {
+    availability: { state: 'available', reason: null },
+    outcomes: [{ key: 'tir', unit: '%', before: 90, after: 95, assessment: { state: 'unclear' } }],
+    denominators: { before: { readings: 900, contributing_meals: 4, coverage: [{ date: '2026-01-01' }] },
+      after: { readings: 800, contributing_meals: 3, coverage: [] } },
+    views: {
+      before: { trace, basal: { delivered: 1, programmed: 1, above: 0, below: 0, minutes: 60 },
+        occurrences: [{ trace: { cgm: [{ minute: 0, bg: 100 }] } }], clock: [], rest_windows: [] },
+      after: { trace, basal: null, occurrences: [], clock: [], rest_windows: [] },
+    },
+  };
+  const roster = fake.client.fetchVerifyTrials;
+  fake.client.fetchVerifyTrials = (opts = {}) => (opts.selected
+    ? Promise.resolve({ selected: { reassessment: { comparison } } }) : roster(opts));
+  await createLive({ client: fake.client, glossary: [], memory }).readTab('changes');
+
+  const refreshed = createLive({ client: fakeClient(served).client, glossary: [],
+    memory: createMemory({ storage, build: 'build-1', token: () => 'token-a' }) });
+  assert.equal(refreshed.remembered('changes'), true);
+  const kept = refreshed.answers.changes.wearer.trials.find((t) => t.id === 'trial:29').reassessment;
+  assert.deepEqual(kept, {
+    availability: { state: 'available' },
+    outcomes: comparison.outcomes,
+    denominators: { before: { contributing_meals: 4 }, after: { contributing_meals: 3 } },
+    views: { before: { trace, basal: comparison.views.before.basal }, after: { trace, basal: null } },
+  });
 });

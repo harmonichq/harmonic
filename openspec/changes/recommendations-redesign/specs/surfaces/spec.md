@@ -176,6 +176,36 @@ state and a transient bar SHALL show "Not saved" with Retry.
 - **WHEN** the person opens Overview and then Queue
 - **THEN** Overview shows Unavailable and Retry, and Queue renders its items
 
+#### Scenario: A screen whose answers cannot be read again keeps them, marked stale
+
+- **GIVEN** Overview drew its answers, from this visit or kept from an earlier one
+- **WHEN** reading them again fails
+- **THEN** Overview keeps drawing them, with Unavailable and Retry in its title row
+- **AND** a Retry that succeeds draws the new answers and clears the mark
+
+### Requirement: Each screen draws its last answers at once, and reads them again behind them
+
+A tab the person has opened SHALL keep its answers on screen when they leave it
+and come back, without a loading state and without reading them again. The app
+SHALL keep each tab's answers in the browser, keyed by the build and by a hash of
+the API token they were read under, and after a page refresh a tab read before
+SHALL draw those answers at once while its first read asks the engine again. A
+new token SHALL forget every answer kept under the last one, and storage the
+browser refuses SHALL keep nothing, the app reading the engine as before (#522).
+
+#### Scenario: A refresh draws the remembered Queue before the engine answers
+
+- **GIVEN** the Queue was read in this browser under the current token
+- **WHEN** the page is refreshed and the guidance read has not answered yet
+- **THEN** the Queue draws the remembered items, and the guidance is read again
+  behind them
+
+#### Scenario: Answers kept under another token are never drawn
+
+- **GIVEN** answers kept under one token
+- **WHEN** the app runs under another token, or another build
+- **THEN** no tab draws them, and saving drops them
+
 ## MODIFIED Requirements
 
 ### Requirement: The server serves a name beside every identifier the desk prints

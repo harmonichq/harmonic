@@ -16,7 +16,8 @@ import { QueueScreen, type QueueScreenProps } from './QueueScreen';
 //   the Queue the engine served after it, the bar's Until, and the Snoozed row.
 // - Snoozed list: the first days with everything snoozed, each with Restore.
 // - Empty: the same store's Queue, "0 patterns", with its Snoozed row.
-// - Loading, and Unavailable (the unsynced store serves guidance unavailable).
+// - Loading, and Unavailable (the unsynced store serves guidance unavailable);
+//   Stale, the last answers under Unavailable.
 // - Phone mid-swipe: a row held over its Snooze reveal, the QueueRow's own
 //   still state.
 // Two desktop plays: selecting a row opens it; Snooze shows the bar, and Undo
@@ -107,6 +108,10 @@ export const LoadingPhone = story('phone', LOADING);
 export const LoadingDesktop = story('desktop', LOADING);
 export const UnavailablePhone = story('phone', UNAVAILABLE);
 export const UnavailableDesktop = story('desktop', UNAVAILABLE);
+// Stale (§2.5, 2026-10-14): the last answers, kept on screen under Unavailable
+// and Retry, when reading them again failed.
+export const StalePhone = story('phone', { store: 'wearer', state: 'stale' });
+export const StaleDesktop = story('desktop', { store: 'wearer', state: 'stale' });
 export const MidSwipePhone: Story = {
   args: { layout: 'phone', store: 'wearer', swiping: second('wearer') },
   parameters: { frame: FRAMES.phone },

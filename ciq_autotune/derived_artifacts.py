@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
 
+from .result_cache import count
 from .store import Store
 
 DERIVED_ARTIFACT_STORE_SCHEMA_VERSION = 4
@@ -217,6 +218,7 @@ def _load_or_compute_once(db_path: str, coordinates: tuple, compute: Callable,
                                 _mark_sidecar_rebuilt(value)
                             covers_to = row[2]
                             durable_hit = True
+                            count("derived")
                         except (ValueError, TypeError, KeyError):
                             pass
             except sqlite3.Error as error:

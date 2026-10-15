@@ -38,6 +38,11 @@ export function saveToken(token) {
   try { localStorage.setItem(TOKEN_KEY, token); } catch {}
 }
 
+/** The API token every request carries now, or null: none kept, no storage (node tests), or access refused. */
+export function currentToken() {
+  try { return typeof localStorage !== 'undefined' ? localStorage.getItem(TOKEN_KEY) : null; } catch { return null; }
+}
+
 /**
  * Build a bound API namespace whose transport can be replaced.
  *
@@ -54,9 +59,7 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
    */
   async function api(url, opts) {
     const headers = Object.assign({}, opts && opts.headers);
-    // localStorage may not exist (node tests) or may refuse access.
-    let token = null;
-    try { token = typeof localStorage !== 'undefined' ? localStorage.getItem(TOKEN_KEY) : null; } catch {}
+    const token = currentToken();
     if (token) headers['Authorization'] = 'Bearer ' + token;
     const res = await _fetch(url, Object.assign({}, opts, { headers }));
     if (!res.ok) {

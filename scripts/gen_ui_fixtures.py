@@ -37,8 +37,11 @@ Two committed outputs, one generator, one ``--check``:
   ISF of 33 under 8 mg/dL of sensor noise), read through the same API.
 
   ``changes`` holds the Changes components' answers by store (the admission,
-  the active or ended Trial, the Focus records with their served titles):
-  ``wearer`` with its matured Trial and that Trial's retained comparison;
+  every Trial on the roster, the Focus records with their served titles). The
+  active Trial carries its retained comparison, trimmed to what the screen
+  draws (#524): the outcome rows, each arm's meals, and each arm's binned
+  glucose trace and, for a basal Trial, Control-IQ's delivery against the
+  programmed rate. The stores: ``wearer`` with its matured Trial;
   ``wearer-ended`` the same store once the person ends that Trial through
   ``POST /api/verify/trials/{id}/finish``; ``wearer-pinned`` with its Focus;
   ``wearer-focus``, a Focus pinned on the Trial day with four weeks synced
@@ -47,9 +50,16 @@ Two committed outputs, one generator, one ``--check``:
   ended Trial is the last change beside an active one; ``wearer-first-days``
   with no active change; ``wearer-trial-maturing``,
   the wearer's history cut six days after the Trial day, so the Trial is still
-  maturing; and ``wearer-worse``, the second wearer, whose wrong-direction
-  Trial matures Worse. The two matured results are checked: the generator
-  fails if either stops being served. ``wearer-worse`` also has its Queue
+  maturing; ``wearer-ic-maturing``, a change to the 11:00 carb ratio cut a
+  few days later, its after period too few meals for a band;
+  ``wearer-profile``, a switch to a second profile that moves the 02:00 basal
+  and the 11:00 carb ratio at once, one whole-profile Trial;
+  ``wearer-previous``, three changes in turn, each ending the one before and
+  the last ended by the person, then a Focus pinned and ended at once, for
+  the Previous list; and ``wearer-worse``,
+  the second wearer, whose wrong-direction Trial matures Worse. The two
+  matured results are checked, and so is each new store's state: the
+  generator fails if any stops being served. ``wearer-worse`` also has its Queue
   answers in ``queue``.
 
   ``day`` holds ``/api/timeline`` and ``/api/carbs`` for four of the wearer's
@@ -178,14 +188,27 @@ MONTHS = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", 
 # ChangeCard's "Before/After values" and "Days 0 / 14", the Prompt's "Next" text
 # action, Log carbs' "Time" row (default now) and "Save", the write-failed
 # "Not saved" with "Retry", "Cancel" beneath End's confirmation (§1.3a), and
-# "Previous" and "Next", the names of the Day navigator's ‹ › (§1.4).
+# "Previous" and "Next", the names of the Day navigator's ‹ › (§1.4), and
+# Changes' Previous list (§2.5, 2026-10-14). The Changes screen's basal
+# module's "Delivered" rate and its meal trace's "Minutes" axis (#524).
 CHANGE_DAY_LABELS = ("Before", "After", "Days", "Next", "Time", "Now", "Save", "Not saved", "Retry", "Cancel",
-                     "Previous")
+                     "Previous", "Delivered", "Minutes")
 # The wearer's first days: fewer than the glucose profile's eight supported days.
 FIRST_DAYS = 5
 # A Trial still maturing: the wearer's history cut this many days after the
 # Trial day, short of the engine's fourteen.
 MATURING_DAYS = 6
+# A carb ratio Trial still maturing: the wearer's history cut this many days
+# after a change to the 11:00 carb ratio, which two of its lunches fall in.
+IC_MATURING_DAYS = 5
+# The Previous list's wearer (#524): the 02:00 basal lowered four weeks before
+# the Trial day, the 11:00 carb ratio two weeks before it, and the 02:00 basal
+# again on it, each change ending the one before.
+PREVIOUS_CHANGES = (
+    (ui_patient.TRIAL_DAY - 28, 1, ui_patient.trial_profile(1.40)),
+    (ui_patient.TRIAL_DAY - 14, 1, ui_patient.lunch_profile(ui_patient.trial_profile(1.40))),
+    (ui_patient.TRIAL_DAY, 1, ui_patient.lunch_profile(ui_patient.trial_profile(1.00))),
+)
 # Settings (§1.1, §1.2, §1.3, and the Settings section of the brief): the root
 # list's Glossary row, the sync rows, the account rows, the Token field, the pump profile, the
 # snooze bar ("Snoozed · Until <date>") and the screen-level "Unavailable".
@@ -368,6 +391,27 @@ def fixtures() -> dict:
         _, maturing = _wearer(scratch, "wearer-trial-maturing", trial=True,
                               days=ui_patient.TRIAL_DAY + MATURING_DAYS)
         changes["wearer-trial-maturing"] = _changes_store(maturing)
+
+        # A carb ratio Trial a few days in, two lunches into its block (#524).
+        _, ic_maturing = _wearer(scratch, "wearer-ic-maturing", trial=True,
+                                 days=ui_patient.TRIAL_DAY + IC_MATURING_DAYS,
+                                 changes=((ui_patient.TRIAL_DAY, 1, ui_patient.lunch_profile()),))
+        changes["wearer-ic-maturing"] = _changes_store(ic_maturing)
+        _require_few_meals(changes["wearer-ic-maturing"])
+        # A switch to a second profile, which moves the basal and the carb ratio at once.
+        _, switched = _wearer(scratch, "wearer-profile", trial=True,
+                              changes=((ui_patient.TRIAL_DAY, 2, ui_patient.switch_profile()),))
+        changes["wearer-profile"] = _changes_store(switched)
+        _require_parameter(changes["wearer-profile"], "profile")
+        # Several changes in turn, each ending the one before, and the last
+        # ended by the person once matured: the Previous list.
+        _, previous = _wearer(scratch, "wearer-previous", trial=True, changes=PREVIOUS_CHANGES)
+        _end_active_trial(previous)
+        # Then a Focus pinned and ended at once, before any data after its pin.
+        _pin(previous)
+        _resolve_active_focus(previous)
+        changes["wearer-previous"] = _changes_store(previous)
+        _require_previous(changes["wearer-previous"])
 
         _, worse = _wearer(scratch, "wearer-worse", trial=True,
                            profile=ui_patient.trial_profile(ui_patient.WORSE_PROFILE_BASAL),
@@ -570,34 +614,59 @@ def _outcome_rows(rows: list[dict]) -> list[dict]:
              "assessment": {"state": r["assessment"]["state"]}} for r in rows]
 
 
+# A trial roster row's fields the Changes screen reads: what changed, where and
+# when, its state, its days, and (a whole-profile switch) the settings it moved.
+TRIAL_FIELDS = ("id", "parameter", "slot", "changed_at", "before", "after", "state", "maturing",
+                "target_metrics", "block")
+CONSTITUENT_FIELDS = ("parameter", "slot", "before", "after")
+
+
+def _comparison(answer: dict) -> dict:
+    """The active Trial's retained comparison, trimmed to what the Changes
+    screen draws (#524): its availability, the outcome rows, each arm's meals,
+    and each arm's trace and (a basal Trial) Control-IQ's delivery against the
+    programmed rate."""
+    comparison = answer["selected"]["reassessment"]["comparison"]
+    return {
+        "availability": {"state": comparison["availability"]["state"]},
+        "outcomes": _outcome_rows(comparison["outcomes"]),
+        "denominators": {arm: {"contributing_meals": served["contributing_meals"]}
+                         for arm, served in comparison.get("denominators", {}).items()},
+        "views": {arm: {key: view[key] for key in ("trace", "basal") if key in view}
+                  for arm, view in comparison.get("views", {}).items()},
+    }
+
+
 def _changes_store(client: TestClient) -> dict:
-    """The Changes components' answers from one store: the admission, the
-    active or ended Trial (a matured active one with its retained comparison),
-    and the Focus records with their served titles."""
+    """The Changes components' answers from one store: the admission, every
+    Trial on the roster (the active one with its retained comparison, every
+    other a previous change, #524), and the Focus records with their served
+    titles."""
     answer = _get(client, "/api/verify/trials")
     admission = answer["admission"]
     trials = []
     for t in answer["trials"]:
         ending = t["ending"]
-        if t["watch_disposition"] != "active" and "kind" not in ending:
-            continue
-        row = {field: t[field] for field in
-               ("id", "parameter", "slot", "changed_at", "before", "after", "state", "maturing",
-                "target_metrics")}
+        row = {field: t[field] for field in TRIAL_FIELDS}
+        if "changes" in t:
+            row["changes"] = [{field: c[field] for field in CONSTITUENT_FIELDS} for c in t["changes"]]
         row["ending"] = ({"kind": ending["kind"], "effective_at": ending["effective_at"],
-                          "assessment": {"outcomes": _outcome_rows(ending["assessment"]["outcomes"])}}
+                          "assessment": {"outcomes": _outcome_rows(ending["assessment"].get("outcomes", []))}}
                          if "kind" in ending else {"state": ending["state"]})
-        if t["watch_disposition"] == "active" and admission["can_finish_trial"]:
-            selected = _get(client, "/api/verify/trials", selected=t["id"], assessment="retained")
-            row["reassessment"] = {"outcomes": _outcome_rows(
-                selected["selected"]["reassessment"]["comparison"]["outcomes"])}
+        if t["watch_disposition"] == "active":
+            row["reassessment"] = _comparison(
+                _get(client, "/api/verify/trials", selected=t["id"], assessment="retained"))
         trials.append(row)
     focuses = []
     for f in answer["focuses"]:
-        detail = _get(client, "/api/verify/trials", kind="focus", selected=str(f["id"]))["selected"]
+        # The active Focus, and each ended one: a previous change (#524).
+        if f["status"] != "active" and "kind" not in (f.get("ending") or {}):
+            continue
+        detail =_get(client, "/api/verify/trials", kind="focus", selected=str(f["id"]))["selected"]
         focuses.append({**{field: f[field] for field in ("id", "lever", "pattern_key", "pinned_at", "status")},
                         "title": detail["title"], "lever_title": detail["lever_title"],
-                        **({"tracking": _focus_tracking(client, f["id"])} if f["status"] == "active" else {})})
+                        **({"tracking": _focus_tracking(client, f["id"])} if f["status"] == "active" else {}),
+                        **({"ending": _focus_ending(f["ending"])} if "kind" in (f.get("ending") or {}) else {})})
     return {
         "admission": {field: admission[field] for field in
                       ("state", "active_kind", "active_id", "can_finish_trial", "maturity")},
@@ -663,12 +732,58 @@ def _require_result(store: dict, state: str) -> None:
         raise SystemExit(f"the simulated Trial {trial['id']} no longer serves {state}: {served}")
 
 
+def _focus_ending(ending: dict) -> dict:
+    """An ended Focus's saved ending, trimmed to what its Previous row prints:
+    when it ended and, where the ending saved one, the verdict on the habit."""
+    adherence = ending.get("assessment", {}).get("adherence")
+    return {"kind": ending["kind"], "effective_at": ending["effective_at"],
+            "assessment": ({"adherence": {"assessment": {"state": adherence["assessment"]["state"]}}}
+                           if adherence else {})}
+
+
+def _active_trial(store: dict) -> dict:
+    return next(t for t in store["trials"] if t["id"] == store["admission"]["active_id"])
+
+
+def _require_few_meals(store: dict) -> None:
+    """Fail unless the store's active Trial is a maturing carb ratio Trial whose
+    after period has fewer meals than a band needs, so its story draws each one."""
+    trial = _active_trial(store)
+    after = trial["reassessment"]["views"]["after"]["trace"]
+    if (trial["parameter"], trial["state"]) != ("carb_ratio", "maturing") or not after["traces"]:
+        raise SystemExit(f"the simulated carb ratio Trial no longer matures on a few meals: {trial['id']}")
+
+
+def _require_parameter(store: dict, parameter: str) -> None:
+    """Fail unless the store's active Trial is a ``parameter`` Trial."""
+    if _active_trial(store)["parameter"] != parameter:
+        raise SystemExit(f"the simulated Trial is no longer a {parameter} Trial")
+
+
+def _require_previous(store: dict) -> None:
+    """Fail unless the store holds three previous Trials, one with a served
+    result on its target metric and one without, and one ended Focus."""
+    served = [any(row["key"] in t["target_metrics"]
+                  for row in t["ending"].get("assessment", {}).get("outcomes", []))
+              for t in store["trials"]]
+    ended = [f for f in store["focuses"] if "ending" in f]
+    if (len(served) != 3 or store["admission"]["active_id"] is not None or set(served) != {True, False}
+            or len(ended) != 1):
+        raise SystemExit(f"the simulated changes no longer leave the previous changes: {served}, {len(ended)}")
+
+
 def _end_active_trial(client: TestClient) -> None:
     """The person ends the matured active Trial, as the End action posts it."""
     answer = _get(client, "/api/verify/trials")
     active = answer["admission"]["active_id"]
     _post(client, f"/api/verify/trials/{active}/finish",
           {"request_id": "ui-fixtures-end", "input_revision": answer["input_revision"]})
+
+
+def _resolve_active_focus(client: TestClient) -> None:
+    """The person ends the active Focus, as the End action posts it."""
+    active = _get(client, "/api/verify/trials")["admission"]["active_id"]
+    _post(client, f"/api/focus/{active}/resolve", {})
 
 
 def _days(client: TestClient, navigator: dict) -> dict:

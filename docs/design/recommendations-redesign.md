@@ -11,6 +11,10 @@ Status: **exploring** (#481).
   `32398383`, with a delta coloured only where the engine judged that row
   better or worse. The operator: "Yes, that looks good to me. Let's proceed
   with locking it."
+  Revised 2026-10-14 by the operator's decisions in §2.5 (#524): the current
+  change leads, with what it did to glucose in its block as modules beneath
+  it, and the last change's one row became "Previous", a drill-down to every
+  previous change.
 - **Overview screen locked 2026-10-13**: Storybook `Screens/Overview` at commit
   `0b0b78d8`: one page with no scrolling, one time-in-ranges bar for the
   selected window, colour only on Below 70 and Above 180. The operator:
@@ -48,7 +52,7 @@ consolidated brief from the first exploration (2026-10-12) as decision history.
 | Tab | Owns | Owns nothing else |
 |---|---|---|
 | **Queue** | The ranked recommendations, from Patterns and Settings, and the Snoozed list. | No logging, no status, no counters. |
-| **Changes** | The active watched change (one Trial or one Focus) and the last finished change. | No history archive. |
+| **Changes** | The current watched change (one Trial or one Focus) with what a Trial did to glucose in its block, and Previous: every earlier change (§2.5, 2026-10-14). | Nothing to act on but End. |
 | **Overview** | Standard metrics over 14, 30 or 90 days against the period of the same length before, the selected window's time-in-ranges bar and glucose profile, and the ISF estimate. | No Queue items and nothing to act on: the ISF estimate shows the engine's supported change as the Queue's card does, but changes nothing. |
 | **Day** | One day's glucose, insulin and carbs, the day navigator, carb logging and Prompts. | No aggregates beyond that day. |
 | **Settings** | Tandem Source (sync and account), Pump profile and the Glossary. | No preferences the engine doesn't have. |
@@ -81,7 +85,8 @@ Each row lists a screen's states. Labels only; no state uses prose.
 | Queue | Ranked cards, top card expanded | "0 patterns" label | Card skeletons | Unavailable + Retry | A card expanded; mid-swipe; just snoozed (bar "Snoozed · Until <date>" + Undo); Snoozed footer when N > 0 |
 | Queue · Snoozed | Each snoozed item as its Queue row, plus "Until <date>" + Restore | Not reachable (the footer is hidden at 0) | — | Unavailable + Retry | Restored (row leaves) |
 | Queue · setting detail | current → estimate, range, n, chart | — | Chart skeleton | Unavailable | A queued ISF: the Overview's ISF card in the Queue's frame (§2.5, 2026-10-14) |
-| Changes | Active Trial or Focus + the last change as one row | "No active change" label | Skeleton | Unavailable + Retry | Maturing; Matured (result pill); last change row expanded in place; **End** (Focus: anytime; Trial: once matured) → confirm sheet → ended |
+| Changes | The current Trial (head, trace, ranges, Mean/GMI/CV, Basal vs Pump profile) or Focus, then the Previous row with its count | "No active change" label; no Previous row at 0 | Skeleton | Unavailable + Retry | Maturing; Matured (result pill); a carb ratio Trial (Meals before / after; its trace meal by meal under three meals); a whole-profile switch (each setting it moved); **End** (Focus: anytime; Trial: once matured) → confirm sheet → ended |
+| Changes · Previous | Every previous change, newest first, no cutoff: setting and block, date, before → after per setting, the result where one was saved | Not reachable (the row is hidden at 0) | — | Unavailable + Retry | — |
 | Overview | 14 d selected; one scrolling page, the summary (window switch, date span, In range, metrics, glucose profile) its first screenful, the ISF estimate below | "No data" label per window, and in the ISF estimate when none is served | Skeleton; a window not yet read shows its profile's and ISF estimate's skeletons | Unavailable + Retry | 30 d / 90 d selected; a previous period without data (the span alone, no changes); the ISF estimate with a supported change (current → recommended), held, Uncertain, with nights beyond its axis |
 | Day | Latest day with data | "No data" for a day without readings | Chart skeleton | Unavailable + Retry | Month dropped down from the header's day; desktop: the selected week as a ribbon; Prompts row when count > 0 |
 | Day · Prompts | One prompt, "n / N" | Not reachable (the row is hidden at 0) | — | Not saved + Retry | Yes → grams field and keyboard; mid-swipe Not sure |
@@ -345,7 +350,8 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   the engine judged that row better or worse; an unclear or context row moves
   in neutral ink. Every derived difference is taken between the values as
   printed, so a delta always equals the numbers beside it.
-- **2026-10-13 — the last change is one row.** The operator: "the previous
+- **2026-10-13 — the last change is one row** (superseded 2026-10-14 by
+  Previous, below). The operator: "the previous
   change should show as a small row that can be extended … I guess we can
   leave a slot, like a one row small slot for previous change. but I'm not
   trying to maintain a queue of all past changes in a historical record." The
@@ -687,6 +693,46 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   modal, no sign-in screen and no new route; the `/#token=` link still works
   as before. "Token" joins the plain interface words (Settings labels).
 
+- **2026-10-14 — Changes leads with the current change, and keeps every
+  previous one.** The operator reviewed mocks of the redesigned Changes screen
+  drawn from his own history: "This all looks really good, like really good."
+  On the basal Trial: "it might be also helpful just to see how active Control
+  IQ was before versus after. Because that's kind of why you're doing it." On
+  the numbers: "we don't need to make it look like a table, but the data
+  should align like a table." He chose CV, the glossary's spread term, over the
+  mock's SD. Built in #524 (ADR 524); §1.1, §1.3 and §4.2 follow.
+  - **The current change leads.** Its ChangeCard: the setting's name and
+    block as the title ("I:C 07:00–11:00", the glossary's short names, as the
+    Pump profile prints them), the state pill on that line, the date beneath,
+    before → after per block (a whole-profile switch names each setting it
+    moved), and the data collected: Days, "n of N", and for a carb ratio Trial
+    Meals before and Meals after. End stays its compact secondary action.
+  - **What the change did, in modules beneath it**, each a served value of the
+    Trial's own comparison and its own population: the glucose trace for the
+    changed block (ChangeTrace: before grey, after in the accent, each a median
+    over its 25–75% band, or each episode on its own under three; a basal
+    Trial by clock time across its block, a carb ratio Trial at each in-block
+    meal bolus from −30 to 240 minutes, an episode with no reading before its
+    bolus left off); In range / Below 70 / Above 180; Mean / GMI / CV; and for
+    a basal Trial, Basal vs Pump profile: the delivered rate and the share of
+    the time Control-IQ delivered above and below the programmed rate
+    (ChangeMetrics). A Focus keeps its locked card.
+  - **Aligned like a table.** Every before → after, its unit and its Δ sit in
+    fixed columns in tabular numerals, the same in every module and in the
+    Previous list; no rules or cells are drawn.
+  - **Previous.** The last change's disclosure row becomes "Previous" with how
+    many there are, which drills down (§2.2, as Day's Lows) to every previous
+    change, newest first, with no cutoff: its setting and block, its date,
+    what moved before → after, and its result where its ending saved one. A
+    Focus ended is a previous change too, named by its Pattern. This reverses
+    the 2026-10-13 "not trying to maintain a queue of all past changes".
+  - **Waiting for pump.** A slot is kept between the current change and
+    Previous for the settings the person has said they changed and the pump
+    has not shown yet (feat/setting-done, not merged when this was built).
+  - **Plain interface words:** Previous, Delivered, Minutes and Meals (§2.5,
+    2026-10-13); every domain term is §1.5's (Basal, Pump profile, I:C, ISF,
+    In range, Below 70, Above 180, Mean, GMI, CV).
+
 ### 2.6 Deferred (not cut)
 Not built in the current screens. The engine still serves what each needs, and
 nothing is removed from the engine or the fixtures for them.
@@ -704,7 +750,7 @@ nothing is removed from the engine or the fixtures for them.
 
 ## 4. Component inventory (approved 2026-10-12)
 
-Twenty-two components. Screens are composed only from these. Every state listed
+Twenty-four components. Screens are composed only from these. Every state listed
 gets a Storybook story in step 3. "Fields" are the only served data a component
 may display; derived values name their formula in the provenance table.
 
@@ -898,20 +944,50 @@ unless noted. Loading is a skeleton of the component's own shape.
 
 **Changes**
 
-16. **ChangeCard**: the active Trial or Focus. Shows what changed (the
-    setting before → after, or how often the habit happened before → after),
-    its evidence as ticks (a Trial's days, a Focus's meals), and Before/After
-    values with a Δ (the shared Delta) once matured, with End.
+16. **ChangeCard**: the active Trial or Focus (§2.5, 2026-10-14).
+    - A Trial: the setting and block as the title ("I:C 07:00–11:00"), the
+      state pill on that line, the date beneath; before → after per block in
+      the shared columns (one setting the figure, "07:00 4.0 → 4.4 g/U"; a
+      whole-profile switch each setting named on its own line); the data
+      collected: Days "n of N", and for a carb ratio Trial Meals before and
+      Meals after; End at its foot once matured.
+    - A Focus: how often the habit happened before → after, its meals as
+      ticks against the gate, and Before/After values with a Δ once matured,
+      with End.
     - States: Trial maturing; Trial matured with a result (Better / Worse /
-      Unclear); Focus with no data yet; Focus maturing; Focus matured with a
-      result (the engine's verdict on the habit); ended; none ("No active
-      change").
-    - Fields: `trials.trials[]` (before, after, changed_at, maturing,
-      ending.assessment.outcomes); `focus.focuses[]`; a Focus's retained
-      comparison (`readiness.after` count and required, `adherence` before and
-      after rate and assessment, `outcomes` peak, nadir, tir, tbr, tar);
-      `guidance.admission`.
+      Unclear); carb ratio Trial (meals); whole-profile switch; Focus with no
+      data yet; Focus maturing; Focus matured with a result (the engine's
+      verdict on the habit); none ("No active change").
+    - Fields: `trials.trials[]` (parameter, block, changed_at, before, after,
+      changes, maturing, state); the active Trial's
+      `reassessment.comparison.denominators.*.contributing_meals`;
+      `focus.focuses[]`; a Focus's retained comparison (`readiness.after`
+      count and required, `adherence` before and after rate and assessment,
+      `outcomes` peak, nadir, tir, tbr, tar); `admission`.
     - Desktop: the same, in the Changes pane.
+23. **ChangeTrace**: the active Trial's glucose before and after, for the
+    changed block (§2.5, 2026-10-14).
+    - Before grey, After the accent: a median over its 25–75% band, or each
+      episode as a thin line when an arm has fewer than three; 70 and 180
+      dashed; "mg/dL" once; the legend names the episode once ("Nights",
+      "Meals"), then "Before 55" and "After 2" in the engine's counts.
+    - States: by clock across a block (basal; ISF); across the whole day (a
+      whole-profile switch); at each in-block meal bolus, −30 to 240 minutes,
+      with "Minutes" (carb ratio); an arm drawn episode by episode.
+    - Fields: the comparison's `views.before|after.trace` (`alignment`,
+      `start_min`, `start`, `end`, `episodes`, `bins[].t, median, p25, p75`,
+      `traces`) (ADR 524).
+    - Desktop: the pane's width.
+24. **ChangeMetrics**: one module of a Trial's metrics, before → after with
+    the shared Delta, in fixed columns shared by every module (§2.5,
+    2026-10-14).
+    - States: In range / Below 70 / Above 180 (the target metric strong, its
+      Δ toned by the engine's verdict); Mean / GMI / CV (never toned); Basal
+      vs Pump profile: Delivered (U/h), Above and Below (% of the time).
+    - Fields: the comparison's `outcomes[key=tir|tbr|tar|mean|gmi|cv].before,
+      after, assessment.state`; `views.before|after.basal.delivered, above,
+      below` (ADR 524).
+    - Desktop: the same, the pane's width.
 
 **Day**
 
@@ -960,8 +1036,8 @@ unless noted. Loading is a skeleton of the component's own shape.
 
 20. **ListRow**: label, inline value or state, ›; read-only rows have no ›.
     - States: navigable; read-only; with alert ("⚠ Failed"); with a secondary
-      button ("Update"); disclosure, closed or open (expands in place: the
-      Changes screen's last change); field (the account form's Email and
+      button ("Update"); a previous change (Changes · Previous: its name and block, date, what
+      moved in the shared columns, its result pill); field (the account form's Email and
       Password, and the root's Token).
     - Fields: `status`; `credentials.configured, email` (masked), `region`;
       `pump_settings.profile.segments[]`.

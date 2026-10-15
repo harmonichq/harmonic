@@ -1,0 +1,48 @@
+.ui-trace {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 12px 12px;
+  border-radius: var(--wk-radius);
+  background: var(--wk-surface);
+  color: var(--wk-ink);
+  font-family: var(--ui-font);
+  font-variant-numeric: tabular-nums;
+}
+
+.ui-trace__title {
+  margin: 0 4px;
+  font-size: var(--ui-type-body);
+  font-weight: var(--ui-weight-strong);
+  line-height: 22px;
+}
+
+.ui-trace__chart { display: block; overflow: visible; }
+.ui-trace__scale { fill: var(--wk-ink-meta); font-size: var(--ui-type-caption); }
+.ui-trace__grid { stroke: var(--wk-rule); stroke-width: 1; }
+.ui-trace__axis { stroke: var(--wk-rule); stroke-width: 1; }
+.ui-trace__threshold { stroke: var(--wk-ink-meta); stroke-opacity: .7; stroke-width: 1; stroke-dasharray: 3 3; }
+.ui-trace__bolus { stroke: var(--wk-ink-meta); stroke-opacity: .6; stroke-width: 1; }
+
+/* Before in grey, After in the accent: a band, its median, or each episode. */
+.ui-trace__arm--before { --ui-trace-tone: var(--wk-ink-meta); }
+.ui-trace__arm--after { --ui-trace-tone: var(--primary); }
+.ui-trace__band { fill: var(--ui-trace-tone); fill-opacity: .22; }
+.ui-trace__median { fill: none; stroke: var(--ui-trace-tone); stroke-width: 2; stroke-linejoin: round; }
+.ui-trace__arm--before .ui-trace__median { stroke: var(--wk-ink-body); }
+.ui-trace__episode { fill: none; stroke: var(--ui-trace-tone); stroke-width: 1.5; stroke-linejoin: round; stroke-opacity: .9; }
+
+.ui-trace__legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 20px;
+  margin: 0 4px;
+  color: var(--wk-ink-body);
+  font-size: var(--ui-type-label);
+}
+.ui-trace__axis-name { flex-basis: 100%; color: var(--wk-ink-meta); font-size: var(--ui-type-caption); }
+.ui-trace__key { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+.ui-trace__key svg { display: block; stroke-width: 3; }
+.ui-trace__key--before svg { stroke: var(--wk-ink-body); }
+.ui-trace__key--after svg { stroke: var(--primary); }

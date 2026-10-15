@@ -180,6 +180,11 @@ def _assess(before, after, groups, statistic, polarity, ready=True):
     if before is None or after is None:
         assessment["reasons"].append("No readable observations or opportunities in one period.")
         return assessment
+    if polarity is None:
+        # A context row never takes a direction, so it is not resampled for an
+        # interval nothing reads (#524).
+        assessment["reasons"].append("A context row claims no direction; no interval is estimated.")
+        return assessment
     if not ready:
         assessment["reasons"].append("Type-specific follow-up readiness is not met in both arms.")
     if min(len(g) for g in groups) < 2:
@@ -440,21 +445,22 @@ def compare_follow_up(store, *, record, data_cutoff, input_revision, context_mod
             comparison["readiness"][name] = arm
         ready = all(behavior_ready)
     metrics = [compute_metrics(p["readings"]) for p in populations]
+    # Every comparison serves the glossary's Mean, GMI and CV beside the ranges,
+    # over the same readings, as context rows (#524).
     specs = [("tir", "Time in range", "tir", "up"),
              ("tbr", "Time below range", "tbr_lvl1", "down"),
-             ("tar", "Time above range", "tar_lvl1", "down")]
-    if parameter == "profile":
-        specs += [("mean", "Mean glucose", "mean_glucose", None),
-                  ("cv", "Glucose variability", "cv", None)]
+             ("tar", "Time above range", "tar_lvl1", "down"),
+             ("mean", "Mean glucose", "mean_glucose", None),
+             ("gmi", "Glucose management indicator", "gmi", None),
+             ("cv", "Glucose variability", "cv", None)]
     for key, label, attr, polarity in specs:
         if polarity is not None:
             rate_groups = [{day: [glycemic_rate_counts(readings, attr)]
                             for day, readings in arm.items()} for arm in groups]
             statistic = lambda counts: _pct(sum(k for k, n in counts), sum(n for k, n in counts)) if counts else None
         else:
-            rate_groups = groups
-            statistic = lambda readings, attr=attr: getattr(
-                compute_metrics(readings, include_cv=attr == "cv"), attr)
+            # A context row is never resampled (_assess), so it has no statistic.
+            rate_groups, statistic = groups, None
         outcome_ready = ready
         if kind == "focus" and key == target:
             # Mapped glucose retains its own measurement/coverage checks below;

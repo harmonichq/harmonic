@@ -86,6 +86,28 @@ test('Changes reads at most the active change\'s detail, however long the histor
   }
 });
 
+test('Changes keeps every previous change from the roster, and reads a maturing Trial\'s comparison', async () => {
+  // #524: the Previous list is every Trial on the roster and every ended Focus,
+  // read from the one roster answer; the active Trial's comparison is read
+  // whether or not it has matured, since its trace and metrics show either way.
+  const served = history({ activeKind: 'trial' });
+  served.admission.can_finish_trial = false;
+  for (const focus of served.focuses) {
+    focus.ending = { kind: 'manual', effective_at: '2026-01-02 00:00:00', assessment: {} };
+    focus.status = 'resolved';
+  }
+  served.focuses[0].ending = { state: 'none' };
+  const fake = fakeClient(served);
+  const live = createLive({ client: fake.client, glossary: [] });
+  await live.readTab('changes');
+  const store = live.answers.changes.wearer;
+  assert.equal(store.trials.length, 30);
+  assert.ok(store.trials.find((t) => t.id === 'trial:29').reassessment, 'the maturing Trial is compared');
+  assert.equal(store.focuses.length, 39, 'every ended Focus, and none that never ended');
+  assert.equal(fake.count('trials', detail), 1, 'one detail read: the active Trial');
+  assert.equal(fake.count('guidance'), 0, 'Changes reads no guidance');
+});
+
 test('the Queue reads a case file only for each Pattern it ranks', async () => {
   const fake = fakeClient();
   await createLive({ client: fake.client, glossary: [] }).readTab('queue');

@@ -572,6 +572,8 @@ class VerifyTrialsApiTest(unittest.TestCase):
             "block": None,
             "state": "complete",
             "maturing": {"days_elapsed": 14, "days_required": 14, "gap_count": 0},
+            # The settings it moved (#524); none attributable from these reads.
+            "changes": [],
         }])
 
     def test_edit_chains_retained_records_within_a_day_and_breaks_past_it(self):

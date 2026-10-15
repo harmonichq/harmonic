@@ -73,6 +73,8 @@ const EXPECTED = {
       magnitude: { count: 1, denominator: 5, noun: 'lows' } },
     isf: null,
     change: { kind: 'none' },
+    // One previous change: the whole-day carb ratio move, with no saved result.
+    previous: [{ title: 'I:C', block: null, moves: [[null, 12, 10, 'g/U']], result: null }],
     overview: { tir: 98.6, previous: 100, isf: { current: 40, recommended: null, uncertain: true, nights: 14 } },
     day: { latest: '2024-06-30', insulin: 19.56, firstLowBg: 48 },
     // The 22:00 low resolves after midnight: it is the 29th's finding.
@@ -108,8 +110,14 @@ const EXPECTED = {
     queue: ['setting:basal_rate'],
     basal: { start: 60, end: 90, current: 0.6, suggested: 0.48, trial: false },
     isf: null,
-    change: { kind: 'trial', title: 'Basal', slot: '03:00', before: 0.6, after: 0.54, maturing: false,
-      result: 'unclear', canEnd: true },
+    change: { kind: 'trial', title: 'Basal', maturing: false, result: 'unclear', canEnd: true },
+    // #524: its block, what moved, the trace by clock time across the block (its
+    // nights before and after), every module, and Control-IQ's delivered rate.
+    trial: { block: [180, 210], moves: [['03:00', 0.6, 0.54, 'U/h']], meals: null,
+      trace: { alignment: 'clock', episodes: [13, 15] },
+      modules: { ranges: ['tir', 'tbr', 'tar'], glucose: ['mean', 'gmi', 'cv'], basal: ['delivered', 'above', 'below'] },
+      delivered: [0.48, 0.48] },
+    previous: [],
   },
 };
 
@@ -151,9 +159,26 @@ test(`the live adapter serves each tab's model from the ${CASE} store`, async (t
   await t.test('Changes', async () => {
     await live.readTab('changes');
     const active = values(changes.change('wearer'));
-    const { before, after, ...rest } = expected.change;
-    for (const [key, value] of Object.entries(rest)) assert.equal(active[key], value, `change ${key}`);
-    if (before !== undefined) assert.deepEqual([active.change.before, active.change.after], [before, after]);
+    for (const [key, value] of Object.entries(expected.change)) assert.equal(active[key], value, `change ${key}`);
+    const trial = expected.trial;
+    if (trial) {
+      assert.deepEqual(active.block && [active.block.start, active.block.end], trial.block);
+      assert.deepEqual(active.moves.map((m) => [m.slot, m.before, m.after, m.units]), trial.moves);
+      assert.deepEqual(active.meals, trial.meals);
+      assert.equal(active.trace.alignment, trial.trace.alignment);
+      assert.deepEqual([active.trace.before.episodes, active.trace.after.episodes], trial.trace.episodes);
+      for (const [module, keys] of Object.entries(trial.modules)) {
+        assert.deepEqual(active[module].map((row) => row.key), keys, module);
+      }
+      const delivered = active.basal.find((row) => row.key === 'delivered');
+      assert.deepEqual([delivered.before, delivered.after], trial.delivered);
+    }
+    if (expected.previous) {
+      const previous = values(changes.previousChanges('wearer'));
+      assert.equal(values(changes.previousCount('wearer')), expected.previous.length, 'Previous · N');
+      assert.deepEqual(previous.map((row) => ({ title: row.title, block: row.block,
+        moves: row.moves.map((m) => [m.slot, m.before, m.after, m.units]), result: row.result })), expected.previous);
+    }
   });
 
   if (expected.findings) {

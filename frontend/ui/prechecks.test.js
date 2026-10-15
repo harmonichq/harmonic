@@ -107,6 +107,15 @@ test('a derived difference is taken between the values as printed', async () => 
   assert.equal(shown, '2.2');
 });
 
+test('(e) a count of two lists, less a literal, resolves left to right', () => {
+  // Changes' "Previous · N" (#524): every Trial and ended Focus but the active one.
+  const fixtures = { store: { trials: [1, 2, 3], focuses: [1, 2] } };
+  const check = (texts) => precheckProblems({ ...clean, texts }, { ...sources, fixtures });
+  assert.deepEqual(check([{ text: '4', source: 'store.trials.length + store.focuses.length − 1' }]), []);
+  assert.match(check([{ text: '5', source: 'store.trials.length + store.focuses.length − 1' }])[0],
+    /^\(e\) "5" is not store\.trials\.length \+ store\.focuses\.length − 1 \(4\)/);
+});
+
 test('(e) a share resolves over the values as printed', () => {
   const fixtures = { ins: { basal: 29.4229, meal: 22.1017, total: 62.4429 } };
   const check = (texts) => precheckProblems({ ...clean, texts }, { ...sources, fixtures });

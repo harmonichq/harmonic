@@ -57,8 +57,6 @@
 .ui-row--head { min-height: 40px; align-items: end; padding-bottom: 6px; }
 .ui-row--head .ui-row__cell { color: var(--wk-ink-meta); }
 
-/* A disclosure row's chevron: down closed, up open. */
-.ui-row__disclosure { display: flex; flex: none; color: var(--wk-ink-meta); }
 
 /* A form row: the label, then its input on the right, underlined as the grams
    field is (§2.2 numeric input): a neutral rule, the accent while focused. */

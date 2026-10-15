@@ -124,6 +124,44 @@ computed, or answered from the derived-results file (#522).
 - **WHEN** the 14-day outcomes are read twice
 - **THEN** the first line logs one computed read and the second one hit from memory
 
+### Requirement: A selected Trial's comparison serves what Changes draws
+
+A selected Trial's reassessment comparison SHALL serve, for each arm, a glucose
+`trace` binned from that arm's own population: a basal, ISF or whole-day Trial
+aligned by clock time across its block (or the whole day), one episode a night,
+from the readings its outcomes read; a carb ratio Trial aligned at each in-block
+meal bolus from 30 minutes before it to 240 minutes after, one episode a meal,
+leaving off a meal with no reading before its bolus. Each bin SHALL carry the
+median and the 25th–75th percentiles of its readings; an arm with fewer than
+three episodes SHALL serve each episode's readings instead of bins. Every
+comparison SHALL serve Mean, GMI and CV beside the time-in-range rows, over the
+same readings, as context rows that are not resampled for an interval. A basal
+Trial's arms SHALL serve how active Control-IQ was over the same windows: the
+time-weighted delivered and programmed rates and the share of the time delivered
+above and below the programmed rate. The roster SHALL name the settings each
+whole-profile switch moved.
+
+#### Scenario: A basal Trial's trace follows its block's clock
+
+- **WHEN** a basal Trial changed 02:00–05:00 and every night before it ran low
+  from 04:00 to 05:00 while Control-IQ suspended
+- **THEN** each arm's trace is aligned at 02:00 across 180 minutes, one episode a
+  night, its 04:30 bin the low
+- **AND** the before arm's Control-IQ delivery is below the programmed rate for
+  a third of the block's time
+
+#### Scenario: A meal with a CGM gap before its bolus is left off
+
+- **WHEN** a carb ratio Trial's after arm holds six in-block lunches, one with no
+  reading in the half hour before its bolus
+- **THEN** the after trace has five episodes and counts one left off, while the
+  arm's meal count stays six
+
+#### Scenario: Two nights after a change are drawn one by one
+
+- **WHEN** a basal Trial's after arm holds two nights
+- **THEN** its trace serves no bins and serves each night's readings
+
 ## MODIFIED Requirements
 
 ### Requirement: The heavy read endpoints answer from one per-process result cache

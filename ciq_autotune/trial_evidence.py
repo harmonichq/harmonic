@@ -30,6 +30,7 @@ therefore reads a shade lower than the frozen mock render on the same data.
 from __future__ import annotations
 
 import statistics
+from bisect import bisect_left
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Sequence, Tuple
 
@@ -344,6 +345,9 @@ def comparison_evidence(*, parameter, slot, block, changed_at, before, after,
     occurrences = []
     steps = []
     windows = []
+    # The clock span a clock-aligned trace reads: a basal or ISF Trial's block or
+    # slot, else the whole day.
+    clock_span = (0, 1440)
     if parameter == "carb_ratio":
         for meal in meals:
             intervals.append((meal.t, min(end, meal.t + timedelta(hours=5))))
@@ -367,6 +371,8 @@ def comparison_evidence(*, parameter, slot, block, changed_at, before, after,
             span = (minute, minute + 30)
         if span is not None and span[1] <= span[0]:
             span = (span[0], span[1] + 1440)
+        if span is not None:
+            clock_span = span
         for window in rest:
             lo, hi = max(start, window.start), min(end, window.end)
             windows.append({"id": f"rest:{window.date}", "start": str(lo), "end": str(hi)})
@@ -402,7 +408,8 @@ def comparison_evidence(*, parameter, slot, block, changed_at, before, after,
             merged.append((lo, hi))
     readings = [r for r in owned_cgm if any(lo <= r.t < hi for lo, hi in merged)]
     coverage = comparison_coverage(readings, merged, start, end)
-    readiness = _comparison_readiness(
+    trace = _meal_trace(meals, owned_cgm) if parameter == "carb_ratio" else _clock_trace(readings, clock_span)
+    readiness =_comparison_readiness(
         "focus" if focus else parameter, slot, block, start, end, cgm, bolus, basal, carbs, snapshots,
         pump_events, isf, captured_members, steps, coverage,
     )
@@ -414,11 +421,109 @@ def comparison_evidence(*, parameter, slot, block, changed_at, before, after,
                  if parameter == "carb_ratio" else None,
                  "clock": _clock_envelope(readings, (start, end)),
                  "rest_windows": windows, "fasting_steps": steps,
+                 "trace": trace,
+                 **({"basal": _basal_activity(basal, merged)} if parameter == "basal_rate" else {}),
                  "changes": _constituent_changes(
                      snapshots, parameter=parameter, slot=slot, changed_at=changed_at,
                      before=before, after=after,
                  )},
     }
+
+
+# The before-vs-after glucose trace a Trial's comparison serves for each arm,
+# which the Changes screen draws (#524). Binned here, so the screen computes
+# nothing statistical. A basal (or ISF, or whole-day) Trial is aligned by clock
+# time across its span, one episode a night, from the arm's own readings — the
+# readings its outcomes read. A carb ratio Trial is aligned at each in-block meal
+# bolus, half an hour before it to four hours after, one episode a meal.
+_TRACE_CLOCK_BIN = 10
+_TRACE_MEAL_SPAN = (-30, 240)
+_TRACE_MEAL_BIN = 5
+# The band (median and 25th–75th percentile) needs three episodes, and each
+# bin three readings; fewer episodes are served one by one instead.
+_TRACE_BAND = 3
+
+
+def _trace(alignment, episodes, *, start, end, bin_minutes, left_off=0, **extra):
+    """``episodes`` is one ``[(offset, bg), ...]`` list per episode."""
+    trace = {"alignment": alignment, **extra, "start": start, "end": end,
+             "bin_minutes": bin_minutes, "episodes": len(episodes), "left_off": left_off,
+             "bins": [], "traces": None}
+    if len(episodes) < _TRACE_BAND:
+        trace["traces"] = [[{"t": t, "bg": bg} for t, bg in episode] for episode in episodes]
+        return trace
+    half = bin_minutes / 2
+    for centre in range(start, end + 1, bin_minutes):
+        values = [bg for episode in episodes for t, bg in episode if centre - half <= t < centre + half]
+        if len(values) < _TRACE_BAND:
+            continue
+        p25, median, p75 = statistics.quantiles(values, n=4, method="inclusive")
+        trace["bins"].append({"t": centre, "n": len(values), "median": round(median, 1),
+                              "p25": round(p25, 1), "p75": round(p75, 1)})
+    return trace
+
+
+def _clock_trace(readings, span: Tuple[int, int]) -> dict:
+    """The arm's readings by minutes into ``span`` (which may run past midnight),
+    one episode for each night the span starts on."""
+    start_min, end_min = span
+    length = end_min - start_min
+    episodes: Dict[object, list] = {}
+    for reading in readings:
+        offset = (reading.t.hour * 60 + reading.t.minute - start_min) % 1440
+        if offset >= length:
+            continue
+        night = (reading.t - timedelta(minutes=offset)).date()
+        episodes.setdefault(night, []).append((offset, reading.bg))
+    return _trace("clock", [episodes[night] for night in sorted(episodes)],
+                  start=0, end=length, bin_minutes=_TRACE_CLOCK_BIN, start_min=start_min % 1440)
+
+
+def _meal_trace(meals, cgm) -> dict:
+    """Each meal's readings by minutes since its bolus. A meal with no reading
+    before its bolus (a CGM gap) has no start to align, and is left off."""
+    lo, hi = _TRACE_MEAL_SPAN
+    times = [reading.t for reading in cgm]
+    episodes, left_off = [], 0
+    for meal in meals:
+        episode = []
+        for reading in cgm[bisect_left(times, meal.t + timedelta(minutes=lo)):]:
+            offset = (reading.t - meal.t).total_seconds() / 60
+            if offset > hi:
+                break
+            episode.append((round(offset, 1), reading.bg))
+        if any(offset < 0 for offset, _ in episode):
+            episodes.append(episode)
+        else:
+            left_off += 1
+    return _trace("meal", episodes, start=lo, end=hi, bin_minutes=_TRACE_MEAL_BIN, left_off=left_off)
+
+
+def _basal_activity(basal, intervals) -> Optional[dict]:
+    """How active Control-IQ was in the arm's windows (#524): the delivered and
+    programmed rates, time-weighted in U/h, and the share of the time it
+    delivered above and below the programmed rate (a suspend is below). Read
+    from each delivery row's ``basal_rate`` against its ``profile_basal_rate``,
+    over the same windows the arm's glucose is read from; None without a row."""
+    minutes = delivered = programmed = above = below = 0.0
+    for row in basal:
+        if row.basal_rate is None or row.profile_basal_rate is None:
+            continue
+        if not any(lo <= row.t < hi for lo, hi in intervals):
+            continue
+        length = row.duration_mins or 5
+        minutes += length
+        delivered += row.basal_rate * length
+        programmed += row.profile_basal_rate * length
+        if row.basal_rate > row.profile_basal_rate:
+            above += length
+        elif row.basal_rate < row.profile_basal_rate:
+            below += length
+    if not minutes:
+        return None
+    return {"minutes": round(minutes), "delivered": round(delivered / minutes, 2),
+            "programmed": round(programmed / minutes, 2),
+            "above": round(100 * above / minutes, 1), "below": round(100 * below / minutes, 1)}
 
 
 def comparison_coverage(readings, intervals, start, end):

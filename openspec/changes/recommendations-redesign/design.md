@@ -720,3 +720,57 @@ so it is left for its own decision.
 **Consequences.** A new cached builder that reads follow-up state must not be
 named in the keep list. A new screen read belongs in the warm roster. The
 browser keeps answers only from its own server, under its own token.
+
+## ADR 524 — A Trial's comparison serves the Changes screen's trace, metrics and Control-IQ activity
+
+**Decision.** The selected Trial's retained comparison
+(`GET /api/verify/trials?selected=…&assessment=retained`) serves everything the
+redesigned Changes screen draws, so the screen computes nothing statistical:
+
+- **A `trace` per arm** (`views.before|after.trace`), binned from that arm's own
+  population. A basal, ISF or whole-day Trial is aligned by clock time across
+  its block (`start_min`, offsets `0…end`), one episode a night (the date the
+  block starts on), from the readings the arm's outcomes read — for a basal
+  block, the fasting rest windows inside it. A carb ratio Trial is aligned at
+  each in-block meal bolus, −30 to 240 minutes, one episode a meal; a meal with
+  no reading before its bolus has no start to align and is left off
+  (`left_off`), while the arm's meal count (`denominators.contributing_meals`)
+  still counts it. Each bin (10 minutes by clock, 5 by meal) carries `n`,
+  `median`, `p25` and `p75` when it holds three readings; an arm with fewer
+  than three episodes serves `traces` (each episode's readings) and no bins.
+- **Mean, GMI and CV for every Trial and Focus**, beside the time-in-range rows
+  and over the same readings. They were whole-profile only; GMI is new. They
+  are context rows: the engine judges none of them.
+- **Context rows are not resampled.** A context row never takes a direction,
+  so its bootstrap interval was cost with no reader (no surface reads it); it
+  now serves `interval: null`. This also covers the carb ratio peak, nadir and
+  starting glucose rows. Directional rows are unchanged.
+- **Control-IQ activity for a basal Trial** (`views.before|after.basal`): over
+  the same windows the arm's glucose is read from, the time-weighted delivered
+  rate (`basal_rate`) and programmed rate (`profile_basal_rate`) in U/h, and the
+  share of the time delivered above and below the programmed rate (a suspend is
+  below). The engine judges none of it.
+- **The roster names a whole-profile switch's settings** (`trials[].changes`,
+  profile rows only), the constituents the selected detail already served, so
+  the Previous list prints them without a detail read per change.
+
+**Why the comparison, not the breakdown.** The legacy breakdown
+(`trial_breakdown`) reads whole periods — every reading of the 14 days, by
+clock over the whole day — while the comparison owns the Trial's population
+(the block's rest windows, the in-block meals) and is what its verdict reads.
+The mock Connor approved drew whole-period glucose; serving the comparison's
+population instead keeps one population per module, named, and the same one
+the result reads (AGENTS.md: population is part of the contract).
+
+**Why this is not saved.** A saved ending keeps the comparison without its
+views (ADR 463 keeps only the clock), so traces and Control-IQ activity never
+enter durable records. Mean, GMI and CV rows do, as rows with a unit and a
+named denominator, which the ending validator already accepts.
+
+**Consequences.** The UI fixtures are regenerated, with three new synthetic
+stores (a carb ratio Trial maturing on a few meals, a whole-profile switch, a
+run of previous changes); `scripts/ui_patient.py` now takes a list of dated
+changes, each an in-place edit or a switch, and reproduces every earlier store
+byte for byte. The live adapter reads the active Trial's comparison whether or
+not it has matured, and no longer reads the guidance for Changes. The
+provenance grammar gains `+`, for the Previous count.

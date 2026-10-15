@@ -207,16 +207,30 @@ export function createLive({ client, glossary, memory = null }) {
     };
   }
 
-  /** gen_ui_fixtures._changes_store, for what the screen draws: the active change and every ended Trial (the
-   *  last change is the latest of them, read from the list). Only the active change takes a detail read. */
+  /** gen_ui_fixtures._comparison: the active Trial's comparison, kept to what Changes draws (its availability,
+   *  outcome rows, each arm's meals, trace and Control-IQ delivery), so the browser remembers no raw episode. */
+  function trimmed(comparison) {
+    const arms = (served, pick) => Object.fromEntries(Object.entries(served ?? {}).map(([arm, value]) => [arm, pick(value)]));
+    return {
+      availability: { state: comparison.availability.state },
+      outcomes: comparison.outcomes,
+      denominators: arms(comparison.denominators, (d) => ({ contributing_meals: d.contributing_meals })),
+      views: arms(comparison.views, (view) => Object.fromEntries(
+        ['trace', 'basal'].filter((key) => key in view).map((key) => [key, view[key]]))),
+    };
+  }
+
+  /** gen_ui_fixtures._changes_store, for what the screen draws: every Trial on the roster (the active one and
+   *  the previous ones, #524), the active Focus and every ended one. Only the active change takes a detail
+   *  read: a Trial's retained comparison (its traces, metrics and meals), or a Focus's tracking. A previous
+   *  change prints only what the roster serves. */
   const changes = () => once('changes', async () => {
-    const [answer] = await Promise.all([trials(), guidance()]);
+    const answer = await trials();
     const { admission } = answer;
-    const shown = answer.trials.filter((t) => t.watch_disposition === 'active' || 'kind' in t.ending);
-    const active = admission.active_kind === 'trial' && admission.can_finish_trial
-      ? shown.find((t) => t.id === admission.active_id) : null;
-    const reassessed = active && (await client.fetchVerifyTrials({ selected: active.id, assessment: 'retained' }))
-      .selected.reassessment.comparison.outcomes;
+    const active = admission.active_kind === 'trial'
+      ? answer.trials.find((t) => t.id === admission.active_id) : null;
+    const comparison = active && trimmed((await client.fetchVerifyTrials({
+      selected: active.id, assessment: 'retained' })).selected.reassessment.comparison);
     const pinned = admission.active_kind === 'focus'
       ? answer.focuses.find((f) => f.id === admission.active_id) : null;
     const detail = pinned && (await client.fetchVerifyTrials({
@@ -224,9 +238,12 @@ export function createLive({ client, glossary, memory = null }) {
     answers.changes.wearer = {
       admission,
       input_revision: answer.input_revision,
-      trials: shown.map((t) => (t === active ? { ...t, reassessment: { outcomes: reassessed } } : t)),
-      focuses: pinned ? [{ ...pinned, title: detail.title, lever_title: detail.lever_title,
-        tracking: tracking(detail.reassessment.comparison) }] : [],
+      trials: answer.trials.map((t) => (t === active ? { ...t, reassessment: comparison } : t)),
+      focuses: [
+        ...(pinned ? [{ ...pinned, title: detail.title, lever_title: detail.lever_title,
+          tracking: tracking(detail.reassessment.comparison) }] : []),
+        ...answer.focuses.filter((f) => f.status !== 'active' && f.ending && 'kind' in f.ending),
+      ],
     };
   });
 
@@ -256,7 +273,7 @@ export function createLive({ client, glossary, memory = null }) {
   /** The answers each tab shows; the NavBar's badges read status and the Prompts on every tab. */
   const TABS = {
     queue: { read: queue, keys: ['queue', 'findings', 'guidance', 'analyze', 'trials', 'focus'] },
-    changes: { read: changes, keys: ['changes', 'trials', 'guidance'] },
+    changes: { read: changes, keys: ['changes', 'trials'] },
     overview: { read: () => Promise.all([outcomes(), overviewWindow(FIRST_WINDOW)]),
       keys: ['outcomes', ...WINDOWS.flatMap((w) => [`time-of-day ${w}`, `isf ${w}`])] },
     // Day reads the engine's one target range, which every window's profile serves; the Overview's first.

@@ -139,20 +139,58 @@ def _profile_at(segments, minute: int):
     return current
 
 
-def settings(segments=PROFILE, idp: int = 1, name: str = "Synthetic wearer") -> PumpSettings:
-    profile = ProfileSettings(
-        idp=idp, name=name, dia_min=DIA_MIN, carb_entry=True, max_bolus=15.0,
-        segments=tuple(ProfileSegment(start, basal, isf, ratio, target)
-                       for start, basal, isf, ratio, target in segments),
-    )
-    return PumpSettings(active_idp=idp, profiles=(profile,),
-                        sleep_schedules=(SleepSchedule(SLEEP[0], SLEEP[1], tuple(range(7))),))
+def settings(profiles, active: int = 1) -> PumpSettings:
+    """The pump's settings: ``profiles`` maps each profile's idp to its segments,
+    and ``active`` is the one running. The first is the wearer's own profile."""
+    return PumpSettings(
+        active_idp=active,
+        profiles=tuple(ProfileSettings(
+            idp=idp, name="Synthetic wearer" if idp == 1 else f"Synthetic wearer {idp}",
+            dia_min=DIA_MIN, carb_entry=True, max_bolus=15.0,
+            segments=tuple(ProfileSegment(start, basal, isf, ratio, target)
+                           for start, basal, isf, ratio, target in segments),
+        ) for idp, segments in sorted(profiles.items())),
+        sleep_schedules=(SleepSchedule(SLEEP[0], SLEEP[1], tuple(range(7))),))
 
 
 def trial_profile(trial_basal: float = TRIAL_BASAL, profile=PROFILE):
     """``profile`` with its 02:00 block set to ``trial_basal``."""
     return tuple((start, trial_basal if start == TRIAL_SEGMENT_START else basal, isf, ratio, target)
                  for start, basal, isf, ratio, target in profile)
+
+
+# A carb ratio change: the 11:00 block moved from 8.5 to this person's own
+# lunch response (#524), which the engine detects as a carb ratio Trial.
+LUNCH_RATIO = 6.8
+
+
+def lunch_profile(profile=PROFILE):
+    """``profile`` with its 11:00 carb ratio set to ``LUNCH_RATIO``."""
+    return tuple((start, basal, isf, LUNCH_RATIO if start == 660 else ratio, target)
+                 for start, basal, isf, ratio, target in profile)
+
+
+def switch_profile(profile=PROFILE):
+    """A second profile that moves both mis-set blocks at once, the 02:00 basal
+    and the 11:00 carb ratio: switched to, it is a whole-profile change (#524)."""
+    return lunch_profile(trial_profile(profile=profile))
+
+
+def _changes(trial: bool, trial_basal: float, profile, changes):
+    """The person's changes, ``(day, idp, segments)``: the given ones, else the
+    one Trial-day change to the 02:00 basal when ``trial``."""
+    if changes is not None:
+        return tuple(changes)
+    return ((TRIAL_DAY, 1, trial_profile(trial_basal, profile)),) if trial else ()
+
+
+def _segments_on(day: int, profile, changes):
+    """The running profile's segments on ``day``."""
+    current = profile
+    for at, _, segments in changes:
+        if day >= at:
+            current = segments
+    return current
 
 
 # --- insulin and carbohydrate kernels, per 5-minute step ---------------------
@@ -226,9 +264,11 @@ def _stamp(t: datetime) -> str:
     return t.strftime("%Y-%m-%d %H:%M:%S")
 
 
-def simulate(*, trial: bool, trial_basal: float = TRIAL_BASAL, profile=PROFILE) -> History:
+def simulate(*, trial: bool, trial_basal: float = TRIAL_BASAL, profile=PROFILE, changes=None) -> History:
     """Run the wearer for ``DAYS`` days on ``profile``. ``trial`` makes the
-    ``TRIAL_DAY`` change to the 02:00 block, to ``trial_basal`` U/h."""
+    ``TRIAL_DAY`` change to the 02:00 block, to ``trial_basal`` U/h; ``changes``,
+    ``(day, idp, segments)`` each, replaces it with the person's own."""
+    changes = _changes(trial, trial_basal, profile, changes)
     rng = random.Random(SEED)
     steps = DAYS * STEPS_PER_DAY
     insulin_excess = [0.0] * (steps + len(INSULIN))   # U above the body's need
@@ -322,7 +362,7 @@ def simulate(*, trial: bool, trial_basal: float = TRIAL_BASAL, profile=PROFILE) 
     treat_at = None
 
     def pump_profile(day: int):
-        return trial_profile(trial_basal, profile) if trial and day >= TRIAL_DAY else profile
+        return _segments_on(day, profile, changes)
 
     def bolus(step: int, *, insulin: float, requested: float, carbs_g, bg_read, food, correction,
               option: int, override: int, segment) -> None:
@@ -507,22 +547,31 @@ def simulate(*, trial: bool, trial_basal: float = TRIAL_BASAL, profile=PROFILE) 
 
 
 def materialize(store, *, trial: bool, days: int = DAYS, trial_basal: float = TRIAL_BASAL,
-                profile=PROFILE) -> History:
+                profile=PROFILE, changes=None) -> History:
     """Ingest the simulated history into ``store`` as a Tandem Source pull would:
-    the profile read at the start (and again after the ``TRIAL_DAY`` change),
+    the profile read at the start (and again after each change the pull reaches),
     then CGM, basal, bolus and pump events. ``days`` stops the pull at the end of
-    that day, as a sync made early in the wearer's history would."""
-    history = simulate(trial=trial, trial_basal=trial_basal, profile=profile)
+    that day, as a sync made early in the wearer's history would. A change to
+    another idp is a switch: every read holds each profile the person keeps, as
+    it stands that day, and names the running one."""
+    changes = _changes(trial, trial_basal, profile, changes)
+    history = simulate(trial=trial, profile=profile, changes=changes)
     cut = _stamp(START + timedelta(days=days))
     history.cgm = [row for row in history.cgm if row["EventDateTime"] < cut]
     history.basal = [row for row in history.basal if row["time"] < cut]
     history.bolus = [row for row in history.bolus if row["request_time"] < cut]
     history.pump = [row for row in history.pump if row["time"] < cut]
     history.treated_lows = [low for low in history.treated_lows if _stamp(low[0]) < cut]
-    store.upsert_settings_snapshot(_stamp(START), settings(profile))
-    if trial and days > TRIAL_DAY:
-        store.upsert_settings_snapshot(_stamp(START + timedelta(days=TRIAL_DAY)),
-                                       settings(trial_profile(trial_basal, profile)))
+    profiles = {1: profile}
+    for _, idp, segments in changes:
+        profiles.setdefault(idp, segments)
+    active = 1
+    store.upsert_settings_snapshot(_stamp(START), settings(profiles, active))
+    for at, idp, segments in changes:
+        if days <= at:
+            break
+        profiles[idp], active = segments, idp
+        store.upsert_settings_snapshot(_stamp(START + timedelta(days=at)), settings(profiles, active))
     store.upsert_cgm(history.cgm)
     store.upsert_basal(history.basal)
     store.upsert_bolus(history.bolus)

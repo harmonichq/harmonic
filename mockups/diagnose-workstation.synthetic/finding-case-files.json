@@ -37045,7 +37045,12 @@
       },
       "date": "2020-03-01",
       "id": "o_8b021be51ae0a9b20106e5ce1053f76c",
-      "outcome": null,
+      "outcome": {
+       "bg": 110.0,
+       "kind": "nadir",
+       "minute": 0.0,
+       "t": "2020-03-01 09:00:00"
+      },
       "verdict": "fired"
      },
      {
@@ -37059,7 +37064,12 @@
       },
       "date": "2020-03-02",
       "id": "o_8bf02ce67764fa99647063bb24d9b538",
-      "outcome": null,
+      "outcome": {
+       "bg": 110.0,
+       "kind": "nadir",
+       "minute": 0.0,
+       "t": "2020-03-02 12:00:00"
+      },
       "verdict": "fired"
      },
      {
@@ -37073,7 +37083,12 @@
       },
       "date": "2020-03-03",
       "id": "o_5ae459ee854d51820af407de161a0480",
-      "outcome": null,
+      "outcome": {
+       "bg": 110.0,
+       "kind": "nadir",
+       "minute": 0.0,
+       "t": "2020-03-03 15:00:00"
+      },
       "verdict": "fired"
      },
      {
@@ -37087,7 +37102,12 @@
       },
       "date": "2020-03-01",
       "id": "o_353f9eb38184b38a6050093b74ae81bd",
-      "outcome": null,
+      "outcome": {
+       "bg": 110.0,
+       "kind": "nadir",
+       "minute": 0.0,
+       "t": "2020-03-01 18:00:00"
+      },
       "verdict": "fired"
      },
      {
@@ -37101,7 +37121,12 @@
       },
       "date": "2020-03-02",
       "id": "o_2fca3282af22e5984172eb290d7f41e2",
-      "outcome": null,
+      "outcome": {
+       "bg": 110.0,
+       "kind": "nadir",
+       "minute": 0.0,
+       "t": "2020-03-02 21:00:00"
+      },
       "verdict": "fired"
      },
      {
@@ -37115,7 +37140,12 @@
       },
       "date": "2020-03-04",
       "id": "o_edc3f5860e798ef6c04d6854860fb628",
-      "outcome": null,
+      "outcome": {
+       "bg": 110.0,
+       "kind": "nadir",
+       "minute": 0.0,
+       "t": "2020-03-04 00:00:00"
+      },
       "verdict": "fired"
      },
      {
@@ -37129,7 +37159,12 @@
       },
       "date": "2020-03-02",
       "id": "o_13b1109dd096d4238b42c94684311c59",
-      "outcome": null,
+      "outcome": {
+       "bg": 110.0,
+       "kind": "nadir",
+       "minute": 0.0,
+       "t": "2020-03-02 03:00:00"
+      },
       "verdict": "outranked"
      },
      {
@@ -37143,7 +37178,12 @@
       },
       "date": "2020-03-03",
       "id": "o_8056464e907b6c795b5f86d02a913276",
-      "outcome": null,
+      "outcome": {
+       "bg": 110.0,
+       "kind": "nadir",
+       "minute": 0.0,
+       "t": "2020-03-03 06:00:00"
+      },
       "verdict": "near_miss"
      },
      {
@@ -37157,7 +37197,12 @@
       },
       "date": "2020-03-04",
       "id": "o_1a147dc4ea31130a241d67d0404ef02c",
-      "outcome": null,
+      "outcome": {
+       "bg": 110.0,
+       "kind": "nadir",
+       "minute": 0.0,
+       "t": "2020-03-04 09:00:00"
+      },
       "verdict": "no_data"
      },
      {
@@ -37171,7 +37216,12 @@
       },
       "date": "2020-03-02",
       "id": "o_5188c361303b4fee56326cc5a61569ff",
-      "outcome": null,
+      "outcome": {
+       "bg": 110.0,
+       "kind": "nadir",
+       "minute": 0.0,
+       "t": "2020-03-02 12:01:00"
+      },
       "verdict": "clean"
      }
     ],
@@ -37309,7 +37359,12 @@
       },
       "date": "2020-03-01",
       "id": "o_8b021be51ae0a9b20106e5ce1053f76c",
-      "outcome": null,
+      "outcome": {
+       "bg": 110.0,
+       "kind": "nadir",
+       "minute": 0.0,
+       "t": "2020-03-01 09:00:00"
+      },
       "verdict": "fired"
      },
      {
@@ -37323,7 +37378,12 @@
       },
       "date": "2020-03-02",
       "id": "o_8bf02ce67764fa99647063bb24d9b538",
-      "outcome": null,
+      "outcome": {
+       "bg": 110.0,
+       "kind": "nadir",
+       "minute": 0.0,
+       "t": "2020-03-02 12:00:00"
+      },
       "verdict": "fired"
      },
      {
@@ -37337,7 +37397,12 @@
       },
       "date": "2020-03-03",
       "id": "o_5ae459ee854d51820af407de161a0480",
-      "outcome": null,
+      "outcome": {
+       "bg": 110.0,
+       "kind": "nadir",
+       "minute": 0.0,
+       "t": "2020-03-03 15:00:00"
+      },
       "verdict": "fired"
      },
      {
@@ -37351,7 +37416,12 @@
       },
       "date": "2020-03-01",
       "id": "o_353f9eb38184b38a6050093b74ae81bd",
-      "outcome": null,
+      "outcome": {
+       "bg": 110.0,
+       "kind": "nadir",
+       "minute": 0.0,
+       "t": "2020-03-01 18:00:00"
+      },
       "verdict": "fired"
      },
      {
@@ -37365,7 +37435,12 @@
       },
       "date": "2020-03-02",
       "id": "o_2fca3282af22e5984172eb290d7f41e2",
-      "outcome": null,
+      "outcome": {
+       "bg": 110.0,
+       "kind": "nadir",
+       "minute": 0.0,
+       "t": "2020-03-02 21:00:00"
+      },
       "verdict": "fired"
      },
      {
@@ -37379,7 +37454,12 @@
       },
       "date": "2020-03-04",
       "id": "o_edc3f5860e798ef6c04d6854860fb628",
-      "outcome": null,
+      "outcome": {
+       "bg": 110.0,
+       "kind": "nadir",
+       "minute": 0.0,
+       "t": "2020-03-04 00:00:00"
+      },
       "verdict": "fired"
      },
      {
@@ -37393,7 +37473,12 @@
       },
       "date": "2020-03-02",
       "id": "o_13b1109dd096d4238b42c94684311c59",
-      "outcome": null,
+      "outcome": {
+       "bg": 110.0,
+       "kind": "nadir",
+       "minute": 0.0,
+       "t": "2020-03-02 03:00:00"
+      },
       "verdict": "outranked"
      },
      {
@@ -37407,7 +37492,12 @@
       },
       "date": "2020-03-03",
       "id": "o_8056464e907b6c795b5f86d02a913276",
-      "outcome": null,
+      "outcome": {
+       "bg": 110.0,
+       "kind": "nadir",
+       "minute": 0.0,
+       "t": "2020-03-03 06:00:00"
+      },
       "verdict": "near_miss"
      },
      {
@@ -37421,7 +37511,12 @@
       },
       "date": "2020-03-04",
       "id": "o_1a147dc4ea31130a241d67d0404ef02c",
-      "outcome": null,
+      "outcome": {
+       "bg": 110.0,
+       "kind": "nadir",
+       "minute": 0.0,
+       "t": "2020-03-04 09:00:00"
+      },
       "verdict": "no_data"
      },
      {
@@ -37435,7 +37530,12 @@
       },
       "date": "2020-03-02",
       "id": "o_5188c361303b4fee56326cc5a61569ff",
-      "outcome": null,
+      "outcome": {
+       "bg": 110.0,
+       "kind": "nadir",
+       "minute": 0.0,
+       "t": "2020-03-02 12:01:00"
+      },
       "verdict": "clean"
      }
     ],
@@ -38468,7 +38568,12 @@
        },
        "date": "2020-03-01",
        "id": "o_8b021be51ae0a9b20106e5ce1053f76c",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-01 09:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -38482,7 +38587,12 @@
        },
        "date": "2020-03-02",
        "id": "o_8bf02ce67764fa99647063bb24d9b538",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 12:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -38496,7 +38606,12 @@
        },
        "date": "2020-03-03",
        "id": "o_5ae459ee854d51820af407de161a0480",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-03 15:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -38510,7 +38625,12 @@
        },
        "date": "2020-03-01",
        "id": "o_353f9eb38184b38a6050093b74ae81bd",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-01 18:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -38524,7 +38644,12 @@
        },
        "date": "2020-03-02",
        "id": "o_2fca3282af22e5984172eb290d7f41e2",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 21:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -38538,7 +38663,12 @@
        },
        "date": "2020-03-04",
        "id": "o_edc3f5860e798ef6c04d6854860fb628",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-04 00:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -38552,7 +38682,12 @@
        },
        "date": "2020-03-02",
        "id": "o_13b1109dd096d4238b42c94684311c59",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 03:00:00"
+       },
        "verdict": "outranked"
       },
       {
@@ -38566,7 +38701,12 @@
        },
        "date": "2020-03-03",
        "id": "o_8056464e907b6c795b5f86d02a913276",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-03 06:00:00"
+       },
        "verdict": "near_miss"
       },
       {
@@ -38580,7 +38720,12 @@
        },
        "date": "2020-03-04",
        "id": "o_1a147dc4ea31130a241d67d0404ef02c",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-04 09:00:00"
+       },
        "verdict": "no_data"
       },
       {
@@ -38594,7 +38739,12 @@
        },
        "date": "2020-03-02",
        "id": "o_5188c361303b4fee56326cc5a61569ff",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 12:01:00"
+       },
        "verdict": "clean"
       }
      ],
@@ -38886,7 +39036,12 @@
          "t": "2020-03-02 03:20:00"
         }
        ],
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 03:00:00"
+       },
        "reason": {
         "cause": null,
         "habits": [
@@ -38943,7 +39098,12 @@
        },
        "date": "2020-03-01",
        "id": "o_8b021be51ae0a9b20106e5ce1053f76c",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-01 09:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -38957,7 +39117,12 @@
        },
        "date": "2020-03-02",
        "id": "o_8bf02ce67764fa99647063bb24d9b538",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 12:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -38971,7 +39136,12 @@
        },
        "date": "2020-03-03",
        "id": "o_5ae459ee854d51820af407de161a0480",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-03 15:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -38985,7 +39155,12 @@
        },
        "date": "2020-03-01",
        "id": "o_353f9eb38184b38a6050093b74ae81bd",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-01 18:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -38999,7 +39174,12 @@
        },
        "date": "2020-03-02",
        "id": "o_2fca3282af22e5984172eb290d7f41e2",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 21:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -39013,7 +39193,12 @@
        },
        "date": "2020-03-04",
        "id": "o_edc3f5860e798ef6c04d6854860fb628",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-04 00:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -39027,7 +39212,12 @@
        },
        "date": "2020-03-02",
        "id": "o_13b1109dd096d4238b42c94684311c59",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 03:00:00"
+       },
        "verdict": "outranked"
       },
       {
@@ -39041,7 +39231,12 @@
        },
        "date": "2020-03-03",
        "id": "o_8056464e907b6c795b5f86d02a913276",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-03 06:00:00"
+       },
        "verdict": "near_miss"
       },
       {
@@ -39055,7 +39250,12 @@
        },
        "date": "2020-03-04",
        "id": "o_1a147dc4ea31130a241d67d0404ef02c",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-04 09:00:00"
+       },
        "verdict": "no_data"
       },
       {
@@ -39069,7 +39269,12 @@
        },
        "date": "2020-03-02",
        "id": "o_5188c361303b4fee56326cc5a61569ff",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 12:01:00"
+       },
        "verdict": "clean"
       }
      ],
@@ -39361,7 +39566,12 @@
          "t": "2020-03-04 09:20:00"
         }
        ],
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-04 09:00:00"
+       },
        "reason": {
         "cause": null,
         "habits": [
@@ -39418,7 +39628,12 @@
        },
        "date": "2020-03-01",
        "id": "o_8b021be51ae0a9b20106e5ce1053f76c",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-01 09:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -39432,7 +39647,12 @@
        },
        "date": "2020-03-02",
        "id": "o_8bf02ce67764fa99647063bb24d9b538",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 12:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -39446,7 +39666,12 @@
        },
        "date": "2020-03-03",
        "id": "o_5ae459ee854d51820af407de161a0480",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-03 15:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -39460,7 +39685,12 @@
        },
        "date": "2020-03-01",
        "id": "o_353f9eb38184b38a6050093b74ae81bd",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-01 18:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -39474,7 +39704,12 @@
        },
        "date": "2020-03-02",
        "id": "o_2fca3282af22e5984172eb290d7f41e2",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 21:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -39488,7 +39723,12 @@
        },
        "date": "2020-03-04",
        "id": "o_edc3f5860e798ef6c04d6854860fb628",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-04 00:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -39502,7 +39742,12 @@
        },
        "date": "2020-03-02",
        "id": "o_13b1109dd096d4238b42c94684311c59",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 03:00:00"
+       },
        "verdict": "outranked"
       },
       {
@@ -39516,7 +39761,12 @@
        },
        "date": "2020-03-03",
        "id": "o_8056464e907b6c795b5f86d02a913276",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-03 06:00:00"
+       },
        "verdict": "near_miss"
       },
       {
@@ -39530,7 +39780,12 @@
        },
        "date": "2020-03-04",
        "id": "o_1a147dc4ea31130a241d67d0404ef02c",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-04 09:00:00"
+       },
        "verdict": "no_data"
       },
       {
@@ -39544,7 +39799,12 @@
        },
        "date": "2020-03-02",
        "id": "o_5188c361303b4fee56326cc5a61569ff",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 12:01:00"
+       },
        "verdict": "clean"
       }
      ],
@@ -39836,7 +40096,12 @@
          "t": "2020-03-02 21:20:00"
         }
        ],
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 21:00:00"
+       },
        "reason": {
         "cause": null,
         "habits": [
@@ -39893,7 +40158,12 @@
        },
        "date": "2020-03-01",
        "id": "o_8b021be51ae0a9b20106e5ce1053f76c",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-01 09:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -39907,7 +40177,12 @@
        },
        "date": "2020-03-02",
        "id": "o_8bf02ce67764fa99647063bb24d9b538",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 12:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -39921,7 +40196,12 @@
        },
        "date": "2020-03-03",
        "id": "o_5ae459ee854d51820af407de161a0480",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-03 15:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -39935,7 +40215,12 @@
        },
        "date": "2020-03-01",
        "id": "o_353f9eb38184b38a6050093b74ae81bd",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-01 18:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -39949,7 +40234,12 @@
        },
        "date": "2020-03-02",
        "id": "o_2fca3282af22e5984172eb290d7f41e2",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 21:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -39963,7 +40253,12 @@
        },
        "date": "2020-03-04",
        "id": "o_edc3f5860e798ef6c04d6854860fb628",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-04 00:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -39977,7 +40272,12 @@
        },
        "date": "2020-03-02",
        "id": "o_13b1109dd096d4238b42c94684311c59",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 03:00:00"
+       },
        "verdict": "outranked"
       },
       {
@@ -39991,7 +40291,12 @@
        },
        "date": "2020-03-03",
        "id": "o_8056464e907b6c795b5f86d02a913276",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-03 06:00:00"
+       },
        "verdict": "near_miss"
       },
       {
@@ -40005,7 +40310,12 @@
        },
        "date": "2020-03-04",
        "id": "o_1a147dc4ea31130a241d67d0404ef02c",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-04 09:00:00"
+       },
        "verdict": "no_data"
       },
       {
@@ -40019,7 +40329,12 @@
        },
        "date": "2020-03-02",
        "id": "o_5188c361303b4fee56326cc5a61569ff",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 12:01:00"
+       },
        "verdict": "clean"
       }
      ],
@@ -40311,7 +40626,12 @@
          "t": "2020-03-01 18:20:00"
         }
        ],
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-01 18:00:00"
+       },
        "reason": {
         "cause": null,
         "habits": [
@@ -40368,7 +40688,12 @@
        },
        "date": "2020-03-01",
        "id": "o_8b021be51ae0a9b20106e5ce1053f76c",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-01 09:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -40382,7 +40707,12 @@
        },
        "date": "2020-03-02",
        "id": "o_8bf02ce67764fa99647063bb24d9b538",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 12:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -40396,7 +40726,12 @@
        },
        "date": "2020-03-03",
        "id": "o_5ae459ee854d51820af407de161a0480",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-03 15:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -40410,7 +40745,12 @@
        },
        "date": "2020-03-01",
        "id": "o_353f9eb38184b38a6050093b74ae81bd",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-01 18:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -40424,7 +40764,12 @@
        },
        "date": "2020-03-02",
        "id": "o_2fca3282af22e5984172eb290d7f41e2",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 21:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -40438,7 +40783,12 @@
        },
        "date": "2020-03-04",
        "id": "o_edc3f5860e798ef6c04d6854860fb628",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-04 00:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -40452,7 +40802,12 @@
        },
        "date": "2020-03-02",
        "id": "o_13b1109dd096d4238b42c94684311c59",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 03:00:00"
+       },
        "verdict": "outranked"
       },
       {
@@ -40466,7 +40821,12 @@
        },
        "date": "2020-03-03",
        "id": "o_8056464e907b6c795b5f86d02a913276",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-03 06:00:00"
+       },
        "verdict": "near_miss"
       },
       {
@@ -40480,7 +40840,12 @@
        },
        "date": "2020-03-04",
        "id": "o_1a147dc4ea31130a241d67d0404ef02c",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-04 09:00:00"
+       },
        "verdict": "no_data"
       },
       {
@@ -40494,7 +40859,12 @@
        },
        "date": "2020-03-02",
        "id": "o_5188c361303b4fee56326cc5a61569ff",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 12:01:00"
+       },
        "verdict": "clean"
       }
      ],
@@ -40919,7 +41289,12 @@
          "t": "2020-03-02 12:21:00"
         }
        ],
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 12:01:00"
+       },
        "reason": {
         "cause": null,
         "habits": [
@@ -40976,7 +41351,12 @@
        },
        "date": "2020-03-01",
        "id": "o_8b021be51ae0a9b20106e5ce1053f76c",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-01 09:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -40990,7 +41370,12 @@
        },
        "date": "2020-03-02",
        "id": "o_8bf02ce67764fa99647063bb24d9b538",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 12:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -41004,7 +41389,12 @@
        },
        "date": "2020-03-03",
        "id": "o_5ae459ee854d51820af407de161a0480",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-03 15:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -41018,7 +41408,12 @@
        },
        "date": "2020-03-01",
        "id": "o_353f9eb38184b38a6050093b74ae81bd",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-01 18:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -41032,7 +41427,12 @@
        },
        "date": "2020-03-02",
        "id": "o_2fca3282af22e5984172eb290d7f41e2",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 21:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -41046,7 +41446,12 @@
        },
        "date": "2020-03-04",
        "id": "o_edc3f5860e798ef6c04d6854860fb628",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-04 00:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -41060,7 +41465,12 @@
        },
        "date": "2020-03-02",
        "id": "o_13b1109dd096d4238b42c94684311c59",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 03:00:00"
+       },
        "verdict": "outranked"
       },
       {
@@ -41074,7 +41484,12 @@
        },
        "date": "2020-03-03",
        "id": "o_8056464e907b6c795b5f86d02a913276",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-03 06:00:00"
+       },
        "verdict": "near_miss"
       },
       {
@@ -41088,7 +41503,12 @@
        },
        "date": "2020-03-04",
        "id": "o_1a147dc4ea31130a241d67d0404ef02c",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-04 09:00:00"
+       },
        "verdict": "no_data"
       },
       {
@@ -41102,7 +41522,12 @@
        },
        "date": "2020-03-02",
        "id": "o_5188c361303b4fee56326cc5a61569ff",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 12:01:00"
+       },
        "verdict": "clean"
       }
      ],
@@ -41394,7 +41819,12 @@
          "t": "2020-03-03 15:20:00"
         }
        ],
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-03 15:00:00"
+       },
        "reason": {
         "cause": null,
         "habits": [
@@ -41451,7 +41881,12 @@
        },
        "date": "2020-03-01",
        "id": "o_8b021be51ae0a9b20106e5ce1053f76c",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-01 09:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -41465,7 +41900,12 @@
        },
        "date": "2020-03-02",
        "id": "o_8bf02ce67764fa99647063bb24d9b538",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 12:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -41479,7 +41919,12 @@
        },
        "date": "2020-03-03",
        "id": "o_5ae459ee854d51820af407de161a0480",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-03 15:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -41493,7 +41938,12 @@
        },
        "date": "2020-03-01",
        "id": "o_353f9eb38184b38a6050093b74ae81bd",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-01 18:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -41507,7 +41957,12 @@
        },
        "date": "2020-03-02",
        "id": "o_2fca3282af22e5984172eb290d7f41e2",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 21:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -41521,7 +41976,12 @@
        },
        "date": "2020-03-04",
        "id": "o_edc3f5860e798ef6c04d6854860fb628",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-04 00:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -41535,7 +41995,12 @@
        },
        "date": "2020-03-02",
        "id": "o_13b1109dd096d4238b42c94684311c59",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 03:00:00"
+       },
        "verdict": "outranked"
       },
       {
@@ -41549,7 +42014,12 @@
        },
        "date": "2020-03-03",
        "id": "o_8056464e907b6c795b5f86d02a913276",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-03 06:00:00"
+       },
        "verdict": "near_miss"
       },
       {
@@ -41563,7 +42033,12 @@
        },
        "date": "2020-03-04",
        "id": "o_1a147dc4ea31130a241d67d0404ef02c",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-04 09:00:00"
+       },
        "verdict": "no_data"
       },
       {
@@ -41577,7 +42052,12 @@
        },
        "date": "2020-03-02",
        "id": "o_5188c361303b4fee56326cc5a61569ff",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 12:01:00"
+       },
        "verdict": "clean"
       }
      ],
@@ -41869,7 +42349,12 @@
          "t": "2020-03-03 06:20:00"
         }
        ],
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-03 06:00:00"
+       },
        "reason": {
         "cause": null,
         "habits": [
@@ -41926,7 +42411,12 @@
        },
        "date": "2020-03-01",
        "id": "o_8b021be51ae0a9b20106e5ce1053f76c",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-01 09:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -41940,7 +42430,12 @@
        },
        "date": "2020-03-02",
        "id": "o_8bf02ce67764fa99647063bb24d9b538",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 12:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -41954,7 +42449,12 @@
        },
        "date": "2020-03-03",
        "id": "o_5ae459ee854d51820af407de161a0480",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-03 15:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -41968,7 +42468,12 @@
        },
        "date": "2020-03-01",
        "id": "o_353f9eb38184b38a6050093b74ae81bd",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-01 18:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -41982,7 +42487,12 @@
        },
        "date": "2020-03-02",
        "id": "o_2fca3282af22e5984172eb290d7f41e2",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 21:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -41996,7 +42506,12 @@
        },
        "date": "2020-03-04",
        "id": "o_edc3f5860e798ef6c04d6854860fb628",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-04 00:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -42010,7 +42525,12 @@
        },
        "date": "2020-03-02",
        "id": "o_13b1109dd096d4238b42c94684311c59",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 03:00:00"
+       },
        "verdict": "outranked"
       },
       {
@@ -42024,7 +42544,12 @@
        },
        "date": "2020-03-03",
        "id": "o_8056464e907b6c795b5f86d02a913276",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-03 06:00:00"
+       },
        "verdict": "near_miss"
       },
       {
@@ -42038,7 +42563,12 @@
        },
        "date": "2020-03-04",
        "id": "o_1a147dc4ea31130a241d67d0404ef02c",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-04 09:00:00"
+       },
        "verdict": "no_data"
       },
       {
@@ -42052,7 +42582,12 @@
        },
        "date": "2020-03-02",
        "id": "o_5188c361303b4fee56326cc5a61569ff",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 12:01:00"
+       },
        "verdict": "clean"
       }
      ],
@@ -42344,7 +42879,12 @@
          "t": "2020-03-01 09:20:00"
         }
        ],
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-01 09:00:00"
+       },
        "reason": {
         "cause": {
          "lever": "correction_on_iob",
@@ -42405,7 +42945,12 @@
        },
        "date": "2020-03-01",
        "id": "o_8b021be51ae0a9b20106e5ce1053f76c",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-01 09:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -42419,7 +42964,12 @@
        },
        "date": "2020-03-02",
        "id": "o_8bf02ce67764fa99647063bb24d9b538",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 12:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -42433,7 +42983,12 @@
        },
        "date": "2020-03-03",
        "id": "o_5ae459ee854d51820af407de161a0480",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-03 15:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -42447,7 +43002,12 @@
        },
        "date": "2020-03-01",
        "id": "o_353f9eb38184b38a6050093b74ae81bd",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-01 18:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -42461,7 +43021,12 @@
        },
        "date": "2020-03-02",
        "id": "o_2fca3282af22e5984172eb290d7f41e2",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 21:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -42475,7 +43040,12 @@
        },
        "date": "2020-03-04",
        "id": "o_edc3f5860e798ef6c04d6854860fb628",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-04 00:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -42489,7 +43059,12 @@
        },
        "date": "2020-03-02",
        "id": "o_13b1109dd096d4238b42c94684311c59",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 03:00:00"
+       },
        "verdict": "outranked"
       },
       {
@@ -42503,7 +43078,12 @@
        },
        "date": "2020-03-03",
        "id": "o_8056464e907b6c795b5f86d02a913276",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-03 06:00:00"
+       },
        "verdict": "near_miss"
       },
       {
@@ -42517,7 +43097,12 @@
        },
        "date": "2020-03-04",
        "id": "o_1a147dc4ea31130a241d67d0404ef02c",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-04 09:00:00"
+       },
        "verdict": "no_data"
       },
       {
@@ -42531,7 +43116,12 @@
        },
        "date": "2020-03-02",
        "id": "o_5188c361303b4fee56326cc5a61569ff",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 12:01:00"
+       },
        "verdict": "clean"
       }
      ],
@@ -42992,7 +43582,12 @@
          "t": "2020-03-02 12:21:00"
         }
        ],
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 12:00:00"
+       },
        "reason": {
         "cause": null,
         "habits": [
@@ -43049,7 +43644,12 @@
        },
        "date": "2020-03-01",
        "id": "o_8b021be51ae0a9b20106e5ce1053f76c",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-01 09:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -43063,7 +43663,12 @@
        },
        "date": "2020-03-02",
        "id": "o_8bf02ce67764fa99647063bb24d9b538",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 12:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -43077,7 +43682,12 @@
        },
        "date": "2020-03-03",
        "id": "o_5ae459ee854d51820af407de161a0480",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-03 15:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -43091,7 +43701,12 @@
        },
        "date": "2020-03-01",
        "id": "o_353f9eb38184b38a6050093b74ae81bd",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-01 18:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -43105,7 +43720,12 @@
        },
        "date": "2020-03-02",
        "id": "o_2fca3282af22e5984172eb290d7f41e2",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 21:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -43119,7 +43739,12 @@
        },
        "date": "2020-03-04",
        "id": "o_edc3f5860e798ef6c04d6854860fb628",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-04 00:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -43133,7 +43758,12 @@
        },
        "date": "2020-03-02",
        "id": "o_13b1109dd096d4238b42c94684311c59",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 03:00:00"
+       },
        "verdict": "outranked"
       },
       {
@@ -43147,7 +43777,12 @@
        },
        "date": "2020-03-03",
        "id": "o_8056464e907b6c795b5f86d02a913276",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-03 06:00:00"
+       },
        "verdict": "near_miss"
       },
       {
@@ -43161,7 +43796,12 @@
        },
        "date": "2020-03-04",
        "id": "o_1a147dc4ea31130a241d67d0404ef02c",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-04 09:00:00"
+       },
        "verdict": "no_data"
       },
       {
@@ -43175,7 +43815,12 @@
        },
        "date": "2020-03-02",
        "id": "o_5188c361303b4fee56326cc5a61569ff",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 12:01:00"
+       },
        "verdict": "clean"
       }
      ],
@@ -43467,7 +44112,12 @@
          "t": "2020-03-04 00:20:00"
         }
        ],
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-04 00:00:00"
+       },
        "reason": {
         "cause": null,
         "habits": [
@@ -43526,7 +44176,12 @@
        },
        "date": "2020-03-01",
        "id": "o_8b021be51ae0a9b20106e5ce1053f76c",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-01 09:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -43540,7 +44195,12 @@
        },
        "date": "2020-03-02",
        "id": "o_8bf02ce67764fa99647063bb24d9b538",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 12:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -43554,7 +44214,12 @@
        },
        "date": "2020-03-03",
        "id": "o_5ae459ee854d51820af407de161a0480",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-03 15:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -43568,7 +44233,12 @@
        },
        "date": "2020-03-01",
        "id": "o_353f9eb38184b38a6050093b74ae81bd",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-01 18:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -43582,7 +44252,12 @@
        },
        "date": "2020-03-02",
        "id": "o_2fca3282af22e5984172eb290d7f41e2",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 21:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -43596,7 +44271,12 @@
        },
        "date": "2020-03-04",
        "id": "o_edc3f5860e798ef6c04d6854860fb628",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-04 00:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -43610,7 +44290,12 @@
        },
        "date": "2020-03-02",
        "id": "o_13b1109dd096d4238b42c94684311c59",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 03:00:00"
+       },
        "verdict": "outranked"
       },
       {
@@ -43624,7 +44309,12 @@
        },
        "date": "2020-03-03",
        "id": "o_8056464e907b6c795b5f86d02a913276",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-03 06:00:00"
+       },
        "verdict": "near_miss"
       },
       {
@@ -43638,7 +44328,12 @@
        },
        "date": "2020-03-04",
        "id": "o_1a147dc4ea31130a241d67d0404ef02c",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-04 09:00:00"
+       },
        "verdict": "no_data"
       },
       {
@@ -43652,7 +44347,12 @@
        },
        "date": "2020-03-02",
        "id": "o_5188c361303b4fee56326cc5a61569ff",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 12:01:00"
+       },
        "verdict": "clean"
       }
      ],
@@ -44839,7 +45539,12 @@
          "t": "2020-03-02 03:20:00"
         }
        ],
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 03:00:00"
+       },
        "reason": {
         "cause": null,
         "habits": [
@@ -44896,7 +45601,12 @@
        },
        "date": "2020-03-01",
        "id": "o_8b021be51ae0a9b20106e5ce1053f76c",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-01 09:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -44910,7 +45620,12 @@
        },
        "date": "2020-03-02",
        "id": "o_8bf02ce67764fa99647063bb24d9b538",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 12:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -44924,7 +45639,12 @@
        },
        "date": "2020-03-03",
        "id": "o_5ae459ee854d51820af407de161a0480",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-03 15:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -44938,7 +45658,12 @@
        },
        "date": "2020-03-01",
        "id": "o_353f9eb38184b38a6050093b74ae81bd",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-01 18:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -44952,7 +45677,12 @@
        },
        "date": "2020-03-02",
        "id": "o_2fca3282af22e5984172eb290d7f41e2",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 21:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -44966,7 +45696,12 @@
        },
        "date": "2020-03-04",
        "id": "o_edc3f5860e798ef6c04d6854860fb628",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-04 00:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -44980,7 +45715,12 @@
        },
        "date": "2020-03-02",
        "id": "o_13b1109dd096d4238b42c94684311c59",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 03:00:00"
+       },
        "verdict": "outranked"
       },
       {
@@ -44994,7 +45734,12 @@
        },
        "date": "2020-03-03",
        "id": "o_8056464e907b6c795b5f86d02a913276",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-03 06:00:00"
+       },
        "verdict": "near_miss"
       },
       {
@@ -45008,7 +45753,12 @@
        },
        "date": "2020-03-04",
        "id": "o_1a147dc4ea31130a241d67d0404ef02c",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-04 09:00:00"
+       },
        "verdict": "no_data"
       },
       {
@@ -45022,7 +45772,12 @@
        },
        "date": "2020-03-02",
        "id": "o_5188c361303b4fee56326cc5a61569ff",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 12:01:00"
+       },
        "verdict": "clean"
       }
      ],
@@ -46209,7 +46964,12 @@
          "t": "2020-03-04 09:20:00"
         }
        ],
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-04 09:00:00"
+       },
        "reason": {
         "cause": null,
         "habits": [
@@ -46266,7 +47026,12 @@
        },
        "date": "2020-03-01",
        "id": "o_8b021be51ae0a9b20106e5ce1053f76c",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-01 09:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -46280,7 +47045,12 @@
        },
        "date": "2020-03-02",
        "id": "o_8bf02ce67764fa99647063bb24d9b538",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 12:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -46294,7 +47064,12 @@
        },
        "date": "2020-03-03",
        "id": "o_5ae459ee854d51820af407de161a0480",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-03 15:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -46308,7 +47083,12 @@
        },
        "date": "2020-03-01",
        "id": "o_353f9eb38184b38a6050093b74ae81bd",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-01 18:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -46322,7 +47102,12 @@
        },
        "date": "2020-03-02",
        "id": "o_2fca3282af22e5984172eb290d7f41e2",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 21:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -46336,7 +47121,12 @@
        },
        "date": "2020-03-04",
        "id": "o_edc3f5860e798ef6c04d6854860fb628",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-04 00:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -46350,7 +47140,12 @@
        },
        "date": "2020-03-02",
        "id": "o_13b1109dd096d4238b42c94684311c59",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 03:00:00"
+       },
        "verdict": "outranked"
       },
       {
@@ -46364,7 +47159,12 @@
        },
        "date": "2020-03-03",
        "id": "o_8056464e907b6c795b5f86d02a913276",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-03 06:00:00"
+       },
        "verdict": "near_miss"
       },
       {
@@ -46378,7 +47178,12 @@
        },
        "date": "2020-03-04",
        "id": "o_1a147dc4ea31130a241d67d0404ef02c",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-04 09:00:00"
+       },
        "verdict": "no_data"
       },
       {
@@ -46392,7 +47197,12 @@
        },
        "date": "2020-03-02",
        "id": "o_5188c361303b4fee56326cc5a61569ff",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 12:01:00"
+       },
        "verdict": "clean"
       }
      ],
@@ -47579,7 +48389,12 @@
          "t": "2020-03-02 21:20:00"
         }
        ],
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 21:00:00"
+       },
        "reason": {
         "cause": null,
         "habits": [
@@ -47636,7 +48451,12 @@
        },
        "date": "2020-03-01",
        "id": "o_8b021be51ae0a9b20106e5ce1053f76c",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-01 09:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -47650,7 +48470,12 @@
        },
        "date": "2020-03-02",
        "id": "o_8bf02ce67764fa99647063bb24d9b538",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 12:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -47664,7 +48489,12 @@
        },
        "date": "2020-03-03",
        "id": "o_5ae459ee854d51820af407de161a0480",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-03 15:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -47678,7 +48508,12 @@
        },
        "date": "2020-03-01",
        "id": "o_353f9eb38184b38a6050093b74ae81bd",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-01 18:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -47692,7 +48527,12 @@
        },
        "date": "2020-03-02",
        "id": "o_2fca3282af22e5984172eb290d7f41e2",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 21:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -47706,7 +48546,12 @@
        },
        "date": "2020-03-04",
        "id": "o_edc3f5860e798ef6c04d6854860fb628",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-04 00:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -47720,7 +48565,12 @@
        },
        "date": "2020-03-02",
        "id": "o_13b1109dd096d4238b42c94684311c59",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 03:00:00"
+       },
        "verdict": "outranked"
       },
       {
@@ -47734,7 +48584,12 @@
        },
        "date": "2020-03-03",
        "id": "o_8056464e907b6c795b5f86d02a913276",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-03 06:00:00"
+       },
        "verdict": "near_miss"
       },
       {
@@ -47748,7 +48603,12 @@
        },
        "date": "2020-03-04",
        "id": "o_1a147dc4ea31130a241d67d0404ef02c",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-04 09:00:00"
+       },
        "verdict": "no_data"
       },
       {
@@ -47762,7 +48622,12 @@
        },
        "date": "2020-03-02",
        "id": "o_5188c361303b4fee56326cc5a61569ff",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 12:01:00"
+       },
        "verdict": "clean"
       }
      ],
@@ -48949,7 +49814,12 @@
          "t": "2020-03-01 18:20:00"
         }
        ],
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-01 18:00:00"
+       },
        "reason": {
         "cause": null,
         "habits": [
@@ -49006,7 +49876,12 @@
        },
        "date": "2020-03-01",
        "id": "o_8b021be51ae0a9b20106e5ce1053f76c",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-01 09:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -49020,7 +49895,12 @@
        },
        "date": "2020-03-02",
        "id": "o_8bf02ce67764fa99647063bb24d9b538",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 12:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -49034,7 +49914,12 @@
        },
        "date": "2020-03-03",
        "id": "o_5ae459ee854d51820af407de161a0480",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-03 15:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -49048,7 +49933,12 @@
        },
        "date": "2020-03-01",
        "id": "o_353f9eb38184b38a6050093b74ae81bd",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-01 18:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -49062,7 +49952,12 @@
        },
        "date": "2020-03-02",
        "id": "o_2fca3282af22e5984172eb290d7f41e2",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 21:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -49076,7 +49971,12 @@
        },
        "date": "2020-03-04",
        "id": "o_edc3f5860e798ef6c04d6854860fb628",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-04 00:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -49090,7 +49990,12 @@
        },
        "date": "2020-03-02",
        "id": "o_13b1109dd096d4238b42c94684311c59",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 03:00:00"
+       },
        "verdict": "outranked"
       },
       {
@@ -49104,7 +50009,12 @@
        },
        "date": "2020-03-03",
        "id": "o_8056464e907b6c795b5f86d02a913276",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-03 06:00:00"
+       },
        "verdict": "near_miss"
       },
       {
@@ -49118,7 +50028,12 @@
        },
        "date": "2020-03-04",
        "id": "o_1a147dc4ea31130a241d67d0404ef02c",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-04 09:00:00"
+       },
        "verdict": "no_data"
       },
       {
@@ -49132,7 +50047,12 @@
        },
        "date": "2020-03-02",
        "id": "o_5188c361303b4fee56326cc5a61569ff",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 12:01:00"
+       },
        "verdict": "clean"
       }
      ],
@@ -50452,7 +51372,12 @@
          "t": "2020-03-02 12:21:00"
         }
        ],
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 12:01:00"
+       },
        "reason": {
         "cause": null,
         "habits": [
@@ -50509,7 +51434,12 @@
        },
        "date": "2020-03-01",
        "id": "o_8b021be51ae0a9b20106e5ce1053f76c",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-01 09:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -50523,7 +51453,12 @@
        },
        "date": "2020-03-02",
        "id": "o_8bf02ce67764fa99647063bb24d9b538",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 12:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -50537,7 +51472,12 @@
        },
        "date": "2020-03-03",
        "id": "o_5ae459ee854d51820af407de161a0480",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-03 15:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -50551,7 +51491,12 @@
        },
        "date": "2020-03-01",
        "id": "o_353f9eb38184b38a6050093b74ae81bd",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-01 18:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -50565,7 +51510,12 @@
        },
        "date": "2020-03-02",
        "id": "o_2fca3282af22e5984172eb290d7f41e2",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 21:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -50579,7 +51529,12 @@
        },
        "date": "2020-03-04",
        "id": "o_edc3f5860e798ef6c04d6854860fb628",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-04 00:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -50593,7 +51548,12 @@
        },
        "date": "2020-03-02",
        "id": "o_13b1109dd096d4238b42c94684311c59",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 03:00:00"
+       },
        "verdict": "outranked"
       },
       {
@@ -50607,7 +51567,12 @@
        },
        "date": "2020-03-03",
        "id": "o_8056464e907b6c795b5f86d02a913276",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-03 06:00:00"
+       },
        "verdict": "near_miss"
       },
       {
@@ -50621,7 +51586,12 @@
        },
        "date": "2020-03-04",
        "id": "o_1a147dc4ea31130a241d67d0404ef02c",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-04 09:00:00"
+       },
        "verdict": "no_data"
       },
       {
@@ -50635,7 +51605,12 @@
        },
        "date": "2020-03-02",
        "id": "o_5188c361303b4fee56326cc5a61569ff",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 12:01:00"
+       },
        "verdict": "clean"
       }
      ],
@@ -51822,7 +52797,12 @@
          "t": "2020-03-03 15:20:00"
         }
        ],
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-03 15:00:00"
+       },
        "reason": {
         "cause": null,
         "habits": [
@@ -51879,7 +52859,12 @@
        },
        "date": "2020-03-01",
        "id": "o_8b021be51ae0a9b20106e5ce1053f76c",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-01 09:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -51893,7 +52878,12 @@
        },
        "date": "2020-03-02",
        "id": "o_8bf02ce67764fa99647063bb24d9b538",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 12:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -51907,7 +52897,12 @@
        },
        "date": "2020-03-03",
        "id": "o_5ae459ee854d51820af407de161a0480",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-03 15:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -51921,7 +52916,12 @@
        },
        "date": "2020-03-01",
        "id": "o_353f9eb38184b38a6050093b74ae81bd",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-01 18:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -51935,7 +52935,12 @@
        },
        "date": "2020-03-02",
        "id": "o_2fca3282af22e5984172eb290d7f41e2",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 21:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -51949,7 +52954,12 @@
        },
        "date": "2020-03-04",
        "id": "o_edc3f5860e798ef6c04d6854860fb628",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-04 00:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -51963,7 +52973,12 @@
        },
        "date": "2020-03-02",
        "id": "o_13b1109dd096d4238b42c94684311c59",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 03:00:00"
+       },
        "verdict": "outranked"
       },
       {
@@ -51977,7 +52992,12 @@
        },
        "date": "2020-03-03",
        "id": "o_8056464e907b6c795b5f86d02a913276",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-03 06:00:00"
+       },
        "verdict": "near_miss"
       },
       {
@@ -51991,7 +53011,12 @@
        },
        "date": "2020-03-04",
        "id": "o_1a147dc4ea31130a241d67d0404ef02c",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-04 09:00:00"
+       },
        "verdict": "no_data"
       },
       {
@@ -52005,7 +53030,12 @@
        },
        "date": "2020-03-02",
        "id": "o_5188c361303b4fee56326cc5a61569ff",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 12:01:00"
+       },
        "verdict": "clean"
       }
      ],
@@ -53192,7 +54222,12 @@
          "t": "2020-03-03 06:20:00"
         }
        ],
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-03 06:00:00"
+       },
        "reason": {
         "cause": null,
         "habits": [
@@ -53249,7 +54284,12 @@
        },
        "date": "2020-03-01",
        "id": "o_8b021be51ae0a9b20106e5ce1053f76c",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-01 09:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -53263,7 +54303,12 @@
        },
        "date": "2020-03-02",
        "id": "o_8bf02ce67764fa99647063bb24d9b538",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 12:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -53277,7 +54322,12 @@
        },
        "date": "2020-03-03",
        "id": "o_5ae459ee854d51820af407de161a0480",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-03 15:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -53291,7 +54341,12 @@
        },
        "date": "2020-03-01",
        "id": "o_353f9eb38184b38a6050093b74ae81bd",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-01 18:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -53305,7 +54360,12 @@
        },
        "date": "2020-03-02",
        "id": "o_2fca3282af22e5984172eb290d7f41e2",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 21:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -53319,7 +54379,12 @@
        },
        "date": "2020-03-04",
        "id": "o_edc3f5860e798ef6c04d6854860fb628",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-04 00:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -53333,7 +54398,12 @@
        },
        "date": "2020-03-02",
        "id": "o_13b1109dd096d4238b42c94684311c59",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 03:00:00"
+       },
        "verdict": "outranked"
       },
       {
@@ -53347,7 +54417,12 @@
        },
        "date": "2020-03-03",
        "id": "o_8056464e907b6c795b5f86d02a913276",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-03 06:00:00"
+       },
        "verdict": "near_miss"
       },
       {
@@ -53361,7 +54436,12 @@
        },
        "date": "2020-03-04",
        "id": "o_1a147dc4ea31130a241d67d0404ef02c",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-04 09:00:00"
+       },
        "verdict": "no_data"
       },
       {
@@ -53375,7 +54455,12 @@
        },
        "date": "2020-03-02",
        "id": "o_5188c361303b4fee56326cc5a61569ff",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 12:01:00"
+       },
        "verdict": "clean"
       }
      ],
@@ -54562,7 +55647,12 @@
          "t": "2020-03-01 09:20:00"
         }
        ],
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-01 09:00:00"
+       },
        "reason": {
         "cause": {
          "lever": "correction_on_iob",
@@ -54623,7 +55713,12 @@
        },
        "date": "2020-03-01",
        "id": "o_8b021be51ae0a9b20106e5ce1053f76c",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-01 09:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -54637,7 +55732,12 @@
        },
        "date": "2020-03-02",
        "id": "o_8bf02ce67764fa99647063bb24d9b538",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 12:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -54651,7 +55751,12 @@
        },
        "date": "2020-03-03",
        "id": "o_5ae459ee854d51820af407de161a0480",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-03 15:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -54665,7 +55770,12 @@
        },
        "date": "2020-03-01",
        "id": "o_353f9eb38184b38a6050093b74ae81bd",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-01 18:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -54679,7 +55789,12 @@
        },
        "date": "2020-03-02",
        "id": "o_2fca3282af22e5984172eb290d7f41e2",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 21:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -54693,7 +55808,12 @@
        },
        "date": "2020-03-04",
        "id": "o_edc3f5860e798ef6c04d6854860fb628",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-04 00:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -54707,7 +55827,12 @@
        },
        "date": "2020-03-02",
        "id": "o_13b1109dd096d4238b42c94684311c59",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 03:00:00"
+       },
        "verdict": "outranked"
       },
       {
@@ -54721,7 +55846,12 @@
        },
        "date": "2020-03-03",
        "id": "o_8056464e907b6c795b5f86d02a913276",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-03 06:00:00"
+       },
        "verdict": "near_miss"
       },
       {
@@ -54735,7 +55865,12 @@
        },
        "date": "2020-03-04",
        "id": "o_1a147dc4ea31130a241d67d0404ef02c",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-04 09:00:00"
+       },
        "verdict": "no_data"
       },
       {
@@ -54749,7 +55884,12 @@
        },
        "date": "2020-03-02",
        "id": "o_5188c361303b4fee56326cc5a61569ff",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 12:01:00"
+       },
        "verdict": "clean"
       }
      ],
@@ -56105,7 +57245,12 @@
          "t": "2020-03-02 12:21:00"
         }
        ],
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 12:00:00"
+       },
        "reason": {
         "cause": null,
         "habits": [
@@ -56162,7 +57307,12 @@
        },
        "date": "2020-03-01",
        "id": "o_8b021be51ae0a9b20106e5ce1053f76c",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-01 09:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -56176,7 +57326,12 @@
        },
        "date": "2020-03-02",
        "id": "o_8bf02ce67764fa99647063bb24d9b538",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 12:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -56190,7 +57345,12 @@
        },
        "date": "2020-03-03",
        "id": "o_5ae459ee854d51820af407de161a0480",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-03 15:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -56204,7 +57364,12 @@
        },
        "date": "2020-03-01",
        "id": "o_353f9eb38184b38a6050093b74ae81bd",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-01 18:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -56218,7 +57383,12 @@
        },
        "date": "2020-03-02",
        "id": "o_2fca3282af22e5984172eb290d7f41e2",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 21:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -56232,7 +57402,12 @@
        },
        "date": "2020-03-04",
        "id": "o_edc3f5860e798ef6c04d6854860fb628",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-04 00:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -56246,7 +57421,12 @@
        },
        "date": "2020-03-02",
        "id": "o_13b1109dd096d4238b42c94684311c59",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 03:00:00"
+       },
        "verdict": "outranked"
       },
       {
@@ -56260,7 +57440,12 @@
        },
        "date": "2020-03-03",
        "id": "o_8056464e907b6c795b5f86d02a913276",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-03 06:00:00"
+       },
        "verdict": "near_miss"
       },
       {
@@ -56274,7 +57459,12 @@
        },
        "date": "2020-03-04",
        "id": "o_1a147dc4ea31130a241d67d0404ef02c",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-04 09:00:00"
+       },
        "verdict": "no_data"
       },
       {
@@ -56288,7 +57478,12 @@
        },
        "date": "2020-03-02",
        "id": "o_5188c361303b4fee56326cc5a61569ff",
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-02 12:01:00"
+       },
        "verdict": "clean"
       }
      ],
@@ -57475,7 +58670,12 @@
          "t": "2020-03-04 00:20:00"
         }
        ],
-       "outcome": null,
+       "outcome": {
+        "bg": 110.0,
+        "kind": "nadir",
+        "minute": 0.0,
+        "t": "2020-03-04 00:00:00"
+       },
        "reason": {
         "cause": null,
         "habits": [
@@ -57533,7 +58733,12 @@
       },
       "date": "2020-03-01",
       "id": "o_8b021be51ae0a9b20106e5ce1053f76c",
-      "outcome": null,
+      "outcome": {
+       "bg": 110.0,
+       "kind": "nadir",
+       "minute": 0.0,
+       "t": "2020-03-01 09:00:00"
+      },
       "verdict": "fired"
      },
      {
@@ -57547,7 +58752,12 @@
       },
       "date": "2020-03-02",
       "id": "o_8bf02ce67764fa99647063bb24d9b538",
-      "outcome": null,
+      "outcome": {
+       "bg": 110.0,
+       "kind": "nadir",
+       "minute": 0.0,
+       "t": "2020-03-02 12:00:00"
+      },
       "verdict": "fired"
      },
      {
@@ -57561,7 +58771,12 @@
       },
       "date": "2020-03-03",
       "id": "o_5ae459ee854d51820af407de161a0480",
-      "outcome": null,
+      "outcome": {
+       "bg": 110.0,
+       "kind": "nadir",
+       "minute": 0.0,
+       "t": "2020-03-03 15:00:00"
+      },
       "verdict": "fired"
      },
      {
@@ -57575,7 +58790,12 @@
       },
       "date": "2020-03-01",
       "id": "o_353f9eb38184b38a6050093b74ae81bd",
-      "outcome": null,
+      "outcome": {
+       "bg": 110.0,
+       "kind": "nadir",
+       "minute": 0.0,
+       "t": "2020-03-01 18:00:00"
+      },
       "verdict": "fired"
      },
      {
@@ -57589,7 +58809,12 @@
       },
       "date": "2020-03-02",
       "id": "o_2fca3282af22e5984172eb290d7f41e2",
-      "outcome": null,
+      "outcome": {
+       "bg": 110.0,
+       "kind": "nadir",
+       "minute": 0.0,
+       "t": "2020-03-02 21:00:00"
+      },
       "verdict": "fired"
      },
      {
@@ -57603,7 +58828,12 @@
       },
       "date": "2020-03-04",
       "id": "o_edc3f5860e798ef6c04d6854860fb628",
-      "outcome": null,
+      "outcome": {
+       "bg": 110.0,
+       "kind": "nadir",
+       "minute": 0.0,
+       "t": "2020-03-04 00:00:00"
+      },
       "verdict": "fired"
      },
      {
@@ -57617,7 +58847,12 @@
       },
       "date": "2020-03-02",
       "id": "o_13b1109dd096d4238b42c94684311c59",
-      "outcome": null,
+      "outcome": {
+       "bg": 110.0,
+       "kind": "nadir",
+       "minute": 0.0,
+       "t": "2020-03-02 03:00:00"
+      },
       "verdict": "outranked"
      },
      {
@@ -57631,7 +58866,12 @@
       },
       "date": "2020-03-03",
       "id": "o_8056464e907b6c795b5f86d02a913276",
-      "outcome": null,
+      "outcome": {
+       "bg": 110.0,
+       "kind": "nadir",
+       "minute": 0.0,
+       "t": "2020-03-03 06:00:00"
+      },
       "verdict": "near_miss"
      },
      {
@@ -57645,7 +58885,12 @@
       },
       "date": "2020-03-04",
       "id": "o_1a147dc4ea31130a241d67d0404ef02c",
-      "outcome": null,
+      "outcome": {
+       "bg": 110.0,
+       "kind": "nadir",
+       "minute": 0.0,
+       "t": "2020-03-04 09:00:00"
+      },
       "verdict": "no_data"
      },
      {
@@ -57659,7 +58904,12 @@
       },
       "date": "2020-03-02",
       "id": "o_5188c361303b4fee56326cc5a61569ff",
-      "outcome": null,
+      "outcome": {
+       "bg": 110.0,
+       "kind": "nadir",
+       "minute": 0.0,
+       "t": "2020-03-02 12:01:00"
+      },
       "verdict": "clean"
      }
     ],
@@ -57797,7 +59047,12 @@
       },
       "date": "2020-03-01",
       "id": "o_8b021be51ae0a9b20106e5ce1053f76c",
-      "outcome": null,
+      "outcome": {
+       "bg": 110.0,
+       "kind": "nadir",
+       "minute": 0.0,
+       "t": "2020-03-01 09:00:00"
+      },
       "verdict": "fired"
      },
      {
@@ -57811,7 +59066,12 @@
       },
       "date": "2020-03-02",
       "id": "o_8bf02ce67764fa99647063bb24d9b538",
-      "outcome": null,
+      "outcome": {
+       "bg": 110.0,
+       "kind": "nadir",
+       "minute": 0.0,
+       "t": "2020-03-02 12:00:00"
+      },
       "verdict": "fired"
      },
      {
@@ -57825,7 +59085,12 @@
       },
       "date": "2020-03-03",
       "id": "o_5ae459ee854d51820af407de161a0480",
-      "outcome": null,
+      "outcome": {
+       "bg": 110.0,
+       "kind": "nadir",
+       "minute": 0.0,
+       "t": "2020-03-03 15:00:00"
+      },
       "verdict": "fired"
      },
      {
@@ -57839,7 +59104,12 @@
       },
       "date": "2020-03-01",
       "id": "o_353f9eb38184b38a6050093b74ae81bd",
-      "outcome": null,
+      "outcome": {
+       "bg": 110.0,
+       "kind": "nadir",
+       "minute": 0.0,
+       "t": "2020-03-01 18:00:00"
+      },
       "verdict": "fired"
      },
      {
@@ -57853,7 +59123,12 @@
       },
       "date": "2020-03-02",
       "id": "o_2fca3282af22e5984172eb290d7f41e2",
-      "outcome": null,
+      "outcome": {
+       "bg": 110.0,
+       "kind": "nadir",
+       "minute": 0.0,
+       "t": "2020-03-02 21:00:00"
+      },
       "verdict": "fired"
      },
      {
@@ -57867,7 +59142,12 @@
       },
       "date": "2020-03-04",
       "id": "o_edc3f5860e798ef6c04d6854860fb628",
-      "outcome": null,
+      "outcome": {
+       "bg": 110.0,
+       "kind": "nadir",
+       "minute": 0.0,
+       "t": "2020-03-04 00:00:00"
+      },
       "verdict": "fired"
      },
      {
@@ -57881,7 +59161,12 @@
       },
       "date": "2020-03-02",
       "id": "o_13b1109dd096d4238b42c94684311c59",
-      "outcome": null,
+      "outcome": {
+       "bg": 110.0,
+       "kind": "nadir",
+       "minute": 0.0,
+       "t": "2020-03-02 03:00:00"
+      },
       "verdict": "outranked"
      },
      {
@@ -57895,7 +59180,12 @@
       },
       "date": "2020-03-03",
       "id": "o_8056464e907b6c795b5f86d02a913276",
-      "outcome": null,
+      "outcome": {
+       "bg": 110.0,
+       "kind": "nadir",
+       "minute": 0.0,
+       "t": "2020-03-03 06:00:00"
+      },
       "verdict": "near_miss"
      },
      {
@@ -57909,7 +59199,12 @@
       },
       "date": "2020-03-04",
       "id": "o_1a147dc4ea31130a241d67d0404ef02c",
-      "outcome": null,
+      "outcome": {
+       "bg": 110.0,
+       "kind": "nadir",
+       "minute": 0.0,
+       "t": "2020-03-04 09:00:00"
+      },
       "verdict": "no_data"
      },
      {
@@ -57923,7 +59218,12 @@
       },
       "date": "2020-03-02",
       "id": "o_5188c361303b4fee56326cc5a61569ff",
-      "outcome": null,
+      "outcome": {
+       "bg": 110.0,
+       "kind": "nadir",
+       "minute": 0.0,
+       "t": "2020-03-02 12:01:00"
+      },
       "verdict": "clean"
      }
     ],
@@ -204535,7 +205835,12 @@
       },
       "date": "2020-03-01",
       "id": "o_8b021be51ae0a9b20106e5ce1053f76c",
-      "outcome": null,
+      "outcome": {
+       "bg": 147.5,
+       "kind": "peak",
+       "minute": 120.0,
+       "t": "2020-03-01 11:00:00"
+      },
       "verdict": "fired"
      },
      {
@@ -204549,7 +205854,12 @@
       },
       "date": "2020-03-02",
       "id": "o_8bf02ce67764fa99647063bb24d9b538",
-      "outcome": null,
+      "outcome": {
+       "bg": 147.5,
+       "kind": "peak",
+       "minute": 120.0,
+       "t": "2020-03-02 14:00:00"
+      },
       "verdict": "fired"
      },
      {
@@ -204563,7 +205873,12 @@
       },
       "date": "2020-03-03",
       "id": "o_5ae459ee854d51820af407de161a0480",
-      "outcome": null,
+      "outcome": {
+       "bg": 147.5,
+       "kind": "peak",
+       "minute": 120.0,
+       "t": "2020-03-03 17:00:00"
+      },
       "verdict": "fired"
      },
      {
@@ -204577,7 +205892,12 @@
       },
       "date": "2020-03-01",
       "id": "o_353f9eb38184b38a6050093b74ae81bd",
-      "outcome": null,
+      "outcome": {
+       "bg": 147.5,
+       "kind": "peak",
+       "minute": 120.0,
+       "t": "2020-03-01 20:00:00"
+      },
       "verdict": "fired"
      },
      {
@@ -204591,7 +205911,12 @@
       },
       "date": "2020-03-02",
       "id": "o_2fca3282af22e5984172eb290d7f41e2",
-      "outcome": null,
+      "outcome": {
+       "bg": 147.5,
+       "kind": "peak",
+       "minute": 120.0,
+       "t": "2020-03-02 23:00:00"
+      },
       "verdict": "fired"
      },
      {
@@ -204605,7 +205930,12 @@
       },
       "date": "2020-03-04",
       "id": "o_edc3f5860e798ef6c04d6854860fb628",
-      "outcome": null,
+      "outcome": {
+       "bg": 147.5,
+       "kind": "peak",
+       "minute": 120.0,
+       "t": "2020-03-04 02:00:00"
+      },
       "verdict": "fired"
      },
      {
@@ -204619,7 +205949,12 @@
       },
       "date": "2020-03-02",
       "id": "o_13b1109dd096d4238b42c94684311c59",
-      "outcome": null,
+      "outcome": {
+       "bg": 147.5,
+       "kind": "peak",
+       "minute": 120.0,
+       "t": "2020-03-02 05:00:00"
+      },
       "verdict": "outranked"
      },
      {
@@ -204633,7 +205968,12 @@
       },
       "date": "2020-03-03",
       "id": "o_8056464e907b6c795b5f86d02a913276",
-      "outcome": null,
+      "outcome": {
+       "bg": 147.5,
+       "kind": "peak",
+       "minute": 120.0,
+       "t": "2020-03-03 08:00:00"
+      },
       "verdict": "near_miss"
      },
      {
@@ -204647,7 +205987,12 @@
       },
       "date": "2020-03-04",
       "id": "o_1a147dc4ea31130a241d67d0404ef02c",
-      "outcome": null,
+      "outcome": {
+       "bg": 147.5,
+       "kind": "peak",
+       "minute": 120.0,
+       "t": "2020-03-04 11:00:00"
+      },
       "verdict": "no_data"
      },
      {
@@ -204661,7 +206006,12 @@
       },
       "date": "2020-03-02",
       "id": "o_5188c361303b4fee56326cc5a61569ff",
-      "outcome": null,
+      "outcome": {
+       "bg": 147.5,
+       "kind": "peak",
+       "minute": 119.0,
+       "t": "2020-03-02 14:00:00"
+      },
       "verdict": "clean"
      }
     ],
@@ -204799,7 +206149,12 @@
       },
       "date": "2020-03-01",
       "id": "o_8b021be51ae0a9b20106e5ce1053f76c",
-      "outcome": null,
+      "outcome": {
+       "bg": 147.5,
+       "kind": "peak",
+       "minute": 120.0,
+       "t": "2020-03-01 11:00:00"
+      },
       "verdict": "fired"
      },
      {
@@ -204813,7 +206168,12 @@
       },
       "date": "2020-03-02",
       "id": "o_8bf02ce67764fa99647063bb24d9b538",
-      "outcome": null,
+      "outcome": {
+       "bg": 147.5,
+       "kind": "peak",
+       "minute": 120.0,
+       "t": "2020-03-02 14:00:00"
+      },
       "verdict": "fired"
      },
      {
@@ -204827,7 +206187,12 @@
       },
       "date": "2020-03-03",
       "id": "o_5ae459ee854d51820af407de161a0480",
-      "outcome": null,
+      "outcome": {
+       "bg": 147.5,
+       "kind": "peak",
+       "minute": 120.0,
+       "t": "2020-03-03 17:00:00"
+      },
       "verdict": "fired"
      },
      {
@@ -204841,7 +206206,12 @@
       },
       "date": "2020-03-01",
       "id": "o_353f9eb38184b38a6050093b74ae81bd",
-      "outcome": null,
+      "outcome": {
+       "bg": 147.5,
+       "kind": "peak",
+       "minute": 120.0,
+       "t": "2020-03-01 20:00:00"
+      },
       "verdict": "fired"
      },
      {
@@ -204855,7 +206225,12 @@
       },
       "date": "2020-03-02",
       "id": "o_2fca3282af22e5984172eb290d7f41e2",
-      "outcome": null,
+      "outcome": {
+       "bg": 147.5,
+       "kind": "peak",
+       "minute": 120.0,
+       "t": "2020-03-02 23:00:00"
+      },
       "verdict": "fired"
      },
      {
@@ -204869,7 +206244,12 @@
       },
       "date": "2020-03-04",
       "id": "o_edc3f5860e798ef6c04d6854860fb628",
-      "outcome": null,
+      "outcome": {
+       "bg": 147.5,
+       "kind": "peak",
+       "minute": 120.0,
+       "t": "2020-03-04 02:00:00"
+      },
       "verdict": "fired"
      },
      {
@@ -204883,7 +206263,12 @@
       },
       "date": "2020-03-02",
       "id": "o_13b1109dd096d4238b42c94684311c59",
-      "outcome": null,
+      "outcome": {
+       "bg": 147.5,
+       "kind": "peak",
+       "minute": 120.0,
+       "t": "2020-03-02 05:00:00"
+      },
       "verdict": "outranked"
      },
      {
@@ -204897,7 +206282,12 @@
       },
       "date": "2020-03-03",
       "id": "o_8056464e907b6c795b5f86d02a913276",
-      "outcome": null,
+      "outcome": {
+       "bg": 147.5,
+       "kind": "peak",
+       "minute": 120.0,
+       "t": "2020-03-03 08:00:00"
+      },
       "verdict": "near_miss"
      },
      {
@@ -204911,7 +206301,12 @@
       },
       "date": "2020-03-04",
       "id": "o_1a147dc4ea31130a241d67d0404ef02c",
-      "outcome": null,
+      "outcome": {
+       "bg": 147.5,
+       "kind": "peak",
+       "minute": 120.0,
+       "t": "2020-03-04 11:00:00"
+      },
       "verdict": "no_data"
      },
      {
@@ -204925,7 +206320,12 @@
       },
       "date": "2020-03-02",
       "id": "o_5188c361303b4fee56326cc5a61569ff",
-      "outcome": null,
+      "outcome": {
+       "bg": 147.5,
+       "kind": "peak",
+       "minute": 119.0,
+       "t": "2020-03-02 14:00:00"
+      },
       "verdict": "clean"
      }
     ],
@@ -205958,7 +207358,12 @@
        },
        "date": "2020-03-01",
        "id": "o_8b021be51ae0a9b20106e5ce1053f76c",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-01 11:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -205972,7 +207377,12 @@
        },
        "date": "2020-03-02",
        "id": "o_8bf02ce67764fa99647063bb24d9b538",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 14:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -205986,7 +207396,12 @@
        },
        "date": "2020-03-03",
        "id": "o_5ae459ee854d51820af407de161a0480",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-03 17:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -206000,7 +207415,12 @@
        },
        "date": "2020-03-01",
        "id": "o_353f9eb38184b38a6050093b74ae81bd",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-01 20:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -206014,7 +207434,12 @@
        },
        "date": "2020-03-02",
        "id": "o_2fca3282af22e5984172eb290d7f41e2",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 23:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -206028,7 +207453,12 @@
        },
        "date": "2020-03-04",
        "id": "o_edc3f5860e798ef6c04d6854860fb628",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-04 02:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -206042,7 +207472,12 @@
        },
        "date": "2020-03-02",
        "id": "o_13b1109dd096d4238b42c94684311c59",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 05:00:00"
+       },
        "verdict": "outranked"
       },
       {
@@ -206056,7 +207491,12 @@
        },
        "date": "2020-03-03",
        "id": "o_8056464e907b6c795b5f86d02a913276",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-03 08:00:00"
+       },
        "verdict": "near_miss"
       },
       {
@@ -206070,7 +207510,12 @@
        },
        "date": "2020-03-04",
        "id": "o_1a147dc4ea31130a241d67d0404ef02c",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-04 11:00:00"
+       },
        "verdict": "no_data"
       },
       {
@@ -206084,7 +207529,12 @@
        },
        "date": "2020-03-02",
        "id": "o_5188c361303b4fee56326cc5a61569ff",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 119.0,
+        "t": "2020-03-02 14:00:00"
+       },
        "verdict": "clean"
       }
      ],
@@ -206376,7 +207826,12 @@
          "t": "2020-03-02 03:20:00"
         }
        ],
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 05:00:00"
+       },
        "reason": {
         "cause": null,
         "habits": [
@@ -206433,7 +207888,12 @@
        },
        "date": "2020-03-01",
        "id": "o_8b021be51ae0a9b20106e5ce1053f76c",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-01 11:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -206447,7 +207907,12 @@
        },
        "date": "2020-03-02",
        "id": "o_8bf02ce67764fa99647063bb24d9b538",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 14:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -206461,7 +207926,12 @@
        },
        "date": "2020-03-03",
        "id": "o_5ae459ee854d51820af407de161a0480",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-03 17:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -206475,7 +207945,12 @@
        },
        "date": "2020-03-01",
        "id": "o_353f9eb38184b38a6050093b74ae81bd",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-01 20:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -206489,7 +207964,12 @@
        },
        "date": "2020-03-02",
        "id": "o_2fca3282af22e5984172eb290d7f41e2",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 23:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -206503,7 +207983,12 @@
        },
        "date": "2020-03-04",
        "id": "o_edc3f5860e798ef6c04d6854860fb628",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-04 02:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -206517,7 +208002,12 @@
        },
        "date": "2020-03-02",
        "id": "o_13b1109dd096d4238b42c94684311c59",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 05:00:00"
+       },
        "verdict": "outranked"
       },
       {
@@ -206531,7 +208021,12 @@
        },
        "date": "2020-03-03",
        "id": "o_8056464e907b6c795b5f86d02a913276",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-03 08:00:00"
+       },
        "verdict": "near_miss"
       },
       {
@@ -206545,7 +208040,12 @@
        },
        "date": "2020-03-04",
        "id": "o_1a147dc4ea31130a241d67d0404ef02c",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-04 11:00:00"
+       },
        "verdict": "no_data"
       },
       {
@@ -206559,7 +208059,12 @@
        },
        "date": "2020-03-02",
        "id": "o_5188c361303b4fee56326cc5a61569ff",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 119.0,
+        "t": "2020-03-02 14:00:00"
+       },
        "verdict": "clean"
       }
      ],
@@ -206851,7 +208356,12 @@
          "t": "2020-03-04 09:20:00"
         }
        ],
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-04 11:00:00"
+       },
        "reason": {
         "cause": null,
         "habits": [
@@ -206908,7 +208418,12 @@
        },
        "date": "2020-03-01",
        "id": "o_8b021be51ae0a9b20106e5ce1053f76c",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-01 11:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -206922,7 +208437,12 @@
        },
        "date": "2020-03-02",
        "id": "o_8bf02ce67764fa99647063bb24d9b538",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 14:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -206936,7 +208456,12 @@
        },
        "date": "2020-03-03",
        "id": "o_5ae459ee854d51820af407de161a0480",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-03 17:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -206950,7 +208475,12 @@
        },
        "date": "2020-03-01",
        "id": "o_353f9eb38184b38a6050093b74ae81bd",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-01 20:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -206964,7 +208494,12 @@
        },
        "date": "2020-03-02",
        "id": "o_2fca3282af22e5984172eb290d7f41e2",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 23:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -206978,7 +208513,12 @@
        },
        "date": "2020-03-04",
        "id": "o_edc3f5860e798ef6c04d6854860fb628",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-04 02:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -206992,7 +208532,12 @@
        },
        "date": "2020-03-02",
        "id": "o_13b1109dd096d4238b42c94684311c59",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 05:00:00"
+       },
        "verdict": "outranked"
       },
       {
@@ -207006,7 +208551,12 @@
        },
        "date": "2020-03-03",
        "id": "o_8056464e907b6c795b5f86d02a913276",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-03 08:00:00"
+       },
        "verdict": "near_miss"
       },
       {
@@ -207020,7 +208570,12 @@
        },
        "date": "2020-03-04",
        "id": "o_1a147dc4ea31130a241d67d0404ef02c",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-04 11:00:00"
+       },
        "verdict": "no_data"
       },
       {
@@ -207034,7 +208589,12 @@
        },
        "date": "2020-03-02",
        "id": "o_5188c361303b4fee56326cc5a61569ff",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 119.0,
+        "t": "2020-03-02 14:00:00"
+       },
        "verdict": "clean"
       }
      ],
@@ -207326,7 +208886,12 @@
          "t": "2020-03-02 21:20:00"
         }
        ],
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 23:00:00"
+       },
        "reason": {
         "cause": null,
         "habits": [
@@ -207383,7 +208948,12 @@
        },
        "date": "2020-03-01",
        "id": "o_8b021be51ae0a9b20106e5ce1053f76c",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-01 11:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -207397,7 +208967,12 @@
        },
        "date": "2020-03-02",
        "id": "o_8bf02ce67764fa99647063bb24d9b538",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 14:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -207411,7 +208986,12 @@
        },
        "date": "2020-03-03",
        "id": "o_5ae459ee854d51820af407de161a0480",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-03 17:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -207425,7 +209005,12 @@
        },
        "date": "2020-03-01",
        "id": "o_353f9eb38184b38a6050093b74ae81bd",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-01 20:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -207439,7 +209024,12 @@
        },
        "date": "2020-03-02",
        "id": "o_2fca3282af22e5984172eb290d7f41e2",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 23:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -207453,7 +209043,12 @@
        },
        "date": "2020-03-04",
        "id": "o_edc3f5860e798ef6c04d6854860fb628",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-04 02:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -207467,7 +209062,12 @@
        },
        "date": "2020-03-02",
        "id": "o_13b1109dd096d4238b42c94684311c59",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 05:00:00"
+       },
        "verdict": "outranked"
       },
       {
@@ -207481,7 +209081,12 @@
        },
        "date": "2020-03-03",
        "id": "o_8056464e907b6c795b5f86d02a913276",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-03 08:00:00"
+       },
        "verdict": "near_miss"
       },
       {
@@ -207495,7 +209100,12 @@
        },
        "date": "2020-03-04",
        "id": "o_1a147dc4ea31130a241d67d0404ef02c",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-04 11:00:00"
+       },
        "verdict": "no_data"
       },
       {
@@ -207509,7 +209119,12 @@
        },
        "date": "2020-03-02",
        "id": "o_5188c361303b4fee56326cc5a61569ff",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 119.0,
+        "t": "2020-03-02 14:00:00"
+       },
        "verdict": "clean"
       }
      ],
@@ -207801,7 +209416,12 @@
          "t": "2020-03-01 18:20:00"
         }
        ],
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-01 20:00:00"
+       },
        "reason": {
         "cause": null,
         "habits": [
@@ -207858,7 +209478,12 @@
        },
        "date": "2020-03-01",
        "id": "o_8b021be51ae0a9b20106e5ce1053f76c",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-01 11:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -207872,7 +209497,12 @@
        },
        "date": "2020-03-02",
        "id": "o_8bf02ce67764fa99647063bb24d9b538",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 14:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -207886,7 +209516,12 @@
        },
        "date": "2020-03-03",
        "id": "o_5ae459ee854d51820af407de161a0480",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-03 17:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -207900,7 +209535,12 @@
        },
        "date": "2020-03-01",
        "id": "o_353f9eb38184b38a6050093b74ae81bd",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-01 20:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -207914,7 +209554,12 @@
        },
        "date": "2020-03-02",
        "id": "o_2fca3282af22e5984172eb290d7f41e2",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 23:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -207928,7 +209573,12 @@
        },
        "date": "2020-03-04",
        "id": "o_edc3f5860e798ef6c04d6854860fb628",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-04 02:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -207942,7 +209592,12 @@
        },
        "date": "2020-03-02",
        "id": "o_13b1109dd096d4238b42c94684311c59",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 05:00:00"
+       },
        "verdict": "outranked"
       },
       {
@@ -207956,7 +209611,12 @@
        },
        "date": "2020-03-03",
        "id": "o_8056464e907b6c795b5f86d02a913276",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-03 08:00:00"
+       },
        "verdict": "near_miss"
       },
       {
@@ -207970,7 +209630,12 @@
        },
        "date": "2020-03-04",
        "id": "o_1a147dc4ea31130a241d67d0404ef02c",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-04 11:00:00"
+       },
        "verdict": "no_data"
       },
       {
@@ -207984,7 +209649,12 @@
        },
        "date": "2020-03-02",
        "id": "o_5188c361303b4fee56326cc5a61569ff",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 119.0,
+        "t": "2020-03-02 14:00:00"
+       },
        "verdict": "clean"
       }
      ],
@@ -208409,7 +210079,12 @@
          "t": "2020-03-02 12:21:00"
         }
        ],
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 119.0,
+        "t": "2020-03-02 14:00:00"
+       },
        "reason": {
         "cause": null,
         "habits": [
@@ -208466,7 +210141,12 @@
        },
        "date": "2020-03-01",
        "id": "o_8b021be51ae0a9b20106e5ce1053f76c",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-01 11:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -208480,7 +210160,12 @@
        },
        "date": "2020-03-02",
        "id": "o_8bf02ce67764fa99647063bb24d9b538",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 14:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -208494,7 +210179,12 @@
        },
        "date": "2020-03-03",
        "id": "o_5ae459ee854d51820af407de161a0480",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-03 17:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -208508,7 +210198,12 @@
        },
        "date": "2020-03-01",
        "id": "o_353f9eb38184b38a6050093b74ae81bd",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-01 20:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -208522,7 +210217,12 @@
        },
        "date": "2020-03-02",
        "id": "o_2fca3282af22e5984172eb290d7f41e2",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 23:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -208536,7 +210236,12 @@
        },
        "date": "2020-03-04",
        "id": "o_edc3f5860e798ef6c04d6854860fb628",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-04 02:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -208550,7 +210255,12 @@
        },
        "date": "2020-03-02",
        "id": "o_13b1109dd096d4238b42c94684311c59",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 05:00:00"
+       },
        "verdict": "outranked"
       },
       {
@@ -208564,7 +210274,12 @@
        },
        "date": "2020-03-03",
        "id": "o_8056464e907b6c795b5f86d02a913276",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-03 08:00:00"
+       },
        "verdict": "near_miss"
       },
       {
@@ -208578,7 +210293,12 @@
        },
        "date": "2020-03-04",
        "id": "o_1a147dc4ea31130a241d67d0404ef02c",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-04 11:00:00"
+       },
        "verdict": "no_data"
       },
       {
@@ -208592,7 +210312,12 @@
        },
        "date": "2020-03-02",
        "id": "o_5188c361303b4fee56326cc5a61569ff",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 119.0,
+        "t": "2020-03-02 14:00:00"
+       },
        "verdict": "clean"
       }
      ],
@@ -208884,7 +210609,12 @@
          "t": "2020-03-03 15:20:00"
         }
        ],
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-03 17:00:00"
+       },
        "reason": {
         "cause": null,
         "habits": [
@@ -208941,7 +210671,12 @@
        },
        "date": "2020-03-01",
        "id": "o_8b021be51ae0a9b20106e5ce1053f76c",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-01 11:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -208955,7 +210690,12 @@
        },
        "date": "2020-03-02",
        "id": "o_8bf02ce67764fa99647063bb24d9b538",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 14:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -208969,7 +210709,12 @@
        },
        "date": "2020-03-03",
        "id": "o_5ae459ee854d51820af407de161a0480",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-03 17:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -208983,7 +210728,12 @@
        },
        "date": "2020-03-01",
        "id": "o_353f9eb38184b38a6050093b74ae81bd",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-01 20:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -208997,7 +210747,12 @@
        },
        "date": "2020-03-02",
        "id": "o_2fca3282af22e5984172eb290d7f41e2",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 23:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -209011,7 +210766,12 @@
        },
        "date": "2020-03-04",
        "id": "o_edc3f5860e798ef6c04d6854860fb628",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-04 02:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -209025,7 +210785,12 @@
        },
        "date": "2020-03-02",
        "id": "o_13b1109dd096d4238b42c94684311c59",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 05:00:00"
+       },
        "verdict": "outranked"
       },
       {
@@ -209039,7 +210804,12 @@
        },
        "date": "2020-03-03",
        "id": "o_8056464e907b6c795b5f86d02a913276",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-03 08:00:00"
+       },
        "verdict": "near_miss"
       },
       {
@@ -209053,7 +210823,12 @@
        },
        "date": "2020-03-04",
        "id": "o_1a147dc4ea31130a241d67d0404ef02c",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-04 11:00:00"
+       },
        "verdict": "no_data"
       },
       {
@@ -209067,7 +210842,12 @@
        },
        "date": "2020-03-02",
        "id": "o_5188c361303b4fee56326cc5a61569ff",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 119.0,
+        "t": "2020-03-02 14:00:00"
+       },
        "verdict": "clean"
       }
      ],
@@ -209359,7 +211139,12 @@
          "t": "2020-03-03 06:20:00"
         }
        ],
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-03 08:00:00"
+       },
        "reason": {
         "cause": null,
         "habits": [
@@ -209416,7 +211201,12 @@
        },
        "date": "2020-03-01",
        "id": "o_8b021be51ae0a9b20106e5ce1053f76c",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-01 11:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -209430,7 +211220,12 @@
        },
        "date": "2020-03-02",
        "id": "o_8bf02ce67764fa99647063bb24d9b538",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 14:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -209444,7 +211239,12 @@
        },
        "date": "2020-03-03",
        "id": "o_5ae459ee854d51820af407de161a0480",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-03 17:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -209458,7 +211258,12 @@
        },
        "date": "2020-03-01",
        "id": "o_353f9eb38184b38a6050093b74ae81bd",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-01 20:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -209472,7 +211277,12 @@
        },
        "date": "2020-03-02",
        "id": "o_2fca3282af22e5984172eb290d7f41e2",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 23:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -209486,7 +211296,12 @@
        },
        "date": "2020-03-04",
        "id": "o_edc3f5860e798ef6c04d6854860fb628",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-04 02:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -209500,7 +211315,12 @@
        },
        "date": "2020-03-02",
        "id": "o_13b1109dd096d4238b42c94684311c59",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 05:00:00"
+       },
        "verdict": "outranked"
       },
       {
@@ -209514,7 +211334,12 @@
        },
        "date": "2020-03-03",
        "id": "o_8056464e907b6c795b5f86d02a913276",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-03 08:00:00"
+       },
        "verdict": "near_miss"
       },
       {
@@ -209528,7 +211353,12 @@
        },
        "date": "2020-03-04",
        "id": "o_1a147dc4ea31130a241d67d0404ef02c",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-04 11:00:00"
+       },
        "verdict": "no_data"
       },
       {
@@ -209542,7 +211372,12 @@
        },
        "date": "2020-03-02",
        "id": "o_5188c361303b4fee56326cc5a61569ff",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 119.0,
+        "t": "2020-03-02 14:00:00"
+       },
        "verdict": "clean"
       }
      ],
@@ -209834,7 +211669,12 @@
          "t": "2020-03-01 09:20:00"
         }
        ],
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-01 11:00:00"
+       },
        "reason": {
         "cause": {
          "lever": "over_treated_low",
@@ -209895,7 +211735,12 @@
        },
        "date": "2020-03-01",
        "id": "o_8b021be51ae0a9b20106e5ce1053f76c",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-01 11:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -209909,7 +211754,12 @@
        },
        "date": "2020-03-02",
        "id": "o_8bf02ce67764fa99647063bb24d9b538",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 14:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -209923,7 +211773,12 @@
        },
        "date": "2020-03-03",
        "id": "o_5ae459ee854d51820af407de161a0480",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-03 17:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -209937,7 +211792,12 @@
        },
        "date": "2020-03-01",
        "id": "o_353f9eb38184b38a6050093b74ae81bd",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-01 20:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -209951,7 +211811,12 @@
        },
        "date": "2020-03-02",
        "id": "o_2fca3282af22e5984172eb290d7f41e2",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 23:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -209965,7 +211830,12 @@
        },
        "date": "2020-03-04",
        "id": "o_edc3f5860e798ef6c04d6854860fb628",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-04 02:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -209979,7 +211849,12 @@
        },
        "date": "2020-03-02",
        "id": "o_13b1109dd096d4238b42c94684311c59",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 05:00:00"
+       },
        "verdict": "outranked"
       },
       {
@@ -209993,7 +211868,12 @@
        },
        "date": "2020-03-03",
        "id": "o_8056464e907b6c795b5f86d02a913276",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-03 08:00:00"
+       },
        "verdict": "near_miss"
       },
       {
@@ -210007,7 +211887,12 @@
        },
        "date": "2020-03-04",
        "id": "o_1a147dc4ea31130a241d67d0404ef02c",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-04 11:00:00"
+       },
        "verdict": "no_data"
       },
       {
@@ -210021,7 +211906,12 @@
        },
        "date": "2020-03-02",
        "id": "o_5188c361303b4fee56326cc5a61569ff",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 119.0,
+        "t": "2020-03-02 14:00:00"
+       },
        "verdict": "clean"
       }
      ],
@@ -210482,7 +212372,12 @@
          "t": "2020-03-02 12:21:00"
         }
        ],
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 14:00:00"
+       },
        "reason": {
         "cause": null,
         "habits": [
@@ -210539,7 +212434,12 @@
        },
        "date": "2020-03-01",
        "id": "o_8b021be51ae0a9b20106e5ce1053f76c",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-01 11:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -210553,7 +212453,12 @@
        },
        "date": "2020-03-02",
        "id": "o_8bf02ce67764fa99647063bb24d9b538",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 14:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -210567,7 +212472,12 @@
        },
        "date": "2020-03-03",
        "id": "o_5ae459ee854d51820af407de161a0480",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-03 17:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -210581,7 +212491,12 @@
        },
        "date": "2020-03-01",
        "id": "o_353f9eb38184b38a6050093b74ae81bd",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-01 20:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -210595,7 +212510,12 @@
        },
        "date": "2020-03-02",
        "id": "o_2fca3282af22e5984172eb290d7f41e2",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 23:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -210609,7 +212529,12 @@
        },
        "date": "2020-03-04",
        "id": "o_edc3f5860e798ef6c04d6854860fb628",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-04 02:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -210623,7 +212548,12 @@
        },
        "date": "2020-03-02",
        "id": "o_13b1109dd096d4238b42c94684311c59",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 05:00:00"
+       },
        "verdict": "outranked"
       },
       {
@@ -210637,7 +212567,12 @@
        },
        "date": "2020-03-03",
        "id": "o_8056464e907b6c795b5f86d02a913276",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-03 08:00:00"
+       },
        "verdict": "near_miss"
       },
       {
@@ -210651,7 +212586,12 @@
        },
        "date": "2020-03-04",
        "id": "o_1a147dc4ea31130a241d67d0404ef02c",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-04 11:00:00"
+       },
        "verdict": "no_data"
       },
       {
@@ -210665,7 +212605,12 @@
        },
        "date": "2020-03-02",
        "id": "o_5188c361303b4fee56326cc5a61569ff",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 119.0,
+        "t": "2020-03-02 14:00:00"
+       },
        "verdict": "clean"
       }
      ],
@@ -210957,7 +212902,12 @@
          "t": "2020-03-04 00:20:00"
         }
        ],
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-04 02:00:00"
+       },
        "reason": {
         "cause": null,
         "habits": [
@@ -211016,7 +212966,12 @@
        },
        "date": "2020-03-01",
        "id": "o_8b021be51ae0a9b20106e5ce1053f76c",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-01 11:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -211030,7 +212985,12 @@
        },
        "date": "2020-03-02",
        "id": "o_8bf02ce67764fa99647063bb24d9b538",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 14:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -211044,7 +213004,12 @@
        },
        "date": "2020-03-03",
        "id": "o_5ae459ee854d51820af407de161a0480",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-03 17:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -211058,7 +213023,12 @@
        },
        "date": "2020-03-01",
        "id": "o_353f9eb38184b38a6050093b74ae81bd",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-01 20:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -211072,7 +213042,12 @@
        },
        "date": "2020-03-02",
        "id": "o_2fca3282af22e5984172eb290d7f41e2",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 23:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -211086,7 +213061,12 @@
        },
        "date": "2020-03-04",
        "id": "o_edc3f5860e798ef6c04d6854860fb628",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-04 02:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -211100,7 +213080,12 @@
        },
        "date": "2020-03-02",
        "id": "o_13b1109dd096d4238b42c94684311c59",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 05:00:00"
+       },
        "verdict": "outranked"
       },
       {
@@ -211114,7 +213099,12 @@
        },
        "date": "2020-03-03",
        "id": "o_8056464e907b6c795b5f86d02a913276",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-03 08:00:00"
+       },
        "verdict": "near_miss"
       },
       {
@@ -211128,7 +213118,12 @@
        },
        "date": "2020-03-04",
        "id": "o_1a147dc4ea31130a241d67d0404ef02c",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-04 11:00:00"
+       },
        "verdict": "no_data"
       },
       {
@@ -211142,7 +213137,12 @@
        },
        "date": "2020-03-02",
        "id": "o_5188c361303b4fee56326cc5a61569ff",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 119.0,
+        "t": "2020-03-02 14:00:00"
+       },
        "verdict": "clean"
       }
      ],
@@ -212329,7 +214329,12 @@
          "t": "2020-03-02 03:20:00"
         }
        ],
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 05:00:00"
+       },
        "reason": {
         "cause": null,
         "habits": [
@@ -212386,7 +214391,12 @@
        },
        "date": "2020-03-01",
        "id": "o_8b021be51ae0a9b20106e5ce1053f76c",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-01 11:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -212400,7 +214410,12 @@
        },
        "date": "2020-03-02",
        "id": "o_8bf02ce67764fa99647063bb24d9b538",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 14:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -212414,7 +214429,12 @@
        },
        "date": "2020-03-03",
        "id": "o_5ae459ee854d51820af407de161a0480",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-03 17:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -212428,7 +214448,12 @@
        },
        "date": "2020-03-01",
        "id": "o_353f9eb38184b38a6050093b74ae81bd",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-01 20:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -212442,7 +214467,12 @@
        },
        "date": "2020-03-02",
        "id": "o_2fca3282af22e5984172eb290d7f41e2",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 23:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -212456,7 +214486,12 @@
        },
        "date": "2020-03-04",
        "id": "o_edc3f5860e798ef6c04d6854860fb628",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-04 02:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -212470,7 +214505,12 @@
        },
        "date": "2020-03-02",
        "id": "o_13b1109dd096d4238b42c94684311c59",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 05:00:00"
+       },
        "verdict": "outranked"
       },
       {
@@ -212484,7 +214524,12 @@
        },
        "date": "2020-03-03",
        "id": "o_8056464e907b6c795b5f86d02a913276",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-03 08:00:00"
+       },
        "verdict": "near_miss"
       },
       {
@@ -212498,7 +214543,12 @@
        },
        "date": "2020-03-04",
        "id": "o_1a147dc4ea31130a241d67d0404ef02c",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-04 11:00:00"
+       },
        "verdict": "no_data"
       },
       {
@@ -212512,7 +214562,12 @@
        },
        "date": "2020-03-02",
        "id": "o_5188c361303b4fee56326cc5a61569ff",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 119.0,
+        "t": "2020-03-02 14:00:00"
+       },
        "verdict": "clean"
       }
      ],
@@ -213699,7 +215754,12 @@
          "t": "2020-03-04 09:20:00"
         }
        ],
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-04 11:00:00"
+       },
        "reason": {
         "cause": null,
         "habits": [
@@ -213756,7 +215816,12 @@
        },
        "date": "2020-03-01",
        "id": "o_8b021be51ae0a9b20106e5ce1053f76c",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-01 11:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -213770,7 +215835,12 @@
        },
        "date": "2020-03-02",
        "id": "o_8bf02ce67764fa99647063bb24d9b538",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 14:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -213784,7 +215854,12 @@
        },
        "date": "2020-03-03",
        "id": "o_5ae459ee854d51820af407de161a0480",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-03 17:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -213798,7 +215873,12 @@
        },
        "date": "2020-03-01",
        "id": "o_353f9eb38184b38a6050093b74ae81bd",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-01 20:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -213812,7 +215892,12 @@
        },
        "date": "2020-03-02",
        "id": "o_2fca3282af22e5984172eb290d7f41e2",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 23:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -213826,7 +215911,12 @@
        },
        "date": "2020-03-04",
        "id": "o_edc3f5860e798ef6c04d6854860fb628",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-04 02:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -213840,7 +215930,12 @@
        },
        "date": "2020-03-02",
        "id": "o_13b1109dd096d4238b42c94684311c59",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 05:00:00"
+       },
        "verdict": "outranked"
       },
       {
@@ -213854,7 +215949,12 @@
        },
        "date": "2020-03-03",
        "id": "o_8056464e907b6c795b5f86d02a913276",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-03 08:00:00"
+       },
        "verdict": "near_miss"
       },
       {
@@ -213868,7 +215968,12 @@
        },
        "date": "2020-03-04",
        "id": "o_1a147dc4ea31130a241d67d0404ef02c",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-04 11:00:00"
+       },
        "verdict": "no_data"
       },
       {
@@ -213882,7 +215987,12 @@
        },
        "date": "2020-03-02",
        "id": "o_5188c361303b4fee56326cc5a61569ff",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 119.0,
+        "t": "2020-03-02 14:00:00"
+       },
        "verdict": "clean"
       }
      ],
@@ -215069,7 +217179,12 @@
          "t": "2020-03-02 21:20:00"
         }
        ],
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 23:00:00"
+       },
        "reason": {
         "cause": null,
         "habits": [
@@ -215126,7 +217241,12 @@
        },
        "date": "2020-03-01",
        "id": "o_8b021be51ae0a9b20106e5ce1053f76c",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-01 11:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -215140,7 +217260,12 @@
        },
        "date": "2020-03-02",
        "id": "o_8bf02ce67764fa99647063bb24d9b538",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 14:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -215154,7 +217279,12 @@
        },
        "date": "2020-03-03",
        "id": "o_5ae459ee854d51820af407de161a0480",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-03 17:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -215168,7 +217298,12 @@
        },
        "date": "2020-03-01",
        "id": "o_353f9eb38184b38a6050093b74ae81bd",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-01 20:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -215182,7 +217317,12 @@
        },
        "date": "2020-03-02",
        "id": "o_2fca3282af22e5984172eb290d7f41e2",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 23:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -215196,7 +217336,12 @@
        },
        "date": "2020-03-04",
        "id": "o_edc3f5860e798ef6c04d6854860fb628",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-04 02:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -215210,7 +217355,12 @@
        },
        "date": "2020-03-02",
        "id": "o_13b1109dd096d4238b42c94684311c59",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 05:00:00"
+       },
        "verdict": "outranked"
       },
       {
@@ -215224,7 +217374,12 @@
        },
        "date": "2020-03-03",
        "id": "o_8056464e907b6c795b5f86d02a913276",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-03 08:00:00"
+       },
        "verdict": "near_miss"
       },
       {
@@ -215238,7 +217393,12 @@
        },
        "date": "2020-03-04",
        "id": "o_1a147dc4ea31130a241d67d0404ef02c",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-04 11:00:00"
+       },
        "verdict": "no_data"
       },
       {
@@ -215252,7 +217412,12 @@
        },
        "date": "2020-03-02",
        "id": "o_5188c361303b4fee56326cc5a61569ff",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 119.0,
+        "t": "2020-03-02 14:00:00"
+       },
        "verdict": "clean"
       }
      ],
@@ -216439,7 +218604,12 @@
          "t": "2020-03-01 18:20:00"
         }
        ],
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-01 20:00:00"
+       },
        "reason": {
         "cause": null,
         "habits": [
@@ -216496,7 +218666,12 @@
        },
        "date": "2020-03-01",
        "id": "o_8b021be51ae0a9b20106e5ce1053f76c",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-01 11:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -216510,7 +218685,12 @@
        },
        "date": "2020-03-02",
        "id": "o_8bf02ce67764fa99647063bb24d9b538",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 14:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -216524,7 +218704,12 @@
        },
        "date": "2020-03-03",
        "id": "o_5ae459ee854d51820af407de161a0480",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-03 17:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -216538,7 +218723,12 @@
        },
        "date": "2020-03-01",
        "id": "o_353f9eb38184b38a6050093b74ae81bd",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-01 20:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -216552,7 +218742,12 @@
        },
        "date": "2020-03-02",
        "id": "o_2fca3282af22e5984172eb290d7f41e2",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 23:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -216566,7 +218761,12 @@
        },
        "date": "2020-03-04",
        "id": "o_edc3f5860e798ef6c04d6854860fb628",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-04 02:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -216580,7 +218780,12 @@
        },
        "date": "2020-03-02",
        "id": "o_13b1109dd096d4238b42c94684311c59",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 05:00:00"
+       },
        "verdict": "outranked"
       },
       {
@@ -216594,7 +218799,12 @@
        },
        "date": "2020-03-03",
        "id": "o_8056464e907b6c795b5f86d02a913276",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-03 08:00:00"
+       },
        "verdict": "near_miss"
       },
       {
@@ -216608,7 +218818,12 @@
        },
        "date": "2020-03-04",
        "id": "o_1a147dc4ea31130a241d67d0404ef02c",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-04 11:00:00"
+       },
        "verdict": "no_data"
       },
       {
@@ -216622,7 +218837,12 @@
        },
        "date": "2020-03-02",
        "id": "o_5188c361303b4fee56326cc5a61569ff",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 119.0,
+        "t": "2020-03-02 14:00:00"
+       },
        "verdict": "clean"
       }
      ],
@@ -217942,7 +220162,12 @@
          "t": "2020-03-02 12:21:00"
         }
        ],
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 119.0,
+        "t": "2020-03-02 14:00:00"
+       },
        "reason": {
         "cause": null,
         "habits": [
@@ -217999,7 +220224,12 @@
        },
        "date": "2020-03-01",
        "id": "o_8b021be51ae0a9b20106e5ce1053f76c",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-01 11:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -218013,7 +220243,12 @@
        },
        "date": "2020-03-02",
        "id": "o_8bf02ce67764fa99647063bb24d9b538",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 14:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -218027,7 +220262,12 @@
        },
        "date": "2020-03-03",
        "id": "o_5ae459ee854d51820af407de161a0480",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-03 17:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -218041,7 +220281,12 @@
        },
        "date": "2020-03-01",
        "id": "o_353f9eb38184b38a6050093b74ae81bd",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-01 20:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -218055,7 +220300,12 @@
        },
        "date": "2020-03-02",
        "id": "o_2fca3282af22e5984172eb290d7f41e2",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 23:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -218069,7 +220319,12 @@
        },
        "date": "2020-03-04",
        "id": "o_edc3f5860e798ef6c04d6854860fb628",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-04 02:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -218083,7 +220338,12 @@
        },
        "date": "2020-03-02",
        "id": "o_13b1109dd096d4238b42c94684311c59",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 05:00:00"
+       },
        "verdict": "outranked"
       },
       {
@@ -218097,7 +220357,12 @@
        },
        "date": "2020-03-03",
        "id": "o_8056464e907b6c795b5f86d02a913276",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-03 08:00:00"
+       },
        "verdict": "near_miss"
       },
       {
@@ -218111,7 +220376,12 @@
        },
        "date": "2020-03-04",
        "id": "o_1a147dc4ea31130a241d67d0404ef02c",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-04 11:00:00"
+       },
        "verdict": "no_data"
       },
       {
@@ -218125,7 +220395,12 @@
        },
        "date": "2020-03-02",
        "id": "o_5188c361303b4fee56326cc5a61569ff",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 119.0,
+        "t": "2020-03-02 14:00:00"
+       },
        "verdict": "clean"
       }
      ],
@@ -219312,7 +221587,12 @@
          "t": "2020-03-03 15:20:00"
         }
        ],
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-03 17:00:00"
+       },
        "reason": {
         "cause": null,
         "habits": [
@@ -219369,7 +221649,12 @@
        },
        "date": "2020-03-01",
        "id": "o_8b021be51ae0a9b20106e5ce1053f76c",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-01 11:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -219383,7 +221668,12 @@
        },
        "date": "2020-03-02",
        "id": "o_8bf02ce67764fa99647063bb24d9b538",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 14:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -219397,7 +221687,12 @@
        },
        "date": "2020-03-03",
        "id": "o_5ae459ee854d51820af407de161a0480",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-03 17:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -219411,7 +221706,12 @@
        },
        "date": "2020-03-01",
        "id": "o_353f9eb38184b38a6050093b74ae81bd",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-01 20:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -219425,7 +221725,12 @@
        },
        "date": "2020-03-02",
        "id": "o_2fca3282af22e5984172eb290d7f41e2",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 23:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -219439,7 +221744,12 @@
        },
        "date": "2020-03-04",
        "id": "o_edc3f5860e798ef6c04d6854860fb628",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-04 02:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -219453,7 +221763,12 @@
        },
        "date": "2020-03-02",
        "id": "o_13b1109dd096d4238b42c94684311c59",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 05:00:00"
+       },
        "verdict": "outranked"
       },
       {
@@ -219467,7 +221782,12 @@
        },
        "date": "2020-03-03",
        "id": "o_8056464e907b6c795b5f86d02a913276",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-03 08:00:00"
+       },
        "verdict": "near_miss"
       },
       {
@@ -219481,7 +221801,12 @@
        },
        "date": "2020-03-04",
        "id": "o_1a147dc4ea31130a241d67d0404ef02c",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-04 11:00:00"
+       },
        "verdict": "no_data"
       },
       {
@@ -219495,7 +221820,12 @@
        },
        "date": "2020-03-02",
        "id": "o_5188c361303b4fee56326cc5a61569ff",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 119.0,
+        "t": "2020-03-02 14:00:00"
+       },
        "verdict": "clean"
       }
      ],
@@ -220682,7 +223012,12 @@
          "t": "2020-03-03 06:20:00"
         }
        ],
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-03 08:00:00"
+       },
        "reason": {
         "cause": null,
         "habits": [
@@ -220739,7 +223074,12 @@
        },
        "date": "2020-03-01",
        "id": "o_8b021be51ae0a9b20106e5ce1053f76c",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-01 11:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -220753,7 +223093,12 @@
        },
        "date": "2020-03-02",
        "id": "o_8bf02ce67764fa99647063bb24d9b538",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 14:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -220767,7 +223112,12 @@
        },
        "date": "2020-03-03",
        "id": "o_5ae459ee854d51820af407de161a0480",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-03 17:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -220781,7 +223131,12 @@
        },
        "date": "2020-03-01",
        "id": "o_353f9eb38184b38a6050093b74ae81bd",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-01 20:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -220795,7 +223150,12 @@
        },
        "date": "2020-03-02",
        "id": "o_2fca3282af22e5984172eb290d7f41e2",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 23:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -220809,7 +223169,12 @@
        },
        "date": "2020-03-04",
        "id": "o_edc3f5860e798ef6c04d6854860fb628",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-04 02:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -220823,7 +223188,12 @@
        },
        "date": "2020-03-02",
        "id": "o_13b1109dd096d4238b42c94684311c59",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 05:00:00"
+       },
        "verdict": "outranked"
       },
       {
@@ -220837,7 +223207,12 @@
        },
        "date": "2020-03-03",
        "id": "o_8056464e907b6c795b5f86d02a913276",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-03 08:00:00"
+       },
        "verdict": "near_miss"
       },
       {
@@ -220851,7 +223226,12 @@
        },
        "date": "2020-03-04",
        "id": "o_1a147dc4ea31130a241d67d0404ef02c",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-04 11:00:00"
+       },
        "verdict": "no_data"
       },
       {
@@ -220865,7 +223245,12 @@
        },
        "date": "2020-03-02",
        "id": "o_5188c361303b4fee56326cc5a61569ff",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 119.0,
+        "t": "2020-03-02 14:00:00"
+       },
        "verdict": "clean"
       }
      ],
@@ -222052,7 +224437,12 @@
          "t": "2020-03-01 09:20:00"
         }
        ],
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-01 11:00:00"
+       },
        "reason": {
         "cause": {
          "lever": "over_treated_low",
@@ -222113,7 +224503,12 @@
        },
        "date": "2020-03-01",
        "id": "o_8b021be51ae0a9b20106e5ce1053f76c",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-01 11:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -222127,7 +224522,12 @@
        },
        "date": "2020-03-02",
        "id": "o_8bf02ce67764fa99647063bb24d9b538",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 14:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -222141,7 +224541,12 @@
        },
        "date": "2020-03-03",
        "id": "o_5ae459ee854d51820af407de161a0480",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-03 17:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -222155,7 +224560,12 @@
        },
        "date": "2020-03-01",
        "id": "o_353f9eb38184b38a6050093b74ae81bd",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-01 20:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -222169,7 +224579,12 @@
        },
        "date": "2020-03-02",
        "id": "o_2fca3282af22e5984172eb290d7f41e2",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 23:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -222183,7 +224598,12 @@
        },
        "date": "2020-03-04",
        "id": "o_edc3f5860e798ef6c04d6854860fb628",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-04 02:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -222197,7 +224617,12 @@
        },
        "date": "2020-03-02",
        "id": "o_13b1109dd096d4238b42c94684311c59",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 05:00:00"
+       },
        "verdict": "outranked"
       },
       {
@@ -222211,7 +224636,12 @@
        },
        "date": "2020-03-03",
        "id": "o_8056464e907b6c795b5f86d02a913276",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-03 08:00:00"
+       },
        "verdict": "near_miss"
       },
       {
@@ -222225,7 +224655,12 @@
        },
        "date": "2020-03-04",
        "id": "o_1a147dc4ea31130a241d67d0404ef02c",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-04 11:00:00"
+       },
        "verdict": "no_data"
       },
       {
@@ -222239,7 +224674,12 @@
        },
        "date": "2020-03-02",
        "id": "o_5188c361303b4fee56326cc5a61569ff",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 119.0,
+        "t": "2020-03-02 14:00:00"
+       },
        "verdict": "clean"
       }
      ],
@@ -223595,7 +226035,12 @@
          "t": "2020-03-02 12:21:00"
         }
        ],
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 14:00:00"
+       },
        "reason": {
         "cause": null,
         "habits": [
@@ -223652,7 +226097,12 @@
        },
        "date": "2020-03-01",
        "id": "o_8b021be51ae0a9b20106e5ce1053f76c",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-01 11:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -223666,7 +226116,12 @@
        },
        "date": "2020-03-02",
        "id": "o_8bf02ce67764fa99647063bb24d9b538",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 14:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -223680,7 +226135,12 @@
        },
        "date": "2020-03-03",
        "id": "o_5ae459ee854d51820af407de161a0480",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-03 17:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -223694,7 +226154,12 @@
        },
        "date": "2020-03-01",
        "id": "o_353f9eb38184b38a6050093b74ae81bd",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-01 20:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -223708,7 +226173,12 @@
        },
        "date": "2020-03-02",
        "id": "o_2fca3282af22e5984172eb290d7f41e2",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 23:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -223722,7 +226192,12 @@
        },
        "date": "2020-03-04",
        "id": "o_edc3f5860e798ef6c04d6854860fb628",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-04 02:00:00"
+       },
        "verdict": "fired"
       },
       {
@@ -223736,7 +226211,12 @@
        },
        "date": "2020-03-02",
        "id": "o_13b1109dd096d4238b42c94684311c59",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-02 05:00:00"
+       },
        "verdict": "outranked"
       },
       {
@@ -223750,7 +226230,12 @@
        },
        "date": "2020-03-03",
        "id": "o_8056464e907b6c795b5f86d02a913276",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-03 08:00:00"
+       },
        "verdict": "near_miss"
       },
       {
@@ -223764,7 +226249,12 @@
        },
        "date": "2020-03-04",
        "id": "o_1a147dc4ea31130a241d67d0404ef02c",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-04 11:00:00"
+       },
        "verdict": "no_data"
       },
       {
@@ -223778,7 +226268,12 @@
        },
        "date": "2020-03-02",
        "id": "o_5188c361303b4fee56326cc5a61569ff",
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 119.0,
+        "t": "2020-03-02 14:00:00"
+       },
        "verdict": "clean"
       }
      ],
@@ -224965,7 +227460,12 @@
          "t": "2020-03-04 00:20:00"
         }
        ],
-       "outcome": null,
+       "outcome": {
+        "bg": 147.5,
+        "kind": "peak",
+        "minute": 120.0,
+        "t": "2020-03-04 02:00:00"
+       },
        "reason": {
         "cause": null,
         "habits": [
@@ -225023,7 +227523,12 @@
       },
       "date": "2020-03-01",
       "id": "o_8b021be51ae0a9b20106e5ce1053f76c",
-      "outcome": null,
+      "outcome": {
+       "bg": 147.5,
+       "kind": "peak",
+       "minute": 120.0,
+       "t": "2020-03-01 11:00:00"
+      },
       "verdict": "fired"
      },
      {
@@ -225037,7 +227542,12 @@
       },
       "date": "2020-03-02",
       "id": "o_8bf02ce67764fa99647063bb24d9b538",
-      "outcome": null,
+      "outcome": {
+       "bg": 147.5,
+       "kind": "peak",
+       "minute": 120.0,
+       "t": "2020-03-02 14:00:00"
+      },
       "verdict": "fired"
      },
      {
@@ -225051,7 +227561,12 @@
       },
       "date": "2020-03-03",
       "id": "o_5ae459ee854d51820af407de161a0480",
-      "outcome": null,
+      "outcome": {
+       "bg": 147.5,
+       "kind": "peak",
+       "minute": 120.0,
+       "t": "2020-03-03 17:00:00"
+      },
       "verdict": "fired"
      },
      {
@@ -225065,7 +227580,12 @@
       },
       "date": "2020-03-01",
       "id": "o_353f9eb38184b38a6050093b74ae81bd",
-      "outcome": null,
+      "outcome": {
+       "bg": 147.5,
+       "kind": "peak",
+       "minute": 120.0,
+       "t": "2020-03-01 20:00:00"
+      },
       "verdict": "fired"
      },
      {
@@ -225079,7 +227599,12 @@
       },
       "date": "2020-03-02",
       "id": "o_2fca3282af22e5984172eb290d7f41e2",
-      "outcome": null,
+      "outcome": {
+       "bg": 147.5,
+       "kind": "peak",
+       "minute": 120.0,
+       "t": "2020-03-02 23:00:00"
+      },
       "verdict": "fired"
      },
      {
@@ -225093,7 +227618,12 @@
       },
       "date": "2020-03-04",
       "id": "o_edc3f5860e798ef6c04d6854860fb628",
-      "outcome": null,
+      "outcome": {
+       "bg": 147.5,
+       "kind": "peak",
+       "minute": 120.0,
+       "t": "2020-03-04 02:00:00"
+      },
       "verdict": "fired"
      },
      {
@@ -225107,7 +227637,12 @@
       },
       "date": "2020-03-02",
       "id": "o_13b1109dd096d4238b42c94684311c59",
-      "outcome": null,
+      "outcome": {
+       "bg": 147.5,
+       "kind": "peak",
+       "minute": 120.0,
+       "t": "2020-03-02 05:00:00"
+      },
       "verdict": "outranked"
      },
      {
@@ -225121,7 +227656,12 @@
       },
       "date": "2020-03-03",
       "id": "o_8056464e907b6c795b5f86d02a913276",
-      "outcome": null,
+      "outcome": {
+       "bg": 147.5,
+       "kind": "peak",
+       "minute": 120.0,
+       "t": "2020-03-03 08:00:00"
+      },
       "verdict": "near_miss"
      },
      {
@@ -225135,7 +227675,12 @@
       },
       "date": "2020-03-04",
       "id": "o_1a147dc4ea31130a241d67d0404ef02c",
-      "outcome": null,
+      "outcome": {
+       "bg": 147.5,
+       "kind": "peak",
+       "minute": 120.0,
+       "t": "2020-03-04 11:00:00"
+      },
       "verdict": "no_data"
      },
      {
@@ -225149,7 +227694,12 @@
       },
       "date": "2020-03-02",
       "id": "o_5188c361303b4fee56326cc5a61569ff",
-      "outcome": null,
+      "outcome": {
+       "bg": 147.5,
+       "kind": "peak",
+       "minute": 119.0,
+       "t": "2020-03-02 14:00:00"
+      },
       "verdict": "clean"
      }
     ],
@@ -225287,7 +227837,12 @@
       },
       "date": "2020-03-01",
       "id": "o_8b021be51ae0a9b20106e5ce1053f76c",
-      "outcome": null,
+      "outcome": {
+       "bg": 147.5,
+       "kind": "peak",
+       "minute": 120.0,
+       "t": "2020-03-01 11:00:00"
+      },
       "verdict": "fired"
      },
      {
@@ -225301,7 +227856,12 @@
       },
       "date": "2020-03-02",
       "id": "o_8bf02ce67764fa99647063bb24d9b538",
-      "outcome": null,
+      "outcome": {
+       "bg": 147.5,
+       "kind": "peak",
+       "minute": 120.0,
+       "t": "2020-03-02 14:00:00"
+      },
       "verdict": "fired"
      },
      {
@@ -225315,7 +227875,12 @@
       },
       "date": "2020-03-03",
       "id": "o_5ae459ee854d51820af407de161a0480",
-      "outcome": null,
+      "outcome": {
+       "bg": 147.5,
+       "kind": "peak",
+       "minute": 120.0,
+       "t": "2020-03-03 17:00:00"
+      },
       "verdict": "fired"
      },
      {
@@ -225329,7 +227894,12 @@
       },
       "date": "2020-03-01",
       "id": "o_353f9eb38184b38a6050093b74ae81bd",
-      "outcome": null,
+      "outcome": {
+       "bg": 147.5,
+       "kind": "peak",
+       "minute": 120.0,
+       "t": "2020-03-01 20:00:00"
+      },
       "verdict": "fired"
      },
      {
@@ -225343,7 +227913,12 @@
       },
       "date": "2020-03-02",
       "id": "o_2fca3282af22e5984172eb290d7f41e2",
-      "outcome": null,
+      "outcome": {
+       "bg": 147.5,
+       "kind": "peak",
+       "minute": 120.0,
+       "t": "2020-03-02 23:00:00"
+      },
       "verdict": "fired"
      },
      {
@@ -225357,7 +227932,12 @@
       },
       "date": "2020-03-04",
       "id": "o_edc3f5860e798ef6c04d6854860fb628",
-      "outcome": null,
+      "outcome": {
+       "bg": 147.5,
+       "kind": "peak",
+       "minute": 120.0,
+       "t": "2020-03-04 02:00:00"
+      },
       "verdict": "fired"
      },
      {
@@ -225371,7 +227951,12 @@
       },
       "date": "2020-03-02",
       "id": "o_13b1109dd096d4238b42c94684311c59",
-      "outcome": null,
+      "outcome": {
+       "bg": 147.5,
+       "kind": "peak",
+       "minute": 120.0,
+       "t": "2020-03-02 05:00:00"
+      },
       "verdict": "outranked"
      },
      {
@@ -225385,7 +227970,12 @@
       },
       "date": "2020-03-03",
       "id": "o_8056464e907b6c795b5f86d02a913276",
-      "outcome": null,
+      "outcome": {
+       "bg": 147.5,
+       "kind": "peak",
+       "minute": 120.0,
+       "t": "2020-03-03 08:00:00"
+      },
       "verdict": "near_miss"
      },
      {
@@ -225399,7 +227989,12 @@
       },
       "date": "2020-03-04",
       "id": "o_1a147dc4ea31130a241d67d0404ef02c",
-      "outcome": null,
+      "outcome": {
+       "bg": 147.5,
+       "kind": "peak",
+       "minute": 120.0,
+       "t": "2020-03-04 11:00:00"
+      },
       "verdict": "no_data"
      },
      {
@@ -225413,7 +228008,12 @@
       },
       "date": "2020-03-02",
       "id": "o_5188c361303b4fee56326cc5a61569ff",
-      "outcome": null,
+      "outcome": {
+       "bg": 147.5,
+       "kind": "peak",
+       "minute": 119.0,
+       "t": "2020-03-02 14:00:00"
+      },
       "verdict": "clean"
      }
     ],

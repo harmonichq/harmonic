@@ -1,7 +1,8 @@
 // The Queue components' data, read from one served store (#483). This is the
 // provenance table in code: every number a Queue component shows is built here
 // as a Sourced value naming its field, and nothing here invents a threshold or
-// a verdict — uncertain, pinned, matured and the cause shares are all served.
+// a verdict — uncertain, pinned, matured, every chart's episodes and bands, and
+// every count are all served.
 //
 // A store is one entry of `answers.queue`; the screens will hand the same
 // answers in from the live API.
@@ -21,20 +22,34 @@ export type Magnitude = {
   noun: string;
 };
 
-export type Cause = { title: string; count: number };
-
-/** The open card's impact line: the Pattern's own episodes against the
- *  comparison episodes, at the peak (highs) or nadir (lows) of each cohort's
- *  median trace after the anchor. */
+/** The open card's impact line: the Pattern's own episodes against Typical,
+ *  the comparison episodes, at the peak (highs) or nadir (lows) of each
+ *  cohort's served median after the start (ADR 523). */
 export type Impact = { kind: 'peak' | 'nadir'; own: Sourced<number>; typical: Sourced<number> };
+
+/** One served 5-minute bin of a cohort: its median and 25–75 band. */
+export type TraceBin = { minute: number; n: number; median: number; p25: number; p75: number };
+
+/** The open card's trace chart, as the case file serves it (ADR 523): the
+ *  start every episode is aligned at, the minutes drawn, the Pattern's own
+ *  episodes (null when there are more than eight, which it then serves as its
+ *  bins), and Typical's bins. */
+export type TraceData = {
+  anchor: 'bolus' | 'correction' | 'nadir';
+  window: [number, number];
+  tone: Tone;
+  episodes: { minute: number; bg: number }[][] | null;
+  pattern: TraceBin[];
+  typical: TraceBin[];
+};
 
 export type PatternData = {
   title: string;
   tone: Tone;
   /** Null when the engine serves no count for this pattern. */
   magnitude: Magnitude | null;
-  /** Pattern-scope cause shares, largest first. */
-  causes: Cause[];
+  /** Null when the engine serves no case file for this pattern. */
+  traces: TraceData | null;
   /** The engine flags the pattern as too broad to rely on (ADR 485). */
   uncertain: boolean;
   pinned: boolean;
@@ -53,12 +68,15 @@ export type SettingData = {
   estimate: Sourced<number>;
   lo: Sourced<number>;
   hi: Sourced<number>;
-  /** Basal's night evidence: the count, each night's delivered rate, and the
-   *  roster's own path, so the chart can name the nights beyond its axis. Null
-   *  for ISF and I:C, whose evidence is not nights. */
-  days: Sourced<number> | null;
-  nights: { rate: Sourced<number> }[] | null;
-  roster: string | null;
+  /** What the chart's axis measures ("Basal", "I:C"). */
+  axis: string;
+  /** The evidence the estimate counts, as the stat row names it (Nights, Meal
+   *  runs) with its served count; the chart's dots, one per item; and the
+   *  served list's path and field, so the chart can name those beyond its axis. */
+  count: { label: 'Nights' | 'Meal runs'; value: Sourced<number> };
+  dots: { rate: Sourced<number> }[];
+  roster: string;
+  field: string;
   /** The slot's change was detected and has matured into a Trial. */
   trial: boolean;
 };
@@ -67,7 +85,7 @@ const store = (name: QueueStore) => answers.queue[name];
 
 /** The findings row a Pattern is read through, or none. A pattern that
  *  collapses to its one member is served as that member's habit row: the Queue
- *  reads it through that row, whose habit is its cause. */
+ *  reads it through that row, which serves the pattern's own count and causes. */
 function patternRow(name: QueueStore, key: string) {
   const s = store(name);
   const outcome = s.findings.outcome_patterns.find((p) => p.key === key);
@@ -80,60 +98,57 @@ function patternRow(name: QueueStore, key: string) {
 export function pattern(name: QueueStore, key: string): PatternData {
   const root = `queue.${name}.findings`;
   const s = store(name);
-  const id = `pattern:${key}`;
   const { outcome, member, rowId, row } = patternRow(name, key);
   if (!row) throw new Error(`${name} serves no ${rowId} row`);
   const rowPath = `${root}.rows[id=${rowId}].0`;
-  const counted = Boolean(row.count_sentences?.length);
-  const causes = member
-    ? [{ title: row.title, count: row.count_sentences![0].count }]
-    : s.findings.rows
-      .filter((r) => r.claimed_by === id)
-      .flatMap((r) => (r.fold_sentences ?? [])
-        .filter((f) => f.scope === 'pattern')
-        .map((f) => ({ title: r.title, count: f.count })))
-      .sort((a, b) => b.count - a.count);
+  // A pattern served as its habit counts as the pattern, from the count its
+  // member row serves for it, never as the habit's own (ADR 520).
+  const counter = member ? row.served_as : row;
+  const countPath = member ? `${rowPath}.served_as` : rowPath;
+  const sentences = counter?.count_sentences;
   const tone: Tone = row.chips?.includes('highs') ? 'high' : 'low';
+  const served = (s.cases as Record<string, { traces: ServedTraces }>)[key]?.traces;
   return {
     title: outcome?.title ?? row.title,
     tone,
-    magnitude: counted
+    magnitude: sentences?.length
       ? {
-          count: sourced(`${rowPath}.count_sentences.0.count`),
-          denominator: sourced(`${rowPath}.count_sentences.0.denominator`),
-          noun: row.count_sentences![0].noun,
+          count: sourced(`${countPath}.count_sentences.0.count`),
+          denominator: sourced(`${countPath}.count_sentences.0.denominator`),
+          noun: sentences[0].noun,
         }
       : null,
-    causes,
+    traces: served ? {
+      anchor: served.anchor, window: served.window_min, tone,
+      episodes: served.pattern.episodes, pattern: served.pattern.points, typical: served.typical.points,
+    } : null,
     uncertain: (outcome?.wide as boolean | null | undefined) === true,
     pinned: s.focus.focuses.some((f) => f.status === 'active' && f.pattern_key === key),
-    impact: impact(name, key, tone),
+    impact: served ? impact(name, key, tone, served) : null,
   };
 }
 
-type CasePoint = { minute: number; median: number | null };
+type ServedTraces = {
+  anchor: TraceData['anchor'];
+  window_min: [number, number];
+  pattern: { episodes: TraceData['episodes']; points: TraceBin[] };
+  typical: { points: TraceBin[] };
+};
 
-/** The impact pair from the Pattern's served case file, or null when it has
- *  none or either cohort's median is withheld. Each value is the served median
- *  at the minute where that cohort's trace peaks (or bottoms out) after the
- *  anchor, so the story check proves the printed number is that point. */
-function impact(name: QueueStore, key: string, tone: Tone): Impact | null {
-  const cases = store(name).cases as Record<string, {
-    comparison: { state: string };
-    cohorts: { key: string; points: CasePoint[] }[];
-  }>;
-  const served = cases[key];
-  if (!served || served.comparison.state !== 'available') return null;
+/** The impact pair from the Pattern's served trace chart, or null when either
+ *  cohort serves no bin from the start on. Each value is the served median at
+ *  the minute where that cohort's median peaks (or bottoms out) after the
+ *  start, so the story check proves the printed number is that bin's. */
+function impact(name: QueueStore, key: string, tone: Tone, served: ServedTraces): Impact | null {
   const kind = tone === 'high' ? 'peak' : 'nadir';
-  const extreme = (cohort: string): Sourced<number> | null => {
-    const points = served.cohorts.find((c) => c.key === cohort)?.points
-      .filter((p): p is { minute: number; median: number } => p.minute >= 0 && p.median !== null) ?? [];
+  const extreme = (cohort: 'pattern' | 'typical'): Sourced<number> | null => {
+    const points = served[cohort].points.filter((p) => p.minute >= 0);
     if (points.length === 0) return null;
     const at = points.reduce((best, p) => ((kind === 'peak' ? p.median > best.median : p.median < best.median) ? p : best));
-    return sourced(`queue.${name}.cases.${key}.cohorts[key=${cohort}].0.points[minute=${at.minute}].0.median`, 'round');
+    return sourced(`queue.${name}.cases.${key}.traces.${cohort}.points[minute=${at.minute}].0.median`, 'round');
   };
-  const own = extreme('matched');
-  const typical = extreme('comparison');
+  const own = extreme('pattern');
+  const typical = extreme('typical');
   return own && typical ? { kind, own, typical } : null;
 }
 
@@ -166,9 +181,11 @@ export function basalSetting(name: QueueStore, startMin: number): SettingData {
     estimate: sourced(`${slotPath}.estimate.value`, 'fixed2'),
     lo: sourced(`${slotPath}.estimate.lo`, 'fixed2'),
     hi: sourced(`${slotPath}.estimate.hi`, 'fixed2'),
-    days: sourced(`${slotPath}.days`),
-    nights: roster.map((_, i) => ({ rate: sourced(`${slotPath}.evidence.night_roster.${i}.delivered_rate`) })),
+    axis: 'Basal',
+    count: { label: 'Nights', value: sourced(`${slotPath}.days`) },
+    dots: roster.map((_, i) => ({ rate: sourced(`${slotPath}.evidence.night_roster.${i}.delivered_rate`) })),
     roster: `${slotPath}.evidence.night_roster`,
+    field: 'delivered_rate',
     trial: s.trials.trials.some((t) => t.parameter === 'basal_rate' && t.state === 'complete'
       && maturedTrial(span, t)),
   };
@@ -196,34 +213,38 @@ export function maturedTrial(span: { start_min: number; end_min: number },
   return [...halfHours(span.start_min, span.end_min)].some((m) => inTrial.has(m));
 }
 
-/** The glossary's name for I:C, whose candidate title is longer (§1.5 I:C). */
-const SETTING_TITLES: Record<string, string> = { carb_ratio: 'I:C' };
+type IcBlock = { block_id: number; start_min: number; evidence: { counted_runs: unknown[] } };
 
-/** An I:C Setting, from its admitted findings row: its block, and its
- *  first member's current, suggested and estimate range, each printed as the
- *  pump profile prints that setting. Null when the findings serve no admitted
- *  row for it. Its evidence is not nights, so it has no night chart or count. */
-export function otherSetting(name: QueueStore, parameter: 'carb_ratio'): SettingData | null {
+/** The I:C Setting: the carb-ratio block the engine stages a move for (the
+ *  earliest, when it stages several), its programmed ratio, the
+ *  recommendation, the estimate in its range, each printed as the pump
+ *  profile prints the setting, and the meal runs that estimate counts — the
+ *  chart's dots and the Meal runs count are that one served list (ADR 523).
+ *  Null when the analysis serves no such block or the guidance no unit. */
+export function carbRatioSetting(name: QueueStore): SettingData | null {
   const s = store(name);
-  const row = s.findings.rows.find((r) => r.kind === 'setting' && r.parameter === parameter && r.members?.length);
-  const candidate = s.guidance.candidates.find((c) => c.subject === `setting:${parameter}`);
-  if (!row?.span || !candidate?.units) return null;
-  const rowPath = `queue.${name}.findings.rows[id=${row.id}].0`;
-  const member = `${rowPath}.members.0`;
-  const format = PARAMETER_FORMATS[parameter];
+  const blocks = ((s.analyze as { ic_blocks?: IcBlock[] }).ic_blocks ?? []);
+  const block = [...blocks].sort((a, b) => a.start_min - b.start_min)[0];
+  const candidate = s.guidance.candidates.find((c) => c.subject === 'setting:carb_ratio');
+  if (!block || !candidate?.units) return null;
+  const path = `queue.${name}.analyze.ic_blocks[block_id=${block.block_id}].0`;
+  const format = PARAMETER_FORMATS.carb_ratio;
   return {
-    title: SETTING_TITLES[parameter],
+    // The glossary's name for I:C, whose candidate title is longer (§1.5 I:C).
+    title: 'I:C',
     units: candidate.units,
-    start: sourced(`${rowPath}.span.start_min`, 'clock'),
-    end: sourced(`${rowPath}.span.end_min`, 'clock'),
-    current: sourced(`${member}.current`, format),
-    suggested: sourced(`${member}.recommended`, format),
-    estimate: sourced(`${member}.estimate.value`, format),
-    lo: sourced(`${member}.estimate.lo`, format),
-    hi: sourced(`${member}.estimate.hi`, format),
-    days: null,
-    nights: null,
-    roster: null,
+    start: sourced(`${path}.start_min`, 'clock'),
+    end: sourced(`${path}.end_min`, 'clock'),
+    current: sourced(`${path}.current_values.0`, format),
+    suggested: sourced(`${path}.recommended`, format),
+    estimate: sourced(`${path}.estimate.value`, format),
+    lo: sourced(`${path}.estimate.lo`, format),
+    hi: sourced(`${path}.estimate.hi`, format),
+    axis: 'I:C',
+    count: { label: 'Meal runs', value: sourced(`${path}.evidence.counted_runs.length`) },
+    dots: block.evidence.counted_runs.map((_, i) => ({ rate: sourced(`${path}.evidence.counted_runs.${i}.true_ic`) })),
+    roster: `${path}.evidence.counted_runs`,
+    field: 'true_ic',
     trial: false,
   };
 }
@@ -243,7 +264,7 @@ export function isfSetting(name: QueueStore): IsfSettingData | null {
 
 /** The story states the generator found in the served answers, by name. */
 const states = () => answers.states;
-type PatternState = 'multi_cause' | 'single_cause' | 'pinned' | 'uncertain';
+type PatternState = 'traces_episodes' | 'traces_band' | 'traces_gap' | 'pinned' | 'uncertain';
 type SettingState = 'setting' | 'setting_trial';
 
 export function patternState(name: PatternState): PatternData {
@@ -289,7 +310,7 @@ function item(name: QueueStore, candidate: Candidate): QueueItem | null {
     return data ? { subject: candidate.subject, kind: 'isf', data } : null;
   }
   if (candidate.subject === 'setting:carb_ratio') {
-    const data = otherSetting(name, 'carb_ratio');
+    const data = carbRatioSetting(name);
     return data ? { subject: candidate.subject, kind: 'setting', data } : null;
   }
   return null;

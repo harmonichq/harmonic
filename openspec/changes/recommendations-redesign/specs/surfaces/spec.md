@@ -68,13 +68,52 @@ The browser router and the Python route policy SHALL name the same five tabs.
 The Queue SHALL list exactly the candidates the guidance read admits and the
 person has not snoozed, by served priority, highest first, an exact tie broken by
 subject. It SHALL re-derive no admission, floor, threshold or direction. A
-Pattern card SHALL offer Pin, which starts a Focus on its habit. A Setting card
-SHALL show the current value, the engine's estimate, its range, its count and its
-evidence chart; a queued correction factor SHALL use the Overview's ISF estimate
-card in the Queue's frame. Every item SHALL offer Snooze, which sets it aside
+Pattern card SHALL offer Pin, which starts a Focus on its habit, and SHALL draw
+the trace chart its case file serves: the Pattern's episodes, or its median and
+band past eight, against Typical's median and band, computing no band and
+choosing no episode (ADR 523). A Setting card SHALL show the current value, the
+engine's estimate, its range, its count and its evidence chart, one dot per item
+its estimate counts, and SHALL end in one stat row in one order on every setting
+card: Estimate, Range, then the served count (Nights, Meal runs, Fasting
+nights); a queued correction factor SHALL use the Overview's ISF estimate
+card in the Queue's frame. A queued carb ratio's findings row SHALL serve its
+block as its one member, in the shape a basal run serves its slots, so its card
+draws the block, current → recommended and its range. A Pattern served as its one
+habit SHALL be drawn with the Pattern's own count and its rate levers' credited
+shares, which that habit's row serves for it, and its case file SHALL be read under
+the Pattern's subject. Every item SHALL offer Snooze, which sets it aside
 until fourteen days after the engine's served decision time, with an Undo; the
 Snoozed list SHALL show each snoozed item with its until date and a Restore, and
 SHALL be reachable only while at least one item is snoozed.
+
+#### Scenario: A queued carb ratio draws its card
+
+- **GIVEN** the QA case whose meals support lowering a whole-day carb ratio of 10
+- **WHEN** the Queue renders
+- **THEN** the I:C card shows 00:00–24:00, 10 → 9 g/U and its range
+
+#### Scenario: A Pattern served as its habit is counted as the Pattern
+
+- **GIVEN** the QA case where Lows after correcting highs is served as Correction
+  on active insulin, which drives two of six lows, while a stacked pair of
+  corrections reaches a third
+- **WHEN** the Queue renders that Pattern and reads its case file
+- **THEN** the card counts 3 of 6 lows, credited 2 to Correction on active
+  insulin and 1 to Correction stacking, and its case file claims the same 3
+
+#### Scenario: A Pattern card draws its served traces
+
+- **GIVEN** the showcase, whose one over-treated low rebounds
+- **WHEN** the Queue renders Highs after treating lows
+- **THEN** its chart draws that one episode from the low's nadir over 0 to 180
+  minutes against the other four lows' median and band, and no impact line, since
+  one episode serves no bin
+
+#### Scenario: A queued carb ratio counts its meal runs
+
+- **GIVEN** the QA case whose meals support lowering a whole-day carb ratio of 10
+- **WHEN** the Queue renders its I:C card
+- **THEN** it draws eight dots and its stat row reads Estimate, Range, Meal runs 8
 
 #### Scenario: A held setting is not queued
 
@@ -111,7 +150,10 @@ date span, In range and the standard CGM metrics against the period of the same
 length before, one time-in-ranges bar, and the glucose profile. Below 54 and
 Above 250 SHALL read as subsets of Below 70 and Above 180. Below the summary it
 SHALL show the ISF estimate whatever the engine decides, drawing current →
-recommended only when the analyzer's ISF staging verdict supports the change.
+recommended only when the analyzer's ISF staging verdict supports the change,
+and beside it, the same size, the basal estimate: the day's 48 half-hour slots,
+the programmed rate stepped, each slot's estimate over its range, and a mark on
+each slot whose staging verdict asserts a move, in its served direction (ADR 523).
 Overview SHALL carry nothing to act on.
 
 #### Scenario: A held ISF shows its estimate without a recommendation
@@ -120,6 +162,12 @@ Overview SHALL carry nothing to act on.
 - **WHEN** Overview renders
 - **THEN** the ISF estimate shows its estimate and range, and no current →
   recommended
+
+#### Scenario: The basal estimate marks the slots the analyzer moves
+
+- **GIVEN** the showcase, whose basal analyzer lowers 03:00 and 03:30
+- **WHEN** Overview renders the 14-day window
+- **THEN** the basal estimate draws all 48 slots and marks those two ▼
 
 ### Requirement: Day shows one day with its insulin, carb logging and Prompts
 

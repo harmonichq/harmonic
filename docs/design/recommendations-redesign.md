@@ -23,7 +23,8 @@ Status: **exploring** (#481).
   the summary as its first screenful; the glucose profile follows the window
   switch and the recent-days strip is gone; an ISF estimate card below the
   summary; each window compared with the period of the same length before it,
-  its date span on the line under the window switch.
+  its date span on the line under the window switch. Revised again 2026-10-14
+  (§2.5, the charts): a basal estimate card beside the ISF card.
 - **Day screen locked 2026-10-13**: Storybook `Screens/Day` at commit
   `4972898a`: the date in the header as a drop-down month of gapless weeks,
   the current week as a gapless ribbon on desktop, the day's insulin as one
@@ -87,7 +88,7 @@ Each row lists a screen's states. Labels only; no state uses prose.
 | Queue · setting detail | current → estimate, range, n, chart | — | Chart skeleton | Unavailable | A queued ISF: the Overview's ISF card in the Queue's frame (§2.5, 2026-10-14) |
 | Changes | The current Trial (head, trace, ranges, Mean/GMI/CV, Basal vs Pump profile) or Focus, then the Previous row with its count | "No active change" label; no Previous row at 0 | Skeleton | Unavailable + Retry | Maturing; Matured (result pill); a carb ratio Trial (Meals before / after; its trace meal by meal under three meals); a whole-profile switch (each setting it moved); **End** (Focus: anytime; Trial: once matured) → confirm sheet → ended |
 | Changes · Previous | Every previous change, newest first, no cutoff: setting and block, date, before → after per setting, the result where one was saved | Not reachable (the row is hidden at 0) | — | Unavailable + Retry | — |
-| Overview | 14 d selected; one scrolling page, the summary (window switch, date span, In range, metrics, glucose profile) its first screenful, the ISF estimate below | "No data" label per window, and in the ISF estimate when none is served | Skeleton; a window not yet read shows its profile's and ISF estimate's skeletons | Unavailable + Retry | 30 d / 90 d selected; a previous period without data (the span alone, no changes); the ISF estimate with a supported change (current → recommended), held, Uncertain, with nights beyond its axis |
+| Overview | 14 d selected; one scrolling page, the summary (window switch, date span, In range, metrics, glucose profile) its first screenful, the ISF and basal estimates below | "No data" label per window, and in the ISF or basal estimate when none is served | Skeleton; a window not yet read shows its profile's and estimates' skeletons | Unavailable + Retry | 30 d / 90 d selected; a previous period without data (the span alone, no changes); the ISF estimate with a supported change (current → recommended), held, Uncertain, with nights beyond its axis |
 | Day | Latest day with data | "No data" for a day without readings | Chart skeleton | Unavailable + Retry | Month dropped down from the header's day; desktop: the selected week as a ribbon; Prompts row when count > 0 |
 | Day · Prompts | One prompt, "n / N" | Not reachable (the row is hidden at 0) | — | Not saved + Retry | Yes → grams field and keyboard; mid-swipe Not sure |
 | Day · Log carbs | Grams field focused, Time = now | — | Saving | Not saved + Retry | Time edited |
@@ -480,7 +481,8 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   the second line is the magnitude alone ("38 of 137 meals"), with the
   trailing impact value as below. The Snoozed list's rows follow, as they draw
   with QueueRow's snoozed state. The open card's waffle and legend are
-  unchanged and still name the causes. On the impact, which the 2026-10-13 amendment had kept to the
+  unchanged and still name the causes. *Amended 2026-10-14 (the charts,
+  below):* the waffle is gone, and no Queue surface names a cause. On the impact, which the 2026-10-13 amendment had kept to the
   open card: "for the impact number I want a comparison. or a delta maybe?…",
   and of three mocked rows "the format of B is more to my liking". A Pattern
   row with an impact ends in a trailing value: Peak (high) or Nadir (low) as a
@@ -720,6 +722,48 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   nothing. Nothing is tapped open or hidden (§1.4). The Tandem Source failed
   stories serve a long error at phone and desktop and check the row holds it.
 
+- **2026-10-14 — the charts: traces on Patterns, one dot row and stat row on
+  Settings, and the day's basal on the Overview** (ADR 523). The operator, on
+  mock-ups of his own data: "I think the charts are better", then of the
+  setting cards "They look wonderful. I love it. Perfect.", and for the basal
+  card "I think the 48 slot".
+  - **Pattern card.** A TraceChart replaces the CauseWaffle on every Pattern:
+    each episode aligned at its start — a meal's bolus (−30 to 240 minutes),
+    the correction a counted low followed (0 to 240), a low's nadir (0 to
+    180) — glucose up, "Minutes" across, 70 and 180 as dotted lines. Typical
+    is a grey median over its 25–75 band; the Pattern is each episode's own
+    thin trace in its glucose colour when there are eight or fewer, else its
+    coloured median over its band; legend Pattern and Typical. An episode
+    missing its early readings is left off, never drawn from part-way. No
+    caption. The engine serves the episodes and every band; the card draws
+    them and computes none. Typical for Lows after correcting highs is now
+    every other lone correction, and for Highs after treating lows every
+    other low. The impact line and the row's delta read the same served
+    medians, so the number is a point on the chart. The waffle and its
+    legend are gone, so the Queue names no cause anywhere.
+  - **Setting cards.** Basal, I:C and ISF draw one EvidenceChart: one row of
+    dots, one per night (basal's delivered rate), counted meal run (I:C's
+    ratio) or fasting night (the ISF's fit), spread either side of the row
+    where they would touch; Current dashed, Estimate solid over its Range
+    band; dots inside the range bright, outside receded; dots beyond the
+    axis counted at its edge; beneath the ticks the axis names itself
+    ("Basal · U/h"). Every setting card ends in one stat row, in the same
+    order and place: Estimate, Range, then Nights, Meal runs or Fasting
+    nights, each a served count. Pin's place stays empty on a Setting card.
+    "Meal runs" and "Minutes" are plain interface words.
+  - **Overview.** A basal estimate card, the ISF card's size, beside it on
+    desktop and under it on the phone, over the selected window: the day's 48
+    half-hour slots, the programmed rate a dashed step, each slot's median
+    clean delivered rate a solid tick over its range, a slot the analyzer
+    stages a move for marked ▲ or ▼ above it; legend Current, Estimate,
+    Range. "Basal estimate", as the ISF card is "ISF estimate".
+  - **One chart family.** The trace chart, the dot row and the basal day
+    share one scale and path module and one stylesheet, and the Changes
+    trace (ADR 524) draws its bands and gap-broken lines with the same module.
+  - **Desktop Queue list.** 440 px wide, from 400, so a row's title and its
+    trailing value share one line for every Pattern title: a row stays the
+    same height with or without the value.
+
 - **2026-10-14 — answers kept across visits, and stale beats blank (#522).**
   On the home server every screen waited on the engine, on every visit and
   every refresh. The operator: "we definitely need some kind of caching ...
@@ -785,7 +829,9 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
 ### 2.6 Deferred (not cut)
 Not built in the current screens. The engine still serves what each needs, and
 nothing is removed from the engine or the fixtures for them.
-- Pattern evidence drill-in: from an open Pattern, one screen with one
+- Pattern evidence drill-in (its aligned-episodes chart is now the open
+  card's TraceChart, §2.5 2026-10-14; the dated episode list is still deferred):
+  from an open Pattern, one screen with one
   aligned-episodes chart (each episode's glucose trace aligned at its trigger —
   the bolus for meal patterns, the treatment for treated lows, the night for
   overnight lows — with the median on top) and the dated episode list beneath
@@ -799,7 +845,8 @@ nothing is removed from the engine or the fixtures for them.
 
 ## 4. Component inventory (approved 2026-10-12)
 
-Twenty-four components. Screens are composed only from these. Every state listed
+Twenty-five components (the TraceChart replaced the CauseWaffle and the
+BasalCard joined, §2.5 2026-10-14). Screens are composed only from these. Every state listed
 gets a Storybook story in step 3. "Fields" are the only served data a component
 may display; derived values name their formula in the provenance table.
 
@@ -888,45 +935,59 @@ unless noted. Loading is a skeleton of the component's own shape.
    - Fields: `guidance.candidates[].title, kind, priority, admitted,
      preference`; `findings.outcome_patterns[].k, n` and the noun; the
      impact as
-     PatternCard reads it, its delta the derived `own − typical`.
+     PatternCard reads it (the case file's `traces`, ADR 523), its delta the
+     derived `own − typical`.
    - Desktop: a list row that selects into the detail pane. Snooze is an icon
      the open card's Snooze text action (shortcut S); there's no swipe.
-8. **PatternCard**: the open pattern, showing the magnitude, a CauseWaffle,
-   and Pin. No Range: only a Setting has one; Uncertain carries a pattern's
-   confidence (ADR 485).
-   - States: multi-cause; **single cause**; Uncertain
+8. **PatternCard**: the open pattern, showing the magnitude, a TraceChart
+   (§2.5, 2026-10-14), and Pin. No Range: only a Setting has one; Uncertain
+   carries a pattern's confidence (ADR 485). No cause is named.
+   - States: episodes drawn; median and band (more than eight); empty chart
+     ("No data"); Uncertain
      (the tag at the end of the magnitude line); with or without the impact
      line (Peak or Nadir · Typical, mg/dL, beneath the magnitude);
      pinned (Pin replaced by a "Focus" pill); loading.
    - Header row: the title and (phone) the collapse chevron. Snooze is a
      text action centred beneath Pin (or the Focus pill), 16 px below it.
-   - Fields: `outcome_patterns[].k, n, wide`; fold sentences (count,
-     denominator, lever title); the case file's `projection.cohorts[matched,
-     comparison].points[].median` (the impact line: each cohort's highest or
-     lowest median at or after minute 0).
+   - Fields: `outcome_patterns[].k, n, wide`; the count sentence (count,
+     denominator, noun); the case file's `traces` (the chart, and the impact
+     line: each cohort's highest or lowest served median at or after minute 0).
    - Desktop: fills the detail pane up to 720 px; no collapse chevron.
-9. **CauseWaffle**: one cell per occurrence in n, with filled cells patterned
-   by cause, plus a legend.
-   - States: multi-cause; single cause (one legend entry). A counted Pattern
-     always has a claiming cause since ADR 499 cut the overnight Pattern, so
-     the no-cause state is retired.
-   - Fields: as PatternCard.
-   - Desktop: larger cells, same rules.
+9. **TraceChart** (replaces the CauseWaffle, §2.5 2026-10-14): a Pattern's
+   episodes against Typical, aligned at their start; glucose up on the one
+   glucose axis every chart uses (at least 50–220 mg/dL, "mg/dL", 100 / 200 /
+   300 labelled), minutes across ("Minutes", ticks every 60), dotted 70 and 180
+   lines, a hairline at minute 0 when the window opens before it. Typical a grey
+   median over its 25–75 band; the Pattern each episode's thin trace in its
+   glucose colour (eight or fewer), else its coloured median over its band. A
+   gap in the readings or in the served bins is left blank, never bridged.
+   Legend: Pattern, Typical (each only when drawn).
+   - States: episodes; episodes with a gap; median and band; empty ("No data").
+   - Fields: the case file's `traces.anchor, window_min,
+     pattern.episodes[][].minute, bg, pattern.points[], typical.points[]`
+     (`minute, median, p25, p75`; a bin is served only from three readings).
+   - Desktop: wider, same marks.
 10. **SettingCard**: the open setting, showing current → suggested in figure
-    type, the time block as its title, a compact EvidenceChart, the evidence
-    count ("30 nights") and one Range. No button.
+    type, the time block as its title, a compact EvidenceChart, and the stat
+    row every setting card ends in (§2.5, 2026-10-14): Estimate, Range, then
+    the served count (Nights for basal, Meal runs for I:C). No button; Pin's
+    place stays empty.
     - States: default; range collapsed (lo = hi, single value shown);
       matured into a Trial (Changes link): the block lies in a matured basal
       Trial's served block (#506), whether or not it starts where the Trial
       starts.
     - Snooze: a text action centred at the card's foot.
-    - Fields: `analyze.basal[slot].current, estimate.value, estimate.lo, hi,
-      days`, plus their carb-ratio equivalents. A queued ISF opens into the
-      IsfCard instead (§2.5, 2026-10-14).
+    - Fields: `analyze.basal[slot].current, recommended, estimate.value,
+      estimate.lo, hi, days, evidence.night_roster[].delivered_rate`;
+      `analyze.ic_blocks[].current_values, recommended, estimate.value, lo, hi,
+      evidence.counted_runs[].true_ic` and its length (ADR 523). A queued ISF
+      opens into the IsfCard instead (§2.5, 2026-10-14).
     - Desktop: fills the detail pane up to 720 px.
-11. **EvidenceChart**: a setting's evidence, one dot per night against current
-    and the estimate in its range: a basal slot's delivered rate, or an ISF
-    fasting night's fit.
+11. **EvidenceChart**: a setting's evidence, one row of dots against current
+    and the estimate in its range: a basal night's delivered rate, an I:C
+    counted meal run's ratio, or an ISF fasting night's fit. Dots that would
+    touch spread either side of the row; beneath the ticks the axis names
+    itself ("I:C · g/U") (§2.5, 2026-10-14).
     - States: default; zero variance (a compact strip); nights beyond the
       axis, counted ("‹ 3", "2 ›") in a gutter reserved at that end, outside
       the plot (§2.5, 2026-10-14).
@@ -934,6 +995,7 @@ unless noted. Loading is a skeleton of the component's own shape.
       does. Every tick keeps its mark, but a tick label that would touch its
       neighbour is left out; the last, which carries the unit, always shows.
     - Fields: `analyze.basal[slot].evidence.night_roster`;
+      `analyze.ic_blocks[].evidence.counted_runs[].true_ic`;
       `analyze.isf[0].evidence.night_fits[].isf`.
     - Desktop: wider, same marks.
 
@@ -978,7 +1040,8 @@ unless noted. Loading is a skeleton of the component's own shape.
     Overview's summary. The title "ISF" with "estimate", and the Uncertain
     pill when the estimate is wide; "current → recommended" in figure type
     only when the engine supports the change; an EvidenceChart of the fasting
-    nights' fits; then Estimate, Range and Fasting nights as captioned values.
+    nights' fits; then the setting cards' stat row: Estimate, Range and Fasting
+    nights.
     - States: supported change; held (no figure); Uncertain; nights beyond the
       axis; no data ("No data"); not yet read (its skeleton).
     - Fields: `analyze.isf[0].current, recommended, asserts_move,
@@ -991,6 +1054,19 @@ unless noted. Loading is a skeleton of the component's own shape.
       verdict); Snooze is a text action centred at its foot, as on the
       SettingCard; no other action. Phone: in its row's place. Desktop:
       fills the detail pane up to 720 px.
+
+25. **BasalCard** (§2.5, 2026-10-14): the basal estimate for the selected
+    window, the ISF card's size, beside it on desktop and under it on the
+    phone. Titled "Basal" with "estimate". The day's 48 half-hour slots: the
+    programmed rate a dashed step, each slot's estimate a solid tick over its
+    range, ▲ or ▼ above a slot whose staging verdict asserts a move; the rate
+    ticks with "U/h", the hours 00:00–24:00; legend Current, Estimate, Range.
+    Nothing to act on.
+    - States: with moves; holds (no marks); no data ("No data"); not yet read
+      (its skeleton).
+    - Fields: `analyze.basal[].slot, current, estimate.value, lo, hi,
+      asserts_move, direction`, read from `/api/analyze?window=N`.
+    - Desktop: half the Overview's body, beside the IsfCard.
 
 **Changes**
 

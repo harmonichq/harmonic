@@ -1,10 +1,15 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { settingState } from '../../queue-model';
+import { expect } from 'storybook/test';
+import { carbRatioSetting, settingState, type SettingData } from '../../queue-model';
 import { EvidenceChart } from './EvidenceChart';
 
-// The simulated wearer's admitted Basal block (§4.2 EvidenceChart, default).
-// Nights at one identical rate do not arise in the wearer's history, so the
-// zero-variance state has no story; the chart draws it as a single stack.
+// §4.2 EvidenceChart, one row of dots (ADR 523): the simulated wearer's
+// Basal block whose change matured into a Trial, its nights by delivered
+// rate; and a queued I:C block's counted meal runs by their ratio, from the QA
+// case whose meals support lowering the carb ratio. Nights at one identical
+// rate do not arise in the wearer's history, so the zero-variance state has no
+// story; the chart draws it as one pile spread either side of the row. The ISF
+// card's stories show its fasting nights and the edge counts.
 const meta = {
   title: 'EvidenceChart',
   component: EvidenceChart,
@@ -15,9 +20,18 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {
-  args: (() => {
-    const { nights, roster, current, estimate, lo, hi, units } = settingState('setting_trial');
-    return { nights: nights!, roster: roster!, field: 'delivered_rate', current, estimate, lo, hi, units };
-  })(),
+const argsOf = ({ dots, roster, field, current, estimate, lo, hi, units, axis }: SettingData) =>
+  ({ dots, roster, field, current, estimate, lo, hi, units, axis });
+
+/** No two dots overlap, however many share a value. */
+const dotsClear: Story['play'] = async ({ canvasElement }) => {
+  const dots = [...canvasElement.querySelectorAll<SVGCircleElement>('.ui-evidence__dot')]
+    .map((dot) => [Number(dot.getAttribute('cx')), Number(dot.getAttribute('cy'))]);
+  const touching = dots.filter(([x, y], i) => dots.some(([u, v], j) => j > i && Math.hypot(u - x, v - y) < 5.5));
+  await expect(touching.length).toBe(0);
+  await expect(canvasElement.querySelector('.ui-chart__caption')).not.toBeNull();
 };
+
+export const Default: Story = { args: argsOf(settingState('setting_trial')), play: dotsClear };
+export const CarbRatio: Story = { args: argsOf(carbRatioSetting('carb-ratio-supported')!), play: dotsClear };
+export const Desktop: Story = { args: argsOf(settingState('setting_trial')), parameters: { frame: { width: 720 } } };

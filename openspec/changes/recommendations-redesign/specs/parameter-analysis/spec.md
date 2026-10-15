@@ -27,3 +27,19 @@ one of them as a substitute staging gate.
 - **WHEN** the capped and rounded final recommendation equals the programmed ISF
 - **THEN** the segment preserves that direction and annotation but stamps
   `asserts_move = false`, so it cannot enter Plan
+
+## ADDED Requirements
+
+### Requirement: A carb-ratio block serves the meal runs its estimate counts
+
+Each carb-ratio block SHALL serve `evidence.counted_runs`: every pooled meal run
+of its roster, in roster order, with its time and its ratio. The I:C Setting
+card's dots and its Meal runs count SHALL read that one list (ADR 523).
+
+#### Scenario: The counted runs are the pooled runs
+
+- **GIVEN** the `basal-and-carb-ratio-lower` QA case, whose whole-day block the
+  engine stages a move for from eight pooled runs
+- **WHEN** the analysis is read
+- **THEN** the block's counted runs are those eight runs, with the ratio each run
+  serves

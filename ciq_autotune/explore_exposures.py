@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from .analyzers.scenario.evaluation import evaluate
 from .analyzers.scenario.engine import _effective_isf, low_prompt_answers
 from .analyzers.scenario.levers import Lever, outcome_kind, title
-from .analyzers.scenario.model_view import _build_episode_view, _is_driver
+from .analyzers.scenario.model_view import _build_episode_view, _is_driver, stacking_reached_low
 from .analyzers.scenario_config import ScenarioConfig
 from .false_low import drop_readings, false_low_span_records, spans_from_records
 
@@ -128,22 +128,12 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
             isf=isf, scenario_config=scenario_config,
             low_answers=low_answers, evaluated=evaluated_episode,
         )
-        if attribution.lever is Lever.CORRECTION_STACKING:
-            reached_low = min(
-                (
-                    item for item in episode_anchors.anchors
-                    if item.kind.value == "low"
-                    and attribution.driver_anchor is not None
-                    and item.t >= attribution.driver_anchor.t
-                ),
-                key=lambda item: item.t,
-                default=None,
+        reached_low = stacking_reached_low(episode_anchors.anchors, attribution)
+        if reached_low is not None:
+            target_attributions.append(
+                ("lows", reached_low.t, attribution.lever.value,
+                 outcome_minute)
             )
-            if reached_low is not None:
-                target_attributions.append(
-                    ("lows", reached_low.t, attribution.lever.value,
-                     outcome_minute)
-                )
         owned_highs = [high for high, _owner in attribution.owned_highs]
         for source_anchor, anchor in zip(
             sorted(episode_anchors.anchors, key=lambda item: item.t), episode["anchors"],

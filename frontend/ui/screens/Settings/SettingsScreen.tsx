@@ -207,7 +207,9 @@ function TandemSource({ sync, account, read, form, onUpdate }: {
           {source.failed !== null && <ListRow label="State" value={source.failed ? 'Failed' : 'OK'} alert={source.failed} />}
           {source.lastSuccess && <ListRow label="Last success" value={<DateTime at={source.lastSuccess} />} />}
           {source.lastAttempt && <ListRow label="Last attempt" value={<DateTime at={source.lastAttempt} />} />}
-          {source.error && <ListRow label="Error" value={source.error} />}
+          {source.error && (
+            <ListRow label="Error" value={<Num value={source.error.label} />} detail={<Num value={source.error.text} />} />
+          )}
           {source.data && (
             <ListRow label="Data" value={<><Num value={source.data.from} /> – <Num value={source.data.to} /> · <Num value={source.data.days} /> d</>} />
           )}

@@ -33,6 +33,63 @@ known. A window with no basal and no delivered bolus SHALL serve `null`.
 - **WHEN** the window holds no basal row and no delivered bolus
 - **THEN** `insulin_totals` is `null`
 
+### Requirement: Every pump-event read serves one site change per fill sequence
+
+The store SHALL keep every cartridge, tubing and cannula fill row, and every
+pump-event read SHALL serve one site change per fill sequence: fills within 30
+minutes of the one before join one event at the first fill, lasting until the
+last. The timeline, the clean-window exclusion and the pattern sweep SHALL all
+read that series.
+
+#### Scenario: Three fills seconds apart are one site change
+
+- **WHEN** a cartridge, tubing and cannula fill are logged 4 seconds apart
+- **THEN** the timeline serves one site change at the first fill, lasting until the
+  last, and the store still holds all three rows
+
+### Requirement: The status read labels a failed fetch
+
+The status read SHALL serve `last_error_label` beside `last_error`: null when the
+last attempt succeeded, else one short label for what stopped it — No connection,
+Timed out, Sign-in refused, HTTP and the vendor's status code, Not set up, or
+Unknown (also for a failure recorded before labels). A partial fetch SHALL be
+labelled by what stopped its failed window.
+
+#### Scenario: A network that is down is labelled
+
+- **WHEN** a fetch fails because its connection never opened
+- **THEN** the status read serves `last_error_label` "No connection" and the raw
+  text as `last_error`
+
+### Requirement: The per-day model read serves the day's findings
+
+The per-day model read SHALL serve `findings`: every anchor whose time falls on
+the requested calendar day and that the engine counted toward a Lever, in time
+order, with its `t`, `kind`, `bg` and `levers`, each Lever's key and served
+title. An anchor SHALL count toward its episode's Lever when it drove that
+episode, toward each Lever whose classifier verdict on it matched, and toward
+Correction stacking when it is the low a Correction stacking episode reached.
+The findings SHALL be read from every episode with an anchor on that day,
+whichever day the episode resolves on. A near-miss, clean or no-data anchor
+SHALL count toward nothing. `episodes` SHALL keep their resolve-day assignment.
+
+#### Scenario: An evening finding that resolves after midnight is its own day's
+
+- **GIVEN** a 19:00 meal that drove a Meal over-delivery episode, and its 22:05
+  low claimed as Correction on active insulin, in an episode resolving the next
+  day
+- **WHEN** the per-day model read is requested for the meal's day
+- **THEN** it serves no episode, and serves both anchors as findings with their
+  Levers
+- **AND** the next day's read serves neither anchor as a finding
+
+#### Scenario: The low a Correction stacking reached is a finding
+
+- **WHEN** two stacked corrections drove a Correction stacking episode and
+  glucose reached a low after the second
+- **THEN** the second correction and that low are findings of Correction
+  stacking, and the first correction is not
+
 ### Requirement: A write to follow-up state alone keeps the results that read only recorded data
 
 A guidance preference (snooze, restore) and a Focus, Trial or Plan lifecycle step
@@ -100,6 +157,9 @@ response."
 ### Requirement: A scheduled fetch that wrote invalidates, then re-warms the landing set
 
 The process runs a background fetch on startup and on a fixed hourly interval. A
+fetch recorded as failed is tried again five minutes later instead, at most three
+times in a row, before the loop falls back to hourly; the next success starts that
+count again. A
 fetch that committed nothing MUST NOT invalidate — there is nothing to invalidate
 against, and a failure must never kill the loop. A fetch that wrote calls one
 routine that invalidates first and only then re-warms, so no request can ever be
@@ -130,6 +190,13 @@ or when that fetch commits nothing. Warming runs in a worker thread rather than
 the event loop, a newer invalidation abandons an older pass at its next shape, and
 one shape failing to warm is logged and skipped rather than aborting the pass or
 the loop.
+
+#### Scenario: A fetch that fails at startup is retried within minutes
+
+- **GIVEN** the network is not yet up when the process starts
+- **WHEN** the startup fetch fails
+- **THEN** the loop fetches again five minutes later rather than an hour later, up
+  to three times in a row, and then waits the hour
 
 #### Scenario: A fetch that committed some windows and then failed still invalidates
 

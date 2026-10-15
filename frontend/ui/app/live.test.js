@@ -60,6 +60,8 @@ function fakeClient(served = history()) {
       episodes: [{ id: 'e', lever: 'late_bolus', lever_title: 'Late bolus', steps: [{ t: 's' }],
         anchors: [{ t: `${date} 13:10:00`, kind: 'meal', label: 'Meal bolus', bg: null, insulin: 3, carbs: 30,
           state: 'fired', verdicts: [{ classifier: 'late_bolus', matched: true, title: 'Late bolus', detail: 'd' }] }] }],
+      findings: [{ t: `${date} 13:10:00`, kind: 'meal', bg: null,
+        levers: [{ lever: 'late_bolus', title: 'Late bolus' }] }],
     })),
     setGuidancePreference: answer('snooze', () => ({})),
     answerPrompt: answer('answer', () => ({ carb_entry_id: null })),
@@ -199,9 +201,8 @@ test('a picked day reads what the engine counted on it once, kept to what the ch
   assert.deepEqual(fake.calls.find((c) => c.name === 'model-view').args, ['2026-01-05']);
   assert.deepEqual(live.answers.day.days['2026-01-05'].model_view, {
     date: '2026-01-05',
-    episodes: [{ lever: 'late_bolus', lever_title: 'Late bolus',
-      anchors: [{ t: '2026-01-05 13:10:00', kind: 'meal', state: 'fired', bg: null,
-        verdicts: [{ classifier: 'late_bolus', matched: true, title: 'Late bolus' }] }] }],
+    findings: [{ t: '2026-01-05 13:10:00', kind: 'meal', bg: null,
+      levers: [{ lever: 'late_bolus', title: 'Late bolus' }] }],
   });
 });
 

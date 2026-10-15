@@ -8,8 +8,9 @@ import { SettingsScreen, type SettingsScreenProps } from './SettingsScreen';
 // (1440), every value the simulated wearer's served answer:
 // - Root: the last sync OK (no badge), and failed (the Settings "!" and the
 //   row's inline "⚠ Failed").
-// - Tandem Source: synced, failed, and with no account set ("Not set" and
-//   Update); Updating: the account form open.
+// - Tandem Source: synced, failed (a long raw error under its short label),
+//   and with no account set ("Not set" and Update); Updating: the account
+//   form open.
 // - Pump profile: the wearer's profile and its segments; "No profile" for the
 //   store that has none.
 // - Glossary: §1.5's terms with their definitions.
@@ -48,8 +49,29 @@ export const RootFailedPhone = story('phone', FAILED);
 export const RootFailedDesktop = story('desktop', FAILED);
 export const TandemSourceSyncedPhone = story('phone', { ...SYNCED, view: 'tandem' });
 export const TandemSourceSyncedDesktop = story('desktop', { ...SYNCED, view: 'tandem' });
-export const TandemSourceFailedPhone = story('phone', { ...FAILED, view: 'tandem' });
-export const TandemSourceFailedDesktop = story('desktop', { ...FAILED, view: 'tandem' });
+// The failed sync's long error (§2.5 2026-10-14): the Error row shows the
+// served label, and the raw text wraps beneath it, never past the row's edge
+// nor under the label on its right.
+const longErrorPlay: Story['play'] = async ({ canvasElement }) => {
+  const label = within(canvasElement).getByText('No connection');
+  const row = label.closest('.ui-row') as HTMLElement;
+  const detail = row.querySelector('.ui-row__detail') as HTMLElement;
+  await expect(detail.textContent).toMatch(/^HTTPSConnectionPool.*Network is unreachable/);
+  // The text's own extent: a box does not grow with text that overflows it.
+  const text = document.createRange();
+  text.selectNodeContents(detail);
+  const edge = row.getBoundingClientRect().right;
+  for (const part of row.querySelectorAll('*')) {
+    await expect(part.getBoundingClientRect().right).toBeLessThanOrEqual(edge + 0.5);
+  }
+  await expect(detail.scrollWidth).toBeLessThanOrEqual(detail.clientWidth);
+  await expect(text.getBoundingClientRect().right).toBeLessThanOrEqual(label.getBoundingClientRect().left);
+  for (const box of canvasElement.querySelectorAll<HTMLElement>('.ui-settings, .ui-settings__main, .ui-settings__pane')) {
+    await expect(box.scrollWidth).toBeLessThanOrEqual(box.clientWidth);
+  }
+};
+export const TandemSourceLongErrorPhone: Story = { ...story('phone', { ...FAILED, view: 'tandem' }), play: longErrorPlay };
+export const TandemSourceLongErrorDesktop: Story = { ...story('desktop', { ...FAILED, view: 'tandem' }), play: longErrorPlay };
 export const TandemSourceNotSetPhone = story('phone', { ...NOT_SET, view: 'tandem' });
 export const TandemSourceNotSetDesktop = story('desktop', { ...NOT_SET, view: 'tandem' });
 export const UpdatingPhone = story('phone', { ...NOT_SET, view: 'tandem', updating: true });

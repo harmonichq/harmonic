@@ -571,6 +571,83 @@ contract test's per-store literals. A new screen gets one line in the smoke's
 tab list. No synthetic store yet holds a queued basal block inside a Trial's
 block; that state is proved only by the Storybook fixtures.
 
+## ADR 516 — A site change is one fill sequence, a failed sync is served by a short label, and a failed fetch is retried early
+
+**Context.** On a real store, one site change showed as three: the pump logs a
+cartridge, a tubing and a cannula fill as separate events with distinct
+sequence numbers, seconds apart, and the store maps each to a site change. In
+Settings, a failed sync's raw exception text was the Error row's inline value
+and ran off the row. And a fetch that failed at container start (network not
+up yet) left the state Failed for the hour until the next attempt.
+
+**Decision.**
+1. *Join at the one read.* The rows stay as the pump logged them (keyed on
+   seqNum). `Store.pump_events` joins every site-change fill within 30 minutes
+   of the one before into one event at the first fill, lasting until the last,
+   so every consumer — the Day timeline, the clean-window exclusion, the
+   pattern sweep — reads one series. The pattern sweep's own 5-minute site
+   clustering is removed as a second copy of the fact. Thirty minutes because
+   the fills land seconds apart when the set is already in and minutes apart
+   when the wearer inserts a new set between the tubing and cannula fills; two
+   site changes inside half an hour are one procedure redone. The joined
+   event's length spans the fills, so the exclusion margin around it covers
+   exactly what the separate fills did.
+2. *Classify at the exception, serve the label.* The fetch records a short
+   label beside the raw text (`fetch_status.last_error_label`), classified by
+   the exception's type: requests timeout, requests connection error, a
+   sign-in the vendor refused (named where the pull signs in, since the vendor
+   client raises the same exception for it as for any HTTP error), the vendor's
+   HTTP status, a refusal to start, or Unknown. A failure stored before the
+   column existed is served as Unknown. Settings shows the label inline and the
+   raw text wrapped beneath it; it classifies nothing.
+3. *Bounded early retry.* A fetch the status records as failed is retried
+   after five minutes, at most three times in a row, then hourly; a success
+   resets the count. The loop reads the outcome from the recorded status, the
+   same fact Settings shows.
+
+**Rejected.** Rekeying or deleting stored fill rows (seqNum keys are what make
+re-pulls merge). Classifying the stored text by pattern at read time (brittle
+against upstream message changes). Retrying only network failures: the retry is
+bounded, so a refused sign-in costs at most three extra attempts per streak.
+
+**Consequences.** A new pump event type that should count once per procedure
+joins at the same read. A new fetch failure mode gets its label in
+`fetch_error_label`, and the Settings stories serve it.
+
+## ADR 517 — The model-view serves the day's findings, and Day marks every one
+
+**Decision.** `/api/model-view?date=` serves `findings`: every anchor on the
+requested calendar day that the engine counted toward a Lever, in time order,
+each with `t`, `kind`, `bg` and `levers` (each Lever's key and served title).
+An anchor counts toward its episode's Lever when it drove the episode, toward
+each Lever whose own classifier verdict matched (the Episode Log's claimed
+anchor), and toward Correction stacking when it is the low a Correction stacking
+episode reached. Near-miss, clean and no-data anchors count toward nothing. Day
+marks each finding with the Pattern glyph and names its habits on its event row,
+and reads no anchor state of its own.
+
+**Why the server.** Day had re-derived the rule from `episodes`: fired meant the
+episode's Lever, outranked meant the matched verdicts, and a frontend list
+dropped three habits the engine no longer serves (#499; `Lever(...)` cannot name
+them). Which moments count toward which habit is policy, and its owner is the
+evaluation, so the frontend's copy, and its unreachable cut list, go.
+
+**Why every episode, not only the resolve day's.** `episodes` stays assigned to
+the day an episode resolves on (ADR 0019). Day kept only anchors on its own day,
+so an evening anchor of an episode resolving after midnight was dropped by the
+next day's read and never served by its own: on the showcase a 22:00 Correction
+on active insulin reached no day. `findings` reads every episode with an anchor
+on the day.
+
+**Why the reached low.** The Lows after correcting highs Pattern credits that
+low to Correction stacking (`explore_exposures`), so a day that hid it showed
+less than the Pattern counts. `model_view.stacking_reached_low` is now the one
+rule both read.
+
+**Consequences.** The UI fixtures are regenerated with the trimmed `findings`.
+The contract test adds `pattern-correction-fold`,
+whose days carry five kinds of finding, and checks the showcase's three days.
+
 ## ADR 522 — Reads answer without rescanning the history, writes re-warm in the background, and the app keeps its last answers
 
 **Context.** Connor, 2026-10-14, on his phone against the home server (two cores,

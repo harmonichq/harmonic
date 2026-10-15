@@ -30,7 +30,8 @@ export type TandemSourceData = {
   failed: boolean | null;
   lastSuccess: When | null;
   lastAttempt: When | null;
-  error: string | null;
+  /** The failed sync's short served label, and its raw text beneath. */
+  error: { label: Sourced<string>; text: Sourced<string> } | null;
   data: { from: Sourced<string>; to: Sourced<string>; days: Sourced<number> } | null;
   account: { configured: boolean; email: string | null; region: string | null };
 };
@@ -52,7 +53,10 @@ export function tandemSource(sync: SyncState | null, account: AccountState): Tan
     failed: lastFailed(served),
     lastSuccess: served.last_success_at ? when(`${status}.last_success_at`) : null,
     lastAttempt: served.last_attempt_at ? when(`${status}.last_attempt_at`) : null,
-    error: served.last_error,
+    error: served.last_error !== null ? {
+      label: sourced(`${status}.last_error_label`),
+      text: sourced(`${status}.last_error`),
+    } : null,
     data: served.earliest_data_day ? {
       from: sourced(`${status}.earliest_data_day`, 'date'),
       to: sourced(`${status}.latest_data_day`, 'date'),

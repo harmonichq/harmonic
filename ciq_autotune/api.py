@@ -1251,7 +1251,11 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             data_day_count = store.cgm_data_day_count()
             input_revision = store.input_data_revision()
         base = status or {"last_attempt_at": None, "last_success_at": None,
-                          "last_error": None, "last_written": None}
+                          "last_error": None, "last_error_label": None, "last_written": None}
+        if base["last_error"] is not None and base["last_error_label"] is None:
+            # A failure recorded before fetches were labelled.
+            from .fetch_loop import UNKNOWN
+            base = {**base, "last_error_label": UNKNOWN}
         return {**base, "earliest_data_day": earliest_day, "latest_data_day": latest_day,
                 "data_day_count": data_day_count, "input_revision": input_revision}
 

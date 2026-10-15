@@ -45,6 +45,18 @@
   line-height: 18px;
 }
 
+/* A detail row: its served detail beneath the label in meta ink, broken at any
+   character, since a raw error carries tokens wider than a phone's row. */
+.ui-row--detail { align-items: flex-start; padding: 12px 0; }
+.ui-row__detail {
+  display: block;
+  margin-top: 4px;
+  color: var(--wk-ink-meta);
+  font-size: var(--ui-type-label);
+  line-height: 18px;
+  overflow-wrap: anywhere;
+}
+
 /* Dense: a table row in the group's shared columns. */
 .ui-row--dense {
   display: grid;

@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import sys
 from datetime import timedelta
 from typing import Callable, Optional
 
@@ -22,6 +23,44 @@ logger = logging.getLogger(__name__)
 
 INTERVAL_SECONDS = 3600
 FETCH_WINDOW_DAYS = 120
+# A failed fetch is tried again this soon, at most this many times in a row,
+# before the loop falls back to hourly: a container's network can come up a few
+# seconds after the first fetch, which then left Settings Failed for the hour.
+RETRY_SECONDS = 300
+EARLY_RETRIES = 3
+
+# The short label Settings shows for a failed fetch, beside its raw text. One
+# per way the fetch fails: the connection never opened, it opened and timed out,
+# the vendor refused the sign-in, the vendor answered with an HTTP error, the
+# fetch refused to start, or anything else.
+NO_CONNECTION = "No connection"
+TIMED_OUT = "Timed out"
+SIGN_IN_REFUSED = "Sign-in refused"
+NOT_SET_UP = "Not set up"
+UNKNOWN = "Unknown"
+
+
+def fetch_error_label(error: BaseException) -> str:
+    """The short label for what stopped a fetch; a partial fetch is labelled by
+    what stopped its failed window."""
+    from . import sync as sync_mod
+
+    if isinstance(error, sync_mod.PartialFetchError):
+        error = error.cause
+    # Only an installed sync extra can raise these, and raising one imported it.
+    requests = sys.modules.get("requests")
+    vendor = sys.modules.get("tconnectsync.api.common")
+    if requests is not None and isinstance(error, requests.exceptions.Timeout):
+        return TIMED_OUT
+    if requests is not None and isinstance(error, requests.exceptions.ConnectionError):
+        return NO_CONNECTION
+    if isinstance(error, sync_mod.SignInRefused):
+        return SIGN_IN_REFUSED
+    if vendor is not None and isinstance(error, vendor.ApiException) and error.status_code:
+        return f"HTTP {error.status_code}"
+    if isinstance(error, sync_mod.NotSetUp):
+        return NOT_SET_UP
+    return UNKNOWN
 
 
 def run_fetch_once(db_path: str, *, key_path: str = DEFAULT_KEY_PATH,
@@ -65,7 +104,8 @@ def run_fetch_once(db_path: str, *, key_path: str = DEFAULT_KEY_PATH,
             logger.warning("Hourly fetch partial: %s", e)
             summary = (f"{e.windows_completed} of {e.windows_total} windows succeeded, "
                        f"partial data kept: {e.cause}")
-            store.record_fetch_result(attempted_at=attempted_at, ok=False, error=summary)
+            store.record_fetch_result(attempted_at=attempted_at, ok=False, error=summary,
+                                      error_label=fetch_error_label(e))
             # Fetch status is an input revision too.  Complete the same durable
             # frontier before returning the historical no-row sentinel.
             reconcile_needed = True
@@ -75,7 +115,8 @@ def run_fetch_once(db_path: str, *, key_path: str = DEFAULT_KEY_PATH,
             committed = store.input_data_revision() > baseline
             reconcile_needed = committed
             logger.warning("Hourly fetch failed: %s", e)
-            store.record_fetch_result(attempted_at=attempted_at, ok=False, error=str(e))
+            store.record_fetch_result(attempted_at=attempted_at, ok=False, error=str(e),
+                                      error_label=fetch_error_label(e))
             reconcile_needed = True
             if committed:
                 # Rows landed — the settings snapshot, or part of a window — but
@@ -97,10 +138,22 @@ def run_fetch_once(db_path: str, *, key_path: str = DEFAULT_KEY_PATH,
     return None
 
 
+def _last_attempt_failed(db_path: str) -> bool:
+    """Whether the attempt just recorded failed, as ``/api/status`` reads it."""
+    with Store.open(db_path) as store:
+        status = store.fetch_status()
+    return status is not None and status["last_error"] is not None
+
+
 async def run_fetch_loop(db_path: str, *, key_path: str = DEFAULT_KEY_PATH,
-                          interval_seconds: int = INTERVAL_SECONDS,
+                          interval_seconds: float = INTERVAL_SECONDS,
+                          retry_seconds: float = RETRY_SECONDS,
                           on_write: Optional[Callable[[], None]] = None) -> None:
     """Fetch on startup, then every ``interval_seconds``, until cancelled.
+
+    A failed fetch is tried again after ``retry_seconds`` instead, up to
+    ``EARLY_RETRIES`` times in a row; one that still fails then waits the full
+    interval, and the next success starts the count again.
 
     ``run_fetch_once`` is blocking (synchronous HTTP via tconnectsync), so it
     runs in a worker thread via :func:`asyncio.to_thread` and never blocks the
@@ -114,8 +167,15 @@ async def run_fetch_loop(db_path: str, *, key_path: str = DEFAULT_KEY_PATH,
     fetch itself, because it now also pre-warms the cache (#424) and that is
     seconds of pure-Python compute the event loop must not stall on.
     """
+    retries = 0
     while True:
         written = await asyncio.to_thread(run_fetch_once, db_path, key_path=key_path)
         if written is not None and on_write is not None:
             await asyncio.to_thread(on_write)
+        if not await asyncio.to_thread(_last_attempt_failed, db_path):
+            retries = 0
+        elif retries < EARLY_RETRIES:
+            retries += 1
+            await asyncio.sleep(retry_seconds)
+            continue
         await asyncio.sleep(interval_seconds)

@@ -4,7 +4,7 @@ import { glossary, pumpProfile, tandemSource, type When } from '../../settings-m
 import { ListGroup, ListRow, ListRowDense } from './ListRow';
 
 // §4.2 ListRow in each of its states: navigable, read-only, with an alert,
-// with a secondary button, a Glossary term, the
+// with a secondary button, a served detail beneath the label, a Glossary term, the
 // dense row of the Pump profile's segment table, and a form's field rows.
 // Every value is the simulated wearer's served answer. The Settings screens
 // built from these rows are Screens/Settings.
@@ -26,6 +26,11 @@ export const Navigable: Story = { args: { label: 'Pump profile', value: profile.
 export const ReadOnly: Story = { args: { label: 'Last attempt', value: <DateTime at={lastAttempt} /> } };
 export const WithAlert: Story = { args: { label: 'Tandem Source', value: 'Failed', alert: true, onOpen: () => {} } };
 export const WithButton: Story = { args: { label: 'Password', value: 'Set', action: { label: 'Update' } } };
+// Detail: the failed sync's Error row, its served label inline and its raw
+// text beneath, wrapped inside the row.
+export const Detail: Story = {
+  args: { label: 'Error', value: <Num value={failed.error!.label} />, detail: <Num value={failed.error!.text} /> },
+};
 export const GlossaryTerm: Story = {
   render: () => {
     const entry = glossary().find((e) => e.term === 'Snooze')!;

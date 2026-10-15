@@ -453,6 +453,7 @@ CREATE TABLE IF NOT EXISTS fetch_status (
     last_attempt_at   TEXT,
     last_success_at   TEXT,
     last_error        TEXT,
+    last_error_label  TEXT,
     last_written_json TEXT
 );
 
@@ -542,6 +543,15 @@ CREATE TABLE IF NOT EXISTS follow_up_requests (
 );
 """
 
+# The pump event every step of a site change logs (cartridge, tubing and cannula
+# fills), and the most time between two fills of one site change. The fills land
+# seconds apart when the set is already in and minutes apart when the wearer
+# inserts the new set between the tubing and the cannula fills; two site changes
+# within half an hour are one procedure redone, never two sites. Read by
+# :meth:`Store.pump_events`.
+SITE_CHANGE_EVENT = "Site/Cartridge Change"
+SITE_CHANGE_GAP = timedelta(minutes=30)
+
 # Additive columns introduced after the first release, applied to pre-existing
 # databases in :meth:`Store._migrate` (CREATE TABLE IF NOT EXISTS never alters an
 # existing table). Each entry is (table, column, type).
@@ -558,6 +568,7 @@ _ADDED_COLUMNS = [
     ("bolus_events", "isf", "REAL"),          # #159 dose-stamped ISF
     ("bolus_events", "target_bg", "REAL"),    # #159 dose-stamped target BG
     ("bolus_events", "carb_ratio", "REAL"),   # #159 dose-stamped carb ratio
+    ("fetch_status", "last_error_label", "TEXT"),  # the failed fetch's short label
 ]
 
 
@@ -1202,10 +1213,35 @@ class Store:
                 if r.event_id == CONTINUOUS_IOB_EVENT_ID]
 
     def pump_events(self, start=None, end=None) -> List[PumpEvent]:
-        return [
-            PumpEvent(parse_t(r["t"]), r["event_type"], r["duration_mins"])
-            for r in self._select("pump_events", start, end)
-        ]
+        """Every pump event, one site change per fill sequence.
+
+        A site change is one procedure on the pump — load the cartridge, fill the
+        tubing, fill the cannula — and each step logs its own event, seconds apart
+        when the set is already in, minutes apart when the wearer inserts the new
+        set between the tubing and the cannula fills. The rows stay as the pump
+        logged them (keyed on seqNum); this read joins every
+        ``SITE_CHANGE_EVENT`` within ``SITE_CHANGE_GAP`` of the one before it into
+        one event at its first fill, lasting until its last, so every consumer —
+        the Day timeline, the clean-window exclusion, the pattern sweep — counts
+        the procedure once and an exclusion around it still covers every fill.
+        """
+        events: List[PumpEvent] = []
+        site: Optional[int] = None  # the site change a next fill may join
+        last_fill: Optional[datetime] = None
+        for r in self._select("pump_events", start, end):
+            event = PumpEvent(parse_t(r["t"]), r["event_type"], r["duration_mins"])
+            fill = event.event_type == SITE_CHANGE_EVENT
+            if fill and site is not None and event.t - last_fill <= SITE_CHANGE_GAP:
+                first = events[site].t
+                events[site] = PumpEvent(first, SITE_CHANGE_EVENT,
+                                         (event.t - first).total_seconds() / 60)
+            else:
+                events.append(event)
+                if fill:
+                    site = len(events) - 1
+            if fill:
+                last_fill = event.t
+        return events
 
     # --- carb log (#125) ----------------------------------------------------
     # Unlike the sync feeds above (idempotent upserts on a natural key), carb
@@ -1377,25 +1413,29 @@ class Store:
 
     def record_fetch_result(self, *, attempted_at: str, ok: bool,
                             error: Optional[str] = None,
+                            error_label: Optional[str] = None,
                             written: Optional[dict] = None) -> None:
         """Record one fetch attempt. ``last_success_at``/``last_written_json``
-        only advance on success — a failed attempt updates ``last_attempt_at``
-        and ``last_error`` but leaves the last-known-good state in place."""
+        only advance on success — a failed attempt updates ``last_attempt_at``,
+        ``last_error`` and its short ``last_error_label`` but leaves the
+        last-known-good state in place."""
         written_json = json.dumps(written) if written is not None else None
         with self._write_transaction():
             self.conn.execute(
                 "INSERT INTO fetch_status "
-                "(id, last_attempt_at, last_success_at, last_error, last_written_json) "
-                "VALUES (1, ?, ?, ?, ?) "
+                "(id, last_attempt_at, last_success_at, last_error, last_error_label, "
+                "last_written_json) "
+                "VALUES (1, ?, ?, ?, ?, ?) "
                 "ON CONFLICT (id) DO UPDATE SET "
                 "last_attempt_at=excluded.last_attempt_at, "
                 "last_success_at=CASE WHEN ? THEN excluded.last_success_at "
                 "                 ELSE fetch_status.last_success_at END, "
                 "last_error=excluded.last_error, "
+                "last_error_label=excluded.last_error_label, "
                 "last_written_json=CASE WHEN ? THEN excluded.last_written_json "
                 "                   ELSE fetch_status.last_written_json END",
                 (attempted_at, attempted_at if ok else None, None if ok else error,
-                 written_json, ok, ok),
+                 None if ok else error_label, written_json, ok, ok),
             )
             self._advance_revision()
 
@@ -1407,6 +1447,7 @@ class Store:
             "last_attempt_at": row["last_attempt_at"],
             "last_success_at": row["last_success_at"],
             "last_error": row["last_error"],
+            "last_error_label": row["last_error_label"],
             "last_written": json.loads(row["last_written_json"]) if row["last_written_json"] else None,
         }
 

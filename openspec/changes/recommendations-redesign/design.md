@@ -571,6 +571,49 @@ contract test's per-store literals. A new screen gets one line in the smoke's
 tab list. No synthetic store yet holds a queued basal block inside a Trial's
 block; that state is proved only by the Storybook fixtures.
 
+## ADR 516 — A site change is one fill sequence, a failed sync is served by a short label, and a failed fetch is retried early
+
+**Context.** On a real store, one site change showed as three: the pump logs a
+cartridge, a tubing and a cannula fill as separate events with distinct
+sequence numbers, seconds apart, and the store maps each to a site change. In
+Settings, a failed sync's raw exception text was the Error row's inline value
+and ran off the row. And a fetch that failed at container start (network not
+up yet) left the state Failed for the hour until the next attempt.
+
+**Decision.**
+1. *Join at the one read.* The rows stay as the pump logged them (keyed on
+   seqNum). `Store.pump_events` joins every site-change fill within 30 minutes
+   of the one before into one event at the first fill, lasting until the last,
+   so every consumer — the Day timeline, the clean-window exclusion, the
+   pattern sweep — reads one series. The pattern sweep's own 5-minute site
+   clustering is removed as a second copy of the fact. Thirty minutes because
+   the fills land seconds apart when the set is already in and minutes apart
+   when the wearer inserts a new set between the tubing and cannula fills; two
+   site changes inside half an hour are one procedure redone. The joined
+   event's length spans the fills, so the exclusion margin around it covers
+   exactly what the separate fills did.
+2. *Classify at the exception, serve the label.* The fetch records a short
+   label beside the raw text (`fetch_status.last_error_label`), classified by
+   the exception's type: requests timeout, requests connection error, a
+   sign-in the vendor refused (named where the pull signs in, since the vendor
+   client raises the same exception for it as for any HTTP error), the vendor's
+   HTTP status, a refusal to start, or Unknown. A failure stored before the
+   column existed is served as Unknown. Settings shows the label inline and the
+   raw text wrapped beneath it; it classifies nothing.
+3. *Bounded early retry.* A fetch the status records as failed is retried
+   after five minutes, at most three times in a row, then hourly; a success
+   resets the count. The loop reads the outcome from the recorded status, the
+   same fact Settings shows.
+
+**Rejected.** Rekeying or deleting stored fill rows (seqNum keys are what make
+re-pulls merge). Classifying the stored text by pattern at read time (brittle
+against upstream message changes). Retrying only network failures: the retry is
+bounded, so a refused sign-in costs at most three extra attempts per streak.
+
+**Consequences.** A new pump event type that should count once per procedure
+joins at the same read. A new fetch failure mode gets its label in
+`fetch_error_label`, and the Settings stories serve it.
+
 ## ADR 517 — The model-view serves the day's findings, and Day marks every one
 
 **Decision.** `/api/model-view?date=` serves `findings`: every anchor on the

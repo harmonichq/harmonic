@@ -269,9 +269,10 @@ def timeline(
              "profile_basal_rate": e.profile_basal_rate}
             for e in basal
         ],
-        # Exercise bars + auto-suspend context for the daily report (#22).
-        # "Site/Cartridge Change" rows ride along here too but the frontend
-        # only renders the Exercise event type; Sleep comes from sleep_windows.
+        # Exercise bars + auto-suspend context for the daily report (#22), and
+        # the Day chart's site changes: one "Site/Cartridge Change" per fill
+        # sequence, as Store.pump_events joins them. Sleep comes from
+        # sleep_windows.
         "pump_events": [
             {"t": _fmt(p.t), "event_type": p.event_type, "duration_mins": p.duration_mins}
             for p in pump

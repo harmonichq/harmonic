@@ -18,7 +18,7 @@ from unittest.mock import patch
 from ciq_autotune.fetch_loop import FETCH_WINDOW_DAYS, run_fetch_loop, run_fetch_once
 from ciq_autotune.settings import ProfileSegment, ProfileSettings, PumpSettings
 from ciq_autotune.store import Store
-from ciq_autotune.sync import PartialFetchError
+from ciq_autotune.sync import NotSetUp, PartialFetchError, SignInRefused, pull_from_tconnect
 from tests.test_wall_clock import (
     PROCESS_ZONE, PUMP_ZONE, assert_near, assert_window_end, pin_process_zone, pin_pump_zone, pump_now,
 )
@@ -309,6 +309,155 @@ class RunFetchLoopTest(unittest.IsolatedAsyncioTestCase):
         task.cancel()
         with self.assertRaises(asyncio.CancelledError):
             await task
+
+
+
+# The text requests gives a connection that never opened, as the fetch stores it.
+_UNREACHABLE = ("HTTPSConnectionPool(host='sso.example.invalid', port=443): Max retries "
+                "exceeded with url: /login (Caused by NewConnectionError('Failed to "
+                "establish a new connection: [Errno 101] Network is unreachable'))")
+
+
+class FetchErrorLabelTest(unittest.TestCase):
+    """Settings shows a failed fetch by a short label the server serves beside
+    the raw error text, classified from what the fetch raised."""
+
+    def setUp(self):
+        tmp = tempfile.NamedTemporaryFile(suffix=".db", delete=False)
+        tmp.close()
+        self.addCleanup(os.unlink, tmp.name)
+        self.db = tmp.name
+
+    def _status_after(self, error):
+        from fastapi.testclient import TestClient
+        from ciq_autotune.api import create_app
+        with patch("ciq_autotune.sync.pull_from_tconnect", side_effect=error, return_value={}):
+            run_fetch_once(self.db)
+        client = TestClient(create_app(db_path=self.db, token=None, enable_fetch_loop=False))
+        return client.get("/api/status").json()
+
+    def test_each_failure_is_served_by_its_label_beside_its_text(self):
+        import requests
+        from tconnectsync.api.common import ApiException
+        cases = [
+            (requests.exceptions.ConnectionError(_UNREACHABLE), "No connection"),
+            (requests.exceptions.ConnectTimeout("connect timed out"), "Timed out"),
+            (requests.exceptions.ReadTimeout("read timed out"), "Timed out"),
+            (SignInRefused("Error sending POST to login_api_url: denied (HTTP 401)"),
+             "Sign-in refused"),
+            (ApiException(400, "TandemSourceApi HTTP 400 response: bad"), "HTTP 400"),
+            (NotSetUp("t:connect credentials are not configured."), "Not set up"),
+            (RuntimeError("something else"), "Unknown"),
+        ]
+        for error, label in cases:
+            with self.subTest(label=label, error=type(error).__name__):
+                status = self._status_after(error)
+                self.assertEqual(status["last_error_label"], label)
+                self.assertEqual(status["last_error"], str(error))
+
+    def test_partial_fetch_is_labelled_by_what_stopped_it(self):
+        import requests
+        status = self._status_after(PartialFetchError(
+            requests.exceptions.ConnectionError(_UNREACHABLE), written={},
+            windows_completed=1, windows_total=4, failed_window=("2026-02-01", "2026-03-03")))
+        self.assertEqual(status["last_error_label"], "No connection")
+        self.assertIn("1 of 4 windows", status["last_error"])
+
+    def test_success_serves_no_label(self):
+        status = self._status_after(None)
+        self.assertIsNone(status["last_error"])
+        self.assertIsNone(status["last_error_label"])
+
+    def test_an_error_stored_before_labels_is_served_as_unknown(self):
+        from fastapi.testclient import TestClient
+        from ciq_autotune.api import create_app
+        with Store.open(self.db) as store:
+            store.conn.execute(
+                "INSERT INTO fetch_status (id, last_attempt_at, last_error) "
+                "VALUES (1, '2026-06-01 09:00:00', 'an older failure')")
+            store.conn.commit()
+        client = TestClient(create_app(db_path=self.db, token=None, enable_fetch_loop=False))
+        self.assertEqual(client.get("/api/status").json()["last_error_label"], "Unknown")
+
+
+class SignInRefusedTest(unittest.TestCase):
+    """The vendor client signs in on its first read and raises its plain
+    ApiException when the sign-in is refused; the pull names that refusal."""
+
+    def test_a_refused_sign_in_is_named(self):
+        from tconnectsync.api.common import ApiException
+        from ciq_autotune.credentials import Credentials
+
+        class _Refusing:
+            def __init__(self, *args):
+                pass
+
+            @property
+            def tandemsource(self):
+                raise ApiException(401, "Error sending POST to login_api_url: denied")
+
+        with tempfile.TemporaryDirectory() as directory, \
+                patch.dict(os.environ, {"TIMEZONE_NAME": "UTC"}), \
+                patch("ciq_autotune.credentials.load_credentials",
+                      return_value=Credentials("wearer@example.invalid", "synthetic", "US")), \
+                patch("tconnectsync.api.TConnectApi", _Refusing), \
+                Store.open(directory + "/synthetic.sqlite") as store:
+            with self.assertRaises(SignInRefused) as raised:
+                pull_from_tconnect(store, start="2026-06-01", end="2026-06-02")
+        self.assertIn("login_api_url", str(raised.exception))
+
+
+def _fails(db_path, times):
+    """A stand-in fetch: records ``times`` failures to the store, then successes."""
+    calls = []
+
+    def fetch(path, **kwargs):
+        calls.append(path)
+        with Store.open(db_path) as store:
+            store.record_fetch_result(
+                attempted_at=f"2026-06-01 09:00:{len(calls):02d}",
+                ok=len(calls) > times, error=None if len(calls) > times else "no connection",
+                error_label=None if len(calls) > times else "No connection")
+        return None
+    return fetch, calls
+
+
+class FetchLoopRetryTest(unittest.IsolatedAsyncioTestCase):
+    """A fetch that fails — the network not up yet at container start — is
+    retried a few minutes later rather than left Failed for the hour, a bounded
+    number of times, before the loop falls back to hourly."""
+
+    def setUp(self):
+        tmp = tempfile.NamedTemporaryFile(suffix=".db", delete=False)
+        tmp.close()
+        self.addCleanup(os.unlink, tmp.name)
+        self.db = tmp.name
+
+    async def _run(self, fetch, seconds=0.3):
+        with patch("ciq_autotune.fetch_loop.run_fetch_once", side_effect=fetch):
+            task = asyncio.create_task(run_fetch_loop(
+                self.db, interval_seconds=100, retry_seconds=0.01))
+            await asyncio.sleep(seconds)
+            task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await task
+
+    async def test_a_failed_fetch_is_retried_early_until_it_succeeds(self):
+        fetch, calls = _fails(self.db, times=2)
+        await self._run(fetch)
+        # Two failures, then the success; the next is the hourly one.
+        self.assertEqual(len(calls), 3)
+
+    async def test_early_retries_are_bounded(self):
+        fetch, calls = _fails(self.db, times=100)
+        await self._run(fetch)
+        # The first attempt and three early retries, then hourly.
+        self.assertEqual(len(calls), 4)
+
+    async def test_a_success_waits_the_hour(self):
+        fetch, calls = _fails(self.db, times=0)
+        await self._run(fetch)
+        self.assertEqual(len(calls), 1)
 
 
 if __name__ == "__main__":

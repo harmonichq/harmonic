@@ -4,7 +4,9 @@
 // alert ("⚠ Failed", glyph and word, never colour alone) or one compact
 // secondary action ("Update"). The dense variant lays a row out in columns
 // for the Pump profile's segment table. A Glossary row adds its one-line
-// definition beneath the term.
+// definition beneath the term; a detail row adds a served detail beneath its
+// label (a failed sync's raw error), wrapped at any width so it never runs
+// past the row.
 //
 // A field row is a form's row: the label on the left and its text input on
 // the right, named by the label, underlined as the grams field is (the accent
@@ -31,6 +33,8 @@ export type ListRowProps = {
   action?: { label: string; onAction?: () => void };
   /** Glossary: the term's definition, beneath it. */
   definition?: string;
+  /** A served detail beneath the label, wrapped at any width: a failed sync's raw error. */
+  detail?: ReactNode;
   /** A form row: a text input of this kind, named by the label. */
   field?: { kind: 'email' | 'password'; onChange?: (text: string) => void; disabled?: boolean; focused?: boolean };
 };
@@ -45,7 +49,7 @@ function Value({ value, alert }: Pick<ListRowProps, 'value' | 'alert'>) {
   );
 }
 
-export function ListRow({ label, value, alert = false, onOpen, action, definition, field }: ListRowProps) {
+export function ListRow({ label, value, alert = false, onOpen, action, definition, detail, field }: ListRowProps) {
   if (field) {
     return (
       <label className="ui-row ui-row--field">
@@ -66,10 +70,11 @@ export function ListRow({ label, value, alert = false, onOpen, action, definitio
     );
   }
   return (
-    <div className={definition ? 'ui-row ui-row--term' : 'ui-row'}>
+    <div className={definition ? 'ui-row ui-row--term' : detail ? 'ui-row ui-row--detail' : 'ui-row'}>
       <span className="ui-row__label">
         {label}
         {definition && <span className="ui-row__definition">{definition}</span>}
+        {detail && <span className="ui-row__detail">{detail}</span>}
       </span>
       <Value value={value} alert={alert} />
       {action && <Button kind="secondary" label={action.label} onClick={action.onAction} />}

@@ -78,6 +78,16 @@ export const LoadingPhone = story('phone', LOADING);
 export const LoadingDesktop = story('desktop', LOADING);
 export const UnavailablePhone = story('phone', UNAVAILABLE);
 export const UnavailableDesktop = story('desktop', UNAVAILABLE);
+// A site change: the pump logs one event per fill (cartridge, tubing and
+// cannula, seconds apart), and the day shows one site change.
+const siteChangePlay: Story['play'] = async ({ canvasElement }) => {
+  const listed = within(canvasElement).getAllByText('Site change')
+    .filter((element) => !element.closest('.ui-daychart__legend'));
+  await expect(listed).toHaveLength(1);
+};
+export const SiteChangePhone: Story = { ...story('phone', { store: 'wearer', day: siteDay }), play: siteChangePlay };
+export const SiteChangeDesktop: Story = { ...story('desktop', { store: 'wearer', day: siteDay }), play: siteChangePlay };
+
 // A day carrying several kinds of finding (§2.5, 2026-10-14 every finding
 // marked): the logged-carbs day, whose served findings name three habits.
 // Every habit the engine served names an event row, and each named row has

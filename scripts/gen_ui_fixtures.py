@@ -135,7 +135,9 @@ from fastapi.testclient import TestClient  # noqa: E402
 
 import qa_e2e_cases  # noqa: E402
 import ui_patient  # noqa: E402
+import requests  # noqa: E402
 from ciq_autotune.api import create_app  # noqa: E402
+from ciq_autotune.fetch_loop import fetch_error_label  # noqa: E402
 from ciq_autotune.store import Store  # noqa: E402
 from ciq_autotune.watched_change import reconcile_ingested_follow_up  # noqa: E402
 
@@ -148,7 +150,13 @@ GENERATED_BY = "scripts/gen_ui_fixtures.py"
 WINDOWS = (14, 30, 90)
 # The pinned wall clock: one hour after the wearer's last reading.
 CLOCK = ui_patient.START + timedelta(days=ui_patient.DAYS, hours=1)
-FAILED_ERROR = "synthetic sync failure"
+# The failed sync: a connection that never opened, in the shape requests reports
+# it (a synthetic host), long enough to wrap at every width. Its label comes from
+# the server's own classification of that error.
+FAILED_ERROR = ("HTTPSConnectionPool(host='sso.example.invalid', port=443): Max retries "
+                "exceeded with url: /login (Caused by NewConnectionError('Failed to "
+                "establish a new connection: [Errno 101] Network is unreachable'))")
+FAILED_LABEL = fetch_error_label(requests.exceptions.ConnectionError(FAILED_ERROR))
 # The person logs the treated lows of the last fortnight by hand, all but the
 # most recent few, which stay as prompts: about four entries a week, the rate
 # a real wearer's manual carb log runs at.
@@ -340,7 +348,7 @@ def fixtures() -> dict:
         changes["wearer-ended"] = _changes_store(client)
         with Store.open(str(database)) as store:
             store.record_fetch_result(attempted_at=CLOCK.strftime("%Y-%m-%d %H:%M:%S"),
-                                      ok=False, error=FAILED_ERROR)
+                                      ok=False, error=FAILED_ERROR, error_label=FAILED_LABEL)
         status_failed = _get(client, "/api/status")
 
         overview = {"wearer": {
@@ -486,7 +494,7 @@ def _pump_settings(client: TestClient) -> dict:
 
 def _status(answer: dict) -> dict:
     return {field: answer[field] for field in
-            ("last_attempt_at", "last_success_at", "last_error",
+            ("last_attempt_at", "last_success_at", "last_error", "last_error_label",
              "earliest_data_day", "latest_data_day", "data_day_count")}
 
 
@@ -502,7 +510,8 @@ def _settings(database: pathlib.Path, client: TestClient) -> dict:
         store.record_fetch_result(attempted_at=SYNC_OK_AT.strftime(stamp), ok=True)
     synced = _status(_get(client, "/api/status"))
     with Store.open(str(database)) as store:
-        store.record_fetch_result(attempted_at=SYNC_FAILED_AT.strftime(stamp), ok=False, error=FAILED_ERROR)
+        store.record_fetch_result(attempted_at=SYNC_FAILED_AT.strftime(stamp), ok=False, error=FAILED_ERROR,
+                                  error_label=FAILED_LABEL)
     failed = _status(_get(client, "/api/status"))
     return {
         "credentials": {"unset": unset, "set": configured},
@@ -1143,6 +1152,8 @@ def allowlist(data: dict) -> dict:
                                       if p["configured"]],
         "served account regions": [c["region"] for c in data["settings"]["credentials"].values() if c["region"]],
         "served sync errors": [s["last_error"] for s in data["settings"]["status"].values() if s["last_error"]],
+        "served sync error labels": [s["last_error_label"] for s in data["settings"]["status"].values()
+                                     if s["last_error_label"]],
         "chart mark fields": [field for field in MARK_FIELDS
                               if all(field in slot for store in stores
                                      for slot in store["analyze"]["basal"])],

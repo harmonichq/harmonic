@@ -540,7 +540,7 @@ class GuidanceApiTest(unittest.TestCase):
         client = TestClient(create_app(db_path=tmp.name, token="secret", enable_fetch_loop=False))
         headers = {"Authorization": "Bearer secret"}
         self.assertEqual(client.get("/api/guidance", headers=headers).status_code, 200)
-        self.assertEqual(client.post("/api/plan/apply", headers=headers).status_code, 400)
+        self.assertEqual(client.post("/api/plan/apply", headers=headers).status_code, 422)
         first = client.post("/api/focus", headers=headers, json={"lever": "missed_meal"})
         self.assertEqual(first.status_code, 200)
         second = client.post("/api/focus", headers=headers, json={"lever": "missed_meal"})

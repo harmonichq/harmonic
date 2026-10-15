@@ -1370,7 +1370,6 @@ def _review_detail(store, trial: _ReviewTrial, now: datetime) -> dict:
         focus = {**focus, "message": {
             "active_trial": "Focus is unavailable while a Trial is live. It will not queue behind this change.",
             "active_focus": "A Focus is already active.",
-            "pending_plan": "Focus is unavailable while an applied Plan is pending.",
             "reconciliation_required": "Focus is unavailable until follow-up admission is reconciled.",
         }[focus["reason"]]}
     detail.update({
@@ -1395,7 +1394,6 @@ def _review_detail(store, trial: _ReviewTrial, now: datetime) -> dict:
         ),
         "evidence": _trial_evidence(store, view, changed_at, now,
                                     block=trial.block),
-        "plan_route": _prior_plan_route(view, trial.members),
         "limits": _trial_limits(trial),
     })
     # The selected Trial's paired reads (#660), which Changes' Trial view renders:
@@ -1517,51 +1515,6 @@ def _trial_limits(trial: _ReviewTrial) -> List[str]:
     return limits
 
 
-def _prior_plan_route(view: TrialView, members: Optional[list] = None) -> dict:
-    """Describe a manual Plan route without staging or writing anything.
-
-    A prior value is safe to prefill only for one ordinary Plan family at one known
-    slot.  Whole-profile, missing-baseline, whole-day, and target Trials instead
-    retain the manual Plan boundary instead of inventing a setting to revert.
-
-    ``members`` is a block-bound I:C Trial's captured member starts (#581 finding
-    3): every member shares the group's one prior value, so a Revert stages every
-    member of the block, not only its lead slot — half-reverting a multi-member
-    block would leave the pump split between the old and new setting.
-    """
-    item_type = _PLAN_TYPE.get(view.parameter)
-    if members:
-        starts = sorted(members)
-    elif view.slot is not None:
-        hour, minute = (int(part) for part in view.slot.split(":"))
-        starts = [hour * 60 + minute]
-    else:
-        starts = None
-    if item_type is not None and view.before is not None and starts is not None:
-        return {
-            "mode": "stage-prior",
-            "label": "Prior setting ready for Plan",
-            "draft": {
-                "items": [
-                    {"type": item_type, "start_min": start, "value": view.before}
-                    for start in starts
-                ],
-            },
-            "message": (
-                "The prior setting is staged for manual pump programming. After programming, "
-                "confirm it with a fresh pump snapshot in Plan."
-            ),
-        }
-    return {
-        "mode": "manual-review",
-        "label": "Review this change in Plan",
-        "message": (
-            "This Trial does not have one prior setting that can be staged. Review the "
-            "change in Plan, program the pump manually, then confirm it with a fresh pump snapshot."
-        ),
-    }
-
-
 def _unavailable(reason):
     return {"version": "386:1", "state": "unavailable", "reason": reason}
 
@@ -1594,81 +1547,108 @@ def _retained_trial(store, record, now, *, saved=None):
                         _data_gaps(start, end, times), block, record.get("members"))
 
 
-def pending_plan(store):
-    """The newest recorded Plan while it is neither confirmed nor withdrawn
-    (ADR 431). An older open Plan is superseded and withholds nothing."""
-    history = store.plan_history()
-    newest = store.follow_up_record("plan", history[0]["applied_at"]) if history else None
-    if (newest is None or newest["reconciliation"].get("state") == "available"
-            or newest["withdrawal"].get("state") == "available"):
+# --- Done: a Setting card's acknowledgment, recorded as a Plan (ADR 518) -----
+
+# A Plan item's family → the profile setting it programs.
+_PLAN_PARAMETER = {"basal": "basal_rate", "isf": "isf", "ic": "carb_ratio", "target": "target_bg"}
+
+
+def plan_subject(plan) -> Optional[str]:
+    """The guidance subject a Plan acknowledges: the one its decision recorded,
+    else (a Plan from before decisions were recorded) its items' one setting."""
+    context = plan["decision_context"]
+    if context.get("state") == "available" and context.get("subjects"):
+        return context["subjects"][0]
+    families = {item.get("type") for item in plan["items"] if isinstance(item, dict)}
+    if len(families) != 1 or not families <= _PLAN_PARAMETER.keys():
         return None
-    return newest
+    return f"setting:{_PLAN_PARAMETER[families.pop()]}"
 
 
-def _comparable(plan):
-    """Every recorded item names an integer start minute and a numeric value,
-    under today's item rules; a history row an older build accepted may not."""
-    from .store import validate_plan_items
-    try:
-        validate_plan_items(plan["items"])
-    except ValueError:
-        return False
-    return all(type(item.get("start_min")) is int and type(item.get("value")) in (int, float)
-               for item in plan["items"])
+def _is_open(plan) -> bool:
+    return (plan["reconciliation"].get("state") != "available"
+            and plan["withdrawal"].get("state") != "available")
 
 
-def _held_schedule(plan, snapshot):
-    """The Plan's schedule when this read's active profile holds it, else None.
+def open_plans(store) -> Dict[str, dict]:
+    """Each subject's open acknowledgment: a recorded Plan neither resolved nor
+    withdrawn, the newest per subject (ADR 518)."""
+    out = {}
+    for plan in store.follow_up_records("plan"):  # newest first
+        subject = plan_subject(plan)
+        if subject is not None and subject not in out and _is_open(plan):
+            out[subject] = plan
+    return out
 
-    The schedule is the Plan's captured deliverable; a Plan recorded before
-    schedules were captured is its recorded values applied over this read's
-    active profile. An incomparable Plan is held by no read (ADR 431).
+
+def _programmed(profile, parameter, minute):
+    return getattr(next((s for s in reversed(profile.segments) if s.start_min <= minute),
+                        profile.segments[0]), parameter)
+
+
+def _moved(plan, before, after) -> Optional[bool]:
+    """Whether ``after``'s active profile programs any of the Plan's items'
+    settings differently from ``before``'s, at each item's start minute and at
+    pump precision; None when either read has no active profile or an item names
+    no setting or integer start minute (an incomparable Plan, which only Undo
+    closes)."""
+    from .result import plan_value
+    old, new = before.settings.active(), after.settings.active()
+    if old is None or new is None or not old.segments or not new.segments:
+        return None
+    moved = False
+    for item in plan["items"]:
+        parameter = _PLAN_PARAMETER.get(item.get("type")) if isinstance(item, dict) else None
+        minute = item.get("start_min") if parameter else None
+        if type(minute) is not int or not 0 <= minute < 1440:
+            return None
+        precision = "isf" if parameter == "target_bg" else parameter
+        if (plan_value(_programmed(old, parameter, minute), precision)
+                != plan_value(_programmed(new, parameter, minute), precision)):
+            moved = True
+    return moved
+
+
+def _resolve_from_read(store, recorded_at, snapshots):
+    """Close each open acknowledgment the latest read after it decides (ADR 518).
+
+    The read at or before the decision is what the person saw; the latest read
+    captured after it is what the pump now runs. A setting that moved there, to
+    any value, closes the acknowledgment on the pump at once: the pump change is
+    its Trial, by the ordinary rule. A setting that did not move decides only
+    once the store holds pump data from after the decision, so a sync of what
+    the pump uploaded before it never reads as not on the pump.
     """
-    from dataclasses import asdict
-    from .guidance import plan_deliverable, schedule_matches
-    profile = snapshot.settings.active()
-    if profile is None or not _comparable(plan):
-        return None
-    actual = [asdict(segment) for segment in profile.segments]
-    deliverable = plan["deliverable"]
-    schedule = (deliverable.get("rows") if deliverable.get("state") == "available"
-                else plan_deliverable(actual, plan["items"]))
-    return schedule if schedule_matches(schedule, actual) else None
-
-
-def _confirm_from_read(store, recorded_at):
-    """Confirm the pending Plan once the latest read after its decision holds it,
-    naming the first read of that unbroken holding run and no Trial (ADR 431)."""
-    plan = pending_plan(store)
-    if plan is None:
+    if not snapshots:
         return
-    decision = datetime.fromisoformat(plan["applied_at"])
-    first = None
-    for snapshot in reversed(store.settings_snapshots()):
-        schedule = _held_schedule(plan, snapshot) if snapshot.captured_at > decision else None
-        if schedule is None:
-            break
-        first = snapshot, schedule
-    if first is None:
-        return
-    snapshot, schedule = first
-    store.save_follow_up_record({**plan, "reconciliation": {
-        "version": "386:1", "state": "available", "applied_at": plan["id"], "trial_id": None,
-        "established_at": recorded_at.strftime(_DT_FMT),
-        "observed_snapshot": {"captured_at": snapshot.captured_at.strftime(_DT_FMT),
-                              "active_idp": snapshot.settings.active_idp},
-        "matched_schedule": schedule}})
+    latest = snapshots[-1]
+    horizon = store.latest_cgm_or_basal_timestamp()
+    for plan in store.follow_up_records("plan"):
+        if not _is_open(plan):
+            continue
+        decision = datetime.fromisoformat(plan["applied_at"])
+        before = next((s for s in reversed(snapshots) if s.captured_at <= decision), None)
+        if before is None or latest.captured_at <= decision:
+            continue
+        moved = _moved(plan, before, latest)
+        if moved is None or (not moved and (horizon is None or horizon <= decision)):
+            continue
+        store.save_follow_up_record({**plan, "reconciliation": {
+            "version": "386:1", "state": "available", "applied_at": plan["id"], "trial_id": None,
+            "established_at": recorded_at.strftime(_DT_FMT), "on_pump": moved,
+            "observed_snapshot": {"captured_at": latest.captured_at.strftime(_DT_FMT),
+                                  "active_idp": latest.settings.active_idp}}})
 
 
 def _link_from_read(store, recorded_at):
-    """Link a Trial detected after its Plan's pump-read confirmation to that Plan
-    (ADR 463 decision 7, an addendum to ADR 431).
+    """Link a Trial to the acknowledgment a read closed on the pump (ADR 463
+    decision 7, as ADR 518 amends it).
 
-    A Trial with no receipt and no captured carb-ratio block links to a Plan
-    confirmed from a pump read with no Trial when the Trial is of the Plan's
+    A Trial with no receipt and no captured carb-ratio block links to a Plan a
+    read closed on the pump with no Trial when the Trial is of the Plan's
     setting (a slotted Trial's slot being one of its item start minutes) or is
-    whole-profile, its change time is within a day of the confirming read, and
-    the match is one-to-one both ways with no Trial already naming the Plan. It
+    whole-profile, its change time is within a day of the closing read, and the
+    match is one-to-one both ways with no Trial already naming the Plan. It
     never compares the Plan's recorded time. Only the Trial's receipt is written;
     nothing rewrites a Plan.
     """
@@ -1676,7 +1656,7 @@ def _link_from_read(store, recorded_at):
     named = {trial["reconciliation"].get("applied_at") for trial in trials
              if trial["reconciliation"].get("state") == "available"}
     plans = [plan for plan in store.follow_up_records("plan")
-             if plan["reconciliation"].get("state") == "available"
+             if plan_verdict(plan)["state"] == "on_pump"
              and plan["reconciliation"].get("trial_id") is None and plan["id"] not in named]
     unlinked = [trial for trial in trials
                 if trial["reconciliation"].get("state") != "available"
@@ -1699,48 +1679,79 @@ def _link_from_read(store, recorded_at):
         matches = [trial for trial in unlinked if qualifies(trial, plan)]
         if len(matches) != 1 or sum(qualifies(matches[0], other) for other in plans) != 1:
             continue
-        trial, confirmed = matches[0], plan["reconciliation"]
+        trial = matches[0]
         store.save_follow_up_record({**trial, "reconciliation": {
             "version": "386:1", "state": "available", "applied_at": plan["id"], "trial_id": trial["id"],
             "established_at": recorded_at.strftime(_DT_FMT),
-            "observed_snapshot": confirmed["observed_snapshot"],
-            "matched_schedule": confirmed["matched_schedule"]}})
+            "observed_snapshot": plan["reconciliation"]["observed_snapshot"]}})
+
+
+def plan_verdict(plan) -> dict:
+    """A recorded Plan's one served verdict (ADR 518), read off its record:
+    ``withdrawn`` (Undo), ``waiting`` for the pump, or resolved ``on_pump`` (a
+    read showed the setting moved, or a Trial's transition carried it out) or
+    ``not_on_pump``. ``read_at`` is the deciding read's capture time, null until
+    resolved. A Plan an earlier build confirmed from a holding read is on the
+    pump."""
+    receipt = plan["reconciliation"]
+    if plan["withdrawal"].get("state") == "available":
+        return {"state": "withdrawn", "read_at": None}
+    if receipt.get("state") != "available":
+        return {"state": "waiting", "read_at": None}
+    on_pump = receipt.get("trial_id") is not None or receipt.get("on_pump", True)
+    return {"state": "on_pump" if on_pump else "not_on_pump",
+            "read_at": (receipt.get("observed_snapshot") or {}).get("captured_at")}
 
 
 def with_plan_verdicts(store, records):
-    """Each recorded Plan with its one served verdict (ADR 431), computed at read
-    time without writing; the Plan history and guidance reads both serve it here.
+    """Each recorded Plan with its served verdict, for the Plan history read."""
+    return [{**plan, "verdict": plan_verdict(plan)} for plan in records]
 
-    ``state`` is decided in order: withdrawn, confirmed, then for the newest Plan
-    pending (the latest read after the decision holds it, there is no such read,
-    or it is incomparable) or mismatch, and otherwise superseded. ``on_pump``
-    says whether the latest read after the decision holds the Plan.
+
+def _blocks(plan) -> List[dict]:
+    """The decision's blocks as its card showed them: each served action's span,
+    the value programmed when it was recorded, and the suggestion."""
+    from .guidance import _schedule_at
+    context, deliverable = plan["decision_context"], plan["deliverable"]
+    actions = context.get("action") if context.get("state") == "available" else None
+    source = ((deliverable.get("source_profile") or {}).get("segments")
+              if deliverable.get("state") == "available" else None)
+    if not isinstance(actions, list) or not source:
+        return []
+    return [{"start_min": action["start_min"], "end_min": action["end_min"],
+             "current": _schedule_at(source, action["start_min"]).get(action["parameter"]),
+             "recommended": action["recommended"], "units": action["units"]}
+            for action in actions]
+
+
+def setting_acknowledgments(store) -> Dict[str, dict]:
+    """Each Setting subject's served Done state (ADR 518), when it has one.
+
+    The subject's newest acknowledgment that was not taken back decides it:
+    ``waiting`` while open; ``not_on_pump`` once a sync found the setting
+    unchanged, until the next pump change of that setting or a snooze of the
+    subject decided after that read. One resolved on the pump serves nothing:
+    its Trial carries it.
     """
-    snapshots = store.settings_snapshots()
-    last = snapshots[-1] if snapshots else None
-    history = store.plan_history()
-    newest = history[0]["applied_at"] if history else None
-    served = []
-    for plan in records:
-        latest = (last if last is not None
-                  and last.captured_at > datetime.fromisoformat(plan["applied_at"]) else None)
-        on_pump = latest is not None and _held_schedule(plan, latest) is not None
-        receipt = plan["reconciliation"]
-        if plan["withdrawal"].get("state") == "available":
-            state = "withdrawn"
-        elif receipt.get("state") == "available":
-            state = "confirmed"
-        elif plan["id"] != newest:
-            state = "superseded"
-        elif on_pump or latest is None or not _comparable(plan):
-            state = "pending"
-        else:
-            state = "mismatch"
-        confirmed_at = ((receipt.get("observed_snapshot") or {}).get("captured_at")
-                        if state == "confirmed" else None)
-        served.append({**plan, "verdict": {"state": state, "confirmed_at": confirmed_at,
-                                           "on_pump": on_pump}})
-    return served
+    snoozed = {row["subject"]: row["decided_at"] for row in store.guidance_preferences()}
+    changed = {}
+    for trial in store.follow_up_records("trial"):
+        changed[trial["parameter"]] = max(changed.get(trial["parameter"], ""), trial["changed_at"])
+    decided, out = set(), {}
+    for plan in store.follow_up_records("plan"):  # newest first
+        subject = plan_subject(plan)
+        if subject is None or subject in decided or plan["withdrawal"].get("state") == "available":
+            continue
+        decided.add(subject)
+        verdict = plan_verdict(plan)
+        read = verdict["read_at"]
+        if verdict["state"] == "not_on_pump" and (
+                changed.get(subject.split(":", 1)[1], "") > read or (snoozed.get(subject) or "") > read):
+            continue
+        if verdict["state"] in ("waiting", "not_on_pump"):
+            out[subject] = {"state": verdict["state"], "applied_at": plan["applied_at"],
+                            "read_at": read, "blocks": _blocks(plan)}
+    return out
 
 
 def follow_up_admission(store, *, now):
@@ -1768,7 +1779,7 @@ def follow_up_admission(store, *, now):
         if not is_pinnable(focus["lever"], focus.get("pattern_key")):
             return {**verdict, "state": "unavailable", "reason": "reconciliation_required"}
         verdict.update(active_kind="focus", active_id=focus["id"], reason="active_focus")
-    reason = verdict["reason"] if verdict["active_kind"] else ("pending_plan" if pending_plan(store) else None)
+    reason = verdict["reason"] if verdict["active_kind"] else None
     verdict["focus_pin"] = {"available": reason is None, "reason": reason}
     return verdict
 
@@ -1922,7 +1933,7 @@ def reconcile_follow_up(store, *, now, recorded_at):
                 "first_observed_at": recorded_at.strftime(_DT_FMT), "observed_context": observed,
                 "comparison_context": capture_comparison_context(store, at=now, input_revision=store.input_data_revision())})
         _reconcile_plan(store, record, recorded_at, snapshots)
-    _confirm_from_read(store, recorded_at)
+    _resolve_from_read(store, recorded_at, snapshots)
     _link_from_read(store, recorded_at)
     _end_open_records(store, trials, now=now, recorded_at=recorded_at)
     newest = trials[0] if trials else None

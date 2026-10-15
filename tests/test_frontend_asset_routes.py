@@ -109,7 +109,7 @@ class FrontendAssetRoutesTest(unittest.TestCase):
                 self.assertEqual(response.status_code, 200, path)
                 self.assertTrue(response.headers["content-type"].startswith(content_type), path)
 
-            self.assertTrue(client.get("/api/plan").headers["content-type"].startswith("application/json"))
+            self.assertTrue(client.get("/api/plan/history").headers["content-type"].startswith("application/json"))
             for path in _RETIRED:
                 response = client.get(path, follow_redirects=False)
                 # 404, so neither the shell nor a redirect to it.

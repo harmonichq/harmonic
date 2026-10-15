@@ -1,5 +1,6 @@
-"""#431: the server confirms a pending Plan from a matching pump read, only the
-newest recorded Plan can be pending, and every recorded Plan serves one verdict.
+"""#431, as #518 amends it: a recorded Plan is a Done's acknowledgment. The first
+sync after it decides it from the pump read, and every recorded Plan serves one
+verdict read off its record.
 
 Every store here is a manufactured QA case (`basal-raise`) plus synthetic
 settings reads and Plans; no source data or generated files.
@@ -10,6 +11,7 @@ import time
 import unittest
 from dataclasses import replace
 from datetime import datetime, timedelta
+from unittest import mock
 
 from fastapi.testclient import TestClient
 
@@ -55,6 +57,13 @@ class PlanCase(unittest.TestCase):
             reconcile_ingested_follow_up(store)
             latest = store.settings_snapshots()[-1]
             self.source, self.source_at = latest.settings.active().segments, latest.captured_at
+            # The server's clock stands an hour after the case's data, so a Done
+            # and the reads after it fall inside the analysis window.
+            now = store.latest_cgm_or_basal_timestamp() + timedelta(hours=1)
+        clock = mock.patch("ciq_autotune.api.wall_clock_now", lambda after=None: (
+            max(now, after + timedelta(seconds=1)) if after else now))
+        clock.start()
+        self.addCleanup(clock.stop)
         self.client = TestClient(create_app(
             db_path=self.path, token="synthetic-token", enable_fetch_loop=False))
         self.headers = {"Authorization": "Bearer synthetic-token"}
@@ -74,21 +83,16 @@ class PlanCase(unittest.TestCase):
         return next(row for row in self.history() if row["applied_at"] == plan["applied_at"])
 
     def record_plan(self):
-        """Record the served basal action through the public Plan routes."""
+        """Done on the basal card, through the public route."""
         guidance = self.get("/api/guidance")
-        action = next(row for row in guidance["candidates"]
-                      if row["subject"] == "setting:basal_rate")["action"][0]
-        items = [{"type": "basal", "start_min": action["start_min"], "value": action["recommended"]}]
-        draft = self.client.put("/api/plan", headers=self.headers, json={"items": items}).json()
         response = self.client.post("/api/plan/apply", headers=self.headers, json={
             "request_id": f"apply-{time.time_ns()}", "input_revision": guidance["input_revision"],
-            "subject": "setting:basal_rate", "analysis_generation": guidance["analysis_generation"],
-            "draft_updated_at": draft["updated_at"]})
+            "subject": "setting:basal_rate", "analysis_generation": guidance["analysis_generation"]})
         self.assertEqual(response.status_code, 200, response.text)
         return response.json()["record"]
 
     def record_older_plan(self, items, applied_at):
-        """A Plan recorded as history from before schedules were captured."""
+        """A Plan recorded as history from before decisions and schedules were captured."""
         with Store.open(self.path) as store:
             store.save_plan_draft(items, stamp(applied_at))
             return store.apply_plan(stamp(applied_at))
@@ -106,6 +110,13 @@ class PlanCase(unittest.TestCase):
             store.upsert_settings_snapshot(stamp(when), replace(settings, profiles=tuple(
                 profile if p.idp == settings.active_idp else p for p in settings.profiles)))
 
+    def deliver(self, when):
+        """One delivery row at ``when``: the store holds pump data from then."""
+        rate = self.source[0].basal_rate
+        with Store.open(self.path) as store:
+            store.upsert_basal([{"seq_num": 9_600_000, "time": stamp(when), "delivery_type": "profileDelivery",
+                                 "duration_mins": 5, "basal_rate": rate, "profile_basal_rate": rate}])
+
     def reconcile(self):
         with Store.open(self.path) as store:
             reconcile_ingested_follow_up(store)
@@ -118,35 +129,9 @@ class PlanCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200, response.text)
         return response.json()
 
-
-class ServerConfirmationTest(PlanCase):
-    def test_an_in_place_edit_after_the_decision_is_the_plans_trial(self):
-        # The edit is a pump change, so it is a Trial (#500), and the Plan it
-        # carries out names it.
-        plan = self.record_plan()
-        read_at = at(plan) + timedelta(minutes=5)
-        self.write_read(read_at, rows=plan["deliverable"]["rows"])
-        self.reconcile()
-        (trial,) = self.trials()
-        self.assertEqual((trial["parameter"], trial["changed_at"]), ("basal_rate", stamp(read_at)))
-        row = self.row(plan)
-        self.assertEqual(row["reconciliation"]["state"], "available")
-        self.assertEqual(row["reconciliation"]["trial_id"], trial["id"])
-        self.assertEqual(row["reconciliation"]["observed_snapshot"]["captured_at"], stamp(read_at))
-        self.assertEqual(trial["reconciliation"]["applied_at"], plan["applied_at"])
-        guidance = self.get("/api/guidance")
-        self.assertEqual(guidance["disposition"], "active_change")
-        self.assertIsNone(guidance["pending_plan"])
-        self.assertEqual(guidance["admission"]["active_id"], trial["id"])
-        self.assertEqual(guidance["admission"]["focus_pin"], {"available": False, "reason": "active_trial"})
-
-    def dose_stream(self, plan):
-        """Two days of the delivery feed from the day after the decision, each
-        slot's programmed rate read off the Plan's captured rows."""
-        rows = plan["deliverable"]["rows"]
-        day0 = (at(plan) + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
-        self.feed(day0, range(2), lambda minute: [r for r in rows if r["start_min"] <= minute][-1]["basal_rate"]["value"])
-        return day0
+    def trials(self):
+        with Store.open_readonly(self.path) as store:
+            return store.follow_up_records("trial")
 
     def feed(self, day0, days, rate_at):
         """The delivery feed on each of ``days`` after ``day0``, every slot at
@@ -159,172 +144,109 @@ class ServerConfirmationTest(PlanCase):
                 "basal_rate": rate_at(30 * slot), "profile_basal_rate": rate_at(30 * slot)}
                 for day in days for slot in range(48)])
 
-    def trials(self):
-        with Store.open_readonly(self.path) as store:
-            return store.follow_up_records("trial")
+
+class ServerResolutionTest(PlanCase):
+    def test_an_in_place_edit_after_the_decision_is_the_plans_trial(self):
+        # The edit is a pump change, so it is a Trial (#500), and the Plan it
+        # carries out names it.
+        plan = self.record_plan()
+        read_at = at(plan) + timedelta(minutes=5)
+        self.write_read(read_at, rows=plan["deliverable"]["rows"])
+        self.reconcile()
+        (trial,) = self.trials()
+        self.assertEqual((trial["parameter"], trial["changed_at"]), ("basal_rate", stamp(read_at)))
+        row = self.row(plan)
+        self.assertEqual(row["reconciliation"]["trial_id"], trial["id"])
+        self.assertEqual(row["verdict"], {"state": "on_pump", "read_at": stamp(read_at)})
+        self.assertEqual(trial["reconciliation"]["applied_at"], plan["applied_at"])
+        guidance = self.get("/api/guidance")
+        self.assertEqual(guidance["disposition"], "active_change")
+        self.assertEqual(guidance["admission"]["active_id"], trial["id"])
+        self.assertEqual(guidance["admission"]["focus_pin"], {"available": False, "reason": "active_trial"})
 
     def test_a_change_the_dose_stream_carries_before_its_read_is_one_trial_at_the_read(self):
         # The feed carries the edit for two days before the read that shows it.
         # That read dates the one Trial, and the Plan names it (#500).
         plan = self.record_plan()
         rows = plan["deliverable"]["rows"]
-        day0 = self.dose_stream(plan)
+        day0 = (at(plan) + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+        self.feed(day0, range(2), lambda minute: [r for r in rows if r["start_min"] <= minute][-1]["basal_rate"]["value"])
         read_at = day0 + timedelta(days=2, hours=1)
         self.write_read(read_at, rows=rows)
         self.reconcile()
         (trial,) = self.trials()
         self.assertEqual((trial["parameter"], trial["changed_at"]), ("basal_rate", stamp(read_at)))
         self.assertEqual(trial["reconciliation"]["applied_at"], plan["applied_at"])
-        row = self.row(plan)
-        self.assertEqual(row["reconciliation"]["trial_id"], trial["id"])
-        self.assertEqual(row["verdict"], {"state": "confirmed", "confirmed_at": stamp(read_at), "on_pump": True})
+        self.assertEqual(self.row(plan)["verdict"], {"state": "on_pump", "read_at": stamp(read_at)})
 
-    def edited_before_an_older_plan(self, edits, items, *, confirm_after):
-        """Reads at each ``(offset days, segments)`` of ``edits`` before an older
-        Plan of ``items`` is recorded an hour after the last, and one later read,
-        ``confirm_after`` past the last edit, that holds it."""
-        with Store.open(self.path) as store:
-            base = max([self.source_at] + [event.t for event in store.basal_events()]) + timedelta(days=3)
-        for offset, segments in edits:
-            self.write_read(base + timedelta(days=offset), segments=segments)
-        last = base + timedelta(days=edits[-1][0])
-        plan = self.record_older_plan(items, last + timedelta(hours=1))
-        self.write_read(last + confirm_after, segments=edits[-1][1])
-        self.reconcile()
-        return plan, last + confirm_after
-
-    def test_a_trial_read_within_a_day_of_the_confirming_read_links_to_its_plan(self):
-        # The edit is read before the decision is recorded, so its Trial predates
-        # the Plan; a later read confirms the Plan and links that Trial when it
-        # is within a day of it (ADR 463 decision 7).
-        value = round(self.current_rate() + 0.1, 2)
-        items = [{"type": "basal", "start_min": SLOT, "value": value}]
-        edited = edited_in_place(self.source, SLOT, value)
-        for label, confirm_after, linked in (("within a day", timedelta(hours=2), True),
-                                             ("more than a day", timedelta(days=1, hours=2), False)):
-            with self.subTest(label):
-                self.open_case()
-                plan, read_at = self.edited_before_an_older_plan([(0, edited)], items,
-                                                                 confirm_after=confirm_after)
-                (trial,) = self.trials()
-                self.assertEqual((trial["parameter"], trial["slot"]), ("basal_rate", "02:00"))
-                receipt = trial["reconciliation"]
-                row = self.row(plan)
-                self.assertIsNone(row["reconciliation"]["trial_id"], "the Plan's own receipt is never rewritten")
-                self.assertEqual(row["verdict"], {"state": "confirmed", "confirmed_at": stamp(read_at), "on_pump": True})
-                if linked:
-                    self.assertEqual((receipt["state"], receipt.get("applied_at"), receipt.get("trial_id")),
-                                     ("available", plan["applied_at"], trial["id"]))
-                    self.assertEqual(receipt["observed_snapshot"]["captured_at"], stamp(read_at))
-                else:
-                    self.assertNotEqual(receipt["state"], "available")
-
-    def test_an_ambiguous_or_other_slot_trial_stays_unlinked(self):
+    def test_two_qualifying_trials_leave_the_plan_unlinked(self):
+        # The read moves the Plan's two slots to a value other than its own, so
+        # it closes on the pump; each slot is its own Trial, and an ambiguous
+        # match links neither (ADR 463 decision 7).
         value = round(self.current_rate() + 0.1, 2)
         other = (SLOT + 240) % 1440
-        both = edited_in_place(edited_in_place(self.source, SLOT, value), other, value)
-        for label in ("two qualifying Trials", "a Trial of another slot"):
-            with self.subTest(label):
-                self.open_case()
-                if label == "two qualifying Trials":
-                    items = [{"type": "basal", "start_min": minute, "value": value}
-                             for minute in (SLOT, other)]
-                    edits = [(0, both)]
-                else:
-                    # The Plan's own slot moved two days earlier; the edit read
-                    # within a day of the confirming read moved another slot.
-                    items = [{"type": "basal", "start_min": SLOT, "value": value}]
-                    edits = [(0, edited_in_place(self.source, SLOT, value)), (2, both)]
-                plan, _ = self.edited_before_an_older_plan(edits, items, confirm_after=timedelta(hours=2))
-                trials = self.trials()
-                self.assertEqual(sorted(t["slot"] for t in trials), ["02:00", "06:00"],
-                                 "premise: the reads detect the edited slots' Trials")
-                self.assertEqual(self.row(plan)["verdict"]["state"], "confirmed", "premise: the read confirms the Plan")
-                self.assertTrue(all(t["reconciliation"]["state"] != "available" for t in trials))
-
-    def test_a_read_from_before_the_decision_never_confirms(self):
-        plan = self.record_plan()
-        # One holding read before the decision, and one captured at it.
-        self.write_read(at(plan) - timedelta(minutes=1), rows=plan["deliverable"]["rows"])
-        self.write_read(at(plan), rows=plan["deliverable"]["rows"])
+        decision = self.source_at + timedelta(hours=1)
+        plan = self.record_older_plan([{"type": "basal", "start_min": minute, "value": round(value + 0.05, 2)}
+                                       for minute in (SLOT, other)], decision)
+        self.write_read(decision + timedelta(hours=2),
+                        segments=edited_in_place(edited_in_place(self.source, SLOT, value), other, value))
         self.reconcile()
-        self.assertEqual(self.row(plan)["reconciliation"]["state"], "unavailable")
-        guidance = self.get("/api/guidance")
-        # The earlier read is a pump change, so its Trial holds the watch (#500).
-        self.assertEqual(guidance["disposition"], "active_change")
-        self.assertEqual(guidance["pending_plan"]["applied_at"], plan["applied_at"])
-        self.assertEqual(guidance["admission"]["focus_pin"]["reason"], "active_trial")
+        trials = self.trials()
+        self.assertEqual(sorted(t["slot"] for t in trials), ["02:00", "06:00"])
+        self.assertEqual(self.row(plan)["verdict"]["state"], "on_pump")
+        self.assertTrue(all(t["reconciliation"]["state"] != "available" for t in trials))
 
-    def test_a_latest_read_that_differs_keeps_the_plan_pending(self):
+    def test_a_read_from_before_the_decision_never_resolves(self):
         plan = self.record_plan()
-        self.write_read(at(plan) + timedelta(minutes=5), rows=plan["deliverable"]["rows"])
-        self.write_read(at(plan) + timedelta(minutes=10), segments=self.source)
+        self.deliver(at(plan) + timedelta(minutes=1))
+        # One unchanged read before the decision, and one captured at it.
+        self.write_read(at(plan) - timedelta(minutes=1), segments=self.source)
+        self.write_read(at(plan), segments=self.source)
         self.reconcile()
-        self.assertEqual(self.row(plan)["reconciliation"]["state"], "unavailable")
-        guidance = self.get("/api/guidance")
-        self.assertEqual(guidance["disposition"], "pending_plan")
-        self.assertEqual(guidance["pending_plan"]["applied_at"], plan["applied_at"])
-        self.assertEqual(guidance["admission"]["focus_pin"]["reason"], "pending_plan")
+        self.assertEqual(self.row(plan)["verdict"], {"state": "waiting", "read_at": None})
 
-    def test_the_confirmed_time_is_the_first_read_of_the_matching_run(self):
+    def test_the_first_sync_that_decides_names_its_read_and_later_reads_change_nothing(self):
         plan = self.record_plan()
         rows = plan["deliverable"]["rows"]
         self.write_read(at(plan) + timedelta(minutes=5), segments=self.source)
+        self.reconcile()
+        self.assertEqual(self.row(plan)["verdict"]["state"], "waiting", "no pump data after the Done yet")
         self.write_read(at(plan) + timedelta(minutes=10), rows=rows)
-        self.write_read(at(plan) + timedelta(minutes=15), rows=rows)
         self.reconcile()
         first = self.row(plan)
-        self.assertEqual(first["verdict"]["confirmed_at"], stamp(at(plan) + timedelta(minutes=10)))
-        self.assertEqual(first["reconciliation"]["observed_snapshot"]["captured_at"],
-                         stamp(at(plan) + timedelta(minutes=10)))
-        self.write_read(at(plan) + timedelta(minutes=20), rows=rows)
+        self.assertEqual(first["verdict"], {"state": "on_pump", "read_at": stamp(at(plan) + timedelta(minutes=10))})
+        self.write_read(at(plan) + timedelta(minutes=20), segments=self.source)
         self.reconcile()
         again = self.row(plan)
-        self.assertEqual(again["reconciliation"], first["reconciliation"])
-        self.assertEqual(again["verdict"], first["verdict"])
+        self.assertEqual((again["reconciliation"], again["verdict"]), (first["reconciliation"], first["verdict"]))
 
     def test_an_incomparable_recorded_plan_fails_nothing_and_leaves_by_withdrawal(self):
-        # A key-only item (no start minute) and a null value: the second, over an
-        # unchanged read, would look held if a missing value counted as current.
-        for item in ({"type": "basal", "key": 0, "value": 0.7},
-                     {"type": "basal", "start_min": SLOT, "value": None}):
-            with self.subTest(item=item):
-                self.open_case()
-                decision = self.source_at + timedelta(hours=1)
-                plan = self.record_older_plan([item], decision)
-                self.write_read(decision + timedelta(minutes=5), segments=self.source)
-                self.reconcile()
-                pending = {"state": "pending", "confirmed_at": None, "on_pump": False}
-                self.assertEqual(self.row(plan)["verdict"], pending)
-                guidance = self.get("/api/guidance")
-                self.assertEqual(guidance["pending_plan"]["verdict"], pending)
-                self.assertEqual(guidance["admission"]["focus_pin"]["reason"], "pending_plan")
-                withdrawn = self.withdraw(plan)
-                self.assertEqual(withdrawn["record"]["withdrawal"]["state"], "available")
-                self.assertNotEqual(withdrawn["admission"]["focus_pin"]["reason"], "pending_plan")
-                self.reconcile()
-                self.assertEqual(self.row(plan)["verdict"]["state"], "withdrawn")
-                self.assertIsNone(self.get("/api/guidance")["pending_plan"])
+        # A key-only item names no start minute, so no read decides it.
+        decision = self.source_at + timedelta(hours=1)
+        plan = self.record_older_plan([{"type": "basal", "key": 0, "value": 0.7}], decision)
+        self.write_read(decision + timedelta(minutes=5), segments=self.source)
+        self.reconcile()
+        self.assertEqual(self.row(plan)["verdict"], {"state": "waiting", "read_at": None})
+        self.withdraw(plan)
+        self.assertEqual(self.row(plan)["verdict"]["state"], "withdrawn")
 
-    def test_a_recorded_plan_todays_item_rules_refuse_is_incomparable(self):
+    def test_a_recorded_plan_todays_item_rules_refuse_resolves_without_failing(self):
         # A history row an older build accepted: it names start minutes and
-        # values, but mixes families, which today's item rules refuse.
+        # values, but mixes families, which today's item rules refuse. It names
+        # no one setting, so it serves no card's state.
         decision = stamp(self.source_at + timedelta(hours=1))
         items = ('[{"type": "basal", "start_min": 120, "value": 0.8},'
                  ' {"type": "isf", "start_min": 0, "value": 40}]')
         with Store.open(self.path) as store, store.conn:
             store.conn.execute("INSERT INTO plan_history (applied_at, items_json) VALUES (?, ?)",
                                (decision, items))
-        plan = {"applied_at": decision}
         self.write_read(self.source_at + timedelta(hours=1, minutes=5), segments=self.source)
         self.reconcile()
-        pending = {"state": "pending", "confirmed_at": None, "on_pump": False}
-        self.assertEqual(self.row(plan)["verdict"], pending)
-        self.assertEqual(self.get("/api/guidance")["pending_plan"]["verdict"], pending)
-        self.withdraw(plan)
-        self.assertEqual(self.row(plan)["verdict"]["state"], "withdrawn")
+        self.assertEqual(self.row({"applied_at": decision})["verdict"]["state"], "not_on_pump")
+        basal = next(row for row in self.get("/api/guidance")["candidates"] if row["subject"] == "setting:basal_rate")
+        self.assertIsNone(basal["acknowledgment"])
 
-    def test_a_plan_recorded_without_a_captured_schedule_confirms_from_its_values(self):
+    def test_a_plan_recorded_without_a_captured_schedule_resolves_from_the_reads(self):
         rate = round(self.current_rate() + 0.1, 2)
         decision = self.source_at + timedelta(hours=1)
         plan = self.record_older_plan([{"type": "basal", "start_min": SLOT, "value": rate}], decision)
@@ -334,76 +256,49 @@ class ServerConfirmationTest(PlanCase):
         self.reconcile()
         row = self.row(plan)
         self.assertIsNone(row["reconciliation"]["trial_id"])
-        self.assertEqual(row["verdict"], {"state": "confirmed", "confirmed_at": stamp(read_at), "on_pump": True})
-        self.assertIsNone(self.get("/api/guidance")["pending_plan"])
-
-
-class NewestPendingTest(PlanCase):
-    def test_superseded_history_does_not_block_the_desk(self):
-        current = self.current_rate()
-        for ending in ("confirmed", "withdrawn"):
-            with self.subTest(ending=ending):
-                self.open_case()
-                older_at, newer_at = self.source_at + timedelta(hours=1), self.source_at + timedelta(hours=2)
-                older_rate, newer_rate = round(current + 0.1, 2), round(current + 0.2, 2)
-                older = self.record_older_plan([{"type": "basal", "start_min": SLOT, "value": older_rate}], older_at)
-                newer = self.record_older_plan([{"type": "basal", "start_min": SLOT, "value": newer_rate}], newer_at)
-                if ending == "confirmed":
-                    self.write_read(newer_at + timedelta(minutes=5),
-                                    segments=edited_in_place(self.source, SLOT, newer_rate))
-                    self.reconcile()
-                else:
-                    # The latest read holds the OLDER Plan: a superseded Plan is
-                    # never confirmed by a pump read.
-                    self.write_read(newer_at + timedelta(minutes=5),
-                                    segments=edited_in_place(self.source, SLOT, older_rate))
-                    self.withdraw(newer)
-                    self.reconcile()
-                guidance = self.get("/api/guidance")
-                self.assertIsNone(guidance["pending_plan"])
-                self.assertNotEqual(guidance["admission"]["focus_pin"]["reason"], "pending_plan")
-                self.assertEqual(self.row(newer)["verdict"]["state"], ending)
-                self.assertEqual(self.row(older)["verdict"]["state"], "superseded")
-                self.assertEqual(self.row(older)["reconciliation"]["state"], "unavailable")
-                self.assertEqual(self.row(older)["withdrawal"]["state"], "unavailable")
+        self.assertEqual(row["verdict"], {"state": "on_pump", "read_at": stamp(read_at)})
+        (trial,) = self.trials()
+        self.assertEqual(trial["reconciliation"]["applied_at"], plan["applied_at"],
+                         "the Trial its read closed links to it")
 
 
 class ServedVerdictTest(PlanCase):
-    def assert_reads_agree(self):
-        history = self.get("/api/plan/history")
-        guidance = self.get("/api/guidance")
-        self.assertEqual(history["input_revision"], guidance["input_revision"])
-        self.assertEqual(history["history"][0]["verdict"], guidance["pending_plan"]["verdict"])
-        return guidance["pending_plan"]["verdict"]
+    def acknowledgment(self):
+        return next(row for row in self.get("/api/guidance")["candidates"]
+                    if row["subject"] == "setting:basal_rate")["acknowledgment"]
 
     def test_the_history_and_guidance_reads_agree(self):
         plan = self.record_plan()
-        self.assertEqual(self.assert_reads_agree(), {"state": "pending", "confirmed_at": None, "on_pump": False})
+        self.assertEqual(self.row(plan)["verdict"], {"state": "waiting", "read_at": None})
+        self.assertEqual(self.acknowledgment()["state"], "waiting")
+        self.deliver(at(plan) + timedelta(minutes=1))
         self.write_read(at(plan) + timedelta(minutes=5), segments=self.source)
         self.reconcile()
-        self.assertEqual(self.assert_reads_agree(), {"state": "mismatch", "confirmed_at": None, "on_pump": False})
+        verdict = {"state": "not_on_pump", "read_at": stamp(at(plan) + timedelta(minutes=5))}
+        self.assertEqual(self.row(plan)["verdict"], verdict)
+        self.assertEqual((self.acknowledgment()["state"], self.acknowledgment()["read_at"]),
+                         ("not_on_pump", verdict["read_at"]))
 
-    def test_a_withdrawn_newest_plan_reads_withdrawn_on_both_reads(self):
+    def test_a_withdrawn_plan_reads_withdrawn(self):
         plan = self.record_plan()
         self.withdraw(plan)
-        self.assertEqual(self.row(plan)["verdict"], {"state": "withdrawn", "confirmed_at": None, "on_pump": False})
-        self.assertIsNone(self.get("/api/guidance")["pending_plan"])
+        self.assertEqual(self.row(plan)["verdict"], {"state": "withdrawn", "read_at": None})
+        self.assertIsNone(self.acknowledgment())
 
-    def test_a_holding_read_not_yet_reconciled_serves_pending(self):
+    def test_a_deciding_read_not_yet_reconciled_still_serves_waiting(self):
+        # The verdict is read off the record; only a sync's reconcile decides it.
         plan = self.record_plan()
         self.write_read(at(plan) + timedelta(minutes=5), rows=plan["deliverable"]["rows"])
         row = self.row(plan)
         self.assertEqual(row["reconciliation"]["state"], "unavailable")
-        self.assertEqual(row["verdict"], {"state": "pending", "confirmed_at": None, "on_pump": True})
+        self.assertEqual(row["verdict"], {"state": "waiting", "read_at": None})
 
-    def test_withdraw_refuses_a_pending_plan_the_latest_read_already_holds(self):
-        # Served pending with on_pump true: the withdraw lifecycle reconciles
-        # first, which confirms the Plan, so it refuses as nonpending_plan and
-        # rolls that confirmation back with the refused write.
+    def test_undo_refuses_a_done_the_latest_read_already_decides(self):
+        # The withdraw lifecycle reconciles first, which closes the Done on the
+        # pump, so it refuses as nonpending_plan and rolls that back with the
+        # refused write.
         plan = self.record_plan()
         self.write_read(at(plan) + timedelta(minutes=5), rows=plan["deliverable"]["rows"])
-        held = {"state": "pending", "confirmed_at": None, "on_pump": True}
-        self.assertEqual(self.row(plan)["verdict"], held)
         revision = self.get("/api/plan/history")["input_revision"]
         response = self.client.post("/api/plan/history/withdraw", headers=self.headers, json={
             "request_id": f"withdraw-{time.time_ns()}", "input_revision": revision,
@@ -413,26 +308,18 @@ class ServedVerdictTest(PlanCase):
         row = self.row(plan)
         self.assertEqual((row["withdrawal"]["state"], row["reconciliation"]["state"]),
                          ("unavailable", "unavailable"))
-        self.assertEqual(row["verdict"], held)
-        # The refusal withdrew nothing: the next reconciliation confirms it.
+        # The refusal withdrew nothing: the next reconciliation decides it.
         self.reconcile()
-        self.assertEqual(self.row(plan)["verdict"]["state"], "confirmed")
+        self.assertEqual(self.row(plan)["verdict"]["state"], "on_pump")
 
-    def test_a_confirmed_plan_the_pump_stops_holding_stays_confirmed(self):
+    def test_a_done_on_the_pump_stays_on_the_pump_when_the_pump_moves_again(self):
         plan = self.record_plan()
-        confirmed_at = at(plan) + timedelta(minutes=5)
-        self.write_read(confirmed_at, rows=plan["deliverable"]["rows"])
+        read_at = at(plan) + timedelta(minutes=5)
+        self.write_read(read_at, rows=plan["deliverable"]["rows"])
         self.reconcile()
         self.write_read(at(plan) + timedelta(minutes=10), segments=self.source)
         self.reconcile()
-        self.assertEqual(self.row(plan)["verdict"],
-                         {"state": "confirmed", "confirmed_at": stamp(confirmed_at), "on_pump": False})
-
-    def test_a_differing_read_after_the_decision_serves_a_mismatch(self):
-        plan = self.record_plan()
-        self.write_read(at(plan) + timedelta(minutes=5), segments=self.source)
-        self.reconcile()
-        self.assertEqual(self.row(plan)["verdict"], {"state": "mismatch", "confirmed_at": None, "on_pump": False})
+        self.assertEqual(self.row(plan)["verdict"], {"state": "on_pump", "read_at": stamp(read_at)})
 
     def test_history_keeps_serving_newest_first(self):
         decision = self.source_at + timedelta(hours=1)

@@ -303,7 +303,7 @@ class ExploreTimeOfDayTest(unittest.TestCase):
                         "/api/explore/time-of-day", params={"days": days}).status_code, 200)
             self.assertEqual(sorted(calls), [14, 30, 90], "one build per window, then cached")
 
-    def test_carb_write_recomputes_but_plan_draft_does_not(self):
+    def test_carb_write_recomputes(self):
         self._seed(cgm=[_cgm(datetime(2026, 6, 30, 12, 0), 120)])
         import ciq_autotune.api as api
         real_build = api.build_time_of_day
@@ -315,9 +315,6 @@ class ExploreTimeOfDayTest(unittest.TestCase):
 
         with patch.object(api, "build_time_of_day", counting_build):
             self._body()
-            self._body()
-            self.assertEqual(len(calls), 1)
-            self.assertEqual(self.client.put("/api/plan", json={"items": []}).status_code, 200)
             self._body()
             self.assertEqual(len(calls), 1)
             self.assertEqual(self.client.post("/api/carbs", json={

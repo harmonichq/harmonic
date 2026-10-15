@@ -113,16 +113,17 @@ def _guidance_client(test, case_name):
     return TestClient(app)
 
 
-def _source_plan_items(client, parameter):
+def _candidate(client, parameter):
     source = client.get("/api/guidance").json()
-    candidate = next(row for row in source["candidates"] if row["subject"] == "setting:" + parameter)
-    action = candidate["action"][0]
-    if parameter == "carb_ratio":
-        provenance = {"block_start_min": action["start_min"], "block_end_min": action["end_min"],
-                      "block_member_start_mins": action["member_start_mins"]}
-        return [{"type": "ic", "start_min": start, "value": action["recommended"],
-                 "ic_block_provenance": provenance} for start in action["member_start_mins"]]
-    return [{"type": "basal", "start_min": action["start_min"], "value": action["recommended"]}]
+    return next(row for row in source["candidates"] if row["subject"] == "setting:" + parameter)
+
+
+def _done(client, subject):
+    """Done on a Queue Setting card (#518), through the public route."""
+    source = client.get("/api/guidance").json()
+    return client.post("/api/plan/apply", json={
+        "request_id": f"done-{time.time_ns()}", "input_revision": source["input_revision"],
+        "subject": subject, "analysis_generation": source["analysis_generation"]})
 
 
 def _seed_ready_cell(path):
@@ -580,22 +581,13 @@ class ApiTest(unittest.TestCase):
         # app stopped serving rather than if one route was correctly dropped.
         self.assertEqual(self.client.get("/api/scenarios", params={"window": 30}).status_code, 200)
 
-    def test_plan_starts_empty(self):
-        r = self.client.get("/api/plan")
-        self.assertEqual(r.status_code, 200)
-        self.assertEqual({key: r.json()[key] for key in ("items", "updated_at")}, {"items": [], "updated_at": None})
+    def test_the_plan_draft_routes_are_gone(self):
+        # #518: the app stages no Plan; a Done records one from the served action.
+        self.assertEqual(self.client.get("/api/plan").status_code, 404)
+        self.assertEqual(self.client.put("/api/plan", json={"items": []}).status_code, 404)
+        self.assertEqual(self.client.get("/api/plan/history").status_code, 200)
 
-    def test_put_then_get_plan_round_trips(self):
-        items = [{"type": "basal", "key": 0, "label": "00:00", "value": 0.7}]
-        r = self.client.put("/api/plan", json={"items": items})
-        self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.json()["items"], items)
-
-        r = self.client.get("/api/plan")
-        self.assertEqual(r.json()["items"], items)
-        self.assertIsNotNone(r.json()["updated_at"])
-
-    def test_put_plan_allows_one_family_across_multiple_rows(self):
+    def test_a_recorded_plan_holds_one_family_across_rows(self):
         for items in (
             [{"type": "basal", "key": 0}, {"type": "basal", "key": 1}],
             [{"type": "isf", "key": 0}, {"type": "isf", "key": 540}],
@@ -603,81 +595,53 @@ class ApiTest(unittest.TestCase):
             [{"type": "target", "key": 0}, {"type": "target", "key": 540}],
             [],
         ):
-            with self.subTest(items=items):
-                r = self.client.put("/api/plan", json={"items": items})
-                self.assertEqual(r.status_code, 200)
-                self.assertEqual(r.json()["items"], items)
+            with self.subTest(items=items), Store.open(self.tmp.name) as store:
+                store.save_plan_draft(items, "2026-01-01 00:00:00")
 
-    def test_put_plan_rejects_mixed_family_items(self):
-        items = [{"type": "basal", "key": 0}, {"type": "isf", "key": 540}]
-        r = self.client.put("/api/plan", json={"items": items})
-        self.assertEqual(r.status_code, 400)
-        self.assertIn("mixes tuning families", r.json()["detail"])
-        self.assertEqual(self.client.get("/api/plan").json()["items"], [])
+    def test_a_recorded_plan_refuses_mixed_non_tuning_and_incomplete_block_items(self):
+        prov = {"block_start_min": 720, "block_end_min": 900, "block_member_start_mins": [720, 780]}
+        for items, message in (
+            ([{"type": "basal", "key": 0}, {"type": "isf", "key": 540}], "mixes tuning families"),
+            ([{"type": "behavior", "key": "late-meal"}], "unsupported tuning family"),
+            ([{"type": "ic", "start_min": 720, "value": 9.5, "ic_block_provenance": prov}], "block"),
+        ):
+            with self.subTest(items=items), Store.open(self.tmp.name) as store:
+                with self.assertRaisesRegex(ValueError, message):
+                    store.save_plan_draft(items, "2026-01-01 00:00:00")
+                self.assertIsNone(store.get_plan_draft())
 
-    def test_put_plan_rejects_non_tuning_items(self):
-        r = self.client.put("/api/plan", json={"items": [{"type": "behavior", "key": "late-meal"}]})
-        self.assertEqual(r.status_code, 400)
-        self.assertIn("unsupported tuning family", r.json()["detail"])
+    def test_done_without_a_durable_request_is_refused(self):
+        self.assertEqual(self.client.post("/api/plan/apply").status_code, 422)
+        self.assertEqual(self.client.post("/api/plan/apply", json={"subject": "setting:basal_rate"}).status_code, 422)
 
-    def test_put_plan_overwrites_previous_draft(self):
-        self.client.put("/api/plan", json={"items": [{"type": "basal", "key": 0}]})
-        self.client.put("/api/plan", json={"items": [{"type": "isf", "key": 540}]})
-        self.assertEqual(self.client.get("/api/plan").json()["items"], [{"type": "isf", "key": 540}])
-
-    def test_apply_with_no_draft_returns_400(self):
-        r = self.client.post("/api/plan/apply")
-        self.assertEqual(r.status_code, 400)
-
-    def test_applying_twice_in_the_same_second_returns_409_not_500(self):
-        self.client = _guidance_client(self, "basal-raise")
-        items = _source_plan_items(self.client, "basal_rate")
+    def test_two_dones_in_the_same_second_return_409_not_500(self):
+        self.client = _guidance_client(self, "basal-and-carb-ratio-lower")
         with patch("ciq_autotune.api.wall_clock_now", return_value=datetime(2026, 1, 1)):
-            self.client.put("/api/plan", json={"items": items})
-            self.assertEqual(self.client.post("/api/plan/apply").status_code, 200)
-            self.client.put("/api/plan", json={"items": items})
-            self.assertEqual(self.client.post("/api/plan/apply").status_code, 409)
+            self.assertEqual(_done(self.client, "setting:basal_rate").status_code, 200)
+            self.assertEqual(_done(self.client, "setting:carb_ratio").status_code, 409)
 
-    def test_apply_snapshots_into_history_and_clears_draft(self):
+    def test_done_records_the_served_action_into_history(self):
         self.client = _guidance_client(self, "basal-raise")
-        items = _source_plan_items(self.client, "basal_rate")
-        self.client.put("/api/plan", json={"items": items})
-
-        r = self.client.post("/api/plan/apply")
+        action = _candidate(self.client, "basal_rate")["action"]
+        r = _done(self.client, "setting:basal_rate")
         self.assertEqual(r.status_code, 200)
+        items = [{"type": "basal", "start_min": a["start_min"], "value": a["recommended"]} for a in action]
         self.assertEqual(r.json()["items"], items)
         self.assertIsNotNone(r.json()["applied_at"])
-
-        self.assertEqual(self.client.get("/api/plan").json()["items"], [])
-
         history = self.client.get("/api/plan/history").json()["history"]
-        self.assertEqual(len(history), 1)
-        self.assertEqual(history[0]["items"], items)
+        self.assertEqual([row["items"] for row in history], [items])
 
-    def test_ic_block_provenance_round_trips_through_draft_and_apply_history(self):
+    def test_a_carb_ratio_done_records_its_block_provenance(self):
         self.client = _guidance_client(self, "ic-raise")
-        items = _source_plan_items(self.client, "carb_ratio")
-        r = self.client.put("/api/plan", json={"items": items})
+        action = _candidate(self.client, "carb_ratio")["action"][0]
+        provenance = {"block_start_min": action["start_min"], "block_end_min": action["end_min"],
+                      "block_member_start_mins": action["member_start_mins"]}
+        items = [{"type": "ic", "start_min": start, "value": action["recommended"],
+                  "ic_block_provenance": provenance} for start in action["member_start_mins"]]
+        r = _done(self.client, "setting:carb_ratio")
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.json()["items"], items)
-        self.assertEqual(self.client.get("/api/plan").json()["items"], items)
-
-        r = self.client.post("/api/plan/apply")
-        self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.json()["items"], items)
-
-        history = self.client.get("/api/plan/history").json()["history"]
-        self.assertEqual(history[0]["items"], items)
-
-    def test_put_plan_rejects_incomplete_ic_block_group(self):
-        prov = {
-            "block_start_min": 720, "block_end_min": 900,
-            "block_member_start_mins": [720, 780],
-        }
-        items = [{"type": "ic", "start_min": 720, "value": 9.5, "ic_block_provenance": prov}]
-        r = self.client.put("/api/plan", json={"items": items})
-        self.assertEqual(r.status_code, 400)
-        self.assertEqual(self.client.get("/api/plan").json()["items"], [])
+        self.assertEqual(self.client.get("/api/plan/history").json()["history"][0]["items"], items)
 
 
 @unittest.skipUnless(_HAS_FASTAPI, "api extra not installed")
@@ -1245,13 +1209,6 @@ class ApiAuthTest(unittest.TestCase):
     def test_scenarios_requires_token(self):
         self.assertEqual(self.client.get("/api/scenarios").status_code, 401)
 
-    def test_get_plan_requires_token(self):
-        self.assertEqual(self.client.get("/api/plan").status_code, 401)
-
-    def test_put_plan_requires_token(self):
-        r = self.client.put("/api/plan", json={"items": []})
-        self.assertEqual(r.status_code, 401)
-
     def test_apply_plan_requires_token(self):
         self.assertEqual(self.client.post("/api/plan/apply").status_code, 401)
 
@@ -1543,30 +1500,11 @@ class CacheInvalidationTest(unittest.TestCase):
             self.client.get("/api/analyze", params={"window": 30})   # bumped → recompute
             self.assertEqual(len(calls), 2)  # exactly one recompute per data version
 
-    def test_plan_draft_save_does_not_invalidate_cache(self):
-        # #427: saving a draft must NOT clear heavy analysis results.
-        import ciq_autotune.api as api_mod
-        real_analyze = api_mod.analyze
-        calls = []
-
-        def counting_analyze(*args, **kwargs):
-            calls.append(1)
-            return real_analyze(*args, **kwargs)
-
-        with patch.object(api_mod, "analyze", counting_analyze):
-            self.client.get("/api/analyze", params={"window": 30})   # miss → compute
-            self.client.get("/api/analyze", params={"window": 30})   # hit → no compute
-            self.assertEqual(len(calls), 1)
-            r = self.client.put("/api/plan", json={"items": [{"type": "basal", "note": "x"}]})
-            self.assertEqual(r.status_code, 200)
-            self.client.get("/api/analyze", params={"window": 30})   # draft save → still a hit
-            self.assertEqual(len(calls), 1, "draft save must not clear the cache")
-
-    def test_plan_apply_invalidates_cache(self):
-        # #427: applying a Plan still forces recomputation (it writes setting history).
+    def test_done_invalidates_cache(self):
+        # #427, #518: a Done writes setting history, so it forces recomputation.
         import ciq_autotune.api as api_mod
         self.client = _guidance_client(self, "basal-raise")
-        items = _source_plan_items(self.client, "basal_rate")
+        self.client.get("/api/guidance")  # warm the independently computed source
         real_analyze = api_mod.analyze
         calls = []
 
@@ -1578,14 +1516,13 @@ class CacheInvalidationTest(unittest.TestCase):
             self.client.get("/api/analyze", params={"window": 30})   # miss → compute
             self.client.get("/api/analyze", params={"window": 30})   # hit → no compute
             self.assertEqual(len(calls), 1)
-            self.client.put("/api/plan", json={"items": items})
-            r = self.client.post("/api/plan/apply")
+            r = _done(self.client, "setting:basal_rate")
             self.assertEqual(r.status_code, 200)
             self.client.get("/api/analyze", params={"window": 30})   # bumped → recompute
-            self.assertEqual(len(calls), 2, "plan apply must clear the cache")
+            self.assertEqual(len(calls), 2, "a Done must clear the cache")
 
     def test_focus_pin_invalidates_cache(self):
-        # #427: the draft-save carve-out is the ONLY one — a Focus pin still clears.
+        # #427: a Focus pin clears the cache like every other write.
         import ciq_autotune.api as api_mod
         self.client = _guidance_client(self, "behavioral-missed-meal")
         self.client.get("/api/guidance")  # warm the independently computed source

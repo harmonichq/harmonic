@@ -45,7 +45,8 @@ type Store = 'wearer' | 'wearer-unsynced';
 export type OverviewScreenProps = {
   layout: Layout;
   store: Store;
-  state?: 'ready' | 'loading' | 'unavailable';
+  /** `stale`: its answers are an earlier read's, since reading them again failed (§2.5, 2026-10-14). */
+  state?: 'ready' | 'loading' | 'unavailable' | 'stale';
   /** The window selected first. */
   window?: Window;
   /** The selected window, each time it is chosen (and the first), so its
@@ -110,10 +111,14 @@ export function OverviewScreen({
 }: OverviewScreenProps) {
   const [window, setWindow] = useState<Window>(initial);
   useEffect(() => { onWindow?.(window); }, [window]);
-  if (state !== 'ready') return <Frame layout={layout} state={state} nav={nav} onRetry={onRetry} />;
+  if (state === 'loading' || state === 'unavailable') {
+    return <Frame layout={layout} state={state} nav={nav} onRetry={onRetry} />;
+  }
   const served = outcomes(store);
   const hasData = served[window].metrics.tir !== null;
-  const header = <ScreenHeader title="Overview" layout={layout} />;
+  const header = state === 'stale'
+    ? <ScreenHeader title="Overview" trailing="unavailable" layout={layout} onRetry={onRetry} />
+    : <ScreenHeader title="Overview" layout={layout} />;
   const span = period(store, window);
 
   const control = (

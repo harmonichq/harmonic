@@ -90,19 +90,55 @@ SHALL count toward nothing. `episodes` SHALL keep their resolve-day assignment.
 - **THEN** the second correction and that low are findings of Correction
   stacking, and the first correction is not
 
+### Requirement: A write to follow-up state alone keeps the results that read only recorded data
+
+A guidance preference (snooze, restore) and a Focus, Trial or Plan lifecycle step
+write only follow-up state — the preference, Focus and follow-up records, the
+frontier, the Plan history — and advance the input revision. Such a write SHALL
+keep the cached results whose builders read only recorded data (readings,
+deliveries, boluses, carbs, prompt answers, settings captures and pump events):
+outcomes, the day navigator, the model-view, the timeline, the analysis and
+scenarios at a non-default window, and the static catalog. Every other cached
+result and every case-file preparation SHALL be dropped, and results keyed by the
+input revision SHALL miss on the new revision as before. Saving credentials SHALL
+invalidate nothing: no cached result reads them (#522).
+
+#### Scenario: A snooze keeps the Overview's results and reads the default analysis again
+
+- **GIVEN** the 14-day outcomes, a day's model-view and the analysis at 14 and 30
+  days are cached
+- **WHEN** a candidate is snoozed
+- **THEN** the outcomes, the model-view and the 14-day analysis answer without
+  recomputing, and the 30-day analysis is computed again
+- **AND WHEN** carbs are logged
+- **THEN** every one of them is computed again
+
+### Requirement: Every API request logs its duration and how its cached reads were answered
+
+The server SHALL log one line per `/api/` request: method, path and query,
+status, milliseconds, and how many of its cached reads were answered from memory,
+computed, or answered from the derived-results file (#522).
+
+#### Scenario: A repeated read logs a hit
+
+- **WHEN** the 14-day outcomes are read twice
+- **THEN** the first line logs one computed read and the second one hit from memory
+
 ## MODIFIED Requirements
 
 ### Requirement: The heavy read endpoints answer from one per-process result cache
 
 Recomputing the analysis from the store costs tens of seconds, so the expensive
 reads — the analysis result, scenarios, outcomes, the outcomes trend, the per-day
-model view, the day navigator, the pattern sweep, the time-of-day evidence feed,
-and the lever catalog — answer through a cache keyed by endpoint name plus the parameters that change the
+model view, the day navigator, the day timeline, the pattern sweep, the
+time-of-day evidence feed, and the lever catalog — answer through a cache keyed by
+endpoint name plus the parameters that change the
 answer. Finding case-file preparation is cached once per data version and projects
 each request's coordinates from that prepared source. Caching is opt-in per
-endpoint: the cheap store reads (status, timeline, pump settings, carb entries,
-prompts, the Plan draft and its history, Focus) read the store directly on every
-request and are never cached.
+endpoint: the cheap store reads (status, pump settings, carb entries, prompts,
+the Plan draft and its history, Focus) read the store directly on every request
+and are never cached. A read that needs only the latest data instant SHALL find
+it with one query, never by reading the history (#522).
 
 The cache instance belongs to the app, not to the module, so two apps built in one
 process (as tests do) never share state. It is bounded by a least-recently-used cap
@@ -140,15 +176,20 @@ compared across a window that closes before the attempt's outcome is recorded,
 because recording the outcome advances that revision itself and would otherwise
 report every failed fetch as a write.
 
-The warm pass covers exactly one fixed roster: the analysis, live and pooled; the
-outcomes trend; the scenarios; the outcomes and the glucose profile for each
-window the Overview switches between; the exposures; the carb-ratio block, basal
-night and ISF rest-window evidence; and the Finding case-file preparation.
-Anything keyed on a date, a month, or any other window stays lazy, so an hourly warm cannot grow without bound; selected
-case-file projections likewise stay lazy behind their warmed prepared source.
-Warming runs in the fetch loop's worker thread rather than the event loop, and one
-shape failing to warm is logged and skipped rather than aborting the pass or the
-loop.
+The warm pass covers exactly what the app's five tabs read, in the order a visit
+needs it (#522): the analysis, pooled and live; the findings and guidance
+snapshot; the Finding case-file preparation; the Trial roster; the outcomes, the
+glucose profile and the analysis for each window the Overview switches between;
+the day navigator; and the model-view and timeline of the latest day with
+readings and the day before it. Nothing the app does not read is warmed. Any
+other date, month, or window stays lazy, so a warm cannot grow without bound;
+selected case-file projections likewise stay lazy behind their warmed prepared
+source. Every write the app makes runs the same pass after it invalidates, and
+`serve` runs it once at start, so a restart is warm before its first fetch lands
+or when that fetch commits nothing. Warming runs in a worker thread rather than
+the event loop, a newer invalidation abandons an older pass at its next shape, and
+one shape failing to warm is logged and skipped rather than aborting the pass or
+the loop.
 
 #### Scenario: A fetch that fails at startup is retried within minutes
 
@@ -177,3 +218,37 @@ loop.
   this case: seeding is itself a committed write, so that attempt invalidates once.
   Over-invalidation costs one recompute and is accepted; under-invalidation serves
   numbers that no longer match the data
+
+### Requirement: A write that no cached result reads invalidates nothing, and each exception is proved
+
+Saving the Plan draft does **not** invalidate the cache. The draft is a staging
+convenience for the person using the app; no cached computation reads it, so
+clearing the heavy results on every keystroke-scale save would only cold-start the
+expensive surfaces for no correctness gain. **Applying** the Plan does invalidate,
+because applying changes the state the analysis reads. Saving credentials does not
+invalidate either: only the fetch's login and the uncached credentials read read
+them (#522).
+
+A future exception MUST clear the same bar: a demonstration that no cached
+computation reads the written state, not an argument that the write feels minor or
+that invalidating is expensive. Absent that proof, the write invalidates.
+
+#### Scenario: The Plan draft round-trips without disturbing the cache
+
+- **GIVEN** the analysis result is cached
+- **WHEN** a client saves a Plan draft and then re-reads the analysis
+- **THEN** the draft is persisted and returned, the cached analysis is served without
+  recomputing, and the cache version is unchanged
+- **AND WHEN** that Plan is subsequently applied
+- **THEN** the cache is invalidated and the next analysis read recomputes
+
+#### Scenario: Saving credentials keeps every cached result
+
+- **GIVEN** the 14-day outcomes are cached
+- **WHEN** credentials are saved and the outcomes read again
+- **THEN** they answer without recomputing
+
+## RENAMED Requirements
+
+- FROM: `### Requirement: Saving a Plan draft is the one deliberate exception, and a future exception must meet its standard`
+- TO: `### Requirement: A write that no cached result reads invalidates nothing, and each exception is proved`

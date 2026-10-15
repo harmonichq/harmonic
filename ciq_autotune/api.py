@@ -27,7 +27,8 @@ import logging
 import re
 import sqlite3
 import threading
-from datetime import datetime
+import time
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional
 
@@ -66,7 +67,7 @@ from .ic_block_evidence import UnknownIcBlockId, prepare_ic_block_evidence
 from .isf_rest_window_evidence import prepare_isf_rest_window_evidence
 from .window_membership import WindowQuery
 from .result import SCHEMA_VERSION
-from .result_cache import ResultCache
+from .result_cache import ResultCache, open_tally
 from .safety import _MIN_SUPPORTED_NIGHTS
 from .derived_artifacts import (
     discard_artifact, dump_findings, dump_ic_history,
@@ -79,6 +80,17 @@ from .store import Store, wall_clock_now
 from .guidance import baseline_for, is_preference_subject
 
 logger = logging.getLogger(__name__)
+
+# One line per API request — path, status, milliseconds, and how its cached reads
+# were answered — so a slow screen can be read off the server log. Nothing else
+# configures logging under ``serve``, so it carries its own handler.
+request_log = logging.getLogger("harmonic.requests")
+if not request_log.handlers:
+    _request_handler = logging.StreamHandler()
+    _request_handler.setFormatter(logging.Formatter("%(asctime)s %(message)s"))
+    request_log.addHandler(_request_handler)
+    request_log.setLevel(logging.INFO)
+    request_log.propagate = False
 
 DEFAULT_DB = "tconnect-data/ciq.db"
 DEFAULT_HOST = "127.0.0.1"
@@ -145,21 +157,24 @@ def _analysis_payload(result) -> dict:
     return {**result.to_dict(), "basal_support_floor": _MIN_SUPPORTED_NIGHTS}
 
 
-def _latest_instant(store) -> Optional[datetime]:
-    """The most recent data instant in ``store``, settings snapshots included: the
-    ``now`` this API's follow-up reads and writes use. It counts snapshots as the
-    ingestion reconcile does; the Outcomes trend's anchor does not
-    (``outcomes_trend.trend_watched_change``, #447), so the two can differ."""
-    times = ([e.t for e in store.basal_events()]
-             + [r.t for r in store.cgm_readings()]
-             + [b.t for b in store.bolus_events()]
-             + [s.captured_at for s in store.settings_snapshots()])
-    return max(times) if times else None
+def _reads_only_recorded_data(key) -> bool:
+    """Whether a cached result reads only recorded data, never follow-up state (#522).
+
+    The fixed default analysis (30 days, setting changes honoured) and scenario
+    report are keyed by the input revision instead, so they are not listed."""
+    name = key[0]
+    if name in ("outcomes", "day-navigator", "model-view", "timeline", "catalog"):
+        return True
+    if name == "analyze":
+        return not (key[1] == 30 and not key[2])
+    if name == "scenarios":
+        return key[1] != 30
+    return False
 
 
 def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                key_path: Optional[str] = None, enable_fetch_loop: Optional[bool] = None,
-               analysis_incarnation: Optional[str] = None):
+               analysis_incarnation: Optional[str] = None, warm_on_start: bool = False):
     """Build the FastAPI app. ``db_path`` / ``token`` default to the
     canonical ``HARMONIC_DB`` / ``HARMONIC_API_TOKEN`` env vars. Their legacy
     ``CIQ_*`` spellings remain deprecated fallbacks. ``key_path`` (the Fernet
@@ -169,6 +184,10 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     :mod:`~ciq_autotune.fetch_loop`) for the lifetime of the app; tests building
     an app for request assertions should pass ``False`` to avoid a stray live
     fetch attempt.
+
+    ``warm_on_start`` runs the warm pass once the app starts, so a restart is warm
+    before its first fetch lands — or when that fetch commits nothing (#522).
+    ``serve`` turns it on; an app built for request assertions leaves it off.
     """
     try:
         import asyncio
@@ -250,6 +269,8 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         app.state.recompute_event = event
         app.state.recompute_loop = loop
         app.state.recompute_task = asyncio.create_task(recompute_worker(event))
+        if warm_on_start:
+            event.set()
         fetch_task = None
         if enable_fetch_loop:
             from .fetch_loop import run_fetch_loop
@@ -279,6 +300,30 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     # the hourly fetch loop clear it. A per-app instance (not a module singleton)
     # keeps two-DB tests isolated. See ADR 0035.
     app.state.result_cache = cache
+
+    def invalidate(keep=None) -> None:
+        """Bump the cache after a write, then start the warm pass in the background.
+
+        Without a running lifespan (an ASGI server started with it off) there is no
+        warm worker, and the next read computes as it always did."""
+        cache.bump(keep=keep)
+        loop = getattr(app.state, "recompute_loop", None)
+        if loop is not None:
+            loop.call_soon_threadsafe(app.state.recompute_event.set)
+
+    def follow_up_written() -> None:
+        """Invalidate after a write to follow-up state alone (#522).
+
+        A guidance preference, a Focus, a Trial or Plan lifecycle step, and the
+        follow-up reconcile each write only follow-up tables — the preference, the
+        Focus and follow-up records, the frontier, the Plan history — and advance
+        the input revision. The results kept here read none of that: their
+        builders (outcomes, the day navigator, the model-view, the timeline, the
+        analysis and scenarios at a non-default window, the static catalog) read
+        only recorded readings, deliveries, boluses, carbs, prompt answers,
+        settings captures and pump events. Revision-keyed and fixed results miss
+        on the new revision by themselves, and case-file preparations are dropped."""
+        invalidate(keep=_reads_only_recorded_data)
     app.state.finding_case_file_before_commit = None
     fixed_flights: dict[tuple, None] = {}
     fixed_flights_lock = threading.Lock()
@@ -441,7 +486,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         for _ in range(3):
             with Store.open_queryonly(db_path) as store:
                 revision = store.input_data_revision()
-                now = _latest_instant(store) or datetime.now()
+                now = store.latest_data_instant() or datetime.now()
                 admission = follow_up_admission(store, now=now)
                 watch = active_watched_change(store, (), (), (), now=now)
                 pending = pending_plan(store)
@@ -608,6 +653,24 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     # The shell has one stable URL, so it revalidates on every load. Vite
     # fingerprints assets, so they can stay immutable until their names change.
     @app.middleware("http")
+    async def _request_duration(request, call_next):
+        path = request.url.path
+        if not path.startswith("/api/"):
+            return await call_next(request)
+        tally = open_tally()
+        started = time.perf_counter()
+        status = 500
+        try:
+            response = await call_next(request)
+            status = response.status_code
+            return response
+        finally:
+            request_log.info(
+                "%s %s%s %d %d ms cache hit=%d miss=%d derived=%d", request.method, path,
+                f"?{request.url.query}" if request.url.query else "", status, round((time.perf_counter() - started) * 1000),
+                tally["hit"], tally["miss"], tally["derived"])
+
+    @app.middleware("http")
     async def _frontend_no_store(request, call_next):
         response = await call_next(request)
         path = request.url.path
@@ -709,7 +772,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             with Store.open(db_path) as store:
                 resolved = month
                 if resolved is None:
-                    latest = _latest_instant(store)
+                    latest = store.latest_data_instant()
                     resolved = latest.strftime("%Y-%m") if latest else datetime.now().strftime("%Y-%m")
                 try:
                     datetime.strptime(resolved, "%Y-%m")
@@ -770,7 +833,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 # retry with a new connection, not recompute inside the old snapshot.
                 store.conn.execute("BEGIN")
                 revision = store.input_data_revision()
-                now = _latest_instant(store) or datetime.now()
+                now = store.latest_data_instant() or datetime.now()
                 record = store.follow_up_record(kind, identity) if identity is not None else None
                 retained = record.get("comparison_context") if record else None
                 current = (capture_comparison_context(store, at=now, input_revision=revision)
@@ -886,7 +949,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             except ValueError as error:
                 raise HTTPException(status_code=409, detail=str(error)) from error
             reconcile_ingested_follow_up(store)
-        cache.bump()
+        follow_up_written()
         return {"subject": subject, "set_aside": True}
 
     @app.delete("/api/guidance/preferences/{subject:path}")
@@ -903,7 +966,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             if restored:
                 reconcile_ingested_follow_up(store)
         if restored:
-            cache.bump()
+            follow_up_written()
         return {"subject": subject, "set_aside": False}
 
     @app.get("/api/diagnose/carb-ratio-block-evidence")
@@ -1118,7 +1181,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             era_str = payload_now["era_start"] or ""
             store.record_pattern_review(cell_id=cell_id, era_start=era_str,
                                         decision=decision)
-        cache.bump()  # a sign-off changes the ready-for-review queue (#267)
+        invalidate()  # a sign-off changes the ready-for-review queue (#267)
         return {"cell_id": cell_id, "era_start": era_str, "decision": decision}
 
     @app.post("/api/pattern-sweep/approve")
@@ -1176,7 +1239,8 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     ) -> dict:
         with Store.open(db_path) as store:
             credentials.save_credentials(store, email, password, region, key_path=key_path)
-        cache.bump()  # (#267)
+        # No cached result reads the credentials: only the fetch's login and the
+        # uncached credentials read do, so a save invalidates nothing (#522).
         return {"configured": True}
 
     @app.get("/api/status")
@@ -1235,8 +1299,13 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     def timeline_endpoint(start: datetime, end: datetime,
                           _: None = Depends(require_token)) -> dict:
         from .timeline import timeline as build_timeline
-        with Store.open(db_path) as store:
-            return build_timeline(store, start, end)
+
+        def compute() -> dict:
+            with Store.open(db_path) as store:
+                return build_timeline(store, start, end)
+
+        # It reads only stored rows, never the clock, so every write's bump keeps it current.
+        return cache.get_or_compute(("timeline", start.isoformat(), end.isoformat()), compute)
 
     # --- manual carb log (#126) --------------------------------------------
     # Plain CRUD onto carb_entries (the #125 store). Entries are captured and
@@ -1294,7 +1363,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 result = store.get_carb_entry(new_id)
         finally:
             if committed:
-                cache.bump()  # a committed write stays invalidated if reconcile fails
+                invalidate()  # a committed write stays invalidated if reconcile fails
         return result
 
     @app.patch("/api/carbs/{entry_id}")
@@ -1315,7 +1384,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 result = store.get_carb_entry(entry_id)
         finally:
             if committed:
-                cache.bump()
+                invalidate()
         return result
 
     @app.delete("/api/carbs/{entry_id}")
@@ -1332,7 +1401,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                     reconcile_carb_write(store)
         finally:
             if committed:
-                cache.bump()
+                invalidate()
         if n == 0:
             raise HTTPException(status_code=404, detail="carb entry not found")
         return {"deleted": n}
@@ -1401,7 +1470,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 reconcile_carb_write(store)
         finally:
             if committed:
-                cache.bump()  # an answered prompt changes the carb-exclusion set (#267)
+                invalidate()  # an answered prompt changes the carb-exclusion set (#267)
         return result
 
     @app.delete("/api/prompts/answer")
@@ -1428,7 +1497,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                     reconcile_carb_write(store)
         finally:
             if committed:
-                cache.bump()
+                invalidate()
         return {"cleared": n}
 
     @app.get("/api/report")
@@ -1445,7 +1514,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     def follow_up_read(store):
         from .watched_change import follow_up_admission
         return {"input_revision": store.input_data_revision(),
-                "admission": follow_up_admission(store, now=_latest_instant(store) or datetime.now())}
+                "admission": follow_up_admission(store, now=store.latest_data_instant() or datetime.now())}
 
     def durable_request(payload, *, creation=False, apply=False, required=False):
         payload = payload or {}
@@ -1536,7 +1605,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                             raise FollowUpConflict("stale_input_revision", store.input_data_revision())
                         if source is not None and source["input_revision"] != store.input_data_revision():
                             raise FollowUpConflict("stale_source", store.input_data_revision())
-                        now = _latest_instant(store) or datetime.now()
+                        now = store.latest_data_instant() or datetime.now()
                         recorded_at = wall_clock_now(after=store.latest_server_stamp())
                         admission = (reconcile_follow_up(store, now=now, recorded_at=recorded_at)
                                      if reconcile else None)
@@ -1560,7 +1629,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                                                      kind=kind, id=record["id"], result=result)
                 changed = store.input_data_revision() != before
             if changed:
-                cache.bump()
+                follow_up_written()
             return result
         except (FollowUpConflict, FocusAlreadyActive, sqlite3.IntegrityError) as error:
             with Store.open_queryonly(db_path) as store:
@@ -1851,31 +1920,57 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         does no compute there: one event coalesces writes while the worker is
         running and the loop remains free to serve requests between shapes.
         """
-        cache.bump()
-        app.state.recompute_loop.call_soon_threadsafe(app.state.recompute_event.set)
+        invalidate()
 
     async def default_recompute_pace() -> None:
         await asyncio.sleep(RECOMPUTE_PACE_SECONDS)
 
     def warm_roster():
+        """What the app's five tabs read, in the order a visit needs it (#522).
+
+        The Queue and Changes first — the findings and guidance snapshot under them
+        all, the analysis, the case files, the Trial roster — then each Overview
+        window, then the Day screen's navigator and its latest two days. Nothing
+        the app does not read is warmed: on the home server, a warm shape it never
+        reads is CPU taken from the visitor."""
+        def latest_days():
+            with Store.open_queryonly(db_path) as store:
+                last = store.cgm_day_bounds()[1]
+            if last is None:
+                return ()
+            day = datetime.strptime(last, "%Y-%m-%d")
+            return (day, day - timedelta(days=1))
+
+        def warm_day(index):
+            def warm():
+                days = latest_days()
+                if index < len(days):
+                    day = days[index]
+                    model_view_endpoint(date=day.strftime("%Y-%m-%d"))
+                    timeline_endpoint(start=day, end=day + timedelta(days=1))
+            return warm
+
         return (
-            ("analyze", lambda: analyze_endpoint(window=30, ignore_changes=False, pool=False)),
-            ("outcomes-trend", outcomes_trend_endpoint),
+            # The snapshot's first input, warmed as its own shape.
             ("analyze-pooled", lambda: analyze_endpoint(window=30, ignore_changes=False, pool=True)),
-            ("scenarios", lambda: scenarios_endpoint(window=30)),
-            # Every window the Overview switches between: its outcomes (each with
-            # its previous period) and its glucose profile.
+            ("findings-history", lambda: history_snapshot(
+                findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS)),
+            ("analyze", lambda: analyze_endpoint(window=30, ignore_changes=False, pool=False)),
+            ("finding-case-file", lambda: finding_case_file_preparation(
+                Request({"type": "http", "query_string": b""}))),
+            ("verify-trials", lambda: verify_trials_endpoint()),
+            # Every window the Overview switches between: its outcomes, its glucose
+            # profile, and the analysis its correction-factor estimate reads.
             *((f"outcomes-{days}", lambda days=days: outcomes_endpoint(window=days))
               for days in TIME_OF_DAY_DAYS),
             *((f"explore-time-of-day-{days}", lambda days=days: explore_time_of_day_endpoint(days=days))
               for days in TIME_OF_DAY_DAYS),
-            ("exposures", explore_exposures_endpoint),
-            ("ic-block-evidence-preparation", ic_block_evidence_preparation),
-            ("basal-night-evidence", lambda: basal_night_evidence_preparation(
-                findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS)),
-            ("isf-rest-window-evidence", lambda: diagnose_isf_rest_window_evidence_endpoint()),
-            ("finding-case-file", lambda: finding_case_file_preparation(
-                Request({"type": "http", "query_string": b""}))),
+            *((f"analyze-{days}", lambda days=days: analyze_endpoint(
+                window=days, ignore_changes=False, pool=False))
+              for days in TIME_OF_DAY_DAYS if days != 30),
+            ("day-navigator", lambda: day_navigator_endpoint()),
+            ("day-latest", warm_day(0)),
+            ("day-before-latest", warm_day(1)),
         )
 
     async def recompute_worker(event) -> None:
@@ -1941,4 +2036,5 @@ def serve(host: str = DEFAULT_HOST, port: int = DEFAULT_PORT,
     import uvicorn
 
     uvicorn.run(create_app(db_path=db_path, token=token,
-                           enable_fetch_loop=enable_fetch_loop), host=host, port=port)
+                           enable_fetch_loop=enable_fetch_loop, warm_on_start=True),
+                host=host, port=port)

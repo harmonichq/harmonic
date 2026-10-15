@@ -2007,8 +2007,6 @@ def _reconcile_plan(store, record, recorded_at, snapshots):
 def reconcile_ingested_follow_up(store):
     """Completion adapter shared by standalone ingestion, the fetch loop and the
     guidance preference writes, which advance the input revision the same way."""
-    times = ([row.t for row in store.cgm_readings()] + [row.t for row in store.basal_events()]
-             + [row.t for row in store.bolus_events()] + [row.captured_at for row in store.settings_snapshots()])
-    now = max(times) if times else datetime.now()
+    now = store.latest_data_instant() or datetime.now()
     with store.follow_up_transaction():
         return reconcile_follow_up(store, now=now, recorded_at=wall_clock_now(after=store.latest_server_stamp()))

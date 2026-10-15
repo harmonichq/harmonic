@@ -1,10 +1,10 @@
 // ChangeCard (§4.2): the active Trial or Focus.
 //
 // A Trial (§2.5, 2026-10-14, the Changes redesign): the setting's name and its
-// block as the title ("I:C 07:00–11:00") with the state pill on the same line
+// block as the title ("I:C 11:00–14:00") with the state pill on the same line
 // (Maturing, or the result once matured), the change date beneath in meta ink;
 // then what changed, before → after per block, in fixed columns: one setting
-// is the card's figure ("07:00 4.0 → 4.4 g/U"), each setting a profile switch
+// is the card's figure (its slot, before → after, its units), each setting a profile switch
 // moved its own named line at body size. Then the data collected, as captioned
 // values: Days, "n of N" (a matured Trial has every required day, "14 of 14",
 // however long it has run since), and for a carb ratio Trial its in-block
@@ -99,7 +99,7 @@ function Days({ caption, elapsed, required, done }: {
   );
 }
 
-/** A block, "07:00–11:00". */
+/** A block, "11:00–14:00". */
 export function BlockSpan({ block }: { block: Block }) {
   return <span className="ui-change__block"><Num value={block.start} />–<Num value={block.end} /></span>;
 }

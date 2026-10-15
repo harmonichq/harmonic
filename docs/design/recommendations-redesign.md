@@ -729,7 +729,7 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   should align like a table." He chose CV, the glossary's spread term, over the
   mock's SD. Built in #524 (ADR 524); §1.1, §1.3 and §4.2 follow.
   - **The current change leads.** Its ChangeCard: the setting's name and
-    block as the title ("I:C 07:00–11:00", the glossary's short names, as the
+    block as the title ("I:C 11:00–14:00", the glossary's short names, as the
     Pump profile prints them), the state pill on that line, the date beneath,
     before → after per block (a whole-profile switch names each setting it
     moved), and the data collected: Days, "n of N", and for a carb ratio Trial
@@ -973,9 +973,9 @@ unless noted. Loading is a skeleton of the component's own shape.
 **Changes**
 
 16. **ChangeCard**: the active Trial or Focus (§2.5, 2026-10-14).
-    - A Trial: the setting and block as the title ("I:C 07:00–11:00"), the
+    - A Trial: the setting and block as the title ("I:C 11:00–14:00"), the
       state pill on that line, the date beneath; before → after per block in
-      the shared columns (one setting the figure, "07:00 4.0 → 4.4 g/U"; a
+      the shared columns (one setting the figure: its slot, before → after, its units; a
       whole-profile switch each setting named on its own line); the data
       collected: Days "n of N", and for a carb ratio Trial Meals before and
       Meals after; End at its foot once matured.

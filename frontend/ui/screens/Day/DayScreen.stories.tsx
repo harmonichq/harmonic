@@ -78,6 +78,16 @@ export const LoadingPhone = story('phone', LOADING);
 export const LoadingDesktop = story('desktop', LOADING);
 export const UnavailablePhone = story('phone', UNAVAILABLE);
 export const UnavailableDesktop = story('desktop', UNAVAILABLE);
+// A site change: the pump logs one event per fill (cartridge, tubing and
+// cannula, seconds apart), and the day shows one site change.
+const siteChangePlay: Story['play'] = async ({ canvasElement }) => {
+  const listed = within(canvasElement).getAllByText('Site change')
+    .filter((element) => !element.closest('.ui-daychart__legend'));
+  await expect(listed).toHaveLength(1);
+};
+export const SiteChangePhone: Story = { ...story('phone', { store: 'wearer', day: siteDay }), play: siteChangePlay };
+export const SiteChangeDesktop: Story = { ...story('desktop', { store: 'wearer', day: siteDay }), play: siteChangePlay };
+
 // A day carrying several kinds of finding (§2.5, 2026-10-14 every finding
 // marked): the logged-carbs day, whose served findings name three habits.
 // Every habit the engine served names an event row, and each named row has
@@ -95,6 +105,11 @@ const findingsPlay: Story['play'] = async ({ canvasElement }) => {
 };
 export const FindingsPhone: Story = { ...story('phone', LOGGED_CARBS), play: findingsPlay };
 export const FindingsDesktop: Story = { ...story('desktop', LOGGED_CARBS), play: findingsPlay };
+
+// Stale (§2.5, 2026-10-14): the last answers, kept on screen under Unavailable
+// and Retry, when reading them again failed.
+export const StalePhone = story('phone', { ...DEFAULT, state: 'stale' });
+export const StaleDesktop = story('desktop', { ...DEFAULT, state: 'stale' });
 export const MonthOpenPhone = story('phone', { ...DEFAULT, monthOpen: true });
 export const MonthOpenDesktop = story('desktop', { ...DEFAULT, monthOpen: true });
 

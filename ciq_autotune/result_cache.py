@@ -29,13 +29,34 @@ Stdlib only, imported by nothing in core — it stays out of the ``api`` extra's
 
 from __future__ import annotations
 
+import contextvars
 import secrets
 import threading
 import time
-from collections import OrderedDict
+from collections import Counter, OrderedDict
 from typing import Callable, Hashable, TypeVar
 
 T = TypeVar("T")
+
+# One request's cache outcomes, for its duration log line. The request opens a
+# tally; the endpoint's worker thread runs in a copy of that context, so it
+# counts into the same Counter.
+_TALLY: "contextvars.ContextVar[Counter | None]" = contextvars.ContextVar(
+    "result_cache_tally", default=None)
+
+
+def open_tally() -> Counter:
+    """Start counting this context's cache outcomes: ``hit``, ``miss``, ``derived``."""
+    tally: Counter = Counter()
+    _TALLY.set(tally)
+    return tally
+
+
+def count(outcome: str) -> None:
+    """Count one outcome into the open tally, if a request opened one."""
+    tally = _TALLY.get()
+    if tally is not None:
+        tally[outcome] += 1
 
 DEFAULT_CAP = 256
 PREPARATION_CAP = 64
@@ -82,10 +103,18 @@ class ResultCache:
         """Opaque identity for a version captured by a guarded cache operation."""
         return f"{self._incarnation}:{version}"
 
-    def bump(self) -> None:
-        """Invalidate: clear the map and advance ``version``. Called after any write."""
+    def bump(self, keep: Callable[[Hashable], bool] | None = None) -> None:
+        """Invalidate: clear the map and advance ``version``. Called after any write.
+
+        ``keep`` names results the write provably cannot change — results that read
+        none of the state it wrote — which stay cached across the new version.
+        Every other result, and every retained preparation, is dropped."""
         with self._lock:
-            self._map.clear()
+            if keep is None:
+                self._map.clear()
+            else:
+                for key in [key for key in self._map if not keep(key)]:
+                    del self._map[key]
             self._preparations.clear()
             self._version += 1
 
@@ -197,6 +226,7 @@ class ResultCache:
                 current = self._map[key]
                 if validate is None or validate(current):
                     self._map.move_to_end(key)
+                    count("hit")
                     return current  # type: ignore[return-value]
                 self._map.pop(key)
             flight = self._flights.get(key)
@@ -214,12 +244,14 @@ class ResultCache:
                             current = self._map[key]
                             if validate is None or validate(current):
                                 self._map.move_to_end(key)
+                                count("hit")
                                 return current  # type: ignore[return-value]
                             self._map.pop(key)
                         # Snapshot inside the flight lock: a write may have landed
                         # while we waited, so this is the version ``compute`` reads.
                         snapshot = self._version
 
+                    count("miss")
                     value = compute()
                     with self._lock:
                         if self._version != snapshot:

@@ -143,6 +143,51 @@ class GuidanceApiTest(unittest.TestCase):
         self.assertEqual(restored.status_code, 200, restored.text)
         self.assertEqual(app.state.result_cache.version - before, 1)
 
+    def test_preference_write_keeps_recorded_data_results_and_rereads_the_rest(self):
+        """#522: a snooze writes follow-up state only, so the Overview's and the Day
+        screen's results survive it; the revision-keyed analysis is read again."""
+        import ciq_autotune.api as api_mod
+        import ciq_autotune.analyzers.scenario as scenario_mod
+        import ciq_autotune.outcomes as outcomes_mod
+        _tmp, app, client = self._case_client("behavioral-carb-undercount")
+        day = client.get("/api/status").json()["latest_data_day"]
+        counts = {"outcomes": 0, "model-view": 0, "analyze": 0}
+
+        def counting(label, real):
+            def run(*args, **kwargs):
+                counts[label] += 1
+                return real(*args, **kwargs)
+            return run
+
+        with patch.object(outcomes_mod, "summarize_outcomes",
+                          counting("outcomes", outcomes_mod.summarize_outcomes)), \
+             patch.object(scenario_mod, "build_model_view",
+                          counting("model-view", scenario_mod.build_model_view)), \
+             patch.object(api_mod, "analyze", counting("analyze", api_mod.analyze)):
+            def read_all():
+                for path, params in (("/api/outcomes", {"window": 14}),
+                                     ("/api/model-view", {"date": day}),
+                                     ("/api/analyze", {"window": 14}),
+                                     ("/api/analyze", {})):
+                    self.assertEqual(client.get(path, params=params).status_code, 200, path)
+            read_all()
+            self.assertEqual(counts, {"outcomes": 1, "model-view": 1, "analyze": 2})
+            current = client.get("/api/guidance").json()  # its own pooled analysis
+            self.assertEqual(counts["analyze"], 3)
+            saved = client.put("/api/guidance/preferences/pattern:highs_after_meals",
+                               json={"generation": current["analysis_generation"]})
+            self.assertEqual(saved.status_code, 200, saved.text)
+            read_all()
+            # Only the default analysis, keyed by the input revision the snooze
+            # advanced, is computed again.
+            self.assertEqual(counts, {"outcomes": 1, "model-view": 1, "analyze": 4})
+            # A carb write changes recorded data, so everything is read again.
+            logged = client.post("/api/carbs", json={
+                "t": f"{day} 12:00:00", "grams": 10, "certainty": "exact"})
+            self.assertEqual(logged.status_code, 200, logged.text)
+            read_all()
+            self.assertEqual(counts, {"outcomes": 2, "model-view": 2, "analyze": 6})
+
     def test_preference_writes_keep_offline_guidance_reconciled(self):
         from ciq_autotune.watched_change import reconcile_ingested_follow_up
         tmp, _app, client = self._case_client("basal-lower")

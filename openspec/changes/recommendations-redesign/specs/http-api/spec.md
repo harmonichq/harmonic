@@ -100,6 +100,34 @@ SHALL NOT be rewritten.
 - **WHEN** the Focus is resolved
 - **THEN** its saved ending is effective after its pin
 
+### Requirement: Every pump-event read serves one site change per fill sequence
+
+The store SHALL keep every cartridge, tubing and cannula fill row, and every
+pump-event read SHALL serve one site change per fill sequence: fills within 30
+minutes of the one before join one event at the first fill, lasting until the
+last. The timeline, the clean-window exclusion and the pattern sweep SHALL all
+read that series.
+
+#### Scenario: Three fills seconds apart are one site change
+
+- **WHEN** a cartridge, tubing and cannula fill are logged 4 seconds apart
+- **THEN** the timeline serves one site change at the first fill, lasting until the
+  last, and the store still holds all three rows
+
+### Requirement: The status read labels a failed fetch
+
+The status read SHALL serve `last_error_label` beside `last_error`: null when the
+last attempt succeeded, else one short label for what stopped it — No connection,
+Timed out, Sign-in refused, HTTP and the vendor's status code, Not set up, or
+Unknown (also for a failure recorded before labels). A partial fetch SHALL be
+labelled by what stopped its failed window.
+
+#### Scenario: A network that is down is labelled
+
+- **WHEN** a fetch fails because its connection never opened
+- **THEN** the status read serves `last_error_label` "No connection" and the raw
+  text as `last_error`
+
 ### Requirement: The per-day model read serves the day's findings
 
 The per-day model read SHALL serve `findings`: every anchor whose time falls on
@@ -129,19 +157,71 @@ SHALL count toward nothing. `episodes` SHALL keep their resolve-day assignment.
 - **THEN** the second correction and that low are findings of Correction
   stacking, and the first correction is not
 
+### Requirement: A write to follow-up state alone keeps the results that read only recorded data
+
+A guidance preference (snooze, restore) and a Focus, Trial or Plan lifecycle step
+(among them a Done on a Setting card and its Undo, #518) write only follow-up state — the preference, Focus and follow-up records, the
+frontier, the Plan history — and advance the input revision. Such a write SHALL
+keep the cached results whose builders read only recorded data (readings,
+deliveries, boluses, carbs, prompt answers, settings captures and pump events):
+outcomes, the day navigator, the model-view, the timeline, the analysis and
+scenarios at a non-default window, and the static catalog. Every other cached
+result and every case-file preparation SHALL be dropped, and results keyed by the
+input revision SHALL miss on the new revision as before. Saving credentials SHALL
+invalidate nothing: no cached result reads them (#522).
+
+#### Scenario: A snooze keeps the Overview's results and reads the default analysis again
+
+- **GIVEN** the 14-day outcomes, a day's model-view and the analysis at 14 and 30
+  days are cached
+- **WHEN** a candidate is snoozed
+- **THEN** the outcomes, the model-view and the 14-day analysis answer without
+  recomputing, and the 30-day analysis is computed again
+- **AND WHEN** carbs are logged
+- **THEN** every one of them is computed again
+
+### Requirement: Every API request logs its duration and how its cached reads were answered
+
+The server SHALL log one line per `/api/` request: method, path and query,
+status, milliseconds, and how many of its cached reads were answered from memory,
+computed, or answered from the derived-results file (#522).
+
+#### Scenario: A repeated read logs a hit
+
+- **WHEN** the 14-day outcomes are read twice
+- **THEN** the first line logs one computed read and the second one hit from memory
+
+### Requirement: A write that no cached result reads invalidates nothing, and each exception is proved
+
+Saving credentials SHALL NOT invalidate the cache: only the fetch's login and the
+uncached credentials read read them (#522). It is the one such write: the Plan
+draft that was the first exception is gone with its routes (#518).
+
+A future exception MUST clear the same bar: a demonstration that no cached
+computation reads the written state, not an argument that the write feels minor or
+that invalidating is expensive. Absent that proof, the write invalidates.
+
+#### Scenario: Saving credentials keeps every cached result
+
+- **GIVEN** the 14-day outcomes are cached
+- **WHEN** credentials are saved and the outcomes read again
+- **THEN** they answer without recomputing
+
 ## MODIFIED Requirements
 
 ### Requirement: The heavy read endpoints answer from one per-process result cache
 
 Recomputing the analysis from the store costs tens of seconds, so the expensive
 reads — the analysis result, scenarios, outcomes, the outcomes trend, the per-day
-model view, the day navigator, the pattern sweep, the time-of-day evidence feed,
-and the lever catalog — answer through a cache keyed by endpoint name plus the parameters that change the
+model view, the day navigator, the day timeline, the pattern sweep, the
+time-of-day evidence feed, and the lever catalog — answer through a cache keyed by
+endpoint name plus the parameters that change the
 answer. Finding case-file preparation is cached once per data version and projects
 each request's coordinates from that prepared source. Caching is opt-in per
-endpoint: the cheap store reads (status, timeline, pump settings, carb entries,
-prompts, the Plan history, Focus) read the store directly on every request and
-are never cached.
+endpoint: the cheap store reads (status, pump settings, carb entries, prompts,
+the Plan history, Focus) read the store directly on every request and are never
+cached. A read that needs only the latest data instant SHALL find it with one
+query, never by reading the history (#522).
 
 The cache instance belongs to the app, not to the module, so two apps built in one
 process (as tests do) never share state. It is bounded by a least-recently-used cap
@@ -160,6 +240,9 @@ response."
 ### Requirement: A scheduled fetch that wrote invalidates, then re-warms the landing set
 
 The process runs a background fetch on startup and on a fixed hourly interval. A
+fetch recorded as failed is tried again five minutes later instead, at most three
+times in a row, before the loop falls back to hourly; the next success starts that
+count again. A
 fetch that committed nothing MUST NOT invalidate — there is nothing to invalidate
 against, and a failure must never kill the loop. A fetch that wrote calls one
 routine that invalidates first and only then re-warms, so no request can ever be
@@ -176,15 +259,27 @@ compared across a window that closes before the attempt's outcome is recorded,
 because recording the outcome advances that revision itself and would otherwise
 report every failed fetch as a write.
 
-The warm pass covers exactly one fixed roster: the analysis, live and pooled; the
-outcomes trend; the scenarios; the outcomes and the glucose profile for each
-window the Overview switches between; the exposures; the carb-ratio block, basal
-night and ISF rest-window evidence; and the Finding case-file preparation.
-Anything keyed on a date, a month, or any other window stays lazy, so an hourly warm cannot grow without bound; selected
-case-file projections likewise stay lazy behind their warmed prepared source.
-Warming runs in the fetch loop's worker thread rather than the event loop, and one
-shape failing to warm is logged and skipped rather than aborting the pass or the
-loop.
+The warm pass covers exactly what the app's five tabs read, in the order a visit
+needs it (#522): the analysis, pooled and live; the findings and guidance
+snapshot; the Finding case-file preparation; the Trial roster; the outcomes, the
+glucose profile and the analysis for each window the Overview switches between;
+the day navigator; and the model-view and timeline of the latest day with
+readings and the day before it. Nothing the app does not read is warmed. Any
+other date, month, or window stays lazy, so a warm cannot grow without bound;
+selected case-file projections likewise stay lazy behind their warmed prepared
+source. Every write the app makes runs the same pass after it invalidates, and
+`serve` runs it once at start, so a restart is warm before its first fetch lands
+or when that fetch commits nothing. Warming runs in a worker thread rather than
+the event loop, a newer invalidation abandons an older pass at its next shape, and
+one shape failing to warm is logged and skipped rather than aborting the pass or
+the loop.
+
+#### Scenario: A fetch that fails at startup is retried within minutes
+
+- **GIVEN** the network is not yet up when the process starts
+- **WHEN** the startup fetch fails
+- **THEN** the loop fetches again five minutes later rather than an hour later, up
+  to three times in a row, and then waits the hour
 
 #### Scenario: A fetch that committed some windows and then failed still invalidates
 
@@ -211,17 +306,22 @@ loop.
 
 The system SHALL satisfy the following:
 
-Invalidation is coarse and global: a single `bump` clears the whole map and advances
-a monotonic version. There is no per-endpoint dependency tracking, because
+Invalidation is coarse: one `bump` drops the cached results and advances a
+monotonic version. There is no per-endpoint dependency tracking, because
 over-invalidation costs at most one recompute while under-invalidation serves
 numbers that no longer match the data. **Every endpoint that writes to the store —
-saving credentials, creating, editing, or deleting a carb entry, answering or
-clearing a prompt, signing off a swept pattern, recording or withdrawing a Done
-(a Plan), pinning or resolving a Focus — invalidates the cache before
-returning.** There is no exception (#518, ADR 518). A new write endpoint
-that omits this is a defect, not an optimization: it leaves every cached read
-answering from pre-write data. The live pull has no endpoint (ADR 417): the
-scheduled fetch invalidates through the loop's own hook, specified below.
+creating, editing, or deleting a carb entry, answering or clearing a prompt,
+signing off a swept pattern, recording or withdrawing a Done (a Plan), snoozing
+or restoring a candidate, pinning or resolving a Focus, ending a Trial —
+invalidates the cache before returning.** A write to follow-up state alone (a
+preference, a Done, a Focus or Trial step) keeps only the results that read
+recorded data, as "A write to follow-up state alone keeps the results that read
+only recorded data" states; the one write that invalidates nothing, saving
+credentials, is proved in "A write that no cached result reads invalidates
+nothing, and each exception is proved". A new write endpoint that omits this is a
+defect, not an optimization: it leaves every cached read answering from
+pre-write data. The live pull has no endpoint (ADR 417): the scheduled fetch
+invalidates through the loop's own hook, specified below.
 
 #### Scenario: A write endpoint invalidates what the reads depend on
 
@@ -231,11 +331,12 @@ scheduled fetch invalidates through the loop's own hook, specified below.
   that analysis recomputes — exactly once for the new data version, with every later
   request for the same key served from the cache
 
-#### Scenario: A Done invalidates the cache
+#### Scenario: A Done drops the default analysis and keeps the recorded-data results
 
-- **GIVEN** the analysis result is cached
+- **GIVEN** the 30-day default analysis and the 14-day outcomes are cached
 - **WHEN** a client records a Done on a Setting card
-- **THEN** the next analysis read recomputes
+- **THEN** the next default analysis read recomputes, and the outcomes answer
+  without recomputing
 
 #### Scenario: A write path that skips invalidation serves stale advice
 
@@ -251,9 +352,9 @@ scheduled fetch invalidates through the loop's own hook, specified below.
 
 ### Requirement: Saving a Plan draft is the one deliberate exception, and a future exception must meet its standard
 
-**Reason:** The app keeps no Plan draft, and the draft routes are removed (#518, ADR 518): a Done records the card's served action at once and invalidates like every other write. No write is excepted.
+**Reason:** The app keeps no Plan draft, and the draft routes are removed (#518, ADR 518): a Done records the card's served action at once, as a write to follow-up state. The credentials exception #522 added beside it is restated alone as "A write that no cached result reads invalidates nothing, and each exception is proved".
 
-**Migration:** None; nothing read a saved draft. A future exception would need its own requirement, proving no cached computation reads the written state.
+**Migration:** None; nothing read a saved draft.
 
 ### Requirement: Every stamp the server writes is on the pump's wall clock
 

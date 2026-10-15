@@ -76,7 +76,8 @@ export type DayScreenProps = {
   layout: Layout;
   /** The served Prompts: before any answer, the wearer's own (one answered), or all answered. */
   store: PromptStore;
-  state?: 'ready' | 'loading' | 'unavailable';
+  /** `stale`: its answers are an earlier read's, since reading them again failed (§2.5, 2026-10-14). */
+  state?: 'ready' | 'loading' | 'unavailable' | 'stale';
   /** The day selected first; the latest day with readings when unset. */
   day?: string;
   view?: 'day' | 'prompts';
@@ -190,7 +191,7 @@ function Frame({ layout, state, nav, onRetry }: {
 
 export function DayScreen(props: DayScreenProps) {
   // The live app has no answers to read until they arrive.
-  if (props.writes && props.state !== undefined && props.state !== 'ready') {
+  if (props.writes && (props.state === 'loading' || props.state === 'unavailable')) {
     return <Frame layout={props.layout} state={props.state} nav={props.nav} onRetry={props.onRetry} />;
   }
   return <Day {...props} />;
@@ -406,7 +407,7 @@ function Day({
     ? opened && livePromptPlace(opened, opened.value - visible.length + (held ? 0 : 1))
     : promptPlace(store, shown);
   const dayControl = { ...dayDate(selected), open: month, onToggle: toggleMonth };
-  const header = state === 'unavailable'
+  const header = state === 'unavailable' || (state === 'stale' && view === 'day')
     ? <ScreenHeader title="Day" trailing="unavailable" layout={layout} onRetry={onRetry} />
     : view === 'prompts'
       ? place
@@ -462,7 +463,7 @@ function Day({
   );
 
   const dropped = usePresence(month && state !== 'unavailable' && view === 'day');
-  const sheet = usePresence(carbs !== null && state === 'ready' && view === 'day' && carbs);
+  const sheet = usePresence(carbs !== null && state !== 'loading' && state !== 'unavailable' && view === 'day' && carbs);
 
   if (layout === 'phone') {
     return (

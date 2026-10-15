@@ -195,6 +195,78 @@ class StoreTest(unittest.TestCase):
                          [datetime(2022, 5, 27, 1, 0, 0), datetime(2022, 5, 27, 2, 0, 0)])
 
 
+class CgmSlotTest(unittest.TestCase):
+    """Two CGM records for one five-minute slot are one reading (#519).
+
+    The vendor feed can carry two records seconds apart for one slot: the same
+    reading twice, or two disagreeing series side by side. The store keys on the
+    timestamp, so both land as rows; the reader must hand every analyzer one.
+    """
+
+    def setUp(self):
+        self.store = Store.open(":memory:")
+
+    def tearDown(self):
+        self.store.close()
+
+    def _put(self, *readings):
+        self.store.upsert_cgm([
+            {"EventDateTime": t, "Readings (CGM / BGM)": bg, "Description": "EGV"}
+            for t, bg in readings
+        ])
+
+    def test_the_same_reading_seconds_apart_is_one_reading(self):
+        self._put(("2022-05-27T01:00:10", "120"), ("2022-05-27T01:05:10", "124"),
+                  ("2022-05-27T01:05:11", "124"), ("2022-05-27T01:10:10", "128"))
+        got = self.store.cgm_readings()
+        self.assertEqual([(r.t, r.bg) for r in got], [
+            (datetime(2022, 5, 27, 1, 0, 10), 120.0),
+            (datetime(2022, 5, 27, 1, 5, 10), 124.0),
+            (datetime(2022, 5, 27, 1, 10, 10), 128.0),
+        ])
+
+    def test_two_disagreeing_series_leave_each_slot_with_no_value(self):
+        # Every slot carries a second, disagreeing reading 26 s later.
+        self._put(("2022-05-27T01:00:00", "150"),
+                  ("2022-05-27T01:05:00", "140"), ("2022-05-27T01:05:26", "190"),
+                  ("2022-05-27T01:10:00", "145"), ("2022-05-27T01:10:26", "195"),
+                  ("2022-05-27T01:15:26", "200"))
+        got = self.store.cgm_readings()
+        self.assertEqual([(r.t, r.bg) for r in got], [
+            (datetime(2022, 5, 27, 1, 0, 0), 150.0),
+            (datetime(2022, 5, 27, 1, 5, 0), None),
+            (datetime(2022, 5, 27, 1, 10, 0), None),
+            (datetime(2022, 5, 27, 1, 15, 26), 200.0),
+        ])
+        self.assertEqual({r.type for r in got}, {"EGV"})
+
+    def test_a_ranged_read_agrees_with_the_whole_read_at_both_edges(self):
+        self._put(("2022-05-27T00:59:50", "150"), ("2022-05-27T01:00:16", "190"),
+                  ("2022-05-27T01:05:00", "140"),
+                  ("2022-05-27T01:59:50", "145"), ("2022-05-27T02:00:16", "195"))
+        start, end = datetime(2022, 5, 27, 1, 0, 0), datetime(2022, 5, 27, 2, 0, 0)
+        whole = [(r.t, r.bg) for r in self.store.cgm_readings() if start <= r.t < end]
+        ranged = [(r.t, r.bg) for r in self.store.cgm_readings(
+            start="2022-05-27 01:00:00", end="2022-05-27 02:00:00")]
+        self.assertEqual(ranged, whole)
+        self.assertEqual(ranged, [(datetime(2022, 5, 27, 1, 5, 0), 140.0),
+                                  (datetime(2022, 5, 27, 1, 59, 50), None)])
+
+    def test_a_record_with_no_value_beside_a_reading_leaves_the_reading(self):
+        self._put(("2022-05-27T01:04:59", None), ("2022-05-27T01:05:00", "140"),
+                  ("2022-05-27T01:05:30", None))
+        self.assertEqual([(r.t, r.bg) for r in self.store.cgm_readings()],
+                         [(datetime(2022, 5, 27, 1, 5, 0), 140.0)])
+        self.assertEqual([(r.t, r.bg) for r in self.store.cgm_readings(
+            start="2022-05-27 01:05:00", end="2022-05-27 01:06:00")],
+                         [(datetime(2022, 5, 27, 1, 5, 0), 140.0)])
+
+    def test_a_normal_five_minute_stream_is_untouched(self):
+        self._put(("2022-05-27T01:00:00", "120"), ("2022-05-27T01:04:43", "121"),
+                  ("2022-05-27T01:10:00", "122"))
+        self.assertEqual([r.bg for r in self.store.cgm_readings()], [120.0, 121.0, 122.0])
+
+
 class OpenReadonlyTest(unittest.TestCase):
     """`Store.open_readonly` reads a snapshot without touching the file —
     the grounding-workflow contract (pulled snapshots stay pristine)."""
@@ -1320,3 +1392,74 @@ class OpenWithoutWriterTest(unittest.TestCase):
         with Store.open(self.path) as store:
             self.assertIsNotNone(store.conn.execute(
                 "SELECT 1 FROM sqlite_master WHERE type='table' AND name='plan_draft'").fetchone())
+
+
+def _settings(basal_rate):
+    pad = [{"startTime": 0, "basalRate": 0, "isf": 0, "carbRatio": 0, "targetBg": 0}] * 15
+    return parse_pump_settings({"profiles": {"activeIdp": 1, "profile": [
+        {"name": "A", "idp": 1, "insulinDuration": 300, "carbEntry": 1, "maxBolus": 15000,
+         "tDependentSegs": [{"startTime": 0, "basalRate": basal_rate, "isf": 40,
+                             "carbRatio": 8000, "targetBg": 110}] + pad}]}, "cgmSettings": {}})
+
+
+class LatestDataInstantTest(unittest.TestCase):
+    """#522: the follow-up reads' ``now`` — the latest basal, CGM, bolus or settings
+    capture instant — is one query, never a materialized history."""
+
+    def setUp(self):
+        self.store = Store.open(":memory:")
+
+    def tearDown(self):
+        self.store.close()
+
+    def test_empty_store_has_no_latest_instant(self):
+        self.assertIsNone(self.store.latest_data_instant())
+
+    def test_latest_instant_spans_all_four_streams(self):
+        self.store.upsert_cgm([{"EventDateTime": "2026-06-01T08:00:00",
+                                "Readings (CGM / BGM)": 110, "Description": "EGV"}])
+        self.store.upsert_basal([{"seq_num": 1, "time": "2026-06-01 08:05:00",
+                                  "delivery_type": "algorithmDelivery", "duration_mins": 5,
+                                  "basal_rate": 0.8}])
+        self.assertEqual(self.store.latest_data_instant(), datetime(2026, 6, 1, 8, 5))
+        self.store.upsert_bolus([{
+            "request_time": "2026-06-01 09:00:00", "seq_num": 1, "description": "Bolus",
+            "insulin": 1.0, "carbs": None, "bolus_options": 3,
+            "completion_time": "2026-06-01 09:00:00",
+        }])
+        self.assertEqual(self.store.latest_data_instant(), datetime(2026, 6, 1, 9, 0))
+        self.store.upsert_settings_snapshot("2026-06-01 10:30:00", _settings(600))
+        self.assertEqual(self.store.latest_data_instant(), datetime(2026, 6, 1, 10, 30))
+
+
+class SettingsSnapshotsReadTest(unittest.TestCase):
+    """#522: the parsed captures are kept per connection, and never outlive a write."""
+
+    def setUp(self):
+        self.tmp = tempfile.NamedTemporaryFile(suffix=".sqlite")
+        self.addCleanup(self.tmp.close)
+
+    def test_a_capture_written_by_another_connection_is_read(self):
+        with Store.open(self.tmp.name) as writer, Store.open(self.tmp.name) as reader:
+            writer.upsert_settings_snapshot("2026-06-01 10:00:00", _settings(600))
+            self.assertEqual(len(reader.settings_snapshots()), 1)
+            writer.upsert_settings_snapshot("2026-06-01 11:00:00", _settings(700))
+            snapshots = reader.settings_snapshots()
+        self.assertEqual([s.captured_at for s in snapshots],
+                         [datetime(2026, 6, 1, 10), datetime(2026, 6, 1, 11)])
+        self.assertEqual(snapshots[1].settings.profiles[0].segments[0].basal_rate, 0.7)
+
+    def test_a_capture_written_on_the_same_connection_is_read(self):
+        with Store.open(self.tmp.name) as store:
+            store.upsert_settings_snapshot("2026-06-01 10:00:00", _settings(600))
+            self.assertEqual(len(store.settings_snapshots()), 1)
+            store.upsert_settings_snapshot("2026-06-01 11:00:00", _settings(600))
+            self.assertEqual(len(store.settings_snapshots()), 2)
+
+    def test_identical_profiles_across_captures_parse_to_equal_values(self):
+        with Store.open(self.tmp.name) as store:
+            store.upsert_settings_snapshot("2026-06-01 10:00:00", _settings(600))
+            store.upsert_settings_snapshot("2026-06-01 11:00:00", _settings(600))
+            first, second = store.settings_snapshots()
+        self.assertEqual(first.settings, second.settings)
+        self.assertNotEqual(first.captured_at, second.captured_at)

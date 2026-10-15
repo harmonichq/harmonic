@@ -605,8 +605,14 @@ detail's stage-prior route any more.
    be a Setting the guidance admits, not snoozed and not already waiting; a
    stale read refuses as `stale_source`, an inadmissible one as
    `ineligible_source`. The decision context and the deliverable (the source
-   profile and its rows) are captured as before. The write is durable and bumps
-   the cache through the one lifecycle path.
+   profile and its rows) are captured as before. The write is durable and goes
+   through the one lifecycle path, so it invalidates as a write to follow-up
+   state (ADR 522): it writes only the Plan history, the follow-up records and
+   the frontier (its staging row is written and cleared in the same
+   transaction), and no result kept across such a write reads any of them. The
+   default analysis, the findings and guidance snapshot and the case-file
+   preparations are dropped and re-warmed; the guidance's Done state is read
+   from the store on every guidance read and is never cached.
 2. *One open Done per Setting, and it holds nothing back.* A Plan is open while
    it is neither resolved nor withdrawn. Each Setting subject has at most its
    newest open Plan, and several Settings can each wait at once. This replaces
@@ -658,7 +664,8 @@ detail's stage-prior route any more.
    `plan_history` and `plan_draft` tables, the Plan history read, the
    deliverable, the Trial-matched receipt and the annotated I:C group matching
    stay: Done records through them, and Trial detection reads the history.
-   With the draft route gone, the cache has no write exception left.
+   With the draft route gone, the draft's cache exception goes too; saving
+   credentials (ADR 522) is the one write left that invalidates nothing.
 
 **Dosing.** No analyzer, staging predicate, cap or floor changes: Done exists
 only on a card the engine already admits through its one staging verdict, and
@@ -673,6 +680,49 @@ it; one whose setting has not moved since shows its card Not on pump, if that
 card is queued, until the next change or a snooze. The amendments this makes
 to the Plan, HTTP API and surfaces specifications are in this change's spec
 deltas, and the confirmation requirement ADR 500 modified moves here.
+
+## ADR 516 — A site change is one fill sequence, a failed sync is served by a short label, and a failed fetch is retried early
+
+**Context.** On a real store, one site change showed as three: the pump logs a
+cartridge, a tubing and a cannula fill as separate events with distinct
+sequence numbers, seconds apart, and the store maps each to a site change. In
+Settings, a failed sync's raw exception text was the Error row's inline value
+and ran off the row. And a fetch that failed at container start (network not
+up yet) left the state Failed for the hour until the next attempt.
+
+**Decision.**
+1. *Join at the one read.* The rows stay as the pump logged them (keyed on
+   seqNum). `Store.pump_events` joins every site-change fill within 30 minutes
+   of the one before into one event at the first fill, lasting until the last,
+   so every consumer — the Day timeline, the clean-window exclusion, the
+   pattern sweep — reads one series. The pattern sweep's own 5-minute site
+   clustering is removed as a second copy of the fact. Thirty minutes because
+   the fills land seconds apart when the set is already in and minutes apart
+   when the wearer inserts a new set between the tubing and cannula fills; two
+   site changes inside half an hour are one procedure redone. The joined
+   event's length spans the fills, so the exclusion margin around it covers
+   exactly what the separate fills did.
+2. *Classify at the exception, serve the label.* The fetch records a short
+   label beside the raw text (`fetch_status.last_error_label`), classified by
+   the exception's type: requests timeout, requests connection error, a
+   sign-in the vendor refused (named where the pull signs in, since the vendor
+   client raises the same exception for it as for any HTTP error), the vendor's
+   HTTP status, a refusal to start, or Unknown. A failure stored before the
+   column existed is served as Unknown. Settings shows the label inline and the
+   raw text wrapped beneath it; it classifies nothing.
+3. *Bounded early retry.* A fetch the status records as failed is retried
+   after five minutes, at most three times in a row, then hourly; a success
+   resets the count. The loop reads the outcome from the recorded status, the
+   same fact Settings shows.
+
+**Rejected.** Rekeying or deleting stored fill rows (seqNum keys are what make
+re-pulls merge). Classifying the stored text by pattern at read time (brittle
+against upstream message changes). Retrying only network failures: the retry is
+bounded, so a refused sign-in costs at most three extra attempts per streak.
+
+**Consequences.** A new pump event type that should count once per procedure
+joins at the same read. A new fetch failure mode gets its label in
+`fetch_error_label`, and the Settings stories serve it.
 
 ## ADR 517 — The model-view serves the day's findings, and Day marks every one
 
@@ -707,3 +757,76 @@ rule both read.
 **Consequences.** The UI fixtures are regenerated with the trimmed `findings`.
 The contract test adds `pattern-correction-fold`,
 whose days carry five kinds of finding, and checks the showcase's three days.
+
+## ADR 522 — Reads answer without rescanning the history, writes re-warm in the background, and the app keeps its last answers
+
+**Context.** Connor, 2026-10-14, on his phone against the home server (two cores,
+about three times slower than the development Mac): "we definitely need some kind
+of caching ... Like hot loading on a refresh ... every little interface click is
+the longest wait". The server log showed a page load taking 43 s for Prompts and
+56 s for guidance an hour and a half after a restart, so it was not a cold start.
+Measured in-process on a snapshot of his own store (timings and endpoint names
+only), no read wrote to the store or bumped the cache. Instead:
+
+- `guidance`, `focus`, `verify/trials` and every follow-up read found their `now`
+  by reading and parsing every basal, CGM and bolus row and every settings
+  capture: 2.3–3.5 s per call on the Mac, several calls per request, never cached.
+- `prompts` read the whole history to keep seven days (2.5 s), uncached by design.
+- The timeline rebuilt its false-low records from all CGM (1.5 s), uncached.
+- Settings captures (about 9,600 rows) were parsed afresh several times a request.
+- A snooze advances the input revision and bumped the whole cache, so the
+  Overview and Day (outcomes, model-view, the 14-day analysis) recomputed after
+  any Queue action, about 30 s on the Mac.
+- Only a fetch that committed rows started the warm pass, and its roster was the
+  retired desk's: it left out the findings and guidance snapshot, the Trial
+  roster, the Overview's 14- and 90-day analyses and the Day screen.
+
+**Decision.**
+
+1. *One query for "now".* `Store.latest_data_instant` takes the maximum stored
+   instant of the four streams with one scalar query (every stored instant is the
+   one text format `parse_t` reads, so the text maximum is the latest instant).
+   Prompts reads its window only. The settings captures are parsed once per
+   connection until `PRAGMA data_version` or the connection's own `total_changes`
+   moves, and identical profiles parse once per read.
+2. *The timeline is cached*; it reads only stored rows and no clock, so every
+   write's bump keeps it current. Prompts stays uncached: its answered grace is
+   measured on the wall clock.
+3. *A follow-up write keeps what reads only recorded data.* The follow-up writes
+   and the modules behind outcomes, the day navigator, the model-view, the
+   timeline, and the analysis and scenarios at a non-default window were read
+   transitively: those builders read only recorded data, so a snooze, restore or
+   lifecycle step keeps them (`ResultCache.bump(keep=...)`). Revision-keyed and
+   fixed results miss on the new revision by themselves; case-file preparations
+   are dropped. Saving credentials invalidates nothing.
+4. *Every write re-warms, and so does start.* Each invalidation also signals the
+   warm worker, and `serve` warms once at start (`warm_on_start`, off for apps
+   built in tests). The roster is what the five tabs read, in visit order.
+5. *A log line per request* (path, status, ms, hits, computes, derived hits), so
+   the home server's own log shows where time goes.
+6. *The app keeps its last answers* (§2.5, 2026-10-14): in memory across tab
+   switches (as built), in the browser across refreshes, keyed by the build and a
+   hash of the token, and drawn at once while they are read again. A failed
+   refresh keeps them under Unavailable and Retry (`stale`).
+
+**Measured** on the real snapshot (Mac; host about three times slower):
+
+| Tab | Warm, before | Warm, after | After a snooze, before | After a snooze, after (warm pass done) |
+|---|---|---|---|---|
+| Queue | 13.2 s | 1.8 s | 62.3 s | 2.0 s |
+| Changes | 6.7 s | 0.4 s | 6.6 s | 0.5 s |
+| Overview | 1.8 s | 0.2 s | 29.0 s | 0.2 s |
+| Day | 4.2 s | 0.2 s | 19.4 s | 0.2 s |
+| Settings | 1.8 s | 0.1 s | 1.8 s | 0.2 s |
+
+**Not decided here.** A snooze still advances the input revision, which is also
+the derived-results file's key, so the findings snapshot and the 30-day analysis
+are recomputed after every follow-up write even though neither reads follow-up
+state. The warm pass after a snooze takes about 46 s on the Mac. Keying derived
+results by a revision that only recorded-data writes advance would remove that,
+but it changes the store's derivation key and the follow-up concurrency contract,
+so it is left for its own decision.
+
+**Consequences.** A new cached builder that reads follow-up state must not be
+named in the keep list. A new screen read belongs in the warm roster. The
+browser keeps answers only from its own server, under its own token.

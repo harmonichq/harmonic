@@ -18,7 +18,8 @@ import { ChangesScreen, type ChangesScreenProps } from './ChangesScreen';
 // - Empty: the first days, with no change at all.
 // - Waiting for pump: a Done on the basal card that no sync has resolved.
 // - Confirm: End pressed on the matured Trial, the confirmation open.
-// - Loading, and Unavailable (the unsynced store serves guidance unavailable).
+// - Loading, and Unavailable (the unsynced store serves guidance unavailable);
+//   Stale, the last answers under Unavailable.
 // Two plays per size: End → End ends the Trial and shows what the engine
 // served after it; End → Cancel leaves the Focus as it was.
 const meta: Meta<typeof ChangesScreen> = {
@@ -75,6 +76,10 @@ export const LoadingPhone = story('phone', LOADING);
 export const LoadingDesktop = story('desktop', LOADING);
 export const UnavailablePhone = story('phone', UNAVAILABLE);
 export const UnavailableDesktop = story('desktop', UNAVAILABLE);
+// Stale (§2.5, 2026-10-14): the last answers, kept on screen under Unavailable
+// and Retry, when reading them again failed.
+export const StalePhone = story('phone', { store: 'wearer', state: 'stale' });
+export const StaleDesktop = story('desktop', { store: 'wearer', state: 'stale' });
 
 const endPlay: Story['play'] = async ({ canvasElement }) => {
   const canvas = within(canvasElement);

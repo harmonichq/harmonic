@@ -1514,26 +1514,33 @@ class CacheInvalidationTest(unittest.TestCase):
             self.client.get("/api/analyze", params={"window": 30})   # bumped → recompute
             self.assertEqual(len(calls), 2)  # exactly one recompute per data version
 
-    def test_done_invalidates_cache(self):
-        # #427, #518: a Done writes setting history, so it forces recomputation.
+    def test_done_drops_the_default_analysis_and_keeps_the_outcomes(self):
+        # #518, #522: a Done is a write to follow-up state alone, so it drops the
+        # default analysis and keeps the results that read only recorded data.
         import ciq_autotune.api as api_mod
         self.client = _guidance_client(self, "basal-raise")
         self.client.get("/api/guidance")  # warm the independently computed source
-        real_analyze = api_mod.analyze
-        calls = []
+        import ciq_autotune.outcomes as outcomes_mod
+        real_analyze, real_outcomes = api_mod.analyze, outcomes_mod.summarize_outcomes
+        calls = {"analyze": 0, "outcomes": 0}
 
-        def counting_analyze(*args, **kwargs):
-            calls.append(1)
-            return real_analyze(*args, **kwargs)
+        def counting(name, real):
+            def run(*args, **kwargs):
+                calls[name] += 1
+                return real(*args, **kwargs)
+            return run
 
-        with patch.object(api_mod, "analyze", counting_analyze):
+        with patch.object(api_mod, "analyze", counting("analyze", real_analyze)), \
+                patch.object(outcomes_mod, "summarize_outcomes", counting("outcomes", real_outcomes)):
             self.client.get("/api/analyze", params={"window": 30})   # miss → compute
+            self.client.get("/api/outcomes", params={"window": 14})
             self.client.get("/api/analyze", params={"window": 30})   # hit → no compute
-            self.assertEqual(len(calls), 1)
+            self.assertEqual(calls, {"analyze": 1, "outcomes": 1})
             r = _done(self.client, "setting:basal_rate")
             self.assertEqual(r.status_code, 200)
-            self.client.get("/api/analyze", params={"window": 30})   # bumped → recompute
-            self.assertEqual(len(calls), 2, "a Done must clear the cache")
+            self.client.get("/api/analyze", params={"window": 30})   # dropped → recompute
+            self.client.get("/api/outcomes", params={"window": 14})  # kept → hit
+            self.assertEqual(calls, {"analyze": 2, "outcomes": 1})
 
     def test_focus_pin_invalidates_cache(self):
         # #427: a Focus pin clears the cache like every other write.
@@ -1577,6 +1584,10 @@ class CachePreWarmTest(unittest.TestCase):
         ("outcomes", "ciq_autotune.outcomes", "summarize_outcomes"),
         ("isf-rest-window-evidence", "ciq_autotune.api", "prepare_isf_rest_window_evidence"),
         ("finding-case-file", "ciq_autotune.api", "prepare_finding_cases"),
+        ("trials", "ciq_autotune.watched_change", "review_trials"),
+        ("day-navigator", "ciq_autotune.day_navigator", "build_day_navigator"),
+        ("model-view", "ciq_autotune.analyzers.scenario", "build_model_view"),
+        ("timeline", "ciq_autotune.timeline", "timeline"),
     )
 
     def setUp(self):
@@ -1609,23 +1620,31 @@ class CachePreWarmTest(unittest.TestCase):
             yield counts
 
     def _get_landing_set(self):
-        """Exactly what the browser asks for on the initial Diagnose load."""
+        """What the app's five tabs read (frontend/ui/app/live.js), in its order."""
         for path, params in (
-            ("/api/analyze", {"window": 30, "ignore_changes": False, "pool": False}),
-            ("/api/outcomes/trend", {}),
-            ("/api/analyze", {"window": 30, "ignore_changes": False, "pool": True}),
-            ("/api/scenarios", {"window": 30}),
-            ("/api/explore/time-of-day", {}),
-            # The Overview's outcomes and glucose profile, at each window it switches to.
+            # Queue and Changes.
+            ("/api/diagnose/findings", {}),
+            ("/api/guidance", {}),
+            ("/api/analyze", {}),
+            ("/api/verify/trials", {}),
+            ("/api/focus", {}),
+            ("/api/diagnose/finding-case-file-preparation", {}),
+            # The Overview: outcomes, the glucose profile and the analysis behind its
+            # correction-factor estimate, at each window it switches to.
             ("/api/outcomes", {"window": 14}),
             ("/api/outcomes", {"window": 30}),
             ("/api/outcomes", {"window": 90}),
             ("/api/explore/time-of-day", {"days": 14}),
+            ("/api/explore/time-of-day", {"days": 30}),
             ("/api/explore/time-of-day", {"days": 90}),
-            ("/api/explore/exposures", {}),
-            ("/api/diagnose/isf-rest-window-evidence", {}),
-            ("/api/diagnose/findings", {}),
-            ("/api/diagnose/finding-case-file-preparation", {}),
+            ("/api/analyze", {"window": 14}),
+            ("/api/analyze", {"window": 90}),
+            # The Day screen: its navigator, then the latest day and the one before.
+            ("/api/day-navigator", {}),
+            ("/api/timeline", {"start": "2026-06-05T00:00:00", "end": "2026-06-06T00:00:00"}),
+            ("/api/model-view", {"date": "2026-06-05"}),
+            ("/api/timeline", {"start": "2026-06-04T00:00:00", "end": "2026-06-05T00:00:00"}),
+            ("/api/model-view", {"date": "2026-06-04"}),
         ):
             r = self.client.get(path, params=params)
             self.assertEqual(r.status_code, 200, path)
@@ -1963,24 +1982,29 @@ class CachePreWarmTest(unittest.TestCase):
         with self._counting_builders() as counts:
             with self._run_worker():
                 after_warm = dict(counts)
-            # Exactly the landing shapes and nothing else — both /api/analyze modes
-            # included. Findings consumers share the canonical pooled analysis,
-            # scenario report, and exposure feed.
-            self.assertEqual(after_warm, {"analyze": 2,
-                                          "outcomes-trend": 1, "scenarios": 1,
+            # Exactly what the app reads and nothing else: the analysis at the
+            # default window (pooled and not) and at the Overview's other two, and no
+            # retired desk drill-down. Findings consumers share the canonical pooled
+            # analysis, scenario report, and exposure feed.
+            self.assertEqual(after_warm, {"analyze": 4,
+                                          "outcomes-trend": 0, "scenarios": 1,
                                           "exposures": 1,
                                           "explore-time-of-day": 3, "outcomes": 3,
-                                          "isf-rest-window-evidence": 1,
-                                          "finding-case-file": 1})
+                                          "isf-rest-window-evidence": 0,
+                                          "finding-case-file": 1, "trials": 1,
+                                          "day-navigator": 1, "model-view": 2,
+                                          "timeline": 2})
             expected_keys = (
-                ("analyze", 30, False, False),
-                ("outcomes-trend",), ("explore-time-of-day", 14),
+                ("analyze", 30, False, False), ("analyze", 30, False, True),
+                ("analyze", 14, False, False), ("analyze", 90, False, False),
+                ("findings-history-snapshot", 30),
+                ("explore-time-of-day", 14),
                 ("explore-time-of-day", 30), ("explore-time-of-day", 90),
                 ("outcomes", 14), ("outcomes", 30), ("outcomes", 90),
-                ("analyze", 30, False, True), ("scenarios", 30),
-                ("exposures",),
-                ("isf-rest-window-evidence", 30),
+                ("scenarios", 30), ("exposures",),
                 ("finding-case-file", None, None, None),
+                ("day-navigator", None),
+                ("model-view", "2026-06-05"), ("model-view", "2026-06-04"),
             )
             warmed = self._warmed_keys()
             for key in expected_keys:
@@ -2039,7 +2063,7 @@ class CachePreWarmTest(unittest.TestCase):
         with self._counting_builders() as counts:
             with self._run_worker():
                 after_warm = dict(counts)
-                self.assertEqual(self.client.get("/api/analyze", params={"window": 90}).status_code, 200)
+                self.assertEqual(self.client.get("/api/analyze", params={"window": 60}).status_code, 200)
                 self.assertGreater(counts["analyze"], after_warm["analyze"])
                 # Day/month drill-downs are unbounded in key space and are never warmed.
                 self.assertEqual(self.client.get("/api/day-navigator",
@@ -2049,22 +2073,78 @@ class CachePreWarmTest(unittest.TestCase):
 
     def test_one_failing_shape_is_contained_and_the_rest_still_warm(self):
         # The witness must be a shape the warm pass reaches *after* the failing one,
-        # or containment isn't what's being proved. The outcomes trend warms second,
-        # the finding-case preparation last, so a blown-up trend leaves later
-        # shapes to observe.
-        import ciq_autotune.outcomes_trend as trend_mod
+        # or containment isn't what's being proved. The Trial roster warms before
+        # the Overview and the Day screen, so a blown-up roster leaves later shapes
+        # to observe.
+        import ciq_autotune.watched_change as watched_mod
 
         def boom(*args, **kwargs):
-            raise RuntimeError("outcomes trend blew up")
+            raise RuntimeError("trial roster blew up")
 
         with self._counting_builders() as counts:
-            with patch.object(trend_mod, "trend_watched_change", boom):
+            with patch.object(watched_mod, "review_trials", boom):
                 with self._run_worker():
-                    self.assertEqual(counts["outcomes-trend"], 0)
-                    self.assertEqual(counts["analyze"], 2)
-                    self.assertEqual(counts["scenarios"], 1)
-            self.assertEqual(self.client.get("/api/outcomes/trend").status_code, 200)
-            self.assertEqual(counts["outcomes-trend"], 1)
+                    self.assertEqual(counts["trials"], 0)
+                    self.assertEqual(counts["outcomes"], 3)
+                    self.assertEqual(counts["model-view"], 2)
+            self.assertEqual(self.client.get("/api/verify/trials").status_code, 200)
+            self.assertEqual(counts["trials"], 1)
+
+    def _marker_roster(self):
+        ran = threading.Event()
+        self.app.state.recompute_roster = lambda: (("marker", ran.set),)
+        return ran
+
+    def test_a_write_from_the_app_starts_the_warm_pass(self):
+        """#522: a write re-warms in the background, not only a fetch."""
+        ran = self._marker_roster()
+        with TestClient(self.app) as client:
+            self.assertFalse(ran.wait(0.2), "nothing was written yet")
+            logged = client.post("/api/carbs", json={
+                "t": "2026-06-03 10:05:00", "grams": 8, "certainty": "exact"})
+            self.assertEqual(logged.status_code, 200)
+            self.assertTrue(ran.wait(5), "the write did not start the warm pass")
+
+    def test_warm_on_start_warms_before_any_fetch_or_write(self):
+        from ciq_autotune.api import create_app
+        self.app = create_app(db_path=self.tmp.name, token=None, enable_fetch_loop=False,
+                              warm_on_start=True)
+        ran = self._marker_roster()
+        with TestClient(self.app):
+            self.assertTrue(ran.wait(5), "the app did not warm on start")
+
+    def test_timeline_is_cached_until_a_write(self):
+        with self._counting_builders() as counts:
+            day = {"start": "2026-06-03T00:00:00", "end": "2026-06-04T00:00:00"}
+            first = self.client.get("/api/timeline", params=day)
+            again = self.client.get("/api/timeline", params=day)
+            self.assertEqual(first.json(), again.json())
+            self.assertEqual(counts["timeline"], 1)
+            self.client.post("/api/carbs", json={
+                "t": "2026-06-03 10:05:00", "grams": 8, "certainty": "exact"})
+            self.assertEqual(self.client.get("/api/timeline", params=day).status_code, 200)
+            self.assertEqual(counts["timeline"], 2)
+
+    def test_saving_credentials_keeps_every_cached_result(self):
+        """#522: no cached result reads the credentials."""
+        with self._counting_builders() as counts:
+            self.client.get("/api/outcomes", params={"window": 14})
+            saved = self.client.post("/api/credentials", json={
+                "email": "me@example.com", "password": "hunter2", "region": "US"})
+            self.assertEqual(saved.status_code, 200)
+            self.client.get("/api/outcomes", params={"window": 14})
+            self.assertEqual(counts["outcomes"], 1)
+
+    def test_every_api_request_logs_its_duration_and_cache_outcome(self):
+        with self.assertLogs("harmonic.requests", "INFO") as logged:
+            self.client.get("/api/outcomes", params={"window": 14})
+            self.client.get("/api/outcomes", params={"window": 14})
+            self.client.get("/api/nowhere")
+        self.assertEqual(len(logged.records), 3)
+        cold, warm, missing = (record.getMessage() for record in logged.records)
+        self.assertRegex(cold, r"^GET /api/outcomes\?window=14 200 \d+ ms cache hit=0 miss=1 derived=0$")
+        self.assertRegex(warm, r"^GET /api/outcomes\?window=14 200 \d+ ms cache hit=1 miss=0 derived=0$")
+        self.assertRegex(missing, r"^GET /api/nowhere 404 \d+ ms")
 
 
 @unittest.skipUnless(_HAS_FASTAPI, "api extra not installed")

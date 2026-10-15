@@ -264,10 +264,12 @@ including for isolated chart layout or interaction.
 calls `cache.bump()`; the hourly fetch bumps through `run_fetch_loop`'s
 `on_write`, which then re-warms a fixed roster of read shapes — the analysis and
 each of the Overview's windows among them — in the loop's worker thread, so the first visitor after a fetch lands warm. A new write
-endpoint that does not bump leaves a stale cache. There is no exception: the one
-there was, saving a Plan draft, went with the draft routes when a Done on a
-Setting card began recording the Plan itself (#518). Do not add one without
-proving no cached compute reads the written state.
+endpoint that does not bump leaves a stale cache. A write to follow-up state
+alone (snooze, restore, a Done and its Undo, a Focus or Trial step) keeps only
+the results that read recorded data (#522). The one write that invalidates
+nothing is saving credentials (#522); the Plan draft's exception went with the
+draft routes when a Done on a Setting card began recording the Plan itself
+(#518). Do not add one without proving no cached compute reads the written state.
 The cache is in-process and single-`serve`: an out-of-process CLI `fetch` while
 `serve` is up will not invalidate the running server.
 
@@ -369,6 +371,12 @@ Hard-won, and expensive to re-derive.
   the correct instant, but the vendor UI labels it in a way that reads like
   local time, so eyeballing a capture makes CGM look hours later than it is.
   Reconcile CGM only by `egvTimestamp` / `pumpDateTime`.
+- **The CGM feed can carry two records for one five-minute slot.** They sit
+  seconds apart: either the same reading twice, or two disagreeing series side
+  by side for hours. Each is a distinct vendor record, stable across re-pulls,
+  so no key merges them. `Store.cgm_readings` collapses a slot to one reading
+  and withholds the value where its records disagree (ADR 519). Read CGM only
+  through it, never straight from the table.
 - **Event tables are keyed on the pump's `seqNum`, not on a timestamp.** A
   delivery's `eventTimestamp` is not stable across pulls — the vendor re-decodes
   it a few seconds off from a prior generation — so keying on it lets a re-pull

@@ -272,6 +272,7 @@ class PreparedCases:
         claimed_identities = set(claims_by_identity)
         claimant_of = {}
         doses = {}
+        corrections = {}
         precedence = {"fired": 4, "near_miss": 3, "outranked": 2, "no_data": 1, "clean": 0}
         pattern_roster = []
         remaining_claims = set(claimed_identities)
@@ -280,6 +281,7 @@ class PreparedCases:
             t = datetime.strptime(candidate["t"], FMT)
             occurrence_id = _opaque("o_", family.value, identity, candidate["t"], index)
             doses[occurrence_id] = (candidate.get("insulin"), candidate.get("carbs"))
+            corrections[occurrence_id] = candidate.get("corrections") or {}
             claimant = claims_by_identity.get(identity)
             if claimant is not None and identity in remaining_claims:
                 claimant_of[occurrence_id] = claimant
@@ -333,7 +335,92 @@ class PreparedCases:
             "verdict_counts": counts, "occurrences": occurrences,
             "projection": projection,
             "selection": selection,
+            "traces": self._pattern_traces(
+                pattern["key"], pattern_roster, claimed_ids,
+                {member_id: corrections[member_id].get(lever)
+                 for member_id, lever in claimant_of.items()},
+                projection if alignment == "event" else _event(
+                    population_lever, pattern_roster, claimed_ids, self.cgm, self.bolus,
+                    self.source_window_days, self.basal),
+            ),
         }
+
+    def _pattern_traces(self, key, roster, claimed_ids, correction_of, event):
+        """The Pattern card's trace chart (ADR 523): the Pattern's episodes and Typical,
+        the comparison episodes, each aligned at its start event over the Pattern's
+        window.
+
+        A meal Pattern starts at the meal's bolus, against its event comparison's
+        meals. Lows after correcting highs starts at the correction each low it counts
+        followed, against every other lone correction in the window. Highs after
+        treating lows starts at the low's nadir, against every other low.
+        """
+        anchor, window = _TRACE_CHART[key]
+        claimed = [member for member in roster if member.id in claimed_ids]
+        if anchor == "bolus":
+            comparison = set(next(cohort for cohort in event["cohorts"]
+                                  if cohort["key"] == "comparison")["occurrence_ids"])
+            own = [member.opportunity.anchor_t for member in claimed]
+            typical = [member.opportunity.anchor_t for member in roster
+                       if member.id in comparison]
+        elif anchor == "nadir":
+            own = [member.opportunity.anchor_t for member in claimed]
+            typical = [member.opportunity.anchor_t for member in roster
+                       if member.id not in claimed_ids]
+        else:
+            own = sorted({datetime.strptime(correction_of[member.id], FMT) for member in claimed
+                          if correction_of.get(member.id) is not None})
+            lone = opportunities.lone_corrections(
+                _window_bolus(self.bolus, self.cgm, self.basal, self.source_window_days),
+                scenario_config=ScenarioConfig())
+            typical = [row.t for row in lone if row.t not in set(own)
+                       and self.query.contains(_minute(row.t))]
+        return {"anchor": anchor, "window_min": list(window),
+                "pattern": _trace_cohort(own, self.cgm, window, episodes=True),
+                "typical": _trace_cohort(typical, self.cgm, window, episodes=False)}
+
+
+# The Pattern card's trace chart, per Pattern (ADR 523): what each episode is
+# aligned at, and the minutes drawn either side of it.
+_TRACE_CHART = {
+    "highs_after_meals": ("bolus", (-30, 240)),
+    "lows_after_meals": ("bolus", (-30, 240)),
+    "highs_after_treating_lows": ("nadir", (0, 180)),
+    "lows_after_correcting_highs": ("correction", (0, 240)),
+}
+# Up to this many Pattern episodes are served one by one; more are served as their
+# median and band alone.
+_TRACE_EPISODES = 8
+# A 5-minute bin is served, with its median and 25-75 band, only from this many
+# readings.
+_TRACE_BIN_READINGS = 3
+# An episode is drawn only with a reading this soon after its window opens: one
+# that starts in a CGM gap is left off, never drawn from part-way.
+_TRACE_LEAD_MIN = 10
+
+
+def _trace_cohort(anchors, cgm, window, *, episodes):
+    """One cohort of the trace chart: its drawn anchors, their 5-minute median and
+    25-75 band in each bin that has enough readings (a bin without is not served),
+    and, for the Pattern, each episode's readings when there are few."""
+    start = window[0]
+    drawn = []
+    for anchor in anchors:
+        trace = _comparison_trace(anchor.strftime(FMT), anchor, cgm, window)
+        if any(start <= point["minute"] <= start + _TRACE_LEAD_MIN
+               for point in trace["trace"]["cgm"]):
+            drawn.append(trace)
+    bands = event_comparison.project_cohort("traces", drawn, window)["points"]
+    cohort = {
+        "anchors": [trace["id"] for trace in drawn],
+        "points": [{field: point[field] for field in ("minute", "n", "median", "p25", "p75")}
+                   for point in bands if point["n"] >= _TRACE_BIN_READINGS],
+    }
+    if episodes:
+        cohort["episodes"] = ([[{"minute": point["minute"], "bg": point["bg"]}
+                                for point in trace["trace"]["cgm"]] for trace in drawn]
+                              if len(drawn) <= _TRACE_EPISODES else None)
+    return cohort
 
 
 def prepare(store, *, query, version, analysis, exposures, scenarios, selected_id=None,

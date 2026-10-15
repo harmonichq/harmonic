@@ -47,6 +47,18 @@ class QueuedCarbRatioTest(unittest.TestCase):
                          "n_clusters": 8},
         }])
 
+    def test_the_block_serves_the_meal_runs_its_estimate_counts(self):
+        # ADR 523: the Setting card's dots and its Meal runs count are one served
+        # list, the pooled runs with a ratio, not a filter the reader re-applies.
+        block = next(b for b in self.client.get("/api/analyze").json()["ic_blocks"]
+                     if b["asserts_move"])
+        counted = block["evidence"]["counted_runs"]
+        self.assertEqual(len(counted), 8)
+        self.assertEqual([r["t"] for r in counted],
+                         [r["t"] for r in block["evidence"]["runs"] if r["in_pool"]])
+        self.assertEqual([r["true_ic"] for r in counted],
+                         [r["true_ic"] for r in block["evidence"]["runs"] if r["in_pool"]])
+
 
 @unittest.skipUnless(HAS_API, "api extra is installed")
 class PatternServedAsItsHabitTest(unittest.TestCase):

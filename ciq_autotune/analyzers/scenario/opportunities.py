@@ -73,13 +73,34 @@ def build_opportunities(
                 Exposure.HIGHS, source_key, anchor.t, "high", anchor.bg,
                 reach_start=anchor.reach_start,
             ))
-    corrections = sorted(
-        (item for item in bolus if _is_user_correction(item, scenario_config=scenario_config)),
-        key=lambda item: (item.t, item.seq_num),
-    )
+    corrections = _user_corrections(bolus, scenario_config)
     for previous, second in zip(corrections, corrections[1:]):
         families[Exposure.CORRECTION_CLUSTERS].append(Opportunity(
             Exposure.CORRECTION_CLUSTERS, (previous.seq_num, second.seq_num), second.t,
             "correction", members=(previous, second),
         ))
     return {family: tuple(items) for family, items in families.items()}
+
+
+def _user_corrections(bolus: Sequence[BolusEvent],
+                      scenario_config: ScenarioConfig) -> list[BolusEvent]:
+    return sorted(
+        (item for item in bolus if _is_user_correction(item, scenario_config=scenario_config)),
+        key=lambda item: (item.t, item.seq_num),
+    )
+
+
+def lone_corrections(
+    bolus: Sequence[BolusEvent], *, scenario_config: ScenarioConfig = ScenarioConfig(),
+) -> tuple[BolusEvent, ...]:
+    """The user corrections with no other user correction within the stacking window
+    either side: a correction whose glucose path no second dose shapes. The Lows after
+    correcting highs Pattern draws its Typical episodes from these (ADR 523)."""
+    corrections = _user_corrections(bolus, scenario_config)
+    window = scenario_config.stacking_window_min * 60
+    # Sorted by time, so the nearest other correction is a neighbour.
+    return tuple(
+        item for index, item in enumerate(corrections)
+        if all(abs((other.t - item.t).total_seconds()) > window
+               for other in corrections[max(0, index - 1):index] + corrections[index + 1:index + 2])
+    )

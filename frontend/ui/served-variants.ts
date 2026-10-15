@@ -12,11 +12,6 @@
 // - A Queue whose ranking holds candidates the Queue cannot draw: an ISF and an
 //   I:C Setting the findings serve no admitted row for, a Pattern the findings
 //   hold no row for, and a candidate of a kind the app does not know.
-// - A Queue with an admitted I:C Setting: the findings row the engine serves
-//   for an admitted block (the shape of the generated basal block's), its
-//   current value the generated pump profile's, its suggestion and range test
-//   values a tenth below it. No generated store admits one; the synthetic
-//   wearer's I:C holds. (A queued ISF is generated: `isf-supported`.)
 // - A day navigator with no readings, as a store before its first sync serves it.
 // - A day with no Control-IQ boluses: the latest day's timeline with
 //   `insulin_totals.control_iq_bolus` served as 0 and its `total` the served
@@ -67,35 +62,6 @@ queue.guidance.candidates.push(
   { ...pattern, subject: 'habit:missed_meal', kind: 'habit', title: 'Unknown', priority: 1001, queued: true },
 );
 add('queue', 'wearer-undrawable', queue);
-
-type Store = typeof fixtures.queue.wearer;
-type Row = Store['findings']['rows'][number];
-
-/** The wearer's Queue with its `parameter` Setting admitted, over the whole day. */
-function admitted(parameter: 'carb_ratio'): Store {
-  const store = clone(fixtures.queue.wearer);
-  const current = fixtures.settings.pump_settings.wearer.profile.segments[0][parameter];
-  const suggested = Math.round(current * 9) / 10;
-  const block = clone(fixtures.queue['wearer-pinned'].findings.rows.find((r) => r.kind === 'setting')!) as Row;
-  Object.assign(block, {
-    id: `${parameter}:0-1440`, parameter, chips: [],
-    span: { start_min: 0, end_min: 1440, label: '00:00 to 24:00' },
-    members: [{
-      start_min: 0, current, recommended: suggested, days: 0,
-      estimate: { confidence: 0.8, method: 'test', n: 30, wide: false,
-        value: suggested, lo: Math.round(current * 8) / 10, hi: suggested },
-    }],
-  });
-  store.findings.rows.push(block);
-  for (const candidate of store.guidance.candidates) {
-    if (candidate.subject === `setting:${parameter}`) {
-      Object.assign(candidate, { admitted: true, set_aside: false, queued: true, priority: 100 });
-    }
-  }
-  return store;
-}
-add('queue', 'wearer-ic', admitted('carb_ratio'));
-export const QUEUE_IC = 'wearer-ic' as keyof typeof fixtures.queue;
 
 export const CHANGES_PROFILE = 'wearer-profile' as keyof typeof fixtures.changes;
 export const CHANGES_PROFILE_ENDED = 'wearer-profile-ended' as keyof typeof fixtures.changes;

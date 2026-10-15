@@ -9,6 +9,8 @@
 //   uv run python scripts/smoke_app.py --case isf-strengthen --then node --test frontend/ui/app/live.contract.test.mjs
 //   uv run python scripts/smoke_app.py --case c3-trial --then node --test frontend/ui/app/live.contract.test.mjs
 //   uv run python scripts/smoke_app.py --case pattern-correction-fold --then node --test frontend/ui/app/live.contract.test.mjs
+//   uv run python scripts/smoke_app.py --case basal-and-carb-ratio-lower --then node --test frontend/ui/app/live.contract.test.mjs
+//   uv run python scripts/smoke_app.py --case pattern-correction-collapse --then node --test frontend/ui/app/live.contract.test.mjs
 //
 // smoke_app names the serve in HARMONIC_URL and the store in HARMONIC_CASE.
 // Every expected value is a literal read once from that store's served answers,
@@ -70,7 +72,10 @@ const EXPECTED = {
     queue: ['setting:basal_rate', 'pattern:highs_after_treating_lows'],
     basal: { start: 180, end: 240, current: 0.6, suggested: 0.48, trial: false },
     pattern: { key: 'highs_after_treating_lows', title: 'Highs after treating lows',
-      magnitude: { count: 1, denominator: 5, noun: 'lows' } },
+      magnitude: { count: 1, denominator: 5, noun: 'lows' },
+      causes: [{ title: 'Over-treated low', count: 1 }],
+      // One matched low: its cohort is withheld, so the card draws no impact line.
+      caseFile: { summary: { claimed: 1, denominator: 5, noun: 'lows' }, outcome: 'peak', impact: null } },
     isf: null,
     change: { kind: 'none' },
     overview: { tir: 98.6, previous: 100, isf: { current: 40, recommended: null, uncertain: true, nights: 14 } },
@@ -104,6 +109,25 @@ const EXPECTED = {
     isf: { current: 40, recommended: 32, uncertain: false, nights: 29 },
     change: { kind: 'none' },
   },
+  // A queued carb ratio: its card draws the block, current → suggested and range.
+  'basal-and-carb-ratio-lower': {
+    queue: ['setting:basal_rate', 'pattern:highs_after_meals', 'pattern:lows_after_meals', 'setting:carb_ratio'],
+    ic: { title: 'I:C', units: 'g/U', start: 0, end: 1440, current: 10, suggested: 9, estimate: 8, lo: 8, hi: 8 },
+    isf: null,
+    change: { kind: 'none' },
+  },
+  // Lows after correcting highs, served as its one admitted habit, counts the low
+  // a stacked pair of corrections reached as well as that habit's own two.
+  'pattern-correction-collapse': {
+    queue: ['pattern:lows_after_correcting_highs', 'pattern:highs_after_treating_lows'],
+    pattern: { key: 'lows_after_correcting_highs', title: 'Lows after correcting highs',
+      magnitude: { count: 3, denominator: 6, noun: 'lows' },
+      causes: [{ title: 'Correction on active insulin', count: 2 }, { title: 'Correction stacking', count: 1 }],
+      caseFile: { summary: { claimed: 3, denominator: 6, noun: 'lows' }, outcome: 'nadir',
+        impact: { kind: 'nadir', own: 53.8, typical: 60 } } },
+    isf: null,
+    change: { kind: 'none' },
+  },
   'c3-trial': {
     queue: ['setting:basal_rate'],
     basal: { start: 60, end: 90, current: 0.6, suggested: 0.48, trial: false },
@@ -127,7 +151,8 @@ test(`the live adapter serves each tab's model from the ${CASE} store`, async (t
   const day = await import('../day-model.ts');
   const settings = await import('../settings-model.ts');
 
-  const live = createLive({ client: makeDeps({ fetch }), glossary: [] });
+  const client = makeDeps({ fetch });
+  const live = createLive({ client, glossary: [] });
   serve(live.answers);
 
   await t.test('Queue', async () => {
@@ -138,10 +163,28 @@ test(`the live adapter serves each tab's model from the ${CASE} store`, async (t
       const basal = ranking.find((item) => item.subject === 'setting:basal_rate').data;
       for (const [key, value] of Object.entries(expected.basal)) assert.equal(basal[key], value, `basal ${key}`);
     }
+    if (expected.ic) {
+      const ic = ranking.find((item) => item.subject === 'setting:carb_ratio').data;
+      for (const [key, value] of Object.entries(expected.ic)) assert.equal(ic[key], value, `I:C ${key}`);
+    }
     if (expected.pattern) {
-      const pattern = values(queue.pattern('wearer', expected.pattern.key));
-      assert.equal(pattern.title, expected.pattern.title);
-      assert.deepEqual(pattern.magnitude, expected.pattern.magnitude);
+      const { key, title, magnitude, causes, caseFile } = expected.pattern;
+      const pattern = values(queue.pattern('wearer', key));
+      assert.equal(pattern.title, title);
+      assert.deepEqual(pattern.magnitude, magnitude);
+      if (causes) assert.deepEqual(pattern.causes, causes);
+      if (caseFile) {
+        // The case file the card reads its impact line from: the Queue's own
+        // subject, the same population as the card's count, and each event's
+        // own peak or nadir.
+        assert.deepEqual(pattern.impact, caseFile.impact);
+        const { projection_id } = await client.fetchDiagnoseFindingCasePreparation();
+        const served = await client.fetchDiagnoseFindingCase({ projection_id, finding_id: `pattern:${key}`, alignment: 'event' });
+        assert.deepEqual(served.summary, caseFile.summary);
+        assert.equal(served.summary.claimed, pattern.magnitude.count, 'one population backs the count and the case file');
+        assert.ok(served.occurrences.length > 0);
+        for (const occurrence of served.occurrences) assert.equal(occurrence.outcome?.kind, caseFile.outcome, occurrence.anchor.t);
+      }
     }
     const isf = values(queue.isfSetting('wearer'));
     if (expected.isf === null) assert.equal(isf, null);

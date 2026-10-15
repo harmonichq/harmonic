@@ -120,14 +120,44 @@ class PreparedCases:
         arcs = outcomes_trend.meal_arcs(anchors, self.judged_cgm, ctx_meal_times=truncators)
         return [_arc_outcome(kind, anchor, arc) for anchor, arc in zip(anchors, arcs)]
 
-    def _meal_outcomes(self, roster, lever):
-        """The served outcome of every meal row; a glucose or correction row has none."""
+    def _outcomes(self, roster, lever):
+        """The served outcome of every meal and low row; any other row has none.
+
+        A meal reads its Post-meal arc (ADR 432). A low reads its own drawn trace,
+        from the anchor to the comparison window's far edge, in the direction
+        ``lever`` judges: the rebound's peak for a high outcome, the nadir for a low
+        one (ADR __PR__).
+        """
         meals = [member for member in roster if member.opportunity.family is Exposure.MEALS]
-        if not meals:
-            return {}
-        return dict(zip((member.id for member in meals), self._arc_outcomes(
+        outcomes = dict(zip((member.id for member in meals), self._arc_outcomes(
             [member.opportunity.anchor_t for member in meals], lever,
-        )))
+        ))) if meals else {}
+        lows = [member for member in roster if member.opportunity.family is Exposure.LOWS]
+        if lows:
+            kind = _ARC_READINGS[outcome_kind(lever)]
+            after = timedelta(minutes=policy_for(lever).comparison_window[1])
+            for member in lows:
+                anchor = member.opportunity.anchor_t
+                outcomes[member.id] = _glucose_outcome(
+                    kind, anchor, [row for row in self.cgm
+                                   if anchor <= row.t <= anchor + after and row.bg is not None])
+        return outcomes
+
+    def _pattern(self, finding_id):
+        """The Pattern a case file is asked for: its chart-bearing row's, or one
+        served as its one habit, which has no row of its own and is read from the
+        findings answer's roster (ADR __PR__). The same chartability predicate decides
+        both."""
+        row = self._authoritative_row(finding_id)
+        if row is not None:
+            return row["pattern"] if row.get("kind") == "pattern" and row.get("pattern_chart") else None
+        pattern = next((item for item in self.findings["outcome_patterns"]
+                        if item["subject"] == finding_id
+                        and item["collapse"] == "collapse_to_member"), None)
+        if pattern is None or not findings_projection.pattern_chartable(
+                pattern, self.pattern_exposures or self.exposures or {}):
+            return None
+        return pattern
 
     def case(self, finding_id, alignment, occ, *, lever=None):
         """Project a Finding claim or a claim-free lever/window case file.
@@ -172,7 +202,7 @@ class PreparedCases:
             else _event(lever, roster, claimed_ids, self.cgm, self.bolus,
                         self.source_window_days, self.basal)
         )
-        outcomes = self._meal_outcomes(roster, lever)
+        outcomes = self._outcomes(roster, lever)
         facts = {member.id: (*_anchor_dose(member.opportunity), outcomes.get(member.id))
                  for member in roster}
         selection, cohort_of = _select_roster_occurrence(
@@ -216,12 +246,9 @@ class PreparedCases:
         existing opportunity roster and member associations for the case-file
         transport consumed by the evidence chart.
         """
-        row = self._authoritative_row(finding_id)
-        if row is None or row.get("kind") != "pattern":
+        pattern = self._pattern(finding_id)
+        if pattern is None:
             return None
-        if not row.get("pattern_chart"):
-            return None
-        pattern = row["pattern"]
         family = findings_projection.pattern_rate_family(pattern)
         source = ((self.pattern_exposures or self.exposures or {}).get("exposures") or {}).get(family.value) or {}
         source_rows = tuple(source.get("occurrences") or ())
@@ -282,7 +309,7 @@ class PreparedCases:
         projection = (_clock(pattern_roster, claimed_ids) if alignment == "clock"
                       else _event(population_lever, pattern_roster, claimed_ids, self.cgm,
                                   self.bolus, self.source_window_days, self.basal))
-        outcomes = self._meal_outcomes(pattern_roster, population_lever)
+        outcomes = self._outcomes(pattern_roster, population_lever)
         facts = {member.id: (*doses[member.id], outcomes.get(member.id))
                  for member in pattern_roster}
         selection, _ = _select_roster_occurrence(
@@ -594,6 +621,17 @@ def _arc_outcome(kind, anchor, arc):
         return None
     return {"kind": kind, "bg": value, "t": t.strftime(FMT),
             "minute": round((t - anchor).total_seconds() / 60, 1)}
+
+
+def _glucose_outcome(kind, anchor, readings):
+    """The served outcome off a glucose anchor's own readings: the first highest
+    (``peak``) or lowest (``nadir``) of them, in the meal outcome's shape, or none."""
+    if not readings:
+        return None
+    pick = max if kind == "peak" else min
+    row = pick(readings, key=lambda reading: reading.bg)
+    return {"kind": kind, "bg": row.bg, "t": row.t.strftime(FMT),
+            "minute": round((row.t - anchor).total_seconds() / 60, 1)}
 
 
 def _anchor_dose(opportunity):

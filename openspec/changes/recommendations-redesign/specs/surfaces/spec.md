@@ -71,10 +71,30 @@ subject. It SHALL re-derive no admission, floor, threshold or direction. A
 Pattern card SHALL offer Pin, which starts a Focus on its habit. A Setting card
 SHALL show the current value, the engine's estimate, its range, its count and its
 evidence chart; a queued correction factor SHALL use the Overview's ISF estimate
-card in the Queue's frame. Every item SHALL offer Snooze, which sets it aside
+card in the Queue's frame. A queued carb ratio's findings row SHALL serve its
+block as its one member, in the shape a basal run serves its slots, so its card
+draws the block, current → recommended and its range. A Pattern served as its one
+habit SHALL be drawn with the Pattern's own count and its rate levers' credited
+shares, which that habit's row serves for it, and its case file SHALL be read under
+the Pattern's subject. Every item SHALL offer Snooze, which sets it aside
 until fourteen days after the engine's served decision time, with an Undo; the
 Snoozed list SHALL show each snoozed item with its until date and a Restore, and
 SHALL be reachable only while at least one item is snoozed.
+
+#### Scenario: A queued carb ratio draws its card
+
+- **GIVEN** the QA case whose meals support lowering a whole-day carb ratio of 10
+- **WHEN** the Queue renders
+- **THEN** the I:C card shows 00:00–24:00, 10 → 9 g/U and its range
+
+#### Scenario: A Pattern served as its habit is counted as the Pattern
+
+- **GIVEN** the QA case where Lows after correcting highs is served as Correction
+  on active insulin, which drives two of six lows, while a stacked pair of
+  corrections reaches a third
+- **WHEN** the Queue renders that Pattern and reads its case file
+- **THEN** the card counts 3 of 6 lows, credited 2 to Correction on active
+  insulin and 1 to Correction stacking, and its case file claims the same 3
 
 #### Scenario: A held setting is not queued
 

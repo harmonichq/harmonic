@@ -38,19 +38,14 @@ const DEFAULT_ANALYSIS = '30';
 const WHOLE_DAY = { start_min: 0, end_min: 1440 };
 const NO_STATUS = { last_attempt_at: null, last_success_at: null, last_error: null };
 
-/** The model-view trimmed to what the Day chart marks: each episode's habit,
- *  and each anchor's time, kind, state, glucose and verdicts (mirrors
- *  gen_ui_fixtures.model_view_marks). */
+/** The model-view trimmed to what the Day chart marks: the day's findings,
+ *  each anchor's time, kind and glucose and the habits it counts toward
+ *  (mirrors gen_ui_fixtures.model_view_marks). */
 export function modelViewMarks(view) {
   return {
     date: view.date,
-    episodes: view.episodes.map((episode) => ({
-      lever: episode.lever,
-      lever_title: episode.lever_title,
-      anchors: episode.anchors.map(({ t, kind, state, bg, verdicts }) => ({
-        t, kind, state, bg,
-        verdicts: verdicts.map(({ classifier, matched, title }) => ({ classifier, matched, title })),
-      })),
+    findings: view.findings.map(({ t, kind, bg, levers }) => ({
+      t, kind, bg, levers: levers.map(({ lever, title }) => ({ lever, title })),
     })),
   };
 }

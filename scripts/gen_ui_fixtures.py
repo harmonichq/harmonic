@@ -721,15 +721,12 @@ def _days(client: TestClient, navigator: dict) -> dict:
 
 def model_view_marks(model_view: dict) -> dict:
     """``/api/model-view`` trimmed to what the Day chart marks (§4.2 DayChart):
-    each episode's habit, and each anchor's time, kind, state, glucose and
-    verdicts' habit, match and title. The live adapter trims the same."""
-    return {"date": model_view["date"], "episodes": [{
-        "lever": episode["lever"], "lever_title": episode["lever_title"],
-        "anchors": [{**{field: anchor[field] for field in ("t", "kind", "state", "bg")},
-                     "verdicts": [{field: v[field] for field in ("classifier", "matched", "title")}
-                                  for v in anchor["verdicts"]]}
-                    for anchor in episode["anchors"]],
-    } for episode in model_view["episodes"]]}
+    the day's findings, each anchor's time, kind and glucose and the habits it
+    counts toward. The live adapter trims the same."""
+    return {"date": model_view["date"], "findings": [{
+        **{field: finding[field] for field in ("t", "kind", "bg")},
+        "levers": [{field: lever[field] for field in ("lever", "title")} for lever in finding["levers"]],
+    } for finding in model_view["findings"]]}
 
 
 def _require_lows(stores: dict) -> dict:
@@ -1021,11 +1018,9 @@ def allowlist(data: dict) -> dict:
         "labels §1.2–§4.2": list(CHANGE_DAY_LABELS),
         "engine habit titles": [f["lever_title"] for store in data["changes"].values()
                                 for f in store["focuses"] if f["lever_title"]],
-        "served day habit titles": [title for day in data["day"]["days"].values()
-                                    for episode in day["model_view"]["episodes"]
-                                    for title in [episode["lever_title"]]
-                                    + [v["title"] for a in episode["anchors"] for v in a["verdicts"] if v["matched"]]
-                                    if title],
+        "served day habit titles": [lever["title"] for day in data["day"]["days"].values()
+                                    for finding in day["model_view"]["findings"]
+                                    for lever in finding["levers"]],
         "labels Settings": list(SETTINGS_LABELS),
         "kind glyph names §2.5": list(KIND_NAMES),
         "rail wordmark §2.5": list(BRAND),

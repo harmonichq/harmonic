@@ -19,6 +19,8 @@ import { QueueScreen, type QueueScreenProps } from './QueueScreen';
 // - Loading, and Unavailable (the unsynced store serves guidance unavailable).
 // - Phone mid-swipe: a row held over its Snooze reveal, the QueueRow's own
 //   still state.
+// - Done (#518): a fresh wearer's basal card Done and undone, and the same card
+//   back Not on pump after an unchanged sync.
 // Two desktop plays: selecting a row opens it; Snooze shows the bar, and Undo
 // puts the item back.
 const meta: Meta<typeof QueueScreen> = {
@@ -224,9 +226,70 @@ const liveSnoozePlay: Story['play'] = async ({ canvasElement }) => {
 };
 const liveWrites = (): QueueScreenProps['writes'] => ({
   snooze: failsOnce(undefined), restore: failsOnce(undefined), pin: failsOnce(undefined),
+  done: failsOnce(undefined), undoDone: failsOnce(undefined),
 });
 export const LiveSnoozeNotSavedPhone: Story = { ...story('phone', { store: 'wearer', writes: liveWrites() }), play: liveSnoozePlay };
 export const LiveSnoozeNotSavedDesktop: Story = { ...story('desktop', { store: 'wearer', writes: liveWrites() }), play: liveSnoozePlay };
+
+// Done (#518), a Setting card's primary: a fresh wearer presses Done on the
+// basal card. The screen shows the Queue the engine served after it (the card
+// is gone), the bar reads "Waiting for pump", and Undo (the bar's, or ⌘Z on
+// desktop) puts the card back. Snooze stays the text action beneath Done.
+const done: QueueScreenProps['done'] = { subject: 'setting:basal_rate', after: 'wearer-done' };
+const DONE = { store: 'wearer-before-done', open: 'setting:basal_rate', done } as QueueScreenProps;
+const basalCard = (canvas: ReturnType<typeof within>) => canvas.queryByRole('heading', { level: 2, name: /^Basal/ });
+const doneUndoPlay = (undo: 'click' | 'shortcut'): Story['play'] => async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  await expect(ranking('wearer-done').some((item) => item.subject === 'setting:basal_rate')).toBe(false);
+  const card = within(canvasElement.querySelector('.ui-scard') as HTMLElement);
+  const [doneButton, snoozeButton] = [card.getByRole('button', { name: 'Done' }), card.getByRole('button', { name: 'Snooze' })];
+  await expect(doneButton.getBoundingClientRect().bottom).toBeLessThan(snoozeButton.getBoundingClientRect().top);
+  // Desktop lists the basal row beside its open card; the phone opens the card in the row's place.
+  const basalRow = () => canvas.queryByRole('button', { name: /^Setting Basal/ });
+  await expect(basalRow() !== null).toBe(undo === 'shortcut');
+  await userEvent.click(doneButton);
+  await expect(canvas.getByRole('status')).toHaveTextContent('Waiting for pump');
+  await expect(basalCard(canvas)).toBeNull();
+  await expect(basalRow()).toBeNull();
+  if (undo === 'click') await userEvent.click(canvas.getByRole('button', { name: 'Undo' }));
+  else await userEvent.keyboard('{Meta>}z{/Meta}');
+  await expect(canvas.queryByRole('status')).toBeNull();
+  await expect(basalCard(canvas)).toBeInTheDocument();
+  await expect(basalRow() !== null).toBe(undo === 'shortcut');
+};
+export const DoneUndoPhone: Story = { ...story('phone', DONE), play: doneUndoPlay('click') };
+export const DoneUndoDesktop: Story = { ...story('desktop', DONE), play: doneUndoPlay('shortcut') };
+
+// The same wearer after a later sync whose read found the basal unchanged: the
+// engine serves the card back Not on pump, on its row (desktop) and its card,
+// which offers Done again.
+const NOT_ON_PUMP = { store: 'wearer-not-on-pump', open: 'setting:basal_rate' } as QueueScreenProps;
+const notOnPumpPlay = (layout: 'phone' | 'desktop'): Story['play'] => async ({ canvasElement }) => {
+  const card = within(canvasElement.querySelector('.ui-scard') as HTMLElement);
+  await expect(card.getByText('Not on pump')).toBeInTheDocument();
+  await expect(card.getByRole('button', { name: 'Done' })).toBeInTheDocument();
+  if (layout === 'desktop') {
+    const row = within(canvasElement).getByRole('button', { name: /^Setting Basal/ });
+    await expect(within(row).getByText('Not on pump')).toBeInTheDocument();
+  }
+  await expect(canvasElement.querySelectorAll('.ui-pill--not_on_pump').length).toBe(layout === 'desktop' ? 2 : 1);
+};
+export const NotOnPumpPhone: Story = { ...story('phone', NOT_ON_PUMP), play: notOnPumpPlay('phone') };
+export const NotOnPumpDesktop: Story = { ...story('desktop', NOT_ON_PUMP), play: notOnPumpPlay('desktop') };
+
+// Live: a Done the engine does not save puts the card back with "Not saved",
+// and Retry saves it; then the bar reads "Waiting for pump".
+const liveDonePlay: Story['play'] = async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  await userEvent.click(canvas.getByRole('button', { name: 'Done' }));
+  await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent(/Not saved/));
+  await expect(basalCard(canvas)).toBeInTheDocument();
+  await userEvent.click(canvas.getByRole('button', { name: 'Retry' }));
+  await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent('Waiting for pump'));
+};
+const LIVE_DONE = { store: 'wearer-before-done', open: 'setting:basal_rate' } as QueueScreenProps;
+export const LiveDoneNotSavedPhone: Story = { ...story('phone', { ...LIVE_DONE, writes: liveWrites() }), play: liveDonePlay };
+export const LiveDoneNotSavedDesktop: Story = { ...story('desktop', { ...LIVE_DONE, writes: liveWrites() }), play: liveDonePlay };
 
 // A ranking holding candidates the Queue cannot draw (an ISF and an I:C
 // Setting with no admitted row, a Pattern the findings serve no row for, and a

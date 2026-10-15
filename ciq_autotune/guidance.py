@@ -36,7 +36,7 @@ _SETTING_SUBJECTS = frozenset({
 _HABIT_SUBJECTS = frozenset(f"habit:{lever.value}" for lever in Lever)
 _PATTERN_SUBJECTS = frozenset(f"pattern:{key}" for key in _GATES)
 _PREFERENCE_SUBJECTS = _SETTING_SUBJECTS | _HABIT_SUBJECTS | _PATTERN_SUBJECTS
-# Always served as a candidate, because the Plan applies an ISF draft against it, but
+# Always served as a candidate, so its Done state (ADR 518) and evidence stay readable, but
 # admitted to the Queue, and selected, only when its analyzer's one staging verdict
 # (`isf_asserts_move`, stamped as each member's `asserts_move`) supports the change.
 # A held, direction-only or unprogrammed estimate is shown on the Overview, never

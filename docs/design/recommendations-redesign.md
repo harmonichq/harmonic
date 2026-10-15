@@ -36,6 +36,9 @@ Status: **exploring** (#481).
   table, and the Glossary of only the terms the app prints. The operator:
   "locked looks good."
 - **All five screens locked 2026-10-13.** Step 4 is closed.
+- **Done on a Setting card, 2026-10-14** (#518, §2.5): the operator's decision,
+  built on the locked Queue and Changes screens; Storybook `Screens/Queue`
+  (Done, Undo, Not on pump) and `Screens/Changes` (Waiting for pump).
 
 This document is the durable record of the redesign. Sections 1–3 are what the
 build will be checked against once they are approved. The appendix keeps the
@@ -70,7 +73,7 @@ Phone uses a bottom tab bar, and tablet and desktop use a left rail, with the sa
 - **Engine unavailable** (a read endpoint returns 503 or "unavailable"): the
   affected screen shows its title, the label "Unavailable" and a compact
   **Retry**. Other tabs keep working.
-- **Write failed** (pin, snooze, answer, log): the control returns to its prior
+- **Write failed** (pin, snooze, Done, answer, log): the control returns to its prior
   state, and a transient bar shows "Not saved" with **Retry**.
 
 ### 1.3 Screen and state inventory
@@ -78,10 +81,10 @@ Each row lists a screen's states. Labels only; no state uses prose.
 
 | Screen | Default | Empty | Loading | Error | Other states |
 |---|---|---|---|---|---|
-| Queue | Ranked cards, top card expanded | "0 patterns" label | Card skeletons | Unavailable + Retry | A card expanded; mid-swipe; just snoozed (bar "Snoozed · Until <date>" + Undo); Snoozed footer when N > 0 |
+| Queue | Ranked cards, top card expanded | "0 patterns" label | Card skeletons | Unavailable + Retry | A card expanded; mid-swipe; just snoozed (bar "Snoozed · Until <date>" + Undo); just Done (bar "Waiting for pump" + Undo, §2.5); a Setting Not on pump (§2.5); Snoozed footer when N > 0 |
 | Queue · Snoozed | Each snoozed item as its Queue row, plus "Until <date>" + Restore | Not reachable (the footer is hidden at 0) | — | Unavailable + Retry | Restored (row leaves) |
 | Queue · setting detail | current → estimate, range, n, chart | — | Chart skeleton | Unavailable | A queued ISF: the Overview's ISF card in the Queue's frame (§2.5, 2026-10-14) |
-| Changes | Active Trial or Focus + the last change as one row | "No active change" label | Skeleton | Unavailable + Retry | Maturing; Matured (result pill); last change row expanded in place; **End** (Focus: anytime; Trial: once matured) → confirm sheet → ended |
+| Changes | Active Trial or Focus + the last change as one row | "No active change" label | Skeleton | Unavailable + Retry | Maturing; Matured (result pill); last change row expanded in place; **End** (Focus: anytime; Trial: once matured) → confirm sheet → ended; Waiting for pump rows after a Done (§2.5) |
 | Overview | 14 d selected; one scrolling page, the summary (window switch, date span, In range, metrics, glucose profile) its first screenful, the ISF estimate below | "No data" label per window, and in the ISF estimate when none is served | Skeleton; a window not yet read shows its profile's and ISF estimate's skeletons | Unavailable + Retry | 30 d / 90 d selected; a previous period without data (the span alone, no changes); the ISF estimate with a supported change (current → recommended), held, Uncertain, with nights beyond its axis |
 | Day | Latest day with data | "No data" for a day without readings | Chart skeleton | Unavailable + Retry | Month dropped down from the header's day; desktop: the selected week as a ribbon; Prompts row when count > 0 |
 | Day · Prompts | One prompt, "n / N" | Not reachable (the row is hidden at 0) | — | Not saved + Retry | Yes → grams field and keyboard; mid-swipe Not sure |
@@ -113,6 +116,7 @@ Each row lists a screen's states. Labels only; no state uses prose.
 | Pick a day in the month (it closes); the scrim closes it unchanged | Pick a day in the month or the week in view; Escape closes it unchanged |
 | Bottom sheet for Log carbs, on the system keyboard | Popover anchored to "+ Log carbs" |
 | Tap Undo in the snooze bar | Same bar, clickable; ⌘Z |
+| Tap Done on an open Setting card; Undo in its "Waiting for pump" bar | The same Done and bar; ⌘Z undoes (§2.5, 2026-10-14 Done) |
 | Tap "‹ Parent" in a drill-down's header (the system edge-swipe also goes back) | The same "‹ Parent" control in the pane's header |
 
 Desktop has no hover-revealed actions, and every action has a visible control.
@@ -135,7 +139,10 @@ the system's own edge-swipe back is left to the platform, never overridden.
 | **Better / Worse / Unclear** | state | A matured change's result against its before period. |
 | **Snooze** | verb | Remove from the Queue for 14 days. It returns early if the evidence changes. |
 | **Restore** | verb | Bring a snoozed item back. |
-| **Undo** | verb | Reverse the last snooze. |
+| **Undo** | verb | Reverse the last snooze or Done. |
+| **Done** | verb | Mark a Setting's change as programmed into the pump. The next sync checks it. |
+| **Waiting for pump** | state | Done, and no sync has shown the pump since. |
+| **Not on pump** | state | The sync after a Done found the Setting unchanged on the pump. |
 | **Range** | noun | The engine's interval for a Setting's estimate. |
 | **Uncertain** | state | Not yet clear enough to act on: the evidence behind it is thin. |
 | **Peak / Nadir** | noun | The highest or lowest glucose after an event such as a meal, as the median across the events counted, in mg/dL. |
@@ -654,6 +661,40 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   modal, no sign-in screen and no new route; the `/#token=` link still works
   as before. "Token" joins the plain interface words (Settings labels).
 
+- **2026-10-14 — Done on a Setting card (#518).** A Setting card had nothing to
+  press once the person had programmed it, and Snooze means "not now". The
+  operator: "have the user acknowledge, you know, I programmed this into my
+  pump and only have it resurface if a pump sync occurs that contains data
+  since the moment that they swiped, stating that the setting still hasn't
+  changed." On a different value: "if I program something slightly different,
+  for example, if I was given ... 0.82 and I was like, no, I'm gonna do 0.85.
+  I'd prefer the trial. I don't want to see the old basal value." On scope:
+  "one done per card, yeah ... I wouldn't want to have to enter a pump changes
+  screen and say here's all the changes I did." So:
+  - **Done** is a Setting card's one primary (basal, I:C and a queued ISF),
+    full width at the card's foot where Pin sits on a Pattern card, with
+    Snooze the centred text action 16 px beneath it, on phone and desktop. The
+    phone row's swipe stays Snooze. The lock has no shortcut for a card's
+    primary (Pin has none), so Done has none; ⌘Z undoes it on desktop as it
+    undoes a snooze.
+  - Done takes the card out of the Queue at once, and the TransientBar reads
+    "Waiting for pump" with Undo, which puts it back.
+  - Changes lists each Setting waiting for the pump under the caption "Waiting
+    for pump", between the active change and the last change: one ListRow
+    each, its name and block over current → suggested, as the last-change row
+    prints its change. A Setting leaves the list when the engine resolves it.
+  - The engine resolves it on the first sync after the Done that carries pump
+    data from after it. A setting that moved, to any value, is the pump change
+    the Changes tab already shows as a Trial. A setting that did not move
+    brings the card back to the Queue with the **Not on pump** StatePill on its
+    row's title line and its card's title line, until the next change of that
+    setting or a snooze.
+  - The pill's tone is `--warn`, the token table's Warn: it asks the person to
+    look again, without the Worse or Low red.
+  Done, Waiting for pump and Not on pump join §1.5; Undo now also reverses a
+  Done (§4.2 SettingCard, IsfCard, QueueRow, StatePill, TransientBar,
+  ChangeCard's screen).
+
 ### 2.6 Deferred (not cut)
 Not built in the current screens. The engine still serves what each needs, and
 nothing is removed from the engine or the fixtures for them.
@@ -727,13 +768,15 @@ unless noted. Loading is a skeleton of the component's own shape.
    - Fields: none.
    - Desktop: the same, with a visible focus ring.
 5. **StatePill**: a one-word state, as a borderless tinted tag (§2.2).
-   - States: Uncertain, Maturing, Better, Worse, Unclear, Focus. An item's
-     kind is never a pill; its glyph carries it.
+   - States: Uncertain, Maturing, Better, Worse, Unclear, Focus, Not on pump
+     (`--warn`, §2.5 2026-10-14 Done). An item's kind is never a pill; its
+     glyph carries it.
    - Words only, at the one pill size; no glyph inside a pill.
    - Fields: `findings.outcome_patterns[].wide` (Uncertain: the pattern's Queue admission does not hold at its low end, ADR 485); the trial and focus lifecycle and result.
    - Desktop: the same.
 6. **TransientBar**: a label plus one text action, shown above the tab bar.
-   - States: "Snoozed · Until <date>" + Undo; "Not saved" + Retry.
+   - States: "Snoozed · Until <date>" + Undo; "Waiting for pump" + Undo,
+     after a Done (§2.5, 2026-10-14 Done); "Not saved" + Retry.
    - Fields: the snooze-until date (now + 14 d).
    - Desktop: the same, at the bottom of the detail pane; Undo also on ⌘Z.
 
@@ -754,7 +797,9 @@ unless noted. Loading is a skeleton of the component's own shape.
      with impact, high (Peak) or
      low (Nadir); without impact (no trailing value); setting (current →
      suggested replaces the magnitude; a queued ISF's row has no time block,
-     §2.5 2026-10-14); snoozed (read-only: no chevron, swipe
+     §2.5 2026-10-14); setting Not on pump (the StatePill on the title line,
+     inside its 22 px, so the row keeps its height; §2.5 2026-10-14 Done);
+     snoozed (read-only: no chevron, swipe
      or selection; a last line "Until <date>" + Restore); loading.
    - Fields: `guidance.candidates[].title, kind, priority, admitted,
      preference`; `findings.outcome_patterns[].k, n` and the noun; the
@@ -785,12 +830,15 @@ unless noted. Loading is a skeleton of the component's own shape.
    - Desktop: larger cells, same rules.
 10. **SettingCard**: the open setting, showing current → suggested in figure
     type, the time block as its title, a compact EvidenceChart, the evidence
-    count ("30 nights") and one Range. No button.
+    count ("30 nights") and one Range. One button, Done, the card's primary
+    (§2.5, 2026-10-14 Done).
     - States: default; range collapsed (lo = hi, single value shown);
       matured into a Trial (Changes link): the block lies in a matured basal
       Trial's served block (#506), whether or not it starts where the Trial
-      starts.
-    - Snooze: a text action centred at the card's foot.
+      starts; Not on pump (the StatePill on the title line, after the block).
+    - Done: full width at the card's foot, where Pin sits on a PatternCard.
+      Snooze: a text action centred 16 px beneath Done.
+    - Fields: `guidance.candidates[].acknowledgment.state` (`not_on_pump`).
     - Fields: `analyze.basal[slot].current, estimate.value, estimate.lo, hi,
       days`, plus their carb-ratio equivalents. A queued ISF opens into the
       IsfCard instead (§2.5, 2026-10-14).
@@ -859,9 +907,10 @@ unless noted. Loading is a skeleton of the component's own shape.
     - In the Queue (§2.5, 2026-10-14): the open card of a queued ISF, the
       engine's default window (`/api/analyze`). The title is "ISF" alone;
       the figure always stands (the engine queues ISF only with its staging
-      verdict); Snooze is a text action centred at its foot, as on the
-      SettingCard; no other action. Phone: in its row's place. Desktop:
-      fills the detail pane up to 720 px.
+      verdict); Done at its foot and Snooze a text action centred beneath it,
+      as on the SettingCard (§2.5, 2026-10-14 Done); no other action. Not on
+      pump: the StatePill on its title line. Phone: in its row's place.
+      Desktop: fills the detail pane up to 720 px.
 
 **Changes**
 
@@ -879,6 +928,13 @@ unless noted. Loading is a skeleton of the component's own shape.
       after rate and assessment, `outcomes` peak, nadir, tir, tbr, tar);
       `guidance.admission`.
     - Desktop: the same, in the Changes pane.
+    - Beside it on the Changes screen (§2.5, 2026-10-14 Done): the "Waiting
+      for pump" ListGroup, between the active change and the last change, one
+      ListRow per Setting waiting after a Done: its name and block, then
+      current → suggested in meta ink. Fields:
+      `guidance.candidates[acknowledgment.state=waiting].title, parameter,
+      acknowledgment.blocks[0].start_min, end_min, current, recommended,
+      units`.
 
 **Day**
 

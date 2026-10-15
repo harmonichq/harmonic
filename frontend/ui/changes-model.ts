@@ -9,7 +9,7 @@
 import type { Change } from './Delta';
 import { answers, sourced, type Sourced } from './answers';
 import { formatValue } from './provenance.js';
-import { PARAMETER_FORMATS } from './settings-model';
+import { PARAMETER_FORMATS, SETTING_TITLES } from './settings-model';
 
 export type ChangesStore = keyof typeof answers.changes;
 export type Result = 'better' | 'worse' | 'unclear';
@@ -175,6 +175,48 @@ export function lastChange(name: ChangesStore): TrialData | null {
     .filter((t) => t.ending.kind)
     .sort((a, b) => (b.ending.effective_at ?? '').localeCompare(a.ending.effective_at ?? ''));
   return ended[0] ? trialData(name, ended[0]) : null;
+}
+
+/** A Setting a Done left waiting for the pump (#518): its name, its block (none
+ *  for ISF, one fasting value), and the value it was Done from → the suggestion. */
+export type WaitingData = {
+  subject: string;
+  title: string;
+  start: Sourced<number> | null;
+  end: Sourced<number> | null;
+  current: Sourced<number>;
+  suggested: Sourced<number>;
+  units: string;
+};
+
+type WaitingRow = {
+  subject: string; parameter: string; title: string;
+  acknowledgment: { blocks: { start_min: number; end_min: number; units: string }[] };
+};
+
+/** Each Setting waiting for the pump, as the engine serves it and its Queue card
+ *  showed it: the span of its first run of adjacent blocks, with the first
+ *  block's current → suggested. */
+export function waiting(name: ChangesStore): WaitingData[] {
+  const rows = ((answers.changes[name] as { waiting?: readonly WaitingRow[] }).waiting ?? []);
+  return rows.filter((row) => row.acknowledgment.blocks.length > 0).map((row) => {
+    const blocks = `changes.${name}.waiting[subject=${row.subject}].0.acknowledgment.blocks`;
+    const block = `${blocks}.0`;
+    const served = row.acknowledgment.blocks;
+    let last = 0;
+    while (last + 1 < served.length && served[last + 1].start_min === served[last].end_min) last += 1;
+    const format = PARAMETER_FORMATS[row.parameter as keyof typeof PARAMETER_FORMATS];
+    const timed = row.parameter !== 'isf';
+    return {
+      subject: row.subject,
+      title: SETTING_TITLES[row.parameter] ?? row.title,
+      start: timed ? sourced(`${block}.start_min`, 'clock') : null,
+      end: timed ? sourced(`${blocks}.${last}.end_min`, 'clock') : null,
+      current: sourced(`${block}.current`, format),
+      suggested: sourced(`${block}.recommended`, format),
+      units: row.acknowledgment.blocks[0].units,
+    };
+  });
 }
 
 /** What a Trial changed that the guidance serves no setting candidate for: a

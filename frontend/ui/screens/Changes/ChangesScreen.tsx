@@ -7,6 +7,10 @@
 // expands in place into its ended ChangeCard. One slot, never a list: no
 // history archive (operator, 2026-10-13).
 //
+// Between them, "Waiting for pump" (#518): each Setting the person marked Done
+// in the Queue that no sync has shown on the pump yet, one row each (its name
+// and block, current → suggested), until the engine resolves it.
+//
 // End (§1.3a) is the card's compact secondary action, offered when the engine
 // accepts it (a Focus at any time; a Trial once matured). Pressing it asks once:
 // on phone a sheet over the screen, on desktop a popover anchored under End.
@@ -25,7 +29,7 @@
 // Motion: the sheet rises over a darkening scrim, the popover opens out of
 // its arrow, and the last change's card grows open under its row.
 import { useEffect, useRef, useState } from 'react';
-import { change, lastChange, type ChangeData, type ChangesStore } from '../../changes-model';
+import { change, lastChange, waiting, type ChangeData, type ChangesStore } from '../../changes-model';
 import { sourced } from '../../answers';
 import { useMotionGate, usePresence } from '../../motion';
 import { Num } from '../../Num';
@@ -91,6 +95,7 @@ export function ChangesScreen({
   const ready = state === 'ready';
   const active: ChangeData = ready ? change(shown) : { kind: 'none' };
   const last = ready ? lastChange(shown) : null;
+  const pending = ready ? waiting(shown) : [];
   // The confirmation and the last change's card stay while they close; the
   // confirmation keeps the change it asked about.
   const asked = usePresence(asking && state === 'ready');
@@ -131,6 +136,21 @@ export function ChangesScreen({
     : state === 'ready' && (
       <>
         <ChangeCard data={active} onEnd={() => setAsking(true)} confirm={popover} />
+        {pending.length > 0 && (
+          <div className="ui-changes__waiting">
+            <ListGroup caption="Waiting for pump">
+              {pending.map((item) => (
+                <ListRow key={item.subject}
+                  label={<span className="ui-changes__last-row">
+                    <span>{item.title}{item.start && item.end && <> <Num value={item.start} />–<Num value={item.end} /></>}</span>
+                    <span className="ui-changes__last-meta">
+                      <Num value={item.current} /> → <Num value={item.suggested} /> {item.units}
+                    </span>
+                  </span>} />
+              ))}
+            </ListGroup>
+          </div>
+        )}
         {last && (
           <div className="ui-changes__last">
             <ListGroup caption="Last change">

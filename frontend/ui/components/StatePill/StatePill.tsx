@@ -11,6 +11,8 @@ const LABELS = {
   worse: 'Worse',
   unclear: 'Unclear',
   focus: 'Focus',
+  /** A Setting card back from a Done the next sync did not show (#518). */
+  not_on_pump: 'Not on pump',
 } as const;
 
 export type PillState = keyof typeof LABELS;

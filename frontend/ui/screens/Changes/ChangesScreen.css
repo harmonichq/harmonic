@@ -7,7 +7,7 @@
 .ui-changes__body { display: flex; flex-direction: column; margin-top: 8px; }
 
 /* The last change, set apart from the active one under its caption. */
-.ui-changes__last { display: flex; flex-direction: column; margin-top: 32px; }
+.ui-changes__last, .ui-changes__waiting { display: flex; flex-direction: column; margin-top: 32px; }
 .ui-changes__last-card { margin-top: 8px; }
 
 .ui-changes__skeleton { height: 220px; }

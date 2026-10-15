@@ -35,6 +35,15 @@ export const Snoozed: Story = {
     await expect('onUndo' in args && args.onUndo).toHaveBeenCalledOnce();
   },
 };
+// After a Done (#518): the setting waits for the pump, and Undo takes it back.
+export const Waiting: Story = {
+  args: { kind: 'waiting', onUndo: fn() },
+  play: async ({ args, canvasElement }) => {
+    await expect(within(canvasElement).getByRole('status')).toHaveTextContent('Waiting for pump');
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Undo' }));
+    await expect('onUndo' in args && args.onUndo).toHaveBeenCalledOnce();
+  },
+};
 export const NotSaved: Story = {
   args: { kind: 'not_saved', onRetry: fn() },
   play: async ({ args, canvasElement }) => {

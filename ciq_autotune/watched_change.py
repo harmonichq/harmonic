@@ -1709,9 +1709,10 @@ def with_plan_verdicts(store, records):
 
 
 def _blocks(plan) -> List[dict]:
-    """The decision's blocks as its card showed them: each served action's span,
-    the value programmed when it was recorded, and the suggestion."""
-    from .guidance import _schedule_at
+    """The decision's blocks as its card showed them: the served actions, equal
+    adjacent ones merged as guidance merges them, each with its span, the value
+    programmed when it was recorded, and the suggestion."""
+    from .guidance import _canonical_actions, _schedule_at
     context, deliverable = plan["decision_context"], plan["deliverable"]
     actions = context.get("action") if context.get("state") == "available" else None
     source = ((deliverable.get("source_profile") or {}).get("segments")
@@ -1721,7 +1722,7 @@ def _blocks(plan) -> List[dict]:
     return [{"start_min": action["start_min"], "end_min": action["end_min"],
              "current": _schedule_at(source, action["start_min"]).get(action["parameter"]),
              "recommended": action["recommended"], "units": action["units"]}
-            for action in actions]
+            for action in _canonical_actions(actions)]
 
 
 def setting_acknowledgments(store) -> Dict[str, dict]:

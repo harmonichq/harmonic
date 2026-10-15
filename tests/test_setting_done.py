@@ -125,8 +125,13 @@ class DoneTest(DoneCase):
         self.assertEqual(acknowledgment["applied_at"], record["applied_at"])
         self.assertIsNone(acknowledgment["read_at"])
         current = [s for s in self.source if s.start_min <= action[0]["start_min"]][-1].basal_rate
+        # The block as the card shows it: the first run of adjacent actions at one suggestion.
+        end = action[0]["end_min"]
+        for row in action[1:]:
+            if row["start_min"] == end and row["recommended"] == action[0]["recommended"]:
+                end = row["end_min"]
         self.assertEqual(acknowledgment["blocks"][0], {
-            "start_min": action[0]["start_min"], "end_min": action[0]["end_min"],
+            "start_min": action[0]["start_min"], "end_min": end,
             "current": current, "recommended": action[0]["recommended"], "units": "U/h"})
         self.assertEqual(self.history_row(record)["verdict"], {"state": "waiting", "read_at": None})
         # One Done per card: a second while it waits is refused.

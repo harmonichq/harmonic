@@ -55,6 +55,12 @@ export function modelViewMarks(view) {
   };
 }
 
+/** gen_ui_fixtures._waiting: each Setting a Done left waiting for the pump, as Changes lists it (#518). */
+export function waitingFor(guidance) {
+  return guidance.candidates.filter((c) => c.acknowledgment?.state === 'waiting')
+    .map(({ subject, parameter, title, acknowledgment }) => ({ subject, parameter, title, acknowledgment }));
+}
+
 /**
  * @param {{ client: object, glossary: object[] }} deps — the client namespace
  *   (frontend/data.js makeDeps) and §1.5's rows for the Glossary page.
@@ -86,7 +92,8 @@ export function createLive({ client, glossary }) {
 
   // --- The answers, each read once ------------------------------------------
 
-  /** gen_ui_fixtures._queue_store's candidate: preference and decision flattened, and the Queue's order rule. */
+  /** gen_ui_fixtures._queue_store's candidate: preference and decision flattened, and the Queue's order rule:
+   *  admitted, not snoozed, and not waiting for the pump after a Done (#518). */
   const guidance = () => once('guidance', async () => {
     const answer = await client.fetchGuidance();
     answers.queue.wearer.guidance = {
@@ -94,7 +101,8 @@ export function createLive({ client, glossary }) {
         ...c,
         set_aside: c.preference.set_aside,
         decided_at: c.decision?.decided_at ?? null,
-        queued: c.admitted && !c.preference.set_aside,
+        acknowledgment: c.acknowledgment ?? null,
+        queued: c.admitted && !c.preference.set_aside && c.acknowledgment?.state !== 'waiting',
       })),
     };
     return answer;
@@ -194,7 +202,7 @@ export function createLive({ client, glossary }) {
   /** gen_ui_fixtures._changes_store, for what the screen draws: the active change and every ended Trial (the
    *  last change is the latest of them, read from the list). Only the active change takes a detail read. */
   const changes = () => once('changes', async () => {
-    const [answer] = await Promise.all([trials(), guidance()]);
+    const [answer, guided] = await Promise.all([trials(), guidance()]);
     const { admission } = answer;
     const shown = answer.trials.filter((t) => t.watch_disposition === 'active' || 'kind' in t.ending);
     const active = admission.active_kind === 'trial' && admission.can_finish_trial
@@ -211,6 +219,7 @@ export function createLive({ client, glossary }) {
       trials: shown.map((t) => (t === active ? { ...t, reassessment: { outcomes: reassessed } } : t)),
       focuses: pinned ? [{ ...pinned, title: detail.title, lever_title: detail.lever_title,
         tracking: tracking(detail.reassessment.comparison) }] : [],
+      waiting: waitingFor(guided),
     };
   });
 
@@ -321,6 +330,25 @@ export function createLive({ client, glossary }) {
     },
     restore: async (subject) => {
       await write(() => client.restoreGuidancePreference(subject), FOLLOW_UP, both);
+    },
+    /** Done on a Setting card (#518): the subject's served suggestion is on the pump. */
+    done: async (subject) => {
+      const guided = await guidance();
+      await write(async () => {
+        await client.recordDone({ subject, request_id: requestId(`done ${subject}`),
+          input_revision: guided.input_revision, analysis_generation: guided.analysis_generation });
+        identities.delete(`done ${subject}`);
+      }, FOLLOW_UP, both);
+    },
+    /** Undo a Done: withdraw the subject's acknowledgment while it still waits for the pump. */
+    undoDone: async (subject) => {
+      const guided = await guidance();
+      const { applied_at: appliedAt } = guided.candidates.find((c) => c.subject === subject).acknowledgment;
+      await write(async () => {
+        await client.withdrawDone({ applied_at: appliedAt, request_id: requestId(`undo ${appliedAt}`),
+          input_revision: guided.input_revision });
+        identities.delete(`undo ${appliedAt}`);
+      }, FOLLOW_UP, both);
     },
     pin: async (subject) => {
       const [guided, focused] = await Promise.all([guidance(), focus()]);

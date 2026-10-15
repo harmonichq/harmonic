@@ -264,10 +264,10 @@ including for isolated chart layout or interaction.
 calls `cache.bump()`; the hourly fetch bumps through `run_fetch_loop`'s
 `on_write`, which then re-warms a fixed roster of read shapes — the analysis and
 each of the Overview's windows among them — in the loop's worker thread, so the first visitor after a fetch lands warm. A new write
-endpoint that does not bump leaves a stale cache. There is exactly one
-proven-safe exception — saving a Plan draft does not bump, because the draft is
-UX-only and no cached compute reads it. Applying the plan does bump. Do not add
-a second exception without proving no cached compute reads the written state.
+endpoint that does not bump leaves a stale cache. There is no exception: the one
+there was, saving a Plan draft, went with the draft routes when a Done on a
+Setting card began recording the Plan itself (#518). Do not add one without
+proving no cached compute reads the written state.
 The cache is in-process and single-`serve`: an out-of-process CLI `fetch` while
 `serve` is up will not invalidate the running server.
 

@@ -33,6 +33,73 @@ known. A window with no basal and no delivered bolus SHALL serve `null`.
 - **WHEN** the window holds no basal row and no delivered bolus
 - **THEN** `insulin_totals` is `null`
 
+### Requirement: Every stamp the server writes reads the pump's wall clock
+
+Every time the server stamps SHALL be read from one clock: the current instant
+converted to `TIMEZONE_NAME` through the same conversion every stored record
+takes, whatever zone the server process runs in. This covers:
+
+- a pump read's capture time;
+- a recorded Plan's decision and withdrawal times;
+- a Focus pin;
+- a change record's ending, observation and confirmation times;
+- a reassessment time;
+- a guidance set-aside time;
+- a carb-log entry's and a prompt answer's recorded time;
+- an analysis time.
+
+When `TIMEZONE_NAME` is unset or loads no time zone, that clock SHALL be the
+process clock. One zone loader SHALL decide whether the variable loads a zone,
+for the clock and the fetch alike. A data-time anchor, the latest record instant, is not a stamp
+and is unchanged.
+
+#### Scenario: A pump read, a Plan and a Focus pin name the pump's time
+
+- **GIVEN** the server process runs in a zone 25 hours ahead of `TIMEZONE_NAME`
+- **WHEN** a pump read is captured, a Done is recorded and a Focus is pinned
+- **THEN** `/api/pump-settings` serves `fetched_at`, the Plan history serves
+  `applied_at`, and the Focus serves `pinned_at`, each equal to the pump's
+  wall-clock time of that write, to the minute
+
+#### Scenario: An unset zone uses the process clock
+
+- **GIVEN** `TIMEZONE_NAME` is unset
+- **WHEN** a Focus is pinned
+- **THEN** the pin succeeds and `pinned_at` is the process clock's time
+
+### Requirement: A floored stamp never sorts before the latest capture, Done or Focus pin
+
+A pump read's capture time, a recorded Plan's time and every follow-up write's
+time (a Focus pin, a withdrawal, an ending, a reconciliation) SHALL be later than
+the latest capture, Plan or Focus pin already stored. When the clock reads no
+later than that stamp, the new stamp SHALL be one second after it. Stored stamps
+SHALL NOT be rewritten.
+
+#### Scenario: A profile switch read after the clock steps back is recorded forward
+
+- **GIVEN** a pump read stored with the server's clock 7 hours ahead of its
+  current reading
+- **WHEN** a later read shows a profile switch that moves correction factor from
+  30 to 40, and the store is reconciled
+- **THEN** the later read sorts after the earlier one and is served as the pump's
+  current settings
+- **AND** exactly one Trial is recorded, from 30 to 40, at the later read
+
+#### Scenario: A Done recorded after the clock steps back is the waiting one
+
+- **GIVEN** a Done recorded and withdrawn with the server's clock 7 hours ahead
+  of its current reading
+- **WHEN** a new Done is recorded on the same card
+- **THEN** the Plan history lists the new Plan first
+- **AND** guidance serves it as that card's waiting acknowledgment
+
+#### Scenario: A Focus ended after the clock steps back ends after its pin
+
+- **GIVEN** a Focus pinned with the server's clock 7 hours ahead of its current
+  reading
+- **WHEN** the Focus is resolved
+- **THEN** its saved ending is effective after its pin
+
 ## MODIFIED Requirements
 
 ### Requirement: The heavy read endpoints answer from one per-process result cache
@@ -44,8 +111,8 @@ and the lever catalog — answer through a cache keyed by endpoint name plus the
 answer. Finding case-file preparation is cached once per data version and projects
 each request's coordinates from that prepared source. Caching is opt-in per
 endpoint: the cheap store reads (status, timeline, pump settings, carb entries,
-prompts, the Plan draft and its history, Focus) read the store directly on every
-request and are never cached.
+prompts, the Plan history, Focus) read the store directly on every request and
+are never cached.
 
 The cache instance belongs to the app, not to the module, so two apps built in one
 process (as tests do) never share state. It is bounded by a least-recently-used cap
@@ -110,3 +177,63 @@ loop.
   this case: seeding is itself a committed write, so that attempt invalidates once.
   Over-invalidation costs one recompute and is accepted; under-invalidation serves
   numbers that no longer match the data
+
+### Requirement: Every write endpoint MUST invalidate the cache
+
+The system SHALL satisfy the following:
+
+Invalidation is coarse and global: a single `bump` clears the whole map and advances
+a monotonic version. There is no per-endpoint dependency tracking, because
+over-invalidation costs at most one recompute while under-invalidation serves
+numbers that no longer match the data. **Every endpoint that writes to the store —
+saving credentials, creating, editing, or deleting a carb entry, answering or
+clearing a prompt, signing off a swept pattern, recording or withdrawing a Done
+(a Plan), pinning or resolving a Focus — invalidates the cache before
+returning.** There is no exception (#518, ADR 518). A new write endpoint
+that omits this is a defect, not an optimization: it leaves every cached read
+answering from pre-write data. The live pull has no endpoint (ADR 417): the
+scheduled fetch invalidates through the loop's own hook, specified below.
+
+#### Scenario: A write endpoint invalidates what the reads depend on
+
+- **GIVEN** the analysis result for a window has been computed and cached
+- **WHEN** a client creates a carb entry, which the analysis reads as an exclusion signal
+- **THEN** the write invalidates the cache before responding, and the next request for
+  that analysis recomputes — exactly once for the new data version, with every later
+  request for the same key served from the cache
+
+#### Scenario: A Done invalidates the cache
+
+- **GIVEN** the analysis result is cached
+- **WHEN** a client records a Done on a Setting card
+- **THEN** the next analysis read recomputes
+
+#### Scenario: A write path that skips invalidation serves stale advice
+
+- **GIVEN** a cached analysis result computed before a write
+- **WHEN** a write endpoint changes state that a cached computation reads but does not
+  invalidate the cache
+- **THEN** every later read of that endpoint returns the pre-write numbers until some
+  unrelated write or the next scheduled fetch happens to clear the cache — the surface
+  presents advice derived from data the store no longer holds, with nothing in the
+  response marking it stale
+
+## REMOVED Requirements
+
+### Requirement: Saving a Plan draft is the one deliberate exception, and a future exception must meet its standard
+
+**Reason:** The app keeps no Plan draft, and the draft routes are removed (#518, ADR 518): a Done records the card's served action at once and invalidates like every other write. No write is excepted.
+
+**Migration:** None; nothing read a saved draft. A future exception would need its own requirement, proving no cached computation reads the written state.
+
+### Requirement: Every stamp the server writes is on the pump's wall clock
+
+**Reason:** A Plan draft's saved time is no longer stamped: the draft routes are removed (#518, ADR 518). It is restated without it as "Every stamp the server writes reads the pump's wall clock".
+
+**Migration:** None.
+
+### Requirement: A floored stamp never sorts before the latest capture, Plan or Focus pin
+
+**Reason:** There is no pending Plan any more; a recorded Plan is a Done that waits on its own card (#518, ADR 518). It is restated with that scenario as "A floored stamp never sorts before the latest capture, Done or Focus pin".
+
+**Migration:** None.

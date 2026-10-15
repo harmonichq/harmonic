@@ -65,16 +65,36 @@ The browser router and the Python route policy SHALL name the same five tabs.
 
 ### Requirement: Queue ranks what guidance admits, and each item can be pinned or snoozed
 
-The Queue SHALL list exactly the candidates the guidance read admits and the
-person has not snoozed, by served priority, highest first, an exact tie broken by
-subject. It SHALL re-derive no admission, floor, threshold or direction. A
-Pattern card SHALL offer Pin, which starts a Focus on its habit. A Setting card
-SHALL show the current value, the engine's estimate, its range, its count and its
-evidence chart; a queued correction factor SHALL use the Overview's ISF estimate
-card in the Queue's frame. Every item SHALL offer Snooze, which sets it aside
-until fourteen days after the engine's served decision time, with an Undo; the
-Snoozed list SHALL show each snoozed item with its until date and a Restore, and
-SHALL be reachable only while at least one item is snoozed.
+The Queue SHALL list exactly the candidates the guidance read admits, the
+person has not snoozed and the guidance does not serve as waiting for the pump,
+by served priority, highest first, an exact tie broken by subject. It SHALL
+re-derive no admission, floor, threshold or direction. A Pattern card SHALL offer
+Pin, which starts a Focus on its habit. A Setting card SHALL show the current
+value, the engine's estimate, its range, its count and its evidence chart; a
+queued correction factor SHALL use the Overview's ISF estimate card in the
+Queue's frame. A Setting card's primary SHALL be Done (#518), where Pin sits on a
+Pattern card: it SHALL take the card out of the Queue at once, with a bar reading
+"Waiting for pump" and an Undo that withdraws it. A Setting the guidance serves
+as `not_on_pump` SHALL carry the Not on pump pill on its row and its card. Every
+item SHALL offer Snooze, a text action beneath its primary, which sets it aside
+until fourteen days after the engine's served decision time, with an Undo; on the
+phone a row's swipe SHALL stay Snooze. The Snoozed list SHALL show each snoozed
+item with its until date and a Restore, and SHALL be reachable only while at
+least one item is snoozed.
+
+#### Scenario: Done takes a Setting card out of the Queue
+
+- **WHEN** the person presses Done on a Setting card
+- **THEN** the card leaves the Queue, and a bar reads "Waiting for pump" with
+  Undo
+- **AND** Undo puts the card back
+
+#### Scenario: A Setting back from an unchanged sync is marked
+
+- **GIVEN** a basal candidate the guidance serves as `not_on_pump`
+- **WHEN** the Queue renders
+- **THEN** its row and its open card carry the Not on pump pill, and the card
+  offers Done again
 
 #### Scenario: A held setting is not queued
 
@@ -96,7 +116,17 @@ finished change as one row that expands in place. A change still collecting its
 result, Better, Worse or Unclear. End SHALL be a compact secondary action
 followed by a confirm sheet: a Focus can be ended at any time, and a Trial once it
 has matured. The app SHALL send no free-text conclusion. Changes SHALL keep no
-history archive.
+history archive. Between the active change and the last one, Changes SHALL list
+under "Waiting for pump" each Setting the guidance serves as waiting after a
+Done (#518), one row each with its name, its block and current → suggested,
+until the engine resolves it.
+
+#### Scenario: A Done waits on Changes
+
+- **GIVEN** a Done on the basal card that no sync has resolved
+- **WHEN** Changes renders
+- **THEN** a "Waiting for pump" group lists one Basal row with its block and
+  current → suggested
 
 #### Scenario: A maturing Trial cannot be ended from the app
 

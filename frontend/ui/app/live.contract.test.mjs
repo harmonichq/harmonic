@@ -72,6 +72,8 @@ const EXPECTED = {
       magnitude: { count: 1, denominator: 5, noun: 'lows' } },
     isf: null,
     change: { kind: 'none' },
+    done: { subject: 'setting:basal_rate', waiting: { subject: 'setting:basal_rate', title: 'Basal', start: 180, end: 240,
+      current: 0.6, suggested: 0.48, units: 'U/h' } },
     overview: { tir: 98.6, previous: 100, isf: { current: 40, recommended: null, uncertain: true, nights: 14 } },
     day: { latest: '2024-06-30', insulin: 19.56, firstLowBg: 48 },
     settings: { days: 35, segments: [{ start: 0, basal: 0.6, isf: 40, carbRatio: 10 }] },
@@ -80,6 +82,8 @@ const EXPECTED = {
     queue: ['setting:isf'],
     isf: { current: 40, recommended: 32, uncertain: false, nights: 29 },
     change: { kind: 'none' },
+    done: { subject: 'setting:isf', waiting: { subject: 'setting:isf', title: 'ISF', start: null, end: null,
+      current: 40, suggested: 32, units: 'mg/dL/U' } },
   },
   'c3-trial': {
     queue: ['setting:basal_rate'],
@@ -87,6 +91,9 @@ const EXPECTED = {
     isf: null,
     change: { kind: 'trial', title: 'Basal', slot: '03:00', before: 0.6, after: 0.54, maturing: false,
       result: 'unclear', canEnd: true },
+    // A Done while the Trial is watched: it waits on its own (#518).
+    done: { subject: 'setting:basal_rate', waiting: { subject: 'setting:basal_rate', title: 'Basal', start: 60, end: 90,
+      current: 0.6, suggested: 0.48, units: 'U/h' } },
   },
 };
 
@@ -131,6 +138,20 @@ test(`the live adapter serves each tab's model from the ${CASE} store`, async (t
     const { before, after, ...rest } = expected.change;
     for (const [key, value] of Object.entries(rest)) assert.equal(active[key], value, `change ${key}`);
     if (before !== undefined) assert.deepEqual([active.change.before, active.change.after], [before, after]);
+  });
+
+  // Done (#518) on the store's queued Setting, then Undo: the card leaves the
+  // Queue for Changes' Waiting for pump, and comes back. The serve's store is a
+  // scratch copy, and Undo leaves only a withdrawn Plan behind.
+  await t.test('Done and Undo', async () => {
+    const { subject, waiting } = expected.done;
+    const queued = () => values(queue.ranking('wearer')).map((item) => item.subject);
+    await live.queueWrites.done(subject);
+    assert.ok(!queued().includes(subject), 'Done takes the card out of the Queue');
+    assert.deepEqual(values(changes.waiting('wearer')), [waiting]);
+    await live.queueWrites.undoDone(subject);
+    assert.deepEqual(queued(), expected.queue, 'Undo puts it back');
+    assert.deepEqual(values(changes.waiting('wearer')), []);
   });
 
   if (!expected.overview) return;

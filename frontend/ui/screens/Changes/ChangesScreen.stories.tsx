@@ -16,6 +16,7 @@ import { ChangesScreen, type ChangesScreenProps } from './ChangesScreen';
 // - Ended: the matured Trial once the person ends it: no active change, the
 //   Trial as the last change.
 // - Empty: the first days, with no change at all.
+// - Waiting for pump: a Done on the basal card that no sync has resolved.
 // - Confirm: End pressed on the matured Trial, the confirmation open.
 // - Loading, and Unavailable (the unsynced store serves guidance unavailable).
 // Two plays per size: End → End ends the Trial and shows what the engine
@@ -99,6 +100,20 @@ export const EndTrialPhone: Story = { ...story('phone', MATURED), play: endPlay 
 export const EndTrialDesktop: Story = { ...story('desktop', MATURED), play: endPlay };
 export const CancelEndPhone: Story = { ...story('phone', DEFAULT), play: cancelPlay };
 export const CancelEndDesktop: Story = { ...story('desktop', DEFAULT), play: cancelPlay };
+
+// Waiting for pump (#518): the person pressed Done on the basal card and no
+// sync has shown the pump since. One row under the caption, its name and block
+// over current → suggested, with no active change.
+const WAITING = { store: 'wearer-done' } as const;
+const waitingPlay: Story['play'] = async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  const group = canvas.getByRole('heading', { level: 2, name: 'Waiting for pump' }).closest('section') as HTMLElement;
+  await expect(within(group).getByText(/^Basal/)).toBeInTheDocument();
+  await expect(group.querySelector('[data-source$=".acknowledgment.blocks.0.recommended"]')).not.toBeNull();
+  await expect(canvas.getByText('No active change')).toBeInTheDocument();
+};
+export const WaitingForPumpPhone: Story = { ...story('phone', WAITING), play: waitingPlay };
+export const WaitingForPumpDesktop: Story = { ...story('desktop', WAITING), play: waitingPlay };
 
 export const LastOpenPhone = story('phone', { ...DEFAULT, lastOpen: true });
 export const LastOpenDesktop = story('desktop', { ...DEFAULT, lastOpen: true });

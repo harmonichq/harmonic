@@ -40,6 +40,8 @@
   line-height: 22px;
 }
 .ui-qrow__slot { color: var(--wk-ink-meta); }
+/* Not on pump (#518): inside the title's 22 px line, so the row keeps its height. */
+.ui-qrow__title .ui-pill { margin-left: 8px; vertical-align: 2px; }
 .ui-qrow__chevron {
   grid-column: 3;
   grid-row: 1;

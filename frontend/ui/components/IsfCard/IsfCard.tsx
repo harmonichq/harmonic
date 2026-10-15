@@ -11,9 +11,10 @@
 //
 // In the Queue (§2.5, 2026-10-14), an ISF the engine stages is the same card
 // in the Queue's frame: titled "ISF" alone, as its Queue row is, since there it
-// is a change rather than an estimate, and with the Setting card's Snooze text
-// action at its foot. A setting is changed on the pump, so there is no other
-// action.
+// is a change rather than an estimate, and with the Setting card's Done and the
+// Snooze text action beneath it at its foot (#518). A setting is changed on the
+// pump, so there is no other action; a card back from a Done the next sync did
+// not show carries the Not on pump pill on its title line.
 import type { IsfData } from '../../overview-model';
 import { Num } from '../../Num';
 import { Button } from '../Button/Button';
@@ -25,16 +26,20 @@ import './IsfCard.css';
 
 export type IsfCardProps = {
   data: IsfData | 'none' | null;
-  /** The Queue's frame: no "estimate", and Snooze when the screen offers it. */
+  /** The Queue's frame: no "estimate", and Done and Snooze when the screen offers them. */
   queue?: boolean;
+  /** The Queue's frame: the next sync after a Done found the setting unchanged. */
+  notOnPump?: boolean;
+  onDone?: () => void;
   onSnooze?: () => void;
 };
 
-export function IsfCard({ data, queue = false, onSnooze }: IsfCardProps) {
+export function IsfCard({ data, queue = false, notOnPump = false, onDone, onSnooze }: IsfCardProps) {
   const title = (
     <h2 className="ui-scard__title ui-isf__title">
       ISF{!queue && <> <span className="ui-scard__slot">estimate</span></>}
       {data && data !== 'none' && data.uncertain && <StatePill state="uncertain" />}
+      {queue && notOnPump && <StatePill state="not_on_pump" />}
     </h2>
   );
   if (data === null) {
@@ -84,6 +89,7 @@ export function IsfCard({ data, queue = false, onSnooze }: IsfCardProps) {
           <dd><Num value={data.nights} /></dd>
         </div>
       </dl>
+      {queue && onDone && <div className="ui-card-done"><Button kind="primary" label="Done" onClick={onDone} /></div>}
       {queue && onSnooze && <div className="ui-card-snooze"><Button kind="text" label="Snooze" onClick={onSnooze} /></div>}
     </section>
   );

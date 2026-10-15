@@ -38,6 +38,10 @@
   white-space: nowrap;
 }
 
+/* A Setting card's primary (Done, #518): full width at the card's foot, where
+   Pin sits on a Pattern card. */
+.ui-card-done { display: flex; margin-top: 24px; }
+
 /* A card's lesser action (Snooze): a text action centred beneath the card's
    primary, far enough below it not to be hit by accident. */
 .ui-card-snooze { display: flex; justify-content: center; margin-top: 16px; }

@@ -11,6 +11,9 @@ export const PARAMETER_FORMATS: Record<'basal_rate' | 'isf' | 'carb_ratio' | 'ta
   basal_rate: 'fixed2', isf: 'round', carb_ratio: 'fixed1', target_bg: 'round',
 };
 
+/** The glossary's names for I:C and ISF, whose candidate titles are longer (§1.5 I:C, ISF). */
+export const SETTING_TITLES: Record<string, string> = { carb_ratio: 'I:C', isf: 'ISF' };
+
 /** The units each profile setting is printed in, under its column header: fixed by how the pump
  *  stores them, so the table never waits on the guidance to name them. */
 export const PARAMETER_UNITS: Record<'basal_rate' | 'isf' | 'carb_ratio', string> = {

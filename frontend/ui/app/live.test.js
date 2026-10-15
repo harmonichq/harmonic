@@ -131,6 +131,42 @@ test('Retry and a write read again only what they change', async () => {
   assert.equal(fake.count('outcomes'), outcomes + 3, 'Retry reads the tab again');
 });
 
+test('Done records the card\'s subject from the read it was made on, and a waiting Setting leaves the Queue for Changes', async () => {
+  const basal = { subject: 'setting:basal_rate', kind: 'setting', parameter: 'basal_rate', title: 'Basal', units: 'U/h',
+    priority: 99, admitted: true, preference: { set_aside: false }, decision: null, acknowledgment: null };
+  let served = [basal];
+  const fake = fakeClient();
+  fake.client.fetchGuidance = (...args) => {
+    fake.calls.push({ name: 'guidance', args });
+    return Promise.resolve({ analysis_generation: 'g1', input_revision: 7, candidates: served });
+  };
+  fake.client.recordDone = (body) => {
+    fake.calls.push({ name: 'done', args: [body] });
+    served = [{ ...basal, acknowledgment: { state: 'waiting', applied_at: '2026-01-02 00:00:00', read_at: null, blocks: [] } }];
+    return Promise.resolve({});
+  };
+  fake.client.withdrawDone = (body) => {
+    fake.calls.push({ name: 'undo', args: [body] });
+    served = [basal];
+    return Promise.resolve({});
+  };
+  const live = createLive({ client: fake.client, glossary: [] });
+  await live.readTab('queue');
+  assert.equal(live.answers.queue.wearer.guidance.candidates[0].queued, true);
+  await live.queueWrites.done('setting:basal_rate');
+  const [{ args: [done] }] = fake.calls.filter((c) => c.name === 'done');
+  assert.deepEqual({ ...done, request_id: typeof done.request_id },
+    { subject: 'setting:basal_rate', request_id: 'string', input_revision: 7, analysis_generation: 'g1' });
+  assert.equal(live.answers.queue.wearer.guidance.candidates[0].queued, false, 'a waiting Setting is not queued');
+  assert.deepEqual(live.answers.changes.wearer.waiting.map((w) => w.subject), ['setting:basal_rate']);
+  await live.queueWrites.undoDone('setting:basal_rate');
+  const [{ args: [undo] }] = fake.calls.filter((c) => c.name === 'undo');
+  assert.deepEqual({ ...undo, request_id: typeof undo.request_id },
+    { applied_at: '2026-01-02 00:00:00', request_id: 'string', input_revision: 7 });
+  assert.equal(live.answers.queue.wearer.guidance.candidates[0].queued, true, 'Undo queues it again');
+  assert.deepEqual(live.answers.changes.wearer.waiting, []);
+});
+
 test('the Overview reads each window\'s profile and ISF once, when it is shown, shared with the Queue and Day', async () => {
   const fake = fakeClient();
   const live = createLive({ client: fake.client, glossary: [] });

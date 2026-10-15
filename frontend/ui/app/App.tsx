@@ -104,7 +104,8 @@ export function App() {
   switch (tab) {
     case 'queue':
       return <QueueScreen key={tab} layout={layout} store="wearer" state={state} nav={nav} onRetry={retry}
-        writes={{ snooze: drawn(queueWrites.snooze), restore: drawn(queueWrites.restore), pin: drawn(queueWrites.pin) }} />;
+        writes={{ snooze: drawn(queueWrites.snooze), restore: drawn(queueWrites.restore), pin: drawn(queueWrites.pin),
+          done: drawn(queueWrites.done), undoDone: drawn(queueWrites.undoDone) }} />;
     case 'changes':
       return <ChangesScreen key={tab} layout={layout} store="wearer" state={state} nav={nav} onRetry={retry}
         writes={{ end: drawn(changesWrites.end) }} />;

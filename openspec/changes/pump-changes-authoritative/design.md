@@ -97,6 +97,12 @@ existing store records every past pump change the old rule dropped. Those beyond
 their 28-day window end at once, so history gains records it should always have
 had. The 2026-10-12 carb-ratio change should become the active Trial.
 
+*Amended by ADR 518 (2026-10-14).* A recorded Plan is now a Done on a Setting
+card, and the pump-read confirmation above is replaced: the first sync after the
+Done decides it, on the pump when the setting moved to any value, the pump
+change being its Trial by this ADR's rule. The plan spec delta that rewrote the
+confirmation requirement moved to `recommendations-redesign`.
+
 ## ADR 506 — A basal pump change is measured across its whole block
 
 **Context.** ADR 500 decision 2 made each block a targeted pump change moved

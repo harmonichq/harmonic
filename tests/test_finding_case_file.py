@@ -1351,7 +1351,7 @@ def test_case_file_rows_serve_their_anchor_bolus_and_post_meal_arc(
     for row in highs + lows:
         assert row["anchor"]["bg"] is not None
         assert [row["anchor"].get(key, "absent") for key in ("insulin", "carbs")] == [None, None]
-    # A high row serves no outcome; a low serves its nadir (ADR __PR__), which on
+    # A high row serves no outcome; a low serves its nadir (ADR 520), which on
     # these recipes is the low anchor's own reading.
     assert [row.get("outcome", "absent") for row in highs] == [None] * len(highs)
     assert [row.get("outcome", "absent") for row in lows] == [

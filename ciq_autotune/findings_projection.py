@@ -230,7 +230,7 @@ class FindingsProjection:
                     row, pattern_by_subject[row["claimed_by"]], pattern_exposures,
                 )
         # A Pattern with one admitted habit is served as that habit's row, which
-        # carries the Pattern's own count (ADR __PR__). A window whose habit claims
+        # carries the Pattern's own count (ADR 520). A window whose habit claims
         # nothing serves no row for it to ride on.
         for pattern in outcome_patterns:
             if pattern.get("collapse") != "collapse_to_member":
@@ -1018,7 +1018,7 @@ def _pattern_count_sentences(row: dict) -> Optional[List[dict]]:
 
 
 def _served_as(pattern: dict, exposures: dict) -> dict:
-    """The Pattern a habit row is served as (ADR __PR__): its subject, its own count
+    """The Pattern a habit row is served as (ADR 520): its subject, its own count
     sentence, and each rate lever with a credit, its credited share of that count,
     in roster order.
 

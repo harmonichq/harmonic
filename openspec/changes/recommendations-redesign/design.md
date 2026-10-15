@@ -648,7 +648,7 @@ rule both read.
 The contract test adds `pattern-correction-fold`,
 whose days carry five kinds of finding, and checks the showcase's three days.
 
-## ADR __PR__ — The Queue reads a carb-ratio block and a Pattern served as its habit through what the engine serves for them
+## ADR 520 — The Queue reads a carb-ratio block and a Pattern served as its habit through what the engine serves for them
 
 **Context.** A mock-up pass on the operator's own data (2026-10-14) found three
 faults in what the Queue serves. A queued carb ratio drew an empty card: the I:C
@@ -702,3 +702,68 @@ collapsed Pattern whose count its habit's own count understates, and the live
 contract test runs on it and on `basal-and-carb-ratio-lower`. Standalone habit
 candidates the engine queues (for example a missed or unannounced meal) are still
 dropped by the Queue's `item()`; that remains deferred.
+
+## ADR 523 — A Pattern's case file serves its trace chart, and Typical is the comparison episodes aligned at the same start
+
+**Context.** The open Pattern card drew a waffle of its occurrences by cause,
+and its impact line read each cohort's median from the case file's event
+projection. The operator, on mock-ups of his own data (2026-10-14): "I think
+the charts are better" — episodes aligned at their start, against Typical. The
+setting charts: "They look wonderful. I love it. Perfect." The Overview's basal
+card: "I think the 48 slot".
+
+**Decision.** Each Pattern's case file serves `traces`: the start every episode
+is aligned at (`anchor`), the minutes drawn (`window_min`), and two cohorts.
+`pattern` is the episodes the Pattern counts; `typical` the comparison episodes.
+Each serves the anchors it draws and its 5-minute bins (`minute`, `n`, `median`,
+`p25`, `p75`), a bin served only from three readings; `pattern` also serves each
+episode's readings when it draws eight or fewer, else `episodes` is null. An
+episode with no reading in the first ten minutes of its window is left off both
+the anchors and the bins, never drawn from part-way. Per Pattern:
+
+| Pattern | Start | Minutes | Pattern | Typical |
+|---|---|---|---|---|
+| Highs after meals, Lows after meals | the meal's bolus | −30 to 240 | the meals the Pattern counts | the event comparison's meals |
+| Highs after treating lows | the low's nadir | 0 to 180 | the lows the Pattern counts | every other low |
+| Lows after correcting highs | the correction the low followed | 0 to 240 | the correction before each low the Pattern counts | every other lone correction |
+
+**What changed in "Typical".** For the two meal Patterns it is the comparison
+cohort it already was. For Highs after treating lows it was the lows neither
+matched nor nearly matched; it is now every low the Pattern does not count,
+near misses included, so Typical is "what a low usually does next". For Lows
+after correcting highs it was other lows, aligned at their nadir; it is now
+corrections: a low has no start to align a correction's path at, and the
+question the card asks is what a correction usually does. A lone correction is a
+user correction (the engine's `_is_user_correction`) with no other within the
+stacking window (60 minutes) either side, so no second dose shapes its path
+(`opportunities.lone_corrections`). The Pattern's episodes start at the dose the
+engine names for each counted low: the correction a Correction on active insulin
+verdict judged, or the stacking dose a Correction stacking episode drove.
+`explore_exposures` serves that time on the low as `corrections`, keyed by the
+habit, from the verdict the attribution retained (`AnchorVerdict.correction_t`),
+so the case file re-runs no classifier.
+
+**The impact line follows.** "Peak · Typical" and the row's delta read each
+cohort's highest or lowest served median from minute 0, from `traces`, so the
+number beside the chart is a point on the chart. Where either cohort serves no
+bin from minute 0 there is no impact line.
+
+**The setting cards' counts are served.** A carb-ratio block serves
+`evidence.counted_runs`, the pooled meal runs with their ratio: the I:C card's
+dots and its Meal runs count are that one list. The basal Nights count is the
+slot's `days`, and the ISF's Fasting nights its estimate's `n_clusters`. The
+Overview's basal card reads the basal analyzer's 48 slots as served: programmed
+rate, estimate and range, and `asserts_move` with `direction`.
+
+**Not served.** The frontend computes no band, chooses no episode and applies
+no threshold; it draws the served bins and breaks a line where the series has a
+gap.
+
+**Consequences.** The open Pattern card names no cause: the waffle and its
+legend are gone, with CauseWaffle. The findings-projection and event-comparison
+fixtures carry `traces` and `counted_runs`; the frozen exposures input carries
+its outranked low's `corrections`. The UI fixtures trim each case file to its
+`traces`, add the staged I:C blocks and each Overview window's basal slots, and
+pick the Pattern stories by trace form. The contract test checks the traces on
+the showcase and both correction-Pattern cases, the counted runs on the carb
+ratio case, and the showcase's basal slots.

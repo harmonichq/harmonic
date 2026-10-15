@@ -126,7 +126,7 @@ class PreparedCases:
         A meal reads its Post-meal arc (ADR 432). A low reads its own drawn trace,
         from the anchor to the comparison window's far edge, in the direction
         ``lever`` judges: the rebound's peak for a high outcome, the nadir for a low
-        one (ADR __PR__).
+        one (ADR 520).
         """
         meals = [member for member in roster if member.opportunity.family is Exposure.MEALS]
         outcomes = dict(zip((member.id for member in meals), self._arc_outcomes(
@@ -146,7 +146,7 @@ class PreparedCases:
     def _pattern(self, finding_id):
         """The Pattern a case file is asked for: its chart-bearing row's, or one
         served as its one habit, which has no row of its own and is read from the
-        findings answer's roster (ADR __PR__). The same chartability predicate decides
+        findings answer's roster (ADR 520). The same chartability predicate decides
         both."""
         row = self._authoritative_row(finding_id)
         if row is not None:

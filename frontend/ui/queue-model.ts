@@ -102,7 +102,7 @@ export function pattern(name: QueueStore, key: string): PatternData {
   if (!row) throw new Error(`${name} serves no ${rowId} row`);
   const rowPath = `${root}.rows[id=${rowId}].0`;
   // A pattern served as its habit counts as the pattern, from the count its
-  // member row serves for it, never as the habit's own (ADR __PR__).
+  // member row serves for it, never as the habit's own (ADR 520).
   const counter = member ? row.served_as : row;
   const countPath = member ? `${rowPath}.served_as` : rowPath;
   const sentences = counter?.count_sentences;

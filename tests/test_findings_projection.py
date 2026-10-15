@@ -585,7 +585,7 @@ class PublicProducerPopulationProjectionTest(unittest.TestCase):
         # The correction factor is no member (ADR 499), so the one admitted habit
         # carries the Pattern: it collapses to that member, and its case file is
         # the Pattern's own population, the lows the habit's corrections reached
-        # (ADR __PR__).
+        # (ADR 520).
         self.assertEqual(
             [(item["subject"], item["admitted"]) for item in pattern["members"]],
             [("habit:correction_stacking", True)],

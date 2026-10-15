@@ -1,11 +1,18 @@
-// The Changes screen (§1.1, §1.3, §1.3a), composed only from the library's
-// components.
+// The Changes screen (§1.1, §1.3, §1.3a; §2.5 2026-10-14, the Changes
+// redesign, #524), composed only from the library's components.
 //
-// The active change first: its Trial or Focus as the ChangeCard, or the "No
-// active change" label. Then "Last change": the one change the person ended
-// most recently, as a single row (what changed, when, its result) that
-// expands in place into its ended ChangeCard. One slot, never a list: no
-// history archive (operator, 2026-10-13).
+// The current change leads: its Trial or Focus as the ChangeCard, or the "No
+// active change" label. Beneath an active Trial, what it did to glucose in the
+// block it changed, each as its own module: the before-vs-after trace
+// (ChangeTrace), In range / Below 70 / Above 180, Mean / GMI / CV, and for a
+// basal Trial how active Control-IQ was against the Pump profile
+// (ChangeMetrics, every module's numbers in the same columns). Every value is
+// the engine's served comparison; the screen computes nothing.
+//
+// Then "Previous" with how many there are, which drills down (§2.2, as Day's
+// Lows and Settings' rows do) to the list of every previous change, newest
+// first, no cutoff: each its setting and block, before → after in aligned
+// columns, its date, and its result where the engine saved one.
 //
 // Between them, "Waiting for pump" (#518): each Setting the person marked Done
 // in the Queue that no sync has shown on the pump yet, one row each (its name
@@ -16,7 +23,7 @@
 // on phone a sheet over the screen, on desktop a popover anchored under End.
 // Either holds the change's name, End as the screen's one primary and Cancel
 // as a text action beneath it. Ending shows what the engine served after the
-// end: the `after` store, where the ended change is now the last change.
+// end: the `after` store, where the ended change is now a previous one.
 //
 // Live (`writes`, #495): End asks the engine to end the active change once
 // confirmed, and the screen then shows what it served after; an End that fails
@@ -27,14 +34,19 @@
 // as a whole (§2.3).
 //
 // Motion: the sheet rises over a darkening scrim, the popover opens out of
-// its arrow, and the last change's card grows open under its row.
+// its arrow, and the Previous list pushes in from the right and back.
 import { useEffect, useRef, useState } from 'react';
-import { change, lastChange, waiting, type ChangeData, type ChangesStore } from '../../changes-model';
+import {
+  change, previousChanges, previousCount, waiting, type ChangeData, type ChangesStore, type PreviousRow,
+  type TrialData, type WaitingRow,
+} from '../../changes-model';
 import { sourced } from '../../answers';
 import { useMotionGate, usePresence } from '../../motion';
 import { Num } from '../../Num';
 import { Button } from '../../components/Button/Button';
-import { ChangeCard } from '../../components/ChangeCard/ChangeCard';
+import { BlockSpan, ChangeCard, Moves } from '../../components/ChangeCard/ChangeCard';
+import { ChangeMetrics } from '../../components/ChangeMetrics/ChangeMetrics';
+import { ChangeTrace } from '../../components/ChangeTrace/ChangeTrace';
 import { ListGroup, ListRow } from '../../components/ListRow/ListRow';
 import { StatePill } from '../../components/StatePill/StatePill';
 import { NavBar, type NavHooks } from '../../components/NavBar/NavBar';
@@ -44,6 +56,7 @@ import '../../shared.css';
 import './ChangesScreen.css';
 
 type Layout = 'phone' | 'desktop';
+type View = 'changes' | 'previous';
 
 export type ChangesScreenProps = {
   layout: Layout;
@@ -54,8 +67,8 @@ export type ChangesScreenProps = {
   end?: { after: ChangesStore };
   /** Start with the End confirmation open. */
   confirming?: boolean;
-  /** Start with the last change's row expanded into its card. */
-  lastOpen?: boolean;
+  /** Start on the Previous list. */
+  view?: View;
   /** The live engine's End: resolves once the answers are read again, rejects when not saved. */
   writes?: { end: () => Promise<void> };
   nav?: NavHooks;
@@ -67,7 +80,7 @@ const dayCount = () => sourced<number>('prompts[answer=null].length');
 
 /** The change's name, as its card titles it. */
 function Name({ data }: { data: ChangeData }) {
-  if (data.kind === 'trial') return <>{data.title}{data.slot && <> <Num value={data.slot} /></>}</>;
+  if (data.kind === 'trial') return <>{data.title}{data.block && <> <BlockSpan block={data.block} /></>}</>;
   if (data.kind === 'focus') return <>{data.habit}</>;
   return null;
 }
@@ -84,25 +97,67 @@ function Confirm({ data, onEnd, onCancel }: { data: ChangeData; onEnd: () => voi
   );
 }
 
+/** What an active Trial did to glucose, module by module. */
+function Modules({ data }: { data: TrialData }) {
+  return (
+    <>
+      {data.trace && <ChangeTrace data={data.trace} block={data.block} />}
+      <ChangeMetrics rows={data.ranges} />
+      <ChangeMetrics rows={data.glucose} />
+      <ChangeMetrics rows={data.basal}
+        title={<>Basal <span className="ui-metrics__meta">vs Pump profile</span></>} />
+    </>
+  );
+}
+
+/** One previous change: its name and block, the date and its result, then
+ *  what moved, in the list's shared columns. */
+function Previous({ row }: { row: PreviousRow }) {
+  return (
+    <ListRow
+      label={<span className="ui-changes__previous">
+        <span className="ui-changes__previous-title">
+          {row.title}{row.block && <> <BlockSpan block={row.block} /></>}
+        </span>
+        <span className="ui-changes__previous-date"><Num value={row.date} /></span>
+        <Moves moves={row.moves} />
+      </span>}
+      value={row.result ? <StatePill state={row.result} /> : undefined} />
+  );
+}
+
+/** One Setting waiting for the pump after a Done (#518), in the Previous rows'
+ *  columns: its name and block, then current → suggested. No date, no result. */
+function Waiting({ row }: { row: WaitingRow }) {
+  return (
+    <ListRow
+      label={<span className="ui-changes__previous">
+        <span className="ui-changes__previous-title">
+          {row.title}{row.block && <> <BlockSpan block={row.block} /></>}
+        </span>
+        <Moves moves={row.moves} />
+      </span>} />
+  );
+}
+
 export function ChangesScreen({
-  layout, store, state = 'ready', end, confirming = false, lastOpen = false, writes, nav, onRetry,
+  layout, store, state = 'ready', end, confirming = false, view: initialView = 'changes', writes, nav, onRetry,
 }: ChangesScreenProps) {
   const [ended, setEnded] = useState(false);
   const [asking, setAsking] = useState(confirming);
-  const [lastExpanded, setLastExpanded] = useState(lastOpen);
+  const [view, setView] = useState<View>(initialView);
   const [notSaved, setNotSaved] = useState(false);
   const root = useMotionGate<HTMLDivElement>();
   const shown = ended && end ? end.after : store;
   const ready = state === 'ready' || state === 'stale';
   const active: ChangeData = ready ? change(shown) : { kind: 'none' };
-  const last = ready ? lastChange(shown) : null;
+  const count = ready ? previousCount(shown) : null;
   const pending = ready ? waiting(shown) : [];
-  // The confirmation and the last change's card stay while they close; the
-  // confirmation keeps the change it asked about.
+  // The confirmation stays while it closes, and keeps the change it asked about.
   const asked = usePresence(asking && ready);
   const askedAbout = useRef(active);
   if (asking) askedAbout.current = active;
-  const lastCard = usePresence(lastExpanded);
+  const previous = view === 'previous' && ready;
 
   const liveEnd = () => {
     setNotSaved(false);
@@ -122,9 +177,15 @@ export function ChangesScreen({
     return () => window.removeEventListener('keydown', onKey);
   });
 
-  const header = state === 'unavailable' || state === 'stale'
-    ? <ScreenHeader title="Changes" trailing="unavailable" layout={layout} onRetry={onRetry} />
-    : <ScreenHeader title="Changes" layout={layout} />;
+  // Stale keeps the screen it shows, with Unavailable and Retry in its title row.
+  const unavailable = { trailing: 'unavailable', onRetry } as const;
+  const header = state === 'unavailable'
+    ? <ScreenHeader title="Changes" layout={layout} {...unavailable} />
+    : previous
+      ? <ScreenHeader key={view} title="Previous" layout={layout} back={{ label: 'Changes', onBack: () => setView('changes') }}
+          {...(state === 'stale' ? unavailable : {})} />
+      : <ScreenHeader key={view} title="Changes" layout={layout} {...(state === 'stale' ? unavailable : {})} />;
+  const push = previous ? 'forward' : 'back';
 
   const popover = layout === 'desktop' && asked.value && (
     <section className="ui-popover ui-popover--end ui-changes__confirm" role="dialog" aria-label="End" {...asked.exit}>
@@ -133,47 +194,34 @@ export function ChangesScreen({
   );
 
   const content = state === 'loading'
-    ? <span className="ui-skeleton ui-changes__skeleton" aria-hidden="true" />
-    : ready && (
+    ? (
       <>
-        <ChangeCard data={active} onEnd={() => setAsking(true)} confirm={popover} />
-        {pending.length > 0 && (
-          <div className="ui-changes__waiting">
-            <ListGroup caption="Waiting for pump">
-              {pending.map((item) => (
-                <ListRow key={item.subject}
-                  label={<span className="ui-changes__last-row">
-                    <span>{item.title}{item.start && item.end && <> <Num value={item.start} />–<Num value={item.end} /></>}</span>
-                    <span className="ui-changes__last-meta">
-                      <Num value={item.current} /> → <Num value={item.suggested} /> {item.units}
-                    </span>
-                  </span>} />
-              ))}
-            </ListGroup>
-          </div>
-        )}
-        {last && (
-          <div className="ui-changes__last">
-            <ListGroup caption="Last change">
-              <ListRow
-                label={<span className="ui-changes__last-row">
-                  <span>{last.title}{last.slot && <> <Num value={last.slot} /></>}</span>
-                  <span className="ui-changes__last-meta">
-                    {last.change && <><Num value={last.change.before} /> → <Num value={last.change.after} /> {last.change.units} · </>}
-                    <Num value={last.changedAt} />
-                    {last.endedAt && <> – <Num value={last.endedAt} /></>}
-                  </span>
-                </span>}
-                value={last.result ? <StatePill state={last.result} /> : undefined}
-                disclosure={{ expanded: lastExpanded, onToggle: () => setLastExpanded(!lastExpanded) }} />
-            </ListGroup>
-            {lastCard.value && (
-              <div className="ui-changes__last-card ui-expand" {...lastCard.exit}><ChangeCard data={last} /></div>
-            )}
-          </div>
-        )}
+        <span className="ui-skeleton ui-changes__skeleton" aria-hidden="true" />
+        <span className="ui-skeleton ui-changes__skeleton ui-changes__skeleton--trace" aria-hidden="true" />
       </>
-    );
+    )
+    : ready && (previous
+      ? (
+        <ListGroup>
+          {previousChanges(shown).map((row) => <Previous key={row.id} row={row} />)}
+        </ListGroup>
+      )
+      : (
+        <>
+          <ChangeCard data={active} onEnd={() => setAsking(true)} confirm={popover} />
+          {active.kind === 'trial' && <Modules data={active} />}
+          {pending.length > 0 && (
+            <ListGroup caption="Waiting for pump">
+              {pending.map((row) => <Waiting key={row.subject} row={row} />)}
+            </ListGroup>
+          )}
+          {count && count.value > 0 && (
+            <ListGroup>
+              <ListRow label="Previous" value={<Num value={count} />} onOpen={() => setView('previous')} />
+            </ListGroup>
+          )}
+        </>
+      ));
 
   const barShown = usePresence(notSaved);
   const bar = barShown.value && (
@@ -185,9 +233,9 @@ export function ChangesScreen({
   if (layout === 'phone') {
     return (
       <div ref={root} className="ui-changes ui-changes--phone">
-        <div className="ui-changes__head">{header}</div>
-        <main className="ui-changes__main" data-scroll="page">
-          <div className="ui-changes__body">{content}</div>
+        <div className="ui-changes__head" data-push={push}>{header}</div>
+        <main className="ui-changes__main" data-scroll="page" data-push={push}>
+          <div key={`${view}-body`} className="ui-changes__body ui-push">{content}</div>
         </main>
         {bar}
         <NavBar layout="tabbar" selected="changes" dayCount={dayCount()} {...nav} />
@@ -206,9 +254,9 @@ export function ChangesScreen({
   return (
     <div ref={root} className="ui-changes ui-changes--desktop">
       <NavBar layout="rail" selected="changes" dayCount={dayCount()} {...nav} />
-      <section className="ui-changes__pane" data-scroll="page">
+      <section className="ui-changes__pane" data-scroll="page" data-push={push}>
         {header}
-        <div className="ui-changes__body">{content}</div>
+        <div key={`${view}-body`} className="ui-changes__body ui-push">{content}</div>
         {bar}
       </section>
     </div>

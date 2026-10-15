@@ -146,7 +146,9 @@ read `on_pump`. The guidance read SHALL serve each Setting candidate's
 `acknowledgment` from its subject's newest Plan not withdrawn: `waiting` while
 it is open, `not_on_pump` after an unchanged sync until the next pump change of
 that setting or a snooze of the subject decided after the deciding read, and
-none otherwise. A waiting candidate SHALL NOT be selected.
+none otherwise. A waiting candidate SHALL NOT be selected. The Trial roster read
+SHALL serve the same waiting acknowledgments as `waiting`, each with its subject
+and setting, for Changes, which reads the roster and not the guidance.
 
 #### Scenario: The history and guidance reads agree
 

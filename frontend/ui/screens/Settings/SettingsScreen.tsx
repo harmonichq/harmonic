@@ -56,7 +56,7 @@ import { saveToken } from '../../../data.js';
 import { useMotionGate, usePresence } from '../../motion';
 import { Num } from '../../Num';
 import {
-  glossary, pumpProfile, tandemSource, PARAMETER_UNITS, type AccountState, type SyncState, type When,
+  glossary, pumpProfile, tandemSource, PARAMETER_NAMES, PARAMETER_UNITS, type AccountState, type SyncState, type When,
 } from '../../settings-model';
 import { Button } from '../../components/Button/Button';
 import { ListGroup, ListRow, ListRowDense } from '../../components/ListRow/ListRow';
@@ -168,8 +168,8 @@ const DateTime = ({ at }: { at: When }) => <><Num value={at.date} /> <Num value=
 
 // Column headers are the glossary's short forms (Basal, ISF, I:C) over the
 // served units, so a header holds two short lines on a phone.
-const Head = ({ parameter, label }: { parameter: keyof typeof PARAMETER_UNITS; label: string }) => (
-  <span className="ui-caption">{label}<br /><span className="ui-settings__unit">{PARAMETER_UNITS[parameter]}</span></span>
+const Head = ({ parameter }: { parameter: keyof typeof PARAMETER_UNITS }) => (
+  <span className="ui-caption">{PARAMETER_NAMES[parameter]}<br /><span className="ui-settings__unit">{PARAMETER_UNITS[parameter]}</span></span>
 );
 
 /** A part not yet read: a block in its place, as tall as what will fill it. */
@@ -245,8 +245,8 @@ function PumpProfile({ pump, read }: { pump: PumpStore; read: Read }) {
         <ListRow label="Target" value={<><Num value={data.target} /> mg/dL</>} />
       </ListGroup>
       <ListGroup columns="56px 1fr 1fr 1fr">
-        <ListRowDense header cells={[<span className="ui-caption">Start</span>, <Head parameter="basal_rate" label="Basal" />,
-          <Head parameter="isf" label="ISF" />, <Head parameter="carb_ratio" label="I:C" />]} />
+        <ListRowDense header cells={[<span className="ui-caption">Start</span>, <Head parameter="basal_rate" />,
+          <Head parameter="isf" />, <Head parameter="carb_ratio" />]} />
         {data.segments.map((segment) => (
           <ListRowDense key={segment.start.source} cells={[<Num value={segment.start} />, <Num value={segment.basal} />,
             <Num value={segment.isf} />, <Num value={segment.carbRatio} />]} />

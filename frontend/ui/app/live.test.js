@@ -34,7 +34,8 @@ function history({ activeKind = 'focus' } = {}) {
 function fakeClient(served = history()) {
   const calls = [];
   const answer = (name, value) => (...args) => { calls.push({ name, args }); return Promise.resolve(value(...args)); };
-  const comparison = { readiness: { after: { unit: 'meals', count: 2, required: 12, criterion_met: false } },
+  const comparison = { availability: { state: 'available', reason: null },
+    readiness: { after: { unit: 'meals', count: 2, required: 12, criterion_met: false } },
     adherence: { before: {}, after: {}, assessment: { state: 'unclear' } }, outcomes: [] };
   const client = {
     fetchStatus: answer('status', () => ({ last_attempt_at: null, last_success_at: null, last_error: null })),
@@ -85,6 +86,28 @@ test('Changes reads at most the active change\'s detail, however long the histor
     assert.equal(fake.count('trials', (c) => !detail(c)), 1, 'the roster is read once');
     assert.equal(live.answers.changes.wearer.admission.active_kind, activeKind);
   }
+});
+
+test('Changes keeps every previous change from the roster, and reads a maturing Trial\'s comparison', async () => {
+  // #524: the Previous list is every Trial on the roster and every ended Focus,
+  // read from the one roster answer; the active Trial's comparison is read
+  // whether or not it has matured, since its trace and metrics show either way.
+  const served = history({ activeKind: 'trial' });
+  served.admission.can_finish_trial = false;
+  for (const focus of served.focuses) {
+    focus.ending = { kind: 'manual', effective_at: '2026-01-02 00:00:00', assessment: {} };
+    focus.status = 'resolved';
+  }
+  served.focuses[0].ending = { state: 'none' };
+  const fake = fakeClient(served);
+  const live = createLive({ client: fake.client, glossary: [] });
+  await live.readTab('changes');
+  const store = live.answers.changes.wearer;
+  assert.equal(store.trials.length, 30);
+  assert.ok(store.trials.find((t) => t.id === 'trial:29').reassessment, 'the maturing Trial is compared');
+  assert.equal(store.focuses.length, 39, 'every ended Focus, and none that never ended');
+  assert.equal(fake.count('trials', detail), 1, 'one detail read: the active Trial');
+  assert.equal(fake.count('guidance'), 0, 'Changes reads no guidance');
 });
 
 test('the Queue reads a case file only for each Pattern it ranks', async () => {
@@ -143,6 +166,12 @@ test('Done records the card\'s subject from the read it was made on, and a waiti
     fake.calls.push({ name: 'guidance', args });
     return Promise.resolve({ analysis_generation: 'g1', input_revision: 7, candidates: served });
   };
+  // The roster serves the Settings waiting for the pump, as the engine does (#518).
+  const roster = fake.client.fetchVerifyTrials;
+  fake.client.fetchVerifyTrials = (opts) => roster(opts).then((answer) => (opts?.selected ? answer : {
+    ...answer, waiting: served.filter((c) => c.acknowledgment?.state === 'waiting')
+      .map(({ subject, parameter, acknowledgment }) => ({ subject, parameter, acknowledgment })),
+  }));
   fake.client.recordDone = (body) => {
     fake.calls.push({ name: 'done', args: [body] });
     served = [{ ...basal, acknowledgment: { state: 'waiting', applied_at: '2026-01-02 00:00:00', read_at: null, blocks: [] } }];
@@ -153,7 +182,8 @@ test('Done records the card\'s subject from the read it was made on, and a waiti
     served = [basal];
     return Promise.resolve({});
   };
-  const live = createLive({ client: fake.client, glossary: [] });
+  const { storage, memory } = browser();
+  const live = createLive({ client: fake.client, glossary: [], memory });
   await live.readTab('queue');
   assert.equal(live.answers.queue.wearer.guidance.candidates[0].queued, true);
   await live.queueWrites.done('setting:basal_rate');
@@ -162,6 +192,12 @@ test('Done records the card\'s subject from the read it was made on, and a waiti
     { subject: 'setting:basal_rate', request_id: 'string', input_revision: 7, analysis_generation: 'g1' });
   assert.equal(live.answers.queue.wearer.guidance.candidates[0].queued, false, 'a waiting Setting is not queued');
   assert.deepEqual(live.answers.changes.wearer.waiting.map((w) => w.subject), ['setting:basal_rate']);
+  // A refresh draws the Done state from the remembered answers before the engine answers (#522).
+  const refreshed = createLive({ client: fake.client, glossary: [],
+    memory: createMemory({ storage, build: 'build-1', token: () => 'token-a' }) });
+  assert.equal(refreshed.answers.queue.wearer.guidance.candidates[0].acknowledgment.state, 'waiting');
+  assert.equal(refreshed.answers.queue.wearer.guidance.candidates[0].queued, false);
+  assert.deepEqual(refreshed.answers.changes.wearer.waiting.map((w) => w.acknowledgment.state), ['waiting']);
   await live.queueWrites.undoDone('setting:basal_rate');
   const [{ args: [undo] }] = fake.calls.filter((c) => c.name === 'undo');
   assert.deepEqual({ ...undo, request_id: typeof undo.request_id },
@@ -389,4 +425,37 @@ test('a remembered Settings part and a picked day draw at once after a refresh',
   const refreshed = createLive({ client: fakeClient().client, glossary: [], memory: createMemory({ storage, build: 'build-1', token: () => 'token-a' }) });
   assert.equal(refreshed.remembered('settings account'), true);
   assert.ok(refreshed.answers.day.days['2026-01-05'].model_view);
+});
+
+test('a refresh draws Changes\' comparison from memory, kept to what the screen draws (#524)', async () => {
+  const { storage, memory } = browser();
+  const served = history({ activeKind: 'trial' });
+  const fake = fakeClient(served);
+  const trace = { alignment: 'clock', start_min: 120, start: 0, end: 180, episodes: 3, left_off: 0, bins: [], traces: null };
+  const comparison = {
+    availability: { state: 'available', reason: null },
+    outcomes: [{ key: 'tir', unit: '%', before: 90, after: 95, assessment: { state: 'unclear' } }],
+    denominators: { before: { readings: 900, contributing_meals: 4, coverage: [{ date: '2026-01-01' }] },
+      after: { readings: 800, contributing_meals: 3, coverage: [] } },
+    views: {
+      before: { trace, basal: { delivered: 1, programmed: 1, above: 0, below: 0, minutes: 60 },
+        occurrences: [{ trace: { cgm: [{ minute: 0, bg: 100 }] } }], clock: [], rest_windows: [] },
+      after: { trace, basal: null, occurrences: [], clock: [], rest_windows: [] },
+    },
+  };
+  const roster = fake.client.fetchVerifyTrials;
+  fake.client.fetchVerifyTrials = (opts = {}) => (opts.selected
+    ? Promise.resolve({ selected: { reassessment: { comparison } } }) : roster(opts));
+  await createLive({ client: fake.client, glossary: [], memory }).readTab('changes');
+
+  const refreshed = createLive({ client: fakeClient(served).client, glossary: [],
+    memory: createMemory({ storage, build: 'build-1', token: () => 'token-a' }) });
+  assert.equal(refreshed.remembered('changes'), true);
+  const kept = refreshed.answers.changes.wearer.trials.find((t) => t.id === 'trial:29').reassessment;
+  assert.deepEqual(kept, {
+    availability: { state: 'available' },
+    outcomes: comparison.outcomes,
+    denominators: { before: { contributing_meals: 4 }, after: { contributing_meals: 3 } },
+    views: { before: { trace, basal: comparison.views.before.basal }, after: { trace, basal: null } },
+  });
 });

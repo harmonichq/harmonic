@@ -16,7 +16,8 @@
 // a whole percent of a
 // quotient whose operands print to one decimal, as a day's insulin parts do.
 // The 54–69 band prints tbr_lvl1 − tbr_lvl2 as fixed1; a part's share of the
-// day's insulin is part ÷ total as share. The operators are − and ÷.
+// day's insulin is part ÷ total as share; Changes' Previous count adds two
+// lists' lengths and takes the active change away. The operators are +, − and ÷.
 //
 // After the first operand, a formula may also take a whole-number literal, as
 // the live Prompts' place does ("n / N": N served when they opened, less the
@@ -62,7 +63,7 @@ export function resolveField(root, path) {
   return value;
 }
 
-const OPERATORS = { '−': (a, b) => a - b, '÷': (a, b) => a / b };
+const OPERATORS = { '+': (a, b) => a + b, '−': (a, b) => a - b, '÷': (a, b) => a / b };
 
 // A number as its format prints it, back in the field's own scale: a formula
 // works on the values the reader sees, so a change printed beside 25.5 and
@@ -76,7 +77,7 @@ const PRINTED = {
 };
 
 export function resolveSource(root, source, format) {
-  const [first, ...rest] = source.split(/ ([−÷]) /);
+  const [first, ...rest] = source.split(/ ([+−÷]) /);
   if (rest.length === 0) return resolveField(root, first);
   const printed = PRINTED[format] ?? ((v) => v);
   let value = printed(resolveField(root, first));

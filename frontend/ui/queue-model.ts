@@ -9,7 +9,7 @@ import { answers, sourced, type Sourced } from './answers';
 import { delta } from './changes-model';
 import type { Change } from './Delta';
 import { isfData, type IsfAnswer, type IsfData } from './overview-model';
-import { PARAMETER_FORMATS, SETTING_TITLES } from './settings-model';
+import { PARAMETER_FORMATS, PARAMETER_NAMES } from './settings-model';
 
 export type QueueStore = keyof typeof answers.queue;
 export type Tone = 'high' | 'low';
@@ -219,7 +219,7 @@ export function otherSetting(name: QueueStore, parameter: 'carb_ratio'): Setting
   const member = `${rowPath}.members.0`;
   const format = PARAMETER_FORMATS[parameter];
   return {
-    title: SETTING_TITLES[parameter],
+    title: PARAMETER_NAMES[parameter],
     units: candidate.units,
     start: sourced(`${rowPath}.span.start_min`, 'clock'),
     end: sourced(`${rowPath}.span.end_min`, 'clock'),
@@ -247,7 +247,7 @@ export function isfSetting(name: QueueStore): IsfSettingData | null {
   const data = isfData(`queue.${name}.analyze.isf`, store(name).analyze.isf as IsfAnswer[]);
   if (data === 'none' || !data.recommended) return null;
   const candidate = store(name).guidance.candidates.find((c) => c.subject === 'setting:isf');
-  return { ...data, title: SETTING_TITLES.isf, recommended: data.recommended, notOnPump: notOnPump(candidate) };
+  return { ...data, title: PARAMETER_NAMES.isf, recommended: data.recommended, notOnPump: notOnPump(candidate) };
 }
 
 /** The story states the generator found in the served answers, by name. */

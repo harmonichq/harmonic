@@ -1,0 +1,40 @@
+.ui-metrics {
+  box-sizing: border-box;
+  padding: 16px;
+  border-radius: var(--wk-radius);
+  background: var(--wk-surface);
+  color: var(--wk-ink);
+  font-family: var(--ui-font);
+  font-variant-numeric: tabular-nums;
+}
+
+.ui-metrics__title {
+  margin: 0 0 12px;
+  font-size: var(--ui-type-body);
+  font-weight: var(--ui-weight-strong);
+  line-height: 22px;
+}
+.ui-metrics__meta { color: var(--wk-ink-meta); font-weight: var(--ui-weight-regular); }
+
+/* One grid for every row, its value columns fixed (shared.css), so the
+   numbers line up within the module and across the screen's modules. */
+.ui-metrics__rows {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1fr) var(--ui-col-value) var(--ui-col-arrow) var(--ui-col-value) var(--ui-col-unit) var(--ui-col-delta);
+  align-items: baseline;
+  row-gap: 12px;
+  margin: 0;
+}
+.ui-metrics__row { display: contents; }
+.ui-metrics__row dd { margin: 0; white-space: nowrap; }
+.ui-metrics__label { white-space: nowrap; }
+.ui-metrics__before,
+.ui-metrics__after { text-align: right; font-size: var(--ui-type-body); line-height: 22px; }
+.ui-metrics__before { color: var(--wk-ink-meta); }
+.ui-metrics__after { font-weight: var(--ui-weight-strong); }
+.ui-metrics__arrow { color: var(--wk-ink-meta); font-size: var(--ui-type-label); text-align: center; }
+.ui-metrics__unit { padding-left: 6px; color: var(--wk-ink-meta); font-size: var(--ui-type-label); }
+.ui-metrics__delta { text-align: right; }
+/* The Trial's own target metric: the row its result reads. */
+.ui-metrics__row--target .ui-metrics__label { color: var(--wk-ink); }

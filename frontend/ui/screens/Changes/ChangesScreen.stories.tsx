@@ -2,26 +2,34 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { fixtures } from '../../fixtures';
 import { failsOnce } from '../../flaky';
-import { CHANGES_PROFILE, CHANGES_PROFILE_ENDED, CHANGES_UNNAMED } from '../../served-variants';
+import { CHANGES_UNNAMED } from '../../served-variants';
 import { ChangesScreen, type ChangesScreenProps } from './ChangesScreen';
 
-// The Changes screen in each state §1.3 lists, at phone (390) and desktop
-// (1440), every value the simulated wearer's served answer:
-// - Default: a Focus pinned after the person ended a basal Trial, so the
-//   ended Trial is the last change, one row; Last open: that row expanded.
-// - Trial maturing (six days in), Trial matured Better with End offered, and
-//   the second wearer's Trial matured Worse.
-// - Focus maturing (a day after its pin) and matured (four weeks after),
-//   with how often the habit happened and the outcomes it maps to.
+// The Changes screen in each state §1.3 lists (§2.5 2026-10-14, the Changes
+// redesign), at phone (390) and desktop (1440), every value the simulated
+// wearer's served answer:
+// - Default: a Focus pinned after the person ended a basal Trial, the ended
+//   Trial the one previous change.
+// - The basal Trial six days in (maturing), matured Better with End offered,
+//   and the second wearer's Trial matured Worse: each with its trace by clock
+//   time across the 02:00–05:00 block, its ranges, Mean / GMI / CV, and
+//   Control-IQ against the Pump profile.
+// - A carb ratio Trial a few days in: Meals before and after, its trace at
+//   each in-block meal bolus, the after arm meal by meal.
+// - A whole-profile switch: each setting it moved, the trace across the day.
+// - Focus maturing (a day after its pin) and matured (four weeks after).
 // - Ended: the matured Trial once the person ends it: no active change, the
-//   Trial as the last change.
+//   Trial a previous change.
 // - Empty: the first days, with no change at all.
 // - Waiting for pump: a Done on the basal card that no sync has resolved.
+// - Previous: three changes in turn and a Focus, all ended: "Previous · 4",
+//   and the list it opens, newest first, one with its result.
 // - Confirm: End pressed on the matured Trial, the confirmation open.
 // - Loading, and Unavailable (the unsynced store serves guidance unavailable);
-//   Stale, the last answers under Unavailable.
-// Two plays per size: End → End ends the Trial and shows what the engine
-// served after it; End → Cancel leaves the Focus as it was.
+//   Stale, the last answers under Unavailable, on the screen and on Previous.
+// Plays: End → End ends the Trial and shows what the engine served after it;
+// End → Cancel leaves the Focus as it was; Previous opens its list and ‹
+// Changes comes back.
 const meta: Meta<typeof ChangesScreen> = {
   title: 'Screens/Changes',
   component: ChangesScreen,
@@ -46,6 +54,9 @@ const DEFAULT = { store: 'wearer-ended-pinned' } as const;
 const MATURING = { store: 'wearer-trial-maturing' } as const;
 const MATURED = { store: 'wearer', end: { after: 'wearer-ended' } } as const;
 const WORSE = { store: 'wearer-worse' } as const;
+const CARB_RATIO = { store: 'wearer-ic-maturing' } as const;
+const PROFILE = { store: 'wearer-profile' } as const;
+const PREVIOUS = { store: 'wearer-previous' } as const;
 const FOCUS_MATURING = { store: 'wearer-focus-maturing' } as const;
 const FOCUS_MATURED = { store: 'wearer-focus' } as const;
 const ENDED = { store: 'wearer-ended' } as const;
@@ -62,6 +73,14 @@ export const TrialMaturedPhone = story('phone', MATURED);
 export const TrialMaturedDesktop = story('desktop', MATURED);
 export const TrialWorsePhone = story('phone', WORSE);
 export const TrialWorseDesktop = story('desktop', WORSE);
+export const CarbRatioMaturingPhone = story('phone', CARB_RATIO);
+export const CarbRatioMaturingDesktop = story('desktop', CARB_RATIO);
+export const ProfileTrialPhone = story('phone', PROFILE);
+export const ProfileTrialDesktop = story('desktop', PROFILE);
+export const PreviousRowPhone = story('phone', PREVIOUS);
+export const PreviousRowDesktop = story('desktop', PREVIOUS);
+export const PreviousListPhone = story('phone', { ...PREVIOUS, view: 'previous' });
+export const PreviousListDesktop = story('desktop', { ...PREVIOUS, view: 'previous' });
 export const FocusMaturingPhone = story('phone', FOCUS_MATURING);
 export const FocusMaturingDesktop = story('desktop', FOCUS_MATURING);
 export const FocusMaturedPhone = story('phone', FOCUS_MATURED);
@@ -80,17 +99,18 @@ export const UnavailableDesktop = story('desktop', UNAVAILABLE);
 // and Retry, when reading them again failed.
 export const StalePhone = story('phone', { store: 'wearer', state: 'stale' });
 export const StaleDesktop = story('desktop', { store: 'wearer', state: 'stale' });
+export const StalePreviousPhone = story('phone', { ...PREVIOUS, view: 'previous', state: 'stale' });
 
 const endPlay: Story['play'] = async ({ canvasElement }) => {
   const canvas = within(canvasElement);
-  await expect(canvas.queryByText('Last change')).toBeNull();
+  await expect(canvas.queryByRole('button', { name: /Previous/ })).toBeNull();
   await userEvent.click(canvas.getByRole('button', { name: 'End' }));
   const dialog = within(canvas.getByRole('dialog', { name: 'End' }));
   await userEvent.click(dialog.getByRole('button', { name: 'End' }));
   await expect(canvas.queryByRole('dialog')).toBeNull();
   await expect(canvas.getByText('No active change')).toBeInTheDocument();
-  await expect(canvas.getByRole('heading', { name: 'Last change' })).toBeInTheDocument();
-  await expect(canvas.getByRole('button', { expanded: false })).toBeInTheDocument();
+  // The ended Trial is now a previous change.
+  await expect(canvas.getByRole('button', { name: /Previous\s*1/ })).toBeInTheDocument();
 };
 
 const cancelPlay: Story['play'] = async ({ canvasElement }) => {
@@ -120,24 +140,21 @@ const waitingPlay: Story['play'] = async ({ canvasElement }) => {
 export const WaitingForPumpPhone: Story = { ...story('phone', WAITING), play: waitingPlay };
 export const WaitingForPumpDesktop: Story = { ...story('desktop', WAITING), play: waitingPlay };
 
-export const LastOpenPhone = story('phone', { ...DEFAULT, lastOpen: true });
-export const LastOpenDesktop = story('desktop', { ...DEFAULT, lastOpen: true });
-
-// The last change is one row; it expands in place into its card and back.
-export const ExpandLastPhone: Story = {
-  ...story('phone', DEFAULT),
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    const row = canvas.getByRole('button', { expanded: false });
-    await expect(canvas.queryByText('Before')).toBeNull();
-    await userEvent.click(row);
-    await expect(row).toHaveAttribute('aria-expanded', 'true');
-    await expect(canvas.getByText('Before')).toBeInTheDocument();
-    await userEvent.click(row);
-    // It closes in place, then is gone.
-    await waitFor(() => expect(canvas.queryByText('Before')).toBeNull());
-  },
+// Previous drills down to its list (§2.2) and back, as it was.
+const previousPlay: Story['play'] = async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  await userEvent.click(canvas.getByRole('button', { name: /Previous\s*4/ }));
+  await expect(canvas.getByRole('heading', { level: 1, name: 'Previous' })).toBeInTheDocument();
+  await expect(canvas.getAllByText('Basal').length).toBeGreaterThan(0);
+  await expect(canvas.getByText('Unclear')).toBeInTheDocument();
+  // The drill-down's own "‹ Changes" (the tab bar has a Changes too).
+  const header = canvas.getByRole('heading', { level: 1, name: 'Previous' }).closest('header') as HTMLElement;
+  await userEvent.click(within(header).getByRole('button', { name: 'Changes' }));
+  await expect(canvas.getByRole('heading', { level: 1, name: 'Changes' })).toBeInTheDocument();
+  await expect(canvas.getByText('No active change')).toBeInTheDocument();
 };
+export const OpenPreviousPhone: Story = { ...story('phone', PREVIOUS), play: previousPlay };
+export const OpenPreviousDesktop: Story = { ...story('desktop', PREVIOUS), play: previousPlay };
 
 // Live (#495): an End the engine does not save leaves the change as it was,
 // with "Not saved", and Retry ends it.
@@ -153,31 +170,12 @@ const liveEndPlay: Story['play'] = async ({ canvasElement }) => {
 export const LiveEndNotSavedPhone: Story = { ...story('phone', { ...MATURED, writes: { end: failsOnce(undefined) } }), play: liveEndPlay };
 export const LiveEndNotSavedDesktop: Story = { ...story('desktop', { ...MATURED, writes: { end: failsOnce(undefined) } }), play: liveEndPlay };
 
-// A whole-profile Trial (the engine's `profile` parameter): named "Pump
-// profile", with no time block and no before → after, since the engine serves
-// none; its result, its outcomes and End as for any Trial; and as the last change.
-const profilePlay: Story['play'] = async ({ canvasElement }) => {
-  const canvas = within(canvasElement);
-  await expect(canvas.getByRole('heading', { level: 2, name: /Pump profile/ })).toBeInTheDocument();
-  await expect(canvasElement.querySelector('.ui-change__figure')).toBeNull();
-  await expect(canvas.getByRole('button', { name: 'End' })).toBeInTheDocument();
-};
-export const ProfileTrialPhone: Story = { ...story('phone', { store: CHANGES_PROFILE }), play: profilePlay };
-export const ProfileTrialDesktop: Story = { ...story('desktop', { store: CHANGES_PROFILE }), play: profilePlay };
-const profileEndedPlay: Story['play'] = async ({ canvasElement }) => {
-  const canvas = within(canvasElement);
-  await expect(canvas.getByText('No active change')).toBeInTheDocument();
-  await expect(canvas.getByText('Pump profile')).toBeInTheDocument();
-};
-export const ProfileLastChangePhone: Story = { ...story('phone', { store: CHANGES_PROFILE_ENDED }), play: profileEndedPlay };
-export const ProfileLastChangeDesktop: Story = { ...story('desktop', { store: CHANGES_PROFILE_ENDED }), play: profileEndedPlay };
-
 // A Trial whose parameter the app has no name for, as a newer engine might
 // serve: the card draws without a name or a before → after, never fails.
 const unnamedPlay: Story['play'] = async ({ canvasElement }) => {
   const canvas = within(canvasElement);
-  await expect(canvas.getByText('Trial')).toBeInTheDocument();
-  await expect(canvasElement.querySelector('.ui-change__figure')).toBeNull();
+  await expect(canvas.getByRole('button', { name: 'End' })).toBeInTheDocument();
+  await expect(canvasElement.querySelector('.ui-moves')).toBeNull();
 };
 export const UnnamedTrialPhone: Story = { ...story('phone', { store: CHANGES_UNNAMED }), play: unnamedPlay };
 export const UnnamedTrialDesktop: Story = { ...story('desktop', { store: CHANGES_UNNAMED }), play: unnamedPlay };

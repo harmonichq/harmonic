@@ -182,24 +182,19 @@ class SupportedComparisonTest(unittest.TestCase):
     store = FollowUpComparisonTest.store
     focus = FollowUpComparisonTest.focus
 
-    def test_profile_mean_resamples_do_not_recompute_unused_variability(self):
+    def test_context_rows_are_not_resampled(self):
         from unittest.mock import patch
-        from ciq_autotune.outcomes import compute_metrics
         import statistics
 
         store, record, end = self.dense_profile(days=2)
-        # Full-panel computation is the original reference, including the seeded
-        # bootstrap intervals. Only the discarded work is allowed to differ.
-        with patch("ciq_autotune.follow_up_comparison.compute_metrics",
-                   side_effect=lambda readings, **kwargs: compute_metrics(readings)):
-            with patch("ciq_autotune.outcomes.statistics.stdev", wraps=statistics.stdev) as sd:
-                reference = self.compare(store, record, end)
-                full_calls = sd.call_count
         with patch("ciq_autotune.outcomes.statistics.stdev", wraps=statistics.stdev) as sd:
-            actual = self.compare(store, record, end)
-            optimized_calls = sd.call_count
-        self.assertEqual(actual, reference)
-        self.assertEqual(full_calls - optimized_calls, 4000)
+            result = self.compare(store, record, end)
+        # Once per arm, for the served panel; never per resample (#524).
+        self.assertEqual(sd.call_count, 2)
+        for row in result["outcomes"]:
+            if row["key"] in ("mean", "gmi", "cv"):
+                self.assertEqual(row["assessment"]["state"], "context")
+                self.assertIsNone(row["assessment"]["interval"])
 
     def dense_profile(self, *, constant=False, days=16):
         from ciq_autotune.settings import ProfileSegment, ProfileSettings, PumpSettings, Snapshot

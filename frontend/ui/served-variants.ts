@@ -5,9 +5,6 @@
 // changes a generated store, except Day's navigator, which the Day model reads
 // at one fixed key and `withNavigator` swaps only for one story's render.
 //
-// - A whole-profile Trial: the engine's `profile` parameter (an active-profile
-//   switch that moved more than one setting), served with no slot and no
-//   before or after value (watched_change.TrialView, _Cand("profile", None, …)).
 // - A Trial whose parameter the app has no name for, as a newer engine might serve.
 // - A Queue whose ranking holds candidates the Queue cannot draw: an ISF and an
 //   I:C Setting the findings serve no admitted row for, a Pattern the findings
@@ -29,14 +26,10 @@ type Json = Record<string, unknown>;
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value));
 
 /** A Changes store whose one Trial is retargeted to `parameter`, as the engine
- *  serves it; a whole-profile Trial targets in range and the arc
- *  (watched_change._PROFILE_TARGET). */
-function trialAs(from: 'wearer' | 'wearer-ended', parameter: string): Json {
+ *  serves it. */
+function trialAs(from: 'wearer', parameter: string): Json {
   const store = clone(fixtures.changes[from]) as Json & { trials: Json[] };
-  for (const trial of store.trials) {
-    Object.assign(trial, { parameter, slot: null, before: null, after: null },
-      parameter === 'profile' ? { target_metrics: ['tir', 'arc'] } : {});
-  }
+  for (const trial of store.trials) Object.assign(trial, { parameter, slot: null, before: null, after: null });
   return store;
 }
 
@@ -51,8 +44,6 @@ function add(section: 'changes' | 'queue' | 'days', name: string, store: unknown
 }
 (globalThis as { __uiVariants?: typeof added }).__uiVariants = added;
 
-add('changes', 'wearer-profile', trialAs('wearer', 'profile'));
-add('changes', 'wearer-profile-ended', trialAs('wearer-ended', 'profile'));
 add('changes', 'wearer-unnamed', trialAs('wearer', 'reservoir_volume'));
 
 /** The wearer's Queue with every Setting candidate queued, and one queued
@@ -97,8 +88,6 @@ function admitted(parameter: 'carb_ratio'): Store {
 add('queue', 'wearer-ic', admitted('carb_ratio'));
 export const QUEUE_IC = 'wearer-ic' as keyof typeof fixtures.queue;
 
-export const CHANGES_PROFILE = 'wearer-profile' as keyof typeof fixtures.changes;
-export const CHANGES_PROFILE_ENDED = 'wearer-profile-ended' as keyof typeof fixtures.changes;
 export const CHANGES_UNNAMED = 'wearer-unnamed' as keyof typeof fixtures.changes;
 export const QUEUE_UNDRAWABLE = 'wearer-undrawable' as keyof typeof fixtures.queue;
 

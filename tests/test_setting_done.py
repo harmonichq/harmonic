@@ -134,6 +134,9 @@ class DoneTest(DoneCase):
             "start_min": action[0]["start_min"], "end_min": end,
             "current": current, "recommended": action[0]["recommended"], "units": "U/h"})
         self.assertEqual(self.history_row(record)["verdict"], {"state": "waiting", "read_at": None})
+        # Changes lists it from the Trial roster, which it reads instead of the guidance (#524).
+        self.assertEqual(self.get("/api/verify/trials")["waiting"], [
+            {"subject": SUBJECT, "parameter": "basal_rate", "acknowledgment": acknowledgment}])
         # One Done per card: a second while it waits is refused.
         self.assertEqual(self.done().json()["detail"]["code"], "ineligible_source")
         # A Done does not hold a Pin back.
@@ -144,6 +147,7 @@ class DoneTest(DoneCase):
         response = self.undo(record)
         self.assertEqual(response.status_code, 200, response.text)
         self.assertIsNone(self.candidate()["acknowledgment"])
+        self.assertEqual(self.get("/api/verify/trials")["waiting"], [])
         self.assertEqual(self.history_row(record)["verdict"]["state"], "withdrawn")
         self.assertEqual(self.undo(record).status_code, 200, "a repeated Undo is the same answer")
         self.assertEqual(self.done().status_code, 200, "the card can be Done again")

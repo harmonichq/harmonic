@@ -108,25 +108,26 @@ least one item is snoozed.
 - **THEN** it leaves the Queue, a bar offers Undo, and the Snoozed list shows it
   with its until date and Restore
 
-### Requirement: Changes shows the active change and the last finished one
+### Requirement: Changes shows the current change and every previous one
 
-Changes SHALL show the active change, one Trial or one Focus, and the last
-finished change as one row that expands in place. A change still collecting its
-14 days of after data SHALL read Maturing; a matured change SHALL carry its served
-result, Better, Worse or Unclear. End SHALL be a compact secondary action
-followed by a confirm sheet: a Focus can be ended at any time, and a Trial once it
-has matured. The app SHALL send no free-text conclusion. Changes SHALL keep no
-history archive. Between the active change and the last one, Changes SHALL list
-under "Waiting for pump" each Setting the guidance serves as waiting after a
-Done (#518), one row each with its name, its block and current → suggested,
-until the engine resolves it.
+Changes SHALL show the current change, one Trial or one Focus, then a Previous
+row with its count that drills down to every previous change, newest first, with
+no cutoff (ADR 524). A change still collecting its 14 days of after data SHALL
+read Maturing; a matured change SHALL carry its served result, Better, Worse or
+Unclear. End SHALL be a compact secondary action followed by a confirm sheet: a
+Focus can be ended at any time, and a Trial once it has matured. The app SHALL
+send no free-text conclusion. Between the current change and Previous, Changes
+SHALL list under "Waiting for pump" each Setting the Trial roster serves as
+waiting after a Done (#518), one row each in the Previous rows' columns, with its
+name, its block and current → suggested, until the engine resolves it. Changes
+SHALL read it from the roster, not the guidance.
 
 #### Scenario: A Done waits on Changes
 
 - **GIVEN** a Done on the basal card that no sync has resolved
 - **WHEN** Changes renders
 - **THEN** a "Waiting for pump" group lists one Basal row with its block and
-  current → suggested
+  current → suggested, between the current change and Previous
 
 #### Scenario: A maturing Trial cannot be ended from the app
 

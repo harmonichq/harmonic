@@ -73,8 +73,10 @@ const EXPECTED = {
       magnitude: { count: 1, denominator: 5, noun: 'lows' } },
     isf: null,
     change: { kind: 'none' },
-    done: { subject: 'setting:basal_rate', waiting: { subject: 'setting:basal_rate', title: 'Basal', start: 180, end: 240,
-      current: 0.6, suggested: 0.48, units: 'U/h' } },
+    done: { subject: 'setting:basal_rate', waiting: { subject: 'setting:basal_rate', title: 'Basal',
+      block: { start: 180, end: 240 }, moves: [{ name: null, slot: null, before: 0.6, after: 0.48, units: 'U/h' }] } },
+    // One previous change: the whole-day carb ratio move, with no saved result.
+    previous: [{ title: 'I:C', block: null, moves: [[null, 12, 10, 'g/U']], result: null }],
     overview: { tir: 98.6, previous: 100, isf: { current: 40, recommended: null, uncertain: true, nights: 14 } },
     day: { latest: '2024-06-30', insulin: 19.56, firstLowBg: 48 },
     // The 22:00 low resolves after midnight: it is the 29th's finding.
@@ -106,18 +108,24 @@ const EXPECTED = {
     queue: ['setting:isf'],
     isf: { current: 40, recommended: 32, uncertain: false, nights: 29 },
     change: { kind: 'none' },
-    done: { subject: 'setting:isf', waiting: { subject: 'setting:isf', title: 'ISF', start: null, end: null,
-      current: 40, suggested: 32, units: 'mg/dL/U' } },
+    done: { subject: 'setting:isf', waiting: { subject: 'setting:isf', title: 'ISF', block: null,
+      moves: [{ name: null, slot: null, before: 40, after: 32, units: 'mg/dL/U' }] } },
   },
   'c3-trial': {
     queue: ['setting:basal_rate'],
     basal: { start: 60, end: 90, current: 0.6, suggested: 0.48, trial: false },
     isf: null,
-    change: { kind: 'trial', title: 'Basal', slot: '03:00', before: 0.6, after: 0.54, maturing: false,
-      result: 'unclear', canEnd: true },
+    change: { kind: 'trial', title: 'Basal', maturing: false, result: 'unclear', canEnd: true },
     // A Done while the Trial is watched: it waits on its own (#518).
-    done: { subject: 'setting:basal_rate', waiting: { subject: 'setting:basal_rate', title: 'Basal', start: 60, end: 90,
-      current: 0.6, suggested: 0.48, units: 'U/h' } },
+    done: { subject: 'setting:basal_rate', waiting: { subject: 'setting:basal_rate', title: 'Basal',
+      block: { start: 60, end: 90 }, moves: [{ name: null, slot: null, before: 0.6, after: 0.48, units: 'U/h' }] } },
+    // #524: its block, what moved, the trace by clock time across the block (its
+    // nights before and after), every module, and Control-IQ's delivered rate.
+    trial: { block: [180, 210], moves: [['03:00', 0.6, 0.54, 'U/h']], meals: null,
+      trace: { alignment: 'clock', episodes: [13, 15] },
+      modules: { ranges: ['tir', 'tbr', 'tar'], glucose: ['mean', 'gmi', 'cv'], basal: ['delivered', 'above', 'below'] },
+      delivered: [0.48, 0.48] },
+    previous: [],
   },
 };
 
@@ -159,9 +167,26 @@ test(`the live adapter serves each tab's model from the ${CASE} store`, async (t
   await t.test('Changes', async () => {
     await live.readTab('changes');
     const active = values(changes.change('wearer'));
-    const { before, after, ...rest } = expected.change;
-    for (const [key, value] of Object.entries(rest)) assert.equal(active[key], value, `change ${key}`);
-    if (before !== undefined) assert.deepEqual([active.change.before, active.change.after], [before, after]);
+    for (const [key, value] of Object.entries(expected.change)) assert.equal(active[key], value, `change ${key}`);
+    const trial = expected.trial;
+    if (trial) {
+      assert.deepEqual(active.block && [active.block.start, active.block.end], trial.block);
+      assert.deepEqual(active.moves.map((m) => [m.slot, m.before, m.after, m.units]), trial.moves);
+      assert.deepEqual(active.meals, trial.meals);
+      assert.equal(active.trace.alignment, trial.trace.alignment);
+      assert.deepEqual([active.trace.before.episodes, active.trace.after.episodes], trial.trace.episodes);
+      for (const [module, keys] of Object.entries(trial.modules)) {
+        assert.deepEqual(active[module].map((row) => row.key), keys, module);
+      }
+      const delivered = active.basal.find((row) => row.key === 'delivered');
+      assert.deepEqual([delivered.before, delivered.after], trial.delivered);
+    }
+    if (expected.previous) {
+      const previous = values(changes.previousChanges('wearer'));
+      assert.equal(values(changes.previousCount('wearer')), expected.previous.length, 'Previous · N');
+      assert.deepEqual(previous.map((row) => ({ title: row.title, block: row.block,
+        moves: row.moves.map((m) => [m.slot, m.before, m.after, m.units]), result: row.result })), expected.previous);
+    }
   });
 
   // Done (#518) on the store's queued Setting, then Undo: the card leaves the

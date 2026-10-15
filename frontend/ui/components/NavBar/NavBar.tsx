@@ -19,6 +19,9 @@ const ITEMS: readonly { id: NavItem; label: string }[] = [
   { id: 'settings', label: 'Settings' },
 ];
 
+/** Material 3's navigation glyph, on the tab bar and the rail (§4.1). */
+const NAV_GLYPH = 24;
+
 export type NavBarProps = {
   layout: 'tabbar' | 'rail';
   selected: NavItem;
@@ -52,7 +55,7 @@ export function NavBar({ layout, selected, dayCount, syncFailed = false, onSelec
           onClick={() => onSelect?.(id)}
         >
           <span className="ui-nav__icon">
-            <Icon name={id satisfies IconName} />
+            <Icon name={id satisfies IconName} size={NAV_GLYPH} />
             {id === 'day' && dayCount && dayCount.value > 0 && (
               <span className="ui-badge ui-badge--count">
                 <Num value={dayCount} />

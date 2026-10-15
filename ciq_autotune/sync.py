@@ -37,6 +37,17 @@ _EVENT_TABLES = (
 )
 
 
+class NotSetUp(RuntimeError):
+    """The fetch refused to start: no pump time zone, no credentials, no
+    ``sync`` extra, or no pump on the account."""
+
+
+class SignInRefused(Exception):
+    """The vendor refused the sign-in. Its own client raises a plain
+    ``ApiException`` for this, the same type as any other HTTP failure, so the
+    pull names it where the sign-in happens."""
+
+
 class PartialFetchError(Exception):
     """A multi-window pull that persisted some windows before a later one failed.
 
@@ -137,7 +148,7 @@ def pull_from_tconnect(store: Store, *, start, end, region=None,
     # will bucket against so it is visible in the fetch output.
     tz_name = os.environ.get("TIMEZONE_NAME")
     if not tz_name:
-        raise RuntimeError(
+        raise NotSetUp(
             "TIMEZONE_NAME is not set — refusing to fetch. Every tz-aware pump "
             "timestamp would be stored off the pump's local wall clock (#198). "
             "Set TIMEZONE_NAME to the pump's timezone in .env (e.g. "
@@ -147,7 +158,7 @@ def pull_from_tconnect(store: Store, *, start, end, region=None,
     # would fail to convert, and the store's clock has fallen back to the
     # process's (ADR 443).
     if pump_zone() is None:
-        raise RuntimeError(
+        raise NotSetUp(
             f"TIMEZONE_NAME={tz_name!r} names no time zone — refusing to fetch. "
             "Set TIMEZONE_NAME to the pump's timezone (e.g. "
             "TIMEZONE_NAME=America/Phoenix), then retry.")
@@ -156,9 +167,10 @@ def pull_from_tconnect(store: Store, *, start, end, region=None,
     try:
         from tconnectsync import secret
         from tconnectsync.api import TConnectApi
+        from tconnectsync.api.common import ApiException
         from tconnectsync.sync.tandemsource.choose_device import ChooseDevice
     except ImportError as e:  # pragma: no cover - depends on the optional extra
-        raise RuntimeError(
+        raise NotSetUp(
             "Live pull needs the 'sync' extra: install with "
             "`uv sync --extra sync` (or `pip install harmonic[sync]`)."
         ) from e
@@ -168,7 +180,7 @@ def pull_from_tconnect(store: Store, *, start, end, region=None,
 
     creds = load_credentials(store, key_path=key_path)
     if creds is None:
-        raise RuntimeError(
+        raise NotSetUp(
             "t:connect credentials are not configured. Create a .env with "
             "TCONNECT_EMAIL and TCONNECT_PASSWORD (see .env.example), or "
             "store credentials via the API's /api/credentials endpoint."
@@ -184,9 +196,16 @@ def pull_from_tconnect(store: Store, *, start, end, region=None,
     _tandemsource_api.CACHE_CREDENTIALS = False
 
     tconnect = TConnectApi(creds.email, creds.password, region or creds.region)
+    # The client signs in on its first read. A refusal comes back as the same
+    # ApiException as any other HTTP failure, so it is named here; a sign-in
+    # that never reached the vendor raises the network's own error instead.
+    try:
+        tconnect.tandemsource
+    except ApiException as e:
+        raise SignInRefused(str(e)) from e
     device = ChooseDevice(secret, tconnect).choose()
     if not device:
-        raise RuntimeError("No Tandem pump found on this t:connect account.")
+        raise NotSetUp("No Tandem pump found on this t:connect account.")
     # Tandem's BFF pump list keys the pump-logs path segment as `assignmentId`
     # (a UUID) — it replaced the old numeric `tconnectDeviceId`. In tconnectsync
     # 3.0.0, `ChooseDevice.choose()` returns the raw `BffPump` dict, so we read

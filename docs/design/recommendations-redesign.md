@@ -229,7 +229,7 @@ in §2.
 | State pill | Borderless tinted tag: 18 px, 2 px radius, uppercase 11 px label, the state's tone at 15% fill (Unclear on the rail surface). No outline, so it never reads as a button. Item kinds take no pill: the kind glyph carries Pattern vs Setting. |
 | Badge | 16 px; a count pill or an alert "!". |
 | Caption + value pair | A caption names the value it sits with and reads as one unit with it: stacked, the caption directly above the value, left edges aligned (Nights / Range); or inline, the caption before the value on the value's own baseline (`align-items: baseline`), never centred against it. |
-| Tab bar item / rail item | 44 px target, icon above label. The selected item carries Material 3's active indicator: a pill behind the icon, 64 x 32 px on the tab bar and 56 x 32 on the rail, fully rounded, `--primary` at 18%, the icon centred in it and the label below it. The icon and label take the accent. Badges stay top-right of the icon, above the pill. The pill fades and scales in over `--ui-motion-standard` and is instant under reduced motion. |
+| Tab bar item / rail item | 44 px target, 24 px glyph above the label. The phone tab bar is 64 px tall above the device's bottom inset (none on a phone without one), its items centred in it (§2.5, 2026-10-14). The selected item carries Material 3's active indicator: a pill behind the icon, 64 x 32 px on the tab bar and 56 x 32 on the rail, fully rounded, `--primary` at 18%, the icon centred in it and the label below it. The icon and label take the accent. Badges stay top-right of the icon, above the pill. The pill fades and scales in over `--ui-motion-standard` and is instant under reduced motion. |
 | Sheet | Bottom-attached, 12 px top radius, grabber. |
 | Popover | Anchored to its trigger. |
 | Transient bar | Above the tab bar, label and one text action. |
@@ -503,6 +503,19 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   motion. The pill and label overflow the 44 px target by a few px, inside the
   existing spacing (§2.2 Tab bar / rail item).
 
+- **2026-10-14 — the phone tab bar is shorter and its glyphs larger.** On
+  his Android phone the operator found the tab bar "too tall. It's just
+  there's too much dead space underneath the icons. And maybe the icons are
+  too small?" The bar was 84 px with a fixed 34 px reserved under the items
+  for an iPhone's home indicator, empty on a phone without one. The bar now
+  matches Material 3 Expressive's flexible navigation bar: 64 px from its
+  top rule, the 44 px items centred in it, then the device's own bottom inset
+  and nothing more. The glyphs grow from 20 to 24 px, Material 3's
+  navigation glyph, on the tab bar and the rail alike. The pill stays (he
+  compared a filled icon with no pill and a pill, and the pill is current
+  Material 3), as do the 11 px caption label and the 44 px target
+  (§2.2 Tab bar / rail item, §4.1).
+
 - **2026-10-14 — the selected day fills its column, and the month steps.** The
   operator, on the Day screen's month drop-down: "selected day is nearly
   impossible to see." The thin bar at the top of the selected day's column is
@@ -687,6 +700,20 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   modal, no sign-in screen and no new route; the `/#token=` link still works
   as before. "Token" joins the plain interface words (Settings labels).
 
+- **2026-10-14 — the Error row: a short served label, the raw text
+  beneath.** A failed sync's served error is the raw text the fetch raised
+  (a whole connection-pool message when the network is down), and as the
+  row's inline value it ran off the right edge and over the "Error" label.
+  The server now serves `status.last_error_label` beside `last_error`: one
+  short label per way a fetch fails — No connection, Timed out, Sign-in
+  refused, HTTP and its status code, Not set up, or Unknown. The Error row
+  shows that label as its inline value, and the raw text beneath the label
+  in meta ink at label size, broken at any character, so it wraps inside the
+  row at every width and never reaches under the value. Both are served
+  values, not app copy (§2.3 bans 1 and 7), and the frontend classifies
+  nothing. Nothing is tapped open or hidden (§1.4). The Tandem Source failed
+  stories serve a long error at phone and desktop and check the row holds it.
+
 ### 2.6 Deferred (not cut)
 Not built in the current screens. The engine still serves what each needs, and
 nothing is removed from the engine or the fixtures for them.
@@ -719,7 +746,7 @@ may display; derived values name their formula in the provenance table.
 | Icon button | 44 px target, 20 px glyph. |
 | Segmented control | 28 px. |
 | Answer button (Prompt) | 44 px, outlined neutral, equal widths. |
-| Navigation item | 44 px target. |
+| Navigation item | 44 px target, 24 px glyph. |
 | List row | 48 px minimum. |
 
 ### 4.2 Components
@@ -731,7 +758,8 @@ unless noted. Loading is a skeleton of the component's own shape.
 
 1. **NavBar**: the phone tab bar and the desktop/tablet rail; five items, an
    icon above a label; the selected item has a pill behind its icon (§2.5,
-   2026-10-14).
+   2026-10-14). The phone tab bar is 64 px above the device's bottom inset,
+   with 24 px glyphs, its items centred in it (§2.5, 2026-10-14).
    - States: default; item selected; with a count badge; with an alert badge.
    - Fields: `prompts` length (Day count); `status.last_error` and
      `status.last_success_at` (Settings alert).
@@ -962,8 +990,11 @@ unless noted. Loading is a skeleton of the component's own shape.
     - States: navigable; read-only; with alert ("⚠ Failed"); with a secondary
       button ("Update"); disclosure, closed or open (expands in place: the
       Changes screen's last change); field (the account form's Email and
-      Password, and the root's Token).
-    - Fields: `status`; `credentials.configured, email` (masked), `region`;
+      Password, and the root's Token); with a served detail beneath the
+      label, wrapped at any width (the Error row's raw text under its label,
+      §2.5 2026-10-14).
+    - Fields: `status` (`last_error_label` inline, `last_error` beneath);
+      `credentials.configured, email` (masked), `region`;
       `pump_settings.profile.segments[]`.
     - Desktop: the same.
 

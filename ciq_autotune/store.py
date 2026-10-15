@@ -317,6 +317,11 @@ def _seq_key(r: dict, kind: str) -> int:
     return seq
 
 
+# CGM arrives every five minutes, so readings chained closer than this are two
+# records of one slot, never two observations (#519).
+_CGM_SLOT_SPAN = timedelta(minutes=2)
+
+
 # --- schema -----------------------------------------------------------------
 
 _SCHEMA = """
@@ -453,6 +458,7 @@ CREATE TABLE IF NOT EXISTS fetch_status (
     last_attempt_at   TEXT,
     last_success_at   TEXT,
     last_error        TEXT,
+    last_error_label  TEXT,
     last_written_json TEXT
 );
 
@@ -542,6 +548,15 @@ CREATE TABLE IF NOT EXISTS follow_up_requests (
 );
 """
 
+# The pump event every step of a site change logs (cartridge, tubing and cannula
+# fills), and the most time between two fills of one site change. The fills land
+# seconds apart when the set is already in and minutes apart when the wearer
+# inserts the new set between the tubing and the cannula fills; two site changes
+# within half an hour are one procedure redone, never two sites. Read by
+# :meth:`Store.pump_events`.
+SITE_CHANGE_EVENT = "Site/Cartridge Change"
+SITE_CHANGE_GAP = timedelta(minutes=30)
+
 # Additive columns introduced after the first release, applied to pre-existing
 # databases in :meth:`Store._migrate` (CREATE TABLE IF NOT EXISTS never alters an
 # existing table). Each entry is (table, column, type).
@@ -558,6 +573,7 @@ _ADDED_COLUMNS = [
     ("bolus_events", "isf", "REAL"),          # #159 dose-stamped ISF
     ("bolus_events", "target_bg", "REAL"),    # #159 dose-stamped target BG
     ("bolus_events", "carb_ratio", "REAL"),   # #159 dose-stamped carb ratio
+    ("fetch_status", "last_error_label", "TEXT"),  # the failed fetch's short label
 ]
 
 
@@ -1160,10 +1176,58 @@ class Store:
         ]
 
     def cgm_readings(self, start=None, end=None) -> List[CgmReading]:
-        return [
-            CgmReading(parse_t(r["t"]), r["bg"], r["type"])
-            for r in self._select("cgm_readings", start, end)
-        ]
+        """CGM readings in ``[start, end)``, one per five-minute slot (#519).
+
+        The vendor feed can carry two records for one slot seconds apart — the
+        same reading twice, or two disagreeing series side by side — and the
+        timestamp key keeps both. Readings chained less than two minutes apart
+        are one slot. A record with no glucose value adds no observation, so the
+        slot is its first valued reading when its values agree, and its first
+        reading with no value when two values disagree, so no analyzer trusts
+        either series. A ranged read looks across its edges and keeps a slot by
+        that reading's time, so it answers exactly as the whole read does.
+        Stored rows are untouched.
+        """
+        rows = [(parse_t(r["t"]), r["bg"], r["type"])
+                for r in self._select("cgm_readings", start, end)]
+        if not rows:
+            return []
+        if start:
+            while True:
+                prev = self.conn.execute(
+                    "SELECT t, bg, type FROM cgm_readings WHERE t < ? ORDER BY t DESC LIMIT 1",
+                    (rows[0][0].isoformat(sep=" "),)).fetchone()
+                if prev is None or rows[0][0] - parse_t(prev["t"]) >= _CGM_SLOT_SPAN:
+                    break
+                rows.insert(0, (parse_t(prev["t"]), prev["bg"], prev["type"]))
+        if end:
+            while True:
+                nxt = self.conn.execute(
+                    "SELECT t, bg, type FROM cgm_readings WHERE t > ? ORDER BY t LIMIT 1",
+                    (rows[-1][0].isoformat(sep=" "),)).fetchone()
+                if nxt is None or parse_t(nxt["t"]) - rows[-1][0] >= _CGM_SLOT_SPAN:
+                    break
+                rows.append((parse_t(nxt["t"]), nxt["bg"], nxt["type"]))
+        slots: List[list] = []
+        for row in rows:
+            if slots and row[0] - slots[-1][-1][0] < _CGM_SLOT_SPAN:
+                slots[-1].append(row)
+            else:
+                slots.append([row])
+        # Bound by the stored text, exactly as the SQL range above compares it.
+        lo, hi = (str(start) if start else None), (str(end) if end else None)
+        out = []
+        for slot in slots:
+            valued = [row for row in slot if row[1] is not None]
+            if len({row[1] for row in valued}) > 1:
+                t, _, kind = slot[0]
+                reading = CgmReading(t, None, kind)
+            else:
+                reading = CgmReading(*(valued or slot)[0])
+            t = format_t(reading.t) if lo or hi else None
+            if (lo is None or t >= lo) and (hi is None or t < hi):
+                out.append(reading)
+        return out
 
     def cgm_day_bounds(self) -> tuple:
         """Return (earliest_day, latest_day) as YYYY-MM-DD pump-local strings.
@@ -1202,10 +1266,35 @@ class Store:
                 if r.event_id == CONTINUOUS_IOB_EVENT_ID]
 
     def pump_events(self, start=None, end=None) -> List[PumpEvent]:
-        return [
-            PumpEvent(parse_t(r["t"]), r["event_type"], r["duration_mins"])
-            for r in self._select("pump_events", start, end)
-        ]
+        """Every pump event, one site change per fill sequence.
+
+        A site change is one procedure on the pump — load the cartridge, fill the
+        tubing, fill the cannula — and each step logs its own event, seconds apart
+        when the set is already in, minutes apart when the wearer inserts the new
+        set between the tubing and the cannula fills. The rows stay as the pump
+        logged them (keyed on seqNum); this read joins every
+        ``SITE_CHANGE_EVENT`` within ``SITE_CHANGE_GAP`` of the one before it into
+        one event at its first fill, lasting until its last, so every consumer —
+        the Day timeline, the clean-window exclusion, the pattern sweep — counts
+        the procedure once and an exclusion around it still covers every fill.
+        """
+        events: List[PumpEvent] = []
+        site: Optional[int] = None  # the site change a next fill may join
+        last_fill: Optional[datetime] = None
+        for r in self._select("pump_events", start, end):
+            event = PumpEvent(parse_t(r["t"]), r["event_type"], r["duration_mins"])
+            fill = event.event_type == SITE_CHANGE_EVENT
+            if fill and site is not None and event.t - last_fill <= SITE_CHANGE_GAP:
+                first = events[site].t
+                events[site] = PumpEvent(first, SITE_CHANGE_EVENT,
+                                         (event.t - first).total_seconds() / 60)
+            else:
+                events.append(event)
+                if fill:
+                    site = len(events) - 1
+            if fill:
+                last_fill = event.t
+        return events
 
     # --- carb log (#125) ----------------------------------------------------
     # Unlike the sync feeds above (idempotent upserts on a natural key), carb
@@ -1377,25 +1466,29 @@ class Store:
 
     def record_fetch_result(self, *, attempted_at: str, ok: bool,
                             error: Optional[str] = None,
+                            error_label: Optional[str] = None,
                             written: Optional[dict] = None) -> None:
         """Record one fetch attempt. ``last_success_at``/``last_written_json``
-        only advance on success — a failed attempt updates ``last_attempt_at``
-        and ``last_error`` but leaves the last-known-good state in place."""
+        only advance on success — a failed attempt updates ``last_attempt_at``,
+        ``last_error`` and its short ``last_error_label`` but leaves the
+        last-known-good state in place."""
         written_json = json.dumps(written) if written is not None else None
         with self._write_transaction():
             self.conn.execute(
                 "INSERT INTO fetch_status "
-                "(id, last_attempt_at, last_success_at, last_error, last_written_json) "
-                "VALUES (1, ?, ?, ?, ?) "
+                "(id, last_attempt_at, last_success_at, last_error, last_error_label, "
+                "last_written_json) "
+                "VALUES (1, ?, ?, ?, ?, ?) "
                 "ON CONFLICT (id) DO UPDATE SET "
                 "last_attempt_at=excluded.last_attempt_at, "
                 "last_success_at=CASE WHEN ? THEN excluded.last_success_at "
                 "                 ELSE fetch_status.last_success_at END, "
                 "last_error=excluded.last_error, "
+                "last_error_label=excluded.last_error_label, "
                 "last_written_json=CASE WHEN ? THEN excluded.last_written_json "
                 "                   ELSE fetch_status.last_written_json END",
                 (attempted_at, attempted_at if ok else None, None if ok else error,
-                 written_json, ok, ok),
+                 None if ok else error_label, written_json, ok, ok),
             )
             self._advance_revision()
 
@@ -1407,6 +1500,7 @@ class Store:
             "last_attempt_at": row["last_attempt_at"],
             "last_success_at": row["last_success_at"],
             "last_error": row["last_error"],
+            "last_error_label": row["last_error_label"],
             "last_written": json.loads(row["last_written_json"]) if row["last_written_json"] else None,
         }
 

@@ -441,5 +441,68 @@ class InsulinTotalsEndpointTest(unittest.TestCase):
         self.assertIsNone(self._totals("2026-06-16T00:00:00", "2026-06-17T00:00:00"))
 
 
+
+def _pump(seq, t, event_type="Site/Cartridge Change"):
+    return {"seq_num": seq, "time": t, "event_type": event_type, "duration_mins": 0.0}
+
+
+@unittest.skipUnless(_HAS_FASTAPI, "needs the api extra")
+class SiteChangeEndpointTest(unittest.TestCase):
+    """A site change is one procedure on the pump — load the cartridge, fill the
+    tubing, fill the cannula — and each step logs its own event. The store keeps
+    every row (keyed on seqNum); the timeline serves one site change per fill
+    sequence, starting at its first fill and lasting until its last."""
+
+    def setUp(self):
+        tmp = tempfile.NamedTemporaryFile(suffix=".db", delete=False)
+        tmp.close()
+        self.addCleanup(os.unlink, tmp.name)
+        self.db = tmp.name
+        with Store.open(tmp.name) as store:
+            store.upsert_pump([
+                # Cartridge, tubing and cannula filled seconds apart.
+                _pump(11, "2026-06-11 09:00:00"),
+                _pump(12, "2026-06-11 09:00:04"),
+                _pump(13, "2026-06-11 09:00:08"),
+                # A suspend between site changes is its own event.
+                _pump(14, "2026-06-11 12:00:00", "User Suspended"),
+                # A cartridge fill, then the cannula filled twelve minutes later
+                # once the new set is in: still one site change.
+                _pump(15, "2026-06-11 18:00:00"),
+                _pump(16, "2026-06-11 18:12:00"),
+                # The next site change, the next day, stays its own.
+                _pump(17, "2026-06-12 09:00:00"),
+            ])
+        from ciq_autotune.api import create_app
+        self.client = TestClient(create_app(db_path=tmp.name, token=None,
+                                            enable_fetch_loop=False))
+
+    def _events(self, start, end):
+        r = self.client.get("/api/timeline", params={"start": start, "end": end})
+        self.assertEqual(r.status_code, 200)
+        return r.json()["pump_events"]
+
+    def test_one_site_change_per_fill_sequence(self):
+        events = self._events("2026-06-11T00:00:00", "2026-06-16T00:00:00")
+        self.assertEqual(
+            [(e["t"], e["event_type"]) for e in events],
+            [("2026-06-11 09:00:00", "Site/Cartridge Change"),
+             ("2026-06-11 12:00:00", "User Suspended"),
+             ("2026-06-11 18:00:00", "Site/Cartridge Change"),
+             ("2026-06-12 09:00:00", "Site/Cartridge Change")])
+        # Each lasts from its first fill to its last, so a window excluded around
+        # it still covers every fill.
+        self.assertAlmostEqual(events[0]["duration_mins"], 8 / 60)
+        self.assertAlmostEqual(events[2]["duration_mins"], 12.0)
+        self.assertEqual(events[3]["duration_mins"], 0.0)
+
+    def test_every_fill_row_is_kept(self):
+        with Store.open_readonly(self.db) as store:
+            count = store.conn.execute(
+                "SELECT COUNT(*) FROM pump_events WHERE event_type = 'Site/Cartridge Change'"
+            ).fetchone()[0]
+        self.assertEqual(count, 6)
+
+
 if __name__ == "__main__":
     unittest.main()

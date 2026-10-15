@@ -3589,7 +3589,7 @@
           },
           "pump_events": [
             {
-              "duration_mins": 0.0,
+              "duration_mins": 0.13333333333333333,
               "event_type": "Site/Cartridge Change",
               "t": "2025-05-17 10:00:00"
             }
@@ -6523,7 +6523,7 @@
           },
           "pump_events": [
             {
-              "duration_mins": 0.0,
+              "duration_mins": 0.13333333333333333,
               "event_type": "Site/Cartridge Change",
               "t": "2025-05-23 10:00:00"
             }
@@ -57963,7 +57963,8 @@
         "data_day_count": 84,
         "earliest_data_day": "2025-03-03",
         "last_attempt_at": "2025-05-26 01:20:00",
-        "last_error": "synthetic sync failure",
+        "last_error": "HTTPSConnectionPool(host='sso.example.invalid', port=443): Max retries exceeded with url: /login (Caused by NewConnectionError('Failed to establish a new connection: [Errno 101] Network is unreachable'))",
+        "last_error_label": "No connection",
         "last_success_at": "2025-05-26 01:10:00",
         "latest_data_day": "2025-05-25"
       },
@@ -57972,6 +57973,7 @@
         "earliest_data_day": "2025-03-03",
         "last_attempt_at": "2025-05-26 01:10:00",
         "last_error": null,
+        "last_error_label": null,
         "last_success_at": "2025-05-26 01:10:00",
         "latest_data_day": "2025-05-25"
       }
@@ -58039,7 +58041,8 @@
       "earliest_data_day": "2025-03-03",
       "input_revision": 27,
       "last_attempt_at": "2025-05-26 01:00:00",
-      "last_error": "synthetic sync failure",
+      "last_error": "HTTPSConnectionPool(host='sso.example.invalid', port=443): Max retries exceeded with url: /login (Caused by NewConnectionError('Failed to establish a new connection: [Errno 101] Network is unreachable'))",
+      "last_error_label": "No connection",
       "last_success_at": null,
       "last_written": null,
       "latest_data_day": "2025-05-25"
@@ -58050,6 +58053,7 @@
       "input_revision": 25,
       "last_attempt_at": null,
       "last_error": null,
+      "last_error_label": null,
       "last_success_at": null,
       "last_written": null,
       "latest_data_day": "2025-05-25"

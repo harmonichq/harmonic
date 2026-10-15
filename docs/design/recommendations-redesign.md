@@ -654,6 +654,28 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   modal, no sign-in screen and no new route; the `/#token=` link still works
   as before. "Token" joins the plain interface words (Settings labels).
 
+- **2026-10-14 — answers kept across visits, and stale beats blank (#522).**
+  On the home server every screen waited on the engine, on every visit and
+  every refresh. The operator: "we definitely need some kind of caching ...
+  Like hot loading on a refresh". Three behaviours change; no component,
+  word or route is added.
+  - *A tab revisited draws at once.* What a tab read stays on screen when the
+    person leaves and comes back, with no skeleton and no read (as built in
+    #495, now binding).
+  - *A refresh draws the last answers at once.* Each tab's answers are kept in
+    this browser, for this server's token only, and a refresh draws them
+    immediately while the engine is read again behind them; the screen
+    updates when the new answers land. A tab never read in this browser shows
+    its Loading state as before. A new token (Settings, or the `/#token=`
+    link) forgets everything kept under the last one.
+  - *Stale.* When reading a screen's answers again fails, the screen keeps
+    them and its title row shows "Unavailable" and **Retry**, §1.2's own
+    label and action, in place of its trailing control; the rest of the
+    screen is unchanged. On Day that slot also holds the day control and
+    "+ Log carbs", so they return when Retry succeeds. A screen with nothing
+    to keep still shows Unavailable alone (§1.2). Every screen's inventory
+    (§1.3) gains this state; its stories are each screen's Stale pair.
+
 ### 2.6 Deferred (not cut)
 Not built in the current screens. The engine still serves what each needs, and
 nothing is removed from the engine or the fixtures for them.

@@ -76,6 +76,10 @@ export const LoadingPhone = story('phone', LOADING);
 export const LoadingDesktop = story('desktop', LOADING);
 export const UnavailablePhone = story('phone', UNAVAILABLE);
 export const UnavailableDesktop = story('desktop', UNAVAILABLE);
+// Stale (§2.5, 2026-10-14): the last answers, kept on screen under Unavailable
+// and Retry, when reading them again failed.
+export const StalePhone = story('phone', { ...DEFAULT, state: 'stale' });
+export const StaleDesktop = story('desktop', { ...DEFAULT, state: 'stale' });
 export const MonthOpenPhone = story('phone', { ...DEFAULT, monthOpen: true });
 export const MonthOpenDesktop = story('desktop', { ...DEFAULT, monthOpen: true });
 

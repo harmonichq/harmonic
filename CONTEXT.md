@@ -767,21 +767,22 @@ variable; it must not encourage batching unrelated basal / ISF / I:C / target
 changes. One variable at a time is the rule from Diagnose through Changes.
 _Avoid_: change basket, backlog, batch.
 
-A recorded Plan is **pending** until it is **confirmed** — by its matched Trial,
-or by a later pump read that holds its schedule — **withdrawn** by the user, or
-**superseded** by a newer recorded Plan. Only the newest recorded Plan can be
-pending, and while it is pending it withholds a Focus and a new decision. The
-server serves one verdict per recorded Plan (pending; mismatch, a comparable
-pending Plan the latest pump read after its decision does not hold — a Plan
-whose recorded items cannot be compared with a read stays pending; confirmed;
-withdrawn; superseded) with when it was confirmed and whether the latest read still holds
-it (on pump). A confirmed Plan stays confirmed when a later read stops holding
-it. Surfaces read the verdict; none decides it. A Trial detected within a day of
-the pump read that confirmed its Plan links to that Plan, one Trial to one Plan,
+A Plan is recorded by **Done** on a Queue Setting card (ADR 518): the person
+says they programmed the card's served suggestion into the pump. A recorded Plan
+is **waiting** for the pump until the first sync after it decides it, or until
+it is **withdrawn** (Undo). Each Setting has at most one waiting Plan, and a
+waiting Plan withholds nothing. A sync whose read shows the setting moved, to
+any value, closes it **on pump**: the pump change is its Trial. A sync that
+carries pump data from after the Done, with the setting unchanged, closes it
+**not on pump**, and the card returns to the Queue marked so until the next
+change of that setting or a snooze. The server serves one verdict per recorded
+Plan (waiting, on pump, not on pump, withdrawn) with the deciding read's time.
+Surfaces read the verdict; none decides it. A Trial detected within a day of the
+read that closed its Plan on the pump links to that Plan, one Trial to one Plan,
 and a Trial linked or matched to a Plan shows that Plan's recorded decision as
 its original decision; the Plan itself is not rewritten.
-_Avoid_: applied, entered or verified (for confirmed), canceled or deleted (for
-withdrawn), stale, expired or abandoned (for superseded).
+_Avoid_: applied, entered, verified or confirmed (for on pump), canceled or
+deleted (for withdrawn), pending (for waiting), mismatch (for not on pump).
 
 **Maturing**:
 A Trial's watch phase — the change is in effect but its **outcome delta is not yet

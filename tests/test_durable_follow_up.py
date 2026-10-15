@@ -22,7 +22,7 @@ class DurableApiTest(unittest.TestCase):
     def test_unreconciled_read_is_unavailable_and_readonly(self):
         with Store.open_readonly(self.path) as store:
             revision = store.input_data_revision()
-        response = self.client.get("/api/plan", headers=self.headers)
+        response = self.client.get("/api/plan/history", headers=self.headers)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["admission"]["state"], "unavailable")
         with Store.open_readonly(self.path) as store:
@@ -53,7 +53,7 @@ class DurableApiTest(unittest.TestCase):
         response = self.client.post("/api/carbs", headers=self.headers, json={
             "t": "2026-09-11 12:00:00", "grams": 8, "certainty": "exact"})
         self.assertEqual(response.status_code, 200, response.text)
-        read = self.client.get("/api/plan", headers=self.headers)
+        read = self.client.get("/api/plan/history", headers=self.headers)
         self.assertEqual(read.status_code, 200, read.text)
         self.assertEqual(read.json()["admission"]["active_kind"], "trial")
         self.assertEqual(read.json()["admission"]["active_id"], record["id"])
@@ -74,7 +74,7 @@ class DurableApiTest(unittest.TestCase):
                                 store.input_data_revision())
         restarted = TestClient(create_app(
             db_path=self.path, token="synthetic-token", enable_fetch_loop=False))
-        read = restarted.get("/api/plan", headers=self.headers)
+        read = restarted.get("/api/plan/history", headers=self.headers)
         self.assertEqual(read.status_code, 200, read.text)
         self.assertIsNone(read.json()["admission"]["active_kind"])
         with Store.open_readonly(self.path) as store:
@@ -475,27 +475,26 @@ class DurableApiTest(unittest.TestCase):
 
     def test_apply_retry_pending_withdrawal_and_source_conflicts(self):
         source = self.seed_case("basal-raise")
-        action = next(row for row in source["candidates"] if row["subject"] == "setting:basal_rate")["action"][0]
-        items = [{"type": "basal", "start_min": action["start_min"], "value": action["recommended"]}]
-        draft = self.client.put("/api/plan", headers=self.headers, json={"items": items}).json()
         body = {"request_id": "apply", "input_revision": source["input_revision"],
-                "subject": "setting:basal_rate", "analysis_generation": source["analysis_generation"],
-                "draft_updated_at": draft["updated_at"]}
-        bad = self.client.post("/api/plan/apply", headers=self.headers, json={**body, "draft_updated_at": "stale"})
+                "subject": "setting:basal_rate", "analysis_generation": source["analysis_generation"]}
+        bad = self.client.post("/api/plan/apply", headers=self.headers,
+                               json={**body, "request_id": "stale", "analysis_generation": "stale"})
         self.assertEqual(bad.status_code, 409)
+        self.assertEqual(bad.json()["detail"]["code"], "stale_source")
         response = self.client.post("/api/plan/apply", headers=self.headers, json=body)
         self.assertEqual(response.status_code, 200, response.text)
         applied = response.json()
         self.assertEqual(applied["record"]["decision_context"]["state"], "available")
         self.assertTrue(applied["record"]["deliverable"]["rows"])
-        self.assertFalse(applied["admission"]["focus_pin"]["available"])
+        self.assertTrue(applied["admission"]["focus_pin"]["available"], "a Done holds no Pin back (#518)")
         self.assertEqual(self.client.post("/api/plan/apply", headers=self.headers, json=body).json(), applied)
         changed = self.client.post("/api/plan/apply", headers=self.headers,
                                    json={**body, "subject": "setting:isf"})
         self.assertEqual(changed.status_code, 409, changed.text)
         self.assertEqual(changed.json()["detail"]["code"], "request_identity_mismatch")
         guidance = self.client.get("/api/guidance", headers=self.headers).json()
-        self.assertEqual(guidance["disposition"], "pending_plan")
+        basal = next(row for row in guidance["candidates"] if row["subject"] == "setting:basal_rate")
+        self.assertEqual(basal["acknowledgment"]["state"], "waiting")
         withdrawal = {"request_id": "withdraw", "input_revision": applied["input_revision"],
                       "applied_at": applied["applied_at"], "reason": "Reconsidered"}
         response = self.client.post("/api/plan/history/withdraw", headers=self.headers, json=withdrawal)
@@ -512,21 +511,16 @@ class DurableApiTest(unittest.TestCase):
             **body, "input_revision": fresh["input_revision"],
             "analysis_generation": fresh["analysis_generation"]})
         self.assertEqual(retry.status_code, 200, retry.text)
-        self.assertEqual(retry.json(), applied)  # tokens, withdrawal and cleared draft are not identity
+        self.assertEqual(retry.json(), applied)  # tokens and the withdrawal are not identity
 
     def test_plan_history_names_each_recorded_subject_at_read_time(self):
         # ADR 451: the history read serves each recorded subject's name beside its
         # identifier. The name is computed on read and never stored; the recorded
         # explanation is the served concern title at the moment of apply.
         source = self.seed_case("isf-strengthen")
-        concern = next(row for row in source["candidates"] if row["subject"] == "setting:isf")
-        action = concern["action"][0]
-        items = [{"type": "isf", "start_min": action["start_min"], "value": action["recommended"]}]
-        draft = self.client.put("/api/plan", headers=self.headers, json={"items": items}).json()
         response = self.client.post("/api/plan/apply", headers=self.headers, json={
             "request_id": "apply", "input_revision": source["input_revision"],
-            "subject": "setting:isf", "analysis_generation": source["analysis_generation"],
-            "draft_updated_at": draft["updated_at"]})
+            "subject": "setting:isf", "analysis_generation": source["analysis_generation"]})
         self.assertEqual(response.status_code, 200, response.text)
         read = self.client.get("/api/plan/history", headers=self.headers).json()
         context = read["history"][0]["decision_context"]

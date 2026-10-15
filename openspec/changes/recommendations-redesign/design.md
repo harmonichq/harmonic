@@ -571,6 +571,118 @@ contract test's per-store literals. A new screen gets one line in the smoke's
 tab list. No synthetic store yet holds a queued basal block inside a Trial's
 block; that state is proved only by the Storybook fixtures.
 
+## ADR 518 — Done on a Setting card is a Plan the next sync resolves
+
+**Context.** A Queue Setting card (basal, I:C, ISF) had no way to say "I
+programmed this into my pump". The card stayed queued until a sync showed the
+change, so it looked unhandled in the meantime, and Snooze, the only way to
+clear it, means "not now". Connor decided on 2026-10-14: "have the user
+acknowledge, you know, I programmed this into my pump and only have it resurface
+if a pump sync occurs that contains data since the moment that they swiped,
+stating that the setting still hasn't changed." Then, on a different value:
+"if I program something slightly different, for example, if I was given ...
+0.82 and I was like, no, I'm gonna do 0.85. I'd prefer the trial. I don't want
+to see the old basal value." And on scope: "one done per card, yeah ... I
+wouldn't want to have to enter a pump changes screen and say here's all the
+changes I did."
+
+The engine already held a record of exactly this: a recorded Plan, the person's
+decision to program a setting, matched against the pump reads after it and
+withdrawable (ADR 431, ADR 463 decision 7). The desk staged a Plan in a draft and
+recorded it with Apply; the five-tab app (ADR 495) kept no Plan surface, so
+nothing in the app read the draft, the pending-Plan disposition or the Trial
+detail's stage-prior route any more.
+
+**Decision.**
+
+1. *Done records a Plan from the card's own served action.* `POST
+   /api/plan/apply` takes the setting's guidance subject and the read it was
+   made from (`subject`, `analysis_generation`, `input_revision`, `request_id`;
+   all four required). It records the candidate's served action rows as the
+   Plan's items: one item per action member start (the action's own start when
+   it names none) at the action's recommended value, an I:C item carrying its
+   block (`guidance.done_items`). The client sends no values. The candidate must
+   be a Setting the guidance admits, not snoozed and not already waiting; a
+   stale read refuses as `stale_source`, an inadmissible one as
+   `ineligible_source`. The decision context and the deliverable (the source
+   profile and its rows) are captured as before. The write is durable and goes
+   through the one lifecycle path, so it invalidates as a write to follow-up
+   state (ADR 522): it writes only the Plan history, the follow-up records and
+   the frontier (its staging row is written and cleared in the same
+   transaction), and no result kept across such a write reads any of them. The
+   default analysis, the findings and guidance snapshot and the case-file
+   preparations are dropped and re-warmed; the guidance's Done state is read
+   from the store on every guidance read and is never cached.
+2. *One open Done per Setting, and it holds nothing back.* A Plan is open while
+   it is neither resolved nor withdrawn. Each Setting subject has at most its
+   newest open Plan, and several Settings can each wait at once. This replaces
+   ADR 431's "only the newest Plan is pending" and its superseded verdict. An
+   open Plan no longer withholds a Focus (`focus_pin` names no `pending_plan`
+   reason), and a Done is recorded whatever change is being watched: a pump
+   change it leads to ends or joins that change by ADR 500's rule.
+3. *Undo is withdrawal.* `POST /api/plan/history/withdraw` withdraws an open
+   Plan, unchanged but for its open check; one already resolved refuses as
+   `nonpending_plan`.
+4. *The first sync after the Done decides it, in reconciliation.* The read at or
+   before the decision is what the card showed; the latest read captured after
+   it is what the pump runs. At each Plan item's start minute, at pump
+   precision:
+   - a setting that moved there, to the suggestion or to any other value,
+     closes the Plan *on the pump* at once. The pump change is its Trial by the
+     ordinary rule (#502, ADR 500/506/510); nothing compares the new value with
+     the suggestion. ADR 463 decision 7's link then names the Plan in that
+     Trial's receipt when the match is one to one, and a Trial whose transition
+     carries the Plan's whole schedule still links through the Trial-matched
+     receipt (`_reconcile_plan`).
+   - a setting that did not move closes the Plan *not on the pump*, but only
+     once the store holds pump data (the latest CGM or basal record) from after
+     the decision. A sync of what the pump uploaded before the Done never reads
+     as not on the pump: Connor's "a pump sync ... that contains data since the
+     moment that they swiped".
+   - with no read after the decision, or with only a stale one, it stays open.
+   A Plan whose items name no integer start minute cannot be decided and leaves
+   only by Undo. The decision is written once, in the reconciliation receipt
+   (`on_pump`, the deciding read), and later reads never rewrite it. This
+   replaces ADR 431's pump-read confirmation (the unbroken run of holding reads)
+   and its mismatch verdict.
+5. *One verdict, read off the record.* Each recorded Plan serves `withdrawn`,
+   `waiting`, `on_pump` or `not_on_pump`, with the deciding read's time
+   (`read_at`). A Plan an earlier build confirmed is `on_pump`.
+6. *The guidance serves each Setting's Done state; the app renders it.* Each
+   Setting candidate carries `acknowledgment`, from its subject's newest Plan
+   not withdrawn: `waiting` while open; `not_on_pump` after an unchanged sync,
+   until the next pump change of that setting or a snooze decided after that
+   read; otherwise none. A waiting candidate is not selected. The app queues a
+   candidate only when it is admitted, not snoozed and not waiting, and marks a
+   `not_on_pump` card. Changes reads the Trial roster and not the guidance (ADR
+   524), so the roster serves the waiting acknowledgments as `waiting`, from the
+   same function; Changes lists them in the slot between the current change and
+   Previous. The app re-derives none of it.
+7. *What the app no longer needed goes.* The draft routes (`GET`/`PUT
+   /api/plan`), the guidance's `draft` and `pending_plan` fields and their
+   dispositions, the `stale_draft` and `ineligible_draft` refusals, and the
+   Trial detail's `plan_route` (the desk's stage-prior draft) are removed: the
+   app read none of them and nothing else did. The Store's Plan methods, the
+   `plan_history` and `plan_draft` tables, the Plan history read, the
+   deliverable, the Trial-matched receipt and the annotated I:C group matching
+   stay: Done records through them, and Trial detection reads the history.
+   With the draft route gone, the draft's cache exception goes too; saving
+   credentials (ADR 522) is the one write left that invalidates nothing.
+
+**Dosing.** No analyzer, staging predicate, cap or floor changes: Done exists
+only on a card the engine already admits through its one staging verdict, and
+records the engine's own served suggestion. Not on pump shows the same card
+again, with the same served suggestion; it adds no recommendation. A different
+value on the pump is measured as the Trial it is, never re-advised as the old
+suggestion.
+
+**Consequences.** A store's existing open Plans from the desk are decided by the
+next reconciliation, each against the read before and the latest read after
+it; one whose setting has not moved since shows its card Not on pump, if that
+card is queued, until the next change or a snooze. The amendments this makes
+to the Plan, HTTP API and surfaces specifications are in this change's spec
+deltas, and the confirmation requirement ADR 500 modified moves here.
+
 ## ADR 516 — A site change is one fill sequence, a failed sync is served by a short label, and a failed fetch is retried early
 
 **Context.** On a real store, one site change showed as three: the pump logs a

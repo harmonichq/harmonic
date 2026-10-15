@@ -102,7 +102,8 @@ export function createLive({ client, glossary, memory = null }) {
 
   // --- The answers, each read once ------------------------------------------
 
-  /** gen_ui_fixtures._queue_store's candidate: preference and decision flattened, and the Queue's order rule. */
+  /** gen_ui_fixtures._queue_store's candidate: preference and decision flattened, and the Queue's order rule:
+   *  admitted, not snoozed, and not waiting for the pump after a Done (#518). */
   const guidance = () => once('guidance', async () => {
     const answer = await client.fetchGuidance();
     answers.queue.wearer.guidance = {
@@ -110,7 +111,8 @@ export function createLive({ client, glossary, memory = null }) {
         ...c,
         set_aside: c.preference.set_aside,
         decided_at: c.decision?.decided_at ?? null,
-        queued: c.admitted && !c.preference.set_aside,
+        acknowledgment: c.acknowledgment ?? null,
+        queued: c.admitted && !c.preference.set_aside && c.acknowledgment?.state !== 'waiting',
       })),
     };
     return answer;
@@ -244,6 +246,8 @@ export function createLive({ client, glossary, memory = null }) {
           tracking: tracking(detail.reassessment.comparison) }] : []),
         ...answer.focuses.filter((f) => f.status !== 'active' && f.ending && 'kind' in f.ending),
       ],
+      // The Settings a Done left waiting for the pump, served on the roster (#518).
+      waiting: answer.waiting ?? [],
     };
   });
 
@@ -354,6 +358,25 @@ export function createLive({ client, glossary, memory = null }) {
     },
     restore: async (subject) => {
       await write(() => client.restoreGuidancePreference(subject), FOLLOW_UP, both);
+    },
+    /** Done on a Setting card (#518): the subject's served suggestion is on the pump. */
+    done: async (subject) => {
+      const guided = await guidance();
+      await write(async () => {
+        await client.recordDone({ subject, request_id: requestId(`done ${subject}`),
+          input_revision: guided.input_revision, analysis_generation: guided.analysis_generation });
+        identities.delete(`done ${subject}`);
+      }, FOLLOW_UP, both);
+    },
+    /** Undo a Done: withdraw the subject's acknowledgment while it still waits for the pump. */
+    undoDone: async (subject) => {
+      const guided = await guidance();
+      const { applied_at: appliedAt } = guided.candidates.find((c) => c.subject === subject).acknowledgment;
+      await write(async () => {
+        await client.withdrawDone({ applied_at: appliedAt, request_id: requestId(`undo ${appliedAt}`),
+          input_revision: guided.input_revision });
+        identities.delete(`undo ${appliedAt}`);
+      }, FOLLOW_UP, both);
     },
     pin: async (subject) => {
       const [guided, focused] = await Promise.all([guidance(), focus()]);

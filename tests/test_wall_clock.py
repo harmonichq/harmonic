@@ -148,14 +148,10 @@ class StampsOnThePumpClockTest(_ApiCase):
         pinned = self.pin_focus(self.seed_case("behavioral-missed-meal"))
         assert_near(self, pinned["pinned_at"], pump_now())
 
-    def test_plan_and_draft(self):
-        from tests.test_api import _guidance_client, _source_plan_items
+    def test_done(self):
+        from tests.test_api import _done, _guidance_client
         client = _guidance_client(self, "basal-raise")
-        items = _source_plan_items(client, "basal_rate")
-        draft = client.put("/api/plan", json={"items": items}).json()
-        assert_near(self, draft["updated_at"], pump_now())
-        self.assertRegex(draft["updated_at"], r"\.\d{6}$")
-        applied = client.post("/api/plan/apply")
+        applied = _done(client, "setting:basal_rate")
         self.assertEqual(applied.status_code, 200, applied.text)
         assert_near(self, applied.json()["applied_at"], pump_now())
 
@@ -228,23 +224,22 @@ class BackwardStepTest(_ApiCase):
         self.assertEqual([(trial["before"], trial["after"]) for trial in trials], [(30, 40)])
         self.assertEqual(datetime.fromisoformat(trials[0]["changed_at"]), snapshots[-1].captured_at)
 
-    def test_a_plan_recorded_after_the_step_is_the_pending_plan(self):
-        from tests.test_api import _guidance_client, _source_plan_items
+    def test_a_done_recorded_after_the_step_is_the_waiting_one(self):
+        from tests.test_api import _done, _guidance_client
         client = _guidance_client(self, "basal-raise")
-        items = _source_plan_items(client, "basal_rate")
-        client.put("/api/plan", json={"items": items})
-        first = client.post("/api/plan/apply").json()
+        first = _done(client, "setting:basal_rate").json()
         withdrawn = client.post("/api/plan/history/withdraw", json={
             "request_id": "step-withdraw", "input_revision": client.get("/api/status").json()["input_revision"],
             "applied_at": first["applied_at"]})
         self.assertEqual(withdrawn.status_code, 200, withdrawn.text)
         pin_pump_zone(self, "America/Phoenix")
-        client.put("/api/plan", json={"items": items})
-        second = client.post("/api/plan/apply")
+        second = _done(client, "setting:basal_rate")
         self.assertEqual(second.status_code, 200, second.text)
         second = second.json()["applied_at"]
         self.assertEqual(client.get("/api/plan/history").json()["history"][0]["applied_at"], second)
-        self.assertEqual((client.get("/api/guidance").json()["pending_plan"] or {}).get("id"), second)
+        basal = next(row for row in client.get("/api/guidance").json()["candidates"]
+                     if row["subject"] == "setting:basal_rate")
+        self.assertEqual(basal["acknowledgment"]["applied_at"], second)
 
     def test_a_focus_ended_after_the_step_ends_after_its_pin(self):
         pinned = self.pin_focus(self.seed_case("behavioral-missed-meal"))

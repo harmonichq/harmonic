@@ -345,6 +345,44 @@ export function change(name: ChangesStore): ChangeData {
   return trial ? trialData(name, trial) : { kind: 'none' };
 }
 
+/** A Setting a Done left waiting for the pump (#518), drawn as a Previous row
+ *  is: its name, its block (none for ISF, one fasting value), and the value it
+ *  was Done from → the suggestion, as one move in the list's shared columns. */
+export type WaitingRow = {
+  subject: string;
+  title: string;
+  block: Block | null;
+  moves: Move[];
+};
+
+type WaitingAnswer = {
+  subject: string; parameter: string;
+  acknowledgment: { blocks: { start_min: number; end_min: number; units: string }[] };
+};
+
+/** Each Setting waiting for the pump, as the engine serves it and its Queue card
+ *  showed it: the span of its first run of adjacent blocks, with the first
+ *  block's current → suggested. */
+export function waiting(name: ChangesStore): WaitingRow[] {
+  const rows = (answers.changes[name] as { waiting?: readonly WaitingAnswer[] }).waiting ?? [];
+  return rows.filter((row) => row.acknowledgment.blocks.length > 0).map((row) => {
+    const blocks = `changes.${name}.waiting[subject=${row.subject}].0.acknowledgment.blocks`;
+    const served = row.acknowledgment.blocks;
+    let last = 0;
+    while (last + 1 < served.length && served[last + 1].start_min === served[last].end_min) last += 1;
+    const parameter = row.parameter as keyof typeof PARAMETER_NAMES;
+    const format = PARAMETER_FORMATS[parameter];
+    return {
+      subject: row.subject,
+      title: PARAMETER_NAMES[parameter],
+      block: parameter === 'isf' ? null
+        : { start: sourced(`${blocks}.0.start_min`, 'clock'), end: sourced(`${blocks}.${last}.end_min`, 'clock') },
+      moves: [{ name: null, slot: null, before: sourced(`${blocks}.0.current`, format),
+        after: sourced(`${blocks}.0.recommended`, format), units: served[0].units }],
+    };
+  });
+}
+
 /** How many previous changes there are: every Trial and Focus the store holds
  *  (the active Focus and the ended ones), less the active change. */
 export function previousCount(name: ChangesStore): Sourced<number> {

@@ -25,6 +25,7 @@ import { Num } from '../../Num';
 import { Delta } from '../../Delta';
 import { impactChange, type Impact, type Magnitude, type SettingData } from '../../queue-model';
 import { Button } from '../Button/Button';
+import { StatePill } from '../StatePill/StatePill';
 import '../../shared.css';
 import './QueueRow.css';
 
@@ -58,9 +59,10 @@ export type QueueRowProps =
     );
 
 /** What a setting row prints. A setting with no time block (ISF, one fasting
- *  value) has no block beside its title. */
+ *  value) has no block beside its title; one back from a Done the next sync did
+ *  not show carries the Not on pump pill on its title line (#518). */
 export type SettingRow = Pick<SettingData, 'current' | 'suggested' | 'units'>
-  & Partial<Pick<SettingData, 'start' | 'end'>>;
+  & Partial<Pick<SettingData, 'start' | 'end' | 'notOnPump'>>;
 
 function Meta(props: Extract<QueueRowProps, { kind: string }>) {
   if (props.kind === 'setting') {
@@ -104,6 +106,7 @@ export function QueueRow(props: QueueRowProps) {
           {kind === 'setting' && props.setting.start && props.setting.end && <>{' '}<span className="ui-qrow__slot">
             <Num value={props.setting.start} />–<Num value={props.setting.end} />
           </span></>}
+          {kind === 'setting' && props.setting.notOnPump && <StatePill state="not_on_pump" />}
         </span>
         {impact && <span className="ui-qrow__caption ui-caption">{impact.kind === 'peak' ? 'Peak' : 'Nadir'}</span>}
         {layout === 'phone' && !snoozed && <span className="ui-qrow__chevron"><Icon name="expand" /></span>}

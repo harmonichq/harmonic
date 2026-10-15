@@ -86,6 +86,12 @@ Two committed outputs, one generator, one ``--check``:
   ``glossary`` is §1.5's rows, for the Glossary page. For the Queue screen,
   each store's candidates carry their rank, admission and snooze; the pinned
   store's Queue is read again after its snooze (``wearer-pinned-snoozed``);
+  ``wearer-before-done`` is a fresh wearer's Queue, and ``wearer-done`` (Queue
+  and Changes) the same once the person presses Done on the basal card through
+  ``POST /api/plan/apply`` (#518), waiting for the pump;
+  ``wearer-not-on-pump`` is the same store after a later sync, one
+  delivery row and a settings read whose profile is unchanged, written as a
+  fetch would write them, so the card is back marked Not on pump.
   ``wearer-first-days-snoozed`` is the first days with everything snoozed (an
   empty Queue); ``isf-supported`` is the Overview's store of the same name,
   whose ISF the engine supports a change for and so queues; and the unsynced
@@ -372,6 +378,17 @@ def fixtures() -> dict:
         snooze = _snooze(pinned, pinned_pattern=next(
             f["pattern_key"] for f in changes["wearer-pinned"]["focuses"] if f["status"] == "active"))
         queue["wearer-pinned-snoozed"] = _queue_store(pinned)
+
+        # Done (#518): the person presses Done on the basal card. The Queue and
+        # Changes are read while it waits for the pump, then the Queue again
+        # after a later sync whose read finds the setting unchanged.
+        done_database, done = _wearer(scratch, "wearer-done", trial=False)
+        queue["wearer-before-done"] = _queue_store(done)
+        _done(done, "setting:basal_rate")
+        queue["wearer-done"] = _queue_store(done)
+        changes["wearer-done"] = _changes_store(done)
+        _unchanged_sync(done_database)
+        queue["wearer-not-on-pump"] = _queue_store(done)
 
         _, first_days = _wearer(scratch, "wearer-first-days", trial=False, days=FIRST_DAYS)
         overview["wearer-first-days"] = {"time_of_day": _profiles(first_days)}
@@ -681,7 +698,30 @@ def _changes_store(client: TestClient) -> dict:
                       ("state", "active_kind", "active_id", "can_finish_trial", "maturity")},
         "trials": trials,
         "focuses": focuses,
+        # Each Setting a Done left waiting for the pump, served on the roster (#518).
+        "waiting": answer["waiting"],
     }
+
+
+def _done(client: TestClient, subject: str) -> None:
+    """The person presses Done on ``subject``'s Setting card (#518)."""
+    answer = _get(client, "/api/guidance")
+    _post(client, "/api/plan/apply", {"subject": subject, "request_id": f"done {subject}",
+                                       "input_revision": answer["input_revision"],
+                                       "analysis_generation": answer["analysis_generation"]})
+
+
+def _unchanged_sync(database: pathlib.Path) -> None:
+    """A later sync, as a fetch would land it: pump data from after the Done
+    and a settings read whose active profile is unchanged."""
+    with Store.open(str(database)) as store:
+        settings = store.settings_snapshots()[-1].settings
+        segment = settings.active().segments[0]
+        store.upsert_basal([{"seq_num": 10**9, "time": (CLOCK + timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S"),
+                             "delivery_type": "profileDelivery", "duration_mins": 5,
+                             "basal_rate": segment.basal_rate, "profile_basal_rate": segment.basal_rate}])
+        store.upsert_settings_snapshot((CLOCK + timedelta(minutes=30)).strftime("%Y-%m-%d %H:%M:%S"), settings)
+        reconcile_ingested_follow_up(store)
 
 
 def _focus_wearer(scratch: pathlib.Path, name: str, *, days: int = ui_patient.DAYS) -> TestClient:
@@ -916,9 +956,12 @@ def _queue_store(client: TestClient) -> dict:
                  "priority": c["priority"], "admitted": c["admitted"],
                  "set_aside": c["preference"]["set_aside"],
                  "decided_at": (c.get("decision") or {}).get("decided_at"),
-                 # The Queue's order rule (the brief's Queue section): admitted
-                 # and not set aside, ranked by priority.
-                 "queued": c["admitted"] and not c["preference"]["set_aside"]}
+                 "acknowledgment": c.get("acknowledgment"),
+                 # The Queue's order rule (the brief's Queue section): admitted,
+                 # not set aside and not waiting for the pump after a Done
+                 # (#518), ranked by priority.
+                 "queued": (c["admitted"] and not c["preference"]["set_aside"]
+                            and (c.get("acknowledgment") or {}).get("state") != "waiting")}
                 for c in guidance["candidates"]
             ],
         },

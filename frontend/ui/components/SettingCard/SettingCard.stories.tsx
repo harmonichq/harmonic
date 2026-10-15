@@ -1,8 +1,15 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, within } from 'storybook/test';
+import { expect, fn, userEvent, within } from 'storybook/test';
 import { fixtures } from '../../fixtures';
-import { maturedTrial, settingState } from '../../queue-model';
+import { basalSetting, maturedTrial, ranking, settingState, type QueueStore } from '../../queue-model';
 import { SettingCard } from './SettingCard';
+
+/** The basal block a store's Queue opens its basal card on. */
+const blockStart = (store: QueueStore) => {
+  const item = ranking(store).find((i) => i.subject === 'setting:basal_rate');
+  if (item?.kind !== 'setting') throw new Error(`${store} queues no basal card`);
+  return item.data.start.value;
+};
 
 // One story per state (§4.2 SettingCard) the simulated wearer serves: an
 // admitted Basal block, and the block whose earlier change matured into a
@@ -18,6 +25,23 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = { args: { data: settingState('setting') } };
+
+/** Done (#518), the card's primary, and Snooze the text action beneath it. */
+export const WithDone: Story = {
+  args: { data: settingState('setting'), onDone: fn(), onSnooze: fn() },
+  play: async ({ args, canvasElement }) => {
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Done' }));
+    await expect(args.onDone).toHaveBeenCalledOnce();
+  },
+};
+
+/** The basal card back after a sync found it unchanged on the pump (#518). */
+export const NotOnPump: Story = {
+  args: { data: basalSetting('wearer-not-on-pump', blockStart('wearer-not-on-pump')), onDone: fn() },
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByRole('heading', { level: 2 })).toHaveTextContent(/Not on pump$/);
+  },
+};
 
 /** The served block and the matured Trial whose block it lies in (#506): the
  *  block starts after the Trial's own start, so a start-for-start match would

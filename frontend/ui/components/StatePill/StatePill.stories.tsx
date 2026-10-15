@@ -18,3 +18,4 @@ export const Better = story('better');
 export const Worse = story('worse');
 export const Unclear = story('unclear');
 export const Focus = story('focus');
+export const NotOnPump = story('not_on_pump');

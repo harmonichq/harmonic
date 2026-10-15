@@ -36,7 +36,7 @@ _SETTING_SUBJECTS = frozenset({
 _HABIT_SUBJECTS = frozenset(f"habit:{lever.value}" for lever in Lever)
 _PATTERN_SUBJECTS = frozenset(f"pattern:{key}" for key in _GATES)
 _PREFERENCE_SUBJECTS = _SETTING_SUBJECTS | _HABIT_SUBJECTS | _PATTERN_SUBJECTS
-# Always served as a candidate, because the Plan applies an ISF draft against it, but
+# Always served as a candidate, so its Done state (ADR 518) and evidence stay readable, but
 # admitted to the Queue, and selected, only when its analyzer's one staging verdict
 # (`isf_asserts_move`, stamped as each member's `asserts_move`) supports the change.
 # A held, direction-only or unprogrammed estimate is shown on the Overview, never
@@ -442,7 +442,8 @@ def _ordering_reason(candidate, disposition):
     return None
 
 
-def build_guidance(*, analysis, exposures, scenarios, preferences=(), active_watch=None, generation="standalone:0", window=None):
+def build_guidance(*, analysis, exposures, scenarios, preferences=(), acknowledgments=None, active_watch=None,
+                   generation="standalone:0", window=None):
     if analysis is None or any(name not in analysis for name in ("basal", "isf", "ic_blocks")):
         return {"schema": SCHEMA, "analysis_generation": generation, "window": window, "active_watch": active_watch,
                 "selected": None, "disposition": "unavailable", "reasons": {"admission": None, "ordering": None, "return": None},
@@ -451,6 +452,9 @@ def build_guidance(*, analysis, exposures, scenarios, preferences=(), active_wat
     for row in all_candidates:
         row["preference"] = preference_status(row, stored.get(row["subject"]))
         row["admitted"] = _admitted(row)
+        if row["kind"] == "setting":
+            # Done's served state (ADR 518): a waiting setting leaves the Queue.
+            row["acknowledgment"] = (acknowledgments or {}).get(row["subject"])
         if row["subject"] in stored:
             row["decision"] = {key: stored[row["subject"]][key] for key in ("decided_at", "reason", "comparison_version", "state")}
     known = {row["subject"] for row in all_candidates}
@@ -480,10 +484,10 @@ def build_guidance(*, analysis, exposures, scenarios, preferences=(), active_wat
                            or row.get("unavailable") or row.get("has_concern"))]
     available = sorted((row for row in selection_rows
                         if row["admitted"] and isinstance(row.get("priority"), int)
-                        and not row["preference"]["set_aside"]),
+                        and not row["preference"]["set_aside"] and not _waiting(row)),
                        key=lambda row: (-row["priority"], row["subject"]))
     evidenced = sorted((row for row in selection_rows if not row["unavailable"]
-                        and not row["preference"]["set_aside"]),
+                        and not row["preference"]["set_aside"] and not _waiting(row)),
                        key=lambda row: (row.get("priority") is None,
                                         -(row.get("priority") or 0), row["subject"]))
     unavailable_candidates = [row for row in all_candidates if row["unavailable"]
@@ -518,6 +522,31 @@ def build_guidance(*, analysis, exposures, scenarios, preferences=(), active_wat
             "unavailable": ("Required owner-produced guidance inputs are unavailable."
                             if disposition == "unavailable" else None),
             "candidates": all_candidates + absent, "alternatives": [row for row in all_candidates if row is not selected]}
+
+
+def _waiting(row):
+    return (row.get("acknowledgment") or {}).get("state") == "waiting"
+
+
+_PLAN_FAMILY = {"basal_rate": "basal", "isf": "isf", "carb_ratio": "ic", "target_bg": "target"}
+
+
+def done_items(candidate):
+    """The Plan items a Done on ``candidate``'s card records (ADR 518): one per
+    served action member start (the action's own start when it names none), at
+    the action's recommended value, a carb-ratio item carrying its block. They
+    come from the backend's own action rows only."""
+    family = _PLAN_FAMILY[candidate["parameter"]]
+    items = []
+    for action in candidate["action"]:
+        for start in action.get("member_start_mins") or [action["start_min"]]:
+            item = {"type": family, "start_min": start, "value": action["recommended"]}
+            if family == "ic":
+                item["ic_block_provenance"] = {"block_start_min": action["start_min"],
+                                               "block_end_min": action["end_min"],
+                                               "block_member_start_mins": list(action["member_start_mins"])}
+            items.append(item)
+    return items
 
 
 def baseline_for(candidate):

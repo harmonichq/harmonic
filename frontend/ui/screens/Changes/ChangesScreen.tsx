@@ -14,6 +14,10 @@
 // first, no cutoff: each its setting and block, before → after in aligned
 // columns, its date, and its result where the engine saved one.
 //
+// Between them, "Waiting for pump" (#518): each Setting the person marked Done
+// in the Queue that no sync has shown on the pump yet, one row each (its name
+// and block, current → suggested), until the engine resolves it.
+//
 // End (§1.3a) is the card's compact secondary action, offered when the engine
 // accepts it (a Focus at any time; a Trial once matured). Pressing it asks once:
 // on phone a sheet over the screen, on desktop a popover anchored under End.
@@ -33,7 +37,8 @@
 // its arrow, and the Previous list pushes in from the right and back.
 import { useEffect, useRef, useState } from 'react';
 import {
-  change, previousChanges, previousCount, type ChangeData, type ChangesStore, type PreviousRow, type TrialData,
+  change, previousChanges, previousCount, waiting, type ChangeData, type ChangesStore, type PreviousRow,
+  type TrialData, type WaitingRow,
 } from '../../changes-model';
 import { sourced } from '../../answers';
 import { useMotionGate, usePresence } from '../../motion';
@@ -121,6 +126,20 @@ function Previous({ row }: { row: PreviousRow }) {
   );
 }
 
+/** One Setting waiting for the pump after a Done (#518), in the Previous rows'
+ *  columns: its name and block, then current → suggested. No date, no result. */
+function Waiting({ row }: { row: WaitingRow }) {
+  return (
+    <ListRow
+      label={<span className="ui-changes__previous">
+        <span className="ui-changes__previous-title">
+          {row.title}{row.block && <> <BlockSpan block={row.block} /></>}
+        </span>
+        <Moves moves={row.moves} />
+      </span>} />
+  );
+}
+
 export function ChangesScreen({
   layout, store, state = 'ready', end, confirming = false, view: initialView = 'changes', writes, nav, onRetry,
 }: ChangesScreenProps) {
@@ -133,6 +152,7 @@ export function ChangesScreen({
   const ready = state === 'ready' || state === 'stale';
   const active: ChangeData = ready ? change(shown) : { kind: 'none' };
   const count = ready ? previousCount(shown) : null;
+  const pending = ready ? waiting(shown) : [];
   // The confirmation stays while it closes, and keeps the change it asked about.
   const asked = usePresence(asking && ready);
   const askedAbout = useRef(active);
@@ -190,9 +210,11 @@ export function ChangesScreen({
         <>
           <ChangeCard data={active} onEnd={() => setAsking(true)} confirm={popover} />
           {active.kind === 'trial' && <Modules data={active} />}
-          {/* "Waiting for pump" (feat/setting-done, not yet merged): the settings
-              the person has said they changed and the pump has not yet shown
-              land here, between the current change and Previous. */}
+          {pending.length > 0 && (
+            <ListGroup caption="Waiting for pump">
+              {pending.map((row) => <Waiting key={row.subject} row={row} />)}
+            </ListGroup>
+          )}
           {count && count.value > 0 && (
             <ListGroup>
               <ListRow label="Previous" value={<Num value={count} />} onOpen={() => setView('previous')} />

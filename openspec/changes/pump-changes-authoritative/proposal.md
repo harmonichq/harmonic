@@ -42,5 +42,6 @@ No analyzer's staging verdict changes: not `asserts_move`, `ic_asserts_move` or
 
 - `ciq_autotune/watched_change.py`: pump-change detection, Trial candidates,
   corroboration, the reversal check.
-- `openspec/specs/outcomes`, `openspec/specs/plan`: the new requirement, and the
-  in-place-edit Plan scenarios that now see a Trial.
+- `openspec/specs/outcomes`: the new requirement. The in-place-edit Plan
+  scenarios this change rewrote moved to `recommendations-redesign`, whose ADR
+  518 (Done on a Setting card) replaces that confirmation requirement.

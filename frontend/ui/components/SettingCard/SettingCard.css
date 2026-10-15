@@ -22,6 +22,8 @@
   color: var(--wk-ink-meta);
   font-weight: var(--ui-weight-regular);
 }
+/* Not on pump (#518), on the title line after the block. */
+.ui-scard__title .ui-pill { margin-left: 8px; vertical-align: 2px; }
 
 /* The one dominant element: the suggestion strong, the current value it
    replaces regular and receded, the unit at label size on the baseline. */

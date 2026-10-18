@@ -1088,3 +1088,33 @@ rows and the past-setting title; the cases keep proving those states through the
 analyzer rows. The spec deltas restate the headline, setting-title, rate-family,
 workstation-row and QA-era requirements without their desk scenarios, and modify
 the history-generation and count-sentence requirements.
+
+## ADR 529 — Day asks about rises, and each Prompt serves when its reading was
+
+**Decision.** The engine's missed-meal Prompts, which it already derived and
+served, reach the app as Day's Rises (Connor's decision Q20 = A, 2026-10-14; lock
+§2.5). They are listed under the Lows and drawn by the same PromptCard and the
+same one-at-a-time drill-down; a Rise answers Yes, No or Not sure, with no False
+low, and its answers take the one prompt-answer path. To draw a Rise at its peak
+the Prompts read serves each Prompt's `key_t`, the time its `key_bg` was read
+(a rise's peak, a low's nadir, which is its anchor), and a rise's readings run
+on to its peak when it peaks more than two hours after its onset.
+
+**Why serve the time.** The rise's peak is the High run's own anchor, which the
+engine already held; the app finding it again in the readings would be a second
+implementation of the same fact (lock §2.3 ban 7, AGENTS.md: keep policy in its
+owner). One field for both kinds keeps the card free of a detector branch for
+where its reading is.
+
+**Why one component.** A Rise differs from a Low in its name, glyph, reference
+line and answers, all keyed off its kind; the layout, motion, swipe, grams
+field and live writes are the Low's. A second card or drill-down would be the
+duplication the charter forbids.
+
+**Consequences.** The live adapter keeps every prompt, trimmed to what the card
+draws (no question or context sentence is kept in the browser), mirrored by
+`gen_ui_fixtures.prompt_marks`. The UI fixtures gain three Rises stores from the
+same wearer with two lunches never bolused for (`ui_patient.simulate`'s
+`unbolused` days), and every earlier store keeps its bytes but for its prompts'
+trim. The provenance grammar takes more than one filter on a list, for the
+Rises count.

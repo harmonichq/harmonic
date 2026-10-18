@@ -99,6 +99,17 @@ test('(e) a fixed-precision value and a bounded count resolve like any other fie
   assert.deepEqual(run({ texts: [{ text: '1', source: 'slot.nights[rate>0.6].length' }] }), []);
 });
 
+test('(e) filters on one list apply in turn', () => {
+  // Day's Rises row (#529): the unanswered prompts of one detector.
+  const fixtures = { prompts: [{ detector: 'low', answer: null }, { detector: 'missed-meal', answer: null },
+    { detector: 'missed-meal', answer: 'no' }, { detector: 'missed-meal', answer: null }] };
+  const check = (texts) => precheckProblems({ ...clean, texts }, { ...sources, fixtures });
+  assert.deepEqual(check([{ text: '2', source: 'prompts[detector=missed-meal][answer=null].length' }]), []);
+  assert.deepEqual(check([{ text: '1', source: 'prompts[answer=null][detector=low].length' }]), []);
+  assert.match(check([{ text: '3', source: 'prompts[detector=missed-meal][answer=null].length' }])[0],
+    /^\(e\) "3" is not prompts\[detector=missed-meal\]\[answer=null\]\.length \(2\)/);
+});
+
 test('a derived difference is taken between the values as printed', async () => {
   const { resolveSource, formatValue } = await import('./provenance.js');
   const root = { rate: { before: 0.25539, after: 0.23256 } };

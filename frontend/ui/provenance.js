@@ -23,14 +23,17 @@
 // the live Prompts' place does ("n / N": N served when they opened, less the
 // prompts still to come); the first operand is always a field.
 //
-// Grammar: dot-separated keys and array indexes; `length` on an array; and one
-// filter on an array segment: equality, `prompts[answer=null]`, whose value is
-// read as JSON (null, true, false, a number) or else as a plain string; or a
-// numeric bound, `night_roster[delivered_rate<0.6]`.
+// Grammar: dot-separated keys and array indexes; `length` on an array; and
+// filters on an array segment, each applied in turn: equality,
+// `prompts[answer=null]`, whose value is read as JSON (null, true, false, a
+// number) or else as a plain string; or a numeric bound,
+// `night_roster[delivered_rate<0.6]`. Day's Rises row counts
+// `prompts[detector=missed-meal][answer=null]`.
 //
 // Plain JS so the TypeScript stories and the Node story runner share it.
 
-const SEGMENT = /^([^[\]]*)(?:\[([A-Za-z_][\w]*)([=<>])([^\]]*)\])?$/;
+const SEGMENT = /^([^[\]]*)((?:\[[A-Za-z_][\w]*[=<>][^\]]*\])*)$/;
+const FILTER = /\[([A-Za-z_][\w]*)([=<>])([^\]]*)\]/g;
 const COMPARE = {
   '=': (a, b) => a === b,
   '<': (a, b) => typeof a === 'number' && a < b,
@@ -47,14 +50,14 @@ export function resolveField(root, path) {
   for (const part of path.match(/(?:[^.[\]]|\[[^\]]*\])+/g) ?? []) {
     const match = SEGMENT.exec(part);
     if (!match) throw new Error(`bad field path segment "${part}" in ${path}`);
-    const [, key, filterKey, operator, filterValue] = match;
+    const [, key, filters] = match;
     if (key) {
       if (value === null || typeof value !== 'object' || !(key in value)) {
         throw new Error(`no field "${key}" in ${path}`);
       }
       value = value[key];
     }
-    if (filterKey) {
+    for (const [, filterKey, operator, filterValue] of filters.matchAll(FILTER)) {
       if (!Array.isArray(value)) throw new Error(`filter on a non-array in ${path}`);
       const want = literal(filterValue);
       value = value.filter((item) => COMPARE[operator](item?.[filterKey], want));

@@ -17,14 +17,17 @@
 // Above the Prompts row (on desktop, beside it), the day's insulin as its
 // InsulinBar; none on a day that serves none.
 //
-// Unanswered Prompts show as one row, "▼ Lows" and their count (the NavBar's
-// Day badge is the same count), hidden at none. It drills down (§2.2) to the
-// Prompts under "‹ Day": one PromptCard at a time, its place "n / N" in the
-// header, nothing else to act on. An answer moves the Prompts one served store
-// on: Yes stays on the card, recorded, with the optional grams field and Next;
-// any other answer goes to the next prompt, and past the last, back to Day. A
-// write that fails puts the card back as it was and shows "Not saved" with
-// Retry in the TransientBar.
+// Unanswered Prompts show as one row per kind, "▼ Lows" and their count, and
+// under it "▲ Rises" and theirs (#529), each hidden at none; the NavBar's Day
+// badge counts both. Each drills down (§2.2) to its own Prompts under "‹ Day",
+// titled Lows or Rises: one PromptCard at a time, its place "n / N" among that
+// kind in the header, nothing else to act on. An answer moves the Prompts one
+// served store on: Yes stays on the card, recorded, with the optional grams
+// field and Next; any other answer goes to the next prompt of that kind, and
+// past the last, back to Day. A write that fails puts the card back as it was
+// and shows "Not saved" with Retry in the TransientBar. In the stories, a kind
+// whose answers no served store follows opens its first card, with no place,
+// and an answer returns to Day.
 //
 // Log carbs: on phone a bottom sheet over the screen (on the system keyboard,
 // which the story does not draw), on desktop a popover under "+ Log carbs".
@@ -51,8 +54,9 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { Sourced } from '../../answers';
 import {
-  PROMPT_STEPS, dayChartOf, dayDate, insulinBar, latestDay, livePromptPlace, loggedGrams, loggedTime, lowPrompt,
-  lowPrompts, monthBy, monthName, monthServed, monthSpan, monthWeeks, promptPlace, unanswered, weekOf, type PromptData, type PromptStore,
+  PROMPT_STEPS, afterAnswer, dayChartOf, dayDate, insulinBar, latestDay, livePromptPlace, loggedGrams, loggedTime,
+  monthBy, monthName, monthServed, monthSpan, monthWeeks, promptOf, promptPlace, promptsOfKind, unanswered, weekOf,
+  type PromptData, type PromptKind, type PromptStore,
 } from '../../day-model';
 import { day as navigatorDay } from '../../overview-model';
 import { useMotionGate, usePresence } from '../../motion';
@@ -74,13 +78,16 @@ type Layout = 'phone' | 'desktop';
 
 export type DayScreenProps = {
   layout: Layout;
-  /** The served Prompts: before any answer, the wearer's own (one answered), or all answered. */
+  /** The served Prompts: the wearer's lows before any answer, its own (one answered), or all answered;
+   *  or its rises before any answer, after one, or all answered. */
   store: PromptStore;
   /** `stale`: its answers are an earlier read's, since reading them again failed (§2.5, 2026-10-14). */
   state?: 'ready' | 'loading' | 'unavailable' | 'stale';
   /** The day selected first; the latest day with readings when unset. */
   day?: string;
   view?: 'day' | 'prompts';
+  /** The Prompts the screen starts on: its Lows (unset) or its Rises. */
+  kind?: PromptKind;
   /** Start with the month dropped down. */
   monthOpen?: boolean;
   /** Start with Log carbs open, in this state. */
@@ -198,7 +205,8 @@ export function DayScreen(props: DayScreenProps) {
 }
 
 function Day({
-  layout, store, state = 'ready', day, view: initialView = 'day', monthOpen = false, logCarbs, timeEdited = false,
+  layout, store, state = 'ready', day, view: initialView = 'day', kind: initialKind = 'low', monthOpen = false,
+  logCarbs, timeEdited = false,
   recorded = false, swiping = false, failing = false, notSaved = false, writes, onDay, readMonth, nav, onRetry,
 }: DayScreenProps) {
   const [selected, setSelected] = useState(day ?? latestDay());
@@ -209,9 +217,13 @@ function Day({
   const [monthRead, setMonthRead] = useState<'loading' | 'unavailable' | null>(null);
   const [, redraw] = useState(0);
   const [view, setView] = useState(initialView);
-  // The Prompts, one served store per answer given.
-  const entry = PROMPT_STEPS.indexOf(store);
-  const [step, setStep] = useState(entry + (recorded ? 1 : 0));
+  // The Prompts of one kind, one served store per answer given: the store
+  // now, the one the card is drawn from (before its Yes, while recorded) and
+  // the one the Prompts opened on.
+  const [kind, setKind] = useState(initialKind);
+  const [current, setCurrent] = useState<PromptStore>(recorded ? afterAnswer(store, initialKind) : store);
+  const [cardStore, setCardStore] = useState<PromptStore>(store);
+  const [openedStore, setOpenedStore] = useState<PromptStore>(store);
   const [recordedNow, setRecordedNow] = useState(recorded);
   const [failed, setFailed] = useState<Answer | null>(notSaved ? 'carbs' : null);
   const [attempt, setAttempt] = useState(0);
@@ -236,14 +248,16 @@ function Day({
   const [chosen, setChosen] = useState<string>();
   const [retry, setRetry] = useState<{ again: () => void } | null>(null);
 
-  const current = PROMPT_STEPS[step];
-  const count = unanswered(current);
-  const shown = PROMPT_STEPS[recordedNow ? step - 1 : step];
-  const visible = writes ? lowPrompts().filter((p) => !pending.has(p.anchorT) && p.anchorT !== held?.anchorT) : [];
+  const badge = unanswered(current);
+  const counts = { low: unanswered(current, 'low'), rise: unanswered(current, 'rise') };
+  // Whether the stories serve the store after an answer of this kind.
+  const steps = (at: PromptStore) => (PROMPT_STEPS[kind] as readonly PromptStore[]).includes(at);
+  // Live, the engine's answers are the store the screen was given, read again after each write.
+  const visible = writes ? promptsOfKind(kind, store).filter((p) => !pending.has(p.anchorT) && p.anchorT !== held?.anchorT) : [];
   const liveCard = held ?? visible[0] ?? null;
   // The prompt the Prompts opened on; each one after it comes in as the next.
-  const [entered, setEntered] = useState<string>(shown);
-  const cardKey = writes ? liveCard?.anchorT ?? '' : shown;
+  const [entered, setEntered] = useState<string>(`${initialKind} ${store}`);
+  const cardKey = writes ? liveCard?.anchorT ?? '' : `${kind} ${cardStore}`;
   const push = view === 'prompts' ? 'forward' : 'back';
 
   const select = (iso: string) => { setSelected(iso); setMonth(false); };
@@ -285,13 +299,18 @@ function Day({
     if (control) setAnchor(control.offsetLeft - 12);
   }, [layout, selected, view]);
 
-  const advance = (at: number) => {
+  const advance = (at: PromptStore) => {
     setRecordedNow(false);
-    if (unanswered(PROMPT_STEPS[at]).value === 0) setView('day');
+    setCardStore(at);
+    if (unanswered(at, kind).value === 0) setView('day');
   };
   const answer = (given: Answer) => {
     if (writes) {
       if (liveCard && !held) liveAnswer(liveCard, given);
+      return;
+    }
+    if (!steps(current)) {
+      setView('day');
       return;
     }
     if (fails.current) {
@@ -302,12 +321,14 @@ function Day({
       return;
     }
     setFailed(null);
-    setStep(step + 1);
+    const after = afterAnswer(current, kind);
+    setCurrent(after);
     if (given === 'carbs') {
+      setCardStore(current);
       setRecordedNow(true);
       setAttempt((n) => n + 1);
     } else {
-      advance(step + 1);
+      advance(after);
     }
   };
 
@@ -315,7 +336,7 @@ function Day({
     setAttempt((n) => n + 1);
     setRetry({ again });
   };
-  const leaveWhenDone = () => { if (unanswered('wearer').value === 0) setView('day'); };
+  const leaveWhenDone = () => { if (unanswered(store, kind).value === 0) setView('day'); };
   const mark = (prompt: PromptData, on: boolean) => setPending((now) => {
     const next = new Set(now);
     if (on) next.add(prompt.anchorT); else next.delete(prompt.anchorT);
@@ -345,7 +366,7 @@ function Day({
   };
   const next = (grams: string) => {
     if (!writes) {
-      advance(step);
+      advance(current);
       return;
     }
     const made = heldEntry.current;
@@ -397,23 +418,28 @@ function Day({
     onSave: save,
   };
 
-  const openPrompts = () => {
-    setEntered(writes ? visible[0]?.anchorT ?? '' : shown);
-    setOpened(count);
+  const openPrompts = (opening: PromptKind) => {
+    setKind(opening);
+    setCardStore(current);
+    setOpenedStore(current);
+    setEntered(writes ? promptsOfKind(opening, store).filter((p) => !pending.has(p.anchorT))[0]?.anchorT ?? ''
+      : `${opening} ${current}`);
+    setOpened(counts[opening]);
     setView('prompts');
   };
   // "n / N": the served stores' difference, or live, the place among those the Prompts opened with.
   const place = view !== 'prompts' ? undefined : writes
     ? opened && livePromptPlace(opened, opened.value - visible.length + (held ? 0 : 1))
-    : promptPlace(store, shown);
+    : steps(cardStore) ? promptPlace(kind, openedStore, cardStore) : undefined;
+  const title = kind === 'low' ? 'Lows' : 'Rises';
   const dayControl = { ...dayDate(selected), open: month, onToggle: toggleMonth };
   const header = state === 'unavailable' || (state === 'stale' && view === 'day')
     ? <ScreenHeader title="Day" trailing="unavailable" layout={layout} onRetry={onRetry} />
     : view === 'prompts'
       ? place
-        ? <ScreenHeader key={view} title="Lows" layout={layout} back={{ label: 'Day', onBack: () => setView('day') }}
+        ? <ScreenHeader key={view} title={title} layout={layout} back={{ label: 'Day', onBack: () => setView('day') }}
             trailing="count" {...place} />
-        : <ScreenHeader key={view} title="Lows" layout={layout} back={{ label: 'Day', onBack: () => setView('day') }} />
+        : <ScreenHeader key={view} title={title} layout={layout} back={{ label: 'Day', onBack: () => setView('day') }} />
       : layout === 'phone'
         ? <ScreenHeader key={view} title="Day" day={dayControl} layout={layout} trailing="action" label="+ Log carbs"
             onAction={() => setCarbs('empty')} />
@@ -426,10 +452,16 @@ function Day({
     <>
       <div className={`ui-dayscreen__summary ui-dayscreen__summary--${layout}`}>
         <InsulinBar data={insulinBar(selected)} loading={state === 'loading' || !chart} />
-        {count.value > 0 && (
+        {badge.value > 0 && (
           <ListGroup>
-            <ListRow label={<><span className="ui-dayscreen__low" aria-hidden="true">▼</span>Lows</>}
-              value={<Num value={count} />} onOpen={openPrompts} />
+            {counts.low.value > 0 && (
+              <ListRow label={<><span className="ui-dayscreen__low" aria-hidden="true">▼</span>Lows</>}
+                value={<Num value={counts.low} />} onOpen={() => openPrompts('low')} />
+            )}
+            {counts.rise.value > 0 && (
+              <ListRow label={<><span className="ui-dayscreen__rise" aria-hidden="true">▲</span>Rises</>}
+                value={<Num value={counts.rise} />} onOpen={() => openPrompts('rise')} />
+            )}
           </ListGroup>
         )}
       </div>
@@ -440,7 +472,7 @@ function Day({
   );
 
   const prompt = () => {
-    const card = writes ? liveCard : lowPrompt(0, shown);
+    const card = writes ? liveCard : promptOf(kind, 0, cardStore);
     return card && (
     <div key={cardKey} className={cardKey === entered ? 'ui-dayscreen__prompt' : 'ui-dayscreen__prompt ui-advance'}>
       <PromptCard key={attempt} data={card} layout={layout} recorded={writes ? held !== null : recordedNow}
@@ -479,7 +511,7 @@ function Day({
           </div>
         </main>
         {bar}
-        <NavBar layout="tabbar" selected="day" dayCount={count} {...nav} />
+        <NavBar layout="tabbar" selected="day" dayCount={badge} {...nav} />
         {sheet.value && (
           <div className="ui-scrim ui-dayscreen__scrim ui-dayscreen__scrim--sheet" onClick={closeCarbs} {...sheet.exit}>
             <div onClick={(event) => event.stopPropagation()}>
@@ -492,7 +524,7 @@ function Day({
   }
   return (
     <div ref={root} className="ui-dayscreen ui-dayscreen--desktop">
-      <NavBar layout="rail" selected="day" dayCount={count} {...nav} />
+      <NavBar layout="rail" selected="day" dayCount={badge} {...nav} />
       <section className="ui-dayscreen__pane" data-scroll="page" data-push={push}>
         <div ref={headRef} className="ui-dayscreen__pane-head" data-push={push}>
           {header}

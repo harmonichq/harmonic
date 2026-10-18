@@ -87,6 +87,8 @@ const EXPECTED = {
       // The 48 half-hour slots, and the moves the basal analyzer stages (ADR 523).
       basal: { slots: 48, estimated: 48, moves: [[180, 'lower'], [210, 'lower']] } },
     day: { latest: '2024-06-30', insulin: 19.56, firstLowBg: 48 },
+    // Five lows and no rise: Day's Lows row alone.
+    prompts: { lows: 5, rises: [] },
     // The 22:00 low resolves after midnight: it is the 29th's finding.
     findings: {
       '2024-06-25': [['2024-06-25 12:00:00', 'meal', ['Carb undercount']]],
@@ -117,6 +119,9 @@ const EXPECTED = {
         ['2024-05-24 16:05:00', 'pattern', ['Correction stacking']]],
       '2024-05-27': [['2024-05-27 17:00:00', 'pattern', ['Missed / unannounced meal']]],
     },
+    // #529: the unannounced rise is Day's one Rise, asked at its 15:55 onset
+    // and drawn at its served 385 mg/dL peak at 17:00, beside two lows.
+    prompts: { lows: 2, rises: [{ anchorT: '2024-05-27 15:55:00', at: '2024-05-27 17:00:00', bg: 385 }] },
   },
   'isf-strengthen': {
     queue: ['setting:isf'],
@@ -288,6 +293,25 @@ test(`the live adapter serves each tab's model from the ${CASE} store`, async (t
     });
   }
 
+  if (expected.prompts) {
+    // Day's Lows and Rises (#529): each kind's count and card from the served
+    // Prompts, a rise drawn at its served peak; each rise answered No through
+    // the adapter leaves the Rises, and the lows stay.
+    await t.test('Day Prompts', async () => {
+      await live.readTab('day');
+      const counts = () => [values(day.unanswered('wearer', 'low')), values(day.unanswered('wearer', 'rise'))];
+      assert.deepEqual(counts(), [expected.prompts.lows, expected.prompts.rises.length]);
+      assert.equal(values(day.unanswered('wearer')), expected.prompts.lows + expected.prompts.rises.length, 'the Day badge');
+      const rises = values(day.promptsOfKind('rise'));
+      assert.deepEqual(rises.map((r) => ({ anchorT: r.anchorT, at: r.time, bg: r.bg })), expected.prompts.rises);
+      for (const rise of rises) {
+        assert.equal(rise.cgm.find((reading) => reading.minute === rise.key)?.bg, rise.bg, 'the peak is among its readings');
+      }
+      for (const rise of day.promptsOfKind('rise')) await live.dayWrites.answer(rise, 'no');
+      assert.deepEqual(counts(), [expected.prompts.lows, 0]);
+    });
+  }
+
   if (!expected.overview) return;
 
   await t.test('Overview', async () => {
@@ -313,7 +337,7 @@ test(`the live adapter serves each tab's model from the ${CASE} store`, async (t
     assert.deepEqual(values(day.insulinBar(latest)).parts.map((p) => p.key),
       ['basal', 'meal', 'correction', 'control_iq_bolus']);
     assert.ok(values(day.dayChartOf(latest)).cgm.length > 0, 'the day chart has readings');
-    assert.equal(values(day.lowPrompts())[0].bg, expected.day.firstLowBg);
+    assert.equal(values(day.promptsOfKind('low'))[0].bg, expected.day.firstLowBg);
   });
 
   await t.test('Settings', async () => {

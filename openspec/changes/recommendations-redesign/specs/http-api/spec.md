@@ -245,6 +245,27 @@ whole-profile switch moved.
 - **WHEN** a basal Trial's after arm holds two nights
 - **THEN** its trace serves no bins and serves each night's readings
 
+### Requirement: Each Prompt serves when its reading was
+
+The Prompts read SHALL serve, for each Prompt, `key_t`: the time its `key_bg` was
+read, a missed-meal Prompt's peak and a low Prompt's nadir. A missed-meal Prompt's
+readings SHALL run from two hours before its onset to two hours after it, or on to
+its peak when that is later. The app SHALL find no peak and derive no time from
+the readings.
+
+#### Scenario: A rise is served at its peak
+
+- **WHEN** glucose climbs from a flat 110 with no bolus, crossing 250 at 08:55 and
+  reading 270 at 09:00
+- **THEN** its missed-meal Prompt serves `anchor_t` 08:55, `key_t` 09:00 and
+  `key_bg` 270, and its readings hold the 09:00 reading
+
+#### Scenario: A long climb's readings reach its peak
+
+- **WHEN** an unannounced rise peaks more than two hours after it crossed 250
+- **THEN** its readings still run from two hours before the crossing on to the
+  peak
+
 ## MODIFIED Requirements
 
 ### Requirement: Historical findings and event evidence share one restart-safe generation

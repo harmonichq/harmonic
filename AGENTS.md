@@ -108,7 +108,7 @@ command lives in `.github/workflows/ci.yml`:
 
 ```sh
 uv run python scripts/gen_chart_builder_fixtures.py --check
-uv run python scripts/check_demo_fixtures.py   # the Diagnose synthetic set the projection fixtures read
+uv run python scripts/check_demo_fixtures.py   # the Diagnose synthetic set the shape tests read
 uv run python scripts/gen_qa_e2e_db.py --check
 uv run python scripts/gen_findings_projection_fixtures.py --check
 uv run python scripts/gen_ic_history_event_fixtures.py --check
@@ -116,13 +116,6 @@ uv run python scripts/gen_ic_block_evidence_fixtures.py --check
 uv run python scripts/gen_basal_night_evidence_fixtures.py --check
 uv run python scripts/gen_isf_rest_window_evidence_fixtures.py --check
 uv run python scripts/gen_missed_meal_comparison_fixtures.py --check
-```
-
-The frontend job runs one drift check in Node: the event-comparison synthetic
-capture, which the findings-projection generator reads.
-
-```sh
-node mockups/diagnose-event-comparison.synthetic/generate.mjs --check
 ```
 
 Every committed fixture in this repository is synthetic, and the contamination
@@ -540,7 +533,7 @@ reviewer-memory digest. Check a change against these before asking for review.
   coherent state, mark it stale visibly, bound retries, and offer an explicit
   retry. Cached multi-endpoint views read one server-owned generation atomically.
 - **One fact crosses four boundaries:** analyzer → server projection → generated
-  fixtures and JavaScript mirrors → shipped surface. Inventory every encoding and
+  fixtures and the app's screen models → shipped surface. Inventory every encoding and
   consumer before changing it, and split work at those boundaries.
 - **`frontend/index.html` is a consumer.** It imports frontend modules directly
   and no node test loads it. A negative claim ("nothing imports this") needs an

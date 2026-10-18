@@ -12,6 +12,8 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
+from ciq_autotune.window_membership import WindowQuery
+
 try:
     from fastapi.testclient import TestClient
     from ciq_autotune.api import create_app
@@ -111,11 +113,9 @@ class FindingCaseFileRouteTest(unittest.TestCase):
                                        "behavioral_case_headers", "withheld_findings"})
         self.assertEqual(set(payload["findings"]), {
             "schema", "analysis_generation", "window", "findings_window", "rows",
-            "selection", "counts", "chip_counts",
             "outcome_patterns",
         })
         self.assertEqual(payload["findings"]["analysis_generation"], "case-http:0")
-        self.assertIsNone(payload["findings"]["selection"])
 
     def test_chartable_pattern_clock_case_reaches_the_public_route(self):
         from ciq_autotune.finding_case_file import prepare as prepare_case_files
@@ -218,28 +218,18 @@ class FindingCaseFileRouteTest(unittest.TestCase):
         self.assertTrue(detail["glucose"])
         self.assertIn("markers", detail)
 
-    def test_preparation_forwards_history_selection_and_generation(self):
-        sentinel = {
-            "id": "ich1_selected", "disposition": "out_of_scope",
-            "message": "Past-setting evidence is outside the selected window.",
-        }
-
+    def test_preparation_forwards_its_window_and_generation_and_takes_no_selection(self):
         class Projection:
             _scenarios = {}
 
-            def project(self, query, selected_id=None, *, analysis_generation):
-                self.arguments = (query, selected_id, analysis_generation)
+            def project(self, query, *, analysis_generation):
+                self.arguments = (query.to_dict(), analysis_generation)
                 return {
-                    "schema": "diagnose-findings-v2",
+                    "schema": "diagnose-findings-v3",
                     "analysis_generation": analysis_generation,
                     "window": query.to_dict(),
                     "findings_window": {"days": 30, "start": None, "end": None},
-                    "rows": [{"id": "history:sentinel", "register": "history"}],
-                    "selection": sentinel,
-                    "counts": {"assert": 0, "held": 0, "blind": 0,
-                               "finding": 0, "history": 1},
-                    "chip_counts": {"highs": 0, "lows": 0, "meals": 1,
-                                    "corrections": 0},
+                    "rows": [{"id": "basal:0-30", "register": "assert"}],
                 }
 
         projection = Projection()
@@ -249,15 +239,21 @@ class FindingCaseFileRouteTest(unittest.TestCase):
         ):
             response = self.client.get(
                 "/api/diagnose/finding-case-file-preparation",
-                params={"start_min": 0, "end_min": 300,
-                        "selected_id": "ich1_selected"},
+                params={"start_min": 0, "end_min": 300},
+            )
+            # ADR 531: the desk's past-setting selection is gone from the read.
+            selected = self.client.get(
+                "/api/diagnose/finding-case-file-preparation",
+                params={"selected_id": "ich1_selected"},
             )
 
         self.assertEqual(response.status_code, 200, response.text)
         payload = response.json()
-        self.assertEqual(projection.arguments[1:], ("ich1_selected", "case-http:0"))
-        self.assertEqual(payload["findings"]["selection"], sentinel)
+        self.assertEqual(projection.arguments,
+                         (WindowQuery.clock(0, 300).to_dict(), "case-http:0"))
         self.assertEqual(payload["findings"]["rows"], payload["rendered_rows"])
+        self.assertEqual((selected.status_code, selected.json()["detail"]["code"]),
+                         (400, "invalid_request"))
 
     def test_raw_query_failures_use_the_structured_400_envelope(self):
         for url in (
@@ -561,7 +557,7 @@ class FindingCaseFileRouteTest(unittest.TestCase):
         cache = self.app.state.result_cache
         broken = Broken()
         cache.get_or_build_preparation(
-            ("finding-case-file", None, None, None), lambda version: broken,
+            ("finding-case-file", None, None), lambda version: broken,
         )
         response = self.client.get("/api/diagnose/finding-case-file-preparation")
         self.assertEqual(response.status_code, 500)
@@ -702,17 +698,10 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
         findings = prepared["findings"]
         self.assertEqual(set(findings), {
             "schema", "analysis_generation", "window", "findings_window", "rows",
-            "selection", "counts", "chip_counts",
             "outcome_patterns",
         })
         self.assert_window_tree(findings["window"])
         self.assertEqual(set(findings["findings_window"]), {"days", "start", "end"})
-        self.assertEqual(set(findings["counts"]), {
-            "assert", "held", "blind", "finding", "history",
-        })
-        self.assertEqual(set(findings["chip_counts"]), {
-            "highs", "lows", "meals", "corrections",
-        })
         for header in prepared["behavioral_case_headers"].values():
             self.assertEqual(set(header), {
                 "finding_id", "lever", "title", "family", "summary",

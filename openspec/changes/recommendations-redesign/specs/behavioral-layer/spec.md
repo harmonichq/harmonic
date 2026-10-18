@@ -58,6 +58,29 @@ SHALL remain intact; this change SHALL NOT invent a status enum.
 - **AND** the unattributed Low remains a denominator opportunity under its
   existing outcome rule
 
+### Requirement: A Pattern served as its one habit is counted and inspected as the Pattern
+
+A Pattern that collapses to its one admitted habit has no row of its own. That
+habit's row SHALL serve the Pattern it is served as: the Pattern's subject, its
+count sentence, and each rate lever's credited count of it, all from the one
+crediting rule over the Pattern's window population, and none when the Pattern
+serves no count sentence. The habit's own count sentences SHALL be unchanged. A
+case file requested under that Pattern's subject SHALL be the Pattern's case file,
+whenever the chartability predicate holds for it, so its claimed count is the
+Pattern's count.
+
+#### Scenario: A rate lever the Pattern does not admit still counts on it
+
+- **GIVEN** the QA case where Correction on active insulin drives two of six lows
+  and is the one admitted member of Lows after correcting highs, while a stacked
+  pair of corrections reaches a third low
+- **WHEN** the findings projection and the Pattern's case file are read
+- **THEN** the habit's row still counts 2 of 6 lows as its own, and serves the
+  Pattern's 3 of 6 lows, credited 1 to Correction stacking and 2 to Correction on
+  active insulin
+- **AND** the case file under the Pattern's subject claims those 3 lows and names
+  each one's crediting lever
+
 ### Requirement: A folded cause serves its count on its Pattern's own population
 
 The Pattern producer SHALL own one rule that credits each of a Pattern's claimed
@@ -277,6 +300,66 @@ input, Pattern price, support floor, staging predicate or cap SHALL change.
 - **WHEN** the whole-day queue is published
 - **THEN** the correction-factor row, unpriced, sorts before both causes
 
+### Requirement: A Pattern case file serves its episodes and Typical aligned at one start
+
+Every Pattern case file SHALL serve `traces`: the start its episodes are aligned
+at, the minutes drawn, the Pattern's own episodes and Typical, its comparison
+episodes, each as the anchors it draws and its 5-minute bins with their median
+and 25–75 band. A bin SHALL be served only from three readings. The Pattern
+SHALL also serve each episode's readings when it draws eight or fewer, and none
+past that. An episode with no reading in the first ten minutes of its window
+SHALL be left off its cohort. A meal Pattern SHALL start at the meal's bolus, over
+−30 to 240 minutes, against its event comparison's meals; Highs after treating
+lows SHALL start at the low's nadir, over 0 to 180 minutes, against every other
+low; Lows after correcting highs SHALL start at the correction each low it counts
+followed, over 0 to 240 minutes, against every other lone correction, a user
+correction with no other within the stacking window either side (ADR 523).
+
+#### Scenario: A correction Pattern is drawn from the doses its lows followed
+
+- **GIVEN** the `pattern-correction-fold` QA case, where Correction on active
+  insulin claims two lows from 20:00 corrections and Correction stacking two from
+  14:40 stacking doses
+- **WHEN** its Lows after correcting highs case file is read
+- **THEN** its Pattern anchors are those four doses, and Typical's is the one
+  other lone correction
+
+#### Scenario: A low Pattern is compared with every other low
+
+- **GIVEN** the same case, where one low is over-treated
+- **WHEN** its Highs after treating lows case file is read
+- **THEN** its Pattern anchor is that low's nadir and Typical's are the other six
+  lows
+
+#### Scenario: An episode that starts in a gap is left off
+
+- **GIVEN** the same case with the first fifteen minutes after its Typical
+  correction removed
+- **WHEN** the case file is read
+- **THEN** Typical draws no episode and the Pattern's four are unchanged
+
+#### Scenario: Past eight episodes the Pattern is its median and band
+
+- **GIVEN** a meal Pattern counting nine meals
+- **WHEN** its case file is read
+- **THEN** it serves no episodes and serves each bin's median over the nine
+
+### Requirement: A low a correction habit claims names the dose it followed
+
+The exposures feed SHALL serve, on each low a correction habit claims, the time
+of the correction that habit names for it, keyed by the habit: the correction a
+Correction on active insulin verdict judged, or the stacking dose of the
+Correction stacking episode that reached it. It SHALL read the verdict the
+attribution retained and run no classifier again (ADR 523).
+
+#### Scenario: Each claimed low names its correction
+
+- **GIVEN** the `pattern-correction-fold` QA case
+- **WHEN** the exposures feed is built
+- **THEN** the 22:00 low Correction on active insulin claims names its 20:00
+  correction, the 16:05 low Correction stacking reached names its 14:40 stacking
+  dose, and an unclaimed low names none
+
 ## MODIFIED Requirements
 
 ### Requirement: Patterns are detected by instance classifiers that judge one behavior at a time.
@@ -429,7 +512,12 @@ low outcome, each with the reading's time and its minutes after the bolus. The a
 SHALL be computed by the existing Outcomes trend arc implementation over the
 readings the analyzer judged, truncated at the next meal's first bolus, so a
 same-meal top-up never cuts it, and SHALL serve no
-outcome when that arc half has no reading or its nadir window does not qualify. No
+outcome when that arc half has no reading or its nadir window does not qualify. A
+low Occurrence SHALL serve one outcome reading taken from its own drawn trace, from
+the anchor to the comparison window's far edge: the highest reading when the case
+file judges a high outcome (an over-treated low's rebound), the lowest when it
+judges a low outcome, each with the reading's time and its minutes after the anchor,
+and no outcome when that span has no reading. No
 meal or correction-cluster Occurrence SHALL serve an anchor glucose, and no
 episode-level reading SHALL stand in for the arc. The exposure feed SHALL serve
 each exposure Occurrence's anchor bolus dose and carbs, copied from the analyzer's
@@ -453,6 +541,15 @@ Verdicts, verdict counts, cohorts, denominators and claims SHALL be unchanged.
 - **WHEN** the Meal over-delivery case file is read
 - **THEN** each row whose arc nadir qualifies serves the Arc nadir, never the
   peak, and a row whose nadir window does not qualify serves no outcome
+
+#### Scenario: A low reads its rebound peak or its nadir
+
+- **GIVEN** the QA case where a low at 13:55 is over-treated and rebounds to 260
+  forty minutes later
+- **WHEN** the Highs after treating lows and Lows after correcting highs case files
+  are read
+- **THEN** that low serves a peak of 260 forty minutes after it in the first, and
+  every low serves its own reading as its nadir in the second
 
 #### Scenario: Correction clusters serve their dose
 

@@ -1,9 +1,9 @@
 // PatternCard (§4.2): the open pattern. Its magnitude in figure type, the
-// CauseWaffle, and Pin — or, once pinned, the Focus pill in Pin's place. A
+// TraceChart (ADR 523), and Pin — or, once pinned, the Focus pill in Pin's place. A
 // pattern has no Range (only a Setting does); a pattern the engine flags as
 // too broad to rely on carries the Uncertain pill on its magnitude line (ADR
 // 485). When the engine serves no count for the pattern, the card shows no
-// magnitude or waffle rather than inventing one.
+// magnitude rather than inventing one; when it serves no case file, no chart.
 // Under the magnitude, the impact line: the peak (a high pattern) or nadir (a
 // low one) of the pattern's own episodes against the typical episode the
 // engine compares them with, as two caption + value pairs on one baseline.
@@ -15,8 +15,8 @@ import { Icon } from '../../icons';
 import { Num } from '../../Num';
 import type { PatternData } from '../../queue-model';
 import { Button } from '../Button/Button';
-import { CauseWaffle } from '../CauseWaffle/CauseWaffle';
 import { StatePill } from '../StatePill/StatePill';
+import { TraceChart } from '../TraceChart/TraceChart';
 import '../../shared.css';
 import './PatternCard.css';
 
@@ -36,8 +36,8 @@ export function PatternCard(props: PatternCardProps) {
       <section className="ui-pcard ui-pcard--loading" aria-busy="true">
         <span className="ui-skeleton" style={{ width: '62%', height: 22 }} />
         <span className="ui-skeleton" style={{ width: '40%', height: 34, marginTop: 12 }} />
-        <span className="ui-skeleton" style={{ width: '100%', height: 84, marginTop: 16 }} />
-        <span className="ui-skeleton" style={{ width: '70%', height: 13, marginTop: 16 }} />
+        <span className="ui-skeleton" style={{ width: '100%', height: 228, marginTop: 16 }} />
+        <span className="ui-skeleton" style={{ width: '50%', height: 13, marginTop: 12 }} />
         <span className="ui-skeleton" style={{ width: '100%', height: 50, marginTop: 24 }} />
       </section>
     );
@@ -67,12 +67,9 @@ export function PatternCard(props: PatternCardProps) {
               <span className="ui-pcard__unit">mg/dL</span>
             </p>
           )}
-          <div className="ui-pcard__waffle">
-            <CauseWaffle n={magnitude.denominator.value} k={magnitude.count.value}
-              causes={data.causes} noun={magnitude.noun} tone={data.tone} />
-          </div>
         </>
       )}
+      {data.traces && <div className="ui-pcard__chart"><TraceChart data={data.traces} /></div>}
       <div className="ui-pcard__action">
         {data.pinned ? <StatePill state="focus" /> : <Button kind="primary" label="Pin" onClick={onPin} />}
       </div>

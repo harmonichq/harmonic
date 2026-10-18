@@ -55,11 +55,14 @@
 
 .ui-scard__chart { margin-top: 20px; }
 
-/* Two captioned values on one grid, caption above value, both left-aligned. */
+/* The stat row (ADR 523): Estimate, Range and the count, caption above value,
+   left-aligned, each as wide as its value, which never wraps; only a caption may
+   take a second line. */
 .ui-scard__facts {
   display: grid;
-  grid-template-columns: 1fr 2fr;
-  gap: 16px;
+  grid-template-columns: repeat(3, auto);
+  justify-content: start;
+  column-gap: 32px;
   margin: 16px 0 0;
   padding-top: 12px;
   border-top: 1px solid var(--wk-rule);
@@ -70,7 +73,9 @@
   font-size: var(--ui-type-body);
   line-height: 22px;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
+.ui-scard__estimate { color: var(--ui-estimate); font-weight: var(--ui-weight-strong); }
 .ui-scard__unit {
   margin-left: 4px;
   color: var(--wk-ink-meta);

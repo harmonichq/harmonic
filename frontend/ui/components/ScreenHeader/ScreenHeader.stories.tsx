@@ -45,5 +45,5 @@ export const WithDayOpen: Story = {
   },
 };
 export const WithCount: Story = {
-  args: { title: 'Lows', back: { label: 'Day' }, trailing: 'count', ...promptPlace('wearer-pending') },
+  args: { title: 'Lows', back: { label: 'Day' }, trailing: 'count', ...promptPlace('low', 'wearer-pending') },
 };

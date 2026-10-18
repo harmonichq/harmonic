@@ -103,8 +103,12 @@ class Prompt:
     actionable instant — the rise *onset* for a missed meal (where the climb began,
     the classifier's own anchor), the *nadir* for a low. ``key_bg`` is the value
     that makes the question concrete — the peak a missed meal rose to, the floor a
-    low dropped to. ``cgm`` is the ±2h context the ribbon and pop-up sparkline draw,
-    as ``[{"t", "bg"}, …]``. ``age_days`` is filled by :func:`pending_prompts`
+    low dropped to — and ``key_t`` the instant it was read: the peak's time, after
+    the onset, for a missed meal, and the nadir itself for a low. Day's Rises ring
+    the peak at that time and print it (#529), so it is served, never found by
+    the frontend. ``cgm`` is the ±2h context around ``anchor_t`` the sparkline
+    draws, as ``[{"t", "bg"}, …]``, reaching on to ``key_t`` (a long climb can
+    peak more than two hours after its onset). ``age_days`` is filled by :func:`pending_prompts`
     relative to its ``now`` (0.0 on a bare candidate). ``answer`` is ``None`` on a
     pending prompt, or the stored ``carbs`` / ``no`` / ``not-sure`` label when the
     prompt has been answered (so the ribbon can render it as a faded ✓ the user can
@@ -114,6 +118,7 @@ class Prompt:
     detector: str
     anchor_t: datetime
     key_bg: Optional[float]
+    key_t: datetime
     question: str
     context: str
     cgm: List[dict] = field(default_factory=list)
@@ -125,6 +130,7 @@ class Prompt:
             "detector": self.detector,
             "anchor_t": format_t(self.anchor_t),
             "key_bg": self.key_bg,
+            "key_t": format_t(self.key_t),
             "question": self.question,
             "context": self.context,
             "age_days": round(self.age_days, 2),
@@ -133,10 +139,12 @@ class Prompt:
         }
 
 
-def _cgm_window(cgm_readings: Sequence[CgmReading], center: datetime) -> List[dict]:
-    """The ±2h CGM slice around ``center``, as plain ``{"t", "bg"}`` rows (sorted)."""
+def _cgm_window(cgm_readings: Sequence[CgmReading], center: datetime,
+                key_t: datetime) -> List[dict]:
+    """The ±2h CGM slice around ``center``, reaching on to ``key_t`` when that is
+    later, as plain ``{"t", "bg"}`` rows (sorted)."""
     lo = center - _SPARKLINE_PAD
-    hi = center + _SPARKLINE_PAD
+    hi = max(center + _SPARKLINE_PAD, key_t)
     rows = [
         r for r in cgm_readings
         if r.bg is not None and lo <= r.t <= hi
@@ -157,9 +165,10 @@ def _low_prompt(anchor: Anchor, cgm_readings: Sequence[CgmReading]) -> Prompt:
         detector=DETECTOR_LOW,
         anchor_t=anchor.t,
         key_bg=nadir,
+        key_t=anchor.t,
         question="Did you treat this low?",
         context=context,
-        cgm=_cgm_window(cgm_readings, anchor.t),
+        cgm=_cgm_window(cgm_readings, anchor.t, anchor.t),
     )
 
 
@@ -170,7 +179,7 @@ def _missed_meal_prompt(
 
     ``anchor.t`` is the HIGH-run peak; the classifier anchors at the *onset*
     (``anchor.reach_start``), so the prompt does too. ``key_bg`` stays the peak the
-    rise reached (what the question is about), matching the LOCKED ribbon pin.
+    rise reached (what the question is about), and ``key_t`` its time.
     """
     peak = anchor.bg
     context = (
@@ -182,9 +191,10 @@ def _missed_meal_prompt(
         detector=DETECTOR_MISSED_MEAL,
         anchor_t=onset,
         key_bg=peak,
+        key_t=anchor.t,
         question="Did you eat here?",
         context=context,
-        cgm=_cgm_window(cgm_readings, onset),
+        cgm=_cgm_window(cgm_readings, onset, anchor.t),
     )
 
 

@@ -516,14 +516,26 @@ CREATE TABLE IF NOT EXISTS guidance_preferences (
     state_json TEXT NOT NULL
 );
 
--- Monotonic generation for durable derivations.  It advances in the same
--- transaction as every Store-owned committed mutation, so a sidecar artifact
--- can never claim a primary-store snapshot it did not read.
+-- Monotonic generation of the whole store.  It advances in the same
+-- transaction as every Store-owned committed mutation, recorded data and
+-- follow-up state alike, so a follow-up write can refuse a read it did not see.
 CREATE TABLE IF NOT EXISTS input_data_revision (
     id INTEGER PRIMARY KEY CHECK (id = 1),
     revision INTEGER NOT NULL
 );
 INSERT OR IGNORE INTO input_data_revision (id, revision) VALUES (1, 0);
+-- Monotonic generation of the recorded data alone (ADR 538): readings,
+-- deliveries, boluses, insulin on board, pump events, settings captures, carbs
+-- and prompt answers.  It advances in the same transaction as every write to
+-- one of them and never for follow-up state, so a durable derivation that reads
+-- only recorded data can never claim a snapshot it did not read, and outlives a
+-- snooze.  Seeded from the store generation, so it never reuses a number.
+CREATE TABLE IF NOT EXISTS recorded_data_revision (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    revision INTEGER NOT NULL
+);
+INSERT OR IGNORE INTO recorded_data_revision (id, revision)
+    SELECT 1, revision FROM input_data_revision WHERE id = 1;
 
 -- Bounded historical facts, separate from the legacy Plan/Focus response shapes.
 CREATE TABLE IF NOT EXISTS follow_up_records (
@@ -622,6 +634,7 @@ class Store:
         self._follow_up_start_changes = None
         self._follow_up_failed = False
         self._follow_up_frontier_written = False
+        self._follow_up_recorded_data_written = False
         self._follow_up_new_frontier_at = None
         self._follow_up_resolved_focuses = set()
         self._snapshots_memo = None
@@ -668,7 +681,9 @@ class Store:
                 and _schema_objects() <= existing
                 and not self._missing_columns() and not self._stale_seq_num_tables()
                 and self.conn.execute(
-                    "SELECT 1 FROM input_data_revision WHERE id = 1").fetchone() is not None)
+                    "SELECT 1 FROM input_data_revision WHERE id = 1").fetchone() is not None
+                and self.conn.execute(
+                    "SELECT 1 FROM recorded_data_revision WHERE id = 1").fetchone() is not None)
 
     def _missing_columns(self) -> list[tuple[str, str, str]]:
         return [(table, column, coltype) for table, column, coltype in _ADDED_COLUMNS
@@ -687,6 +702,7 @@ class Store:
             if stale:
                 statements.append(_SCHEMA)
             statements.append("UPDATE input_data_revision SET revision = revision + 1 WHERE id = 1")
+            statements.append("UPDATE recorded_data_revision SET revision = revision + 1 WHERE id = 1")
             statements.append("COMMIT")
             self.conn.executescript(";\n".join(statements) + ";")
         if pattern_migration:
@@ -761,7 +777,7 @@ class Store:
                         "ON CONFLICT(kind, id) DO UPDATE SET record_json=excluded.record_json",
                         (str(row["id"]), json.dumps(migrated, sort_keys=True)),
                     )
-            self._advance_revision()
+            self._advance_revision(recorded_data=False)
             self.conn.execute("PRAGMA application_id = 0")
         return True
 
@@ -867,6 +883,7 @@ class Store:
         self._follow_up_start_changes = self.conn.total_changes
         self._follow_up_failed = False
         self._follow_up_frontier_written = False
+        self._follow_up_recorded_data_written = False
         self._follow_up_new_frontier_at = None
         self._follow_up_resolved_focuses = set()
         try:
@@ -883,6 +900,9 @@ class Store:
                         (revision + 1,))
                 self.conn.execute(
                     "UPDATE input_data_revision SET revision = revision + 1 WHERE id = 1")
+                if self._follow_up_recorded_data_written:
+                    self.conn.execute(
+                        "UPDATE recorded_data_revision SET revision = revision + 1 WHERE id = 1")
             self.conn.commit()
         except BaseException:
             self.conn.rollback()
@@ -890,6 +910,7 @@ class Store:
         finally:
             self._follow_up_start_changes = None
             self._follow_up_frontier_written = False
+            self._follow_up_recorded_data_written = False
             self._follow_up_failed = False
             self._follow_up_resolved_focuses.clear()
 
@@ -909,22 +930,46 @@ class Store:
         )
         with self._write_transaction():
             self.conn.executemany(sql, rows)
-            self._advance_revision()
+            self._advance_revision(recorded_data=True)
         return len(rows)
 
-    def _advance_revision(self) -> None:
-        """Advance the durable derivation key inside the caller's transaction."""
+    def _advance_revision(self, *, recorded_data: bool) -> None:
+        """Advance the store generation inside the caller's transaction.
+
+        ``recorded_data`` says the write changed a table the analysis reads —
+        readings, deliveries, boluses, insulin on board, pump events, settings
+        captures, carbs or prompt answers — so the recorded-data revision, the
+        derived results' key, advances with it (ADR 538). Follow-up state,
+        credentials and fetch status advance the store generation alone. Inside
+        a follow-up transaction both are published once, at its commit."""
         if self._follow_up_start_changes is None:
             self.conn.execute(
                 "UPDATE input_data_revision SET revision = revision + 1 WHERE id = 1")
+            if recorded_data:
+                self.conn.execute(
+                    "UPDATE recorded_data_revision SET revision = revision + 1 WHERE id = 1")
+        elif recorded_data:
+            self._follow_up_recorded_data_written = True
 
     def input_data_revision(self) -> int:
-        """Store generation, including a pending follow-up transaction advance."""
+        """Store generation, including a pending follow-up transaction advance.
+
+        Every write advances it, so it is the follow-up writes' concurrency
+        token: a write that names an older one refuses."""
         row = self.conn.execute(
             "SELECT revision FROM input_data_revision WHERE id = 1").fetchone()
         pending = (self._follow_up_start_changes is not None
                    and self.conn.total_changes != self._follow_up_start_changes)
         return int(row["revision"]) + int(pending)
+
+    def recorded_data_revision(self) -> int:
+        """Recorded-data generation, including a pending follow-up advance (ADR 538).
+
+        Only a write to recorded data advances it, so a result computed from
+        recorded data alone is current exactly while this is unchanged."""
+        row = self.conn.execute(
+            "SELECT revision FROM recorded_data_revision WHERE id = 1").fetchone()
+        return int(row["revision"]) + int(self._follow_up_recorded_data_written)
 
     def upsert_basal(self, raw: Iterable[dict]) -> int:
         cols = ["seq_num", "t", "delivery_type", "duration_mins", "basal_rate",
@@ -1358,7 +1403,7 @@ class Store:
                     "VALUES (?, ?, ?, ?, ?, ?)",
                     (t, entry.grams, entry.certainty, entry.source, entry.note, created),
                 )
-                self._advance_revision()
+                self._advance_revision(recorded_data=True)
                 return int(cur.lastrowid)
             self.conn.execute(
                 "INSERT INTO carb_entries (id, t, grams, certainty, source, note, created_at) "
@@ -1367,7 +1412,7 @@ class Store:
                 "certainty=excluded.certainty, source=excluded.source, note=excluded.note",
                 (id, t, entry.grams, entry.certainty, entry.source, entry.note, created),
             )
-            self._advance_revision()
+            self._advance_revision(recorded_data=True)
             return id
 
     def carb_entries(self, start=None, end=None) -> List[CarbEntry]:
@@ -1404,7 +1449,7 @@ class Store:
         with self._write_transaction():
             cur = self.conn.execute("DELETE FROM carb_entries WHERE id = ?", (id,))
             if cur.rowcount:
-                self._advance_revision()
+                self._advance_revision(recorded_data=True)
         return cur.rowcount
 
     def record_prompt_response(self, *, detector: str, anchor_t: datetime, answer: str,
@@ -1420,7 +1465,7 @@ class Store:
                 (detector, format_t(anchor_t), answer, carb_entry_id,
                  format_t(answered_at or wall_clock_now())),
             )
-            self._advance_revision()
+            self._advance_revision(recorded_data=True)
         return int(cur.lastrowid)
 
     def prompt_responses(self) -> List[dict]:
@@ -1452,7 +1497,7 @@ class Store:
                 "VALUES (?, ?, ?, ?, ?)",
                 (detector, format_t(anchor_t), answer, carb_id, answered),
             )
-            self._advance_revision()
+            self._advance_revision(recorded_data=True)
         return carb_id, int(resp.lastrowid)
 
     def clear_prompt_response(self, *, detector: str, anchor_t: datetime,
@@ -1485,7 +1530,7 @@ class Store:
                     self.conn.execute(
                         "DELETE FROM prompt_responses WHERE id = ?", (r["id"],))
             if rows:
-                self._advance_revision()
+                self._advance_revision(recorded_data=True)
         return len(rows)
 
     def set_credentials(self, *, email: str, password_encrypted: bytes,
@@ -1499,7 +1544,7 @@ class Store:
                 "updated_at=excluded.updated_at",
                 (email, password_encrypted, region, updated_at),
             )
-            self._advance_revision()
+            self._advance_revision(recorded_data=False)
 
     def get_credentials(self) -> Optional[sqlite3.Row]:
         return self.conn.execute("SELECT * FROM credentials WHERE id = 1").fetchone()
@@ -1530,7 +1575,7 @@ class Store:
                 (attempted_at, attempted_at if ok else None, None if ok else error,
                  None if ok else error_label, written_json, ok, ok),
             )
-            self._advance_revision()
+            self._advance_revision(recorded_data=False)
 
     def fetch_status(self) -> Optional[dict]:
         row = self.conn.execute("SELECT * FROM fetch_status WHERE id = 1").fetchone()
@@ -1574,7 +1619,7 @@ class Store:
                 (applied_at, json.dumps(draft["items"])),
             )
             self.conn.execute("DELETE FROM plan_draft WHERE id = 1")
-            self._advance_revision()
+            self._advance_revision(recorded_data=False)
         return {"applied_at": applied_at, "items": draft["items"]}
 
     def plan_history(self) -> List[dict]:
@@ -1606,7 +1651,7 @@ class Store:
                 if str(exc) != "UNIQUE constraint failed: focus.status":
                     raise
                 raise FocusAlreadyActive("a Focus is already active") from exc
-            self._advance_revision()
+            self._advance_revision(recorded_data=False)
             result = {"id": cur.lastrowid, "lever": lever,
                       "pinned_at": pinned_at, "status": "active"}
             if pattern_key is not None:
@@ -1634,7 +1679,7 @@ class Store:
                 (status, focus_id),
             )
             if cur.rowcount:
-                self._advance_revision()
+                self._advance_revision(recorded_data=False)
                 if self._follow_up_start_changes is not None:
                     self._follow_up_resolved_focuses.add(focus_id)
         return cur.rowcount > 0
@@ -1673,13 +1718,13 @@ class Store:
                 "comparison_version=excluded.comparison_version, state_json=excluded.state_json",
                 (subject, decided_at, reason, comparison_version, json.dumps(state, sort_keys=True)),
             )
-            self._advance_revision()
+            self._advance_revision(recorded_data=False)
 
     def restore_guidance_preference(self, subject: str) -> bool:
         with self._write_transaction():
             cur = self.conn.execute("DELETE FROM guidance_preferences WHERE subject=?", (subject,))
             if cur.rowcount:
-                self._advance_revision()
+                self._advance_revision(recorded_data=False)
         return bool(cur.rowcount)
 
     @staticmethod
@@ -2101,7 +2146,7 @@ class Store:
                 "decision=excluded.decision, decided_at=excluded.decided_at",
                 (cell_id, era_start, decision, when),
             )
-            self._advance_revision()
+            self._advance_revision(recorded_data=False)
 
     def pattern_reviews(self, era_start: Optional[str] = None) -> dict:
         """Human decisions as ``{cell_id: {'decision', 'decided_at', 'era_start'}}``.

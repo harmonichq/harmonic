@@ -947,7 +947,7 @@ are recomputed after every follow-up write even though neither reads follow-up
 state. The warm pass after a snooze takes about 46 s on the Mac. Keying derived
 results by a revision that only recorded-data writes advance would remove that,
 but it changes the store's derivation key and the follow-up concurrency contract,
-so it is left for its own decision.
+so it is left for its own decision (decided in ADR 538).
 
 **Consequences.** A new cached builder that reads follow-up state must not be
 named in the keep list. A new screen read belongs in the warm roster. The
@@ -1006,6 +1006,96 @@ changes, each an in-place edit or a switch, and reproduces every earlier store
 byte for byte. The live adapter reads the active Trial's comparison whether or
 not it has matured, and no longer reads the guidance for Changes. The
 provenance grammar gains `+`, for the Previous count.
+
+## ADR 538 — Derived results are keyed by a revision only recorded-data writes advance
+
+**Context.** ADR 522 left one slow path: a snooze, restore, pin, Done or Trial
+step advances the input revision, which also keyed the derived-results file, so
+the findings snapshot and the 30-day analysis were recomputed after every
+follow-up write although neither reads follow-up state (a warm pass of about
+46 s on the Mac, about 2 min on the home-lab host). On the synthetic showcase the
+first guidance read after a snooze took 4.06 s and the warm pass after it 4.0 s.
+
+**Decision.**
+
+1. *Two revisions.* The input revision is unchanged: it advances on every
+   committed write and stays the follow-up writes' concurrency token (a durable
+   request's `input_revision`, a preference's expected revision, the frontier's
+   `reconciled_input_revision`, the guidance's `input_revision`, `/api/status`,
+   and the fetch loop's commit check). A new recorded-data revision
+   (`Store.recorded_data_revision`) advances in the same transaction as every
+   write to what the analysis reads: the stream upserts (basal, bolus, CGM,
+   insulin on board, pump events, settings captures), carb entries, prompt
+   answers, and a schema migration. Preferences, Focus pins and resolutions, a
+   Done, follow-up records, frontier and receipts, pattern sign-offs, the
+   pattern-subject rewrite, credentials and fetch status do not advance it. Each
+   writer names its class where it advances (`recorded_data=`). A follow-up
+   transaction that joins a recorded-data write publishes each revision once at
+   commit. The new revision is seeded from the input revision, so it never
+   reuses a number.
+2. *Each derived result is keyed by the revision of what it reads.* The
+   derived-results file and the fixed in-memory results are keyed by the
+   recorded-data revision; a builder that reads follow-up state says so
+   (`reads_follow_up=True`) and is keyed by the input revision. The watched
+   change (`/api/outcomes/trend`) is the one such fixed result, so it keeps its
+   persisted answer and its labelled predecessor as specified.
+3. *Follow-up state is read beside the results, not inside them.* The guidance
+   already reads preferences, admission, the watched change and the
+   acknowledgments in one snapshot at one input revision, composes them with the
+   findings snapshot, and rechecks that revision; that stays. The Trial roster
+   stays keyed by the input revision it read.
+4. *The keep list names every recorded-data result*, the fixed ones included, so
+   a follow-up write keeps them in memory as well as in the file.
+
+**Which cached results read follow-up state.** The store's follow-up reads are
+`guidance_preferences`, `active_focus`, `list_focuses`, `follow_up_record(s)`,
+`follow_up_frontier`, `follow_up_request`, `get_plan_draft`, `plan_history`,
+`pattern_reviews` and `latest_server_stamp`; no other module queries those
+tables. Their callers are the API's composition and write paths,
+`watched_change`, `pattern_sweep` (the sign-offs), `sync` (the stamp floor, at
+ingest), `credentials` and `fetch_loop`. No recorded-data builder — the analysis
+and its analyzers, the scenario report, the exposure feed, the time-of-day
+profile, the findings projection, the carb-ratio history and block evidence, the
+basal-night and ISF rest-window evidence, outcomes, the day navigator, the
+model-view, the timeline, the catalog — imports `watched_change`, `pattern_sweep`
+or `follow_up_comparison`; the guidance helpers the findings projection calls are
+pure over payloads, with preferences passed in at read time. A test reads every
+recorded-data result cold on the showcase with each follow-up read recorded:
+none is called. The Trial roster, the watched change and the pattern sweep each
+call one, and each still refreshes on a follow-up write: the roster and the
+watched change by the input revision, the sweep by being dropped.
+
+**Measured** on the synthetic showcase, in process on the Mac, one snooze after
+a full warm pass:
+
+| | Before | After |
+|---|---|---|
+| First guidance read after the snooze | 4.06 s | 0.01 s |
+| Warm pass after the snooze | 4.0 s | 0.8 s |
+| Default analysis in that pass | 2.19 s | 0.00 s |
+| Time-of-day profiles in that pass | 0.80 s | 0.00 s |
+
+What remains is the case-file preparation (0.77 s) and the Trial roster (0.07 s).
+
+**Rejected.** Stopping follow-up writes from advancing the input revision: two
+follow-up writes from one read would no longer refuse each other, and the
+frontier could no longer tell that a write left it unreconciled. Moving the
+watched change out of the derived-results file: it would drop its specified
+labelled predecessor for no gain, since its key already follows every write.
+Per-table dependency tracking: two revisions answer the one question asked.
+Bumping the file's layout version: every artifact's marker already carries the
+source fingerprint, so nothing written before this change can hit.
+
+**Not decided here.** A case-file preparation is still dropped on every write. It
+reads no follow-up state, but it is leased by a projection identity that carries
+its cache generation, so keeping it across a write changes the preparation
+contract rather than a key.
+
+**Consequences.** A new writer to a table the analysis reads advances with
+`recorded_data=True`; any other passes `False`. A new fixed result that reads
+follow-up state passes `reads_follow_up=True` and stays out of the keep list.
+The showcase's logical dump leaves the new revision out, as it does the input
+revision.
 
 ## ADR 531 — The findings answer serves only what the app reads, and the desk's mirror inputs go
 

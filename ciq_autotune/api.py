@@ -155,19 +155,24 @@ def _analysis_payload(result) -> dict:
     return {**result.to_dict(), "basal_support_floor": _MIN_SUPPORTED_NIGHTS}
 
 
-def _reads_only_recorded_data(key) -> bool:
-    """Whether a cached result reads only recorded data, never follow-up state (#522).
+# Every cached result whose builder reads only recorded data — readings,
+# deliveries, boluses, carbs, prompt answers, settings captures and pump events —
+# and never follow-up state (#522, ADR 538). The fixed ones among them are keyed
+# by the recorded-data revision, which a follow-up write does not advance. The
+# Trial roster, the watched change and the pattern sweep read follow-up state,
+# and are deliberately absent.
+_RECORDED_DATA_RESULTS = frozenset((
+    "analyze", "scenarios", "exposures", "explore-time-of-day",
+    "findings-history-snapshot", "basal-night-evidence",
+    "ic-block-evidence-preparation", "ic-block-evidence-snapshot",
+    "isf-rest-window-evidence", "outcomes", "day-navigator", "model-view",
+    "timeline", "catalog",
+))
 
-    The fixed default analysis (30 days, setting changes honoured) and scenario
-    report are keyed by the input revision instead, so they are not listed."""
-    name = key[0]
-    if name in ("outcomes", "day-navigator", "model-view", "timeline", "catalog"):
-        return True
-    if name == "analyze":
-        return not (key[1] == 30 and not key[2])
-    if name == "scenarios":
-        return key[1] != 30
-    return False
+
+def _reads_only_recorded_data(key) -> bool:
+    """Whether a cached result reads only recorded data, never follow-up state."""
+    return key[0] in _RECORDED_DATA_RESULTS
 
 
 def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
@@ -310,44 +315,53 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             loop.call_soon_threadsafe(app.state.recompute_event.set)
 
     def follow_up_written() -> None:
-        """Invalidate after a write to follow-up state alone (#522).
+        """Invalidate after a write to follow-up state alone (#522, ADR 538).
 
         A guidance preference, a Focus, a Trial or Plan lifecycle step, and the
         follow-up reconcile each write only follow-up tables — the preference, the
         Focus and follow-up records, the frontier, the Plan history — and advance
-        the input revision. The results kept here read none of that: their
-        builders (outcomes, the day navigator, the model-view, the timeline, the
-        analysis and scenarios at a non-default window, the static catalog) read
-        only recorded readings, deliveries, boluses, carbs, prompt answers,
-        settings captures and pump events. Revision-keyed and fixed results miss
-        on the new revision by themselves, and case-file preparations are dropped."""
+        the input revision but not the recorded-data revision. The results kept
+        here read none of that (``_RECORDED_DATA_RESULTS``), and the fixed ones
+        among them still match the derived-results file. What reads follow-up
+        state — the guidance's composition, the Trial roster, the watched change —
+        is dropped or keyed by the input revision, and case-file preparations are
+        dropped."""
         invalidate(keep=_reads_only_recorded_data)
     app.state.finding_case_file_before_commit = None
     fixed_flights: dict[tuple, None] = {}
     fixed_flights_lock = threading.Lock()
 
-    def current_fixed_result(result: FixedResult) -> bool:
+    def current_fixed_result(result: FixedResult, *, reads_follow_up=False) -> bool:
         """Validate a fresh envelope while ResultCache holds its publish lock."""
         if result.revision is None or result.input_data_age is not None:
             return False
         with Store.open_queryonly(db_path) as current:
-            return current.input_data_revision() == result.revision
+            return result.revision == (current.input_data_revision() if reads_follow_up
+                                       else current.recorded_data_revision())
 
-    def fixed(key, marker, compute, *, dump=None, rebuild=None, serve_stale=True):
-        """Return one exact fixed result, or a labeled exact predecessor in flight."""
+    def fixed(key, marker, compute, *, dump=None, rebuild=None, serve_stale=True,
+              reads_follow_up=False):
+        """Return one exact fixed result, or a labeled exact predecessor in flight.
+
+        A result is keyed by the recorded-data revision unless ``reads_follow_up``
+        says its compute reads follow-up state, which keys it by the input
+        revision instead (ADR 538)."""
         with fixed_flights_lock:
             owner = key not in fixed_flights
             if owner:
                 fixed_flights[key] = None
         if serve_stale and not owner and not cache.contains(key):
-            prior = load_latest_prior(db_path, key, shape_marker=marker, rebuild=rebuild)
+            prior = load_latest_prior(db_path, key, shape_marker=marker, rebuild=rebuild,
+                                      reads_follow_up=reads_follow_up)
             if prior is not None:
                 return prior
         def build():
             return load_or_compute(db_path, key, compute, shape_marker=marker,
-                                   dump=dump, rebuild=rebuild, with_age=True)
+                                   dump=dump, rebuild=rebuild, with_age=True,
+                                   reads_follow_up=reads_follow_up)
         try:
-            return cache.get_or_compute(key, build, validate=current_fixed_result)
+            return cache.get_or_compute(key, build, validate=lambda result: current_fixed_result(
+                result, reads_follow_up=reads_follow_up))
         finally:
             if owner:
                 with fixed_flights_lock:
@@ -801,7 +815,10 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             view = trend_watched_change(store)
             return {"watched_change": view.to_dict() if view is not None else None}
 
-        return fixed_response(fixed(("outcomes-trend",), "outcomes-trend-watched-change-v1", watched))
+        # The watched change reads follow-up state (the Focus, the Trial records),
+        # so it is keyed by the input revision every write advances (ADR 538).
+        return fixed_response(fixed(("outcomes-trend",), "outcomes-trend-watched-change-v1",
+                                    watched, reads_follow_up=True))
 
     @app.get("/api/verify/trials")
     def verify_trials_endpoint(selected: Optional[str] = None, kind: str = "trial",

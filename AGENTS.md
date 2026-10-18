@@ -263,19 +263,33 @@ fetch lands, or when that fetch commits nothing. The warm roster is exactly what
 the five tabs read, in visit order; a new screen read belongs in it. A new write
 endpoint that does not invalidate leaves a stale cache.
 
+**The store keeps two revisions, and derived results key on the one their
+builder reads (ADR 538).** The input revision advances on every write and is the
+follow-up writes' concurrency token (durable requests, preferences, the
+frontier). The recorded-data revision advances only on writes to what the
+analysis reads — the stream upserts, settings captures, carbs, prompt answers, a
+schema migration — and each writer says which it is (`recorded_data=` on
+`_advance_revision`). The derived-results file and the fixed results are keyed by
+the recorded-data revision; a fixed result whose builder reads follow-up state
+passes `reads_follow_up=True` and is keyed by the input revision instead — today
+only the watched change (`/api/outcomes/trend`).
+
 **A follow-up write keeps what reads only recorded data.** A guidance preference
 (snooze, restore) and a Focus, Trial or Plan lifecycle step — a Done on a Setting
 card and its Undo among them (#518) — write only follow-up state: the
 preference, Focus and follow-up records, the frontier, the Plan history, and the
-input revision. `follow_up_written()` keeps the cached results named by
-`_reads_only_recorded_data` (outcomes, the day navigator, the model-view, the
-timeline, the analysis and scenarios at a non-default window, and the catalog)
-and drops everything else and every case-file preparation; revision-keyed and
-fixed results miss on the new revision by themselves. A Setting's Done state is
-read from the store on every guidance read and never cached. Add a result to
-that list only with a transitive proof that its builder reads none of the
-follow-up tables or the input revision (ADR 522), and remove it the moment one
-does.
+input revision. `follow_up_written()` keeps every cached result named in
+`_RECORDED_DATA_RESULTS` — the analysis and scenarios at every window, the
+exposures, the time-of-day profile, the findings snapshot and its evidence
+preparations, outcomes, the day navigator, the model-view, the timeline and the
+catalog — and drops everything else and every case-file preparation, so a snooze
+re-ranks the Queue without recomputing the findings. The guidance composes that
+snapshot with the follow-up state it reads at the current input revision; a
+Setting's Done state is read from the store on every guidance read and never
+cached. Add a result to that list, or key it by the recorded-data revision, only
+with a transitive proof that its builder reads none of the follow-up tables
+(ADR 522, ADR 538; `tests/test_guidance_api.py` records every follow-up read
+across them), and remove it the moment one does.
 
 **One proven-safe exception invalidates nothing: saving credentials.** Only the
 fetch's login and the uncached credentials read use them. The Plan draft's

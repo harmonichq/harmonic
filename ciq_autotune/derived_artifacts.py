@@ -1,8 +1,16 @@
 """Durable, disposable cache for fixed Diagnose derivations (#123).
 
 This is deliberately the only module which knows the sidecar layout.  A hit is
-an exact match on the Store revision, complete ResultCache coordinates, and the
-model marker; any damaged bytes are a cache miss, never advisory input.
+an exact match on the Store revision of what its compute reads, complete
+ResultCache coordinates, and the model marker; any damaged bytes are a cache
+miss, never advisory input.
+
+That revision is the recorded-data revision, which follow-up writes (a snooze, a
+Done, a Focus or Trial step) do not advance (ADR 538), so a derivation keyed by
+it must read recorded data alone. A derivation that reads follow-up state says so with
+``reads_follow_up=True`` and is keyed by the input revision, which every write
+advances; otherwise it would answer from before the follow-up write that
+changed it.
 """
 from __future__ import annotations
 
@@ -26,7 +34,7 @@ _SIDECAR_REBUILDS: dict[int, weakref.ReferenceType] = {}
 
 
 class InputRevisionChanged(RuntimeError):
-    """Every bounded artifact snapshot crossed a primary-data revision."""
+    """Every bounded artifact snapshot crossed a recorded-data revision."""
 
 
 @dataclass(frozen=True)
@@ -136,11 +144,16 @@ def is_sidecar_rebuilt(value: Any) -> bool:
     return ref is not None and ref() is value
 
 
+def _revision(store: Store, reads_follow_up: bool) -> int:
+    """The revision a derivation is keyed by: of what its compute reads."""
+    return store.input_data_revision() if reads_follow_up else store.recorded_data_revision()
+
+
 def discard_artifact(db_path: str, coordinates: tuple, shape_marker: str) -> None:
-    """Best-effort removal of one damaged exact-key artifact."""
+    """Best-effort removal of one damaged exact-key recorded-data artifact."""
     try:
         with Store.open_queryonly(db_path) as primary:
-            revision = primary.input_data_revision()
+            revision = primary.recorded_data_revision()
         with closing(_open(sidecar_path(db_path))) as sidecar:
             with sidecar:
                 sidecar.execute("DELETE FROM artifacts WHERE revision=? AND coordinates=? AND marker=?",
@@ -156,18 +169,20 @@ def load_or_compute(db_path: str, coordinates: tuple, compute: Callable,
                     rebuild: Callable[[Any], Any] | None = None,
                     readonly: bool = False, before_persist: Callable[[], None] | None = None,
                     before_commit: Callable[[], None] | None = None,
-                    with_age: bool = False) -> Any:
+                    with_age: bool = False, reads_follow_up: bool = False) -> Any:
     """Return an exact durable hit or compute from one query-only Store snapshot.
 
     ``compute`` may accept the pinned Store snapshot or no arguments for simple
     callers.  Read-only snapshots intentionally never create a sidecar.
+    ``reads_follow_up`` keys the artifact by the input revision instead of the
+    recorded-data revision, for a compute that reads follow-up state.
     """
     for _ in range(_MAX_SNAPSHOT_ATTEMPTS):
         result = _load_or_compute_once(
             db_path, coordinates, compute, shape_marker=shape_marker,
             dump=dump, rebuild=rebuild, readonly=readonly,
             before_persist=before_persist, before_commit=before_commit,
-            with_age=with_age,
+            with_age=with_age, reads_follow_up=reads_follow_up,
         )
         if result is not _REVISION_CHANGED:
             return result
@@ -185,7 +200,7 @@ def _load_or_compute_once(db_path: str, coordinates: tuple, compute: Callable,
                           readonly: bool = False,
                           before_persist: Callable[[], None] | None = None,
                           before_commit: Callable[[], None] | None = None,
-                          with_age: bool = False) -> Any:
+                          with_age: bool = False, reads_follow_up: bool = False) -> Any:
     if readonly:
         with Store.open_readonly(db_path) as snapshot:
             value = _call(compute, snapshot)
@@ -202,7 +217,7 @@ def _load_or_compute_once(db_path: str, coordinates: tuple, compute: Callable,
     try:
         with Store.open_queryonly(db_path) as primary:
             primary.conn.execute("BEGIN")
-            revision = primary.input_data_revision()
+            revision = _revision(primary, reads_follow_up)
             covers_to_value = primary.latest_cgm_or_basal_timestamp()
             covers_to = covers_to_value.strftime("%Y-%m-%d %H:%M:%S") if covers_to_value else None
             try:
@@ -234,7 +249,7 @@ def _load_or_compute_once(db_path: str, coordinates: tuple, compute: Callable,
     if durable_hit:
         try:
             with Store.open_queryonly(db_path) as fresh:
-                if fresh.input_data_revision() != revision:
+                if _revision(fresh, reads_follow_up) != revision:
                     return _REVISION_CHANGED
         except sqlite3.Error:
             return _REVISION_CHANGED
@@ -250,7 +265,7 @@ def _load_or_compute_once(db_path: str, coordinates: tuple, compute: Callable,
         before_persist()
     try:
         with Store.open_queryonly(db_path) as fresh:
-            if fresh.input_data_revision() != revision:
+            if _revision(fresh, reads_follow_up) != revision:
                 return _REVISION_CHANGED
     except sqlite3.Error:
         # Without the fresh revision proof these bytes cannot be returned as a
@@ -294,8 +309,10 @@ def _load_or_compute_once(db_path: str, coordinates: tuple, compute: Callable,
 
 
 def load_latest_prior(db_path: str, coordinates: tuple, *, shape_marker: str,
-                      rebuild: Callable[[Any], Any] | None = None) -> FixedResult | None:
+                      rebuild: Callable[[Any], Any] | None = None,
+                      reads_follow_up: bool = False) -> FixedResult | None:
     """Return the newest prior-revision exact artifact, never a partial match."""
+    revision_table = "input_data_revision" if reads_follow_up else "recorded_data_revision"
     marker = _canonical((shape_marker, DERIVED_ARTIFACT_STORE_SCHEMA_VERSION, source_fingerprint()))
     path = sidecar_path(db_path)
     try:
@@ -313,7 +330,7 @@ def load_latest_prior(db_path: str, coordinates: tuple, *, shape_marker: str,
                 "SELECT MAX(t) AS t FROM main.cgm_readings UNION ALL "
                 "SELECT MAX(t) AS t FROM main.basal_events)) AS newest_covers_to "
                 "FROM derived_artifacts.artifacts "
-                "WHERE revision < (SELECT revision FROM main.input_data_revision WHERE id=1) "
+                f"WHERE revision < (SELECT revision FROM main.{revision_table} WHERE id=1) "
                 "AND coordinates=? AND marker=? "
                 "ORDER BY revision DESC LIMIT 1",
                 (_canonical(coordinates), marker)).fetchone()

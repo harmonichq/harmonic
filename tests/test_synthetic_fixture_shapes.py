@@ -1,7 +1,6 @@
 """Manufactured browser-gate rows carry only shapes their producer can serve (ADR 454).
 
-The Diagnose workstation fixture generator manufactures the exposure Occurrences the
-browser gates read, and the event-comparison capture judges its comparison rows.
+The Diagnose workstation fixture generator manufactures exposure Occurrences.
 Each committed row is read here against the real producer's own vocabulary: the
 anchor kind and label the episode view serves for its family, the classifiers the
 attribution step judges at that anchor kind, the closed silence-reason set, and the
@@ -23,7 +22,6 @@ from ciq_autotune.ic_block_evidence import SCHEMA
 
 ROOT = Path(__file__).resolve().parent.parent
 PAYLOAD = ROOT / "mockups/diagnose-workstation.synthetic/payload.json"
-CAPTURE = ROOT / "mockups/diagnose-event-comparison.synthetic/capture.json"
 BLOCK_EVIDENCE = (
     ROOT / "mockups/diagnose-workstation.synthetic/ic-block-evidence.capture.json")
 
@@ -46,11 +44,6 @@ KIND_FOR_FAMILY = {family: kind for kind, family in _FAMILY_FOR_KIND.items()}
 def _exposure_rows():
     exposures = json.loads(PAYLOAD.read_text())["exposures"]["exposures"]
     return [(family, row) for family, body in exposures.items() for row in body["occurrences"]]
-
-
-def _comparison_rows():
-    views = json.loads(CAPTURE.read_text())["views"]
-    return [(family, view, row) for family, view in views.items() for row in view["occurrences"]]
 
 
 class ManufacturedExposureRowsTest(unittest.TestCase):
@@ -329,24 +322,6 @@ class IcBlockEvidenceRowsTest(unittest.TestCase):
         self.assertEqual(2, case["harm_evidence"]["groups"]["counted_run"])
         self.assertIsNotNone(case["harm_evidence"]["bearing_sentence"])
         self.assertIsNotNone(case["block"]["recommendation"]["sentence"])
-
-
-class ComparisonRowsTest(unittest.TestCase):
-    def test_every_comparison_row_judges_only_its_anchor_kinds_classifiers(self):
-        rows = _comparison_rows()
-        self.assertEqual({family for family, _, _ in rows}, {"meals", "lows"})
-        silences = {reason.value for reason in SilenceReason}
-        for family, view, row in rows:
-            judged = JUDGED[KIND_FOR_FAMILY[family]]
-            self.assertEqual(set(view["factors"]), judged, family)
-            self.assertEqual({verdict["classifier"] for verdict in row["verdicts"]}, judged,
-                             (family, row["id"]))
-            for verdict in row["verdicts"]:
-                # A matched verdict carries no silence reason (`attribute._mv`).
-                if verdict["matched"]:
-                    self.assertIsNone(verdict["silence_reason"], (family, row["id"]))
-                elif verdict["silence_reason"] is not None:
-                    self.assertIn(verdict["silence_reason"], silences, (family, row["id"]))
 
 
 if __name__ == "__main__":

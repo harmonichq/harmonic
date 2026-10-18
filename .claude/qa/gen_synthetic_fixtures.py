@@ -198,9 +198,8 @@ def occurrence(i, minute, lever, rng, matched=True, bolus=None):
 def capture_meal_bolus(position):
     """The anchor bolus, ``(insulin, carbs)``, of the meal row at ``position``.
 
-    It is the bolus the event-comparison capture draws at minute 0 of that row's
-    trace (``mockups/diagnose-event-comparison.synthetic/generate.mjs``), computed
-    the same way, so a row never serves a dose its own trace contradicts.
+    It is the bolus the retired event-comparison capture drew at minute 0 of that
+    row's trace, kept so the committed rows stay byte-identical (ADR 531).
     """
     return 3 + position * .1, 30 + position
 

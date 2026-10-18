@@ -464,15 +464,9 @@ class IcHistoryFacadeTest(unittest.TestCase):
             {"patterns": [], "low_confidence": []},
             [],
         )
-        public = projection.project(WindowQuery.whole_day(), history.history_id)
-        self.assertEqual(public["counts"]["history"], 0)
-        self.assertEqual(public["selection"], {
-            "id": history.history_id,
-            "disposition": "unavailable",
-            "message": (
-                "Past-setting evidence no longer maps to one current program block."
-            ),
-        })
+        public = projection.project(WindowQuery.whole_day())
+        self.assertEqual([row for row in public["rows"]
+                          if row["parameter"] == "carb_ratio"], [])
 
 
 class DoseSettingEpochReconciliationTest(unittest.TestCase):

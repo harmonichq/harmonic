@@ -2160,19 +2160,6 @@
   },
   "findings": {
    "analysis_generation": "synthetic:178",
-   "chip_counts": {
-    "corrections": 0,
-    "highs": 1,
-    "lows": 0,
-    "meals": 0
-   },
-   "counts": {
-    "assert": 0,
-    "blind": 0,
-    "finding": 1,
-    "held": 0,
-    "history": 0
-   },
    "findings_window": {
     "days": 30,
     "end": null,
@@ -2185,8 +2172,7 @@
      "register": "finding"
     }
    ],
-   "schema": "diagnose-findings-v2",
-   "selection": null,
+   "schema": "diagnose-findings-v3",
    "window": {
     "end_min": null,
     "label": null,

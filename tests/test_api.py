@@ -2015,7 +2015,7 @@ class CachePreWarmTest(unittest.TestCase):
                 ("explore-time-of-day", 30), ("explore-time-of-day", 90),
                 ("outcomes", 14), ("outcomes", 30), ("outcomes", 90),
                 ("scenarios", 30), ("exposures",),
-                ("finding-case-file", None, None, None),
+                ("finding-case-file", None, None),
                 ("day-navigator", None),
                 ("model-view", "2026-06-05"), ("model-view", "2026-06-04"),
             )

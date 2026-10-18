@@ -21,3 +21,4 @@
 - [ ] 6.3 The operator opens the app on real data before merge
 - [x] 6.4 Contract tests and one browser smoke replace the behaviour ledgers (#475, ADR 475)
 - [ ] 6.5 The PR's CI finishes within #475's budget, measured on its run
+- [x] 6.6 The findings answer serves only what the app reads, and the desk mirror's fixture inputs go (#531, ADR 531)

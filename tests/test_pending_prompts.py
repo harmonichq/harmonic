@@ -58,10 +58,12 @@ def a_missed_meal_rise(day, hh, mm):
 
 def prompt(detector, day, hh, mm, key_bg=60.0):
     """A bare :class:`Prompt` candidate at a fixed instant (for pending_prompts tests)."""
+    at = datetime(2026, 6, day, hh, mm, 0)
     return Prompt(
         detector=detector,
-        anchor_t=datetime(2026, 6, day, hh, mm, 0),
+        anchor_t=at,
         key_bg=key_bg,
+        key_t=at,
         question="q",
         context="c",
         cgm=[],
@@ -147,6 +149,23 @@ class BuildCandidatesTest(unittest.TestCase):
         # anchored at the rise onset (the >250 run's start), strictly before the peak.
         self.assertLess(mm[0].anchor_t, peak_reading.t)
         self.assertEqual(mm[0].key_bg, peak_reading.bg)   # key_bg is the peak reached
+
+    def test_a_rise_serves_its_peak_and_when_it_was_read(self):
+        # #529: a long climb peaks more than two hours after it crossed 250, past
+        # the onset's ±2h; its readings still reach the peak the view rings.
+        cgm = cgm_legs(datetime(2026, 6, 30, 6, 0, 0), 110, (210, 110), (60, 260),
+                       (150, 330), (60, 200))
+        [rise] = [c for c in build_candidates([], cgm) if c.detector == DETECTOR_MISSED_MEAL]
+        peak = max(cgm, key=lambda r: r.bg)
+        self.assertGreater(peak.t - rise.anchor_t, timedelta(hours=2))
+        self.assertEqual((rise.key_t, rise.key_bg), (peak.t, peak.bg))
+        self.assertEqual(rise.to_dict()["key_t"], format_t(peak.t))
+        self.assertIn({"t": format_t(peak.t), "bg": peak.bg}, rise.cgm)
+        self.assertEqual(rise.cgm[0]["t"], format_t(rise.anchor_t - timedelta(hours=2)))
+
+    def test_a_low_serves_its_nadir_time_as_its_reading_time(self):
+        [low] = build_candidates([], a_low_dip(30, 3, 0, nadir=55))
+        self.assertEqual(low.key_t, low.anchor_t)
 
     def test_rise_with_prior_meal_bolus_is_not_flagged(self):
         # Same rise, but a carb-tagged bolus just before it → digestion tail, no prompt.
@@ -278,9 +297,9 @@ class IncludeAnsweredTest(unittest.TestCase):
         self.assertEqual(len(out) - n_pending, 4)     # only 4 answered fit
 
     def test_expiry_still_drops_old_answered(self):
-        stale = Prompt(detector=DETECTOR_LOW,
-                       anchor_t=NOW - timedelta(days=PROMPT_WINDOW_DAYS, minutes=1),
-                       key_bg=60.0, question="q", context="c")
+        at = NOW - timedelta(days=PROMPT_WINDOW_DAYS, minutes=1)
+        stale = Prompt(detector=DETECTOR_LOW, anchor_t=at, key_bg=60.0, key_t=at,
+                       question="q", context="c")
         r = response(DETECTOR_LOW, stale.anchor_t, "no")
         self.assertEqual(pending_prompts([stale], [r], NOW, include_answered=True), [])
 
@@ -361,10 +380,9 @@ class AnsweredGraceTest(unittest.TestCase):
 
 class ExpiryAndCapTest(unittest.TestCase):
     def test_older_than_window_is_dropped_silently(self):
+        at = NOW - timedelta(days=PROMPT_WINDOW_DAYS, minutes=1)
         stale = Prompt(
-            detector=DETECTOR_LOW,
-            anchor_t=NOW - timedelta(days=PROMPT_WINDOW_DAYS, minutes=1),
-            key_bg=60.0, question="q", context="c",
+            detector=DETECTOR_LOW, anchor_t=at, key_bg=60.0, key_t=at, question="q", context="c",
         )
         fresh = prompt(DETECTOR_LOW, 30, 3, 0)
         result = pending_prompts([stale, fresh], [], NOW)
@@ -380,12 +398,8 @@ class ExpiryAndCapTest(unittest.TestCase):
     def test_display_cap_keeps_the_oldest(self):
         # DISPLAY_CAP+5 prompts spread over the last ~5 days (all inside the window).
         many = [
-            Prompt(
-                detector=DETECTOR_LOW,
-                anchor_t=NOW - timedelta(hours=8 * (i + 1)),
-                key_bg=60.0, question="q", context="c",
-            )
-            for i in range(DISPLAY_CAP + 5)
+            Prompt(detector=DETECTOR_LOW, anchor_t=at, key_bg=60.0, key_t=at, question="q", context="c")
+            for at in (NOW - timedelta(hours=8 * (i + 1)) for i in range(DISPLAY_CAP + 5))
         ]
         result = pending_prompts(many, [], NOW)
         self.assertEqual(len(result), DISPLAY_CAP)

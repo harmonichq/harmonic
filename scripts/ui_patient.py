@@ -264,10 +264,13 @@ def _stamp(t: datetime) -> str:
     return t.strftime("%Y-%m-%d %H:%M:%S")
 
 
-def simulate(*, trial: bool, trial_basal: float = TRIAL_BASAL, profile=PROFILE, changes=None) -> History:
+def simulate(*, trial: bool, trial_basal: float = TRIAL_BASAL, profile=PROFILE, changes=None,
+             unbolused=()) -> History:
     """Run the wearer for ``DAYS`` days on ``profile``. ``trial`` makes the
     ``TRIAL_DAY`` change to the 02:00 block, to ``trial_basal`` U/h; ``changes``,
-    ``(day, idp, segments)`` each, replaces it with the person's own."""
+    ``(day, idp, segments)`` each, replaces it with the person's own. On each day
+    in ``unbolused`` the person eats lunch and never boluses for it (#529); every
+    plan is drawn as before, so the history is the same up to the first of them."""
     changes = _changes(trial, trial_basal, profile, changes)
     rng = random.Random(SEED)
     steps = DAYS * STEPS_PER_DAY
@@ -326,6 +329,8 @@ def simulate(*, trial: bool, trial_basal: float = TRIAL_BASAL, profile=PROFILE, 
                          "undercount" if roll < 0.78 else "forgotten" if roll < 0.90 else "short")
             if grams < 15 and rng.random() < 0.5:
                 behaviour = "missed"  # small snacks often go unbolused
+            if day in unbolused and 12.0 <= hour <= 13.5:
+                behaviour = "missed"  # a lunch never bolused for
             speed, pick = rng.random(), 0
             while speed > MEALS[pick][0]:
                 speed -= MEALS[pick][0]
@@ -547,7 +552,7 @@ def simulate(*, trial: bool, trial_basal: float = TRIAL_BASAL, profile=PROFILE, 
 
 
 def materialize(store, *, trial: bool, days: int = DAYS, trial_basal: float = TRIAL_BASAL,
-                profile=PROFILE, changes=None) -> History:
+                profile=PROFILE, changes=None, unbolused=()) -> History:
     """Ingest the simulated history into ``store`` as a Tandem Source pull would:
     the profile read at the start (and again after each change the pull reaches),
     then CGM, basal, bolus and pump events. ``days`` stops the pull at the end of
@@ -555,7 +560,7 @@ def materialize(store, *, trial: bool, days: int = DAYS, trial_basal: float = TR
     another idp is a switch: every read holds each profile the person keeps, as
     it stands that day, and names the running one."""
     changes = _changes(trial, trial_basal, profile, changes)
-    history = simulate(trial=trial, profile=profile, changes=changes)
+    history = simulate(trial=trial, profile=profile, changes=changes, unbolused=unbolused)
     cut = _stamp(START + timedelta(days=days))
     history.cgm = [row for row in history.cgm if row["EventDateTime"] < cut]
     history.basal = [row for row in history.basal if row["time"] < cut]

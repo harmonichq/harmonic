@@ -205,9 +205,13 @@ Overview SHALL carry nothing to act on.
 Day SHALL show one day's glucose, the day's insulin as one stacked bar of Basal,
 Meal, Correction and Control-IQ, and the day chart, with a day navigator that
 drops down a month from the header's date. It SHALL offer Log carbs, which records
-carbs eaten without a bolus. While Prompts are unanswered, Day SHALL show them one
-at a time with Yes, No, False low and Not sure, and the Day tab SHALL carry their
-count as a badge. Day SHALL show no aggregate beyond that day. Day SHALL mark
+carbs eaten without a bolus. While Prompts are unanswered, Day SHALL list them as
+Lows and, beneath, Rises (the engine's missed-meal Prompts), each with its count and
+hidden at none, and SHALL show each kind one at a time: a Low with Yes, No, False
+low and Not sure, a Rise with Yes, No and Not sure at its served peak. Answers SHALL
+post through the one prompt-answer path, a Rise's under its own identity. The Day
+tab SHALL carry the count of both as a badge. Day SHALL show no aggregate beyond
+that day. Day SHALL mark
 every finding the per-day model read serves for that day: a Pattern glyph on the
 chart at its time, and its habits' served titles on the event row of the bolus
 it counted or, with no bolus at its time, on its own row with its reading. Day
@@ -219,6 +223,15 @@ habits.
 - **GIVEN** two unanswered Prompts
 - **WHEN** the app renders
 - **THEN** the Day tab carries a count badge of 2
+
+#### Scenario: A rise is asked about under the lows
+
+- **GIVEN** one unanswered low and two unanswered missed-meal Prompts
+- **WHEN** Day renders
+- **THEN** it shows a Lows row counting 1 and beneath it a Rises row counting 2,
+  and the Day tab carries a badge of 3
+- **AND** Rises opens the first rise at its peak's time and reading, answered
+  Yes, No or Not sure, with no False low
 
 #### Scenario: Each finding of a day is marked and named
 

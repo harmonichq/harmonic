@@ -1056,3 +1056,7 @@ has a strengthening morning and a weakening evening at once. Each meal Pattern
 there carries only its own block's action and sits beside that block. The
 findings-projection fixture is regenerated. Its strengthening evening block now
 seats Highs after meals only, and Lows after meals falls to the unpriced tail.
+The component library's fixtures are regenerated too. Their carb-ratio store
+(basal-and-carb-ratio-lower) no longer queues Lows after meals, and that store's
+contract test now expects the Queue to hold the basal Setting, Highs after meals
+and the carb-ratio Setting.

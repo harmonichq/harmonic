@@ -36,10 +36,11 @@ and its family's denominator, so a window can never read "3 of 0 lows".
 The projection composes no scores. Priority is read from the two places that already
 ship it — scenario ``Pattern.priority`` for behaviors, ``tuning_levers[]`` for
 settings — and rows are ordered as one urgency ranking (ADR 469): priced rows by
-priority desc, then unpriced asserting rows, then unpriced findings by count. A Pattern admitted through its setting shares that
-setting's position (``anchored_by``) and sorts directly after it, as a claimed cause
-sorts after its Pattern; the tiers are bands of that one order, and ``rank_note`` says
-where a row's rank does not come from what it prints.
+priority desc, then unpriced asserting rows, then unpriced findings by count. A
+Pattern admitted through its setting shares that setting's position (``anchored_by``)
+and sorts directly after it, as a claimed cause sorts after its Pattern; the tiers are
+bands of that one order, and ``rank_note`` says where a row's rank does not come from
+what it prints.
 
 It reads the published payload dicts (``/api/analyze``, ``/api/explore/exposures``,
 ``/api/scenarios``), not analyzer internals, so a fixture generator can drive the very

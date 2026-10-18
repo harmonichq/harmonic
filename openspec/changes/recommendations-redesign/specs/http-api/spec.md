@@ -247,6 +247,40 @@ whole-profile switch moved.
 
 ## MODIFIED Requirements
 
+### Requirement: Historical findings and event evidence share one restart-safe generation
+
+The system SHALL satisfy the following:
+
+`GET /api/diagnose/findings` and
+`GET /api/diagnose/carb-ratio-history/events` are projections of one cached historical
+snapshot: the analyzer-owned findings catalog and the exact event series prepared
+from that catalog. Both schemas carry the same opaque `analysis_generation`, formed
+from a collision-resistant per-app incarnation plus the cache's monotonic data
+version. The stable read returns the token and prepared value only when no cache bump
+crossed the computation; it retries a bounded number of times and fails with a
+structured 409 rather than attaching a new token to crossed bytes. A restarted app
+always has a different incarnation even when it opens unchanged database bytes.
+
+The findings endpoint takes no history selection and serves no past-setting row,
+selection disposition, register tally or chip tally (ADR 531): its answer is the
+window, the findings window, the rows and the Pattern roster. The history-events
+endpoint requires `history_id` and the findings generation, accepts an optional member
+`selected_run_id`, and returns the complete analyzer-published 90-day roster and
+series without recomputing membership. Missing or malformed inputs are structured
+400 responses; canonical identities or runs absent from the catalog membership are
+404; a stale generation is `analysis_generation_mismatch` at 409; and `aged_out`
+versus `unavailable` are distinct structured 410 outcomes. Bearer authentication is
+checked before any of those validation or data responses.
+
+Neither endpoint changes the Finding case-file contract, and neither projection may
+infer schedule membership, lifecycle, support, or actionability. Selecting a run
+changes only the echoed selection; it does not filter `run_ids` or `series`.
+
+#### Scenario: Historical findings and event evidence share one restart-safe generation
+
+- **WHEN** the capability evaluates the behavior described by this requirement
+- **THEN** the stated behavior applies
+
 ### Requirement: The heavy read endpoints answer from one per-process result cache
 
 Recomputing the analysis from the store costs tens of seconds, so the expensive

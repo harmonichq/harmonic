@@ -519,7 +519,7 @@ reviewer-memory digest. Check a change against these before asking for review.
   coherent state, mark it stale visibly, bound retries, and offer an explicit
   retry. Cached multi-endpoint views read one server-owned generation atomically.
 - **One fact crosses four boundaries:** analyzer → server projection → generated
-  fixtures and JavaScript mirrors → shipped surface. Inventory every encoding and
+  fixtures and the app's screen models → shipped surface. Inventory every encoding and
   consumer before changing it, and split work at those boundaries.
 - **`frontend/index.html` is a consumer.** It imports frontend modules directly
   and no node test loads it. A negative claim ("nothing imports this") needs an

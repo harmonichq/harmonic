@@ -905,6 +905,56 @@ class PatternProjectionTest(unittest.TestCase):
         self.assertGreater(pattern["k"], 0)
         self.assertFalse(any(member["kind"] == "habit" for member in pattern["members"]))
 
+    def test_an_out_of_family_member_is_judged_by_no_row_or_reason(self):
+        # ADR 531 moves this rule's proof from the retired mirror's parity onto
+        # the case producer itself: Correction stacking counts over correction
+        # clusters, so under Lows after correcting highs (counted over lows) it
+        # adds no state to any row and no habit entry to any reason.
+        from ciq_autotune.analyzers.scenario.evidence_population import policy_for
+        from ciq_autotune.analyzers.scenario.levers import recommendation
+        from ciq_autotune.analyzers.scenario.payload import Pattern
+        from ciq_autotune.finding_case_file import PreparedCases
+        from ciq_autotune.findings_projection import pattern_rate_family
+        from ciq_autotune.uncertainty import Confidence
+
+        root = pathlib.Path(__file__).resolve().parents[1]
+        exposures = json.loads((root / "mockups" / "diagnose-workstation.synthetic"
+                                / "payload.json").read_text())["exposures"]
+        scenarios = json.loads(json.dumps(self.projection._scenarios))
+        for lever, n, k, basis in ((Lever.CORRECTION_ON_IOB, 45, 8, "lower_bound"),
+                                   (Lever.CORRECTION_STACKING, 40, 5, "low_confidence")):
+            scenarios["patterns"].append(Pattern(
+                lever=lever, confidence=Confidence(n=n, k=k, effect=0.3), rank=5,
+                recommendation=recommendation(lever), hero_episode="ep1",
+                occurrences=["ep1"], admission_basis=basis).to_dict())
+        prepared = prepare_findings_projection(
+            analysis=self.projection._analysis, exposures=exposures, scenarios=scenarios)
+        subject = "pattern:lows_after_correcting_highs"
+        roster = next(row for row in prepared._outcome_patterns if row["subject"] == subject)
+        self.assertEqual({member["subject"] for member in roster["members"]},
+                         {"habit:correction_stacking", "habit:correction_on_iob"})
+        self.assertIsNot(policy_for(Lever.CORRECTION_STACKING).recurrence_family,
+                         pattern_rate_family(roster))
+        self.assertIs(policy_for(Lever.CORRECTION_ON_IOB).recurrence_family,
+                      pattern_rate_family(roster))
+
+        query = WindowQuery.whole_day()
+        cases = PreparedCases(
+            projection_id="fp_" + "2" * 32, version=0, query=query,
+            findings=prepared.project(query), recurrence={},
+            members={lever: () for lever in Lever},
+            associations={lever: frozenset() for lever in Lever},
+            attribution_provenance={lever: () for lever in Lever}, withheld=frozenset(),
+            cgm=(), basal=(), bolus=(), carbs=(), lease_until=0, exposures=exposures)
+        clock = cases.case(subject, "clock", None)
+        self.assertTrue(clock["occurrences"])
+        self.assertIn("habit:correction_on_iob", {row["member"] for row in clock["occurrences"]})
+        for row in clock["occurrences"]:
+            self.assertNotEqual(row["member"], "habit:correction_stacking", row["id"])
+            reason = cases.case(subject, "clock", row["id"])["selection"]["detail"]["reason"]
+            self.assertEqual([habit["lever"] for habit in reason["habits"]],
+                             ["correction_on_iob"], row["id"])
+
     def test_count_status_has_an_explicit_headline_and_no_blank_rate(self):
         source = next(row for row in self.projection._outcome_patterns
                       if row["key"] == "highs_after_meals")

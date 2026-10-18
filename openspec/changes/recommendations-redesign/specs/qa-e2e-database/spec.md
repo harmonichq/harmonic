@@ -75,6 +75,46 @@ historical records outside that surface.
 - **AND** the #319 migration's decision record stays in the archived
   `qa-e2e-coverage-eras` change, unedited
 
+### Requirement: ISF and I:C eras prove analyzer-owned states and the queue rows they serve exactly
+
+Each ISF and I:C case SHALL use the shared expectation contract and its declared
+span. Cases SHALL cover every ISF and I:C condition in the design matrix,
+including direction-only non-stageable ISF, explicit 30-day I:C collecting, quiet
+I:C, and an active past setting. Their isolated executions SHALL compare exact
+analyzer rows, queue rows and absences, support values, staging values, the single
+Fasting ISF row's keyed rest windows, and one keyed I:C history series per active
+identity. The queue serves only asserting setting rows and Findings, so a held,
+no-clean-day or past-setting state is proved by its analyzer row and its absence
+from the queue (ADR 531).
+
+#### Scenario: I:C observation age is analyzer-produced
+
+- **GIVEN** a 30-day I:C case and a mature I:C case whose span derives from
+  `BLOCK_WINDOW_DAYS` days back, or 91 inclusive calendar days
+- **WHEN** production analysis runs
+- **THEN** the 30-day case exactly asserts its `days_observed` and `collecting`
+- **AND** the mature case asserts a non-collecting state; an asserting block pins
+  `days_observed == BLOCK_WINDOW_DAYS`, while another mature state omits the field
+
+#### Scenario: The eight-run I:C floor is data-produced
+
+- **GIVEN** mature isolated I:C cases with seven and eight effective closed meal
+  runs
+- **WHEN** production analysis and findings projection run
+- **THEN** the seven-run block remains below-floor and non-stageable
+- **AND** the eight-run block asserts only when every analyzer-owned eligibility
+  condition passes
+
+#### Scenario: Only asserting settings reach the queue
+
+- **WHEN** isolated ISF and I:C cases run the whole-day projection and the clock
+  windows named by `QaCase.scoped_windows`
+- **THEN** asserting, held, blind, quiet, direction-only non-stageable and active
+  past-setting analyzer rows match their exact expected rows
+- **AND** the queue rows are exactly the asserting ones expected, with no row for a
+  held, blind, quiet or past-setting state
+- **AND** direction-only ISF weaken never gains a recommendation, rank, or move
+
 ## MODIFIED Requirements
 
 ### Requirement: Behavioral eras prove occurrence states and verdict denominators exactly
@@ -232,3 +272,9 @@ suite as the projection input and the recorded 62.93 s whole-pytest baseline /
 **Reason:** The swap to the five-tab app (#495, ADR 495) retired the desk scenarios this requirement carried; it is restated without them as "Every QA database consumer reads the showcase or an emitted case store".
 
 **Migration:** None; the server behavior it states is unchanged.
+
+### Requirement: ISF and I:C eras prove analyzer-owned states exactly
+
+**Reason:** Its last scenario proves held, blind and past-setting queue rows, which the findings answer no longer serves because nothing the app reads served them (#531, ADR 531). It is restated with that scenario replaced as "ISF and I:C eras prove analyzer-owned states and the queue rows they serve exactly".
+
+**Migration:** Read "ISF and I:C eras prove analyzer-owned states and the queue rows they serve exactly", ADDED in this change. The held, blind and past-setting states stay proved through their analyzer rows.

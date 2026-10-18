@@ -161,24 +161,86 @@ SHALL count toward nothing. `episodes` SHALL keep their resolve-day assignment.
 
 A guidance preference (snooze, restore) and a Focus, Trial or Plan lifecycle step
 (among them a Done on a Setting card and its Undo, #518) write only follow-up state — the preference, Focus and follow-up records, the
-frontier, the Plan history — and advance the input revision. Such a write SHALL
-keep the cached results whose builders read only recorded data (readings,
-deliveries, boluses, carbs, prompt answers, settings captures and pump events):
-outcomes, the day navigator, the model-view, the timeline, the analysis and
-scenarios at a non-default window, and the static catalog. Every other cached
-result and every case-file preparation SHALL be dropped, and results keyed by the
-input revision SHALL miss on the new revision as before. Saving credentials SHALL
-invalidate nothing: no cached result reads them (#522).
+frontier, the Plan history — and advance the input revision but not the
+recorded-data revision. Such a write SHALL keep every cached result whose builder
+reads only recorded data (readings, deliveries, boluses, carbs, prompt answers,
+settings captures and pump events): the analysis and the scenario report at
+every window, the exposure feed, the time-of-day profile, the findings snapshot,
+the basal-night, carb-ratio block and ISF rest-window evidence, outcomes, the
+day navigator, the model-view, the timeline, and the static catalog (#522,
+#538). The guidance read SHALL still compose the kept findings snapshot with the
+follow-up state it reads at the new input revision, so its ranking reflects the
+write. Every result that reads follow-up state — the Trial roster, the watched
+change, the pattern sweep — and every case-file preparation SHALL be dropped or
+miss on the new input revision. Saving credentials SHALL invalidate nothing: no
+cached result reads them (#522).
 
-#### Scenario: A snooze keeps the Overview's results and reads the default analysis again
+#### Scenario: A snooze keeps every recorded-data result
 
 - **GIVEN** the 14-day outcomes, a day's model-view and the analysis at 14 and 30
   days are cached
 - **WHEN** a candidate is snoozed
-- **THEN** the outcomes, the model-view and the 14-day analysis answer without
-  recomputing, and the 30-day analysis is computed again
+- **THEN** every one of them answers without recomputing
 - **AND WHEN** carbs are logged
 - **THEN** every one of them is computed again
+
+#### Scenario: A snooze reranks the Queue without recomputing the findings
+
+- **GIVEN** the guidance has been read and its findings snapshot derived
+- **WHEN** its selected candidate is snoozed and the guidance read again — in the
+  same process, and by a freshly started server over the same store
+- **THEN** neither read computes the analysis, the scenario report, the exposure
+  feed, the findings projection or the carb-ratio history
+- **AND** both serve the snoozed candidate set aside, no longer select it, and carry
+  the advanced input revision and a new analysis generation
+
+#### Scenario: A Focus pin refreshes what reads it
+
+- **GIVEN** the watched change and the Trial roster have been read with nothing
+  watched
+- **WHEN** a Focus is pinned
+- **THEN** the next watched-change read serves the Focus, and the Trial roster is
+  computed again and lists it, while the 30-day analysis answers without
+  recomputing
+
+### Requirement: Derived results are keyed by the revision of what they read
+
+The store SHALL keep two revisions, each advanced inside the transaction of the
+write it counts. The input revision SHALL advance on every committed write,
+recorded data and follow-up state alike, and SHALL remain the follow-up writes'
+concurrency token: a durable request, a guidance preference and the follow-up
+frontier name it, and a write naming an older one refuses. The recorded-data
+revision SHALL advance on every write to recorded data — readings, deliveries,
+boluses, insulin on board, pump events, settings captures, carbs and prompt
+answers, and a schema migration — and on no other write. A follow-up transaction
+that joins a recorded-data write SHALL advance each revision once at its commit,
+and an aborted one neither (#538).
+
+Every derived result SHALL be keyed by the recorded-data revision, in memory and
+in the derived-results file, unless its builder reads follow-up state; such a
+result SHALL be keyed by the input revision. The watched change is the one fixed
+result keyed by the input revision, so it keeps its persisted answer and its
+labelled predecessor during a rebuild. No builder keyed by the recorded-data
+revision SHALL read follow-up state: the preferences, the Focus and follow-up
+records, the frontier, the request receipts, the Plan draft and history, or the
+pattern sign-offs.
+
+#### Scenario: A recorded-data write advances both revisions, a follow-up write only one
+
+- **WHEN** a CGM reading is stored, or a carb entry or prompt answer is recorded,
+  edited or cleared
+- **THEN** both revisions advance by one
+- **AND WHEN** a preference is saved or restored, a Focus pinned or resolved, a
+  pattern signed off, credentials saved or a fetch attempt recorded
+- **THEN** the input revision advances by one and the recorded-data revision is
+  unchanged
+
+#### Scenario: No recorded-data result reads follow-up state
+
+- **GIVEN** the synthetic showcase store and a server with a cold cache
+- **WHEN** each recorded-data result is read
+- **THEN** none of them calls a store read of follow-up state
+- **AND** the Trial roster, the watched change and the pattern sweep each do
 
 ### Requirement: Every API request logs its duration and how its cached reads were answered
 

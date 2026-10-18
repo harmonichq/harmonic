@@ -833,8 +833,11 @@ class DurableArtifactApiTest(unittest.TestCase):
         with sqlite3.connect(self.tmp.name) as primary:
             primary.execute("DELETE FROM cgm_readings")
             primary.execute("DELETE FROM basal_events")
+            # A write to recorded data advances both revisions (ADR 538).
             primary.execute(
                 "UPDATE input_data_revision SET revision = revision + 1 WHERE id = 1")
+            primary.execute(
+                "UPDATE recorded_data_revision SET revision = revision + 1 WHERE id = 1")
         app.state.result_cache.bump()
         entered, release = threading.Event(), threading.Event()
         real = api_mod.build_time_of_day
@@ -1514,9 +1517,10 @@ class CacheInvalidationTest(unittest.TestCase):
             self.client.get("/api/analyze", params={"window": 30})   # bumped → recompute
             self.assertEqual(len(calls), 2)  # exactly one recompute per data version
 
-    def test_done_drops_the_default_analysis_and_keeps_the_outcomes(self):
-        # #518, #522: a Done is a write to follow-up state alone, so it drops the
-        # default analysis and keeps the results that read only recorded data.
+    def test_done_keeps_the_default_analysis_and_the_outcomes(self):
+        # #518, #522, #538: a Done is a write to follow-up state alone, so it keeps
+        # every result that reads only recorded data, the default analysis among
+        # them, while it still invalidates the cache.
         import ciq_autotune.api as api_mod
         self.client = _guidance_client(self, "basal-raise")
         self.client.get("/api/guidance")  # warm the independently computed source
@@ -1536,32 +1540,46 @@ class CacheInvalidationTest(unittest.TestCase):
             self.client.get("/api/outcomes", params={"window": 14})
             self.client.get("/api/analyze", params={"window": 30})   # hit → no compute
             self.assertEqual(calls, {"analyze": 1, "outcomes": 1})
+            version = self.client.app.state.result_cache.version
             r = _done(self.client, "setting:basal_rate")
             self.assertEqual(r.status_code, 200)
-            self.client.get("/api/analyze", params={"window": 30})   # dropped → recompute
+            self.assertEqual(self.client.app.state.result_cache.version, version + 1)
+            self.client.get("/api/analyze", params={"window": 30})   # kept → hit
             self.client.get("/api/outcomes", params={"window": 14})  # kept → hit
-            self.assertEqual(calls, {"analyze": 2, "outcomes": 1})
+            self.assertEqual(calls, {"analyze": 1, "outcomes": 1})
 
-    def test_focus_pin_invalidates_cache(self):
-        # #427: a Focus pin clears the cache like every other write.
+    def test_focus_pin_invalidates_what_reads_follow_up_state(self):
+        # #427, #538: a Focus pin invalidates the cache like every other write; the
+        # Trial roster, which reads the Focus, is read again, and the analysis,
+        # which reads only recorded data, is kept.
         import ciq_autotune.api as api_mod
+        import ciq_autotune.watched_change as watched_mod
         self.client = _guidance_client(self, "behavioral-missed-meal")
         self.client.get("/api/guidance")  # warm the independently computed source
-        real_analyze = api_mod.analyze
-        calls = []
+        calls = {"analyze": 0, "trials": 0}
 
-        def counting_analyze(*args, **kwargs):
-            calls.append(1)
-            return real_analyze(*args, **kwargs)
+        def counting(name, real):
+            def run(*args, **kwargs):
+                calls[name] += 1
+                return real(*args, **kwargs)
+            return run
 
-        with patch.object(api_mod, "analyze", counting_analyze):
+        with patch.object(api_mod, "analyze", counting("analyze", api_mod.analyze)), \
+             patch.object(watched_mod, "review_trials",
+                          counting("trials", watched_mod.review_trials)):
             self.client.get("/api/analyze", params={"window": 30})   # miss → compute
+            self.client.get("/api/verify/trials")
             self.client.get("/api/analyze", params={"window": 30})   # hit → no compute
-            self.assertEqual(len(calls), 1)
+            self.client.get("/api/verify/trials")
+            self.assertEqual(calls, {"analyze": 1, "trials": 1})
+            version = self.client.app.state.result_cache.version
             r = self.client.post("/api/focus", json={"lever": "missed_meal"})
             self.assertEqual(r.status_code, 200, r.text)
-            self.client.get("/api/analyze", params={"window": 30})   # bumped → recompute
-            self.assertEqual(len(calls), 2, "a focus pin must clear the cache")
+            self.assertEqual(self.client.app.state.result_cache.version, version + 1)
+            self.client.get("/api/analyze", params={"window": 30})   # kept → hit
+            focuses = self.client.get("/api/verify/trials").json()["focuses"]
+            self.assertEqual(calls, {"analyze": 1, "trials": 2})
+            self.assertEqual([row["lever"] for row in focuses], ["missed_meal"])
 
 
 @unittest.skipUnless(_HAS_FASTAPI, "api extra not installed")

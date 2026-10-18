@@ -45,7 +45,8 @@ def generate(output: Path, case: QaCase | None = None) -> None:
 def _dump(path: Path) -> str:
     with sqlite3.connect(f"file:{path}?mode=ro&immutable=1", uri=True) as conn:
         return "\n".join(line for line in conn.iterdump()
-                         if "input_data_revision" not in line) + "\n"
+                         if "input_data_revision" not in line
+                         and "recorded_data_revision" not in line) + "\n"
 
 
 def check(output: Path) -> bool:

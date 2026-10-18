@@ -1362,6 +1362,102 @@ class FollowUpMigrationStoreTest(unittest.TestCase):
                     self.assertEqual(migrated.active_focus()['id'], 2)
 
 
+class RecordedDataRevisionTest(unittest.TestCase):
+    """ADR 538: only a write to recorded data advances the derived results' key;
+    every write, follow-up state included, advances the input revision."""
+
+    def setUp(self):
+        self.store = Store(sqlite3.connect(":memory:"))
+
+    def tearDown(self):
+        self.store.close()
+
+    def revisions(self):
+        return self.store.input_data_revision(), self.store.recorded_data_revision()
+
+    def assert_advances(self, write, *, recorded_data):
+        before_input, before_recorded = self.revisions()
+        write()
+        self.assertEqual(self.revisions(),
+                         (before_input + 1, before_recorded + int(recorded_data)))
+
+    def test_every_recorded_data_write_advances_both_revisions(self):
+        reading = {"EventDateTime": "2026-06-01 00:00:00",
+                   "Readings (CGM / BGM)": 120, "Description": "EGV"}
+        self.assert_advances(lambda: self.store.upsert_cgm([reading]), recorded_data=True)
+        entry = CarbEntry(datetime(2026, 6, 1, 12), 30.0, "exact", "manual")
+        entry_id = self.store.upsert_carb_entry(entry)
+        self.assert_advances(lambda: self.store.upsert_carb_entry(entry, id=entry_id),
+                             recorded_data=True)
+        self.assert_advances(lambda: self.store.record_prompt_response(
+            detector="missed_meal", anchor_t=datetime(2026, 6, 1, 13), answer="no"),
+            recorded_data=True)
+        self.assert_advances(lambda: self.store.clear_prompt_response(
+            detector="missed_meal", anchor_t=datetime(2026, 6, 1, 13)), recorded_data=True)
+        self.assert_advances(lambda: self.store.delete_carb_entry(entry_id), recorded_data=True)
+
+    def test_a_follow_up_credentials_or_fetch_status_write_advances_the_input_revision_alone(self):
+        self.assert_advances(lambda: self.store.save_guidance_preference(
+            "pattern:highs_after_meals", decided_at="2026-06-01 09:00:00", reason=None,
+            comparison_version="v", state={}), recorded_data=False)
+        self.assert_advances(lambda: self.store.restore_guidance_preference(
+            "pattern:highs_after_meals"), recorded_data=False)
+        focus = {}
+        self.assert_advances(lambda: focus.update(self.store.pin_focus(
+            "late_bolus", "2026-06-01 10:00:00")), recorded_data=False)
+        self.assert_advances(lambda: self.store.resolve_focus(focus["id"]), recorded_data=False)
+        self.assert_advances(lambda: self.store.record_pattern_review(
+            cell_id="low__overnight__late-meal", era_start="2026-05-01",
+            decision="approved"), recorded_data=False)
+        self.assert_advances(lambda: self.store.set_credentials(
+            email="synthetic@example.invalid", password_encrypted=b"x", region="US",
+            updated_at="2026-06-01 11:00:00"), recorded_data=False)
+        self.assert_advances(lambda: self.store.record_fetch_result(
+            attempted_at="2026-06-01 11:00:00", ok=False, error="synthetic"),
+            recorded_data=False)
+
+    def test_a_follow_up_transaction_publishes_a_joined_recorded_data_write_once(self):
+        reading = {"EventDateTime": "2026-06-01 00:05:00",
+                   "Readings (CGM / BGM)": 121, "Description": "EGV"}
+        before = self.revisions()
+        with self.store.follow_up_transaction():
+            self.store.pin_focus("late_bolus", "2026-06-01 10:00:00")
+            self.assertEqual(self.revisions(), (before[0] + 1, before[1]))
+            self.store.upsert_cgm([reading])
+            self.assertEqual(self.revisions(), (before[0] + 1, before[1] + 1))
+        self.assertEqual(self.revisions(), (before[0] + 1, before[1] + 1))
+        with self.store.follow_up_transaction():
+            self.store.resolve_focus(self.store.active_focus()["id"])
+        self.assertEqual(self.revisions(), (before[0] + 2, before[1] + 1))
+
+    def test_an_aborted_follow_up_transaction_publishes_neither(self):
+        reading = {"EventDateTime": "2026-06-01 00:10:00",
+                   "Readings (CGM / BGM)": 122, "Description": "EGV"}
+        before = self.revisions()
+        with self.assertRaises(RuntimeError):
+            with self.store.follow_up_transaction():
+                self.store.upsert_cgm([reading])
+                raise RuntimeError("synthetic abort")
+        self.assertEqual(self.revisions(), before)
+        self.assertEqual(self.store.cgm_readings(), [])
+
+    def test_an_older_store_seeds_its_recorded_data_revision_from_its_input_revision(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "older-synthetic.sqlite")
+            with Store.open(path) as store:
+                store.upsert_cgm([{"EventDateTime": "2026-06-01 00:00:00",
+                                   "Readings (CGM / BGM)": 120, "Description": "EGV"}])
+                store.pin_focus("late_bolus", "2026-06-01 10:00:00")
+                self.assertEqual(store.input_data_revision(), 2)
+            with sqlite3.connect(path) as conn:
+                conn.execute("DROP TABLE recorded_data_revision")
+            with Store.open(path) as store:
+                self.assertEqual(store.recorded_data_revision(), store.input_data_revision())
+                store.upsert_cgm([{"EventDateTime": "2026-06-01 00:05:00",
+                                   "Readings (CGM / BGM)": 121, "Description": "EGV"}])
+                self.assertEqual(store.recorded_data_revision(), 3)
+
+
 class OpenWithoutWriterTest(unittest.TestCase):
     """A current file opens by reads alone; whatever schema setup owes still lands."""
 

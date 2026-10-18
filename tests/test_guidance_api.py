@@ -1,3 +1,4 @@
+import contextlib
 import threading
 import tempfile
 import unittest
@@ -143,9 +144,9 @@ class GuidanceApiTest(unittest.TestCase):
         self.assertEqual(restored.status_code, 200, restored.text)
         self.assertEqual(app.state.result_cache.version - before, 1)
 
-    def test_preference_write_keeps_recorded_data_results_and_rereads_the_rest(self):
-        """#522: a snooze writes follow-up state only, so the Overview's and the Day
-        screen's results survive it; the revision-keyed analysis is read again."""
+    def test_preference_write_keeps_every_recorded_data_result(self):
+        """#522, #538: a snooze writes follow-up state only, so the Overview's and
+        the Day screen's results survive it, and so does the default analysis."""
         import ciq_autotune.api as api_mod
         import ciq_autotune.analyzers.scenario as scenario_mod
         import ciq_autotune.outcomes as outcomes_mod
@@ -178,15 +179,139 @@ class GuidanceApiTest(unittest.TestCase):
                                json={"generation": current["analysis_generation"]})
             self.assertEqual(saved.status_code, 200, saved.text)
             read_all()
-            # Only the default analysis, keyed by the input revision the snooze
-            # advanced, is computed again.
-            self.assertEqual(counts, {"outcomes": 1, "model-view": 1, "analyze": 4})
+            # Nothing is computed again: the default analysis is keyed by the
+            # recorded-data revision, which the snooze did not advance.
+            self.assertEqual(counts, {"outcomes": 1, "model-view": 1, "analyze": 3})
             # A carb write changes recorded data, so everything is read again.
             logged = client.post("/api/carbs", json={
                 "t": f"{day} 12:00:00", "grams": 10, "certainty": "exact"})
             self.assertEqual(logged.status_code, 200, logged.text)
             read_all()
-            self.assertEqual(counts, {"outcomes": 2, "model-view": 2, "analyze": 6})
+            self.assertEqual(counts, {"outcomes": 2, "model-view": 2, "analyze": 5})
+
+    def test_a_snooze_reranks_the_queue_from_the_derived_results_without_recomputing(self):
+        """#538: after a snooze the guidance ranks from the findings snapshot and the
+        default analysis already derived — in this process and after a restart —
+        and still sets the snoozed subject aside."""
+        import ciq_autotune.api as api_mod
+        import ciq_autotune.analyzers.scenario as scenario_mod
+        from ciq_autotune.api import create_app
+        from ciq_autotune.watched_change import reconcile_ingested_follow_up
+        tmp, _app, client = self._case_client("basal-lower")
+        with Store.open(tmp.name) as store:
+            reconcile_ingested_follow_up(store)
+        current = client.get("/api/guidance").json()
+        self.assertEqual(current["disposition"], "eligible_action")
+        subject = current["selected"]["subject"]
+        self.assertEqual(client.get("/api/analyze").status_code, 200)
+        builds = []
+
+        def counting(label, real):
+            def run(*args, **kwargs):
+                builds.append(label)
+                return real(*args, **kwargs)
+            return run
+
+        with patch.object(api_mod, "analyze", counting("analyze", api_mod.analyze)), \
+             patch.object(scenario_mod, "build_scenarios",
+                          counting("scenarios", scenario_mod.build_scenarios)), \
+             patch.object(api_mod, "build_exposures",
+                          counting("exposures", api_mod.build_exposures)), \
+             patch.object(api_mod, "prepare_findings_projection",
+                          counting("findings", api_mod.prepare_findings_projection)), \
+             patch.object(api_mod, "prepare_ic_history_events",
+                          counting("history", api_mod.prepare_ic_history_events)):
+            saved = client.put(f"/api/guidance/preferences/{subject}",
+                               json={"generation": current["analysis_generation"]})
+            self.assertEqual(saved.status_code, 200, saved.text)
+            aside = client.get("/api/guidance").json()
+            self.assertEqual(client.get("/api/diagnose/findings").status_code, 200)
+            self.assertEqual(client.get("/api/analyze").status_code, 200)
+            self.assertEqual(builds, [])
+            restarted = TestClient(create_app(db_path=tmp.name, token="",
+                                              enable_fetch_loop=False))
+            after_restart = restarted.get("/api/guidance").json()
+            self.assertEqual(builds, [])
+        row = next(row for row in aside["candidates"] if row["subject"] == subject)
+        self.assertTrue(row["preference"]["set_aside"])
+        self.assertNotEqual((aside["selected"] or {}).get("subject"), subject)
+        self.assertGreater(aside["input_revision"], current["input_revision"])
+        self.assertNotEqual(aside["analysis_generation"], current["analysis_generation"])
+        for key in ("disposition", "selected", "candidates", "input_revision"):
+            self.assertEqual(after_restart[key], aside[key], key)
+
+    #: Every Store read of follow-up state: the preferences, Focus and follow-up
+    #: records, the frontier, the request receipts, the Plan draft and history,
+    #: the pattern sign-offs, and the stamp floor read off the Plan and Focus rows.
+    _FOLLOW_UP_READERS = (
+        "guidance_preferences", "active_focus", "list_focuses", "follow_up_record",
+        "follow_up_records", "follow_up_frontier", "follow_up_request",
+        "get_plan_draft", "plan_history", "pattern_reviews", "latest_server_stamp",
+    )
+
+    def _follow_up_reads(self, client, reads):
+        """The follow-up readers each read runs, for a client whose cache is cold."""
+        calls = []
+
+        def recording(name, real):
+            def run(store, *args, **kwargs):
+                calls.append(name)
+                return real(store, *args, **kwargs)
+            return run
+
+        observed = {}
+        with contextlib.ExitStack() as stack:
+            for name in self._FOLLOW_UP_READERS:
+                stack.enter_context(patch.object(
+                    Store, name, recording(name, getattr(Store, name))))
+            for path, params in reads:
+                del calls[:]
+                response = client.get(path, params=params)
+                self.assertLess(response.status_code, 500, (path, response.text))
+                observed[(path, tuple(sorted(params.items())))] = sorted(set(calls))
+        return observed
+
+    def test_every_result_a_follow_up_write_keeps_reads_no_follow_up_state(self):
+        """#538: the results keyed by the recorded-data revision, and every result a
+        follow-up write keeps, run no read of follow-up state; the ones that do are
+        exactly those keyed by the input revision or dropped."""
+        _tmp, _app, client = self._case_client("showcase")
+        day = client.get("/api/status").json()["latest_data_day"]
+        start = datetime.strptime(day, "%Y-%m-%d")
+        recorded = self._follow_up_reads(client, (
+            ("/api/analyze", {}), ("/api/analyze", {"pool": "true"}),
+            ("/api/analyze", {"window": 14}), ("/api/analyze", {"ignore_changes": "true"}),
+            ("/api/scenarios", {}), ("/api/scenarios", {"window": 14}),
+            ("/api/explore/exposures", {}), ("/api/explore/time-of-day", {"days": 14}),
+            ("/api/diagnose/findings", {}),
+            ("/api/diagnose/carb-ratio-history/events",
+             {"history_id": "unknown", "analysis_generation": "unknown"}),
+            ("/api/diagnose/carb-ratio-block-evidence",
+             {"block_id": "0", "analysis_generation": "unknown"}),
+            ("/api/diagnose/basal-night-evidence", {"slot": 0}),
+            ("/api/diagnose/isf-rest-window-evidence", {}),
+            ("/api/outcomes", {"window": 14}), ("/api/day-navigator", {}),
+            ("/api/model-view", {"date": day}),
+            ("/api/timeline", {"start": start.isoformat(),
+                               "end": (start + timedelta(days=1)).isoformat()}),
+            ("/api/catalog", {}),
+        ))
+        self.assertEqual({read: names for read, names in recorded.items() if names}, {})
+        follow_up = self._follow_up_reads(client, (
+            ("/api/verify/trials", {}), ("/api/outcomes/trend", {}),
+            ("/api/pattern-sweep", {}),
+        ))
+        self.assertTrue(all(follow_up.values()), follow_up)
+
+    def test_a_focus_pin_refreshes_the_watched_change(self):
+        """#538: the watched change reads follow-up state, so it is not answered
+        from before the pin that changed it."""
+        _tmp, _app, client = self._case_client("behavioral-missed-meal")
+        self.assertIsNone(client.get("/api/outcomes/trend").json()["watched_change"])
+        pinned = client.post("/api/focus", json={"lever": "missed_meal"})
+        self.assertEqual(pinned.status_code, 200, pinned.text)
+        watched = client.get("/api/outcomes/trend").json()["watched_change"]
+        self.assertEqual(watched["lever"], "missed_meal")
 
     def test_preference_writes_keep_offline_guidance_reconciled(self):
         from ciq_autotune.watched_change import reconcile_ingested_follow_up

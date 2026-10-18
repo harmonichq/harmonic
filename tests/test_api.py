@@ -1053,6 +1053,38 @@ class PromptQueueTest(unittest.TestCase):
         for p in (rise, low):
             self.assertIn({"t": p["key_t"], "bg": p["key_bg"]}, p["cgm"])
 
+    def test_every_answer_to_a_rise_is_recorded_data(self):
+        # #538, #529: an answer to a rise is an exclusion the analysis reads, so
+        # answering, revising to carbs and clearing it each advance the
+        # recorded-data revision and the 30-day analysis is computed again.
+        import ciq_autotune.api as api_mod
+        rise = next(p for p in self.client.get("/api/prompts").json()
+                    if p["detector"] == "missed-meal")
+        builds = []
+
+        def counting(*args, **kwargs):
+            builds.append(1)
+            return real(*args, **kwargs)
+
+        real = api_mod.analyze
+        with patch.object(api_mod, "analyze", counting):
+            self.assertEqual(self.client.get("/api/analyze").status_code, 200)
+            for method, payload in (
+                ("POST", {"answer": "no"}),
+                ("POST", {"answer": "carbs", "entry": {"grams": 20, "certainty": "exact"}}),
+                ("DELETE", {}),
+            ):
+                with Store.open(self.tmp.name) as store:
+                    before = store.recorded_data_revision()
+                response = self.client.request(method, "/api/prompts/answer", json={
+                    "detector": "missed-meal", "anchor_t": rise["anchor_t"], **payload})
+                self.assertEqual(response.status_code, 200, response.text)
+                with Store.open(self.tmp.name) as store:
+                    self.assertGreater(store.recorded_data_revision(), before, payload)
+                built = len(builds)
+                self.assertEqual(self.client.get("/api/analyze").status_code, 200)
+                self.assertEqual(len(builds), built + 1, payload)
+
     def test_answer_no_resolves_the_prompt(self):
         low = next(p for p in self.client.get("/api/prompts").json() if p["detector"] == "low")
         self.assertIsNone(low["answer"])       # pending before answering

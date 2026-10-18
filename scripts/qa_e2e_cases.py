@@ -5603,8 +5603,8 @@ QA_CASES += (
 )
 
 # #530 (ADR 530): two carb-ratio blocks moving opposite ways at once — a
-# strengthening morning (programmed 10, measured 8 g/U) and a weakening evening
-# (programmed 12, measured 15 g/U) — so each meal Pattern carries only the move
+# strengthening morning (measured below its programmed ratio) and a weakening
+# evening (measured above its own) — so each meal Pattern carries only the move
 # its direction fits. The same closed-meal shape as _materialize_ic_coverage, on
 # each block. Literal expectations captured through execute_case and transcribed
 # from its dump.

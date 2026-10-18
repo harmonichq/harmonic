@@ -43,6 +43,34 @@ const DEFAULT_ANALYSIS = '30';
 const WHOLE_DAY = { start_min: 0, end_min: 1440 };
 const NO_STATUS = { last_attempt_at: null, last_success_at: null, last_error: null, last_error_label: null };
 
+// The analysis and case-file answers, trimmed to what their cards draw (ADR 523), so
+// the remembered answers hold no evidence a screen does not read.
+
+/** gen_ui_fixtures._traces: a case file's trace chart, without its anchor lists. */
+const traceChart = ({ anchor, window_min, pattern, typical }) => ({
+  anchor, window_min, pattern: { episodes: pattern.episodes, points: pattern.points }, typical: { points: typical.points },
+});
+
+/** gen_ui_fixtures._ic_blocks: the carb-ratio blocks the engine stages a move for, with the runs they count. */
+const icBlocks = (blocks) => blocks.filter((b) => b.asserts_move).map((b) => ({
+  block_id: b.block_id, start_min: b.start_min, end_min: b.end_min, current_values: b.current_values,
+  recommended: b.recommended, estimate: { value: b.estimate.value, lo: b.estimate.lo, hi: b.estimate.hi },
+  evidence: { counted_runs: b.evidence.counted_runs },
+}));
+
+/** gen_ui_fixtures._queue_store's basal: the slots the engine stages a move for, with their nights. */
+const stagedSlots = (basal) => basal.filter((b) => b.asserts_move).map((b) => ({
+  slot: b.slot, label: b.label, current: b.current, recommended: b.recommended, estimate: b.estimate, days: b.days,
+  evidence: { night_roster: b.evidence.night_roster.map(({ date, delivered_rate, programmed_rate }) =>
+    ({ date, delivered_rate, programmed_rate })) },
+}));
+
+/** gen_ui_fixtures._basal_slots: the day's 48 slots, as the Overview's basal card reads them. */
+const basalSlots = (basal) => basal.map((b) => ({
+  slot: b.slot, current: b.current, asserts_move: b.asserts_move, direction: b.direction,
+  estimate: b.estimate && { value: b.estimate.value, lo: b.estimate.lo, hi: b.estimate.hi },
+}));
+
 /** The model-view trimmed to what the Day chart marks: the day's findings,
  *  each anchor's time, kind and glucose and the habits it counts toward
  *  (mirrors gen_ui_fixtures.model_view_marks). */
@@ -149,20 +177,20 @@ export function createLive({ client, glossary, memory = null }) {
   const timeOfDay = (window) => once(`time-of-day ${window}`, async () => {
     answers.overview.wearer.time_of_day[window] = await client.fetchExploreTimeOfDay(Number(window));
   });
-  /** gen_ui_fixtures._isf_windows: one window's first ISF segment, for the Overview's ISF estimate. The 30 d
-   *  analysis is the Queue's own read, shared. */
+  /** gen_ui_fixtures._windows: one window's first ISF segment and its 48 basal slots, for the Overview's ISF
+   *  and basal estimates. The 30 d analysis is the Queue's own read, shared. */
   const isf = (window) => once(`isf ${window}`, async () => {
     const answer = window === DEFAULT_ANALYSIS ? await analyze() : await client.fetchAnalysis(Number(window));
-    answers.overview.wearer.analyze[window] = { isf: answer.isf.slice(0, 1) };
+    answers.overview.wearer.analyze[window] = { isf: answer.isf.slice(0, 1), basal: basalSlots(answer.basal) };
   });
-  /** What the Overview reads for a window it shows: its profile and its ISF estimate. */
+  /** What the Overview reads for a window it shows: its profile and its ISF and basal estimates. */
   const overviewWindow = (window) => Promise.all([timeOfDay(window), isf(window)]);
   const outcomes = () => once('outcomes', async () => {
     const served = await Promise.all(WINDOWS.map((w) => client.fetchOutcomes(Number(w))));
     answers.outcomes = Object.fromEntries(WINDOWS.map((w, i) => [w, served[i]]));
   });
 
-  /** gen_ui_fixtures._pattern_cases: each ranked Pattern's case file, its two cohorts' median traces. */
+  /** gen_ui_fixtures._pattern_cases: each ranked Pattern's case file, its trace chart (ADR 523). */
   async function cases(subjects) {
     if (subjects.length === 0) return {};
     const preparation = await client.fetchDiagnoseFindingCasePreparation();
@@ -173,14 +201,10 @@ export function createLive({ client, glossary, memory = null }) {
         answer = await client.fetchDiagnoseFindingCase({
           projection_id: preparation.projection_id, finding_id: subject, alignment: 'event' });
       } catch (error) {
-        if (error?.status === 404) return; // no inspectable member: no impact line
+        if (error?.status === 404) return; // no inspectable member: no chart, no impact line
         throw error;
       }
-      const { projection } = answer;
-      out[subject.replace(/^pattern:/, '')] = {
-        comparison: { state: projection.comparison.state },
-        cohorts: projection.cohorts.filter((c) => c.key === 'matched' || c.key === 'comparison'),
-      };
+      out[subject.replace(/^pattern:/, '')] = { traces: traceChart(answer.traces) };
     }));
     return out;
   }
@@ -200,7 +224,7 @@ export function createLive({ client, glossary, memory = null }) {
     answers.queue.wearer = {
       findings: { outcome_patterns: served.outcome_patterns, rows },
       guidance: answers.queue.wearer.guidance,
-      analyze: { basal: analysis.basal.filter((b) => b.asserts_move), isf: analysis.isf.slice(0, 1) },
+      analyze: { basal: stagedSlots(analysis.basal), isf: analysis.isf.slice(0, 1), ic_blocks: icBlocks(analysis.ic_blocks) },
       trials: roster,
       focus: focused,
       cases: await cases(ranked),

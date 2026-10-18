@@ -19,6 +19,7 @@ import { formatValue } from '../../provenance.js';
 import { glucoseDomain, glucoseFraction } from '../../glucose-zones';
 import { useWidth } from '../../measure';
 import { BlockSpan } from '../ChangeCard/ChangeCard';
+import { bandPath, linePath, runs } from '../Chart/scale';
 import '../../shared.css';
 import './ChangeTrace.css';
 
@@ -33,21 +34,9 @@ const HEIGHT = TOP + PLOT + FOOT;
 const LOW = 70;
 const HIGH = 180;
 
-type Point = { t: number; bg: number };
 
 /** What an episode is, named once at the legend's start. */
 const EPISODES = { nights: 'Nights', days: 'Days', meals: 'Meals' } as const;
-
-/** Runs of consecutive bins: a missing bin breaks the line and the band. */
-function runs(bins: TraceArm['bins'], step: number) {
-  const out: TraceArm['bins'][] = [];
-  for (const bin of bins) {
-    const run = out[out.length - 1];
-    if (run && bin.t - run[run.length - 1].t <= step) run.push(bin);
-    else out.push([bin]);
-  }
-  return out;
-}
 
 /** The clock or minute ticks: at most five, on whole hours. */
 function ticks(start: number, end: number): number[] {
@@ -70,9 +59,9 @@ export function ChangeTrace({ data, block }: ChangeTraceProps) {
   const domain = glucoseDomain(values);
   const x = (t: number) => LEFT + (right - LEFT) * ((t - data.start) / (data.end - data.start));
   const y = (bg: number) => TOP + PLOT - PLOT * glucoseFraction(bg, domain);
-  const point = (t: number, bg: number) => `${x(t).toFixed(1)},${y(bg).toFixed(1)}`;
   const step = data.alignment === 'meal' ? 5 : 10;
-  const line = (points: Point[]) => points.map((p) => point(p.t, p.bg)).join(' ');
+  // A missing bin breaks the line and the band (the chart family's runs, ADR 523).
+  const binRuns = (bins: TraceArm['bins']) => runs(bins, (bin) => bin.t, step);
   const scale = [100, 200, 300].filter((bg) => bg > domain.low && bg < domain.high);
   const label = (t: number) => (data.alignment === 'clock' ? formatValue((data.startMin + t) % 1440, 'clock') : String(t));
   const meal = data.alignment === 'meal';
@@ -103,16 +92,16 @@ export function ChangeTrace({ data, block }: ChangeTraceProps) {
             {meal && <line x1={x(0)} x2={x(0)} y1={TOP} y2={TOP + PLOT} className="ui-trace__bolus" />}
             {arms.map(([key, arm]) => (
               <g key={key} aria-hidden="true" className={`ui-trace__arm ui-trace__arm--${key}`}>
-                {runs(arm.bins, step).map((run, i) => (
+                {binRuns(arm.bins).map((run, i) => (
                   <path key={`b${i}`} className="ui-trace__band"
-                    d={`M${run.map((b) => point(b.t, b.p75)).join('L')}L${[...run].reverse().map((b) => point(b.t, b.p25)).join('L')}Z`} />
+                    d={bandPath(run.map((b) => [x(b.t), y(b.p75), y(b.p25)]))} />
                 ))}
-                {runs(arm.bins, step).map((run, i) => (
-                  <polyline key={`m${i}`} className="ui-trace__median"
-                    points={line(run.map((b) => ({ t: b.t, bg: b.median })))} />
+                {binRuns(arm.bins).map((run, i) => (
+                  <path key={`m${i}`} className="ui-trace__median"
+                    d={linePath(run.map((b) => [x(b.t), y(b.median)]))} />
                 ))}
                 {(arm.traces ?? []).map((episode, i) => (
-                  <polyline key={`e${i}`} className="ui-trace__episode" points={line(episode)} />
+                  <path key={`e${i}`} className="ui-trace__episode" d={linePath(episode.map((p) => [x(p.t), y(p.bg)]))} />
                 ))}
               </g>
             ))}

@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from .analyzers.scenario.evaluation import evaluate
 from .analyzers.scenario.engine import _effective_isf, low_prompt_answers
 from .analyzers.scenario.levers import Lever, outcome_kind, title
-from .analyzers.scenario.model_view import _build_episode_view, _is_driver, stacking_reached_low
+from .analyzers.scenario.model_view import _build_episode_view, _fmt, _is_driver, stacking_reached_low
 from .analyzers.scenario_config import ScenarioConfig
 from .false_low import drop_readings, false_low_span_records, spans_from_records
 
@@ -132,8 +132,10 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
         if reached_low is not None:
             target_attributions.append(
                 ("lows", reached_low.t, attribution.lever.value,
-                 outcome_minute)
+                 outcome_minute, attribution.driver_anchor.t)
             )
+        retained = {id(item): verdicts for item, verdicts
+                    in zip(episode_anchors.anchors, attribution.anchor_verdicts)}
         owned_highs = [high for high, _owner in attribution.owned_highs]
         for source_anchor, anchor in zip(
             sorted(episode_anchors.anchors, key=lambda item: item.t), episode["anchors"],
@@ -170,9 +172,16 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
             }
             if lever is not None and outcome_minute is not None:
                 occurrence["outcome_minute"] = outcome_minute
+            # The correction a low this episode's correction habit claims followed:
+            # its own verdict's judged dose (ADR 523).
+            corrected = next((verdict.correction_t for verdict in retained.get(id(source_anchor), ())
+                              if lever is not None and verdict.classifier == lever
+                              and verdict.matched and verdict.correction_t is not None), None)
+            if corrected is not None:
+                occurrence["corrections"] = {lever: _fmt(corrected)}
             family["occurrences"].append(occurrence)
 
-    for family_name, target_t, lever, outcome_minute in target_attributions:
+    for family_name, target_t, lever, outcome_minute, dose_t in target_attributions:
         target = next(
             (
                 item for item in families[family_name]["occurrences"]
@@ -182,6 +191,8 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
         )
         if target is not None and lever not in target["attributed_levers"]:
             target["attributed_levers"].append(lever)
+            # A stacked pair reaches its low from the stacking dose, its driver.
+            target.setdefault("corrections", {})[lever] = _fmt(dose_t)
             if outcome_minute is not None:
                 target["outcome_minute"] = outcome_minute
 

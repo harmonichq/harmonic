@@ -1,0 +1,56 @@
+/* The chart family's one stylesheet (§2.2 Charts, ADR 523): every chart's
+   type, axis, grid, reference lines, the engine's Current / Estimate / Range,
+   and the legend beneath a chart. */
+.ui-chart { display: block; }
+.ui-chart__svg { display: block; overflow: visible; font-family: var(--ui-font); }
+.ui-chart__svg text { font-size: var(--ui-type-label); font-variant-numeric: tabular-nums; }
+
+/* The axis, its ticks, its labels and its caption. */
+.ui-chart__axis { stroke: var(--wk-rule); stroke-width: 1; }
+.ui-chart__grid { stroke: var(--wk-rule); stroke-width: 1; opacity: .45; }
+.ui-chart__svg .ui-chart__tick,
+.ui-chart__svg .ui-chart__caption { fill: var(--wk-ink-meta); font-size: var(--ui-type-caption); }
+.ui-chart__edge { fill: var(--wk-ink-meta); }
+/* The 70 and 180 mg/dL lines. */
+.ui-chart__ref { stroke: var(--wk-ink-meta); stroke-width: 1; stroke-dasharray: 2 3; opacity: .7; }
+.ui-chart__zero { stroke: var(--wk-rule); stroke-width: 1; }
+
+/* The engine's marks: the programmed value dashed, the estimate solid over its range. */
+.ui-chart__band { fill: var(--ui-estimate-band); }
+.ui-chart__current { stroke: var(--wk-ink-meta); stroke-width: 1; stroke-dasharray: 3 3; fill: none; }
+.ui-chart__estimate { stroke: var(--ui-estimate); stroke-width: 1.5; fill: none; }
+.ui-chart__move { fill: var(--ui-estimate); }
+.ui-chart__svg .ui-chart__move { font-size: var(--ui-type-caption); }
+.ui-chart__current-label,
+.ui-chart__estimate-label {
+  /* A halo of the card's surface, so no mark line shows through a label. */
+  stroke: var(--wk-surface);
+  stroke-width: 5px;
+  stroke-linejoin: round;
+  paint-order: stroke;
+}
+.ui-chart__current-label { fill: var(--wk-ink-meta); }
+.ui-chart__estimate-label { fill: var(--ui-estimate); font-weight: var(--ui-weight-strong); }
+.ui-chart__word { font-weight: var(--ui-weight-regular); }
+
+/* A series' tone: Typical grey; a Pattern in its glucose colour. */
+.ui-chart__typical { --ui-series: var(--wk-ink-meta); }
+.ui-chart__high { --ui-series: var(--glucose-high); }
+.ui-chart__low { --ui-series: var(--glucose-low); }
+.ui-chart__series-band { fill: var(--ui-series); fill-opacity: .22; }
+.ui-chart__series-median { stroke: var(--ui-series); stroke-width: 2; fill: none; stroke-linejoin: round; }
+.ui-chart__series-trace { stroke: var(--ui-series); stroke-width: 1.3; stroke-opacity: .9; fill: none; stroke-linejoin: round; }
+
+/* The legend: each key a swatch and its word, on one wrapping line. */
+.ui-chart__legend { display: flex; flex-wrap: wrap; gap: 8px 17px; margin-top: 12px; }
+.ui-chart__key {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--wk-ink-body);
+  font: var(--ui-weight-regular) var(--ui-type-label) / 1.2 var(--ui-font);
+  white-space: nowrap;
+}
+.ui-chart__key svg { flex: none; display: block; }
+
+.ui-chart__none { margin: 12px 0 0; color: var(--wk-ink-meta); font-size: var(--ui-type-body); }

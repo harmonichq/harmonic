@@ -54,7 +54,7 @@ from typing import Dict, List, Optional, Sequence, Tuple
 
 from .analyzers.ic import BLOCK_WINDOW_DAYS
 # `_chips_for` (#61) asks each lever what kind of anchor its consequence lands on.
-from .analyzers.scenario.levers import Exposure, exposure, outcome_kind, title
+from .analyzers.scenario.levers import Exposure, Lever, exposure, outcome_kind, title
 from .analyzers.scenario.outcome_patterns import (
     _ROSTER, build_outcome_patterns, credited_claims, outcome_window_population,
 )
@@ -199,6 +199,15 @@ class FindingsProjection:
                 row["fold_sentences"] = _fold_sentences(
                     row, pattern_by_subject[row["claimed_by"]], pattern_exposures,
                 )
+        # A Pattern with one admitted habit is served as that habit's row, which
+        # carries the Pattern's own count (ADR 520). A window whose habit claims
+        # nothing serves no row for it to ride on.
+        for pattern in outcome_patterns:
+            if pattern.get("collapse") != "collapse_to_member":
+                continue
+            member = by_id.get(f"finding:{pattern['action'].removeprefix('habit:')}")
+            if member is not None:
+                member["served_as"] = _served_as(pattern, pattern_exposures)
         return {
             "schema": SCHEMA,
             "analysis_generation": analysis_generation,
@@ -358,6 +367,7 @@ class FindingsProjection:
                 continue
             label = _span_label(start_min, end_min)
             direction = block.get("direction")
+            current = (block.get("current_values") or [None])[0]
             rows.append(_row(
                 id=f"ic:{block['block_id']}",
                 register="assert",
@@ -368,10 +378,14 @@ class FindingsProjection:
                 priority=self._lever_priority("carb_ratio"),
                 span={"start_min": start_min, "end_min": end_min, "label": label},
                 direction=direction,
-                current=block.get("current_values", [None])[0]
-                if block.get("current_values") else None,
+                current=current,
                 recommended=block.get("recommended"),
                 estimate=block.get("estimate") or {},
+                # A block is single-valued, so it is its own one member: the same
+                # shape a basal run's slots are served in, read the same way.
+                members=[{"start_min": start_min, "current": current,
+                          "recommended": block.get("recommended"),
+                          "estimate": block.get("estimate")}],
                 support={"n": block.get("n_runs"), "noun": "meal runs",
                          "run_days": BLOCK_WINDOW_DAYS},
                 annotation=block.get("annotation"),
@@ -789,6 +803,31 @@ def _pattern_count_sentences(row: dict) -> Optional[List[dict]]:
     return [_count_sentence(pattern["k"], pattern["n"], noun, _PATTERN_OUTCOME[key])]
 
 
+def _served_as(pattern: dict, exposures: dict) -> dict:
+    """The Pattern a habit row is served as (ADR 520): its subject, its own count
+    sentence, and each rate lever with a credit, its credited share of that count,
+    in roster order.
+
+    Both read ``credited_claims`` over ``exposures``, the population the Pattern's
+    ``k`` and its case file are built from, so a Pattern served as its one habit is
+    counted as the Pattern, never as that habit's own driver count: a rate lever the
+    Pattern does not admit still claims the lows it reached. A Pattern that serves
+    no count serves no shares.
+    """
+    sentences = _pattern_count_sentences({"pattern": pattern})
+    shares = None
+    if sentences is not None:
+        levers = [subject.removeprefix("habit:") for subject in pattern["rate_levers"]]
+        credits = list(credited_claims(
+            exposures, pattern_rate_family(pattern).value, levers,
+        ).values())
+        shares = [{"subject": f"habit:{lever}", "title": title(Lever(lever)),
+                   "count": credits.count(lever)}
+                  for lever in levers if lever in credits]
+    return {"subject": pattern["subject"], "count_sentences": sentences,
+            "cause_counts": shares}
+
+
 def _cause_count_sentences(row: dict) -> Optional[List[dict]]:
     """One sentence per served family appearance, in appearance order (already
     alphabetical — ``_finding_rows`` sorts ``appearances`` for the same reason)."""
@@ -895,7 +934,7 @@ def _row(**fields) -> dict:
         "chips": None, "window_scope": None, "count_sentences": None, "fold_sentences": None,
         "event_chart": None,
         "pattern": None, "pattern_chart": None, "claimed_by": None,
-        "anchored_by": None, "rank_note": None,
+        "anchored_by": None, "rank_note": None, "served_as": None,
     }
     row.update(fields)
     row["chips"] = _chips_for(row)

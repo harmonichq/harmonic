@@ -1,0 +1,2 @@
+/* The legend sits under a rule, apart from the day's axis (ADR 523). */
+.ui-basal__legend { margin-top: 12px; padding-top: 0; border-top: 1px solid var(--wk-rule); }

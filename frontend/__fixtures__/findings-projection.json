@@ -216,7 +216,23 @@
      "kind": "setting",
      "label": "Evening",
      "lever": null,
-     "members": null,
+     "members": [
+      {
+       "current": 5.7,
+       "estimate": {
+        "confidence": 0.8,
+        "hi": 4.2857,
+        "lo": 4.2857,
+        "method": "bootstrap-inverse-ratio-wls-clustered",
+        "n": 24,
+        "n_clusters": 24,
+        "value": 4.2857,
+        "wide": false
+       },
+       "recommended": 5.0,
+       "start_min": 720
+      }
+     ],
      "parameter": "carb_ratio",
      "pattern": null,
      "pattern_chart": null,
@@ -224,6 +240,7 @@
      "rank_note": null,
      "recommended": 5.0,
      "register": "assert",
+     "served_as": null,
      "span": {
       "end_min": 1440,
       "label": "12:00 to 24:00",
@@ -343,6 +360,7 @@
      "rank_note": "Ranked with its setting",
      "recommended": null,
      "register": "finding",
+     "served_as": null,
      "span": null,
      "support": null,
      "tier": "next_in_line",
@@ -432,6 +450,7 @@
      "rank_note": "Ranked with its setting",
      "recommended": null,
      "register": "finding",
+     "served_as": null,
      "span": null,
      "support": null,
      "tier": "next_in_line",
@@ -510,6 +529,25 @@
      "rank_note": "Ranked on all 30 days",
      "recommended": null,
      "register": "finding",
+     "served_as": {
+      "cause_counts": [
+       {
+        "count": 1,
+        "subject": "habit:over_treated_low",
+        "title": "Over-treated low"
+       }
+      ],
+      "count_sentences": [
+       {
+        "count": 1,
+        "denominator": 2,
+        "noun": "lows",
+        "outcome": "rebounded high",
+        "sentence": "1 of 2 lows rebounded high"
+       }
+      ],
+      "subject": "pattern:highs_after_treating_lows"
+     },
      "span": null,
      "support": null,
      "tier": "worth_a_look",
@@ -571,6 +609,7 @@
      "rank_note": null,
      "recommended": null,
      "register": "assert",
+     "served_as": null,
      "span": null,
      "support": {
       "n": 8,
@@ -643,6 +682,7 @@
      "rank_note": null,
      "recommended": null,
      "register": "finding",
+     "served_as": null,
      "span": null,
      "support": null,
      "tier": "noted",
@@ -723,6 +763,7 @@
      "rank_note": null,
      "recommended": null,
      "register": "finding",
+     "served_as": null,
      "span": null,
      "support": null,
      "tier": "noted",
@@ -968,7 +1009,23 @@
      "kind": "setting",
      "label": "Evening",
      "lever": null,
-     "members": null,
+     "members": [
+      {
+       "current": 5.7,
+       "estimate": {
+        "confidence": 0.8,
+        "hi": 4.2857,
+        "lo": 4.2857,
+        "method": "bootstrap-inverse-ratio-wls-clustered",
+        "n": 24,
+        "n_clusters": 24,
+        "value": 4.2857,
+        "wide": false
+       },
+       "recommended": 5.0,
+       "start_min": 720
+      }
+     ],
      "parameter": "carb_ratio",
      "pattern": null,
      "pattern_chart": null,
@@ -976,6 +1033,7 @@
      "rank_note": null,
      "recommended": 5.0,
      "register": "assert",
+     "served_as": null,
      "span": {
       "end_min": 1440,
       "label": "12:00 to 24:00",
@@ -1095,6 +1153,7 @@
      "rank_note": "Ranked with its setting",
      "recommended": null,
      "register": "finding",
+     "served_as": null,
      "span": null,
      "support": null,
      "tier": "next_in_line",
@@ -1244,6 +1303,7 @@
      "rank_note": null,
      "recommended": null,
      "register": "finding",
+     "served_as": null,
      "span": null,
      "support": null,
      "tier": "worth_a_look",
@@ -1354,6 +1414,7 @@
      "rank_note": "Ranked with its setting",
      "recommended": null,
      "register": "finding",
+     "served_as": null,
      "span": null,
      "support": null,
      "tier": "next_in_line",
@@ -1423,6 +1484,7 @@
      "rank_note": null,
      "recommended": null,
      "register": "assert",
+     "served_as": null,
      "span": {
       "end_min": 90,
       "label": "00:30 to 01:30",
@@ -1493,6 +1555,7 @@
      "rank_note": null,
      "recommended": 0.96,
      "register": "assert",
+     "served_as": null,
      "span": {
       "end_min": 360,
       "label": "05:30",
@@ -1603,6 +1666,25 @@
      "rank_note": null,
      "recommended": null,
      "register": "finding",
+     "served_as": {
+      "cause_counts": [
+       {
+        "count": 1,
+        "subject": "habit:over_treated_low",
+        "title": "Over-treated low"
+       }
+      ],
+      "count_sentences": [
+       {
+        "count": 1,
+        "denominator": 5,
+        "noun": "lows",
+        "outcome": "rebounded high",
+        "sentence": "1 of 5 lows rebounded high"
+       }
+      ],
+      "subject": "pattern:highs_after_treating_lows"
+     },
      "span": null,
      "support": null,
      "tier": "worth_a_look",
@@ -1664,6 +1746,7 @@
      "rank_note": null,
      "recommended": null,
      "register": "assert",
+     "served_as": null,
      "span": null,
      "support": {
       "n": 8,
@@ -1736,6 +1819,7 @@
      "rank_note": null,
      "recommended": null,
      "register": "finding",
+     "served_as": null,
      "span": null,
      "support": null,
      "tier": "noted",
@@ -1847,6 +1931,7 @@
      "rank_note": null,
      "recommended": null,
      "register": "finding",
+     "served_as": null,
      "span": null,
      "support": null,
      "tier": "noted",
@@ -1941,6 +2026,7 @@
      "rank_note": null,
      "recommended": null,
      "register": "finding",
+     "served_as": null,
      "span": null,
      "support": null,
      "tier": "noted",
@@ -2186,7 +2272,23 @@
      "kind": "setting",
      "label": "Evening",
      "lever": null,
-     "members": null,
+     "members": [
+      {
+       "current": 5.7,
+       "estimate": {
+        "confidence": 0.8,
+        "hi": 4.2857,
+        "lo": 4.2857,
+        "method": "bootstrap-inverse-ratio-wls-clustered",
+        "n": 24,
+        "n_clusters": 24,
+        "value": 4.2857,
+        "wide": false
+       },
+       "recommended": 5.0,
+       "start_min": 720
+      }
+     ],
      "parameter": "carb_ratio",
      "pattern": null,
      "pattern_chart": null,
@@ -2194,6 +2296,7 @@
      "rank_note": null,
      "recommended": 5.0,
      "register": "assert",
+     "served_as": null,
      "span": {
       "end_min": 1440,
       "label": "12:00 to 24:00",
@@ -2313,6 +2416,7 @@
      "rank_note": "Ranked with its setting",
      "recommended": null,
      "register": "finding",
+     "served_as": null,
      "span": null,
      "support": null,
      "tier": "next_in_line",
@@ -2402,6 +2506,7 @@
      "rank_note": "Ranked with its setting",
      "recommended": null,
      "register": "finding",
+     "served_as": null,
      "span": null,
      "support": null,
      "tier": "next_in_line",
@@ -2449,6 +2554,7 @@
      "rank_note": null,
      "recommended": null,
      "register": "assert",
+     "served_as": null,
      "span": null,
      "support": {
       "n": 8,
@@ -2521,6 +2627,7 @@
      "rank_note": null,
      "recommended": null,
      "register": "finding",
+     "served_as": null,
      "span": null,
      "support": null,
      "tier": "noted",
@@ -2601,6 +2708,7 @@
      "rank_note": null,
      "recommended": 0.96,
      "register": "assert",
+     "served_as": null,
      "span": {
       "end_min": 360,
       "label": "05:30",
@@ -2656,6 +2764,7 @@
      "rank_note": null,
      "recommended": null,
      "register": "assert",
+     "served_as": null,
      "span": null,
      "support": {
       "n": 8,
@@ -2791,7 +2900,23 @@
      "kind": "setting",
      "label": "Evening",
      "lever": null,
-     "members": null,
+     "members": [
+      {
+       "current": 5.7,
+       "estimate": {
+        "confidence": 0.8,
+        "hi": 4.2857,
+        "lo": 4.2857,
+        "method": "bootstrap-inverse-ratio-wls-clustered",
+        "n": 24,
+        "n_clusters": 24,
+        "value": 4.2857,
+        "wide": false
+       },
+       "recommended": 5.0,
+       "start_min": 720
+      }
+     ],
      "parameter": "carb_ratio",
      "pattern": null,
      "pattern_chart": null,
@@ -2799,6 +2924,7 @@
      "rank_note": null,
      "recommended": 5.0,
      "register": "assert",
+     "served_as": null,
      "span": {
       "end_min": 1440,
       "label": "12:00 to 24:00",
@@ -2876,6 +3002,7 @@
      "rank_note": null,
      "recommended": null,
      "register": "assert",
+     "served_as": null,
      "span": {
       "end_min": 90,
       "label": "00:30 to 01:30",
@@ -2931,6 +3058,7 @@
      "rank_note": null,
      "recommended": null,
      "register": "assert",
+     "served_as": null,
      "span": null,
      "support": {
       "n": 8,
@@ -3003,6 +3131,7 @@
      "rank_note": null,
      "recommended": null,
      "register": "finding",
+     "served_as": null,
      "span": null,
      "support": null,
      "tier": "noted",
@@ -3082,6 +3211,7 @@
      "rank_note": null,
      "recommended": null,
      "register": "finding",
+     "served_as": null,
      "span": null,
      "support": null,
      "tier": "noted",
@@ -3161,6 +3291,7 @@
      "rank_note": null,
      "recommended": null,
      "register": "assert",
+     "served_as": null,
      "span": null,
      "support": {
       "n": 8,
@@ -3296,7 +3427,23 @@
      "kind": "setting",
      "label": "Evening",
      "lever": null,
-     "members": null,
+     "members": [
+      {
+       "current": 5.7,
+       "estimate": {
+        "confidence": 0.8,
+        "hi": 4.2857,
+        "lo": 4.2857,
+        "method": "bootstrap-inverse-ratio-wls-clustered",
+        "n": 24,
+        "n_clusters": 24,
+        "value": 4.2857,
+        "wide": false
+       },
+       "recommended": 5.0,
+       "start_min": 720
+      }
+     ],
      "parameter": "carb_ratio",
      "pattern": null,
      "pattern_chart": null,
@@ -3304,6 +3451,7 @@
      "rank_note": null,
      "recommended": 5.0,
      "register": "assert",
+     "served_as": null,
      "span": {
       "end_min": 1440,
       "label": "12:00 to 24:00",
@@ -3382,6 +3530,25 @@
      "rank_note": "Ranked on all 30 days",
      "recommended": null,
      "register": "finding",
+     "served_as": {
+      "cause_counts": [
+       {
+        "count": 1,
+        "subject": "habit:over_treated_low",
+        "title": "Over-treated low"
+       }
+      ],
+      "count_sentences": [
+       {
+        "count": 1,
+        "denominator": 1,
+        "noun": "lows",
+        "outcome": "rebounded high",
+        "sentence": "1 of 1 lows rebounded high"
+       }
+      ],
+      "subject": "pattern:highs_after_treating_lows"
+     },
      "span": null,
      "support": null,
      "tier": "worth_a_look",
@@ -3443,6 +3610,7 @@
      "rank_note": null,
      "recommended": null,
      "register": "assert",
+     "served_as": null,
      "span": null,
      "support": {
       "n": 8,
@@ -3515,6 +3683,7 @@
      "rank_note": null,
      "recommended": null,
      "register": "finding",
+     "served_as": null,
      "span": null,
      "support": null,
      "tier": "noted",
@@ -3595,6 +3764,7 @@
      "rank_note": null,
      "recommended": null,
      "register": "finding",
+     "served_as": null,
      "span": null,
      "support": null,
      "tier": "noted",
@@ -3943,6 +4113,9 @@
        "carbs": null,
        "cause_lever": "correction_on_iob",
        "cause_title": "Correction on active insulin",
+       "corrections": {
+        "correction_on_iob": "2026-08-16 20:00:00"
+       },
        "date": "2026-08-16",
        "ep_id": "2026-08-17-ep4",
        "insulin": null,
@@ -4247,6 +4420,7 @@
      "rank_note": null,
      "recommended": null,
      "register": "finding",
+     "served_as": null,
      "span": null,
      "support": null,
      "tier": "noted",
@@ -4310,6 +4484,7 @@
      "rank_note": null,
      "recommended": null,
      "register": "finding",
+     "served_as": null,
      "span": null,
      "support": null,
      "tier": "noted",
@@ -4375,6 +4550,7 @@
      "rank_note": null,
      "recommended": null,
      "register": "finding",
+     "served_as": null,
      "span": null,
      "support": null,
      "tier": "noted",
@@ -4439,6 +4615,7 @@
      "rank_note": null,
      "recommended": null,
      "register": "finding",
+     "served_as": null,
      "span": null,
      "support": null,
      "tier": "noted",
@@ -4689,7 +4866,23 @@
      "kind": "setting",
      "label": "Morning",
      "lever": null,
-     "members": null,
+     "members": [
+      {
+       "current": 5.0,
+       "estimate": {
+        "confidence": 0.8,
+        "hi": 6.0,
+        "lo": 6.0,
+        "method": "bootstrap-inverse-ratio-wls-clustered",
+        "n": 24,
+        "n_clusters": 24,
+        "value": 6.0,
+        "wide": false
+       },
+       "recommended": 5.5,
+       "start_min": 0
+      }
+     ],
      "parameter": "carb_ratio",
      "pattern": null,
      "pattern_chart": null,
@@ -4697,6 +4890,7 @@
      "rank_note": null,
      "recommended": 5.5,
      "register": "assert",
+     "served_as": null,
      "span": {
       "end_min": 720,
       "label": "00:00 to 12:00",
@@ -4816,6 +5010,7 @@
      "rank_note": "Ranked with its setting",
      "recommended": null,
      "register": "finding",
+     "served_as": null,
      "span": null,
      "support": null,
      "tier": "next_in_line",
@@ -4965,6 +5160,7 @@
      "rank_note": null,
      "recommended": null,
      "register": "finding",
+     "served_as": null,
      "span": null,
      "support": null,
      "tier": "worth_a_look",
@@ -5075,6 +5271,7 @@
      "rank_note": "Ranked with its setting",
      "recommended": null,
      "register": "finding",
+     "served_as": null,
      "span": null,
      "support": null,
      "tier": "next_in_line",
@@ -5114,7 +5311,23 @@
      "kind": "setting",
      "label": "Evening",
      "lever": null,
-     "members": null,
+     "members": [
+      {
+       "current": 5.7,
+       "estimate": {
+        "confidence": 0.8,
+        "hi": 4.2857,
+        "lo": 4.2857,
+        "method": "bootstrap-inverse-ratio-wls-clustered",
+        "n": 24,
+        "n_clusters": 24,
+        "value": 4.2857,
+        "wide": false
+       },
+       "recommended": 5.0,
+       "start_min": 720
+      }
+     ],
      "parameter": "carb_ratio",
      "pattern": null,
      "pattern_chart": null,
@@ -5122,6 +5335,7 @@
      "rank_note": null,
      "recommended": 5.0,
      "register": "assert",
+     "served_as": null,
      "span": {
       "end_min": 1440,
       "label": "12:00 to 24:00",
@@ -5199,6 +5413,7 @@
      "rank_note": null,
      "recommended": null,
      "register": "assert",
+     "served_as": null,
      "span": {
       "end_min": 90,
       "label": "00:30 to 01:30",
@@ -5269,6 +5484,7 @@
      "rank_note": null,
      "recommended": 0.96,
      "register": "assert",
+     "served_as": null,
      "span": {
       "end_min": 360,
       "label": "05:30",
@@ -5379,6 +5595,25 @@
      "rank_note": null,
      "recommended": null,
      "register": "finding",
+     "served_as": {
+      "cause_counts": [
+       {
+        "count": 1,
+        "subject": "habit:over_treated_low",
+        "title": "Over-treated low"
+       }
+      ],
+      "count_sentences": [
+       {
+        "count": 1,
+        "denominator": 5,
+        "noun": "lows",
+        "outcome": "rebounded high",
+        "sentence": "1 of 5 lows rebounded high"
+       }
+      ],
+      "subject": "pattern:highs_after_treating_lows"
+     },
      "span": null,
      "support": null,
      "tier": "worth_a_look",
@@ -5461,6 +5696,7 @@
      "rank_note": null,
      "recommended": null,
      "register": "finding",
+     "served_as": null,
      "span": null,
      "support": null,
      "tier": "noted",
@@ -5572,6 +5808,7 @@
      "rank_note": null,
      "recommended": null,
      "register": "finding",
+     "served_as": null,
      "span": null,
      "support": null,
      "tier": "noted",
@@ -5666,6 +5903,7 @@
      "rank_note": null,
      "recommended": null,
      "register": "finding",
+     "served_as": null,
      "span": null,
      "support": null,
      "tier": "noted",
@@ -5913,7 +6151,23 @@
      "kind": "setting",
      "label": "Evening",
      "lever": null,
-     "members": null,
+     "members": [
+      {
+       "current": 5.7,
+       "estimate": {
+        "confidence": 0.8,
+        "hi": 4.2857,
+        "lo": 4.2857,
+        "method": "bootstrap-inverse-ratio-wls-clustered",
+        "n": 24,
+        "n_clusters": 24,
+        "value": 4.2857,
+        "wide": false
+       },
+       "recommended": 5.0,
+       "start_min": 720
+      }
+     ],
      "parameter": "carb_ratio",
      "pattern": null,
      "pattern_chart": null,
@@ -5921,6 +6175,7 @@
      "rank_note": null,
      "recommended": 5.0,
      "register": "assert",
+     "served_as": null,
      "span": {
       "end_min": 1440,
       "label": "12:00 to 24:00",
@@ -6040,6 +6295,7 @@
      "rank_note": "Ranked with its setting",
      "recommended": null,
      "register": "finding",
+     "served_as": null,
      "span": null,
      "support": null,
      "tier": "next_in_line",
@@ -6129,6 +6385,7 @@
      "rank_note": "Ranked with its setting",
      "recommended": null,
      "register": "finding",
+     "served_as": null,
      "span": null,
      "support": null,
      "tier": "next_in_line",
@@ -6207,6 +6464,25 @@
      "rank_note": "Ranked on all 30 days",
      "recommended": null,
      "register": "finding",
+     "served_as": {
+      "cause_counts": [
+       {
+        "count": 1,
+        "subject": "habit:over_treated_low",
+        "title": "Over-treated low"
+       }
+      ],
+      "count_sentences": [
+       {
+        "count": 1,
+        "denominator": 2,
+        "noun": "lows",
+        "outcome": "rebounded high",
+        "sentence": "1 of 2 lows rebounded high"
+       }
+      ],
+      "subject": "pattern:highs_after_treating_lows"
+     },
      "span": null,
      "support": null,
      "tier": "worth_a_look",
@@ -6289,6 +6565,7 @@
      "rank_note": null,
      "recommended": null,
      "register": "finding",
+     "served_as": null,
      "span": null,
      "support": null,
      "tier": "noted",
@@ -6369,6 +6646,7 @@
      "rank_note": null,
      "recommended": null,
      "register": "finding",
+     "served_as": null,
      "span": null,
      "support": null,
      "tier": "noted",
@@ -6614,7 +6892,23 @@
      "kind": "setting",
      "label": "Evening",
      "lever": null,
-     "members": null,
+     "members": [
+      {
+       "current": 5.7,
+       "estimate": {
+        "confidence": 0.8,
+        "hi": 4.2857,
+        "lo": 4.2857,
+        "method": "bootstrap-inverse-ratio-wls-clustered",
+        "n": 24,
+        "n_clusters": 24,
+        "value": 4.2857,
+        "wide": false
+       },
+       "recommended": 5.0,
+       "start_min": 720
+      }
+     ],
      "parameter": "carb_ratio",
      "pattern": null,
      "pattern_chart": null,
@@ -6622,6 +6916,7 @@
      "rank_note": null,
      "recommended": 5.0,
      "register": "assert",
+     "served_as": null,
      "span": {
       "end_min": 1440,
       "label": "12:00 to 24:00",
@@ -6741,6 +7036,7 @@
      "rank_note": "Ranked with its setting",
      "recommended": null,
      "register": "finding",
+     "served_as": null,
      "span": null,
      "support": null,
      "tier": "next_in_line",
@@ -6830,6 +7126,7 @@
      "rank_note": "Ranked with its setting",
      "recommended": null,
      "register": "finding",
+     "served_as": null,
      "span": null,
      "support": null,
      "tier": "next_in_line",
@@ -6916,6 +7213,25 @@
      "rank_note": "Ranked on all 30 days",
      "recommended": null,
      "register": "finding",
+     "served_as": {
+      "cause_counts": [
+       {
+        "count": 1,
+        "subject": "habit:over_treated_low",
+        "title": "Over-treated low"
+       }
+      ],
+      "count_sentences": [
+       {
+        "count": 1,
+        "denominator": 3,
+        "noun": "lows",
+        "outcome": "rebounded high",
+        "sentence": "1 of 3 lows rebounded high"
+       }
+      ],
+      "subject": "pattern:highs_after_treating_lows"
+     },
      "span": null,
      "support": null,
      "tier": "worth_a_look",
@@ -6998,6 +7314,7 @@
      "rank_note": null,
      "recommended": null,
      "register": "finding",
+     "served_as": null,
      "span": null,
      "support": null,
      "tier": "noted",
@@ -7229,7 +7546,23 @@
      "kind": "setting",
      "label": "Evening",
      "lever": null,
-     "members": null,
+     "members": [
+      {
+       "current": 5.7,
+       "estimate": {
+        "confidence": 0.8,
+        "hi": 4.2857,
+        "lo": 4.2857,
+        "method": "bootstrap-inverse-ratio-wls-clustered",
+        "n": 24,
+        "n_clusters": 24,
+        "value": 4.2857,
+        "wide": false
+       },
+       "recommended": 5.0,
+       "start_min": 720
+      }
+     ],
      "parameter": "carb_ratio",
      "pattern": null,
      "pattern_chart": null,
@@ -7237,6 +7570,7 @@
      "rank_note": null,
      "recommended": 5.0,
      "register": "assert",
+     "served_as": null,
      "span": {
       "end_min": 1440,
       "label": "12:00 to 24:00",
@@ -7356,6 +7690,7 @@
      "rank_note": "Ranked with its setting",
      "recommended": null,
      "register": "finding",
+     "served_as": null,
      "span": null,
      "support": null,
      "tier": "next_in_line",
@@ -7505,6 +7840,7 @@
      "rank_note": null,
      "recommended": null,
      "register": "finding",
+     "served_as": null,
      "span": null,
      "support": null,
      "tier": "worth_a_look",
@@ -7615,6 +7951,7 @@
      "rank_note": "Ranked with its setting",
      "recommended": null,
      "register": "finding",
+     "served_as": null,
      "span": null,
      "support": null,
      "tier": "next_in_line",
@@ -7684,6 +8021,7 @@
      "rank_note": null,
      "recommended": null,
      "register": "assert",
+     "served_as": null,
      "span": {
       "end_min": 90,
       "label": "00:30 to 01:30",
@@ -7754,6 +8092,7 @@
      "rank_note": null,
      "recommended": 0.96,
      "register": "assert",
+     "served_as": null,
      "span": {
       "end_min": 360,
       "label": "05:30",
@@ -7864,6 +8203,25 @@
      "rank_note": null,
      "recommended": null,
      "register": "finding",
+     "served_as": {
+      "cause_counts": [
+       {
+        "count": 1,
+        "subject": "habit:over_treated_low",
+        "title": "Over-treated low"
+       }
+      ],
+      "count_sentences": [
+       {
+        "count": 1,
+        "denominator": 5,
+        "noun": "lows",
+        "outcome": "rebounded high",
+        "sentence": "1 of 5 lows rebounded high"
+       }
+      ],
+      "subject": "pattern:highs_after_treating_lows"
+     },
      "span": null,
      "support": null,
      "tier": "worth_a_look",
@@ -7946,6 +8304,7 @@
      "rank_note": null,
      "recommended": null,
      "register": "finding",
+     "served_as": null,
      "span": null,
      "support": null,
      "tier": "noted",
@@ -8057,6 +8416,7 @@
      "rank_note": null,
      "recommended": null,
      "register": "finding",
+     "served_as": null,
      "span": null,
      "support": null,
      "tier": "noted",
@@ -8151,6 +8511,7 @@
      "rank_note": null,
      "recommended": null,
      "register": "finding",
+     "served_as": null,
      "span": null,
      "support": null,
      "tier": "noted",
@@ -8396,7 +8757,23 @@
      "kind": "setting",
      "label": "Evening",
      "lever": null,
-     "members": null,
+     "members": [
+      {
+       "current": 5.7,
+       "estimate": {
+        "confidence": 0.8,
+        "hi": 4.2857,
+        "lo": 4.2857,
+        "method": "bootstrap-inverse-ratio-wls-clustered",
+        "n": 24,
+        "n_clusters": 24,
+        "value": 4.2857,
+        "wide": false
+       },
+       "recommended": 5.0,
+       "start_min": 720
+      }
+     ],
      "parameter": "carb_ratio",
      "pattern": null,
      "pattern_chart": null,
@@ -8404,6 +8781,7 @@
      "rank_note": null,
      "recommended": 5.0,
      "register": "assert",
+     "served_as": null,
      "span": {
       "end_min": 1440,
       "label": "12:00 to 24:00",
@@ -8523,6 +8901,7 @@
      "rank_note": "Ranked with its setting",
      "recommended": null,
      "register": "finding",
+     "served_as": null,
      "span": null,
      "support": null,
      "tier": "next_in_line",
@@ -8612,6 +8991,7 @@
      "rank_note": "Ranked with its setting",
      "recommended": null,
      "register": "finding",
+     "served_as": null,
      "span": null,
      "support": null,
      "tier": "next_in_line",
@@ -8680,6 +9060,7 @@
      "rank_note": null,
      "recommended": null,
      "register": "finding",
+     "served_as": null,
      "span": null,
      "support": null,
      "tier": "noted",
@@ -8760,6 +9141,7 @@
      "rank_note": null,
      "recommended": 0.96,
      "register": "assert",
+     "served_as": null,
      "span": {
       "end_min": 360,
       "label": "05:30",
@@ -8899,7 +9281,23 @@
      "kind": "setting",
      "label": "Evening",
      "lever": null,
-     "members": null,
+     "members": [
+      {
+       "current": 5.7,
+       "estimate": {
+        "confidence": 0.8,
+        "hi": 4.2857,
+        "lo": 4.2857,
+        "method": "bootstrap-inverse-ratio-wls-clustered",
+        "n": 24,
+        "n_clusters": 24,
+        "value": 4.2857,
+        "wide": false
+       },
+       "recommended": 5.0,
+       "start_min": 720
+      }
+     ],
      "parameter": "carb_ratio",
      "pattern": null,
      "pattern_chart": null,
@@ -8907,6 +9305,7 @@
      "rank_note": null,
      "recommended": 5.0,
      "register": "assert",
+     "served_as": null,
      "span": {
       "end_min": 1440,
       "label": "12:00 to 24:00",
@@ -8984,6 +9383,7 @@
      "rank_note": null,
      "recommended": null,
      "register": "assert",
+     "served_as": null,
      "span": {
       "end_min": 90,
       "label": "00:30 to 01:30",
@@ -9060,6 +9460,7 @@
      "rank_note": null,
      "recommended": null,
      "register": "finding",
+     "served_as": null,
      "span": null,
      "support": null,
      "tier": "noted",
@@ -9139,6 +9540,7 @@
      "rank_note": null,
      "recommended": null,
      "register": "finding",
+     "served_as": null,
      "span": null,
      "support": null,
      "tier": "noted",
@@ -9301,7 +9703,23 @@
      "kind": "setting",
      "label": "Evening",
      "lever": null,
-     "members": null,
+     "members": [
+      {
+       "current": 5.7,
+       "estimate": {
+        "confidence": 0.8,
+        "hi": 4.2857,
+        "lo": 4.2857,
+        "method": "bootstrap-inverse-ratio-wls-clustered",
+        "n": 24,
+        "n_clusters": 24,
+        "value": 4.2857,
+        "wide": false
+       },
+       "recommended": 5.0,
+       "start_min": 720
+      }
+     ],
      "parameter": "carb_ratio",
      "pattern": null,
      "pattern_chart": null,
@@ -9309,6 +9727,7 @@
      "rank_note": null,
      "recommended": 5.0,
      "register": "assert",
+     "served_as": null,
      "span": {
       "end_min": 1440,
       "label": "12:00 to 24:00",
@@ -9387,6 +9806,25 @@
      "rank_note": "Ranked on all 30 days",
      "recommended": null,
      "register": "finding",
+     "served_as": {
+      "cause_counts": [
+       {
+        "count": 1,
+        "subject": "habit:over_treated_low",
+        "title": "Over-treated low"
+       }
+      ],
+      "count_sentences": [
+       {
+        "count": 1,
+        "denominator": 1,
+        "noun": "lows",
+        "outcome": "rebounded high",
+        "sentence": "1 of 1 lows rebounded high"
+       }
+      ],
+      "subject": "pattern:highs_after_treating_lows"
+     },
      "span": null,
      "support": null,
      "tier": "worth_a_look",
@@ -9469,6 +9907,7 @@
      "rank_note": null,
      "recommended": null,
      "register": "finding",
+     "served_as": null,
      "span": null,
      "support": null,
      "tier": "noted",
@@ -9549,6 +9988,7 @@
      "rank_note": null,
      "recommended": null,
      "register": "finding",
+     "served_as": null,
      "span": null,
      "support": null,
      "tier": "noted",

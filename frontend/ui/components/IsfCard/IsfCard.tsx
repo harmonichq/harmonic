@@ -5,7 +5,7 @@
 // one ISF staging verdict) does "current → recommended" stand above the chart,
 // in the Setting card's figure type; otherwise there is no figure. The chart is
 // the shared EvidenceChart, one dot per fasting night's fitted ISF; beneath it
-// Estimate, Range and Fasting nights as captioned values. A window the engine
+// the setting cards' one stat row: Estimate, Range and Fasting nights (ADR 523). A window the engine
 // serves no estimate for says "No data"; one not read yet is the card's
 // skeleton.
 //
@@ -19,6 +19,7 @@ import type { IsfData } from '../../overview-model';
 import { Num } from '../../Num';
 import { Button } from '../Button/Button';
 import { EvidenceChart } from '../EvidenceChart/EvidenceChart';
+import { SettingFacts } from '../SettingCard/SettingCard';
 import { StatePill } from '../StatePill/StatePill';
 import '../../shared.css';
 import '../SettingCard/SettingCard.css';
@@ -53,7 +54,6 @@ export function IsfCard({ data, queue = false, notOnPump = false, onDone, onSnoo
   if (data === 'none') {
     return <section className="ui-scard ui-isf">{title}<p className="ui-isf__none">No data</p></section>;
   }
-  const collapsed = data.lo.value === data.hi.value;
   return (
     <section className="ui-scard ui-isf">
       {title}
@@ -66,29 +66,11 @@ export function IsfCard({ data, queue = false, notOnPump = false, onDone, onSnoo
         </div>
       )}
       <div className="ui-scard__chart">
-        <EvidenceChart nights={data.fits} roster={data.roster} field="isf" current={data.current}
-          estimate={data.estimate} lo={data.lo} hi={data.hi} units={data.units} />
+        <EvidenceChart dots={data.fits} roster={data.roster} field="isf" current={data.current}
+          estimate={data.estimate} lo={data.lo} hi={data.hi} units={data.units} axis="ISF" />
       </div>
-      <dl className="ui-scard__facts ui-isf__facts">
-        <div>
-          <dt className="ui-caption">Estimate</dt>
-          <dd>
-            <span className="ui-isf__estimate"><Num value={data.estimate} /></span>
-            <span className="ui-scard__unit">{data.units}</span>
-          </dd>
-        </div>
-        <div>
-          <dt className="ui-caption">Range</dt>
-          <dd>
-            {collapsed ? <Num value={data.lo} /> : <><Num value={data.lo} />–<Num value={data.hi} /></>}
-            <span className="ui-scard__unit">{data.units}</span>
-          </dd>
-        </div>
-        <div>
-          <dt className="ui-caption">Fasting nights</dt>
-          <dd><Num value={data.nights} /></dd>
-        </div>
-      </dl>
+      <SettingFacts estimate={data.estimate} lo={data.lo} hi={data.hi} units={data.units}
+        count={{ label: 'Fasting nights', value: data.nights }} />
       {queue && onDone && <div className="ui-card-done"><Button kind="primary" label="Done" onClick={onDone} /></div>}
       {queue && onSnooze && <div className="ui-card-snooze"><Button kind="text" label="Snooze" onClick={onSnooze} /></div>}
     </section>

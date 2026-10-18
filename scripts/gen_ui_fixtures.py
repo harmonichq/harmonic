@@ -28,7 +28,7 @@ Two committed outputs, one generator, one ``--check``:
 
   ``overview`` holds the Overview components' answers by store:
   ``/api/explore/time-of-day`` for each window (14, 30 and 90 days), the ISF
-  estimate of ``/api/analyze`` for each window, ``/api/day-navigator`` for the
+  estimate and the 48 basal slots of ``/api/analyze`` for each window, ``/api/day-navigator`` for the
   wearer's latest month, and ``/api/outcomes`` for each window where the
   top-level ``outcomes`` (the wearer's) does not already hold it. Every outcomes
   answer carries its previous period. The wearer's ISF is held at every window,
@@ -94,13 +94,18 @@ Two committed outputs, one generator, one ``--check``:
   fetch would write them, so the card is back marked Not on pump.
   ``wearer-first-days-snoozed`` is the first days with everything snoozed (an
   empty Queue); ``isf-supported`` is the Overview's store of the same name,
-  whose ISF the engine supports a change for and so queues; and the unsynced
+  whose ISF the engine supports a change for and so queues;
+  ``carb-ratio-supported`` is ``scripts/qa_e2e_cases.py``'s
+  ``basal-and-carb-ratio-lower`` case, whose meals support lowering the carb
+  ratio, so its I:C Setting queues; and the unsynced
   store records its guidance disposition. Each Queue store's ``analyze`` holds
   its first ISF segment, trimmed as the Overview's is, for the Queue's ISF
-  card. Each
+  card, and each carb-ratio block the engine stages a move for, with the meal
+  runs its estimate counts, for the I:C Setting card (ADR 523). Each
   Queue store also holds ``cases``: every admitted Pattern's event-aligned case
-  file from ``/api/diagnose/finding-case-file``, trimmed to the median traces
-  of its matched and comparison cohorts, for the open card's impact line.
+  file from ``/api/diagnose/finding-case-file``, trimmed to its trace chart
+  (ADR 523): the Pattern's episodes or its median and band, and Typical's, for
+  the open card's chart and impact line.
 
   ``status.failed`` adds one invented failed sync attempt, through
   ``Store.record_fetch_result``, so the Settings alert has a served
@@ -180,8 +185,12 @@ MARK_FIELDS = ("current", "estimate")
 STATE_LABELS = ("No data",)
 # §4.2 SettingCard's captions, quoted in §2 ("Nights / Range"); Range is in
 # glossary §1.5. Nights was once also an engine noun, the overnight-lows
-# Pattern's, which ADR 499 cut.
-SETTING_CAPTIONS = ("Nights",)
+# Pattern's, which ADR 499 cut. An I:C card counts its Meal runs (§2.5,
+# 2026-10-14, ADR 523).
+SETTING_CAPTIONS = ("Nights", "Meal runs")
+# The Pattern card's trace chart labels its time axis "Minutes" (§2.5,
+# 2026-10-14, ADR 523), a plain interface word.
+CHART_LABELS = ("Minutes",)
 # §1.3 Queue's empty-state label, "0 patterns".
 QUEUE_LABELS = ("patterns",)
 # §4.2 DayRibbon: "each day's weekday and date". The weekday abbreviations are
@@ -193,6 +202,7 @@ OVERVIEW_LABELS = ("vs",)
 # An ISF the engine supports a change for: qa_e2e_cases' manufactured fasting
 # nights at a true ISF of 33 mg/dL/U under 8 mg/dL of sensor noise.
 ISF_SUPPORTED = {"true_isf": 33.0, "noise_sd": 8.0}
+CARB_RATIO_CASE = "basal-and-carb-ratio-lower"
 # Dates print as "26 Sep" (§1.2 the Overview's span "30 Sep – 13 Oct", §1.3
 # "Until <date>"); the month abbreviations are plain interface words (§2.5,
 # 2026-10-13).
@@ -359,7 +369,7 @@ def fixtures() -> dict:
 
         overview = {"wearer": {
             "time_of_day": _profiles(client),
-            "analyze": _isf_windows(client),
+            "analyze": _windows(client),
             "day_navigator": _day_navigator(client),
         }}
         day = _days(client, overview["wearer"]["day_navigator"])
@@ -452,8 +462,16 @@ def fixtures() -> dict:
         with Store.open(str(supported)) as store:
             qa_e2e_cases._materialize_isf_coverage(store, **ISF_SUPPORTED)
         supported_client = _serve(supported)
-        overview["isf-supported"] = {"analyze": _isf_windows(supported_client)}
+        overview["isf-supported"] = {"analyze": _windows(supported_client)}
         queue["isf-supported"] = _queue_store(supported_client)
+
+        # The wearer's I:C holds, so the carb-ratio Setting is queued from the QA
+        # case whose meals support lowering it.
+        carb_ratio = scratch / "carb-ratio-supported.sqlite"
+        with Store.open(str(carb_ratio)) as store:
+            qa_e2e_cases.materialize_case(store, next(
+                case for case in qa_e2e_cases.QA_CASES if case.name == CARB_RATIO_CASE))
+        queue["carb-ratio-supported"] = _queue_store(_serve(carb_ratio))
 
         unsynced = scratch / "wearer-unsynced.sqlite"
         with Store.open(str(unsynced)):
@@ -620,9 +638,35 @@ def _isf(analysis: dict) -> list[dict]:
         for r in analysis["isf"][:1]]
 
 
-def _isf_windows(client: TestClient) -> dict:
-    """The Overview's ISF estimate card for each window."""
-    return {str(w): {"isf": _isf(_get(client, "/api/analyze", window=w))} for w in WINDOWS}
+def _ic_blocks(analysis: dict) -> list[dict]:
+    """``/api/analyze``'s carb-ratio blocks the engine stages a move for, trimmed to
+    what the I:C Setting card reads: the block, its programmed and recommended
+    ratios, its estimate, and the meal runs that estimate counts (ADR 523)."""
+    return [
+        {**{field: b[field] for field in
+            ("block_id", "start_min", "end_min", "current_values", "recommended")},
+         "estimate": {field: b["estimate"][field] for field in ("value", "lo", "hi")},
+         "evidence": {"counted_runs": b["evidence"]["counted_runs"]}}
+        for b in analysis["ic_blocks"] if b["asserts_move"]]
+
+
+def _basal_slots(analysis: dict) -> list[dict]:
+    """``/api/analyze``'s 48 basal slots, trimmed to what the Overview's basal card
+    reads: the programmed rate, the estimate over its range, and the one staging
+    verdict with its direction (ADR 523)."""
+    return [
+        {**{field: b[field] for field in ("slot", "current", "asserts_move", "direction")},
+         "estimate": b["estimate"] and {field: b["estimate"][field] for field in ("value", "lo", "hi")}}
+        for b in analysis["basal"]]
+
+
+def _windows(client: TestClient) -> dict:
+    """The Overview's ISF estimate and basal cards for each window, from one read."""
+    out = {}
+    for w in WINDOWS:
+        analysis = _get(client, "/api/analyze", window=w)
+        out[str(w)] = {"isf": _isf(analysis), "basal": _basal_slots(analysis)}
+    return out
 
 
 def _day_navigator(client: TestClient) -> dict:
@@ -922,7 +966,7 @@ def _pin(client: TestClient) -> None:
 
 
 ROW_FIELDS = ("id", "kind", "title", "chips", "claimed_by", "lever", "parameter",
-              "count_sentences", "fold_sentences", "span", "members")
+              "count_sentences", "fold_sentences", "span", "members", "served_as")
 
 
 def _queue_store(client: TestClient) -> dict:
@@ -977,6 +1021,7 @@ def _queue_store(client: TestClient) -> dict:
             ],
             # The Queue's ISF card is the Overview's, over the engine's default window.
             "isf": _isf(analyze),
+            "ic_blocks": _ic_blocks(analyze),
         },
         "trials": {
             "trials": [
@@ -996,15 +1041,18 @@ def _queue_store(client: TestClient) -> dict:
     }
 
 
-# The two cohorts the open Pattern card's impact line compares (§4.2
-# PatternCard): the Pattern's own episodes and the comparison episodes.
-IMPACT_COHORTS = ("matched", "comparison")
+def _traces(served: dict) -> dict:
+    """A case file's trace chart, trimmed to what the open Pattern card draws: the
+    anchor and window, the Pattern's episodes and bins, and Typical's bins (ADR 523)."""
+    return {"anchor": served["anchor"], "window_min": served["window_min"],
+            "pattern": {field: served["pattern"][field] for field in ("episodes", "points")},
+            "typical": {"points": served["typical"]["points"]}}
 
 
 def _pattern_cases(client: TestClient, subjects: list[str]) -> dict:
-    """Each admitted Pattern's event-aligned case file, trimmed to its two
-    cohorts' median traces, by pattern key. A Pattern whose case file serves
-    no inspectable member (404) has no entry."""
+    """Each admitted Pattern's event-aligned case file, trimmed to its trace chart,
+    by pattern key. A Pattern whose case file serves no inspectable member (404)
+    has no entry."""
     preparation = _get(client, "/api/diagnose/finding-case-file-preparation")
     cases = {}
     for subject in subjects:
@@ -1013,29 +1061,23 @@ def _pattern_cases(client: TestClient, subjects: list[str]) -> dict:
         if response.status_code == 404:
             continue
         response.raise_for_status()
-        projection = response.json()["projection"]
-        cases[subject.removeprefix("pattern:")] = {
-            "comparison": {"state": projection["comparison"]["state"]},
-            "cohorts": [
-                {"key": cohort["key"], "support": cohort["support"],
-                 "points": [{"minute": point["minute"], "median": point["median"]}
-                            for point in cohort["points"]]}
-                for cohort in projection["cohorts"] if cohort["key"] in IMPACT_COHORTS
-            ],
-        }
+        cases[subject.removeprefix("pattern:")] = {"traces": _traces(response.json()["traces"])}
     return cases
 
 
 def _patterns(store: dict) -> list[dict]:
-    """Counted patterns with their pattern-scope cause shares."""
+    """Queued patterns with a served trace chart: how many episodes it draws one by
+    one (None when it serves their median and band), and whether one of them runs
+    through a gap in its readings, longer than two 5-minute readings."""
     out = []
-    for row in store["findings"]["rows"]:
-        if row["kind"] != "pattern" or not row["count_sentences"]:
+    for candidate in store["guidance"]["candidates"]:
+        key = candidate["subject"].removeprefix("pattern:")
+        if candidate["kind"] != "pattern" or not candidate["queued"] or key not in store["cases"]:
             continue
-        shares = [s["count"] for r in store["findings"]["rows"] if r.get("claimed_by") == row["id"]
-                  for s in r["fold_sentences"] or () if s["scope"] == "pattern"]
-        out.append({"key": row["id"].removeprefix("pattern:"),
-                    "count": row["count_sentences"][0]["count"], "shares": shares})
+        episodes = store["cases"][key]["traces"]["pattern"]["episodes"]
+        out.append({"key": key, "episodes": None if episodes is None else len(episodes),
+                    "gap": any(b["minute"] - a["minute"] > 10 for episode in episodes or ()
+                               for a, b in zip(episode, episode[1:]))})
     return out
 
 
@@ -1082,7 +1124,8 @@ def states(queue: dict) -> dict:
 
     def pattern(rule):
         for store in stores:
-            found = sorted((p for p in _patterns(queue[store]) if rule(p)), key=lambda p: -p["count"])
+            found = sorted((p for p in _patterns(queue[store]) if rule(p)),
+                           key=lambda p: (-(p["episodes"] or 0), p["key"]))
             if found:
                 return {"store": store, "pattern": found[0]["key"]}
         return None
@@ -1096,8 +1139,9 @@ def states(queue: dict) -> dict:
     uncertain = next((p["key"] for p in queue["wearer"]["findings"]["outcome_patterns"]
                       if p.get("wide") is True and any(q["key"] == p["key"] for q in patterns)), None)
     found = {
-        "multi_cause": pattern(lambda p: len(p["shares"]) >= 2),
-        "single_cause": pattern(lambda p: len(p["shares"]) == 1),
+        # The trace chart's two forms (ADR 523): each episode, or the median and band.
+        "traces_episodes": pattern(lambda p: p["episodes"]),
+        "traces_band": pattern(lambda p: p["episodes"] is None),
         "pinned": {"store": "wearer-pinned", "pattern": pinned} if pinned else None,
         "setting": block(lambda b: b["spread"] and not b["collapsed"] and not b["trial"]),
         "setting_trial": block(lambda b: b["trial"]),
@@ -1105,8 +1149,9 @@ def states(queue: dict) -> dict:
         "uncertain": {"store": "wearer", "pattern": uncertain} if uncertain else None,
         "range_collapsed": block(lambda b: b["collapsed"]),
         "zero_variance": block(lambda b: not b["spread"]),
+        "traces_gap": pattern(lambda p: p["gap"]),
     }
-    required = ("multi_cause", "single_cause", "pinned", "setting", "setting_trial")
+    required = ("traces_episodes", "traces_band", "pinned", "setting", "setting_trial")
     missing = [name for name in required if found[name] is None]
     if missing:
         raise SystemExit(f"the simulated wearer no longer serves: {', '.join(missing)}")
@@ -1164,13 +1209,16 @@ def allowlist(data: dict) -> dict:
     text = DESIGN.read_text()
     stores = data["queue"].values()
     rows = [r for store in stores for r in store["findings"]["rows"]]
+    served = [r["served_as"] for r in rows if r.get("served_as")]
     sentences = [s for r in rows for s in (r["count_sentences"] or []) + (r["fold_sentences"] or [])]
+    sentences += [s for p in served for s in p["count_sentences"] or []]
     sources = {
         "glossary §1.5": _table_first_column(_section(text, "### 1.5 Glossary")),
         "tabs §1.1": _table_first_column(_section(text, "### 1.1 Tabs")),
         "engine titles": [c["title"] for c in data["guidance"]["candidates"]]
         + [c["title"] for store in stores for c in store["guidance"]["candidates"]]
-        + [r["title"] for r in rows if r["kind"] == "habit"],  # causes, and a collapsed pattern's member
+        + [r["title"] for r in rows if r["kind"] == "habit"]  # causes, and a collapsed pattern's member
+        + [c["title"] for p in served for c in p["cause_counts"] or []],  # a collapsed pattern's causes
         "engine nouns": [s["noun"] for s in sentences],
         "engine units": [c["units"] for store in stores for c in store["guidance"]["candidates"]
                          if c["units"]],
@@ -1178,6 +1226,7 @@ def allowlist(data: dict) -> dict:
         "connectives §4.2": list(CONNECTIVES),
         "state labels §4.2": list(STATE_LABELS),
         "SettingCard captions §4.2": list(SETTING_CAPTIONS),
+        "chart labels §2.5": list(CHART_LABELS),
         "Queue labels §1.3": list(QUEUE_LABELS),
         "weekdays §4.2": list(WEEKDAYS),
         "months §1.1": list(MONTHS),

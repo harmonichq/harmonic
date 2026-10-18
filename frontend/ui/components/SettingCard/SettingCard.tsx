@@ -1,15 +1,21 @@
 // SettingCard (§4.2): the open setting. Its title is one line: the kind word
-// ("Basal") in strong ink, then its time block in regular meta ink on the same
-// baseline; current → suggested in figure type, only the suggestion in strong
-// ink; the EvidenceChart; then Nights and Range as two captioned values. An
-// ISF or I:C setting, whose evidence is not nights, has Range alone. A setting
-// is changed on the pump, not here: the card's one primary is Done (#518), which
-// says the person programmed it, where Pin sits on a Pattern card. A range the
-// engine serves as one value (lo = hi) shows that value once. Once the slot's
-// change has matured into a Trial, the card names it and links to Changes. A
-// card back from a Done the next sync did not show carries the Not on pump pill
-// on its title line. Snooze, when the screen offers it, is a centred text action
-// beneath Done.
+// ("Basal", "I:C") in strong ink, then its time block in regular meta ink on
+// the same baseline; current → suggested in figure type, only the suggestion
+// in strong ink; the EvidenceChart of the evidence the estimate counts (a basal
+// slot's nights, an I:C block's meal runs); then the stat row. A setting is
+// changed on the pump, not here: the card's one primary is Done (#518), which
+// says the person programmed it, where Pin sits on a Pattern card. Once the
+// slot's change has matured into a Trial, the card names it and links to
+// Changes. A card back from a Done the next sync did not show carries the Not
+// on pump pill on its title line. Snooze, when the screen offers it, is a
+// centred text action beneath Done.
+//
+// The stat row (ADR 523) is the same on every setting card, the ISF card too,
+// in the same order and place: Estimate, Range, then the count of what the
+// estimate counts (Nights, Meal runs, Fasting nights), each a caption above its
+// served value. A range the engine serves as one value (lo = hi) shows that
+// value once.
+import type { Sourced } from '../../answers';
 import { Num } from '../../Num';
 import type { SettingData } from '../../queue-model';
 import { Button } from '../Button/Button';
@@ -17,6 +23,40 @@ import { EvidenceChart } from '../EvidenceChart/EvidenceChart';
 import { StatePill } from '../StatePill/StatePill';
 import '../../shared.css';
 import './SettingCard.css';
+
+export type SettingFactsProps = {
+  estimate: Sourced<number>;
+  lo: Sourced<number>;
+  hi: Sourced<number>;
+  units: string;
+  count: { label: string; value: Sourced<number> };
+};
+
+/** The stat row every setting card ends its evidence with. */
+export function SettingFacts({ estimate, lo, hi, units, count }: SettingFactsProps) {
+  return (
+    <dl className="ui-scard__facts">
+      <div>
+        <dt className="ui-caption">Estimate</dt>
+        <dd>
+          <span className="ui-scard__estimate"><Num value={estimate} /></span>
+          <span className="ui-scard__unit">{units}</span>
+        </dd>
+      </div>
+      <div>
+        <dt className="ui-caption">Range</dt>
+        <dd>
+          {lo.value === hi.value ? <Num value={lo} /> : <><Num value={lo} />–<Num value={hi} /></>}
+          <span className="ui-scard__unit">{units}</span>
+        </dd>
+      </div>
+      <div>
+        <dt className="ui-caption">{count.label}</dt>
+        <dd><Num value={count.value} /></dd>
+      </div>
+    </dl>
+  );
+}
 
 export type SettingCardProps = {
   data: SettingData; onChanges?: () => void;
@@ -27,7 +67,6 @@ export type SettingCardProps = {
 };
 
 export function SettingCard({ data, onChanges, onDone, onSnooze }: SettingCardProps) {
-  const collapsed = data.lo.value === data.hi.value;
   return (
     <section className="ui-scard">
       <h2 className="ui-scard__title">
@@ -41,27 +80,11 @@ export function SettingCard({ data, onChanges, onDone, onSnooze }: SettingCardPr
         <span className="ui-scard__suggested"><Num value={data.suggested} /></span>
         <span className="ui-scard__units">{data.units}</span>
       </div>
-      {data.nights && data.roster && (
-        <div className="ui-scard__chart">
-          <EvidenceChart nights={data.nights} roster={data.roster} field="delivered_rate" current={data.current}
-            estimate={data.estimate} lo={data.lo} hi={data.hi} units={data.units} />
-        </div>
-      )}
-      <dl className="ui-scard__facts">
-        {data.days && (
-          <div>
-            <dt className="ui-caption">Nights</dt>
-            <dd><Num value={data.days} /></dd>
-          </div>
-        )}
-        <div>
-          <dt className="ui-caption">Range</dt>
-          <dd>
-            {collapsed ? <Num value={data.lo} /> : <><Num value={data.lo} />–<Num value={data.hi} /></>}
-            <span className="ui-scard__unit">{data.units}</span>
-          </dd>
-        </div>
-      </dl>
+      <div className="ui-scard__chart">
+        <EvidenceChart dots={data.dots} roster={data.roster} field={data.field} current={data.current}
+          estimate={data.estimate} lo={data.lo} hi={data.hi} units={data.units} axis={data.axis} />
+      </div>
+      <SettingFacts estimate={data.estimate} lo={data.lo} hi={data.hi} units={data.units} count={data.count} />
       {data.trial && (
         <div className="ui-scard__trial">
           <span className="ui-caption">Trial</span>

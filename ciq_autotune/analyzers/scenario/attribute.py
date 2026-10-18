@@ -351,6 +351,10 @@ class AnchorVerdict:
     silence_reason: Optional[SilenceReason]
     suspend_start: Optional[datetime] = None
     suspend_end: Optional[datetime] = None
+    # The correction a Correction on active insulin verdict judged, retained so the
+    # exposure feed can name the dose a counted low followed (ADR 523). Not part of
+    # the model view's serialized verdict.
+    correction_t: Optional[datetime] = None
 
     def to_dict(self) -> dict:
         payload = {
@@ -375,6 +379,7 @@ def _mv(classifier: str, verdict) -> AnchorVerdict:
         detail=verdict.detail,
         evidence_tier=verdict.evidence_tier,
         silence_reason=None if verdict.matched else verdict.silence_reason,
+        correction_t=getattr(verdict, "correction_t", None),
     )
 
 

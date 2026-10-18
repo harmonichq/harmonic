@@ -68,6 +68,7 @@ EXPECTED_ACTIVE_KINDS = {
     "pattern-near-tie": None,
     "pattern-collapse": None,
     "pattern-correction-fold": None,
+    "pattern-correction-collapse": None,
     "c3-focus": "focus",
     "c3-trial": "trial",
     "c3-history": "trial",

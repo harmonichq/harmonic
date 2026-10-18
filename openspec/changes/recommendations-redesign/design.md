@@ -760,6 +760,126 @@ rule both read.
 The contract test adds `pattern-correction-fold`,
 whose days carry five kinds of finding, and checks the showcase's three days.
 
+## ADR 520 — The Queue reads a carb-ratio block and a Pattern served as its habit through what the engine serves for them
+
+**Context.** A mock-up pass on the operator's own data (2026-10-14) found three
+faults in what the Queue serves. A queued carb ratio drew an empty card: the I:C
+row carried its numbers only at row level and no `members`, while the Queue reads
+a Setting's numbers off its first member, as basal's rows serve them. *Highs after
+treating lows* and *Lows after correcting highs*, each served as its one admitted
+habit, had no case file: the case file resolved a `pattern:` subject only through
+a Pattern row, and a collapsed Pattern has none, so the card drew no impact line.
+And *Lows after correcting highs* counted 3 of 65 lows on its card while its case
+evidence held 4. The card read the habit row's own count sentence, which is two
+steps removed from the Pattern: it counts only the lows that habit drove, never
+the lows another rate lever reached (Correction stacking credits the low its
+stacked pair reached), and it is the first of the habit's per-family sentences,
+alphabetical, so a habit counted in highs and lows printed its highs. The
+synthetic wearer showed the second form: *Highs after treating lows* printed
+"1 of 18 highs" where the Pattern counts 8 of 37 lows.
+
+**Decision.**
+
+1. *An I:C block is its own one member.* `_ic_rows` serves `members` as a
+   one-element list, `{start_min, current, recommended, estimate}`, the shape a
+   basal run serves per slot. A block is single-valued, so the member repeats the
+   row's numbers; the Queue reads both settings one way.
+2. *A collapsed Pattern is counted as the Pattern, on its habit's row.* The
+   findings projection stamps that habit's row with `served_as`: the Pattern's
+   subject, its count sentence and each rate lever's credited count, all from
+   `credited_claims` over the Pattern's window population — the rule its `k` and
+   its case file already read. Every row carries the key, null elsewhere. The
+   habit's own count sentences are unchanged, and the published Pattern roster
+   stays the producer's, verbatim.
+3. *A collapsed Pattern's case file is the Pattern's.* Asked for under its
+   `pattern:` subject, the case file resolves a Pattern with no row from the
+   findings answer's roster, gated by the same chartability predicate, and
+   projects the Pattern's population, so its claimed count is the card's count.
+4. *A low serves its outcome.* Beside a meal's arc reading, a low Occurrence serves
+   the peak (a high outcome) or nadir (a low one) of its own drawn trace from the
+   anchor to the comparison window's far edge, in the meal outcome's shape.
+5. *Stories read engine output.* The hand-built `wearer-ic` story variant, which
+   gave the I:C row a `members` field the engine never served, is deleted; the UI
+   fixture generator serves `carb-ratio-supported` from the
+   `basal-and-carb-ratio-lower` QA case instead.
+
+**Rejected.** Reading a collapsed Pattern's count off the case file's summary: it
+would make the Queue's row wait on a second read, and the count belongs beside the
+row the Queue already reads. Adding the count to the published roster: the
+projection publishes the producer's roster verbatim, and that is pinned.
+
+**Consequences.** The findings fixture, the workstation case-file capture and the
+UI fixtures regenerate. A new QA case, `pattern-correction-collapse`, holds a
+collapsed Pattern whose count its habit's own count understates, and the live
+contract test runs on it and on `basal-and-carb-ratio-lower`. Standalone habit
+candidates the engine queues (for example a missed or unannounced meal) are still
+dropped by the Queue's `item()`; that remains deferred.
+
+## ADR 523 — A Pattern's case file serves its trace chart, and Typical is the comparison episodes aligned at the same start
+
+**Context.** The open Pattern card drew a waffle of its occurrences by cause,
+and its impact line read each cohort's median from the case file's event
+projection. The operator, on mock-ups of his own data (2026-10-14): "I think
+the charts are better" — episodes aligned at their start, against Typical. The
+setting charts: "They look wonderful. I love it. Perfect." The Overview's basal
+card: "I think the 48 slot".
+
+**Decision.** Each Pattern's case file serves `traces`: the start every episode
+is aligned at (`anchor`), the minutes drawn (`window_min`), and two cohorts.
+`pattern` is the episodes the Pattern counts; `typical` the comparison episodes.
+Each serves the anchors it draws and its 5-minute bins (`minute`, `n`, `median`,
+`p25`, `p75`), a bin served only from three readings; `pattern` also serves each
+episode's readings when it draws eight or fewer, else `episodes` is null. An
+episode with no reading in the first ten minutes of its window is left off both
+the anchors and the bins, never drawn from part-way. Per Pattern:
+
+| Pattern | Start | Minutes | Pattern | Typical |
+|---|---|---|---|---|
+| Highs after meals, Lows after meals | the meal's bolus | −30 to 240 | the meals the Pattern counts | the event comparison's meals |
+| Highs after treating lows | the low's nadir | 0 to 180 | the lows the Pattern counts | every other low |
+| Lows after correcting highs | the correction the low followed | 0 to 240 | the correction before each low the Pattern counts | every other lone correction |
+
+**What changed in "Typical".** For the two meal Patterns it is the comparison
+cohort it already was. For Highs after treating lows it was the lows neither
+matched nor nearly matched; it is now every low the Pattern does not count,
+near misses included, so Typical is "what a low usually does next". For Lows
+after correcting highs it was other lows, aligned at their nadir; it is now
+corrections: a low has no start to align a correction's path at, and the
+question the card asks is what a correction usually does. A lone correction is a
+user correction (the engine's `_is_user_correction`) with no other within the
+stacking window (60 minutes) either side, so no second dose shapes its path
+(`opportunities.lone_corrections`). The Pattern's episodes start at the dose the
+engine names for each counted low: the correction a Correction on active insulin
+verdict judged, or the stacking dose a Correction stacking episode drove.
+`explore_exposures` serves that time on the low as `corrections`, keyed by the
+habit, from the verdict the attribution retained (`AnchorVerdict.correction_t`),
+so the case file re-runs no classifier.
+
+**The impact line follows.** "Peak · Typical" and the row's delta read each
+cohort's highest or lowest served median from minute 0, from `traces`, so the
+number beside the chart is a point on the chart. Where either cohort serves no
+bin from minute 0 there is no impact line.
+
+**The setting cards' counts are served.** A carb-ratio block serves
+`evidence.counted_runs`, the pooled meal runs with their ratio: the I:C card's
+dots and its Meal runs count are that one list. The basal Nights count is the
+slot's `days`, and the ISF's Fasting nights its estimate's `n_clusters`. The
+Overview's basal card reads the basal analyzer's 48 slots as served: programmed
+rate, estimate and range, and `asserts_move` with `direction`.
+
+**Not served.** The frontend computes no band, chooses no episode and applies
+no threshold; it draws the served bins and breaks a line where the series has a
+gap.
+
+**Consequences.** The open Pattern card names no cause: the waffle and its
+legend are gone, with CauseWaffle. The findings-projection and event-comparison
+fixtures carry `traces` and `counted_runs`; the frozen exposures input carries
+its outranked low's `corrections`. The UI fixtures trim each case file to its
+`traces`, add the staged I:C blocks and each Overview window's basal slots, and
+pick the Pattern stories by trace form. The contract test checks the traces on
+the showcase and both correction-Pattern cases, the counted runs on the carb
+ratio case, and the showcase's basal slots.
+
 ## ADR 522 — Reads answer without rescanning the history, writes re-warm in the background, and the app keeps its last answers
 
 **Context.** Connor, 2026-10-14, on his phone against the home server (two cores,

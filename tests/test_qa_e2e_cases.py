@@ -10,7 +10,7 @@ from unittest.mock import patch
 from ciq_autotune.store import Store
 from ciq_autotune.guidance import build_guidance
 from ciq_autotune.finding_case_file import prepare as prepare_case_files, wrap
-from ciq_autotune.findings_projection import prepare_findings_projection
+from ciq_autotune.findings_projection import pattern_chartable, prepare_findings_projection
 from ciq_autotune.window_membership import WindowQuery
 
 from scripts.qa_e2e_cases import (
@@ -61,6 +61,7 @@ EXPECTED_CASE_NAMES = (
     "behavioral-carb-log-fasting-exclusion",
     "behavioral-preempted-detector",
     "pattern-near-tie", "pattern-collapse", "pattern-correction-fold",
+    "pattern-correction-collapse",
     "c3-focus", "c3-trial", "c3-history", "c3-preempted", "c3-pin",
     "c4-ic", "c4-isf", "c4-profile", "c4-missing", "c4-history",
     "edit-chain",
@@ -124,7 +125,12 @@ class QaE2ECasesTest(unittest.TestCase):
             for key, pattern in patterns.items():
                 with self.subTest(key=key):
                     row = rows_by_id.get(pattern["subject"])
-                    if row is None or not row["pattern_chart"]:
+                    # A Pattern served as its one habit has no row; it owns a case
+                    # file by the same chartability predicate its row would (ADR 520).
+                    collapsed = row is None and pattern["collapse"] == "collapse_to_member"
+                    charted = (pattern_chartable(pattern, prepared.pattern_exposures) if collapsed
+                               else row is not None and bool(row["pattern_chart"]))
+                    if not charted:
                         self.assertIsNone(prepared.case(pattern["subject"], "event", None))
                         self.assertIsNone(prepared.case(pattern["subject"], "clock", None))
                         continue
@@ -141,6 +147,8 @@ class QaE2ECasesTest(unittest.TestCase):
                     for field in ("finding", "family", "summary", "verdict_counts",
                                   "occurrences"):
                         self.assertEqual(clock_case[field], case_file[field])
+                    if collapsed:
+                        continue
                     rendered = rendered_by_id[pattern["subject"]]
                     self.assertEqual(rendered["pattern_chart"], row["pattern_chart"])
                     self.assertEqual(rendered["case_header"]["summary"], case_file["summary"])

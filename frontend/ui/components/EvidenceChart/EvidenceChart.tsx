@@ -1,35 +1,36 @@
-// EvidenceChart (§4.2): how a setting's nights are distributed — a basal
-// slot's nights by delivered rate, or the ISF's fasting nights by their fitted
-// ISF — the nights the engine's own evidence rules count, no more.
+// EvidenceChart (§4.2): a setting's evidence as one row of dots — a basal
+// slot's nights by delivered rate, an I:C block's counted meal runs by their
+// ratio, or the ISF's fasting nights by their fitted ISF — the evidence the
+// engine's own rules count, no more (ADR 523).
 //
 // The axis spans the band that matters: the current value, the estimate and
 // the engine's range, padded generously and snapped to round ticks; it goes
-// below 0 only when the range does. One dot per night at its value; nights at
-// one value stack, wrapping into further columns rather than outgrowing the
-// chart. A night beyond the axis is not dropped: the edge it lies past carries
-// their count ("‹ 1"), and it still counts in the card's total. The count sits
-// in a gutter reserved at that end of the axis, level with the dots' first row,
-// and the axis and every mark stop short of it, so a count never touches a dot,
-// the band or a line (§2.5, 2026-10-14); an end with no count reserves nothing.
-// The axis otherwise runs the full width, flush with the card's text column:
-// the end tick labels anchor inward and the unit follows the last one. Every
-// tick keeps its mark, but a label that would run into its neighbour is left
-// out, the last (with the unit) always kept, so no two labels ever touch.
-// Current (dashed, top row) and Estimate (solid,
-// second row) are full-height marks labelled with their word and value; the
-// engine's range is a band behind them in the estimate colour, and the nights
-// inside it draw bright while the rest recede. Left to right is rate, never
-// time.
+// below 0 only when the range does. One dot per item at its value, in one row:
+// dots that would touch move up or down out of each other's way, nearest the
+// row first (a beeswarm), so a pile at one value spreads either side of the row
+// rather than towering. Dots inside the range draw bright; the rest recede.
+// A dot beyond the axis is not dropped: the edge it lies past carries the
+// count ("‹ 1") in a gutter reserved at that end, level with the row, which the
+// axis and every mark stop short of, so a count never touches a dot, the band
+// or a line (§2.5, 2026-10-14); an end with no count reserves nothing.
+// The axis otherwise runs the full width, flush with the card's text column;
+// its end tick labels anchor inward. Every tick keeps its mark, but a label
+// that would run into its neighbour is left out, the last always kept. Beneath
+// the ticks, the caption names what the axis measures and its unit
+// ("Basal · U/h"). Current (dashed, top row) and Estimate (solid, second row)
+// are full-height marks labelled with their word and value; the range is a
+// band behind them in the estimate colour. Left to right is value, never time.
 import type { Sourced } from '../../answers';
 import { formatValue } from '../../provenance.js';
 import { useWidth } from '../../measure';
-import '../../shared.css';
+import { labelledTicks, niceTicks } from '../Chart/scale';
+import '../Chart/Chart.css';
 import './EvidenceChart.css';
 
 export type EvidenceChartProps = {
-  nights: readonly { rate: Sourced<number> }[];
-  /** The served roster's path and the field each night's value is, so an edge
-   *  count can name its nights. */
+  dots: readonly { rate: Sourced<number> }[];
+  /** The served list's path and the field each dot's value is, so an edge
+   *  count can name the items it counts. */
   roster: string;
   field: string;
   current: Sourced<number>;
@@ -37,50 +38,36 @@ export type EvidenceChartProps = {
   lo: Sourced<number>;
   hi: Sourced<number>;
   units: string;
+  /** What the axis measures: the setting's name ("Basal", "I:C", "ISF"). */
+  axis: string;
 };
 
-const DOT = 6;
-const PITCH = 8; // a 6 px dot and a 2 px gap
-const MAX_ROWS = 10;
+const R = 3;
+const PITCH = 6.6;      // a 6 px dot and the gap to the next
+const MAX_LEVELS = 5;   // either side of the row
 const LABEL_ROW = 18;
-const PLOT_TOP = 2 * LABEL_ROW + 8;
-const PLOT_HEIGHT = MAX_ROWS * PITCH + 4;
-const AXIS_Y = PLOT_TOP + PLOT_HEIGHT;
-const HEIGHT = AXIS_Y + 22;
+const PLOT_TOP = 2 * LABEL_ROW + 6;
 const EDGE_LABEL = 26;  // an edge count's width, "‹ 12" at 13 px
 const EDGE_GUTTER = EDGE_LABEL + 8; // the count and its clearance from the plot
 const LABEL_CHAR = 7.4; // a 13 px Inter character, generously
 const TICK_CHAR = 6.6;  // an 11 px Inter tick character, generously
-const TICK_GAP = 16;    // the least space between two tick labels, so they never read as one
-const STEPS = [0.01, 0.02, 0.025, 0.05, 0.1, 0.2, 0.25, 0.5, 1, 2, 2.5, 5, 10, 20, 25, 50, 100, 200, 250, 500];
 
-/** Round ticks covering [min, max]: the finest step that needs at most five. */
-function ticks(min: number, max: number): { values: number[]; decimals: number } {
-  for (const step of STEPS) {
-    const first = Math.floor(min / step + 1e-9) * step;
-    const last = Math.ceil(max / step - 1e-9) * step;
-    const count = Math.round((last - first) / step) + 1;
-    if (count <= 5) {
-      const decimals = step >= 1 ? 0 : step >= 0.1 && step !== 0.25 ? 1 : 2;
-      const values = Array.from({ length: Math.max(count, 3) },
-        (_, i) => Number((first + i * step).toFixed(6)));
-      return { values, decimals };
+/** A symmetric beeswarm: each dot, left to right, takes the level nearest the
+ *  row where it touches no dot already placed (the outermost when none is free). */
+function swarm(xs: number[]): number[] {
+  const order = xs.map((x, i) => ({ x, i })).sort((a, b) => a.x - b.x);
+  const placed: { x: number; level: number }[] = [];
+  const levels = new Array<number>(xs.length);
+  for (const { x, i } of order) {
+    let chosen = 0;
+    for (let k = 0; k <= 2 * MAX_LEVELS; k += 1) {
+      chosen = k === 0 ? 0 : (k % 2 ? -1 : 1) * Math.ceil(k / 2);
+      if (!placed.some((p) => Math.hypot(p.x - x, (p.level - chosen) * PITCH) < PITCH - 0.4)) break;
     }
+    placed.push({ x, level: chosen });
+    levels[i] = chosen;
   }
-  return { values: [min, max], decimals: 2 };
-}
-
-/** The ticks whose labels are drawn, given each label's [left, right] extent:
- *  left to right, each that clears the last one kept; then the last tick, which
- *  carries the unit, displacing any kept label it would touch. */
-function labelledTicks(extents: [number, number][]): Set<number> {
-  const kept: number[] = [];
-  const last = extents.length - 1;
-  for (let i = 0; i < last; i += 1) {
-    if (kept.length === 0 || extents[i][0] >= extents[kept[kept.length - 1]][1] + TICK_GAP) kept.push(i);
-  }
-  while (kept.length && extents[kept[kept.length - 1]][1] + TICK_GAP > extents[last][0]) kept.pop();
-  return new Set([...kept, last]);
+  return levels;
 }
 
 /** A mark's label, on the side away from the other mark unless the chart's
@@ -97,13 +84,13 @@ function MarkLabel({ word, value, x, other, row, width, className }: {
   return (
     <text x={right ? x + 4 : x - 4} y={(row + 1) * LABEL_ROW - 4} textAnchor={right ? 'start' : 'end'}
       className={className}>
-      <tspan className="ui-evidence__word">{word} </tspan>
+      <tspan className="ui-chart__word">{word} </tspan>
       <tspan data-source={value.source} data-format={value.format}>{text}</tspan>
     </text>
   );
 }
 
-export function EvidenceChart({ nights, roster, field, current, estimate, lo, hi, units }: EvidenceChartProps) {
+export function EvidenceChart({ dots, roster, field, current, estimate, lo, hi, units, axis }: EvidenceChartProps) {
   const [box, width] = useWidth<HTMLDivElement>();
   // The band that matters, padded generously, snapped outward to round ticks;
   // below 0 only when the range is.
@@ -111,96 +98,75 @@ export function EvidenceChart({ nights, roster, field, current, estimate, lo, hi
   const low = Math.min(...marks);
   const high = Math.max(...marks);
   const pad = Math.max((high - low) * 0.75, 0.05);
-  const scale = ticks(lo.value < 0 ? low - pad : Math.max(0, low - pad), high + pad);
+  const scale = niceTicks(lo.value < 0 ? low - pad : Math.max(0, low - pad), high + pad);
   const first = scale.values[0];
   const last = scale.values[scale.values.length - 1];
 
-  const inside = nights.map((night) => night.rate.value).filter((rate) => rate >= first && rate <= last);
-  const below = nights.filter((night) => night.rate.value < first).length;
-  const above = nights.filter((night) => night.rate.value > last).length;
+  const inside = dots.map((dot) => dot.rate.value).filter((value) => value >= first && value <= last);
+  const below = dots.filter((dot) => dot.rate.value < first).length;
+  const above = dots.filter((dot) => dot.rate.value > last).length;
   // The plot stops short of each end's gutter, when that end has a count.
   const left = below > 0 ? EDGE_GUTTER : 0;
   const right = above > 0 ? width - EDGE_GUTTER : width;
-  const x = (rate: number) => left + (right - left) * ((rate - first) / (last - first));
+  const x = (value: number) => left + (right - left) * ((value - first) / (last - first));
 
-  // Histogram stacks: nights whose dots would touch share a bin; a stack taller
-  // than the chart wraps into balanced columns.
-  const bins = new Map<number, number>();
-  for (const rate of inside) {
-    const bin = Math.round(x(rate) / PITCH);
-    bins.set(bin, (bins.get(bin) ?? 0) + 1);
-  }
-  const dots: { cx: number; cy: number; inRange: boolean }[] = [];
-  const binRange = new Map<number, boolean>();
-  for (const rate of inside) {
-    const bin = Math.round(x(rate) / PITCH);
-    binRange.set(bin, (binRange.get(bin) ?? false) || (rate >= lo.value && rate <= hi.value));
-  }
-  for (const [bin, count] of bins) {
-    const columns = Math.ceil(count / MAX_ROWS);
-    // A wrapped stack at an end of the axis shifts inward, never past the plot.
-    const half = ((columns - 1) / 2) * PITCH;
-    const centre = Math.min(Math.max(bin * PITCH, left + half), right - half);
-    for (let i = 0; i < count; i += 1) {
-      const column = i % columns;
-      dots.push({
-        cx: centre + (column - (columns - 1) / 2) * PITCH,
-        cy: AXIS_Y - 2 - DOT / 2 - Math.floor(i / columns) * PITCH,
-        inRange: binRange.get(bin)!,
-      });
-    }
-  }
+  const levels = swarm(inside.map(x));
+  const reach = Math.max(1, ...levels.map(Math.abs));
+  const half = reach * PITCH + R + 2;
+  const row = PLOT_TOP + half;
+  const axisY = row + half;
+  const height = axisY + 36;
 
-  // An edge count's baseline: level with the dots' first row, in its gutter.
-  const edgeY = AXIS_Y - 2;
   const lastIndex = scale.values.length - 1;
   const labelled = labelledTicks(scale.values.map((value, i) => {
     const at = x(value);
-    const span = (value.toFixed(scale.decimals).length + (i === lastIndex ? 1 + units.length : 0)) * TICK_CHAR;
+    const span = value.toFixed(scale.decimals).length * TICK_CHAR;
     return i === 0 ? [at, at + span] : i === lastIndex ? [at - span, at] : [at - span / 2, at + span / 2];
   }));
 
   return (
     <div ref={box} className="ui-chart">
-    {width > 0 && <svg width={width} height={HEIGHT} viewBox={`0 0 ${width} ${HEIGHT}`} className="ui-evidence">
+    {width > 0 && <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="ui-chart__svg">
       {lo.value !== hi.value && (
-        <rect x={x(lo.value)} y={PLOT_TOP} width={x(hi.value) - x(lo.value)} height={PLOT_HEIGHT}
-          className="ui-evidence__band" />
+        <rect x={x(lo.value)} y={PLOT_TOP} width={x(hi.value) - x(lo.value)} height={axisY - PLOT_TOP}
+          className="ui-chart__band" />
       )}
-      <line x1={x(current.value)} x2={x(current.value)} y1={LABEL_ROW} y2={AXIS_Y} className="ui-evidence__current" />
-      <line x1={x(estimate.value)} x2={x(estimate.value)} y1={2 * LABEL_ROW} y2={AXIS_Y} className="ui-evidence__estimate" />
+      <line x1={x(current.value)} x2={x(current.value)} y1={LABEL_ROW} y2={axisY} className="ui-chart__current" />
+      <line x1={x(estimate.value)} x2={x(estimate.value)} y1={2 * LABEL_ROW} y2={axisY} className="ui-chart__estimate" />
       <MarkLabel word="Current" value={current} x={x(current.value)} other={x(estimate.value)} row={0} width={width}
-        className="ui-evidence__current-label" />
+        className="ui-chart__current-label" />
       <MarkLabel word="Estimate" value={estimate} x={x(estimate.value)} other={x(current.value)} row={1} width={width}
-        className="ui-evidence__estimate-label" />
+        className="ui-chart__estimate-label" />
       <g aria-hidden="true">
-        {dots.map((dot, i) => <circle key={i} cx={dot.cx} cy={dot.cy} r={DOT / 2}
-          className={dot.inRange ? 'ui-evidence__night ui-evidence__night--in' : 'ui-evidence__night'} />)}
+        {inside.map((value, i) => (
+          <circle key={i} cx={x(value)} cy={row + levels[i] * PITCH} r={R}
+            className={value >= lo.value && value <= hi.value ? 'ui-evidence__dot ui-evidence__dot--in' : 'ui-evidence__dot'} />
+        ))}
       </g>
       {below > 0 && (
-        <text x={0} y={edgeY} className="ui-evidence__edge" data-edge="below">
+        <text x={0} y={row + 4} className="ui-chart__edge" data-edge="below">
           ‹ <tspan data-source={`${roster}[${field}<${first}].length`}>{below}</tspan>
         </text>
       )}
       {above > 0 && (
-        <text x={width} y={edgeY} textAnchor="end" className="ui-evidence__edge" data-edge="above">
+        <text x={width} y={row + 4} textAnchor="end" className="ui-chart__edge" data-edge="above">
           <tspan data-source={`${roster}[${field}>${last}].length`}>{above}</tspan> ›
         </text>
       )}
       <g data-axis="">
-        <line x1={left} x2={right} y1={AXIS_Y} y2={AXIS_Y} className="ui-evidence__axis" />
+        <line x1={left} x2={right} y1={axisY} y2={axisY} className="ui-chart__axis" />
         {scale.values.map((value, i) => (
           <g key={value}>
-            <line x1={x(value)} x2={x(value)} y1={AXIS_Y} y2={AXIS_Y + 4} className="ui-evidence__axis" />
+            <line x1={x(value)} x2={x(value)} y1={axisY} y2={axisY + 4} className="ui-chart__axis" />
             {labelled.has(i) && (
-              <text x={x(value)} y={AXIS_Y + 17} textAnchor={i === 0 ? 'start' : i === lastIndex ? 'end' : 'middle'}
-                className="ui-evidence__tick">
+              <text x={x(value)} y={axisY + 17} textAnchor={i === 0 ? 'start' : i === lastIndex ? 'end' : 'middle'}
+                className="ui-chart__tick">
                 {value.toFixed(scale.decimals)}
-                {i === lastIndex && <tspan className="ui-evidence__unit"> {units}</tspan>}
               </text>
             )}
           </g>
         ))}
+        <text x={0} y={axisY + 34} className="ui-chart__caption">{axis} · {units}</text>
       </g>
     </svg>}
     </div>

@@ -9,6 +9,8 @@
 //   uv run python scripts/smoke_app.py --case isf-strengthen --then node --test frontend/ui/app/live.contract.test.mjs
 //   uv run python scripts/smoke_app.py --case c3-trial --then node --test frontend/ui/app/live.contract.test.mjs
 //   uv run python scripts/smoke_app.py --case pattern-correction-fold --then node --test frontend/ui/app/live.contract.test.mjs
+//   uv run python scripts/smoke_app.py --case basal-and-carb-ratio-lower --then node --test frontend/ui/app/live.contract.test.mjs
+//   uv run python scripts/smoke_app.py --case pattern-correction-collapse --then node --test frontend/ui/app/live.contract.test.mjs
 //
 // smoke_app names the serve in HARMONIC_URL and the store in HARMONIC_CASE.
 // Every expected value is a literal read once from that store's served answers,
@@ -70,14 +72,20 @@ const EXPECTED = {
     queue: ['setting:basal_rate', 'pattern:highs_after_treating_lows'],
     basal: { start: 180, end: 240, current: 0.6, suggested: 0.48, trial: false },
     pattern: { key: 'highs_after_treating_lows', title: 'Highs after treating lows',
-      magnitude: { count: 1, denominator: 5, noun: 'lows' } },
+      magnitude: { count: 1, denominator: 5, noun: 'lows' },
+      // One low rebounds, from its nadir, against the other lows (ADR 523). One
+      // episode serves no bin of three readings, so the card draws no impact line.
+      traces: { anchor: 'nadir', window: [0, 180], episodes: 1, patternBins: 0, typicalBins: 37, typical: 4 },
+      caseFile: { summary: { claimed: 1, denominator: 5, noun: 'lows' }, outcome: 'peak', impact: null } },
     isf: null,
     change: { kind: 'none' },
     done: { subject: 'setting:basal_rate', waiting: { subject: 'setting:basal_rate', title: 'Basal',
       block: { start: 180, end: 240 }, moves: [{ name: null, slot: null, before: 0.6, after: 0.48, units: 'U/h' }] } },
     // One previous change: the whole-day carb ratio move, with no saved result.
     previous: [{ title: 'I:C', block: null, moves: [[null, 12, 10, 'g/U']], result: null }],
-    overview: { tir: 98.6, previous: 100, isf: { current: 40, recommended: null, uncertain: true, nights: 14 } },
+    overview: { tir: 98.6, previous: 100, isf: { current: 40, recommended: null, uncertain: true, nights: 14 },
+      // The 48 half-hour slots, and the moves the basal analyzer stages (ADR 523).
+      basal: { slots: 48, estimated: 48, moves: [[180, 'lower'], [210, 'lower']] } },
     day: { latest: '2024-06-30', insulin: 19.56, firstLowBg: 48 },
     // The 22:00 low resolves after midnight: it is the 29th's finding.
     findings: {
@@ -93,6 +101,12 @@ const EXPECTED = {
   // unannounced rise.
   'pattern-correction-fold': {
     queue: ['pattern:lows_after_correcting_highs', 'pattern:highs_after_treating_lows'],
+    // Each counted low drawn from the correction it followed, against every other
+    // lone correction (ADR 523).
+    pattern: { key: 'lows_after_correcting_highs', title: 'Lows after correcting highs',
+      magnitude: { count: 4, denominator: 7, noun: 'lows' },
+      traces: { anchor: 'correction', window: [0, 240], episodes: 4, patternBins: 49, typicalBins: 0, typical: 1 },
+      caseFile: { summary: { claimed: 4, denominator: 7, noun: 'lows' }, outcome: 'nadir', impact: null } },
     isf: null,
     change: { kind: 'none' },
     done: null,
@@ -110,6 +124,30 @@ const EXPECTED = {
     change: { kind: 'none' },
     done: { subject: 'setting:isf', waiting: { subject: 'setting:isf', title: 'ISF', block: null,
       moves: [{ name: null, slot: null, before: 40, after: 32, units: 'mg/dL/U' }] } },
+  },
+  // A queued carb ratio: its card draws the block, current → suggested and range.
+  'basal-and-carb-ratio-lower': {
+    queue: ['setting:basal_rate', 'pattern:highs_after_meals', 'pattern:lows_after_meals', 'setting:carb_ratio'],
+    ic: { title: 'I:C', units: 'g/U', start: 0, end: 1440, current: 10, suggested: 9, estimate: 8, lo: 8, hi: 8,
+      // The meal runs the estimate counts: the stat row's count and the chart's dots (ADR 523).
+      count: { label: 'Meal runs', value: 8 }, dots: 8 },
+    isf: null,
+    change: { kind: 'none' },
+    // Done on the I:C card waits for the pump like any Setting (#518).
+    done: { subject: 'setting:carb_ratio', waiting: { subject: 'setting:carb_ratio', title: 'I:C', block: { start: 0, end: 1440 },
+      moves: [{ name: null, slot: null, before: 10, after: 9, units: 'g/U' }] } },
+  },
+  // Lows after correcting highs, served as its one admitted habit, counts the low
+  // a stacked pair of corrections reached as well as that habit's own two.
+  'pattern-correction-collapse': {
+    queue: ['pattern:lows_after_correcting_highs', 'pattern:highs_after_treating_lows'],
+    pattern: { key: 'lows_after_correcting_highs', title: 'Lows after correcting highs',
+      magnitude: { count: 3, denominator: 6, noun: 'lows' },
+      traces: { anchor: 'correction', window: [0, 240], episodes: 3, patternBins: 49, typicalBins: 0, typical: 1 },
+      caseFile: { summary: { claimed: 3, denominator: 6, noun: 'lows' }, outcome: 'nadir', impact: null } },
+    isf: null,
+    change: { kind: 'none' },
+    done: null,
   },
   'c3-trial': {
     queue: ['setting:basal_rate'],
@@ -143,7 +181,8 @@ test(`the live adapter serves each tab's model from the ${CASE} store`, async (t
   const day = await import('../day-model.ts');
   const settings = await import('../settings-model.ts');
 
-  const live = createLive({ client: makeDeps({ fetch }), glossary: [] });
+  const client = makeDeps({ fetch });
+  const live = createLive({ client, glossary: [] });
   serve(live.answers);
 
   await t.test('Queue', async () => {
@@ -154,10 +193,37 @@ test(`the live adapter serves each tab's model from the ${CASE} store`, async (t
       const basal = ranking.find((item) => item.subject === 'setting:basal_rate').data;
       for (const [key, value] of Object.entries(expected.basal)) assert.equal(basal[key], value, `basal ${key}`);
     }
+    if (expected.ic) {
+      const ic = ranking.find((item) => item.subject === 'setting:carb_ratio').data;
+      const { dots, ...fields } = expected.ic;
+      for (const [key, value] of Object.entries(fields)) assert.deepEqual(ic[key], value, `I:C ${key}`);
+      assert.equal(ic.dots.length, dots, 'one dot per counted meal run');
+    }
     if (expected.pattern) {
-      const pattern = values(queue.pattern('wearer', expected.pattern.key));
-      assert.equal(pattern.title, expected.pattern.title);
-      assert.deepEqual(pattern.magnitude, expected.pattern.magnitude);
+      const { key, title, magnitude, traces, caseFile } = expected.pattern;
+      const pattern = values(queue.pattern('wearer', key));
+      assert.equal(pattern.title, title);
+      assert.deepEqual(pattern.magnitude, magnitude);
+      // The trace chart the card draws, as served: its start, its minutes, the
+      // Pattern's episodes (or null past eight) and each cohort's bins.
+      assert.deepEqual({
+        anchor: pattern.traces.anchor, window: pattern.traces.window,
+        episodes: pattern.traces.episodes?.length ?? null,
+        patternBins: pattern.traces.pattern.length, typicalBins: pattern.traces.typical.length,
+      }, (({ typical, ...drawn }) => drawn)(traces));
+      if (caseFile) {
+        // The case file the card reads its impact line from: the Queue's own
+        // subject, the same population as the card's count, and each event's
+        // own peak or nadir.
+        assert.deepEqual(pattern.impact, caseFile.impact);
+        const { projection_id } = await client.fetchDiagnoseFindingCasePreparation();
+        const served = await client.fetchDiagnoseFindingCase({ projection_id, finding_id: `pattern:${key}`, alignment: 'event' });
+        assert.deepEqual(served.summary, caseFile.summary);
+        assert.equal(served.traces.typical.anchors.length, traces.typical, 'Typical episodes drawn');
+        assert.equal(served.summary.claimed, pattern.magnitude.count, 'one population backs the count and the case file');
+        assert.ok(served.occurrences.length > 0);
+        for (const occurrence of served.occurrences) assert.equal(occurrence.outcome?.kind, caseFile.outcome, occurrence.anchor.t);
+      }
     }
     const isf = values(queue.isfSetting('wearer'));
     if (expected.isf === null) assert.equal(isf, null);
@@ -231,6 +297,11 @@ test(`the live adapter serves each tab's model from the ${CASE} store`, async (t
     assert.ok(values(overview.profile('wearer', '14')).bins.length > 0, 'the glucose profile has bins');
     const isf = values(overview.isfEstimate('wearer', '14'));
     for (const [key, value] of Object.entries(expected.overview.isf)) assert.equal(isf[key], value, `ISF ${key}`);
+    const basal = values(overview.basalEstimate('wearer', '14'));
+    assert.deepEqual({
+      slots: basal.slots.length, estimated: basal.slots.filter((slot) => slot.estimate).length,
+      moves: basal.slots.filter((slot) => slot.move).map((slot) => [slot.start, slot.move]),
+    }, expected.overview.basal);
   });
 
   await t.test('Day', async () => {

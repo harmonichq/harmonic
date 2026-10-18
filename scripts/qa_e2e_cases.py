@@ -258,6 +258,27 @@ def _pattern_correction_fold_recipe(store) -> None:
     _materialize_behavioral_correction_on_iob(store, shift=-10, background=False)
 
 
+def _pattern_correction_collapse_recipe(store) -> None:
+    """Correction on active insulin is the one admitted habit, so Lows after
+    correcting highs is served as it, while a single stacked pair of corrections,
+    too few for Correction stacking to be admitted, falls into a low of its own. The
+    Pattern counts that low too; the habit's own count does not.
+    """
+    _materialize_behavioral_correction_on_iob(store)
+    day = datetime.combine(date(2024, 5, 14), datetime.min.time())
+    store.upsert_cgm([{
+        "EventDateTime": (day + timedelta(minutes=14 * 60 + 5 * i)).strftime("%F %T"),
+        "Readings (CGM / BGM)": 160.0 - 4.0 * i, "Description": "Synthetic EGV",
+    } for i in range(26)])
+    store.upsert_bolus([{
+        "seq_num": 180_130 + index,
+        "request_time": (day + timedelta(minutes=minute)).strftime("%F %T"),
+        "description": "Synthetic user correction", "completion": "Completed",
+        "insulin": 3.0, "requested_insulin": 3.0, "carbs": None,
+        "isf": 40.0, "target_bg": 110.0,
+    } for index, minute in enumerate((14 * 60 + 10, 14 * 60 + 40))])
+
+
 def _materialize_pattern_focus_meals(store, *, days=8, meals_per_day=3,
                                      measured=True) -> None:
     """Manufacture two four-day arms with twelve meal opportunities apiece."""
@@ -3124,6 +3145,42 @@ QA_CASES = (
         "pattern-correction-fold",
         _pattern_correction_fold_recipe,
         QaExpectation(analyzer_rows=ExpectedAnalyzerRows(row_keys=(), default=None, overrides={}), support={}, queue_rows={}, queue_absences=frozenset(), rest_windows=frozenset({('2024-05-01', '2024-05-01 22:00:00', '2024-05-02 08:00:00'), ('2024-05-02', '2024-05-02 22:00:00', '2024-05-03 08:00:00'), ('2024-05-03', '2024-05-03 22:00:00', '2024-05-04 08:00:00'), ('2024-05-04', '2024-05-04 22:00:00', '2024-05-05 08:00:00'), ('2024-05-05', '2024-05-05 22:00:00', '2024-05-06 08:00:00'), ('2024-05-06', '2024-05-06 22:00:00', '2024-05-07 08:00:00'), ('2024-05-07', '2024-05-07 22:00:00', '2024-05-08 08:00:00'), ('2024-05-08', '2024-05-08 22:00:00', '2024-05-09 08:00:00'), ('2024-05-09', '2024-05-09 22:00:00', '2024-05-10 08:00:00'), ('2024-05-10', '2024-05-10 22:00:00', '2024-05-11 08:00:00'), ('2024-05-11', '2024-05-11 22:00:00', '2024-05-12 08:00:00'), ('2024-05-12', '2024-05-12 22:00:00', '2024-05-13 08:00:00'), ('2024-05-13', '2024-05-13 22:00:00', '2024-05-14 08:00:00'), ('2024-05-14', '2024-05-14 22:00:00', '2024-05-15 08:00:00'), ('2024-05-15', '2024-05-15 22:00:00', '2024-05-16 08:00:00'), ('2024-05-16', '2024-05-16 22:00:00', '2024-05-17 08:00:00'), ('2024-05-17', '2024-05-17 22:00:00', '2024-05-18 08:00:00'), ('2024-05-18', '2024-05-18 22:00:00', '2024-05-19 08:00:00'), ('2024-05-19', '2024-05-19 22:00:00', '2024-05-20 08:00:00'), ('2024-05-20', '2024-05-20 22:00:00', '2024-05-21 08:00:00'), ('2024-05-21', '2024-05-21 22:00:00', '2024-05-22 08:00:00'), ('2024-05-22', '2024-05-22 22:00:00', '2024-05-23 08:00:00'), ('2024-05-23', '2024-05-23 22:00:00', '2024-05-24 08:00:00'), ('2024-05-24', '2024-05-24 22:00:00', '2024-05-25 08:00:00'), ('2024-05-25', '2024-05-25 22:00:00', '2024-05-26 08:00:00'), ('2024-05-26', '2024-05-26 22:00:00', '2024-05-27 08:00:00'), ('2024-05-27', '2024-05-27 22:00:00', '2024-05-28 08:00:00'), ('2024-05-28', '2024-05-28 22:00:00', '2024-05-29 08:00:00'), ('2024-05-29', '2024-05-29 22:00:00', '2024-05-30 08:00:00')}), history_series={}, behavioral_rows=frozenset({('correction_clusters', '2024-05-14 20:00:00', 'clean'), ('correction_clusters', '2024-05-15 20:00:00', 'clean'), ('correction_clusters', '2024-05-17 20:00:00', 'clean'), ('correction_clusters', '2024-05-24 14:10:00', 'clean'), ('correction_clusters', '2024-05-24 14:40:00', 'fired'), ('correction_clusters', '2024-05-25 14:10:00', 'clean'), ('correction_clusters', '2024-05-25 14:40:00', 'fired'), ('correction_clusters', '2024-05-26 10:10:00', 'clean'), ('correction_clusters', '2024-05-26 10:40:00', 'near_miss'), ('correction_clusters', '2024-05-27 15:30:00', 'clean'), ('correction_clusters', '2024-05-27 16:10:00', 'clean'), ('highs', '2024-05-16 14:35:00', 'near_miss'), ('highs', '2024-05-27 17:00:00', 'fired'), ('lows', '2024-05-14 22:00:00', 'fired'), ('lows', '2024-05-15 22:00:00', 'fired'), ('lows', '2024-05-16 13:55:00', 'fired'), ('lows', '2024-05-17 22:00:00', 'near_miss'), ('lows', '2024-05-18 16:10:00', 'clean'), ('lows', '2024-05-24 16:05:00', 'no_data'), ('lows', '2024-05-25 16:05:00', 'no_data'), ('meals', '2024-05-14 19:00:00', 'no_data'), ('meals', '2024-05-15 19:00:00', 'no_data'), ('meals', '2024-05-17 19:00:00', 'near_miss')}), finding_titles=frozenset({'Correction on active insulin', 'Correction stacking', 'Highs after meals', 'Lows after correcting highs', 'Lows after meals', 'Missed / unannounced meal', 'Over-treated low', 'meals-start-high'}), outcome_patterns=({'key': 'highs_after_meals', 'title': 'Highs after meals', 'subject': 'pattern:highs_after_meals', 'members': [{'subject': 'setting:carb_ratio', 'kind': 'setting', 'k': 0, 'price': 0, 'admitted': False, 'producer': 'tuning_levers', 'lo': None, 'hi': None, 'seriousness': None, 'seriousness_segments': [], 'action': None}], 'rate_levers': ['habit:carb_undercount', 'habit:late_bolus'], 'n': 3, 'k': 0, 'rate': 0.0, 'wilson': {'lo': 0.0, 'hi': 0.3538}, 'wide': False, 'rate_producer': 'exposures', 'readiness': {'count': 3, 'gate': 12, 'verdict': 'withheld'}, 'settled_price': 0, 'admission_route': 'none', 'collapse': 'remain_pattern', 'action': None, 'seriousness': None, 'member_set_fingerprint': '13141e472c40a768'}, {'key': 'lows_after_meals', 'title': 'Lows after meals', 'subject': 'pattern:lows_after_meals', 'members': [{'subject': 'setting:carb_ratio', 'kind': 'setting', 'k': 0, 'price': 0, 'admitted': False, 'producer': 'tuning_levers', 'lo': None, 'hi': None, 'seriousness': None, 'seriousness_segments': [], 'action': None}], 'rate_levers': ['habit:meal_over_delivery'], 'n': 3, 'k': 0, 'rate': 0.0, 'wilson': {'lo': 0.0, 'hi': 0.3538}, 'wide': False, 'rate_producer': 'exposures', 'readiness': {'count': 3, 'gate': 12, 'verdict': 'withheld'}, 'settled_price': 0, 'admission_route': 'none', 'collapse': 'remain_pattern', 'action': None, 'seriousness': None, 'member_set_fingerprint': '13141e472c40a768'}, {'key': 'highs_after_treating_lows', 'title': 'Highs after treating lows', 'subject': 'pattern:highs_after_treating_lows', 'members': [{'subject': 'habit:over_treated_low', 'kind': 'habit', 'k': 1, 'price': 13, 'admitted': True, 'producer': 'scenario', 'lo': 0.0438, 'hi': 0.3777, 'seriousness': 'info', 'action': 'habit:over_treated_low', 'admission_basis': 'low_confidence'}], 'rate_levers': ['habit:over_treated_low'], 'n': 7, 'k': 1, 'rate': 0.1429, 'wilson': {'lo': 0.0438, 'hi': 0.3777}, 'wide': True, 'rate_producer': 'exposures', 'readiness': {'count': 7, 'gate': 12, 'verdict': 'withheld'}, 'settled_price': 13, 'admission_route': 'habit_threshold', 'collapse': 'collapse_to_member', 'action': 'habit:over_treated_low', 'seriousness': 'info', 'member_set_fingerprint': 'a0de7500243ef646'}, {'key': 'lows_after_correcting_highs', 'title': 'Lows after correcting highs', 'subject': 'pattern:lows_after_correcting_highs', 'members': [{'subject': 'habit:correction_stacking', 'kind': 'habit', 'k': 2, 'price': 14, 'admitted': True, 'producer': 'scenario', 'lo': 0.0862, 'hi': 0.3984, 'seriousness': 'info', 'action': 'habit:correction_stacking', 'admission_basis': 'low_confidence'}, {'subject': 'habit:correction_on_iob', 'kind': 'habit', 'k': 2, 'price': 29, 'admitted': True, 'producer': 'scenario', 'lo': 0.1253, 'hi': 0.5275, 'seriousness': 'low', 'action': 'habit:correction_on_iob', 'admission_basis': 'lower_bound'}], 'rate_levers': ['habit:correction_stacking', 'habit:correction_on_iob'], 'n': 7, 'k': 4, 'rate': 0.5714, 'wilson': {'lo': 0.3417, 'hi': 0.774}, 'wide': False, 'rate_producer': 'exposures', 'readiness': {'count': 7, 'gate': 12, 'verdict': 'withheld'}, 'settled_price': 29, 'admission_route': 'habit_threshold', 'collapse': 'remain_pattern', 'action': 'habit:correction_on_iob', 'seriousness': 'low', 'member_set_fingerprint': '162200fbb393e175'}), verdict_tallies={('correction_on_iob', 'lows'): ExpectedVerdictTally(denominator=7, counts={'fired': 2, 'outranked': 1, 'near_miss': 1, 'no_data': 0, 'clean': 3}), ('correction_stacking', 'correction_clusters'): ExpectedVerdictTally(denominator=11, counts={'fired': 2, 'outranked': 0, 'near_miss': 1, 'no_data': 7, 'clean': 1}), ('missed_meal', 'highs'): ExpectedVerdictTally(denominator=2, counts={'fired': 1, 'outranked': 0, 'near_miss': 1, 'no_data': 0, 'clean': 0}), ('over_treated_low', 'lows'): ExpectedVerdictTally(denominator=7, counts={'fired': 1, 'outranked': 2, 'near_miss': 0, 'no_data': 2, 'clean': 2})}, uncaused_highs=0),
+        30,
+    ),
+    QaCase(
+        'pattern-correction-collapse',
+        _pattern_correction_collapse_recipe,
+        QaExpectation(
+            _explicit_rows({}), {}, {}, frozenset(),
+            _BEHAVIORAL_30_DAY_REST_WINDOWS, {}, frozenset({
+                ('correction_clusters', '2024-05-14 14:10:00', 'clean'),
+                ('correction_clusters', '2024-05-14 14:40:00', 'fired'),
+                ('correction_clusters', '2024-05-24 20:00:00', 'clean'),
+                ('correction_clusters', '2024-05-25 20:00:00', 'clean'),
+                ('correction_clusters', '2024-05-27 20:00:00', 'clean'),
+                ('highs', '2024-05-26 14:35:00', 'near_miss'),
+                ('lows', '2024-05-14 16:05:00', 'no_data'),
+                ('lows', '2024-05-24 22:00:00', 'fired'),
+                ('lows', '2024-05-25 22:00:00', 'fired'),
+                ('lows', '2024-05-26 13:55:00', 'fired'),
+                ('lows', '2024-05-27 22:00:00', 'near_miss'),
+                ('lows', '2024-05-28 16:10:00', 'clean'),
+                ('meals', '2024-05-24 19:00:00', 'no_data'),
+                ('meals', '2024-05-25 19:00:00', 'no_data'),
+                ('meals', '2024-05-27 19:00:00', 'near_miss'),
+            }), frozenset({'Over-treated low', 'Correction stacking', 'meals-start-high', 'Correction on active insulin', 'Highs after meals', 'Lows after meals'}),
+            {
+                ('correction_on_iob', 'lows'): _verdict_tally(
+                    6, fired=2, outranked=1, near_miss=1, no_data=0, clean=2,
+                ),
+                ('over_treated_low', 'lows'): _verdict_tally(
+                    6, fired=1, outranked=2, near_miss=0, no_data=1, clean=2,
+                ),
+                ('correction_stacking', 'correction_clusters'): _verdict_tally(
+                    5, fired=1, outranked=0, near_miss=0, no_data=4, clean=0,
+                ),
+            },
+            outcome_patterns=({'key': 'highs_after_meals', 'title': 'Highs after meals', 'subject': 'pattern:highs_after_meals', 'members': [{'subject': 'setting:carb_ratio', 'kind': 'setting', 'k': 0, 'price': 0, 'admitted': False, 'producer': 'tuning_levers', 'lo': None, 'hi': None, 'seriousness': None, 'seriousness_segments': [], 'action': None}], 'rate_levers': ['habit:carb_undercount', 'habit:late_bolus'], 'n': 3, 'k': 0, 'rate': 0.0, 'wilson': {'lo': 0.0, 'hi': 0.3538}, 'wide': False, 'rate_producer': 'exposures', 'readiness': {'count': 3, 'gate': 12, 'verdict': 'withheld'}, 'settled_price': 0, 'admission_route': 'none', 'collapse': 'remain_pattern', 'action': None, 'seriousness': None, 'member_set_fingerprint': '13141e472c40a768'}, {'key': 'lows_after_meals', 'title': 'Lows after meals', 'subject': 'pattern:lows_after_meals', 'members': [{'subject': 'setting:carb_ratio', 'kind': 'setting', 'k': 0, 'price': 0, 'admitted': False, 'producer': 'tuning_levers', 'lo': None, 'hi': None, 'seriousness': None, 'seriousness_segments': [], 'action': None}], 'rate_levers': ['habit:meal_over_delivery'], 'n': 3, 'k': 0, 'rate': 0.0, 'wilson': {'lo': 0.0, 'hi': 0.3538}, 'wide': False, 'rate_producer': 'exposures', 'readiness': {'count': 3, 'gate': 12, 'verdict': 'withheld'}, 'settled_price': 0, 'admission_route': 'none', 'collapse': 'remain_pattern', 'action': None, 'seriousness': None, 'member_set_fingerprint': '13141e472c40a768'}, {'key': 'highs_after_treating_lows', 'title': 'Highs after treating lows', 'subject': 'pattern:highs_after_treating_lows', 'members': [{'subject': 'habit:over_treated_low', 'kind': 'habit', 'k': 1, 'price': 14, 'admitted': True, 'producer': 'scenario', 'lo': 0.0513, 'hi': 0.4253, 'seriousness': 'info', 'action': 'habit:over_treated_low', 'admission_basis': 'low_confidence'}], 'rate_levers': ['habit:over_treated_low'], 'n': 6, 'k': 1, 'rate': 0.1667, 'wilson': {'lo': 0.0513, 'hi': 0.4253}, 'wide': True, 'rate_producer': 'exposures', 'readiness': {'count': 6, 'gate': 12, 'verdict': 'withheld'}, 'settled_price': 14, 'admission_route': 'habit_threshold', 'collapse': 'collapse_to_member', 'action': 'habit:over_treated_low', 'seriousness': 'info', 'member_set_fingerprint': 'a0de7500243ef646'}, {'key': 'lows_after_correcting_highs', 'title': 'Lows after correcting highs', 'subject': 'pattern:lows_after_correcting_highs', 'members': [{'subject': 'habit:correction_on_iob', 'kind': 'habit', 'k': 2, 'price': 32, 'admitted': True, 'producer': 'scenario', 'lo': 0.1477, 'hi': 0.5906, 'seriousness': 'low', 'action': 'habit:correction_on_iob', 'admission_basis': 'lower_bound'}], 'rate_levers': ['habit:correction_stacking', 'habit:correction_on_iob'], 'n': 6, 'k': 3, 'rate': 0.5, 'wilson': {'lo': 0.2682, 'hi': 0.7318}, 'wide': False, 'rate_producer': 'exposures', 'readiness': {'count': 6, 'gate': 12, 'verdict': 'withheld'}, 'settled_price': 32, 'admission_route': 'habit_threshold', 'collapse': 'collapse_to_member', 'action': 'habit:correction_on_iob', 'seriousness': 'low', 'member_set_fingerprint': 'a125e00c457f148f'})),
         30,
     ),
 

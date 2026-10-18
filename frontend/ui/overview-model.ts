@@ -8,7 +8,7 @@
 // `analyze.<window>`; a window the live adapter has not read yet is absent.
 import { answers, sourced, type Format, type Sourced } from './answers';
 import { formatValue } from './provenance.js';
-import { PARAMETER_FORMATS } from './settings-model';
+import { PARAMETER_FORMATS, PARAMETER_UNITS } from './settings-model';
 
 export type OverviewStore = keyof typeof answers.overview;
 export type Window = '14' | '30' | '90';
@@ -230,6 +230,45 @@ export function isfData(path: string, isf: IsfAnswer[]): IsfData | 'none' {
     fits: row.evidence.night_fits.map((_, i) => ({ rate: sourced(`${root}.evidence.night_fits.${i}.isf`) })),
     roster: `${root}.evidence.night_fits`,
     units: 'mg/dL/U',
+  };
+}
+
+// --- BasalCard -----------------------------------------------------------------
+
+/** One of the day's 48 half-hour slots, as the basal analyzer serves it: the
+ *  programmed rate, the median clean delivered rate over its range (none for a
+ *  slot without evidence), and the direction of a move the engine stages there,
+ *  read from its one staging verdict (ADR 523). */
+export type BasalSlot = {
+  start: number;
+  end: number;
+  current: number;
+  estimate: { value: number; lo: number; hi: number } | null;
+  move: 'raise' | 'lower' | null;
+};
+export type BasalDayData = { slots: BasalSlot[]; units: string };
+
+type BasalAnswer = {
+  slot: number; current: number; asserts_move: boolean; direction: string | null;
+  estimate: { value: number; lo: number; hi: number } | null;
+};
+
+/** The basal estimate over `window`: null when it has not been read yet, 'none'
+ *  when the engine serves no slot an estimate. */
+export function basalEstimate(store: OverviewStore, window: Window): BasalDayData | 'none' | null {
+  const served = (answers.overview[store] as { analyze?: Partial<Record<Window, { basal?: BasalAnswer[] }>> })
+    .analyze?.[window];
+  if (!served?.basal) return null;
+  if (!served.basal.some((slot) => slot.estimate)) return 'none';
+  return {
+    units: PARAMETER_UNITS.basal_rate,
+    slots: served.basal.map((slot) => ({
+      start: slot.slot * 30,
+      end: slot.slot * 30 + 30,
+      current: slot.current,
+      estimate: slot.estimate,
+      move: slot.asserts_move && (slot.direction === 'raise' || slot.direction === 'lower') ? slot.direction : null,
+    })),
   };
 }
 

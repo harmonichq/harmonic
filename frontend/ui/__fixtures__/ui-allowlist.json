@@ -1,6 +1,6 @@
 {
   "_generated_by": "scripts/gen_ui_fixtures.py",
-  "_note": "Every word a component story may display: the redesign glossary, its tab names, the engine titles, nouns and units served in ui-fixtures.json, the window unit, the \"of\" of a magnitude, the served fields the evidence chart's marks plot, the glucose profile's \"No data\", the day tile's weekdays, the month abbreviations of a date, the Changes and Day labels quoted in §1.2–§4.2, the engine's habit titles, the habit titles served on the Day chart's days, the Settings labels, the kind glyph's names, and the served pump profile name, account region and sync error.",
+  "_note": "Every word a component story may display: the redesign glossary, its tab names, the engine titles, nouns and units served in ui-fixtures.json, the window unit, the \"of\" of a magnitude, the served fields the evidence chart's marks plot, the glucose profile's \"No data\", the day tile's weekdays, the month abbreviations of a date, the Changes and Day labels quoted in §1.2–§4.2, Day's Prompts rows, the engine's habit titles, the habit titles served on the Day chart's days, the Settings labels, the kind glyph's names, and the served pump profile name, account region and sync error.",
   "words": [
     "a",
     "above",
@@ -123,6 +123,8 @@
     "restore",
     "retries",
     "retry",
+    "rise",
+    "rises",
     "runs",
     "sat",
     "save",

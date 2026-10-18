@@ -27,11 +27,17 @@ import { DayScreen, type DayScreenProps } from './DayScreen';
 //   beneath the answers (desktop's fourth answer is in every desktop Prompts
 //   story); Not saved, the bar with Retry.
 // - Log carbs: open, filled, saving, not saved, Time edited.
+// - Rises (#529): the wearer with two lunches never bolused for, its Rises row
+//   under its Lows row; its Rises, "1 / 2", a Rise's Yes recorded, and on the
+//   phone mid-swipe over Not sure; No rises, once both are answered, its Lows
+//   row alone.
 // Plays per size: picking another day from the dropped-down month, and on
 // desktop from the week in view;
 // Log carbs saved, closed with Escape, and retried after a failed save; the
 // Prompts walked through (Yes, Recorded, Next, the second, ‹ Day); a Yes not
-// saved, then retried; Not sure on the phone. Desktop fits its panes without scrolling.
+// saved, then retried; Not sure on the phone; the Rises walked through (No,
+// "2 / 2", Yes, Next, back to Day with its Lows row alone), and live, a Rise's
+// No posted as a rise's. Desktop fits its panes without scrolling.
 const meta: Meta<typeof DayScreen> = {
   title: 'Screens/Day',
   component: DayScreen,
@@ -65,6 +71,9 @@ const EMPTY = { store: 'wearer', day: noData } as const;
 const LOADING = { store: 'wearer', state: 'loading' } as const;
 const UNAVAILABLE = { store: 'wearer', state: 'unavailable' } as const;
 const PROMPTS = { store: 'wearer-pending', view: 'prompts' } as const;
+const RISES = { store: 'rises-pending' } as const;
+const RISE_PROMPTS = { store: 'rises-pending', view: 'prompts', kind: 'rise' } as const;
+const NO_RISES = { store: 'rises-answered' } as const;
 
 export const DefaultPhone = story('phone', DEFAULT);
 export const DefaultDesktop = story('desktop', DEFAULT);
@@ -120,6 +129,31 @@ export const PromptRecordedDesktop = story('desktop', { ...PROMPTS, recorded: tr
 export const PromptMidSwipePhone = story('phone', { ...PROMPTS, swiping: true });
 export const PromptNotSavedPhone = story('phone', { ...PROMPTS, notSaved: true });
 export const PromptNotSavedDesktop = story('desktop', { ...PROMPTS, notSaved: true });
+
+/** Day's Prompts rows, in order: each row's label and count, as "Lows 1". */
+const promptRows = (canvasElement: HTMLElement) => [...canvasElement.querySelectorAll<HTMLElement>('button')]
+  .map((button) => /^(Lows|Rises)(\d+)$/.exec(button.textContent?.replace(/[▼▲›\s]+/g, '') ?? ''))
+  .flatMap((row) => (row ? [`${row[1]} ${row[2]}`] : []));
+
+// Rises (#529): the Rises row sits under the Lows row, each with its own
+// count; the Day badge counts both.
+const risesPlay: Story['play'] = async ({ canvasElement }) => {
+  await expect(promptRows(canvasElement)).toEqual(['Lows 1', 'Rises 2']);
+  await expect(canvasElement.querySelector('[aria-current="page"] .ui-badge')).toHaveTextContent('3');
+};
+export const RisesPhone: Story = { ...story('phone', RISES), play: risesPlay };
+export const RisesDesktop: Story = { ...story('desktop', RISES), play: risesPlay };
+export const RisesPromptsPhone = story('phone', RISE_PROMPTS);
+export const RisesPromptsDesktop = story('desktop', RISE_PROMPTS);
+export const RiseRecordedPhone = story('phone', { ...RISE_PROMPTS, recorded: true });
+export const RiseRecordedDesktop = story('desktop', { ...RISE_PROMPTS, recorded: true });
+export const RiseMidSwipePhone = story('phone', { ...RISE_PROMPTS, swiping: true });
+// No rises: once both are answered the Rises row is gone, the Lows row stays.
+const noRisesPlay: Story['play'] = async ({ canvasElement }) => {
+  await expect(promptRows(canvasElement)).toEqual(['Lows 1']);
+};
+export const NoRisesPhone: Story = { ...story('phone', NO_RISES), play: noRisesPlay };
+export const NoRisesDesktop: Story = { ...story('desktop', NO_RISES), play: noRisesPlay };
 
 export const LogCarbsPhone = story('phone', { ...DEFAULT, logCarbs: 'empty' });
 export const LogCarbsDesktop = story('desktop', { ...DEFAULT, logCarbs: 'empty' });
@@ -261,8 +295,8 @@ const retryCarbsPlay: Story['play'] = async ({ canvasElement }) => {
 export const LogCarbsRetryPhone: Story = { ...story('phone', { ...DEFAULT, failing: true }), play: retryCarbsPlay };
 export const LogCarbsRetryDesktop: Story = { ...story('desktop', { ...DEFAULT, failing: true }), play: retryCarbsPlay };
 
-const place = (canvas: ReturnType<typeof within>) =>
-  canvas.getByRole('heading', { level: 1, name: 'Lows' }).parentElement as HTMLElement;
+const place = (canvas: ReturnType<typeof within>, title = 'Lows') =>
+  canvas.getByRole('heading', { level: 1, name: title }).parentElement as HTMLElement;
 
 // The Prompts row drills in to "1 / 2"; Yes records it (Recorded, the grams
 // field, Next); Next shows "2 / 2"; ‹ Day returns, the row counting one.
@@ -316,6 +350,26 @@ export const PromptSwipePhone: Story = {
     await expect(place(canvas)).toHaveTextContent('2 / 2');
   },
 };
+// The Rises row drills in to "1 / 2", answered Yes · No and Not sure with no
+// False low; No shows "2 / 2"; Yes records it; Next returns to Day, where the
+// Rises row is gone and the Lows row still counts one.
+const risesFlowPlay: Story['play'] = async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  await userEvent.click(canvas.getByRole('button', { name: /Rises/ }));
+  await expect(place(canvas, 'Rises')).toHaveTextContent('1 / 2');
+  await expect(canvas.queryByRole('button', { name: 'False low' })).toBeNull();
+  await userEvent.click(canvas.getByRole('button', { name: 'No' }));
+  await expect(place(canvas, 'Rises')).toHaveTextContent('2 / 2');
+  await userEvent.click(canvas.getByRole('button', { name: /Yes/ }));
+  await expect(canvas.getByRole('button', { name: /Yes/ })).toHaveAttribute('aria-pressed', 'true');
+  await userEvent.type(canvas.getByRole('textbox', { name: 'Carbs' }), typed);
+  await userEvent.click(within(canvasElement.querySelector<HTMLElement>('.ui-prompt')!).getByRole('button', { name: 'Next' }));
+  await expect(canvas.getByRole('heading', { level: 1, name: 'Day' })).toBeInTheDocument();
+  await expect(promptRows(canvasElement)).toEqual(['Lows 1']);
+};
+export const RisesFlowPhone: Story = { ...story('phone', RISES), play: risesFlowPlay };
+export const RisesFlowDesktop: Story = { ...story('desktop', RISES), play: risesFlowPlay };
+
 export const PromptRetryPhone: Story = { ...story('phone', { ...PROMPTS, failing: true }), play: notSavedPlay };
 export const PromptRetryDesktop: Story = { ...story('desktop', { ...PROMPTS, failing: true }), play: notSavedPlay };
 
@@ -346,6 +400,26 @@ const liveDay = (): DayScreenProps['writes'] => ({
 });
 export const LiveAnswerNotSavedPhone: Story = { ...story('phone', { store: 'wearer', writes: liveDay() }), play: liveAnswerPlay };
 export const LiveAnswerNotSavedDesktop: Story = { ...story('desktop', { store: 'wearer', writes: liveDay() }), play: liveAnswerPlay };
+
+// Live (#529): a Rise's No is posted as that rise's answer, the first of the
+// Rises in served order, and the card moves on at once.
+const answered: [string, string, string][] = [];
+const liveRises = (): DayScreenProps['writes'] => ({
+  answer: async (prompt, given) => { answered.push([prompt.detector, prompt.anchorT, given]); return { carbEntryId: null }; },
+  grams: async () => undefined, logCarbs: async () => undefined,
+});
+const liveRisePlay: Story['play'] = async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  answered.length = 0;
+  await userEvent.click(canvas.getByRole('button', { name: /Rises/ }));
+  await expect(place(canvas, 'Rises')).toHaveTextContent('1 / 2');
+  await userEvent.click(canvas.getByRole('button', { name: 'No' }));
+  const first = (fixtures.day.prompts['rises-pending'] as { detector: string; anchor_t: string; answer: string | null }[])
+    .find((p) => p.detector === 'missed-meal' && p.answer === null)!;
+  await expect(answered).toEqual([['missed-meal', first.anchor_t, 'no']]);
+};
+export const LiveRiseAnswerPhone: Story = { ...story('phone', { ...RISES, writes: liveRises() }), play: liveRisePlay };
+export const LiveRiseAnswerDesktop: Story = { ...story('desktop', { ...RISES, writes: liveRises() }), play: liveRisePlay };
 
 // Live (#495): Log carbs' Time row opens the system picker, and Save logs the
 // carbs at the time picked.

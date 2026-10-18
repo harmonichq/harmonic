@@ -460,6 +460,31 @@ test('a refresh draws Changes\' comparison from memory, kept to what the screen 
   });
 });
 
+test('Day keeps its lows and its rises, remembered as their cards draw them, and a rise is answered as a rise (#529)', async () => {
+  const { storage, memory } = browser();
+  const fake = fakeClient();
+  const cgm = [{ t: '2026-01-05 12:00:00', bg: 140 }, { t: '2026-01-05 13:00:00', bg: 290 }];
+  const served = [
+    { detector: 'low', anchor_t: '2026-01-04 03:15:00', key_t: '2026-01-04 03:15:00', key_bg: 55,
+      question: 'Did you treat this low?', context: 'Glucose dropped to 55 mg/dL.', age_days: 1.4, cgm, answer: null },
+    { detector: 'missed-meal', anchor_t: '2026-01-05 12:40:00', key_t: '2026-01-05 13:00:00', key_bg: 290,
+      question: 'Did you eat here?', context: 'Glucose rose to 290 mg/dL with no bolus logged.', age_days: 0.5, cgm, answer: null },
+  ];
+  fake.client.fetchPrompts = () => Promise.resolve(served);
+  const live = createLive({ client: fake.client, glossary: [], memory });
+  await live.readTab('day');
+  const marks = served.map(({ detector, anchor_t, key_t, key_bg, answer }) => ({ detector, anchor_t, key_t, key_bg, cgm, answer }));
+  assert.deepEqual(live.answers.prompts, marks);
+
+  const refreshed = createLive({ client: fakeClient().client, glossary: [],
+    memory: createMemory({ storage, build: 'build-1', token: () => 'token-a' }) });
+  assert.deepEqual(refreshed.answers.prompts, marks, 'the browser keeps no question or context sentence');
+
+  await live.dayWrites.answer({ detector: 'missed-meal', anchorT: '2026-01-05 12:40:00' }, 'no');
+  assert.deepEqual(fake.calls.find((c) => c.name === 'answer').args[0],
+    { detector: 'missed-meal', anchor_t: '2026-01-05 12:40:00', answer: 'no' });
+});
+
 test('the Queue and Overview keep only what their charts draw, so the remembered answers stay small (ADR 523)', async () => {
   const fake = fakeClient();
   const night = { date: '2024-05-01', delivered_rate: 0.5, programmed_rate: 0.6, points: [1, 2, 3] };

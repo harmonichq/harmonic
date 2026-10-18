@@ -21,6 +21,7 @@
 
 /* The Prompts row's ▼, in the low tone beside its label. */
 .ui-dayscreen__low { margin-right: 8px; color: var(--glucose-low); font-size: var(--ui-type-label); }
+.ui-dayscreen__rise { margin-right: 8px; color: var(--glucose-very-high); font-size: var(--ui-type-label); }
 
 .ui-dayscreen__skeleton { height: 320px; }
 

@@ -83,6 +83,14 @@ export function modelViewMarks(view) {
   };
 }
 
+/** A prompt trimmed to what a PromptCard draws: its identity, the reading it
+ *  is about and when, the readings around it, and its answer; never the
+ *  engine's question and context sentences, so the browser remembers only
+ *  what is shown (mirrors gen_ui_fixtures.prompt_marks). */
+export function promptMarks({ detector, anchor_t, key_t, key_bg, cgm, answer }) {
+  return { detector, anchor_t, key_t, key_bg, cgm, answer };
+}
+
 /**
  * @param {{ client: object, glossary: object[], memory?: { load: Function, save: Function } }} deps —
  *   the client namespace (frontend/data.js makeDeps), §1.5's rows for the
@@ -151,9 +159,9 @@ export function createLive({ client, glossary, memory = null }) {
   const trials = () => once('trials', () => client.fetchVerifyTrials());
   const focus = () => once('focus', () => client.fetchFocuses());
   const status = () => once('status', async () => { answers.status.ok = await client.fetchStatus(); });
-  /** The Prompts the Day screen draws: its lows (§1.5: Day calls its prompts "Lows"). */
+  /** The Prompts the Day screen draws: its Lows and its Rises (#529), each trimmed to its card. */
   const prompts = () => once('prompts', async () => {
-    answers.prompts = (await client.fetchPrompts()).filter((p) => p.detector === 'low');
+    answers.prompts = (await client.fetchPrompts()).map(promptMarks);
   });
   const navigator = () => once('navigator', async () => {
     answers.overview.wearer.day_navigator = await client.fetchDayNavigator();

@@ -73,7 +73,12 @@ Two committed outputs, one generator, one ``--check``:
   before the person answers the one prompt the top-level ``prompts`` shows
   answered, and ``wearer-answered``, read after every other read of the wearer
   once the person answers the rest Yes. With the top-level answer they serve
-  two, one and no unanswered lows.
+  two, one and no unanswered lows. ``rises-pending``, ``rises`` and
+  ``rises-answered`` are Day's Rises (#529): the same wearer with two lunches
+  in the last week never bolused for, its lows answered but the latest, read
+  before any rise is answered, after one No, and once the other is answered
+  Yes, so they serve two, one and no unanswered rises beside one low. Every
+  prompt is trimmed to what a PromptCard draws, as the live adapter trims it.
 
   ``settings`` holds the Settings screens' answers, read from the wearer's
   store after every other read of it: ``/api/credentials`` unset and then set
@@ -173,6 +178,12 @@ FAILED_LABEL = fetch_error_label(requests.exceptions.ConnectionError(FAILED_ERRO
 # a real wearer's manual carb log runs at.
 LOGGING_DAYS = 14
 UNLOGGED_LOWS = 2
+# Day's Rises (#529): the wearer's lunches on these days of the last week,
+# never bolused for, which the engine asks about as possible meals.
+UNBOLUSED_LUNCHES = (79, 81)
+# Day's Prompts rows and the drill-in each opens (§4.2 PromptCard): the plurals
+# of the Low and the Rise they list.
+PROMPT_ROWS = ("Lows", "Rises")
 # §4.2 SegmentedControl: "14 / 30 / 90 d", and QueueRow's magnitude "9 of 71 lows".
 UNITS = ("d",)
 CONNECTIVES = ("of",)
@@ -333,10 +344,13 @@ def _wearer(scratch: pathlib.Path, name: str, *, trial: bool, days: int = ui_pat
     return database, client
 
 
-def _answer_prompts(client: TestClient, answer: str, *, count: int | None = None) -> None:
-    """The person answers the first ``count`` unanswered prompts (all, unset).
-    Yes ("carbs") records carbs of unknown grams at once, as the Prompt's Yes does."""
-    pending = [p for p in _get(client, "/api/prompts") if p.get("answer") is None]
+def _answer_prompts(client: TestClient, answer: str, *, count: int | None = None,
+                    detector: str | None = None) -> None:
+    """The person answers the first ``count`` unanswered prompts (all, unset), of
+    one ``detector`` when one is named. Yes ("carbs") records carbs of unknown
+    grams at once, as the Prompt's Yes does."""
+    pending = [p for p in _get(client, "/api/prompts")
+               if p.get("answer") is None and detector in (None, p["detector"])]
     entry = {"entry": {"grams": None, "certainty": "unknown"}} if answer == "carbs" else {}
     for prompt in pending[:count]:
         _post(client, "/api/prompts/answer", {"detector": prompt["detector"],
@@ -378,7 +392,8 @@ def fixtures() -> dict:
         # and Day's Prompts row is gone.
         _answer_prompts(client, "carbs")
         day_prompts["wearer-answered"] = _get(client, "/api/prompts")
-        day["prompts"] = _require_lows({**day_prompts, "wearer": prompts})
+        day_prompts.update(_rises(scratch))
+        day["prompts"] = _require_prompts({**day_prompts, "wearer": prompts})
 
         _, pinned = _wearer(scratch, "wearer-pinned", trial=False)
         _pin(pinned)
@@ -489,7 +504,7 @@ def fixtures() -> dict:
                   "the same way. status.failed adds one invented failed sync "
                   "attempt."),
         "status": {"ok": status_ok, "failed": status_failed},
-        "prompts": prompts,
+        "prompts": [prompt_marks(p) for p in prompts],
         "outcomes": {key: _outcome(answer) for key, answer in outcomes.items()},
         "guidance": {
             "candidates": [
@@ -937,18 +952,48 @@ def model_view_marks(model_view: dict) -> dict:
     } for finding in model_view["findings"]]}
 
 
-def _require_lows(stores: dict) -> dict:
-    """Day's Prompts: every served prompt is a low (§1.5 Prompt), and the three
-    stores step one answer apart from two unanswered to none, so a prompt's place
-    ("1 / 2") is the difference of two served counts. ``wearer`` is the
-    top-level ``prompts`` and is not repeated."""
-    if any(p["detector"] != "low" for served in stores.values() for p in served):
-        raise SystemExit("the wearer serves a prompt that is not a low")
-    counts = [sum(p["answer"] is None for p in stores[name])
-              for name in ("wearer-pending", "wearer", "wearer-answered")]
-    if counts != [2, 1, 0]:
-        raise SystemExit(f"the Day prompt stores serve {counts} unanswered, not [2, 1, 0]")
-    return {name: served for name, served in stores.items() if name != "wearer"}
+def _rises(scratch: pathlib.Path) -> dict:
+    """Day's Rises (#529): the wearer with two lunches in the last week never
+    bolused for, which the engine asks about as possible meals. The person
+    answers every low but the latest, as the wearer's store has one open, then
+    the rises one at a time: ``rises-pending`` before any, ``rises`` after a No,
+    and ``rises-answered`` once the other is answered Yes."""
+    _, client = _wearer(scratch, "wearer-rises", trial=True, answer=False, unbolused=UNBOLUSED_LUNCHES)
+    lows = [p for p in _get(client, "/api/prompts") if p["detector"] == "low" and p["answer"] is None]
+    _answer_prompts(client, "no", count=len(lows) - 1, detector="low")
+    stores = {"rises-pending": _get(client, "/api/prompts")}
+    _answer_prompts(client, "no", count=1, detector="missed-meal")
+    stores["rises"] = _get(client, "/api/prompts")
+    _answer_prompts(client, "carbs", detector="missed-meal")
+    stores["rises-answered"] = _get(client, "/api/prompts")
+    return stores
+
+
+def prompt_marks(prompt: dict) -> dict:
+    """``/api/prompts``'s prompt trimmed to what a PromptCard draws (§4.2): its
+    identity, the reading it is about and when, the readings around it, and its
+    answer. The engine's question and context sentences are never shown. The
+    live adapter trims the same."""
+    return {field: prompt[field] for field in ("detector", "anchor_t", "key_t", "key_bg", "cgm", "answer")}
+
+
+def _require_prompts(stores: dict) -> dict:
+    """Day's Prompts, trimmed: the wearer's stores serve lows only, stepping one
+    answer apart from two unanswered to none, and the Rises stores step their
+    rises the same way under one open low, so a prompt's place ("1 / 2") is the
+    difference of two served counts. ``wearer`` is the top-level ``prompts`` and
+    is not repeated."""
+    def open_(name: str, detector: str) -> int:
+        return sum(p["answer"] is None and p["detector"] == detector for p in stores[name])
+    families = {("low", ("wearer-pending", "wearer", "wearer-answered")): [2, 1, 0],
+                ("missed-meal", ("wearer-pending", "wearer", "wearer-answered")): [0, 0, 0],
+                ("missed-meal", ("rises-pending", "rises", "rises-answered")): [2, 1, 0],
+                ("low", ("rises-pending", "rises", "rises-answered")): [1, 1, 1]}
+    for (detector, names), want in families.items():
+        counts = [open_(name, detector) for name in names]
+        if counts != want:
+            raise SystemExit(f"the Day prompt stores {names} serve {counts} unanswered {detector}, not {want}")
+    return {name: [prompt_marks(p) for p in served] for name, served in stores.items() if name != "wearer"}
 
 
 def _pin(client: TestClient) -> None:
@@ -1232,6 +1277,7 @@ def allowlist(data: dict) -> dict:
         "months §1.1": list(MONTHS),
         "Overview labels §2.5": list(OVERVIEW_LABELS),
         "labels §1.2–§4.2": list(CHANGE_DAY_LABELS),
+        "Prompts rows §4.2": list(PROMPT_ROWS),
         "engine habit titles": [f["lever_title"] for store in data["changes"].values()
                                 for f in store["focuses"] if f["lever_title"]],
         "served day habit titles": [lever["title"] for day in data["day"]["days"].values()
@@ -1262,7 +1308,8 @@ def allowlist(data: dict) -> dict:
                   "of a magnitude, the served fields the evidence chart's "
                   "marks plot, the glucose profile's \"No data\", the day "
                   "tile's weekdays, the month abbreviations of a date, the "
-                  "Changes and Day labels quoted in §1.2–§4.2, the "
+                  "Changes and Day labels quoted in §1.2–§4.2, Day's "
+                  "Prompts rows, the "
                   "engine's habit titles, the habit titles served on the "
                   "Day chart's days, the Settings labels, the kind "
                   "glyph's names, and the served pump profile name, account "

@@ -11,7 +11,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* One line at body size: Low strong, its date and time in meta, its reading
+/* One line at body size: Low or Rise strong, its date and time in meta, its reading
    strong in its zone's tone. */
 .ui-prompt__head {
   margin: 0;
@@ -28,7 +28,7 @@
 .ui-prompt__anchor { stroke: var(--wk-rule); stroke-width: 1; }
 .ui-prompt__trace { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
 .ui-prompt__trace--in-range { stroke: var(--glucose-in-range-quiet); }
-.ui-prompt__low { fill: var(--wk-surface); stroke-width: 2.5; }
+.ui-prompt__key { fill: var(--wk-surface); stroke-width: 2.5; }
 .ui-prompt__scale {
   fill: var(--wk-ink-meta);
   font-size: var(--ui-type-caption);

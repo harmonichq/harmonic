@@ -1040,6 +1040,19 @@ class PromptQueueTest(unittest.TestCase):
             self.assertIn("key_bg", p)
             self.assertTrue(p["cgm"])          # carries its ±2h context
 
+    def test_serves_the_time_of_each_prompts_reading(self):
+        # #529: Day's Rises draw each rise's peak at its time, so the server serves
+        # when key_bg was read: the peak for a rise (after its 08:55 onset), the
+        # nadir for a low (its own anchor). The frontend derives neither.
+        prompts = {p["detector"]: p for p in self.client.get("/api/prompts").json()}
+        rise, low = prompts["missed-meal"], prompts["low"]
+        self.assertEqual((rise["anchor_t"], rise["key_t"], rise["key_bg"]),
+                         ("2026-06-05 08:55:00", "2026-06-05 09:00:00", 270.0))
+        self.assertEqual((low["anchor_t"], low["key_t"], low["key_bg"]),
+                         ("2026-06-05 03:15:00", "2026-06-05 03:15:00", 55.0))
+        for p in (rise, low):
+            self.assertIn({"t": p["key_t"], "bg": p["key_bg"]}, p["cgm"])
+
     def test_answer_no_resolves_the_prompt(self):
         low = next(p for p in self.client.get("/api/prompts").json() if p["detector"] == "low")
         self.assertIsNone(low["answer"])       # pending before answering

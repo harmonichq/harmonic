@@ -44,6 +44,9 @@ Status: **exploring** (#481).
 - **Done on a Setting card, 2026-10-14** (#518, §2.5): the operator's decision,
   built on the locked Queue and Changes screens; Storybook `Screens/Queue`
   (Done, Undo, Not on pump) and `Screens/Changes` (Waiting for pump).
+- **Rises on Day, 2026-10-14** (#529, §2.5): the operator's decision Q20 = A,
+  built on the locked Day screen; Storybook `Screens/Day` (Rises, Rises
+  prompts, Rise recorded, Rises flow, No rises) and `PromptCard` (Rise).
 
 This document is the durable record of the redesign. Sections 1–3 are what the
 build will be checked against once they are approved. The appendix keeps the
@@ -58,13 +61,13 @@ consolidated brief from the first exploration (2026-10-12) as decision history.
 | **Queue** | The ranked recommendations, from Patterns and Settings, and the Snoozed list. | No logging, no status, no counters. |
 | **Changes** | The current watched change (one Trial or one Focus) with what a Trial did to glucose in its block, and Previous: every earlier change (§2.5, 2026-10-14). | Nothing to act on but End. |
 | **Overview** | Standard metrics over 14, 30 or 90 days against the period of the same length before, the selected window's time-in-ranges bar and glucose profile, and the ISF estimate. | No Queue items and nothing to act on: the ISF estimate shows the engine's supported change as the Queue's card does, but changes nothing. |
-| **Day** | One day's glucose, insulin and carbs, the day navigator, carb logging and Prompts. | No aggregates beyond that day. |
+| **Day** | One day's glucose, insulin and carbs, the day navigator, carb logging and Prompts: Lows and Rises. | No aggregates beyond that day. |
 | **Settings** | Tandem Source (sync and account), Pump profile and the Glossary. | No preferences the engine doesn't have. |
 
 Phone uses a bottom tab bar, and tablet and desktop use a left rail, with the same five items in the same order.
 
 **Badges:** one system, anchored top-right of the icon.
-- Count badge: Day shows the number of unanswered Prompts.
+- Count badge: Day shows the number of unanswered Prompts, Lows and Rises together.
 - Alert badge "!": Settings shows it when the last sync failed.
 
 ### 1.2 Errors and sync status
@@ -92,8 +95,8 @@ Each row lists a screen's states. Labels only; no state uses prose.
 | Changes | The current Trial (head, trace, ranges, Mean/GMI/CV, Basal vs Pump profile) or Focus, then the Previous row with its count | "No active change" label; no Previous row at 0 | Skeleton | Unavailable + Retry | Maturing; Matured (result pill); a carb ratio Trial (Meals before / after; its trace meal by meal under three meals); a whole-profile switch (each setting it moved); **End** (Focus: anytime; Trial: once matured) → confirm sheet → ended; Waiting for pump rows after a Done, between the current change and Previous (§2.5) |
 | Changes · Previous | Every previous change, newest first, no cutoff: setting and block, date, before → after per setting, the result where one was saved | Not reachable (the row is hidden at 0) | — | Unavailable + Retry | — |
 | Overview | 14 d selected; one scrolling page, the summary (window switch, date span, In range, metrics, glucose profile) its first screenful, the ISF and basal estimates below | "No data" label per window, and in the ISF or basal estimate when none is served | Skeleton; a window not yet read shows its profile's and estimates' skeletons | Unavailable + Retry | 30 d / 90 d selected; a previous period without data (the span alone, no changes); the ISF estimate with a supported change (current → recommended), held, Uncertain, with nights beyond its axis |
-| Day | Latest day with data | "No data" for a day without readings | Chart skeleton | Unavailable + Retry | Month dropped down from the header's day; desktop: the selected week as a ribbon; Prompts row when count > 0 |
-| Day · Prompts | One prompt, "n / N" | Not reachable (the row is hidden at 0) | — | Not saved + Retry | Yes → grams field and keyboard; mid-swipe Not sure |
+| Day | Latest day with data | "No data" for a day without readings | Chart skeleton | Unavailable + Retry | Month dropped down from the header's day; desktop: the selected week as a ribbon; the Lows row when its count > 0, and under it the Rises row when its count > 0 (§2.5, 2026-10-14 Rises) |
+| Day · Prompts | One prompt of the row's kind, a Low or a Rise, "n / N" among that kind, titled Lows or Rises | Not reachable (the row is hidden at 0) | — | Not saved + Retry | Yes → grams field and keyboard; mid-swipe Not sure; a Rise: Yes · No and Not sure, no False low |
 | Day · Log carbs | Grams field focused, Time = now | — | Saving | Not saved + Retry | Time edited |
 | Settings | Three rows with inline status, and the Token field (§2.5) | — | Skeleton + Token field (§2.5) | Unavailable + Retry + Token field (§2.5) | Sync OK (no badge) / Failed (badge) |
 | Settings · Tandem Source | Sync rows + account rows | Account "Not set" + Update | — | — | Updating credentials |
@@ -117,7 +120,7 @@ Each row lists a screen's states. Labels only; no state uses prose.
 |---|---|
 | Tap a Queue card to expand it in place | Click or ↑/↓ to select in the list; the detail shows in the right pane |
 | Swipe a Queue row: it follows the finger, and released past half its Snooze reveal it snoozes, as the Snooze text action beneath Pin does (a Setting card: at its foot), with the same bar and Undo; short of half it settles back | The same Snooze text action; shortcut S |
-| Swipe a Prompt: released past half its Not sure reveal it records Not sure and moves to the next, as the Not sure text action beneath its answers does; short of half it settles back | A fourth button, **Not sure** |
+| Swipe a Prompt: released past half its Not sure reveal it records Not sure and moves to the next, as the Not sure text action beneath its answers does; short of half it settles back | A last button, **Not sure** (a Low's fourth, a Rise's third) |
 | Tap the day in the Day header to drop the month down, its weeks as gapless ribbons | The same drop-down, a popover under the day; the selected week stays in view as a ribbon |
 | Pick a day in the month (it closes); the scrim closes it unchanged | Pick a day in the month or the week in view; Escape closes it unchanged |
 | Bottom sheet for Log carbs, on the system keyboard | Popover anchored to "+ Log carbs" |
@@ -156,7 +159,8 @@ the system's own edge-swipe back is left to the platform, never overridden.
 | **Glucose profile** | noun | Glucose by time of day over the selected window (14, 30 or 90 days): the median and the 10th–90th percentile spread. |
 | **Fasting** | state | No food and no recent bolus: the nights an ISF estimate is read from. |
 | **Median** | noun | The middle value of the profile at that time of day. |
-| **Yes / No / False low / Not sure** | answer | The answers to whether carbs were eaten for a low. False low marks the reading itself as invalid. |
+| **Rise** | noun | Glucose above 250 mg/dL with no meal bolus in the 2.5 hours before it and no low or Suspend it climbed from: carbs the pump may not have been told about. |
+| **Yes / No / False low / Not sure** | answer | The answers to whether carbs were eaten for a low or a rise. False low marks a low's reading itself as invalid; a rise has none. |
 | **Log carbs** | verb | Record carbs eaten without a bolus. |
 | **End** | verb | Stop watching the active change. |
 | **Recorded** | state | An answer or entry was saved. |
@@ -870,7 +874,34 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
     2026-10-13); every domain term is §1.5's (Basal, Pump profile, I:C, ISF,
     In range, Below 70, Above 180, Mean, GMI, CV).
 
-### 2.6 Deferred (not cut)
+- **2026-10-14 — Rises join Day (#529).** The engine already asked about a
+  climb with no bolus or carbs logged before it, a possible missed meal, and
+  the app dropped it: the live adapter kept only the lows. Of the options put
+  to the operator (Q20) he chose A: Day asks about those too, as Rises. Built
+  on the locked Day screen; §1.1, §1.3, §1.4, §1.5 and §4.2 follow.
+  - **A Rises row under the Lows row.** "▲ Rises · N" sits under "▼ Lows · N"
+    in the same group, each hidden at none; the Day badge counts both. Rises
+    opens the same one-at-a-time view as Lows (§2.2 drill-down, under
+    "‹ Day"), titled Rises, its place "n / N" among the rises; past the last
+    it returns to Day.
+  - **A Rise is a PromptCard** (§4.2): "▲ Rise · <date> <time> · <mg/dL>",
+    the date, time and reading of its peak, in the peak's zone tone; the
+    readings around it over the 180 line, the peak ringed at its time. Under
+    "Carbs": Yes · No, with Not sure beneath on the phone as the text action
+    and the swipe, and Yes · No · Not sure on desktop. No False low: a rise
+    has no low reading to call invalid.
+  - **Answered as a low is.** Every answer posts to `/api/prompts/answer` with
+    the rise's own identity (`missed-meal`, its `anchor_t`); Yes records carbs
+    of unknown grams at once and the grams typed after it go on the entry it
+    created, as for a low.
+  - **The server serves what the card draws.** Each prompt now carries
+    `key_t`, the time of its reading (a rise's peak, a low's nadir), and a
+    rise's readings run on to its peak when it peaks more than two hours
+    after it began. The frontend finds no peak and derives no time. The live
+    adapter keeps each prompt as its card draws it, so the browser remembers
+    no question or context sentence (§2.5, 2026-10-14 answers kept).
+  - **Words.** "Rise" joins §1.5. "Lows" and "Rises" are the rows' labels,
+    the plurals of the Low and the Rise they list.
 Not built in the current screens. The engine still serves what each needs, and
 nothing is removed from the engine or the fixtures for them.
 - Pattern evidence drill-in (its aligned-episodes chart is now the open
@@ -920,7 +951,7 @@ unless noted. Loading is a skeleton of the component's own shape.
    2026-10-14). The phone tab bar is 64 px above the device's bottom inset,
    with 24 px glyphs, its items centred in it (§2.5, 2026-10-14).
    - States: default; item selected; with a count badge; with an alert badge.
-   - Fields: `prompts` length (Day count); `status.last_error` and
+   - Fields: `prompts[answer=null]` length, Lows and Rises (Day count); `status.last_error` and
      `status.last_success_at` (Settings alert).
    - Desktop: the rail, with the same items and badges, opened by the
      wordmark (§2.5, 2026-10-13).
@@ -1190,15 +1221,19 @@ unless noted. Loading is a skeleton of the component's own shape.
       `carbs.carb_entries`; `model_view.findings[].t, kind, bg,
       levers[].lever, title` (`/api/model-view?date=`).
     - Desktop: wide, under the selected week's DayRibbon.
-18. **PromptCard**: one low prompt, showing "Low · <date time> · <mg/dL>",
-    its sparkline, Yes · No · False low, and on phone Not sure as a text
-    action centred beneath them, as Snooze sits beneath Pin (the swipe is its
-    shortcut).
+18. **PromptCard**: one prompt, a Low or a Rise (§2.5, 2026-10-14 Rises).
+    A Low shows "▼ Low · <date time> · <mg/dL>", its sparkline over the 70
+    line with the nadir ringed, Yes · No · False low; a Rise shows
+    "▲ Rise · <date time> · <mg/dL>", its peak's, over the 180 line with the
+    peak ringed, Yes · No. On phone Not sure is a text action centred beneath
+    them, as Snooze sits beneath Pin (the swipe is its shortcut).
     - States: unanswered; Yes recorded (a checkmark on Yes, labelled "Recorded"
-      for screen readers only, plus the optional grams field); mid-swipe (Not sure).
-    - Fields: `prompts[].anchor_t, key_bg, cgm`; answers posted to
-      `/api/prompts/answer`; grams via `PATCH /api/carbs/{id}`.
-    - Desktop: a fourth button, Not sure, instead of the text action and the swipe.
+      for screen readers only, plus the optional grams field); mid-swipe (Not
+      sure); each a Low or a Rise.
+    - Fields: `prompts[].detector, anchor_t, key_t, key_bg, cgm`; answers
+      posted to `/api/prompts/answer` with `detector` and `anchor_t`; grams via
+      `PATCH /api/carbs/{id}`.
+    - Desktop: a last button, Not sure, instead of the text action and the swipe.
 19. **LogCarbsEntry**: a grams field sized to 3 digits, Time (a tappable row,
     default now), and Save.
     - States: empty; filled; saving; not saved.
@@ -1214,8 +1249,8 @@ unless noted. Loading is a skeleton of the component's own shape.
     - States: default; no data (no bar); loading.
     - Fields: `timeline.insulin_totals.basal, meal, correction,
       control_iq_bolus, total` (ADR 492); `null` serves no bar.
-    - Desktop: the same, the parts in one row, beside the Prompts row under the
-      selected week.
+    - Desktop: the same, the parts in one row, beside the Lows and Rises rows
+      under the selected week.
 
 **Settings**
 

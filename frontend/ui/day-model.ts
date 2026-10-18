@@ -227,56 +227,74 @@ export function monthWeeks(month: string): string[][] {
 
 // --- PromptCard --------------------------------------------------------------
 
-/** The wearer's prompts one answer apart: before the person answers any, as
- *  the top-level `prompts` serves them after one, and after the last. */
-export const PROMPT_STEPS = ['wearer-pending', 'wearer', 'wearer-answered'] as const;
-export type PromptStore = (typeof PROMPT_STEPS)[number];
+/** A Prompt as Day lists it (§1.5): a Low, or a Rise, the engine's
+ *  missed-meal prompt (#529). */
+export type PromptKind = 'low' | 'rise';
+const DETECTOR: Record<PromptKind, string> = { low: 'low', rise: 'missed-meal' };
+
+/** Each kind's prompts one answer apart. Lows: the wearer before the person
+ *  answers any, as the top-level `prompts` serves them after one, and after the
+ *  last. Rises: the wearer with lunches never bolused for, before any rise is
+ *  answered, after one, and after the last, one low open throughout. */
+export const PROMPT_STEPS = {
+  low: ['wearer-pending', 'wearer', 'wearer-answered'],
+  rise: ['rises-pending', 'rises', 'rises-answered'],
+} as const;
+export type PromptStore = (typeof PROMPT_STEPS)[PromptKind][number];
 
 const promptsPath = (store: PromptStore) => (store === 'wearer' ? 'prompts' : `day.prompts.${store}`);
 const promptsOf = (store: PromptStore) => (store === 'wearer' ? answers.prompts : answers.day.prompts[store]);
+const open = (kind?: PromptKind) => `${kind ? `[detector=${DETECTOR[kind]}]` : ''}[answer=null]`;
 
-/** The unanswered prompts: the Day badge and Day's Prompts row. */
-export const unanswered = (store: PromptStore) => sourced<number>(`${promptsPath(store)}[answer=null].length`);
+/** The unanswered prompts of one kind: Day's Lows or Rises row. Of both: the Day badge. */
+export const unanswered = (store: PromptStore, kind?: PromptKind) =>
+  sourced<number>(`${promptsPath(store)}${open(kind)}.length`);
 
-/** The store once the first unanswered prompt of `store` is answered. */
-export function afterAnswer(store: PromptStore): PromptStore {
-  const next = PROMPT_STEPS[PROMPT_STEPS.indexOf(store) + 1];
-  if (!next) throw new Error(`${store} serves no unanswered prompt`);
+/** The store once the first unanswered prompt of `kind` in `store` is answered. */
+export function afterAnswer(store: PromptStore, kind: PromptKind): PromptStore {
+  const steps: readonly PromptStore[] = PROMPT_STEPS[kind];
+  const next = steps.includes(store) ? steps[steps.indexOf(store) + 1] : undefined;
+  if (!next) throw new Error(`${store} serves no ${kind} prompt to answer`);
   return next;
 }
 
-/** "n / N" for the first unanswered prompt of `shown`, stepping through the
- *  prompts `entry` served: N is entry's count, and n the count entry served
- *  less the count left once this one is answered. */
-export function promptPlace(entry: PromptStore, shown: PromptStore = entry) {
+/** "n / N" for the first unanswered prompt of `kind` in `shown`, stepping
+ *  through the prompts `entry` served: N is entry's count, and n the count
+ *  entry served less the count left once this one is answered. */
+export function promptPlace(kind: PromptKind, entry: PromptStore, shown: PromptStore = entry) {
   return {
-    count: sourced<number>(`${promptsPath(entry)}[answer=null].length − ${promptsPath(afterAnswer(shown))}[answer=null].length`),
-    total: unanswered(entry),
+    count: sourced<number>(`${promptsPath(entry)}${open(kind)}.length − ${promptsPath(afterAnswer(shown, kind))}${open(kind)}.length`),
+    total: unanswered(entry, kind),
   };
 }
 
 export type PromptData = {
+  kind: PromptKind;
   /** The prompt's identity, as an answer names it. */
   detector: string;
   anchorT: string;
+  /** When its reading was: a low's nadir, a rise's peak (`key_t`). */
   date: Sourced<string>;
   time: Sourced<string>;
-  /** The low's own reading, mg/dL. */
+  /** Its reading, mg/dL: a low's nadir, a rise's peak. */
   bg: Sourced<number>;
+  /** The target range; a low is drawn against its low end, a rise its high. */
   low: Sourced<number>;
+  high: Sourced<number>;
   /** The served readings around it, minutes from the first. */
   cgm: { minute: number; bg: number }[];
-  anchor: number;
+  /** Its reading's minute, from the first. */
+  key: number;
   start: number;
 };
 
-/** The n-th low prompt still unanswered, in served order. */
-export function lowPrompt(n = 0, store: PromptStore = 'wearer'): PromptData {
+/** The n-th prompt of `kind` still unanswered, in served order. */
+export function promptOf(kind: PromptKind, n = 0, store: PromptStore = 'wearer'): PromptData {
   const prompts = promptsOf(store);
   const index = prompts
     .map((prompt, i) => ({ prompt, i }))
-    .filter(({ prompt }) => prompt.detector === 'low' && prompt.answer === null)[n]?.i;
-  if (index === undefined) throw new Error(`${store} serves no unanswered low prompt ${n}`);
+    .filter(({ prompt }) => prompt.detector === DETECTOR[kind] && prompt.answer === null)[n]?.i;
+  if (index === undefined) throw new Error(`${store} serves no unanswered ${kind} prompt ${n}`);
   const prompt = prompts[index];
   const path = `${promptsPath(store)}.${index}`;
   const start = minuteOf(prompt.cgm[0].t);
@@ -286,22 +304,22 @@ export function lowPrompt(n = 0, store: PromptStore = 'wearer'): PromptData {
     return minute - start;
   };
   return {
+    kind,
     detector: prompt.detector,
     anchorT: prompt.anchor_t,
-    date: sourced(`${path}.anchor_t`, 'date'),
-    time: sourced(`${path}.anchor_t`, 'time'),
+    date: sourced(`${path}.key_t`, 'date'),
+    time: sourced(`${path}.key_t`, 'time'),
     bg: sourced(`${path}.key_bg`, 'round'),
-    low: targetRange().low,
+    ...targetRange(),
     cgm: prompt.cgm.map((reading) => ({ minute: at(reading.t), bg: reading.bg })),
-    anchor: at(prompt.anchor_t),
+    key: at(prompt.key_t),
     start,
   };
 }
 
-/** Every low prompt still unanswered, in served order. */
-export function lowPrompts(store: PromptStore = 'wearer'): PromptData[] {
-  const count = promptsOf(store).filter((p) => p.detector === 'low' && p.answer === null).length;
-  return Array.from({ length: count }, (_, n) => lowPrompt(n, store));
+/** Every prompt of `kind` still unanswered, in served order. */
+export function promptsOfKind(kind: PromptKind, store: PromptStore = 'wearer'): PromptData[] {
+  return Array.from({ length: unanswered(store, kind).value }, (_, n) => promptOf(kind, n, store));
 }
 
 /** "n / N" while answering the live engine, where no served store holds the

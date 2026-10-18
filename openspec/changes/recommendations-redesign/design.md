@@ -886,3 +886,53 @@ changes, each an in-place edit or a switch, and reproduces every earlier store
 byte for byte. The live adapter reads the active Trial's comparison whether or
 not it has matured, and no longer reads the guidance for Changes. The
 provenance grammar gains `+`, for the Previous count.
+
+## ADR 530 — A carb-ratio move rides only on the meal Pattern its direction answers
+
+**Context.** Highs after meals and Lows after meals both carry the carb-ratio
+setting as a member. The roster admitted that member under each Pattern whenever
+any carb-ratio block asserted a move, whatever its direction, so one move was
+offered twice. A stronger ratio (fewer grams per unit, more insulin per meal) was
+offered as the answer to lows after meals, where it would deepen the lows, and a
+weaker one as the answer to highs after meals. Each Pattern also carried the
+setting's whole action list, both directions together when two blocks moved
+opposite ways, and was seated in the Queue beside the first asserting carb-ratio
+row of either direction. The engine audit of #499 found it; Connor agreed to
+gating the member on the move's direction: "Yep that makes sense".
+
+**Decision.**
+
+1. *One rule, in the Pattern roster.* `outcome_patterns.setting_move_fits` maps
+   Highs after meals to a strengthening move (`direction` "lower", lower g/U) and
+   Lows after meals to a weakening one ("raise", higher g/U). The direction it
+   reads is the carb-ratio analyzer's own published one: a block's `direction` is
+   set only when `ic_asserts_move` holds, so a held block names none and fits
+   neither Pattern.
+2. *The member admits only through a fitting move.* The setting member admits,
+   and carries the action, only when an asserting block's direction fits its
+   Pattern. Its seriousness and seriousness spans leave out blocks moving the other
+   way, so a weakening block's recurring-low verdict no longer reads on Highs after
+   meals.
+3. *The member stays in both Patterns.* A member whose move points the other way is
+   kept, unadmitted and with no action, rather than dropped. Its Pattern's member
+   set and fingerprint are unchanged, so no set-aside Pattern returns for a
+   "member set changed" reason. Guidance also keeps selecting the carb-ratio
+   setting through a Pattern, never as its own Queue item.
+4. *Readers apply the same rule.* Guidance serves a setting-admitted Pattern only
+   the action rows whose direction fits it. The findings projection seats such a
+   Pattern beside the first asserting carb-ratio row whose direction fits. Both
+   call the roster's rule. Neither re-derives a direction, and the frontend reads
+   only what is served.
+
+**Basal and the correction factor.** Neither has the defect. No Pattern carries a
+basal setting member (overnight lows reach the wearer through the basal Setting,
+ADR 499). Lows after correcting highs carries no correction-factor member (ADR
+499, ADR 504). The carb ratio is the only setting any Pattern carries.
+
+**Consequences.** The QA catalog's carb-ratio cases now show the move admitted
+under one meal Pattern only: ic-raise, ic-lower, the two capped cases,
+ic-block-evidence and basal-and-carb-ratio-lower. A new case, ic-split-directions,
+has a strengthening morning and a weakening evening at once. Each meal Pattern
+there carries only its own block's action and sits beside that block. The
+findings-projection fixture is regenerated. Its strengthening evening block now
+seats Highs after meals only, and Lows after meals falls to the unpriced tail.

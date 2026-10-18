@@ -67,6 +67,7 @@ from .ic_history import decode_history_id
 from .analyzers.scenario.levers import Exposure, exposure, outcome_kind, title
 from .analyzers.scenario.outcome_patterns import (
     _ROSTER, build_outcome_patterns, credited_claims, outcome_window_population,
+    setting_move_fits,
 )
 from .safety import Status
 from .window_membership import DAY_MINUTES, WindowQuery, outcome_minute
@@ -1126,9 +1127,10 @@ def _stamp_anchors(pattern_rows: Sequence[dict], rows: Sequence[dict],
     """Seat each setting-admitted Pattern in its setting's position (ADR 469).
 
     Its anchor is the first served, priced, asserting row of its setting member's
-    parameter in queue order; every such row carries the same parameter-level
-    Priority. With none served (a scoped window without the setting's row) the Pattern keeps
-    its own ranked position. Its own ``priority`` stays the roster's price (ADR 391).
+    parameter in queue order whose direction fits the Pattern (ADR 530); every such
+    row carries the same parameter-level Priority. With none served (a scoped window
+    without the setting's row) the Pattern keeps its own ranked position. Its own
+    ``priority`` stays the roster's price (ADR 391).
     """
     for pattern_row in pattern_rows:
         pattern = pattern_row["pattern"]
@@ -1138,7 +1140,8 @@ def _stamp_anchors(pattern_rows: Sequence[dict], rows: Sequence[dict],
         parameter = member["subject"].removeprefix("setting:")
         anchors = [row for row in rows
                    if row["register"] == "assert" and row["parameter"] == parameter
-                   and row["priority"] is not None]
+                   and row["priority"] is not None
+                   and setting_move_fits(pattern["key"], row["direction"])]
         if anchors:
             pattern_row["anchored_by"] = min(
                 anchors, key=lambda row: _sort_key(row, by_id))["id"]

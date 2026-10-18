@@ -80,6 +80,7 @@ EXPECTED_ACTIVE_KINDS = {
     "c4-history": "trial",
     "edit-chain": None,
     "basal-and-carb-ratio-lower": None,
+    "ic-split-directions": None,
     "c4-isf-late-read": None,
     "delivery-basal-block": "trial",
     "delivery-basal-legacy": None,
@@ -161,10 +162,17 @@ class PatternReplayTest(unittest.TestCase):
                     self.assertEqual(candidate["priority_inputs"]["member_set_fingerprint"],
                                      roster["member_set_fingerprint"])
                     if roster["admission_route"] == "setting_staging":
+                        # A staged Pattern carries only its setting's moves in the
+                        # direction it answers (ADR 530): strengthen for highs, weaken
+                        # for lows.
+                        fitting = {"pattern:highs_after_meals": "lower",
+                                   "pattern:lows_after_meals": "raise"}[roster["subject"]]
+                        source = source_candidates[candidate["chosen_member"]["subject"]]
                         self.assertEqual(
                             candidate["action"],
-                            source_candidates[candidate["chosen_member"]["subject"]]["action"],
+                            [row for row in source["action"] if row["direction"] == fitting],
                         )
+                        self.assertTrue(candidate["action"])
                 self.assertEqual(admission["active_kind"], EXPECTED_ACTIVE_KINDS[case.name])
                 if case.name in {"pattern-near-tie", "pattern-collapse"}:
                     ready_habits = [row for row in execution.outcome_patterns

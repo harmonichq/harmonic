@@ -8,6 +8,7 @@ from datetime import date, datetime, timedelta
 from unittest.mock import patch
 
 from ciq_autotune.store import Store
+from ciq_autotune.guidance import build_guidance
 from ciq_autotune.finding_case_file import prepare as prepare_case_files, wrap
 from ciq_autotune.findings_projection import prepare_findings_projection
 from ciq_autotune.window_membership import WindowQuery
@@ -64,6 +65,7 @@ EXPECTED_CASE_NAMES = (
     "c4-ic", "c4-isf", "c4-profile", "c4-missing", "c4-history",
     "edit-chain",
     "basal-and-carb-ratio-lower",
+    "ic-split-directions",
     "c4-isf-late-read",
     "delivery-basal-block", "delivery-basal-legacy", "delivery-basal-legacy-open",
     "delivery-basal-across-midnight", "delivery-basal-whole-day",
@@ -319,6 +321,45 @@ class QaE2ECasesTest(unittest.TestCase):
                 case = next(case for case in QA_CASES if case.name == name)
                 row = _execution(case).analysis["ic_blocks"][0]
                 self.assertEqual(row["recommended"], recommendation)
+
+    def test_a_carb_ratio_move_rides_only_on_the_meal_pattern_its_direction_fits(self):
+        # ADR 530: a strengthening move (lower g/U) answers highs after meals and a
+        # weakening one (higher g/U) lows after meals; neither rides on the other.
+        strengthen = [{"start_min": 0, "end_min": 1440, "direction": "lower", "recommended": 9.0}]
+        weaken = [{"start_min": 0, "end_min": 1440, "direction": "raise", "recommended": 11.0}]
+        expected = {
+            "ic-lower": {"pattern:highs_after_meals": (strengthen, "ic:0"),
+                         "pattern:lows_after_meals": (None, None)},
+            "ic-raise": {"pattern:highs_after_meals": (None, None),
+                         "pattern:lows_after_meals": (weaken, "ic:0")},
+            "ic-split-directions": {
+                "pattern:highs_after_meals": (
+                    [{"start_min": 0, "end_min": 720, "direction": "lower", "recommended": 9.0}],
+                    "ic:0"),
+                "pattern:lows_after_meals": (
+                    [{"start_min": 720, "end_min": 1440, "direction": "raise", "recommended": 13.5}],
+                    "ic:720"),
+            },
+        }
+        for name, patterns in expected.items():
+            case = next(case for case in QA_CASES if case.name == name)
+            execution = _execution(case)
+            guidance = build_guidance(analysis=execution.analysis,
+                                      exposures=execution.exposures,
+                                      scenarios=execution.scenarios)
+            candidates = {row["subject"]: row for row in guidance["candidates"]}
+            rows = {row["id"]: row for row in execution.findings["whole_day"]["rows"]}
+            for subject, (actions, anchor) in patterns.items():
+                with self.subTest(case=name, subject=subject):
+                    served = candidates[subject]["action"]
+                    self.assertEqual(
+                        None if served is None else [
+                            {key: row[key] for key in
+                             ("start_min", "end_min", "direction", "recommended")}
+                            for row in served],
+                        actions)
+                    self.assertEqual(rows[subject]["anchored_by"], anchor)
+
 
 def _case_test(case):
     def test(self):

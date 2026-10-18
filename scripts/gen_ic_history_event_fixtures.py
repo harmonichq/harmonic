@@ -57,7 +57,7 @@ def _readings(catalog):
 
 
 def payload():
-    catalog, _aged, _unavailable = gen.history_catalogs()
+    catalog = gen.history_catalog()
     analysis = {"window_days": 30, "ic_history": [row.to_dict() for row in catalog]}
     findings = FindingsProjection(
         analysis, {"exposures": {}}, {"patterns": [], "low_confidence": []}, [])

@@ -298,6 +298,43 @@ browser refuses SHALL keep nothing, the app reading the engine as before (#522).
 - **WHEN** the app runs under another token, or another build
 - **THEN** no tab draws them, and saving drops them
 
+### Requirement: Every served findings row carries one headline
+
+Every row the findings projection publishes, an asserting setting row, a Finding
+or a Pattern, SHALL carry a `headline`: a factual sentence composed only from the
+row's own fields or from the analyzer payload the projection already holds. A
+headline never states a count, direction or verdict the analyzer did not publish,
+and is identical across reruns of the same window. The projection serves no held,
+no-clean-day or past-setting row, so it serves no headline for one (ADR 531).
+
+#### Scenario: Every served row carries a headline
+
+- **WHEN** the projection publishes asserting basal, carb-ratio and correction-factor
+  rows and Finding rows for one window
+- **THEN** every row carries a non-empty headline drawn from served facts only
+- **AND** each setting row's headline opens with its analyzer's served sentence
+
+#### Scenario: A setting that asserts nothing serves no row
+
+- **GIVEN** a basal slot or a carb-ratio block that asserts no move
+- **WHEN** the projection publishes any window that holds it
+- **THEN** it serves no row and no headline for it
+
+### Requirement: Setting findings are titled by their user labels
+
+The findings projection SHALL title a correction-factor row "Correction factor"
+and a carb-ratio block "Carb ratio <span>", each with its direction suffix
+(" · <direction>"). A basal row keeps "Basal <span>". The regenerated fixtures and
+the QA finding-title literals SHALL carry the same titles. The projection lists no
+setting that asserts nothing, so no title carries a lean (ADR 531).
+
+#### Scenario: A correction-factor finding reads as Correction factor
+
+- **GIVEN** the manufactured case isf-strengthen
+- **WHEN** the findings projection publishes its correction-factor row
+- **THEN** the row is titled "Correction factor · strengthen"
+- **AND** no setting row's title contains "ISF" or "I:C"
+
 ## MODIFIED Requirements
 
 ### Requirement: The server serves a name beside every identifier the desk prints
@@ -1104,3 +1141,15 @@ SHALL enter the set-aside comparison state.
 **Reason:** The desk retired with the swap to the five-tab app (#495, ADR 495). Its destinations, rail, stage, watch dock and Episode Log are gone, so this requirement describes no shipped surface.
 
 **Migration:** The desk is preserved as release v0.1.0. The five tabs are specified by this change's ADDED requirements and locked in `docs/design/recommendations-redesign.md`.
+
+### Requirement: Every findings row carries one served headline
+
+**Reason:** Its held, blind and past-setting scenarios describe rows only the desk read; the findings answer no longer serves them (#531, ADR 531). It is restated without them as "Every served findings row carries one headline": a MODIFIED block cannot drop a scenario, so the requirement takes a new header.
+
+**Migration:** Read "Every served findings row carries one headline", ADDED in this change.
+
+### Requirement: Diagnose's setting findings are titled by their user labels
+
+**Reason:** Its recurring-lows scenario titles a held row and its text names the JS findings mirror; the findings answer serves no held row and the mirror is gone (#531, ADR 531). It is restated without them as "Setting findings are titled by their user labels".
+
+**Migration:** Read "Setting findings are titled by their user labels", ADDED in this change.

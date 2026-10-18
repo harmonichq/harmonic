@@ -1007,6 +1007,88 @@ byte for byte. The live adapter reads the active Trial's comparison whether or
 not it has matured, and no longer reads the guidance for Changes. The
 provenance grammar gains `+`, for the Previous count.
 
+## ADR 531 — The findings answer serves only what the app reads, and the desk's mirror inputs go
+
+**Context.** The swap (#495, ADR 495) deleted the desk and its JavaScript findings
+mirror, but the findings answer still served what only the desk read, and the
+findings-projection fixture generator still froze inputs for that mirror. #531 asks
+to remove what nothing reads, and to check the Plan routes against Done (#518, ADR
+518). The charter rules dead code a defect, and a negative claim needs an unfiltered
+whole-tree grep (AGENTS.md: `frontend/index.html` is a consumer).
+
+**What the app reads.** The live adapter (`frontend/ui/app/live.js`) and the UI
+fixture generator (`scripts/gen_ui_fixtures.py`) read the whole-day findings
+answer only: its `outcome_patterns` and the rows that are a Pattern, a claimed or
+collapsed Finding, or a setting row with members, and of those rows only `id`,
+`kind`, `title`, `chips`, `claimed_by`, `lever`, `parameter`, `count_sentences`,
+`fold_sentences`, `span`, `members` and `served_as`. Of the case-file preparation
+they read only `projection_id`. They send no clock window to either read and no
+`selected_id`. A whole-tree grep (`frontend/` with `index.html` and `frontend/ui`,
+`ciq_autotune/`, `scripts/`, `tests/`, `.claude/qa/`, `mockups/`) finds no reader
+of `counts`, `chip_counts`, `selection`, `selected_id`, the `held`, `blind` or
+`history` registers, or the row fields `lean`, `reason`, `past_setting`,
+`programmed_now`, `regime_end` and `run_ids`, outside the projection's own tests
+and the QA harness's literal expectations of them. The server's own scoped readers,
+the Pattern Focus pin and the case-file preparation, read only the scoped
+`outcome_patterns` and the Finding and Pattern rows.
+
+**Decision.**
+
+1. *The findings answer serves the window, the findings window, the rows and the
+   Pattern roster* (schema `diagnose-findings-v3`). `counts`, `chip_counts` and
+   `selection` are gone, and so are the findings route's and the case-file
+   preparation's `selected_id` (the preparation now refuses it as an unknown
+   parameter, the findings route ignores it).
+2. *Every window lists only asserting settings, Findings and Patterns.* The held,
+   no-clean-day (`blind`) and past-setting (`history`) rows are gone in every
+   window, with their headline templates, the held title suffix (" · leaning …"),
+   and the row fields only they filled. A parameter row is listed exactly when its
+   analyzer's one staging verdict lists it (`asserts_move` for basal and carb
+   ratio, `evidence.direction` for ISF), as the whole-day queue already did. Every
+   row that remains is byte-identical to the one main served, in every frozen
+   window: order, tier, headline and fields.
+3. *The findings-projection fixture keeps the projection's answers and its exposure
+   feed.* `inputs.exposures` stays because the generator reads its producer-built
+   over-treated low slice back on the next run. The mirror's inputs and frozen
+   answers (`browser_*`, `habit_rate_families`, `pattern_family_cases`,
+   `pattern_clock_case`, `density_history`, `selection_*`, `direction_only_inputs`,
+   `no_data_inputs` and the rest of `inputs`) are gone, with the generator code
+   that built them. The event-comparison capture
+   (`mockups/diagnose-event-comparison.synthetic`) goes whole: its generator read
+   three of those keys, its rows fed only the desk's case-file mirror (`project.mjs`,
+   imported by nothing) and the findings generator's browser cases, and its one
+   other reader was a shape test of its own rows. Its CI drift step, allowlist line
+   and AGENTS.md section go with it. The mirror's own test was already deleted.
+4. *The out-of-family rule keeps its proof.* "A Pattern case file judges only the
+   habit members in its rate family" was proved only by the mirror's parity with
+   the frozen `pattern_family_cases`; a test through the case producer now proves
+   it directly, and fails when the rate-family filter is removed.
+5. *The Plan routes stay.* After #518 the app calls `POST /api/plan/apply` (Done)
+   and `POST /api/plan/history/withdraw` (Undo); `GET /api/plan/history` is the
+   read the Plan, durable follow-up and wall-clock tests observe verdicts through,
+   and ADR 518 kept it. Done records through the Store's staging row, which ADR 518
+   kept too. No Plan route or field is unread, so none is removed.
+
+**Not in this change.** Other desk-era reads the app does not call stay, because
+#531 names the findings answer and the Plan routes and they have their own
+readers: the I:C history-events, block-evidence, basal night-evidence and ISF
+rest-window routes, the case-file preparation's `findings` and `rendered_rows`
+copies, the scoped findings window, and the Diagnose workstation demo set
+(`mockups/diagnose-workstation.synthetic`), whose payload the shape tests read.
+
+**Dosing.** No analyzer, staging predicate, cap, floor or served suggestion
+changes. A held or no-clean-day setting was never queued and never staged; it is
+now also never listed. Its number and band stay on the analysis read, and
+guidance still reads the carb-ratio `held_reason`.
+
+**Consequences.** The findings-projection fixture drops from about 92,000 lines to
+about 10,000, and the missed-meal fixture's hand-built answer takes the v3 shape.
+The QA harness's literal expectations lose their held, blind and past-setting queue
+rows and the past-setting title; the cases keep proving those states through their
+analyzer rows. The spec deltas restate the headline, setting-title, rate-family,
+workstation-row and QA-era requirements without their desk scenarios, and modify
+the history-generation and count-sentence requirements.
+
 ## ADR 529 — Day asks about rises, and each Prompt serves when its reading was
 
 **Decision.** The engine's missed-meal Prompts, which it already derived and

@@ -236,8 +236,7 @@ whose outcomes land in that window. Every Pattern counts over an Exposure family
 its outcome-anchored count in the window is above zero, whether or not it is
 admitted. Whether
 a Pattern row carries a chart coordinate, and so a case file, SHALL remain the
-chartability predicate's alone and SHALL NOT decide membership. The browser-gate
-findings mirror SHALL serve the same rows from the server's frozen scoped roster.
+chartability predicate's alone and SHALL NOT decide membership.
 
 #### Scenario: Setting-staged and unadmitted Patterns join a scoped window
 
@@ -400,7 +399,98 @@ attribution retained and run no classifier again (ADR 523).
   correction, the 16:05 low Correction stacking reached names its 14:40 stacking
   dose, and an unclaimed low names none
 
+### Requirement: A Pattern case file judges only the habit members in its own rate family
+
+A Pattern case file SHALL judge each roster row, and each selected Occurrence's
+reason, by exactly the Pattern's habit members whose lever's rate family is the
+Pattern's own rate family, where a lever's rate family is its evidence-population
+policy's closed recurrence account. A member outside that family — Correction
+stacking, which is counted over correction clusters, under Lows after correcting
+highs — SHALL contribute no state to a row's verdict and no habit entry to a
+reason, while it MAY still claim a row as one of the Pattern's rate levers and be
+named as that row's cause. The case producer's own test proves it (ADR 531).
+
+#### Scenario: An out-of-family member is judged by no row or reason
+
+- **GIVEN** the findings-fixture inputs over the workstation exposure feed, with
+  scenario Patterns for Correction on active insulin and Correction stacking, whose
+  roster then carries both under Lows after correcting highs
+- **WHEN** the case producer serves that Pattern's clock case, whole and selected
+  at each Occurrence
+- **THEN** no row's member is Correction stacking
+- **AND** every selected reason carries a habit entry for Correction on active
+  insulin only
+
+### Requirement: Manufactured workstation rows carry only shapes their producer can serve
+
+Every exposure Occurrence the Diagnose workstation fixture generator manufactures
+SHALL carry only what the real exposure feed can serve for its family: the anchor
+kind and label the episode view serves for that family (low · Low, meal · Meal
+bolus, high · High, correction · Correction); exactly the classifier verdicts the
+attribution step judges at that anchor kind (a low: Over-treated low and Correction
+on active insulin; a meal: Carb undercount, Late bolus and Meal over-delivery; a
+high: Missed / unannounced meal; a correction: Correction
+stacking, and only as its episode's stacking dose or last correction); each silence
+reason from the closed silence-reason set; a claim only by a lever the attribution
+step can drive from that anchor kind, so a correction row is claimed by Correction
+stacking and never by Correction on active insulin, which only a low drives; on a
+claimed row, its claiming lever's verdict matched, with that verdict's sentence as
+the row's cause text, and every other judged classifier unmatched; on an unclaimed
+row, every judged classifier unmatched and no cause text; and on a High, an anchor
+glucose at or above the high-anchor threshold. A manufactured case-file member its
+lever claims SHALL carry its recorded sentence as its cause text, as the producer's
+attribution does.
+
+#### Scenario: Every manufactured row is a servable shape
+
+- **GIVEN** the committed workstation payload
+- **WHEN** each of its exposure Occurrences is read
+- **THEN** its kind, label and judged classifier set are its family's
+- **AND** no verdict names a classifier that is not a Lever or a silence reason
+  outside the closed set
+- **AND** a claimed row's claiming lever is one its anchor kind can drive, and that
+  lever's verdict reads matched with its detail equal to the row's text
+- **AND** a High's anchor glucose reaches the high-anchor threshold
+
 ## MODIFIED Requirements
+
+### Requirement: The findings projection serves each count-bearing row's count sentences
+
+The findings projection SHALL serve count sentences in the form
+`n of d noun outcome`, each with its count, denominator, noun and outcome words
+served as their own values alongside the whole sentence. A Pattern row that
+carries a count and a denominator SHALL serve exactly one, its outcome words
+keyed by the Pattern's own served key. A Cause row SHALL serve one per family
+appearance it already serves, in the served appearance order and never merged
+into a total, each outcome keyed by the Cause's own lever together with that
+appearance's family. The outcome words SHALL come from one closed table owned by
+the projection. Two Patterns or two Causes that share a family SHALL be able to
+serve different outcomes. A Pattern key, or a lever-and-family pair the
+projection can emit, that has no entry SHALL fail the projection's tests rather
+than serve a sentence without an outcome. A row whose counts are under review,
+or that carries no denominator, SHALL serve no count sentence and SHALL keep its
+existing served status words. Each sentence SHALL use the same count, denominator
+and noun the row already serves, window-local where the row's counts are. No
+staging, tier, rank, verdict or priority value, and no served `headline`, SHALL
+change.
+
+#### Scenario: A cause row serves its outcome per appearance
+
+- **GIVEN** a synthetic store whose window holds a Cause row appearing in two
+  families
+- **WHEN** the findings projection is read for that window
+- **THEN** the row serves two count sentences in appearance order, each with the
+  count, denominator and noun of its own appearance, followed by that lever's
+  outcome words for that family
+- **AND** the row's tier, rank, priority, register and headline are unchanged
+
+#### Scenario: Opposite outcomes in one family stay apart
+
+- **GIVEN** the projection's closed sets of Pattern keys and of lever-and-family
+  pairs
+- **WHEN** the outcome table is compared with those sets
+- **THEN** every member has exactly one entry, and the two Patterns counted in
+  meals serve different outcome words
 
 ### Requirement: Patterns are detected by instance classifiers that judge one behavior at a time.
 
@@ -613,98 +703,6 @@ Verdicts, verdict counts, cohorts, denominators and claims SHALL be unchanged.
 - **THEN** it serves fourteen rows, each with 65 g and the Arc peak of 360 read
   past the top-up
 
-### Requirement: A Pattern case file judges only the habit members in its rate family
-
-A Pattern case file SHALL judge each roster row, and each selected Occurrence's
-reason, by exactly the Pattern's habit members whose lever's rate family is the
-Pattern's own rate family, where a lever's rate family is its evidence-population
-policy's closed recurrence account. A member outside that family — Correction
-stacking, which is counted over correction clusters, under Lows after correcting
-highs — SHALL contribute no state
-to a row's verdict and no habit entry to a reason, while it MAY still claim a row as
-one of the Pattern's rate levers and be named as that row's cause. The fixture-only
-Pattern case-file mirror the browser gates read SHALL apply the same rule, reading
-each lever's rate family from a table its fixture generator freezes from that same
-policy, and SHALL be held to the Python case producer by that producer's frozen
-answers for rosters that admit an out-of-family member.
-
-#### Scenario: An out-of-family member is judged by neither side
-
-- **GIVEN** the browser-gate inputs with one added scenario Pattern for Correction
-  stacking, whose real roster then carries `habit:correction_stacking` under Lows
-  after correcting highs
-- **WHEN** the Python case producer and the fixture-only mirror each serve that
-  Pattern's clock case, whole and selected at its first Occurrence
-- **THEN** both serve the same verdict counts and the same verdict and member for
-  every row, in order
-- **AND** both selected reasons carry habit entries for in-family levers only —
-  Correction on active insulin — and are equal
-
-#### Scenario: The mirror's family table is the policy's
-
-- **GIVEN** the committed event-comparison capture
-- **WHEN** its lever rate-family table is regenerated from the evidence-population
-  policy
-- **THEN** it carries one entry per Lever, equal to that Lever's rate family, and its drift check fails when the committed table differs
-
-### Requirement: Manufactured browser-gate rows carry only shapes their producer can serve
-
-Every exposure Occurrence the Diagnose workstation fixture generator manufactures
-SHALL carry only what the real exposure feed can serve for its family: the anchor
-kind and label the episode view serves for that family (low · Low, meal · Meal
-bolus, high · High, correction · Correction); exactly the classifier verdicts the
-attribution step judges at that anchor kind (a low: Over-treated low and Correction
-on active insulin; a meal: Carb undercount, Late bolus and Meal over-delivery; a
-high: Missed / unannounced meal; a correction: Correction
-stacking, and only as its episode's stacking dose or last correction); each silence
-reason from the closed silence-reason set; a claim only by a lever the attribution
-step can drive from that anchor kind, so a correction row is claimed by Correction
-stacking and never by Correction on active insulin, which only a low drives; on a
-claimed row, its claiming lever's verdict matched, with that verdict's sentence as
-the row's cause text, and every other judged classifier unmatched; on an unclaimed
-row, every judged classifier unmatched and no cause text; and on a High, an anchor
-glucose at or above the high-anchor threshold. A manufactured case-file member its
-lever claims SHALL carry its recorded sentence as its cause text, as the producer's
-attribution does. The event-comparison capture's comparison rows SHALL judge at each
-anchor only the classifiers the attribution step judges at that anchor kind. Each
-row's identity, time, date, dose, carbs, worst reading and state SHALL be
-unchanged, and so SHALL the Pattern roster. The findings projection SHALL move only
-as the unchanged projection reads these rows: the claimed rows' verdict bands, and
-the rows, appearances, chips, counts and sentences the correction rows' Correction
-stacking claim moves, each recorded in the change's design.
-
-#### Scenario: Every manufactured row is a servable shape
-
-- **GIVEN** the committed workstation payload
-- **WHEN** each of its exposure Occurrences is read
-- **THEN** its kind, label and judged classifier set are its family's
-- **AND** no verdict names a classifier that is not a Lever or a silence reason
-  outside the closed set
-- **AND** a claimed row's claiming lever is one its anchor kind can drive, and that
-  lever's verdict reads matched with its detail equal to the row's text
-- **AND** a High's anchor glucose reaches the high-anchor threshold
-
-#### Scenario: The projection moves only as the rows require
-
-- **GIVEN** the workstation payload before and after its rows took these shapes
-- **WHEN** the findings projection is served in the whole day and every browser
-  window
-- **THEN** the Pattern roster, and every row other than Late bolus, Missed /
-  unannounced meal, Over-treated low, Correction on active insulin and Correction
-  stacking, keep their membership, order, sentences and headline
-- **AND** in the whole day Late bolus reads 2 fired where it read 2 outranked,
-  Missed / unannounced meal 3 fired where it read 3 outranked, and Over-treated low
-  15 fired and 3 outranked where it read 18 and 0
-- **AND** in the whole day Correction on active insulin appears in lows only, with
-  3 episodes, 3 fired and 15 outranked, and a Correction stacking row follows it,
-  showing up in 2 of 2 correction clusters
-
-#### Scenario: A claimed meal's cause reads as its own lever
-
-- **GIVEN** the Highs after meals clock case the projection fixture freezes
-- **WHEN** its claimed meal is selected
-- **THEN** its anchor kind is meal and its cause text is the Late bolus sentence
-
 ### Requirement: A meal is its first carb bolus plus its same-meal top-ups
 
 Every meal counter SHALL read one meal-identity rule. A carb bolus at or over the
@@ -807,3 +805,15 @@ carb-ratio analyzer's meal and run ledgers SHALL be unchanged.
 **Reason:** The desk suite this projected for retired with the swap to the five-tab app (#495, ADR 495).
 
 **Migration:** The desk is preserved as release v0.1.0. The five-tab app is specified in the surfaces capability.
+
+### Requirement: A Pattern case file judges only the habit members in its rate family
+
+**Reason:** Its text and both scenarios hold the rule through the fixture-only Pattern case-file mirror and the event-comparison capture's frozen family table; the mirror left with the desk (ADR 495) and the capture and the frozen cases it read are removed (#531, ADR 531). The rule is restated without them as "A Pattern case file judges only the habit members in its own rate family", proved by the case producer's own test.
+
+**Migration:** Read "A Pattern case file judges only the habit members in its own rate family", ADDED in this change.
+
+### Requirement: Manufactured browser-gate rows carry only shapes their producer can serve
+
+**Reason:** The browser gates are gone (ADR 495), and the event-comparison capture whose comparison rows it constrained, the before-and-after projection it recorded and the frozen clock case its last scenario read are removed (#531, ADR 531). The workstation rows' shape rule is restated as "Manufactured workstation rows carry only shapes their producer can serve".
+
+**Migration:** Read "Manufactured workstation rows carry only shapes their producer can serve", ADDED in this change.

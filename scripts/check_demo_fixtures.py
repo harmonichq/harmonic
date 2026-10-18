@@ -2,12 +2,12 @@
 """Fail CI when a committed synthetic fixture set no longer matches its generator (#716).
 
 One synthetic set is committed under `mockups/`: the Diagnose workstation's
-`diagnose-workstation.synthetic/`, which scripts/gen_findings_projection_fixtures.py
-reads as its input (the desk that also drew it is gone, #495). It is produced by
+`diagnose-workstation.synthetic/`, whose exposure rows the fixture shape tests read
+(the desk that also drew it is gone, #495). It is produced by
 running a real generator script, not hand-written — the same "fixture encodes the
 assumption under test" trap `CLAUDE.md` records for the thin-slot hold applies
-here: if a generator's output drifts from what's committed, the projection
-fixtures are built from a payload the generator no longer produces, silently.
+here: if a generator's output drifts from what's committed, those tests read a
+payload the generator no longer produces, silently.
 
 This regenerates each set into a temporary directory and byte-compares it against
 the committed copy. Byte-exact: no parsing/normalization, so even an

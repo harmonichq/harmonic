@@ -55,14 +55,11 @@ def _preparation(*, zero_attribution=False):
     claimed = (frozenset() if zero_attribution
                else frozenset(member.id for member in members[:2]))
     findings = {
-        "schema": "diagnose-findings-v2", "analysis_generation": "synthetic:178",
+        "schema": "diagnose-findings-v3", "analysis_generation": "synthetic:178",
         "window": WindowQuery.whole_day().to_dict(),
         "findings_window": {"days": 30, "start": None, "end": None},
         "rows": [{"id": "finding:missed_meal", "register": "finding",
                   "episodes": len(claimed)}],
-        "selection": None,
-        "counts": {"assert": 0, "held": 0, "blind": 0, "finding": 1, "history": 0},
-        "chip_counts": {"highs": 1, "lows": 0, "meals": 0, "corrections": 0},
     }
     return PreparedCases(
         "fp_" + "1" * 32, 178, WindowQuery.whole_day(), findings,

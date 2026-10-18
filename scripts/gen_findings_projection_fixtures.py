@@ -20,7 +20,13 @@ The inputs are invented on the real schema and shaped like the 2026-08-17 readin
 (basal 05:30 asserting a capped raise, 06:30 held for want of a supported direction,
 the early afternoon leaning lower and held, the 19:30–21:00 stretch with no clean day,
 and a separate ISF case where a flat fasting interval is outweighed by recurring
-correction-linked lows). Synthetic only: no patient data anywhere near it.
+correction-linked lows). Synthetic only: no patient data anywhere near it. The
+held and no-clean-day inputs stay because they shape what asserts around them; the
+projection lists no row for them (ADR 531).
+
+The committed fixture holds the projection's answers only. The inputs once frozen
+beside them fed the desk's JavaScript findings mirror, which left with the desk
+(ADR 495, ADR 531).
 
     python3 scripts/gen_findings_projection_fixtures.py         # rewrite in place
     python3 scripts/gen_findings_projection_fixtures.py --check  # CI-style drift check
@@ -59,24 +65,16 @@ from ciq_autotune.analyzers.scenario.payload import (  # noqa: E402
     PreemptedLows,
     ScenarioReport,
 )
-from ciq_autotune.analyzers.scenario.evidence_population import policy_for  # noqa: E402
-from ciq_autotune.analyzers.scenario.outcome_patterns import (  # noqa: E402
-    build_outcome_patterns,
-    outcome_window_population,
-)
 from ciq_autotune.analyzers.scenario.levers import Lever, recommendation, title  # noqa: E402
-from ciq_autotune.guidance import candidates as guidance_candidates  # noqa: E402
 from ciq_autotune.analyzers.ic_regression import analyze_ic_blocks_fuzzy  # noqa: E402
 from ciq_autotune.analyzers.tuning_priority import (  # noqa: E402
     build_tuning_levers,
     price_ic_blocks,
 )
 from ciq_autotune.events import BasalEvent, BolusEvent, CgmReading  # noqa: E402
-from ciq_autotune.finding_case_file import PreparedCases  # noqa: E402
 from ciq_autotune.findings_projection import (  # noqa: E402
     FindingsProjection,
     WindowQuery,
-    pattern_rate_family,
     prepare_findings_projection,
 )
 from ciq_autotune.window_membership import outcome_minute  # noqa: E402
@@ -110,10 +108,6 @@ ANALYSIS_GENERATION = "findings-fixture-process:0"
 # The windows frozen here: the global queue, the two D34 anchoring windows, the
 # grounded morning and afternoon reads, a window that wraps midnight, and a stretch
 # where nothing speaks.
-# The narrowed windows the browser checks request of the fixture mirror (ADR 454):
-# the desk suite's one scoped preparation and the two fast-gate scopes. The mirror
-# refuses any other narrowed window by name.
-BROWSER_WINDOWS = ((0, 360), (135, 285), (720, 1080))
 WINDOWS = {
     "global": None,
     "morning": (4 * 60 + 30, 8 * 60),
@@ -312,8 +306,8 @@ def _snapshot(at, schedule):
     }))
 
 
-def history_catalogs():
-    """Active, aged and unmappable catalogs, all produced by the real analyzer."""
+def history_catalog():
+    """An active past-setting catalog, produced by the real analyzer."""
     first = datetime(2026, 5, 20)
     changed = datetime(2026, 7, 1)
     old_schedule = [(0, 6.0), (720, 5.7)]
@@ -325,60 +319,15 @@ def history_catalogs():
         for day in (2, 6, 10, 14) for hour in (9, 11)
     ]
 
-    def catalog(now, schedule, snaps=snapshots):
-        answer = []
-        analyze_ic_blocks_fuzzy(
-            events, schedule, config=IcConfig(), observed_days=90,
-            analysis_start=now - timedelta(days=90), analysis_end=now,
-            snapshots=snaps, history_catalog=answer,
-        )
-        return answer
-
-    active = catalog(datetime(2026, 8, 17), current_schedule)
-    aged = catalog(datetime(2026, 12, 17), current_schedule)
-    split_schedule = [(0, 5.0), (360, 7.0), (720, 5.7)]
-    split_snapshots = snapshots + [_snapshot(datetime(2026, 8, 1), split_schedule)]
-    unavailable = catalog(datetime(2026, 8, 17), split_schedule, split_snapshots)
-    if not (active and aged and unavailable):
-        raise SystemExit("synthetic history cases no longer produce a catalog")
-    return active, aged, unavailable
-
-
-def density_history_catalog():
-    """Seven active past-setting blocks, all produced by the real analyzer.
-
-    Each block receives five isolated invented meals before one snapshot-observed
-    schedule change.  Meals land on separate days so the analyzer, rather than
-    fixture code, owns every run boundary, estimate, lifecycle, and identity.
-    """
-    first = datetime(2026, 5, 20)
-    changed = datetime(2026, 7, 1)
-    starts = list(range(0, 7 * 180, 180))
-    old_schedule = [(start, 6.0 + index * 0.2)
-                    for index, start in enumerate(starts)]
-    current_schedule = [(start, ratio - 0.5)
-                        for start, ratio in old_schedule]
-    snapshots = [_snapshot(first, old_schedule), _snapshot(changed, current_schedule)]
-    events = []
-    for index, (start, ratio) in enumerate(old_schedule):
-        hour = (start + 60) // 60
-        for sample in range(5):
-            events.append(BolusEvent(
-                t=first + timedelta(days=1 + index * 5 + sample, hours=hour),
-                insulin=30.0 / ratio, carbs=30.0, carb_ratio=ratio,
-                completion="Completed",
-            ))
-    answer = []
+    now = datetime(2026, 8, 17)
+    active = []
     analyze_ic_blocks_fuzzy(
         events, current_schedule, config=IcConfig(), observed_days=90,
-        analysis_start=datetime(2026, 8, 17) - timedelta(days=90),
-        analysis_end=datetime(2026, 8, 17), snapshots=snapshots,
-        history_catalog=answer,
+        analysis_start=now - timedelta(days=90), analysis_end=now,
+        snapshots=snapshots, history_catalog=active,
     )
-    active = [row for row in answer if row.lifecycle == "active"]
-    if len(active) != 7:
-        raise SystemExit("synthetic density history no longer produces seven active "
-                         f"rows (got {len(active)})")
+    if not active:
+        raise SystemExit("synthetic history case no longer produces a catalog")
     return active
 
 
@@ -540,9 +489,9 @@ def _over_treated_fixture_events():
 def _real_over_treated_low_occurrences():
     """The five frozen production-shaped occurrences in this synthetic input.
 
-    The fixture freezes its three projection inputs alongside its outputs. Re-reading
-    this closed synthetic exposure slice keeps regeneration on the projection seam;
-    it must never invoke a production builder while checking those frozen bytes.
+    The fixture freezes its exposure feed alongside its outputs. Re-reading this
+    closed synthetic exposure slice keeps regeneration on the projection seam; it
+    must never invoke a production builder while checking those frozen bytes.
     """
     produced = json.loads(OUT.read_text())['inputs']['exposures']
     lows = produced["exposures"]["lows"]["occurrences"]
@@ -724,7 +673,7 @@ def analysis(*, blocks=None, isf=None):
     basal = basal_rows()
     isf = isf_rows() if isf is None else isf
     blocks = ic_blocks() if blocks is None else blocks
-    active_history, _aged_history, _unavailable_history = history_catalogs()
+    active_history = history_catalog()
     return AnalysisResult(
         schema_version=SCHEMA_VERSION,
         generated_at=f"{DAY.isoformat()} 09:00:00",
@@ -762,281 +711,33 @@ def empty_projection() -> FindingsProjection:
     )
 
 
-def _pattern_cases(query, findings, exposures, *, cgm=(), bolus=(), pattern_exposures=None):
-    """The Python case producer over one projected answer and its exposures."""
-    return PreparedCases(
-        projection_id="fp_" + "2" * 32, version=0, query=query, findings=findings,
-        recurrence={}, members={lever: () for lever in Lever},
-        associations={lever: frozenset() for lever in Lever},
-        attribution_provenance={lever: () for lever in Lever}, withheld=frozenset(),
-        cgm=cgm, basal=(), bolus=bolus, carbs=(), lease_until=0, exposures=exposures,
-        pattern_exposures=pattern_exposures,
-    )
-
-
-def _pattern_capture():
-    return json.loads((
-        pathlib.Path(__file__).resolve().parents[1]
-        / "mockups" / "diagnose-event-comparison.synthetic" / "capture.json"
-    ).read_text())
-
-
-def _trace_series(rows):
-    """Glucose and boluses rebuilt from the event-comparison capture's per-row traces:
-    each reading and dose at its row's anchor plus its minute. Rows overlap in time, so
-    the first row to reach an instant keeps it, one reading per instant as a store
-    holds; a dose shared by two rows is kept once."""
-    cgm, bolus = {}, {}
-    for source in rows:
-        anchor = datetime.strptime(source["anchor_t"], "%Y-%m-%d %H:%M:%S")
-        for point in source["trace"]["cgm"]:
-            cgm.setdefault(anchor + timedelta(minutes=point["minute"]), point["bg"])
-        for dose in source["trace"]["boluses"]:
-            bolus.setdefault(dose.get("seq_num"), BolusEvent(
-                anchor + timedelta(minutes=dose["minute"]), completion=dose.get("completion"),
-                insulin=dose.get("insulin"), carbs=dose.get("carbs"), seq_num=dose.get("seq_num"),
-            ))
-    return (tuple(CgmReading(t, bg, "EGV") for t, bg in sorted(cgm.items())),
-            tuple(sorted(bolus.values(), key=lambda dose: dose.t)))
-
-
-def browser_window_answers(browser_analysis, browser_exposures, browser_scenarios):
-    """The server's answers over the browser inputs (ADR 454): its full projection for
-    the whole day and each narrowed window the browser checks request, each narrowed
-    window's scoped Pattern roster, and each charted Pattern's clock and event case
-    files there with no selection, from that window's outcome-window population as
-    `finding_case_file.prepare` builds it."""
-    projection = prepare_findings_projection(
-        analysis=browser_analysis, exposures=browser_exposures, scenarios=browser_scenarios,
-    )
-    populations = _pattern_capture()["pattern_populations"]
-    windows = {"whole_day": projection.project(
-        WindowQuery.whole_day(), analysis_generation=ANALYSIS_GENERATION)}
-    rosters, cases = {}, {}
-    for bounds in BROWSER_WINDOWS:
-        key = f"{bounds[0]}-{bounds[1]}"
-        query = WindowQuery.clock(*bounds)
-        findings = projection.project(query, analysis_generation=ANALYSIS_GENERATION)
-        windows[key] = findings
-        rosters[key] = findings["outcome_patterns"]
-        pattern_exposures, _roster = outcome_window_population(
-            browser_analysis, browser_exposures, browser_scenarios, query,
-        )
-        cases[key] = {}
-        for row in findings["rows"]:
-            if row.get("kind") != "pattern" or not row.get("pattern_chart"):
-                continue
-            cgm, bolus = _trace_series(populations[pattern_rate_family(row["pattern"]).value])
-            prepared = _pattern_cases(query, findings, browser_exposures, cgm=cgm, bolus=bolus,
-                                      pattern_exposures=pattern_exposures)
-            cases[key][row["pattern"]["key"]] = {
-                alignment: prepared.case(row["id"], alignment, None)
-                for alignment in ("clock", "event")
-            }
-    return windows, rosters, cases
-
-
-def habit_rate_families():
-    """Each habit lever's evidence-population rate family (ADR 454).
-
-    The Pattern case producer judges a habit member only when this family is its
-    Pattern's; the fixture Pattern mirror reads this frozen table rather than a
-    second transcription of it.
-    """
-    return {lever.value: policy_for(lever).recurrence_family.value for lever in Lever}
-
-
-def pattern_family_cases(browser_analysis, browser_exposures, browser_scenarios):
-    """Freeze the Python Pattern case producer over a roster with an out-of-family
-    habit member (ADR 454): Correction stacking (correction clusters) under Lows after
-    correcting highs.
-
-    It is the browser inputs plus that one scenario Pattern, which is what admits the
-    member. The entry holds the roster row, the whole clock case and the clock case
-    selected at its first Occurrence, so the fixture mirror can be held to them.
-    """
-    query = WindowQuery.whole_day()
-    result = {}
-    for extra, key in ((Lever.CORRECTION_STACKING, "lows_after_correcting_highs"),):
-        scenarios = json.loads(json.dumps(browser_scenarios))
-        scenarios["patterns"].append(Pattern(
-            lever=extra, confidence=Confidence(n=40, k=5, effect=0.3), rank=5,
-            recommendation=recommendation(extra), hero_episode="ep1",
-            occurrences=["ep1"], admission_basis="low_confidence").to_dict())
-        prepared = prepare_findings_projection(
-            analysis=browser_analysis, exposures=browser_exposures, scenarios=scenarios,
-        )
-        roster_row = next(row for row in prepared._outcome_patterns if row["key"] == key)
-        assert f"habit:{extra.value}" in {member["subject"] for member in roster_row["members"]}, key
-        assert policy_for(extra).recurrence_family is not pattern_rate_family(roster_row), key
-        cases = _pattern_cases(query, prepared.project(
-            query, analysis_generation=ANALYSIS_GENERATION), browser_exposures)
-        clock = cases.case(f"pattern:{key}", "clock", None)
-        result[key] = {
-            "lever": extra.value, "roster_row": roster_row, "clock": clock,
-            "selected": cases.case(f"pattern:{key}", "clock", clock["occurrences"][0]["id"]),
-        }
-    return result
-
-
-def pattern_clock_case(browser_analysis, browser_exposures, browser_scenarios):
-    """Freeze one selected Pattern clock answer through the Python case producer."""
-    query = WindowQuery.whole_day()
-    findings = prepare_findings_projection(
-        analysis=browser_analysis, exposures=browser_exposures,
-        scenarios=browser_scenarios,
-    ).project(query, analysis_generation=ANALYSIS_GENERATION)
-    cgm, bolus = _trace_series(_pattern_capture()["pattern_populations"]["meals"][:1])
-    prepared = _pattern_cases(query, findings, browser_exposures, cgm=cgm, bolus=bolus)
-    finding_id = "pattern:highs_after_meals"
-    case = prepared.case(finding_id, "clock", None)
-    return prepared.case(finding_id, "clock", case["occurrences"][0]["id"])
+def _windows(prepared: FindingsProjection, windows) -> dict:
+    return {
+        name: prepared.project(
+            WindowQuery.whole_day() if bounds is None else WindowQuery.clock(*bounds),
+            analysis_generation=ANALYSIS_GENERATION)
+        for name, bounds in windows.items()
+    }
 
 
 def payload() -> dict:
     prepared = projection()
-    no_data = empty_projection()
     direction_only = prepare_findings_projection(
         analysis=analysis(isf=direction_only_isf_rows()),
         exposures=exposures(), scenarios=scenarios(),
     )
-    active_history, aged_history, unavailable_history = history_catalogs()
-    density_history = density_history_catalog()
-    selected_id = active_history[0].history_id
-    browser_payload = json.loads((
-        pathlib.Path(__file__).resolve().parents[1]
-        / "mockups" / "diagnose-workstation.synthetic" / "payload.json"
-    ).read_text())
-    browser_analysis = {
-        **browser_payload["analyze"],
-        "tuning_levers": prepared._analysis["tuning_levers"],
-    }
-    # Every browser roster, window and case reads the payload's exposures unaltered.
-    browser_exposures = json.loads(json.dumps(browser_payload["exposures"]))
-    browser_scenarios = json.loads(json.dumps(prepared._scenarios))
-    # Each hand-built Pattern's admission basis is what the engine's split gives its
-    # own confidence: late bolus scores under the floor without the strong override.
-    browser_scenarios["patterns"].extend([
-        Pattern(lever=Lever.LATE_BOLUS,
-                confidence=Confidence(n=50, k=7, effect=0.38), rank=3,
-                recommendation=recommendation(Lever.LATE_BOLUS),
-                hero_episode="ep70", occurrences=["ep70"], admission_basis="low_confidence").to_dict(),
-        Pattern(lever=Lever.CORRECTION_ON_IOB,
-                confidence=Confidence(n=45, k=8, effect=0.35), rank=4,
-                recommendation=recommendation(Lever.CORRECTION_ON_IOB),
-                hero_episode="ep90", occurrences=["ep90"], admission_basis="lower_bound").to_dict(),
-    ])
-
-    browser_windows, scoped_rosters, scoped_cases = browser_window_answers(
-        browser_analysis, browser_exposures, browser_scenarios,
-    )
-
-    def with_catalog(catalog):
-        analysis_payload = dict(prepared._analysis)
-        analysis_payload["ic_history"] = [row.to_dict() for row in catalog]
-        return prepare_findings_projection(
-            analysis=analysis_payload, exposures=prepared._exposures,
-            scenarios=prepared._scenarios,
-        )
-
     return {
         "_generated_by": "scripts/gen_findings_projection_fixtures.py",
         "_note": ("SYNTHETIC. Every window below is the real projection's own output "
                   "over invented inputs run through the real engines — never "
                   "hand-assembled. Regenerate with "
                   "`python3 scripts/gen_findings_projection_fixtures.py`."),
-        # The three published payloads `windows` was projected FROM (#735). The
-        # browser gates have no Python, so they answer `/diagnose/findings` from a
-        # fixture-only JS mirror of this projection; freezing the inputs beside the
-        # outputs is what lets `frontend/findings-projection-mirror.test.js` run that
-        # mirror over these exact dicts and byte-compare it against the server's own
-        # answers. Without them the mirror could drift in silence, which is the
-        # #273/#465 failure class this projection exists to close.
-        "inputs": {
-            "analysis": prepared._analysis,
-            "exposures": prepared._exposures,
-            "scenarios": prepared._scenarios,
-            "outcome_patterns": prepared._outcome_patterns,
-            "outcome_patterns_by_window": {
-                ("whole_day" if bounds is None else f"{bounds[0]}-{bounds[1]}"):
-                prepared.project(
-                    WindowQuery.whole_day() if bounds is None
-                    else WindowQuery.clock(*bounds),
-                    analysis_generation=ANALYSIS_GENERATION,
-                )["outcome_patterns"]
-                for bounds in (*WINDOWS.values(), (720, 900))
-            },
-            "analysis_generation": ANALYSIS_GENERATION,
-        },
-        # The browser-gate workstation has a denser, independently generated
-        # exposure feed than this projection fixture. Run that feed through the
-        # same public Pattern producer so its rows and case files share k and n.
-        "browser_outcome_patterns": build_outcome_patterns(
-            browser_analysis, browser_exposures, browser_scenarios,
-        ),
-        # The analysis, scenarios and generation every browser roster, window and
-        # case is built from: the test desk serves these, so its whole queue is the
-        # server's own (ADR 454).
-        "browser_inputs": {
-            "analysis": browser_analysis, "scenarios": browser_scenarios,
-            "analysis_generation": ANALYSIS_GENERATION,
-        },
-        # The server's full projection of those inputs for the whole day and each
-        # narrowed window the browser checks request, the fixture mirror's frozen
-        # answers; then each narrowed window's scoped roster and Pattern case files.
-        "browser_windows": browser_windows,
-        "browser_outcome_patterns_by_window": scoped_rosters,
-        "browser_pattern_cases_by_window": scoped_cases,
-        # The Pattern candidates guidance serves for those same inputs, names and
-        # all (ADR 426), so a desk test can mount Changes on the served shape.
-        "browser_guidance_patterns": [
-            row for row in guidance_candidates(
-                browser_analysis, browser_exposures, browser_scenarios,
-            ) if row["kind"] == "pattern"
-        ],
-        "pattern_clock_case": pattern_clock_case(
-            browser_analysis, browser_exposures, browser_scenarios,
-        ),
-        # The lever-to-rate-family table the Pattern case producer filters habit
-        # members by, and its answers for two rosters that carry a member outside
-        # the family, which the fixture Pattern mirror is held to (ADR 454).
-        "habit_rate_families": habit_rate_families(),
-        "pattern_family_cases": pattern_family_cases(
-            browser_analysis, browser_exposures, browser_scenarios,
-        ),
-        "direction_only_inputs": {
-            "analysis": direction_only._analysis,
-            "exposures": direction_only._exposures,
-            "scenarios": direction_only._scenarios,
-            "outcome_patterns": direction_only._outcome_patterns,
-            "outcome_patterns_by_window": {
-                ("whole_day" if bounds is None else f"{bounds[0]}-{bounds[1]}"):
-                direction_only.project(WindowQuery.whole_day() if bounds is None
-                                       else WindowQuery.clock(*bounds),
-                                       analysis_generation=ANALYSIS_GENERATION)["outcome_patterns"]
-                for bounds in WINDOWS.values()
-            },
-            "analysis_generation": ANALYSIS_GENERATION,
-        },
-        "direction_only_windows": {
-            name: direction_only.project(
-                WindowQuery.whole_day() if bounds is None
-                else WindowQuery.clock(*bounds),
-                analysis_generation=ANALYSIS_GENERATION)
-            for name, bounds in WINDOWS.items()
-        },
-        # The browser derives its density input from `inputs` by replacing only
-        # this generator-authored analyzer catalog.  Freezing the whole input a
-        # second time would duplicate the unrelated exposures and scenarios.
-        "density_history": [row.to_dict() for row in density_history],
-        "windows": {
-            name: prepared.project(
-                WindowQuery.whole_day() if bounds is None
-                else WindowQuery.clock(*bounds),
-                analysis_generation=ANALYSIS_GENERATION)
-            for name, bounds in WINDOWS.items()
-        } | {"drawn": prepared.project(
-            WindowQuery.clock(720, 900), analysis_generation=ANALYSIS_GENERATION)},
+        # The exposure feed the windows were projected from. Its producer-built
+        # over-treated low slice is this generator's own input on the next run
+        # (`_real_over_treated_low_occurrences`), so it stays frozen here.
+        "inputs": {"exposures": prepared._exposures},
+        "windows": _windows(prepared, WINDOWS | {"drawn": (720, 900)}),
+        "direction_only_windows": _windows(direction_only, WINDOWS),
         "settings_cases": {
             "carb_ratio_raise": prepare_findings_projection(
                 analysis=analysis(blocks=ic_raise_blocks()), exposures=exposures(),
@@ -1044,47 +745,8 @@ def payload() -> dict:
             ).project(WindowQuery.whole_day(),
                       analysis_generation=ANALYSIS_GENERATION),
         },
-        "selection_cases": {
-            "present": prepared.project(
-                WindowQuery.whole_day(), selected_id,
-                analysis_generation=ANALYSIS_GENERATION),
-            "out_of_scope": prepared.project(
-                WindowQuery.clock(720, 900), selected_id,
-                analysis_generation=ANALYSIS_GENERATION),
-            "aged_out": with_catalog(aged_history).project(
-                WindowQuery.whole_day(), aged_history[0].history_id,
-                analysis_generation=ANALYSIS_GENERATION),
-            "unavailable": with_catalog(unavailable_history).project(
-                WindowQuery.whole_day(), unavailable_history[0].history_id,
-                analysis_generation=ANALYSIS_GENERATION),
-        },
-        "selection_inputs": {
-            "present": prepared._analysis,
-            "out_of_scope": prepared._analysis,
-            "aged_out": with_catalog(aged_history)._analysis,
-            "unavailable": with_catalog(unavailable_history)._analysis,
-        },
-        "no_data_inputs": {
-            "analysis": no_data._analysis,
-            "exposures": no_data._exposures,
-            "scenarios": no_data._scenarios,
-            "outcome_patterns": no_data._outcome_patterns,
-            "outcome_patterns_by_window": {
-                ("whole_day" if bounds is None else f"{bounds[0]}-{bounds[1]}"):
-                no_data.project(WindowQuery.whole_day() if bounds is None
-                                else WindowQuery.clock(*bounds),
-                                analysis_generation=ANALYSIS_GENERATION)["outcome_patterns"]
-                for bounds in (None, WINDOWS["morning"])
-            },
-            "analysis_generation": ANALYSIS_GENERATION,
-        },
-        "no_data": {
-            name: no_data.project(
-                WindowQuery.whole_day() if bounds is None
-                else WindowQuery.clock(*bounds),
-                analysis_generation=ANALYSIS_GENERATION)
-            for name, bounds in (("global", None), ("morning", WINDOWS["morning"]))
-        },
+        "no_data": _windows(empty_projection(),
+                            {"global": None, "morning": WINDOWS["morning"]}),
     }
 
 

@@ -2119,13 +2119,12 @@ QA_CASES = (
             },
             {
                 ("whole_day", ("basal", "03:00")): ExpectedQueueRow("assert", "lower", None, 'One cautious step down is supported at this time. Delivered below the programmed rate across 30 steady nights.'),
-                ("whole_day", ("ic", "All day")): ExpectedQueueRow("history", None, None, 'Past setting, no change suggested. Measured 11.5 g/U across 14 meal runs while 12 was programmed, until 2024-06-16. Programmed now: 10.'),
             },
             frozenset(),
             _SHOWCASE_REST_WINDOWS,
             {"ich1_WzAsMTQ0MCwiMTIiXQ": _showcase_history_series()},
             frozenset({('correction_clusters', '2024-06-25 13:40:00', 'clean'), ('correction_clusters', '2024-06-29 20:00:00', 'clean'), ('highs', '2024-06-25 14:00:00', 'clean'), ('highs', '2024-06-26 14:35:00', 'near_miss'), ('lows', '2024-06-26 13:55:00', 'fired'), ('lows', '2024-06-27 12:10:00', 'near_miss'), ('lows', '2024-06-28 12:10:00', 'clean'), ('lows', '2024-06-28 16:10:00', 'no_data'), ('lows', '2024-06-29 22:00:00', 'fired'), ('meals', '2024-06-01 08:00:00', 'no_data'), ('meals', '2024-06-02 08:00:00', 'no_data'), ('meals', '2024-06-03 08:00:00', 'no_data'), ('meals', '2024-06-04 08:00:00', 'no_data'), ('meals', '2024-06-05 08:00:00', 'no_data'), ('meals', '2024-06-06 08:00:00', 'no_data'), ('meals', '2024-06-07 08:00:00', 'no_data'), ('meals', '2024-06-08 08:00:00', 'no_data'), ('meals', '2024-06-09 08:00:00', 'no_data'), ('meals', '2024-06-10 08:00:00', 'no_data'), ('meals', '2024-06-11 08:00:00', 'no_data'), ('meals', '2024-06-12 08:00:00', 'no_data'), ('meals', '2024-06-13 08:00:00', 'no_data'), ('meals', '2024-06-14 08:00:00', 'no_data'), ('meals', '2024-06-15 08:00:00', 'no_data'), ('meals', '2024-06-16 08:00:00', 'no_data'), ('meals', '2024-06-17 08:00:00', 'no_data'), ('meals', '2024-06-18 08:00:00', 'no_data'), ('meals', '2024-06-19 08:00:00', 'no_data'), ('meals', '2024-06-20 08:00:00', 'no_data'), ('meals', '2024-06-21 08:00:00', 'no_data'), ('meals', '2024-06-22 08:00:00', 'no_data'), ('meals', '2024-06-23 08:00:00', 'no_data'), ('meals', '2024-06-24 08:00:00', 'no_data'), ('meals', '2024-06-25 08:00:00', 'no_data'), ('meals', '2024-06-25 12:00:00', 'fired'), ('meals', '2024-06-26 08:00:00', 'no_data'), ('meals', '2024-06-27 08:00:00', 'no_data'), ('meals', '2024-06-28 08:00:00', 'no_data'), ('meals', '2024-06-29 08:00:00', 'no_data'), ('meals', '2024-06-29 19:00:00', 'no_data'), ('meals', '2024-06-30 08:00:00', 'no_data')}),
-            frozenset({'Basal 03:00 to 04:00 · lower', 'Carb ratio All day. Past setting.', 'Carb undercount', 'Correction on active insulin', 'Highs after meals', 'Lows after correcting highs', 'Lows after meals', 'Over-treated low', 'meals-start-high'}),
+            frozenset({'Basal 03:00 to 04:00 · lower', 'Carb undercount', 'Correction on active insulin', 'Highs after meals', 'Lows after correcting highs', 'Lows after meals', 'Over-treated low', 'meals-start-high'}),
             {('over_treated_low', 'lows'): ExpectedVerdictTally(denominator=5,
                                                                 counts={'fired': 1,
                                                                         'outranked': 1,
@@ -2246,8 +2245,6 @@ QA_CASES = (
             _basal_rows({("basal", "03:00"): _BASAL_INSUFFICIENT}),
             _basal_support("03:00", 7),
             {
-                ((180, 240), ("basal", "03:00")): ExpectedQueueRow("held", None, None, 'Not enough nights of steady data yet to point one way. Delivered 0.48 U/h across 7 steady nights against 0.60 programmed.'),
-                ((180, 240), ("basal", "03:30")): ExpectedQueueRow("blind", None, None, 'No steady nights delivered against the programmed rate here, so nothing to say either way.'),
             },
             frozenset({("whole_day", ("basal", "03:00"))}),
             frozenset(), {}, frozenset(), frozenset({'Highs after meals', 'Highs after treating lows', 'Lows after correcting highs', 'Lows after meals'}),
@@ -2260,8 +2257,6 @@ QA_CASES = (
             _basal_rows({("basal", "03:00"): _BASAL_INSUFFICIENT}),
             _basal_support("03:00", 8),
             {
-                ((180, 240), ("basal", "03:00")): ExpectedQueueRow("held", None, None, 'Not enough nights of steady data yet to point one way. Delivered 0.48 U/h across 8 steady nights against 0.60 programmed.'),
-                ((180, 240), ("basal", "03:30")): ExpectedQueueRow("blind", None, None, 'No steady nights delivered against the programmed rate here, so nothing to say either way.'),
             },
             frozenset({("whole_day", ("basal", "03:00"))}),
             frozenset(), {}, frozenset(), frozenset({'Highs after meals', 'Highs after treating lows', 'Lows after correcting highs', 'Lows after meals'}),
@@ -2289,7 +2284,6 @@ QA_CASES = (
                 ("whole_day", ("basal", "00:30")): ExpectedQueueRow("assert", "lower", None, 'One cautious step down is supported at this time. Delivered 0.50 U/h across 30 steady nights against 0.60 programmed.'),
                 ((0, 120), ("basal", "00:00")): ExpectedQueueRow("assert", "raise", None, 'One cautious step up is supported at this time. Delivered 0.70 U/h across 30 steady nights against 0.60 programmed.'),
                 ((0, 120), ("basal", "00:30")): ExpectedQueueRow("assert", "lower", None, 'One cautious step down is supported at this time. Delivered 0.50 U/h across 30 steady nights against 0.60 programmed.'),
-                ((0, 120), ("basal", "01:30")): ExpectedQueueRow("held", None, None, 'Not enough nights of steady data yet to point one way. Delivered 0.70 U/h across 5 steady nights against 0.60 programmed.'),
             },
             frozenset({
                 ("whole_day", ("basal", "01:00")),
@@ -2309,7 +2303,6 @@ QA_CASES = (
             _basal_rows({("basal", "03:00"): _BASAL_NO_DATA}),
             _basal_support("03:00", 0),
             {
-                ((180, 240), ("basal", "00:00")): ExpectedQueueRow("blind", None, None, 'No steady nights delivered against the programmed rate here, so nothing to say either way.'),
             },
             frozenset({
                 ("whole_day", ("basal", "03:00")),
@@ -2334,8 +2327,6 @@ QA_CASES = (
             ),
             _basal_support("03:00", 0),
             {
-                ((180, 240), ("basal", "03:00")): ExpectedQueueRow("held", None, None, 'No set rate to step from, so only the measured range is shown. 30 steady nights delivered so far.'),
-                ((180, 240), ("basal", "03:30")): ExpectedQueueRow("blind", None, None, 'No steady nights delivered against the programmed rate here, so nothing to say either way.'),
             },
             frozenset({("whole_day", ("basal", "03:00"))}),
             frozenset(), {}, frozenset(), frozenset({'Highs after meals', 'Highs after treating lows', 'Lows after correcting highs', 'Lows after meals'}),
@@ -2347,7 +2338,6 @@ QA_CASES = (
         QaExpectation(
             _basal_rows({("basal", "03:00"): _BASAL_NO_CHANGE}),
             _basal_support("03:00", 0), {
-                ((180, 240), ("basal", "03:30")): ExpectedQueueRow("blind", None, None, 'No steady nights delivered against the programmed rate here, so nothing to say either way.'),
             },
             frozenset({
                 ("whole_day", ("basal", "03:00")),
@@ -2398,8 +2388,6 @@ QA_CASES = (
             _basal_rows({("basal", "03:00"): _BASAL_HARM_GATED}),
             _basal_support("03:00", 30),
             {
-                ((180, 240), ("basal", "03:00")): ExpectedQueueRow("held", None, None, 'A low printed at this hour, so a step up is withheld and the rate stays as it is. Delivered 0.66 U/h across 30 steady nights against 0.60 programmed.'),
-                ((180, 240), ("basal", "03:30")): ExpectedQueueRow("blind", None, None, 'No steady nights delivered against the programmed rate here, so nothing to say either way.'),
             },
             frozenset({("whole_day", ("basal", "03:00"))}),
             frozenset(), {}, frozenset({
@@ -2418,8 +2406,6 @@ QA_CASES = (
             _basal_rows({("basal", "03:00"): _BASAL_HARM_GATED}),
             _basal_support("03:00", 30),
             {
-                ((180, 240), ('basal', '03:00')): ExpectedQueueRow('held', None, None, 'Lows keep happening overnight, but the step down is smaller than the smallest change worth making, so the rate stays as it is. Delivered 0.59 U/h across 30 steady nights against 0.60 programmed.'),
-                ((180, 240), ('basal', '03:30')): ExpectedQueueRow('blind', None, None, 'No steady nights delivered against the programmed rate here, so nothing to say either way.'),
             },
             frozenset({("whole_day", ("basal", "03:00"))}),
             frozenset(), {}, frozenset({
@@ -2439,8 +2425,6 @@ QA_CASES = (
             _basal_rows({("basal", "03:00"): _BASAL_HARM_GATED}),
             _basal_support("03:00", 30),
             {
-                ((180, 240), ('basal', '03:00')): ExpectedQueueRow('held', None, None, 'Lows keep happening overnight, but the measured range still includes the set rate, so it stays as it is. Delivered 0.54 U/h across 30 steady nights against 0.60 programmed.'),
-                ((180, 240), ('basal', '03:30')): ExpectedQueueRow('blind', None, None, 'No steady nights delivered against the programmed rate here, so nothing to say either way.'),
             },
             frozenset({("whole_day", ("basal", "03:00"))}),
             frozenset(), {}, frozenset({
@@ -2460,8 +2444,6 @@ QA_CASES = (
             _basal_rows({('basal', '03:00'): _BASAL_INSUFFICIENT}),
             _basal_support("03:00", 16),
             {
-                ((180, 240), ('basal', '03:00')): ExpectedQueueRow(register='held', direction=None, asserts_move=None, headline='Most nights point one way, but the measured range still includes the set rate, so it stays as it is. Delivered 0.66 U/h across 30 steady nights against 0.60 programmed.'),
-                ((180, 240), ('basal', '03:30')): ExpectedQueueRow(register='blind', direction=None, asserts_move=None, headline='No steady nights delivered against the programmed rate here, so nothing to say either way.'),
             },
             frozenset({("whole_day", ("basal", "03:00"))}),
             frozenset(), {}, frozenset([]),
@@ -2539,7 +2521,6 @@ QA_CASES = (
                     ExpectedSupport(n_runs=8, effective_run_count=8.0),
             },
             {
-                ((0, 720), ("basal", "00:00")): ExpectedQueueRow("blind", None, None, 'No steady nights delivered against the programmed rate here, so nothing to say either way.'),
             },
             frozenset({
                 ("whole_day", ("ic", "All day")),
@@ -2636,8 +2617,6 @@ QA_CASES = (
                     ExpectedSupport(n_runs=8, effective_run_count=8.0),
             },
             {
-                ((0, 720), ("ic", "All day")): ExpectedQueueRow("held", None, None, 'Held at current: pre-empted low. Measured 8 g/U across 8 meal runs against 10 programmed.'),
-                ((0, 720), ("basal", "00:00")): ExpectedQueueRow("blind", None, None, 'No steady nights delivered against the programmed rate here, so nothing to say either way.'),
             },
             frozenset({("whole_day", ("ic", "All day"))}),
             frozenset(), {}, _IC_NINE_MEAL_ROWS, frozenset({'Highs after meals', 'Highs after treating lows', 'Lows after correcting highs', 'Lows after meals'}),
@@ -2656,7 +2635,6 @@ QA_CASES = (
                     ExpectedSupport(n_runs=7, effective_run_count=7.0),
             },
             {
-                ((0, 720), ("basal", "00:00")): ExpectedQueueRow("blind", None, None, 'No steady nights delivered against the programmed rate here, so nothing to say either way.'),
             },
             frozenset({
                 ("whole_day", ("ic", "All day")),
@@ -2678,12 +2656,11 @@ QA_CASES = (
                     ExpectedSupport(n_runs=8, effective_run_count=8.0),
             },
             {
-                ("whole_day", ("ic", "All day")): ExpectedQueueRow("history", None, None, 'Past setting, no change suggested. Measured 12 g/U across 4 meal runs while 12 was programmed, until 2024-05-10. Programmed now: 10.'),
             },
             frozenset(), frozenset(),
             {"ich1_WzAsMTQ0MCwiMTIiXQ": _IC_HISTORY_SERIES},
             _IC_HISTORY_MEAL_ROWS,
-            frozenset({'Carb ratio All day. Past setting.', 'Highs after meals', 'Highs after treating lows', 'Lows after correcting highs', 'Lows after meals'}),
+            frozenset({'Highs after meals', 'Highs after treating lows', 'Lows after correcting highs', 'Lows after meals'}),
             outcome_patterns=({'key': 'highs_after_meals', 'title': 'Highs after meals', 'subject': 'pattern:highs_after_meals', 'members': [{'subject': 'setting:carb_ratio', 'kind': 'setting', 'k': 0, 'price': 0, 'admitted': False, 'producer': 'tuning_levers', 'lo': None, 'hi': None, 'seriousness': None, 'seriousness_segments': [], 'action': None}], 'rate_levers': ['habit:carb_undercount', 'habit:late_bolus'], 'n': 12, 'k': 0, 'rate': 0.0, 'wilson': {'lo': 0.0, 'hi': 0.1204}, 'wide': False, 'rate_producer': 'exposures', 'readiness': {'count': 12, 'gate': 12, 'verdict': 'ready'}, 'settled_price': 0, 'admission_route': 'none', 'collapse': 'remain_pattern', 'action': None, 'seriousness': None, 'member_set_fingerprint': '13141e472c40a768'}, {'key': 'lows_after_meals', 'title': 'Lows after meals', 'subject': 'pattern:lows_after_meals', 'members': [{'subject': 'setting:carb_ratio', 'kind': 'setting', 'k': 0, 'price': 0, 'admitted': False, 'producer': 'tuning_levers', 'lo': None, 'hi': None, 'seriousness': None, 'seriousness_segments': [], 'action': None}], 'rate_levers': ['habit:meal_over_delivery'], 'n': 12, 'k': 0, 'rate': 0.0, 'wilson': {'lo': 0.0, 'hi': 0.1204}, 'wide': False, 'rate_producer': 'exposures', 'readiness': {'count': 12, 'gate': 12, 'verdict': 'ready'}, 'settled_price': 0, 'admission_route': 'none', 'collapse': 'remain_pattern', 'action': None, 'seriousness': None, 'member_set_fingerprint': '13141e472c40a768'}, {'key': 'highs_after_treating_lows', 'title': 'Highs after treating lows', 'subject': 'pattern:highs_after_treating_lows', 'members': [], 'rate_levers': ['habit:over_treated_low'], 'n': 0, 'k': 0, 'rate': None, 'wilson': None, 'wide': True, 'rate_producer': 'exposures', 'readiness': {'count': 0, 'gate': 12, 'verdict': 'withheld'}, 'settled_price': 0, 'admission_route': 'none', 'collapse': 'remain_pattern', 'action': None, 'seriousness': None, 'member_set_fingerprint': 'e3b0c44298fc1c14'}, {'key': 'lows_after_correcting_highs', 'title': 'Lows after correcting highs', 'subject': 'pattern:lows_after_correcting_highs', 'members': [], 'rate_levers': ['habit:correction_stacking', 'habit:correction_on_iob'], 'n': 0, 'k': 0, 'rate': None, 'wilson': None, 'wide': True, 'rate_producer': 'exposures', 'readiness': {'count': 0, 'gate': 12, 'verdict': 'withheld'}, 'settled_price': 0, 'admission_route': 'none', 'collapse': 'remain_pattern', 'action': None, 'seriousness': None, 'member_set_fingerprint': 'e3b0c44298fc1c14'})),
         IC_SOURCE_SPAN_DAYS,
         "ic",
@@ -5102,18 +5079,7 @@ QA_CASES += (
                                                                                                '0.48 U/h across 30 '
                                                                                                'steady nights '
                                                                                                'against 0.60 '
-                                                                                               'programmed.'),
-                                  ('whole_day', ('ic', 'All day')): ExpectedQueueRow(register='history',
-                                                                                     direction=None,
-                                                                                     asserts_move=None,
-                                                                                     headline='Past setting, no '
-                                                                                              'change suggested. '
-                                                                                              'Measured 12 g/U '
-                                                                                              'across 4 meal runs '
-                                                                                              'while 12 was '
-                                                                                              'programmed, until '
-                                                                                              '2024-05-10. '
-                                                                                              'Programmed now: 10.')},
+                                                                                               'programmed.')},
                       queue_absences=frozenset(),
                       rest_windows=frozenset(),
                       history_series={'ich1_WzAsMTQ0MCwiMTIiXQ': ({'run_id': 'icr1_WyIyMDI0LTA1LTAyVDA5OjAwOjAwIl0',
@@ -5164,7 +5130,6 @@ QA_CASES += (
                                                  ('meals', '2024-05-18 09:00:00', 'no_data'),
                                                  ('meals', '2024-05-19 09:00:00', 'no_data')}),
                       finding_titles=frozenset({'Basal 03:00 · lower',
-                                                'Carb ratio All day. Past setting.',
                                                 'Highs after meals',
                                                 'Highs after treating lows',
                                                 'Lows after correcting highs',

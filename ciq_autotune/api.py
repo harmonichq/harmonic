@@ -50,7 +50,7 @@ from .explore_time_of_day import build_time_of_day
 from .events import CarbEntry, parse_t
 from .model import ModelConfig
 from . import findings_projection as findings_projection_module
-from .findings_projection import UnknownHistorySelection, prepare_findings_projection
+from .findings_projection import prepare_findings_projection
 from .finding_case_file import (
     prepare as prepare_finding_cases,
     wrap as wrap_finding_cases,
@@ -552,7 +552,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     def _case_params(request, case=False):
         allowed = (
             {"projection_id", "finding_id", "lever", "alignment", "occ"}
-            if case else {"start_min", "end_min", "selected_id", "lever"}
+            if case else {"start_min", "end_min", "lever"}
         )
         params = request.query_params
         if any(key not in allowed or len(params.getlist(key)) != 1 for key in params):
@@ -574,20 +574,19 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 raise ValueError("malformed case-file coordinate")
             return pid, finding, lever, alignment, occ
         start, end = params.get("start_min"), params.get("end_min")
-        selected_id = params.get("selected_id")
         lever = params.get("lever")
         if lever is not None and lever not in {item.value for item in Lever}:
             raise ValueError("malformed case-file lever")
         if (start is None) != (end is None):
             raise ValueError("a window needs both start_min and end_min, or neither")
         if start is None:
-            return WindowQuery.whole_day(), selected_id, lever
+            return WindowQuery.whole_day(), lever
         if not start.isdecimal() or not end.isdecimal():
             raise ValueError("window coordinates must be decimal minutes")
-        return WindowQuery.clock(int(start), int(end)), selected_id, lever
+        return WindowQuery.clock(int(start), int(end)), lever
 
-    def _prepared_cases(query, selected_id):
-        key = ("finding-case-file", query.start_min, query.end_min, selected_id)
+    def _prepared_cases(query):
+        key = ("finding-case-file", query.start_min, query.end_min)
         def build(version):
             with Store.open_queryonly(db_path) as store:
                 analysis, exposures, scenarios = findings_products(
@@ -595,7 +594,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 )
                 return prepare_finding_cases(
                     store, query=query, version=version, analysis=analysis,
-                    exposures=exposures, scenarios=scenarios, selected_id=selected_id,
+                    exposures=exposures, scenarios=scenarios,
                     analysis_generation=cache.generation_for_version(version),
                 )
         def before_commit():
@@ -869,14 +868,13 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     def diagnose_findings_endpoint(
         start_min: Optional[int] = None, end_min: Optional[int] = None,
         window: int = findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS,
-        selected_id: Optional[str] = None,
         _: None = Depends(require_token),
     ) -> dict:
-        """The Diagnose findings queue for one clock window (#730).
+        """The findings queue for one clock window (#730).
 
-        Omit both bounds for the global (24 h) queue; send both for a preset or a
-        drawn brace. Everything the queue shows — register, merged spans, outcome
-        anchoring, window-local denominators, order — is decided behind
+        Omit both bounds for the whole day, the window the Queue reads; send both
+        for a clock window. Everything the queue shows — register, merged spans,
+        outcome anchoring, window-local denominators, order — is decided behind
         :meth:`FindingsProjection.project`; this route only picks the window.
         """
         if (start_min is None) != (end_min is None):
@@ -893,17 +891,8 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             generation, snapshot = history_snapshot(window)
             return recover_sidecar_projection(
                 ("findings-history-snapshot", window), "findings-history-v1", snapshot,
-                lambda pair: pair[0].project(query, selected_id, analysis_generation=generation),
+                lambda pair: pair[0].project(query, analysis_generation=generation),
                 lambda: history_snapshot(window)[1])
-        except InvalidIcHistoryId as error:
-            raise HTTPException(status_code=400, detail={
-                "code": "invalid_history_id", "message": str(error)}) from error
-        except UnknownHistorySelection as error:
-            raise HTTPException(status_code=404, detail={
-                "code": "history_not_found",
-                "message": "Past-setting evidence was not found.",
-            }) from error
-
         except ResultCache.GenerationChanged as error:
             raise HTTPException(status_code=409, detail={
                 "code": "analysis_generation_mismatch",
@@ -1094,20 +1083,16 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     @app.get("/api/diagnose/finding-case-file-preparation")
     def finding_case_file_preparation(request: Request, _: None = Depends(require_token)):
         try:
-            query, selected_id, _lever = _case_params(request)
+            query, _lever = _case_params(request)
         except ValueError as error:
             return _case_error(400, "invalid_request", str(error))
         try:
-            prepared, reason = _prepared_cases(query, selected_id)
+            prepared, reason = _prepared_cases(query)
             if reason == "capacity":
                 return _case_error(503, "preparation_capacity", "All preparations are leased.")
             if reason == "changed":
                 return _case_error(503, "preparation_changed", "Data changed during preparation.")
             return wrap_finding_cases(prepared)
-        except InvalidIcHistoryId as error:
-            return _case_error(400, "invalid_history_id", str(error))
-        except UnknownHistorySelection:
-            return _case_error(404, "history_not_found", "Past-setting evidence was not found.")
         except Exception:
             logger.exception("Finding case-file preparation was inconsistent")
             return _case_error(500, "inconsistent_projection", "Case population is inconsistent.")

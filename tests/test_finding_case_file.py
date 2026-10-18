@@ -55,8 +55,7 @@ def _findings(lever, episodes=1, extra_rows=()):
            "appearances": [], "evidence": [], "verdict_counts": {},
            "verdict_counts_by_family": {}}
     return {"schema": "diagnose-findings-v1", "window": WindowQuery().to_dict(),
-            "findings_window": {}, "rows": [*extra_rows, row], "counts": {},
-            "chip_counts": {}}
+            "findings_window": {}, "rows": [*extra_rows, row]}
 
 
 def _pattern_row(key, members, *, k, n, rate_levers, chart=True):
@@ -90,7 +89,7 @@ def _pattern_findings(key, members, *, k, n, rate_levers, chart=True):
         rows.append(row)
     return {
         "schema": "diagnose-findings-v1", "window": WindowQuery().to_dict(),
-        "findings_window": {}, "rows": rows, "counts": {}, "chip_counts": {},
+        "findings_window": {}, "rows": rows,
     }
 
 
@@ -374,8 +373,7 @@ def test_case_file_consumes_the_authoritative_diagnose_window(monkeypatch):
         _scenarios = {}
 
         @staticmethod
-        def project(query, selected_id=None, *, analysis_generation="standalone:0"):
-            assert selected_id is None
+        def project(query, *, analysis_generation="standalone:0"):
             assert analysis_generation == "standalone:0"
             return {"rows": []}
 
@@ -553,11 +551,11 @@ def test_rebound_relative_membership_uses_linked_high_outcome_in_wrapping_window
     assert case["projection"]["clock"]["buckets"][0]["occurrence_ids"] == [member.id]
 
 
-def test_named_field_wrapper_preserves_unknown_row_and_top_level_selection():
+def test_named_field_wrapper_preserves_unknown_row_and_top_level_field():
     lever = Lever.LATE_BOLUS
     unknown = {"id": "future:row", "register": "future", "nested": {"bytes": [1, 2]}}
     findings = _findings(lever, extra_rows=(unknown,))
-    findings["selection"] = {"sentinel": ["unchanged"]}
+    findings["future_field"] = {"sentinel": ["unchanged"]}
     findings["rows"][1].update({
         "priority": 42,
         "tier": "worth_a_look",
@@ -586,8 +584,8 @@ def test_named_field_wrapper_preserves_unknown_row_and_top_level_selection():
         before = json.dumps(original["rows"][1][key], separators=(",", ":")).encode()
         after = json.dumps(behavioral[key], separators=(",", ":")).encode()
         assert after == before
-    assert json.dumps(payload["findings"]["selection"]).encode() == json.dumps(
-        original["selection"]
+    assert json.dumps(payload["findings"]["future_field"]).encode() == json.dumps(
+        original["future_field"]
     ).encode()
     assert findings == original
 

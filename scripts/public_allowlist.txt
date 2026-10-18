@@ -96,10 +96,9 @@ docs/kb/the-plan-tab.md
 
 # --- mockups/ is exact-path only (§1.6.6); nothing else in the tree ships
 # from that directory.
-# The two committed synthetic sets the engine generators read, extension-scoped
+# The committed synthetic set the engine generators read, extension-scoped
 # (§1.6.7).
 mockups/diagnose-workstation.synthetic/** {.json,.mjs}
-mockups/diagnose-event-comparison.synthetic/** {.json,.mjs}
 
 # --- .claude/: the local demo + generators CI depends on (§1.6, §1.6 [R3])
 .claude/launch.json

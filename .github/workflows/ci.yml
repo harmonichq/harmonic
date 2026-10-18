@@ -179,9 +179,6 @@ jobs:
       # that does not name a root is a runner no new test is ever seen by.
       - name: Run the node tests
         run: node --test 'frontend/**/*.test.js'
-      # The capture the findings-projection generator reads is generated too.
-      - name: Check the event-comparison synthetic capture is current
-        run: node mockups/diagnose-event-comparison.synthetic/generate.mjs --check
       - name: Exercise the local screenshot wrapper
         run: node --test scripts/screenshots.local.test.mjs
       - name: Install the frontend and build the app

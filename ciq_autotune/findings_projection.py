@@ -6,7 +6,7 @@ place, and *that scoping is decided here*, not in the browser: the caller sends 
 window and receives the window's rows, already classified, merged, anchored, counted
 and ordered. The frontend renders them verbatim and composes nothing (term 40).
 
-Five registers, assigned by one mechanical rule and stamped on every row as
+Two registers, assigned by one mechanical rule and stamped on every row as
 ``register``:
 
 * ``assert`` — a parameter whose backend evidence asserts a direction
@@ -14,18 +14,11 @@ Five registers, assigned by one mechanical rule and stamped on every row as
   the ISF analyzer's own ``evidence.direction`` for ISF). ISF stageability is a
   separate explicit verdict carried beside this register. Contiguous asserting
   basal slots sharing a direction are ONE row named by its span (term 13).
-* ``held`` — a parameter with a number but no assertion, carrying its hold reason
-  transcribed **verbatim** from the analyzer (``safety_status`` / ``held_reason``).
-  Contiguous held slots sharing a lean merge the same way.
-* ``blind`` — a basal span with zero clean days, with the analyzer's own reason.
 * ``finding`` — one row per behavioral finding NAME (term 35), carrying each family
-  appearance's own window-local ``n of m`` denominators.
-* ``history`` — an analyzer-published active past-setting measurement. It is
-  non-actionable and carries the catalog's lifecycle, identity, support, and runs.
+  appearance's own window-local ``n of m`` denominators. A Pattern row is one too.
 
-Under an explicit window all five registers can appear; the GLOBAL (24 h) queue
-contains asserting current parameters plus active history — a quiet current
-parameter is never listed (term 38).
+A parameter that asserts no direction is never listed, in any window (term 38). The
+desk's held, blind and past-setting rows left with the desk (ADR 531).
 
 **Window membership is OUTCOME-anchored** (term 39 / ledger D34). A finding sits in
 the window where its *consequence* landed, never where its trigger crossed a
@@ -43,8 +36,7 @@ and its family's denominator, so a window can never read "3 of 0 lows".
 The projection composes no scores. Priority is read from the two places that already
 ship it — scenario ``Pattern.priority`` for behaviors, ``tuning_levers[]`` for
 settings — and rows are ordered as one urgency ranking (ADR 469): priced rows by
-priority desc, then unpriced asserting rows, then unpriced findings by count, then the
-demoted held and blind registers. A Pattern admitted through its setting shares that
+priority desc, then unpriced asserting rows, then unpriced findings by count. A Pattern admitted through its setting shares that
 setting's position (``anchored_by``) and sorts directly after it, as a claimed cause
 sorts after its Pattern; the tiers are bands of that one order, and ``rank_note`` says
 where a row's rank does not come from what it prints.
@@ -58,35 +50,19 @@ from __future__ import annotations
 
 from copy import deepcopy
 from dataclasses import dataclass
-from datetime import datetime
 from typing import Dict, List, Optional, Sequence, Tuple
 
 from .analyzers.ic import BLOCK_WINDOW_DAYS
-from .ic_history import decode_history_id
 # `_chips_for` (#61) asks each lever what kind of anchor its consequence lands on.
 from .analyzers.scenario.levers import Exposure, exposure, outcome_kind, title
 from .analyzers.scenario.outcome_patterns import (
     _ROSTER, build_outcome_patterns, credited_claims, outcome_window_population,
 )
-from .safety import Status
 from .window_membership import DAY_MINUTES, WindowQuery, outcome_minute
 
-SCHEMA = "diagnose-findings-v2"
-
-
-class UnknownHistorySelection(KeyError):
-    """A canonical selection absent from the analyzer-published catalog."""
+SCHEMA = "diagnose-findings-v3"
 
 _SLOT_MINUTES = 30
-
-# The basal verdicts that WITHHOLD a move: the analyzer had something to say and
-# declined to name a direction from it. `NO_CHANGE` is deliberately not among them —
-# a slot whose delivery sits inside the noise floor of its programmed rate is quiet,
-# and quiet is quiet (ledger D22): it is never listed, in any window.
-_HELD_STATUSES = frozenset({str(Status.INSUFFICIENT), str(Status.HARM_GATED),
-                            str(Status.NO_BASELINE)})
-# No suggestion at all — the model saw no clean day in this slot.
-_BLIND_STATUS = str(Status.NO_DATA)
 
 # Case-file event charts use the Finding lever and the server-owned clock window.
 # The mapping remains here with the projection that publishes the coordinate; it
@@ -120,10 +96,6 @@ _FAMILY_NOUN = {
     "meals": "meals",
     "correction_clusters": "correction clusters",
 }
-
-# Register order in the queue: asserting and counted rows share the ranked head,
-# held and blind follow in the demoted register (term 38).
-_REGISTER_RANK = {"assert": 0, "finding": 0, "held": 1, "blind": 2, "history": 3}
 
 # ADR 0019 §2's closed five-state anchor taxonomy, the verdict band's own vocabulary
 # (ADR 41). The frontend only labels these; it never derives membership or counts.
@@ -187,12 +159,10 @@ class FindingsProjection:
         return tuple(self._analysis.get("ic_history") or [])
 
     def project(
-        self, query: WindowQuery, selected_id: Optional[str] = None, *,
-        analysis_generation: str = "standalone:0",
+        self, query: WindowQuery, *, analysis_generation: str = "standalone:0",
     ) -> dict:
-        rows = self._parameter_rows(query, scoped=query.scoped)
+        rows = self._parameter_rows(query)
         rows += self._finding_rows(query)
-        rows += self._history_rows(query)
         if query.scoped:
             pattern_exposures, scoped_patterns = outcome_window_population(
                 self._analysis, self._exposures, self._scenarios, query,
@@ -229,14 +199,6 @@ class FindingsProjection:
                 row["fold_sentences"] = _fold_sentences(
                     row, pattern_by_subject[row["claimed_by"]], pattern_exposures,
                 )
-        counts = {name: 0 for name in ("assert", "held", "blind", "finding", "history")}
-        chip_counts = {name: 0 for name in ("highs", "lows", "meals", "corrections")}
-        for row in rows:
-            if row.get("claimed_by"):
-                continue
-            counts[row["register"]] += 1
-            for chip in row["chips"]:
-                chip_counts[chip] += 1
         return {
             "schema": SCHEMA,
             "analysis_generation": analysis_generation,
@@ -250,11 +212,6 @@ class FindingsProjection:
             # Findings-policy pass.  Keep it additive while the shipped queue
             # continues to render its existing setting and Lever rows.
             "outcome_patterns": deepcopy(outcome_patterns),
-            "selection": self._selection(query, selected_id),
-            # Keyed by the register name each row carries, so a count and a row can
-            # never be read as two different vocabularies.
-            "counts": counts,
-            "chip_counts": chip_counts,
         }
 
     def _pattern_rows(self, rows: List[dict], query: WindowQuery,
@@ -297,35 +254,6 @@ class FindingsProjection:
             pattern_by_subject[subject] = pattern_row
         return pattern_rows, pattern_by_subject
 
-    def _selection(self, query: WindowQuery, selected_id: Optional[str]) -> Optional[dict]:
-        if selected_id is None:
-            return None
-        decode_history_id(selected_id)
-        history = next(
-            (row for row in self._analysis.get("ic_history") or []
-             if row.get("id") == selected_id),
-            None,
-        )
-        if history is None:
-            raise UnknownHistorySelection(selected_id)
-        lifecycle = history["lifecycle"]
-        messages = {
-            "aged_out": "Past-setting evidence aged out of the 90-day window.",
-            "unavailable": (
-                "Past-setting evidence no longer maps to one current program block."
-            ),
-        }
-        if lifecycle == "active":
-            in_scope = (not query.scoped or query.overlaps(
-                history["block_start_min"], history["block_end_min"]))
-            disposition = "present" if in_scope else "out_of_scope"
-            message = (None if in_scope else
-                       "Past-setting evidence is outside the selected window.")
-        else:
-            disposition = lifecycle
-            message = messages[lifecycle]
-        return {"id": selected_id, "disposition": disposition, "message": message}
-
     def guidance(self, *, active_watch=None, preferences=(), acknowledgments=None,
                  analysis_generation: str = "standalone:0") -> dict:
         """Build unfiltered guidance from this projection's coherent owner inputs."""
@@ -338,42 +266,12 @@ class FindingsProjection:
                     **(self._exposures.get("window") or {})},
         )
 
-    def _history_rows(self, query: WindowQuery) -> List[dict]:
-        """Active analyzer-published past-setting measurements in this clock scope."""
-        rows = []
-        for history in self._analysis.get("ic_history") or []:
-            if history.get("lifecycle") != "active":
-                continue
-            start_min = history["block_start_min"]
-            end_min = history["block_end_min"]
-            if query.scoped and not query.overlaps(start_min, end_min):
-                continue
-            label = history["label"]
-            rows.append(_row(
-                id=history["id"], register="history", kind="setting",
-                parameter="carb_ratio",
-                title=f"Carb ratio {label}. Past setting.",
-                label=label,
-                span={"start_min": start_min, "end_min": end_min,
-                      "label": _span_label(start_min, end_min)},
-                past_setting=history["past_setting"],
-                programmed_now=history["programmed_now"],
-                estimate=history["estimate"], support=history["support"],
-                regime_end=history.get("regime_end"),
-                run_ids=[run["run_id"] for run in history.get("runs") or []],
-                annotation=history.get("annotation"),
-            ))
-        return rows
+    # --- parameters: asserting only -------------------------------------------
 
-    # --- parameters: asserting / held / blind ---------------------------------
-
-    def _parameter_rows(self, query: WindowQuery, *, scoped: bool) -> List[dict]:
-        rows = self._basal_rows(query) + self._ic_rows(query) + self._isf_rows()
-        if not scoped:
-            # The global queue is asserting-only: a quiet parameter is never listed
-            # and never named (term 38).
-            rows = [row for row in rows if row["register"] == "assert"]
-        return rows
+    def _parameter_rows(self, query: WindowQuery) -> List[dict]:
+        """Every window is asserting-only: a parameter that names no direction is
+        never listed and never named (term 38)."""
+        return self._basal_rows(query) + self._ic_rows(query) + self._isf_rows()
 
     def _lever_priority(self, parameter: str) -> Optional[int]:
         for lever in self._analysis.get("tuning_levers") or []:
@@ -393,10 +291,12 @@ class FindingsProjection:
         non-asserting slot inside a row that claims to move everything it spans.
         """
         slots = sorted(self._analysis.get("basal") or [], key=lambda s: s["slot"])
-        spans: List[Tuple[Tuple[str, Optional[str]], List[dict]]] = []
+        spans: List[Tuple[Optional[Tuple[Optional[str]]], List[dict]]] = []
         for slot in slots:
-            key = _basal_key(slot)
-            if key is None:  # quiet: never listed, and it breaks any run it sits in
+            # A slot's direction, the key contiguous asserting slots merge on, or
+            # None for a slot that asserts nothing: no row, and it breaks any run.
+            key = (slot.get("direction"),) if slot.get("asserts_move") else None
+            if key is None:
                 spans.append((key, [slot]))
                 continue
             if (spans and spans[-1][0] == key
@@ -413,22 +313,20 @@ class FindingsProjection:
             end_min = (span[-1]["slot"] + 1) * _SLOT_MINUTES
             if not query.overlaps(start_min, end_min):
                 continue
-            register, direction = key
+            (direction,) = key
             head = span[0]
             single = len(span) == 1
             label = _span_label(start_min, end_min)
             rows.append(_row(
                 id=f"basal:{start_min}-{end_min}",
-                register=register,
+                register="assert",
                 kind="setting",
                 parameter="basal_rate",
-                title=_title(f"Basal {label}", register, direction),
+                title=_title(f"Basal {label}", direction),
                 label=label,
-                priority=(self._lever_priority("basal_rate")
-                          if register == "assert" else None),
+                priority=self._lever_priority("basal_rate"),
                 span={"start_min": start_min, "end_min": end_min, "label": label},
-                direction=direction if register == "assert" else None,
-                lean=direction if register == "held" else None,
+                direction=direction,
                 # A merged run names no single programmed rate, so its numbers stay on
                 # its members rather than becoming an invented span average.
                 current=head.get("current") if single else None,
@@ -443,9 +341,7 @@ class FindingsProjection:
                 support={"n": min(s.get("days") or 0 for s in span),
                          "noun": "nights of steady data",
                          "run_days": self._analysis.get("window_days")},
-                # Verbatim, both of them: the cap() verdict string and the
-                # analyzer's own sentence. Neither is rewritten here.
-                reason=head.get("safety_status") if register != "assert" else None,
+                # Verbatim: the analyzer's own sentence, never rewritten here.
                 annotation=head.get("annotation"),
             ))
         return rows
@@ -456,37 +352,28 @@ class FindingsProjection:
             start_min, end_min = block["start_min"], block["end_min"]
             if not query.overlaps(start_min, end_min):
                 continue
-            asserts = bool(block.get("asserts_move"))
-            estimate = block.get("estimate") or {}
-            # `held_reason` IS the I:C hold predicate (#523): the analyzer sets it
-            # exactly when a numeric block's band excludes the programmed value and a
-            # gate withheld the move. A block whose band agrees, or that is still
-            # collecting, is quiet — never re-derived here from the band.
-            if not asserts and not block.get("held_reason"):
+            # `ic_asserts_move`'s stamp is the one verdict a block lists on; a
+            # block it withholds is never listed, in any window.
+            if not block.get("asserts_move"):
                 continue
-            register = "assert" if asserts else "held"
             label = _span_label(start_min, end_min)
-            direction = (block.get("direction") if asserts
-                         else _lean(block.get("current"), estimate.get("value")))
+            direction = block.get("direction")
             rows.append(_row(
                 id=f"ic:{block['block_id']}",
-                register=register,
+                register="assert",
                 kind="setting",
                 parameter="carb_ratio",
-                title=_title(f"Carb ratio {label}", register, direction),
+                title=_title(f"Carb ratio {label}", direction),
                 label=block.get("label"),
-                priority=(self._lever_priority("carb_ratio") if asserts else None),
+                priority=self._lever_priority("carb_ratio"),
                 span={"start_min": start_min, "end_min": end_min, "label": label},
-                direction=direction if asserts else None,
-                lean=direction if not asserts else None,
+                direction=direction,
                 current=block.get("current_values", [None])[0]
                 if block.get("current_values") else None,
                 recommended=block.get("recommended"),
-                estimate=estimate,
+                estimate=block.get("estimate") or {},
                 support={"n": block.get("n_runs"), "noun": "meal runs",
                          "run_days": BLOCK_WINDOW_DAYS},
-                reason=(block.get("held_reason") or block.get("annotation")
-                        if not asserts else None),
                 annotation=block.get("annotation"),
             ))
         return rows
@@ -496,42 +383,33 @@ class FindingsProjection:
 
         Its register decision is the analyzer's own ``evidence.direction`` — never
         re-derived from the band and the programmed value. Its independent staging
-        decision is copied from ``asserts_move``.
-
-        Unlike basal, a no-direction ISF with a number is HELD rather than quiet: the
-        parameter is one row for the whole day and its analyzer always says in words
-        why it is not moving (a band spanning the programmed value included), where a
-        basal slot inside its noise floor has nothing to say and there are 47 more of
-        them. Term 31's amendment expects exactly this row under an explicit window.
+        decision is copied from ``asserts_move``. A row with no direction is never
+        listed.
         """
         rows = []
         for row in self._analysis.get("isf") or []:
             evidence = row.get("evidence") or {}
             direction = evidence.get("direction")
-            estimate = row.get("estimate") or {}
-            if direction is None and estimate.get("value") is None:
+            if direction is None:
                 continue
-            register = "assert" if direction is not None else "held"
             rows.append(_row(
                 id="isf",
-                register=register,
+                register="assert",
                 kind="setting",
                 parameter="isf",
-                title=_title("Correction factor", register, direction),
+                title=_title("Correction factor", direction),
                 label=row.get("label"),
                 priority=(self._lever_priority("isf")
                           if row.get("asserts_move") is True else None),
                 span=None,
                 direction=direction,
                 asserts_move=row.get("asserts_move"),
-                lean=None,
                 current=row.get("current"),
                 recommended=row.get("recommended"),
-                estimate=estimate,
+                estimate=row.get("estimate") or {},
                 support={"n": len(evidence.get("night_fits") or []),
                          "noun": "fasting nights",
                          "run_days": self._analysis.get("window_days")},
-                reason=row.get("annotation") if direction is None else None,
                 annotation=row.get("annotation"),
             ))
         return rows
@@ -705,49 +583,8 @@ def _lever_evidence(
     return evidence, counts, counts_by_family
 
 
-def _basal_key(slot: dict) -> Optional[Tuple[str, Optional[str]]]:
-    """A slot's ``(register, direction)`` — the pair contiguous slots merge on — or
-    ``None`` for a quiet slot, which is no row at all.
-
-    Asserting is read first, so a zero-clean-day slot the harm layer moved down reads
-    as the move it is rather than as blind.
-    """
-    if slot.get("asserts_move"):
-        return "assert", slot.get("direction")
-    status = slot.get("safety_status")
-    if status == _BLIND_STATUS:
-        return "blind", None
-    if status in _HELD_STATUSES:
-        lean = _lean(slot.get("current"), (slot.get("estimate") or {}).get("value"))
-        if lean == "lower" and ((slot.get("evidence") or {}).get("harm")
-                                or {}).get("nudged"):
-            # ADR 465: recurring lows held a step down too small to take; the
-            # served sentence names the lows, so the title names no lean.
-            lean = None
-        return "held", lean
-    return None
-
-
-def _lean(current: Optional[float], value: Optional[float]) -> Optional[str]:
-    """Which way a held estimate sits against the programmed value.
-
-    A lean is not a direction: nothing asserts here, and the queue prints it as
-    "leaning raise" (term 14). It is computed on the server for the same reason the
-    direction is — the frontend derives neither (#273/#465). A held basal slot the
-    recurring lows nudged drops a "lower" lean (``_basal_key``, ADR 465): its
-    served sentence already names the lows, and it never reads "leaning lower".
-    """
-    if current is None or value is None or value == current:
-        return None
-    return "raise" if value > current else "lower"
-
-
-def _title(name: str, register: str, direction: Optional[str]) -> str:
-    if direction is None:
-        return name
-    if register == "held":
-        return f"{name} · leaning {direction}"
-    return f"{name} · {direction}"
+def _title(name: str, direction: Optional[str]) -> str:
+    return name if direction is None else f"{name} · {direction}"
 
 
 # --- headlines: one served sentence per row (#306 ADR "Every findings row carries
@@ -757,15 +594,7 @@ def _title(name: str, register: str, direction: Optional[str]) -> str:
 # recorded under `## Headline templates` in `design.md`. A slot names only a
 # served row field — every family's, correction factor included: the ISF
 # rest-window evidence is never a source. Nothing here recounts raw records or
-# re-derives a direction, floor, threshold or priority; a held or blind
-# sentence reads the served hold reason verbatim.
-
-_BASAL_BLIND_HEADLINE = (
-    "No steady nights delivered against the programmed rate here, "
-    "so nothing to say either way."
-)
-
-_HELD_AT_CURRENT_SUFFIX = "; held at current"
+# re-derives a direction, floor, threshold or priority.
 
 # The ranked-queue tiers whose event-comparison rows earn the "ranks among this
 # window's findings" verdict (ADR 41's closed tier vocabulary, banded by ADR 469:
@@ -789,22 +618,17 @@ def _fmt_precision(value: Optional[float]) -> Optional[str]:
 
 
 def _below_above(word: Optional[str]) -> Optional[str]:
-    """A basal direction or lean, spelled as the headline's own vocabulary."""
+    """A basal direction, spelled as the headline's own vocabulary."""
     return None if word is None else {"raise": "above", "lower": "below"}[word]
 
 
 def _sentence(text: str) -> str:
     """A served analyzer fragment (lowercase-initial user copy), capitalized to
-    open a new sentence — the fragment itself is never reworded (#306 ADR: "a
-    held's sentence reads the served hold reason verbatim")."""
+    open a new sentence — the fragment itself is never reworded (#306 ADR)."""
     return text[:1].upper() + text[1:] if text else text
 
 
 def _basal_headline(row: dict) -> str:
-    if row["register"] == "blind":
-        # Rate-free for single and merged rows alike: a blind row has no
-        # delivered value to set against it.
-        return _BASAL_BLIND_HEADLINE
     support_n = (row.get("support") or {}).get("n")
     annotation = _sentence(row.get("annotation") or "")
     current = row.get("current")
@@ -816,39 +640,23 @@ def _basal_headline(row: dict) -> str:
     # A merged run names no single programmed rate, and a slot with no
     # delivered estimate (a harm-forced move on zero clean nights) has
     # nothing to set against the programmed rate either — both read only the
-    # row's own served direction or lean and the steady-night count.
-    if row["register"] == "assert":
-        word = _below_above(row.get("direction"))
-        return (f"{annotation}. Delivered {word} the programmed rate across "
-                f"{support_n} steady nights.")
-    lean = row.get("lean")
-    if lean is None:
-        # The held estimate sits at the programmed rate, or is absent: nothing
-        # to lean the sentence on but the count.
-        return f"{annotation}. {support_n} steady nights delivered so far."
-    word = _below_above(lean)
+    # row's own served direction and the steady-night count.
+    word = _below_above(row.get("direction"))
     return (f"{annotation}. Delivered {word} the programmed rate across "
             f"{support_n} steady nights.")
 
 
 def _isf_headline(row: dict) -> str:
     """Correction factor's headline: every slot is a row field (`support.n`,
-    `current`, `estimate.value`, `annotation`, `reason`) — the ISF rest-window
-    evidence is never a source, so this reads only the row, like every other
-    family."""
+    `current`, `estimate.value`, `annotation`) — the ISF rest-window evidence is
+    never a source, so this reads only the row, like every other family."""
     support_n = (row.get("support") or {}).get("n")
     current = _fmt_precision(row.get("current"))
-    if row["register"] == "assert":
-        estimate_value = _fmt_precision((row.get("estimate") or {}).get("value"))
-        annotation = _sentence(row.get("annotation") or "")
-        return (f"{annotation}. Measured 1 U : {estimate_value} mg/dL across "
-                f"{support_n} fasting nights against 1 U : {current} mg/dL "
-                f"programmed.")
-    reason = row.get("reason") or ""
-    if current is None:
-        return f"No direction is called: {reason}. {support_n} fasting nights measured."
-    return (f"No direction is called: {reason}. {support_n} fasting nights "
-            f"measured against 1 U : {current} mg/dL programmed.")
+    estimate_value = _fmt_precision((row.get("estimate") or {}).get("value"))
+    annotation = _sentence(row.get("annotation") or "")
+    return (f"{annotation}. Measured 1 U : {estimate_value} mg/dL across "
+            f"{support_n} fasting nights against 1 U : {current} mg/dL "
+            f"programmed.")
 
 
 def _ic_headline(row: dict) -> str:
@@ -856,12 +664,8 @@ def _ic_headline(row: dict) -> str:
     current = _fmt_precision(row.get("current"))
     estimate_value = _fmt_precision((row.get("estimate") or {}).get("value"))
     against_current = f" against {current} programmed" if current is not None else ""
-    if row["register"] == "assert":
-        annotation = _sentence(row.get("annotation") or "")
-        return (f"{annotation}. Measured {estimate_value} g/U across "
-                f"{support_n} meal runs{against_current}.")
-    reason = (row.get("reason") or "").removesuffix(_HELD_AT_CURRENT_SUFFIX)
-    return (f"Held at current: {reason}. Measured {estimate_value} g/U across "
+    annotation = _sentence(row.get("annotation") or "")
+    return (f"{annotation}. Measured {estimate_value} g/U across "
             f"{support_n} meal runs{against_current}.")
 
 
@@ -874,18 +678,6 @@ def _finding_headline(row: dict) -> str:
                else "Not ranked in this window yet")
     return (f"{verdict}. Showed up in {appearance['n']} of {appearance['m']} "
             f"{appearance['noun']} in this window.")
-
-
-def _history_headline(row: dict) -> str:
-    estimate_value = _fmt_precision((row.get("estimate") or {}).get("value"))
-    support = row.get("support")
-    past_setting = _fmt_precision(row.get("past_setting"))
-    programmed_now = _fmt_precision(row.get("programmed_now"))
-    regime_end = row.get("regime_end")
-    regime_end_date = regime_end.split("T")[0] if regime_end else regime_end
-    return (f"Past setting, no change suggested. Measured {estimate_value} g/U "
-            f"across {support} meal runs while {past_setting} was programmed, "
-            f"until {regime_end_date}. Programmed now: {programmed_now}.")
 
 
 def _pattern_noun(pattern: dict) -> str:
@@ -907,8 +699,6 @@ def _headline_for(row: dict) -> str:
         return f"{row['title']} in {pattern['k']} of {pattern['n']} {noun}"
     if row["kind"] == "habit":
         return _finding_headline(row)
-    if row["register"] == "history":
-        return _history_headline(row)
     parameter = row["parameter"]
     if parameter == "basal_rate":
         return _basal_headline(row)
@@ -930,10 +720,6 @@ def _headline_for(row: dict) -> str:
 # same lever counted in highs describes what the high followed). An unrecognized
 # key is a defect, never a silent blank: a Pattern key or lever-and-family pair
 # added later without an entry here fails this module's tests and cannot merge.
-# The frontend's own Pattern word constant (`PATTERN_COPY` in
-# frontend/diagnose-findings-queue.js) still exists as of this commit — this
-# table is its backend replacement, not yet its deletion, which belongs to the
-# rail work that reads served words instead (#413 tasks 3.3).
 
 _PATTERN_OUTCOME = {
     "highs_after_meals": "ran high",
@@ -1076,8 +862,6 @@ _PATTERN_CHIPS = {
 
 def _chips_for(row: dict) -> List[str]:
     """The filter chips a serialized queue row belongs under."""
-    if row["register"] in ("held", "blind", "history"):
-        return []
     if row["register"] == "assert":
         return list(_SETTINGS_CHIPS[(row["parameter"], row["direction"])])
     if row["kind"] == "pattern":
@@ -1104,13 +888,12 @@ def _row(**fields) -> dict:
         "tier": None, "headline": None,
         "parameter": None, "label": None, "span": None, "direction": None,
         "asserts_move": None,
-        "lean": None, "current": None, "recommended": None, "estimate": None,
-        "support": None, "reason": None, "annotation": None, "members": None,
+        "current": None, "recommended": None, "estimate": None,
+        "support": None, "annotation": None, "members": None,
         "lever": None, "appearances": None, "episodes": None,
         "evidence": None, "verdict_counts": None, "verdict_counts_by_family": None,
         "chips": None, "window_scope": None, "count_sentences": None, "fold_sentences": None,
-        "past_setting": None, "programmed_now": None, "regime_end": None,
-        "run_ids": None, "event_chart": None,
+        "event_chart": None,
         "pattern": None, "pattern_chart": None, "claimed_by": None,
         "anchored_by": None, "rank_note": None,
     }
@@ -1189,26 +972,17 @@ def _stamp_rank_notes(rows: Sequence[dict], query: WindowQuery,
 
 def _sort_key(row: dict, by_id: Optional[Dict[str, dict]] = None):
     """The queue's one urgency order (ADR 469): priced rows by priority desc, then
-    unpriced asserting rows, then unpriced findings by count desc, then the demoted
-    held and blind registers in clock order (terms 22 / 38). A row anchored to a
-    setting, or claimed by a Pattern, sorts directly after its parent, recursively,
+    unpriced asserting rows, then unpriced findings by count desc. A row anchored to
+    a setting, or claimed by a Pattern, sorts directly after its parent, recursively,
     so a claimed cause follows its anchored Pattern. Every tie falls through to a
     stable, data-derived key so two runs of the same window always return the same
     list."""
     span = row.get("span") or {}
-    history_recency = 0.0
-    if row["register"] == "history" and row.get("regime_end"):
-        try:
-            history_recency = datetime.fromisoformat(row["regime_end"]).timestamp()
-        except ValueError:
-            pass
     key = (
-        _REGISTER_RANK[row["register"]],
         0 if row["priority"] is not None else 1 if row["register"] == "assert" else 2,
         -(row["priority"] or 0),
         -(row["episodes"] or 0),
         span.get("start_min", DAY_MINUTES),
-        -history_recency,
         row["title"] or "",
     )
     parent = row.get("anchored_by") or row.get("claimed_by")

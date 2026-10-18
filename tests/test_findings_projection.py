@@ -134,79 +134,46 @@ def _with_history(projection, *, lifecycle="active", start_min=420,
                               projection._outcome_patterns), history
 
 
-class HistoryRowsTest(unittest.TestCase):
-    def test_active_history_is_a_non_actionable_noted_row_in_v2(self):
+class DeskRowsRetiredTest(unittest.TestCase):
+    """ADR 531: the answer serves only what the app reads. The desk's past-setting,
+    held and no-clean-day rows, its register tallies, its chip tallies and its
+    past-setting selection are gone, in every window."""
+
+    WINDOWS = (None, MORNING, LOW_BLOCK, REBOUND, AFTERNOON, (22 * 60, 2 * 60),
+               (3 * 60, 4 * 60), (270, 480))
+
+    def _answers(self, projection):
+        for bounds in self.WINDOWS:
+            query = (WindowQuery.whole_day() if bounds is None
+                     else WindowQuery.clock(*bounds))
+            yield bounds, projection.project(query, analysis_generation="fixture-process:0")
+
+    def test_an_active_past_setting_serves_no_row(self):
         projection, history = _with_history(gen.empty_projection())
+        self.assertEqual(projection.history_catalog[0]["id"], history.history_id)
+        for bounds, result in self._answers(projection):
+            with self.subTest(window=bounds):
+                self.assertEqual([row for row in result["rows"] if row["kind"] != "pattern"],
+                                 [])
 
-        result = projection.project(
-            WindowQuery.whole_day(), analysis_generation="fixture-process:0")
-        row = next(row for row in result["rows"] if row["id"] == history.history_id)
+    def test_every_window_serves_only_asserting_and_finding_rows(self):
+        for bounds, result in self._answers(gen.projection()):
+            with self.subTest(window=bounds):
+                self.assertEqual({row["register"] for row in result["rows"]}
+                                 - {"assert", "finding"}, set())
+                for row in result["rows"]:
+                    for field in ("lean", "reason", "past_setting", "programmed_now",
+                                  "regime_end", "run_ids"):
+                        self.assertNotIn(field, row)
 
-        self.assertEqual(result["schema"], "diagnose-findings-v2")
-        self.assertEqual(result["analysis_generation"], "fixture-process:0")
-        self.assertEqual(result["counts"]["history"], 1)
-        self.assertEqual((row["register"], row["kind"], row["parameter"]),
-                         ("history", "setting", "carb_ratio"))
-        self.assertEqual((row["priority"], row["tier"], row["chips"]),
-                         (None, "noted", []))
-        self.assertEqual((row["past_setting"], row["programmed_now"], row["support"]),
-                         (5.0, 6.0, 3))
-        self.assertEqual(row["annotation"], history.annotation)
-        for field in ("recommended", "direction", "lean"):
-            self.assertIsNone(row[field])
-
-    def test_selection_dispositions_come_from_the_catalog_lifecycle(self):
-        active, active_row = _with_history(gen.empty_projection())
-        aged, aged_row = _with_history(active, lifecycle="aged_out", start_min=720,
-                                       end_min=900)
-        unavailable, unavailable_row = _with_history(
-            aged, lifecycle="unavailable", start_min=900, end_min=1080)
-
-        self.assertIsNone(unavailable.project(WindowQuery.whole_day())["selection"])
-        cases = (
-            (active_row.history_id, WindowQuery.whole_day(), "present", None),
-            (active_row.history_id, WindowQuery.clock(0, 300), "out_of_scope",
-             "Past-setting evidence is outside the selected window."),
-            (aged_row.history_id, WindowQuery.whole_day(), "aged_out",
-             "Past-setting evidence aged out of the 90-day window."),
-            (unavailable_row.history_id, WindowQuery.whole_day(), "unavailable",
-             "Past-setting evidence no longer maps to one current program block."),
-        )
-        for selected_id, query, disposition, message in cases:
-            with self.subTest(disposition=disposition):
-                self.assertEqual(
-                    unavailable.project(query, selected_id)["selection"],
-                    {"id": selected_id, "disposition": disposition,
-                     "message": message},
-                )
-
-    def test_history_scope_and_order_are_server_owned(self):
-        projection, older = _with_history(
-            gen.empty_projection(), regime_end="2026-07-01T12:00:00",
-            past_setting=5.0)
-        projection, newer = _with_history(
-            projection, regime_end="2026-08-01T12:00:00", past_setting=5.5)
-        projection, later_block = _with_history(
-            projection, start_min=900, end_min=1080,
-            regime_end="2026-08-10T12:00:00", past_setting=6.5)
-
-        global_history = [row for row in projection.project(
-            WindowQuery.whole_day())["rows"] if row["register"] == "history"]
-        scoped_history = [row for row in projection.project(
-            WindowQuery.clock(400, 500))["rows"] if row["register"] == "history"]
-
-        self.assertEqual([row["id"] for row in global_history],
-                         [newer.history_id, older.history_id, later_block.history_id])
-        self.assertEqual([row["id"] for row in scoped_history],
-                         [newer.history_id, older.history_id])
-
-        mixed = gen.projection().project(WindowQuery.clock(270, 480))["rows"]
-        history_at = next(i for i, row in enumerate(mixed)
-                          if row["register"] == "history")
-        demoted = [i for i, row in enumerate(mixed)
-                   if row["register"] in ("held", "blind")]
-        self.assertTrue(demoted)
-        self.assertGreater(history_at, max(demoted))
+    def test_the_answer_carries_no_desk_tallies_or_selection(self):
+        for bounds, result in self._answers(gen.projection()):
+            with self.subTest(window=bounds):
+                self.assertEqual(set(result), {
+                    "schema", "analysis_generation", "window", "findings_window",
+                    "rows", "outcome_patterns"})
+                self.assertEqual(result["schema"], "diagnose-findings-v3")
+                self.assertEqual(result["analysis_generation"], "fixture-process:0")
 
 
 class OutcomeAnchoredMembershipTest(unittest.TestCase):
@@ -345,34 +312,23 @@ class GroundedWindowTest(unittest.TestCase):
     def setUp(self):
         self.projection = gen.projection()
 
-    def test_the_morning_window_asserts_one_slot_and_holds_the_next(self):
+    def test_the_morning_window_asserts_one_slot_and_lists_no_held_one(self):
+        # 06:30 is held for want of a supported direction (`cap()` says
+        # insufficient evidence); a slot that asserts nothing is no row.
+        slot = next(s for s in self.projection._analysis["basal"] if s["slot"] == 13)
+        self.assertEqual(slot["safety_status"], str(Status.INSUFFICIENT))
         rows = self.projection.project(WindowQuery.clock(*MORNING))["rows"]
         self.assertEqual(_titles(rows, "assert"), ["Basal 05:30 · raise"])
-        held = _row(rows, "Basal 06:30 · leaning raise")
-        self.assertEqual(held["register"], "held")
-        self.assertEqual(held["reason"], str(Status.INSUFFICIENT))
-        self.assertEqual(held["reason"], "insufficient evidence")
+        self.assertFalse([row for row in rows if row["title"].startswith("Basal 06:30")])
 
-    def test_the_afternoon_window_shows_the_blind_stretch_and_a_held_isf(self):
-        rows = self.projection.project(WindowQuery.clock(*AFTERNOON))["rows"]
-        blind = _row(rows, "Basal 19:30 to 21:00")
-        self.assertEqual(blind["register"], "blind")
-        self.assertEqual(blind["reason"], str(Status.NO_DATA))
-        self.assertEqual(blind["support"]["n"], 0)
-        isf = _row(rows, "Correction factor")
-        self.assertEqual(isf["register"], "held")
-        self.assertIsNone(isf["direction"])
-        self.assertIs(isf["asserts_move"], False)
-
-    def test_a_held_reason_is_the_analyzers_own_string(self):
-        # Byte-identical, both flavors: the queue transcribes, it never rewords.
+    def test_the_afternoon_window_lists_no_blind_stretch_and_no_held_isf(self):
         analysis = self.projection._analysis
-        rows = self.projection.project(WindowQuery.clock(*AFTERNOON))["rows"]
-        self.assertEqual(_row(rows, "Correction factor")["reason"],
-                         analysis["isf"][0]["annotation"])
         blind_slot = next(s for s in analysis["basal"] if s["slot"] == 39)
-        self.assertEqual(_row(rows, "Basal 19:30 to 21:00")["reason"],
-                         blind_slot["safety_status"])
+        self.assertEqual(blind_slot["safety_status"], str(Status.NO_DATA))
+        self.assertIsNone(analysis["isf"][0]["evidence"]["direction"])
+        rows = self.projection.project(WindowQuery.clock(*AFTERNOON))["rows"]
+        self.assertFalse([row for row in rows if row["title"].startswith("Basal 19:30")])
+        self.assertFalse([row for row in rows if row["parameter"] == "isf"])
 
     def test_isf_register_stays_direction_derived_but_rank_follows_stageability(self):
         analysis, segment, lever = _direction_only_isf_analysis()
@@ -413,16 +369,11 @@ class GroundedWindowTest(unittest.TestCase):
     def test_a_window_can_hold_nothing_at_all(self):
         empty = gen.empty_projection().project(WindowQuery.clock(*MORNING))
         self.assertEqual(empty["rows"], [])
-        self.assertEqual(empty["counts"],
-                         {"assert": 0, "held": 0, "blind": 0, "finding": 0,
-                          "history": 0})
-        self.assertEqual(empty["chip_counts"],
-                         {"highs": 0, "lows": 0, "meals": 0, "corrections": 0})
+        self.assertEqual(empty["outcome_patterns"], [])
 
-    def test_a_recurring_lows_hold_names_the_lows_and_no_lean(self):
+    def test_a_recurring_lows_hold_lists_no_row(self):
         # ADR 465 decision 3: 03:00's steady nights deliver 0.71 against 0.72
-        # with lows there on two nights, so the slot holds. Its row names the
-        # setting alone and opens with the recurring-lows hold sentence.
+        # with lows there on two nights, so the slot holds; a hold is no row.
         basal, cgm = _build(rate=0.71, programmed=0.72, low_nights=(20, 21))
         slots = analyze_basal(basal, cgm, [], [], harm_config=HarmConfig())
         projection = FindingsProjection(
@@ -432,16 +383,13 @@ class GroundedWindowTest(unittest.TestCase):
             _scenarios={"patterns": [], "low_confidence": []},
             _outcome_patterns=[],
         )
+        slot = next(s for s in slots if s.slot == 6)
+        self.assertFalse(slot.asserts_move)
+        self.assertTrue(slot.annotation.startswith(
+            "lows keep happening overnight, but the step down is smaller than "
+            "the smallest change worth making, so the rate stays as it is"))
         rows = projection.project(WindowQuery.clock(180, 240))["rows"]
-        self.assertEqual(
-            [row["title"] for row in rows if row["title"].startswith("Basal 03:00")],
-            ["Basal 03:00"])
-        row = _row(rows, "Basal 03:00")
-        self.assertEqual(row["register"], "held")
-        self.assertIsNone(row["priority"])
-        self.assertTrue(row["headline"].startswith(
-            "Lows keep happening overnight, but the step down is smaller than "
-            "the smallest change worth making, so the rate stays as it is."))
+        self.assertFalse([row for row in rows if row["title"].startswith("Basal 03:00")])
 
     def test_a_window_wrapping_midnight_reaches_both_sides_of_it(self):
         rows = self.projection.project(WindowQuery.clock(22 * 60, 2 * 60))["rows"]
@@ -459,28 +407,24 @@ class SpanMergingTest(unittest.TestCase):
         span = _row(rows, "Basal 00:30 to 01:30 · raise")["span"]
         self.assertEqual((span["start_min"], span["end_min"]), (30, 90))
 
-    def test_contiguous_held_slots_with_one_lean_are_one_span(self):
-        rows = self.projection.project(WindowQuery.clock(*LOW_BLOCK))["rows"]
-        held = _titles(rows, "held")
-        self.assertIn("Basal 12:30 to 14:00 · leaning lower", held)
-        self.assertEqual(len([t for t in held if t.startswith("Basal")]), 1)
-
-    def test_a_span_never_mixes_directions(self):
-        # Two adjacent held slots leaning opposite ways stay two rows.
+    def test_a_held_slot_breaks_an_asserting_run(self):
+        # 00:30 to 01:30 asserts a raise; make 01:00 hold instead, and the run is
+        # two rows either side of it, never one row spanning a slot that holds.
         analysis = dict(gen.analysis())
         slots = {row["slot"]: row for row in analysis["basal"]}
-        slots[20] = gen._slot(20, current=1.10, value=0.95, lo=0.80, hi=1.15,
-                              n=18, supported=0).to_dict()
-        slots[21] = gen._slot(21, current=0.90, value=1.15, lo=0.85, hi=1.40,
-                              n=18, supported=0).to_dict()
+        self.assertTrue(all(slots[index]["asserts_move"] for index in (1, 2)))
+        slots[2] = gen._slot(2, current=0.60, value=0.62, lo=0.50, hi=0.75,
+                             n=18, supported=0).to_dict()
+        self.assertFalse(slots[2]["asserts_move"])
         analysis["basal"] = [slots[index] for index in sorted(slots)]
         rows = FindingsProjection(
             _analysis=analysis, _exposures=gen.exposures(), _scenarios=gen.scenarios(),
             _outcome_patterns=[],
-        ).project(WindowQuery.clock(10 * 60, 11 * 60))["rows"]
-        self.assertEqual(
-            [row["lean"] for row in rows if row["title"].startswith("Basal")],
-            ["lower", "raise"])
+        ).project(WindowQuery.whole_day())["rows"]
+        spans = [(row["span"]["start_min"], row["span"]["end_min"]) for row in rows
+                 if row["parameter"] == "basal_rate" and row["span"]["start_min"] < 120]
+        self.assertNotIn((30, 90), spans)
+        self.assertFalse([span for span in spans if span[0] <= 60 < span[1]])
 
     def test_the_span_a_row_names_is_the_whole_run_not_the_visible_part(self):
         # A run is one item that stages whole (term 13), so a window that clips it
@@ -503,14 +447,6 @@ class ChipProjectionTest(unittest.TestCase):
         self.assertEqual(_row(afternoon["rows"], "Over-treated low")["chips"], ["highs"])
         self.assertEqual(_row(afternoon["rows"], "Correction stacking")["chips"],
                          ["lows", "corrections"])
-        self.assertEqual(afternoon["chip_counts"], {
-            "highs": 3, "lows": 2, "meals": 2, "corrections": 1,
-        })
-
-        global_counts = self.projection.project(WindowQuery.whole_day())["chip_counts"]
-        self.assertTrue(all(global_counts[chip] > 0
-                            for chip in ("highs", "lows", "meals", "corrections")),
-                        global_counts)
 
         raise_case = gen.payload()["settings_cases"]["carb_ratio_raise"]
         self.assertEqual(_row(raise_case["rows"], "Carb ratio 00:00 to 12:00 · raise")["chips"],
@@ -735,10 +671,7 @@ class QueueOrderTest(unittest.TestCase):
 
     def test_the_global_queue_is_asserting_only(self):
         self.assertEqual(
-            {row["register"] for row in self.global_rows},
-            {"assert", "finding", "history"})
-        quiet = [row for row in self.global_rows if row["register"] in ("held", "blind")]
-        self.assertEqual(quiet, [])
+            {row["register"] for row in self.global_rows}, {"assert", "finding"})
 
     def test_priced_rows_lead_in_server_priority_order_then_counted_rows(self):
         ranked = [row for row in self.global_rows if not row.get("claimed_by")]
@@ -823,12 +756,6 @@ class QueueOrderTest(unittest.TestCase):
                                  if row["pattern"]["admission_route"] != "none" else None)
             elif row["priority"] is not None:
                 self.assertEqual(row["priority"], patterns[row["lever"]])
-
-    def test_held_and_blind_follow_the_ranked_head(self):
-        rows = self.projection.project(WindowQuery.clock(*AFTERNOON))["rows"]
-        order = {"assert": 0, "finding": 0, "held": 1, "blind": 2}
-        ranks = [order[row["register"]] for row in rows]
-        self.assertEqual(ranks, sorted(ranks))
 
 
 class PatternProjectionTest(unittest.TestCase):
@@ -928,17 +855,6 @@ class PatternProjectionTest(unittest.TestCase):
             if row.get("claimed_by"):
                 self.assertIn(row["claimed_by"], served)
 
-    def test_claimed_members_add_nothing_to_counts_or_chip_counts(self):
-        rows = [row for row in self.result["rows"] if not row.get("claimed_by")]
-        expected_counts = {name: 0 for name in self.result["counts"]}
-        expected_chips = {name: 0 for name in self.result["chip_counts"]}
-        for row in rows:
-            expected_counts[row["register"]] += 1
-            for chip in row["chips"]:
-                expected_chips[chip] += 1
-        self.assertEqual(self.result["counts"], expected_counts)
-        self.assertEqual(self.result["chip_counts"], expected_chips)
-
     def test_collapse_member_passes_through_and_unadmitted_pattern_is_title_only(self):
         ids = {row["id"] for row in self.result["rows"]}
         self.assertNotIn("pattern:highs_after_treating_lows", ids)
@@ -957,8 +873,6 @@ class PatternProjectionTest(unittest.TestCase):
         from ciq_autotune.analyzers.scenario.outcome_patterns import build_outcome_patterns
 
         root = pathlib.Path(__file__).resolve().parents[1]
-        browser = json.loads((root / "frontend" / "__fixtures__"
-                              / "findings-projection.json").read_text())
         exposures = json.loads((root / "mockups" / "diagnose-workstation.synthetic"
                                 / "payload.json").read_text())["exposures"]
         # A memberless Pattern with k > 0: one unclaimed meal re-marked as claimed by
@@ -980,9 +894,9 @@ class PatternProjectionTest(unittest.TestCase):
         meals.update(attributed=meals["attributed"] + 1, clean=meals["clean"] - 1,
                      uncaused=meals["uncaused"] - 1, levers=[*meals["levers"], lever.value],
                      by_cause={**meals["by_cause"], title(lever): 1})
-        inputs = browser["browser_inputs"]
         pattern = next(row for row in build_outcome_patterns(
-            inputs["analysis"], exposures, inputs["scenarios"]) if row["key"] == "lows_after_meals")
+            self.projection._analysis, exposures, self.projection._scenarios)
+            if row["key"] == "lows_after_meals")
         self.assertGreater(pattern["k"], 0)
         self.assertFalse(any(member["kind"] == "habit" for member in pattern["members"]))
 
@@ -1313,7 +1227,7 @@ class FindingsEndpointTest(unittest.TestCase):
         r = self.client.get("/api/diagnose/findings")
         self.assertEqual(r.status_code, 200)
         body = r.json()
-        self.assertEqual(body["schema"], "diagnose-findings-v2")
+        self.assertEqual(body["schema"], "diagnose-findings-v3")
         self.assertEqual(body["analysis_generation"], "findings-http:0")
         self.assertFalse(body["window"]["scoped"])
 
@@ -1381,47 +1295,26 @@ class FindingsEndpointTest(unittest.TestCase):
             self.client.get("/api/diagnose/findings")                       # bumped
             self.assertEqual(len(calls), 2)
 
-    def test_selected_history_codec_and_catalog_errors_are_public(self):
-        malformed = self.client.get(
-            "/api/diagnose/findings", params={"selected_id": "ich1_not-canonical"})
-        unknown = self.client.get("/api/diagnose/findings", params={
-            "selected_id": encode_history_id(HistoryIdentity(420, 720, 7.0))})
-
-        self.assertEqual((malformed.status_code, malformed.json()["detail"]["code"]),
-                         (400, "invalid_history_id"))
-        self.assertEqual((unknown.status_code, unknown.json()["detail"]["code"]),
-                         (404, "history_not_found"))
-
-    def test_selected_history_present_and_out_of_scope_bodies_are_public(self):
+    def test_the_served_answer_carries_no_past_setting_row_tally_or_selection(self):
         import ciq_autotune.api as api_mod
         from unittest.mock import patch
 
-        projection, history = _with_history(
-            gen.empty_projection(),
-            annotation="Exact analyzer-owned copy; do not rewrite this sentence.")
+        projection, history = _with_history(gen.projection())
         with patch.object(api_mod, "prepare_findings_projection",
                           lambda *args, **kwargs: projection):
-            present = self.client.get("/api/diagnose/findings", params={
-                "selected_id": history.history_id,
-            })
-            out_of_scope = self.client.get("/api/diagnose/findings", params={
-                "start_min": 0, "end_min": 300,
-                "selected_id": history.history_id,
-            })
+            whole_day = self.client.get("/api/diagnose/findings")
+            # A desk-era selection is a parameter nothing reads: it changes nothing.
+            selected = self.client.get("/api/diagnose/findings", params={
+                "selected_id": history.history_id})
 
-        self.assertEqual(present.status_code, 200)
-        self.assertEqual(present.json()["selection"], {
-            "id": history.history_id, "disposition": "present", "message": None,
-        })
-        present_row = next(row for row in present.json()["rows"]
-                           if row["id"] == history.history_id)
-        self.assertEqual(present_row["annotation"], history.annotation)
-        self.assertEqual(out_of_scope.status_code, 200)
-        self.assertEqual(out_of_scope.json()["selection"], {
-            "id": history.history_id,
-            "disposition": "out_of_scope",
-            "message": "Past-setting evidence is outside the selected window.",
-        })
+        self.assertEqual(whole_day.status_code, 200)
+        self.assertEqual(selected.json(), whole_day.json())
+        body = whole_day.json()
+        self.assertEqual(set(body), {"schema", "analysis_generation", "window",
+                                     "findings_window", "rows", "outcome_patterns"})
+        self.assertTrue(body["rows"])
+        self.assertNotIn(history.history_id, {row["id"] for row in body["rows"]})
+        self.assertEqual({row["register"] for row in body["rows"]}, {"assert", "finding"})
 
     def test_history_events_validate_generation_and_both_identity_codecs(self):
         generation = self.client.get("/api/diagnose/findings").json()[
@@ -1795,9 +1688,6 @@ class HeadlineTest(unittest.TestCase):
     """
 
     def _project(self, analysis, *, exposures=None, scenarios=None, window=None):
-        # A scoped window, never `whole_day()`: the unscoped GLOBAL queue is
-        # asserting-only (term 38) and would silently drop every held/blind
-        # fixture this test builds.
         projection = FindingsProjection(
             _analysis=analysis,
             _exposures=exposures or {"exposures": {}},
@@ -1839,71 +1729,6 @@ class HeadlineTest(unittest.TestCase):
         self.assertNotIn("0.8", row["headline"])
         self.assertNotIn("1.1", row["headline"])
 
-    def test_basal_held_single_slot_headline(self):
-        analysis = {"window_days": 30, "basal": [{
-            "slot": 0, "asserts_move": False,
-            "safety_status": str(Status.INSUFFICIENT),
-            "current": 0.60, "recommended": 0.48,
-            "estimate": {"value": 0.48}, "days": 7,
-            "annotation": "not enough nights of steady data yet to point one way",
-        }], "isf": [], "ic_blocks": []}
-        row = self._project(analysis)[0]
-        self.assertEqual(row["register"], "held")
-        self.assertEqual(
-            row["headline"],
-            "Not enough nights of steady data yet to point one way. "
-            "Delivered 0.48 U/h across 7 steady nights against 0.60 "
-            "programmed.")
-
-    def test_basal_held_merged_with_lean_headline(self):
-        slot = lambda index: {
-            "slot": index, "asserts_move": False,
-            "safety_status": str(Status.INSUFFICIENT),
-            "current": 1.10, "recommended": 0.95, "estimate": {"value": 0.95},
-            "days": 18,
-            "annotation": "not enough nights of steady data yet to point one way",
-        }
-        analysis = {"window_days": 30, "basal": [slot(25), slot(26)],
-                    "isf": [], "ic_blocks": []}
-        row = self._project(analysis)[0]
-        self.assertIsNone(row["current"])
-        self.assertEqual(row["lean"], "lower")
-        self.assertEqual(
-            row["headline"],
-            "Not enough nights of steady data yet to point one way. "
-            "Delivered below the programmed rate across 18 steady nights.")
-
-    def test_basal_held_merged_with_no_lean_states_only_the_count(self):
-        slot = lambda index: {
-            "slot": index, "asserts_move": False,
-            "safety_status": str(Status.NO_BASELINE),
-            "current": None, "recommended": 1.0, "estimate": {"value": 1.0},
-            "days": 10,
-            "annotation": "no set rate to step from, so only the measured range is shown",
-        }
-        analysis = {"window_days": 30, "basal": [slot(30), slot(31)],
-                    "isf": [], "ic_blocks": []}
-        row = self._project(analysis)[0]
-        self.assertIsNone(row["lean"])
-        self.assertEqual(
-            row["headline"],
-            "No set rate to step from, so only the measured range is "
-            "shown. 10 steady nights delivered so far.")
-
-    def test_basal_blind_headline_names_the_withheld_move_and_its_reason(self):
-        analysis = {"window_days": 30, "basal": [{
-            "slot": 0, "asserts_move": False,
-            "safety_status": str(Status.NO_DATA),
-            "current": 1.0, "recommended": None, "estimate": {"value": None},
-            "days": 0, "annotation": "no nights of steady data at this time yet",
-        }], "isf": [], "ic_blocks": []}
-        row = self._project(analysis)[0]
-        self.assertEqual(row["register"], "blind")
-        self.assertEqual(
-            row["headline"],
-            "No steady nights delivered against the programmed rate here, "
-            "so nothing to say either way.")
-
     # --- correction factor (ISF) --------------------------------------------
 
     def _isf_analysis(self, *, register):
@@ -1941,31 +1766,6 @@ class HeadlineTest(unittest.TestCase):
             ": 24.0 mg/dL across 0 fasting nights against 1 U : 40 mg/dL "
             "programmed.")
 
-    def test_correction_factor_held_headline(self):
-        row = self._project(self._isf_analysis(register="held"))[0]
-        self.assertEqual(row["register"], "held")
-        self.assertEqual(
-            row["headline"],
-            "No direction is called: rescue-carb history doesn't cover "
-            "this window. 0 fasting nights measured against 1 U : 40 "
-            "mg/dL programmed.")
-
-    def test_correction_factor_held_headline_with_no_programmed_value(self):
-        """No current, no "None" (must-prevent). ``analyzers/isf.py`` returns
-        direction ``None`` with annotation "measured; no set value to compare"
-        when the programmed value is ``None``; the served headline must drop
-        the "against ... programmed" clause rather than print "None"."""
-        analysis = self._isf_analysis(register="held")
-        analysis["isf"][0]["current"] = None
-        analysis["isf"][0]["annotation"] = "measured; no set value to compare"
-        row = self._project(analysis)[0]
-        self.assertEqual(row["register"], "held")
-        self.assertNotIn("None", row["headline"])
-        self.assertEqual(
-            row["headline"],
-            "No direction is called: measured; no set value to compare. "
-            "0 fasting nights measured.")
-
     # --- carb ratio (I:C) ----------------------------------------------------
 
     def test_carb_ratio_assert_headline(self):
@@ -1982,37 +1782,6 @@ class HeadlineTest(unittest.TestCase):
             row["headline"],
             "Meals look slightly over-covered relative to the programmed carb ratio. "
             "Measured 12 g/U across 8 meal runs against 10 programmed.")
-
-    def test_carb_ratio_held_headline_strips_the_held_at_current_tail(self):
-        analysis = {"window_days": 30, "basal": [], "isf": [], "ic_blocks": [{
-            "block_id": 0, "start_min": 0, "end_min": 60, "label": "Dinner",
-            "asserts_move": False, "held_reason": "pre-empted low; held at current",
-            "current_values": [10], "recommended": None, "estimate": {"value": 8},
-            "n_runs": 8, "annotation": None,
-        }]}
-        row = self._project(analysis)[0]
-        self.assertEqual(row["register"], "held")
-        self.assertEqual(
-            row["headline"],
-            "Held at current: pre-empted low. Measured 8 g/U across 8 "
-            "meal runs against 10 programmed.")
-
-    def test_carb_ratio_held_headline_with_no_current_values(self):
-        """No `current_values`, no "None" (must-prevent): the held sentence
-        drops the "against ... programmed" clause rather than print "None"."""
-        analysis = {"window_days": 30, "basal": [], "isf": [], "ic_blocks": [{
-            "block_id": 0, "start_min": 0, "end_min": 60, "label": "Dinner",
-            "asserts_move": False, "held_reason": "pre-empted low; held at current",
-            "current_values": [], "recommended": None, "estimate": {"value": 8},
-            "n_runs": 8, "annotation": None,
-        }]}
-        row = self._project(analysis)[0]
-        self.assertEqual(row["register"], "held")
-        self.assertNotIn("None", row["headline"])
-        self.assertEqual(
-            row["headline"],
-            "Held at current: pre-empted low. Measured 8 g/U across 8 "
-            "meal runs.")
 
     # --- event comparison (finding) ------------------------------------------
 
@@ -2031,173 +1800,64 @@ class HeadlineTest(unittest.TestCase):
             "Not ranked in this window yet. Showed up in 1 of 5 lows in "
             "this window.")
 
-    # --- past setting (history) -----------------------------------------------
-
-    def test_past_setting_history_headline(self):
-        projection, history = _with_history(
-            gen.empty_projection(), regime_end="2026-08-01T12:00:00")
-        rows = projection.project(WindowQuery.whole_day())["rows"]
-        history_row = next(item for item in rows
-                           if item["id"] == history.history_id)
-        self.assertEqual(
-            history_row["headline"],
-            "Past setting, no change suggested. Measured 4.6 g/U across 3 "
-            "meal runs while 5 was programmed, until 2026-08-01. "
-            "Programmed now: 6.")
-
     # --- coverage + determinism ------------------------------------------------
 
-    def test_nine_family_and_register_pairs_all_carry_a_non_empty_headline(self):
-        basal_assert = {"slot": 0, "asserts_move": True, "direction": "lower",
-                        "current": 0.60, "estimate": {"value": 0.48}, "days": 30,
-                        "annotation": "one cautious step down is supported at this time"}
-        basal_held = {"slot": 1, "asserts_move": False,
-                      "safety_status": str(Status.INSUFFICIENT),
-                      "current": 1.10, "estimate": {"value": 1.26}, "days": 21,
-                      "annotation": "not enough nights of steady data yet to point one way"}
-        basal_blind = {"slot": 2, "asserts_move": False,
-                       "safety_status": str(Status.NO_DATA),
-                       "current": 1.0, "estimate": {"value": None}, "days": 0,
-                       "annotation": "no nights of steady data at this time yet"}
-        ic_assert = {"block_id": 0, "start_min": 0, "end_min": 60, "label": "Breakfast",
-                    "asserts_move": True, "direction": "raise",
-                    "current_values": [10], "estimate": {"value": 12}, "n_runs": 8,
-                    "annotation": ("meals look slightly over-covered relative to the "
-                                   "programmed carb ratio")}
-        ic_held = {"block_id": 1, "start_min": 720, "end_min": 780, "label": "Dinner",
-                  "asserts_move": False, "held_reason": "pre-empted low; held at current",
-                  "current_values": [10], "estimate": {"value": 8}, "n_runs": 8,
-                  "annotation": None}
+    def test_every_served_family_leads_with_its_verdict_sentence(self):
+        # The four family-and-register pairs the answer serves (ADR 531): basal,
+        # carb ratio and correction factor asserting, and the finding. A held
+        # basal slot and a held carb-ratio block ride along and serve no row.
         analysis = {
             "window_days": 30,
-            "basal": [basal_assert, basal_held, basal_blind],
-            "ic_blocks": [ic_assert, ic_held],
+            "basal": [
+                {"slot": 0, "asserts_move": True, "direction": "lower",
+                 "current": 0.60, "estimate": {"value": 0.48}, "days": 30,
+                 "annotation": "one cautious step down is supported at this time"},
+                {"slot": 1, "asserts_move": False,
+                 "safety_status": str(Status.INSUFFICIENT),
+                 "current": 1.10, "estimate": {"value": 1.26}, "days": 21,
+                 "annotation": "not enough nights of steady data yet to point one way"},
+            ],
+            "ic_blocks": [
+                {"block_id": 0, "start_min": 0, "end_min": 60, "label": "Breakfast",
+                 "asserts_move": True, "direction": "raise",
+                 "current_values": [10], "estimate": {"value": 12}, "n_runs": 8,
+                 "annotation": ("meals look slightly over-covered relative to the "
+                                "programmed carb ratio")},
+                {"block_id": 1, "start_min": 720, "end_min": 780, "label": "Dinner",
+                 "asserts_move": False, "held_reason": "pre-empted low; held at current",
+                 "current_values": [10], "estimate": {"value": 8}, "n_runs": 8,
+                 "annotation": None},
+            ],
             "isf": self._isf_analysis(register="assert")["isf"],
         }
-        projection, _history = _with_history(
-            FindingsProjection(_analysis=analysis, _exposures=gen.exposures(),
-                               _scenarios=gen.scenarios(), _outcome_patterns=[]))
-        rows = projection.project(WindowQuery.clock(1, DAY_MINUTES))["rows"]
-        pairs = set()
-        for row in rows:
-            if row["kind"] == "habit":
-                pairs.add(("finding", "habit"))
-            else:
-                pairs.add((row["register"], row.get("parameter") or row["kind"]))
-        # ISF is one row for the whole day (term 31), so assert and held can never
-        # coexist in one analysis; `('held', 'isf')` is covered by
-        # `test_correction_factor_held_headline` instead. The other eight of the
-        # nine family-and-register pairs are exercised together here.
-        expected = {
-            ("assert", "basal_rate"), ("held", "basal_rate"), ("blind", "basal_rate"),
-            ("assert", "carb_ratio"), ("held", "carb_ratio"),
-            ("assert", "isf"),
-            ("finding", "habit"),
-            ("history", "carb_ratio"),
-        }
-        self.assertTrue(expected.issubset(pairs), pairs)
-        for row in rows:
-            self.assertTrue(row["headline"], row)
-
-    def test_every_headline_leads_with_its_verdict_sentence(self):
-        # The nine family-and-register pairs' first sentence must BE the
-        # expected verdict/hold/rank/past-setting sentence — this test builds
-        # or reuses one row of every pair: basal assert/held/blind (3), carb
-        # ratio assert/held (2), correction factor assert/held (2, from two
-        # separate one-row-per-day analyses since assert and held can never
-        # coexist in a single ISF analysis), the event-comparison finding
-        # pair rendered both ways (2), and past setting/history (1).
-        basal_assert = {"slot": 0, "asserts_move": True, "direction": "lower",
-                        "current": 0.60, "estimate": {"value": 0.48}, "days": 30,
-                        "annotation": "one cautious step down is supported at this time"}
-        basal_held = {"slot": 1, "asserts_move": False,
-                      "safety_status": str(Status.INSUFFICIENT),
-                      "current": 1.10, "estimate": {"value": 1.26}, "days": 21,
-                      "annotation": "not enough nights of steady data yet to point one way"}
-        basal_blind = {"slot": 2, "asserts_move": False,
-                       "safety_status": str(Status.NO_DATA),
-                       "current": 1.0, "estimate": {"value": None}, "days": 0,
-                       "annotation": "no nights of steady data at this time yet"}
-        ic_assert = {"block_id": 0, "start_min": 0, "end_min": 60, "label": "Breakfast",
-                    "asserts_move": True, "direction": "raise",
-                    "current_values": [10], "estimate": {"value": 12}, "n_runs": 8,
-                    "annotation": ("meals look slightly over-covered relative to the "
-                                   "programmed carb ratio")}
-        ic_held = {"block_id": 1, "start_min": 720, "end_min": 780, "label": "Dinner",
-                  "asserts_move": False, "held_reason": "pre-empted low; held at current",
-                  "current_values": [10], "estimate": {"value": 8}, "n_runs": 8,
-                  "annotation": None}
-        analysis = {
-            "window_days": 30,
-            "basal": [basal_assert, basal_held, basal_blind],
-            "ic_blocks": [ic_assert, ic_held],
-            "isf": self._isf_analysis(register="assert")["isf"],
-        }
-        projection, _history = _with_history(
-            FindingsProjection(_analysis=analysis, _exposures=gen.exposures(),
-                               _scenarios=gen.scenarios(), _outcome_patterns=[]))
-        rows = projection.project(WindowQuery.clock(1, DAY_MINUTES))["rows"]
-        isf_held_row = self._project(self._isf_analysis(register="held"))[0]
-        finding_rows = gen.projection().project(WindowQuery.whole_day())["rows"]
-        ranking = _row(finding_rows, "Over-treated low")
-        not_ranking = _row(finding_rows, "Correction on active insulin")
+        rows = self._project(analysis, exposures=gen.exposures(),
+                             scenarios=gen.scenarios())
 
         def first_sentence(headline):
             head, sep, _rest = headline.partition(". ")
             return head + "." if sep else head
 
-        expected_by_key = {
+        expected = {
             ("assert", "basal_rate"):
                 "One cautious step down is supported at this time.",
-            ("held", "basal_rate"):
-                "Not enough nights of steady data yet to point one way.",
-            ("blind", "basal_rate"):
-                "No steady nights delivered against the programmed rate "
-                "here, so nothing to say either way.",
             ("assert", "carb_ratio"):
                 "Meals look slightly over-covered relative to the programmed carb ratio.",
-            ("held", "carb_ratio"): "Held at current: pre-empted low.",
             ("assert", "isf"):
                 "Overnight you look more sensitive to insulin than the set "
                 "value, so corrections can run a little stronger.",
         }
-        seen = set()
+        settings = [row for row in rows if row["kind"] == "setting"]
+        self.assertEqual(sorted((row["register"], row["parameter"]) for row in settings),
+                         sorted(expected))
+        for row in settings:
+            self.assertEqual(first_sentence(row["headline"]),
+                             expected[(row["register"], row["parameter"])])
+        findings = [row for row in rows if row["kind"] == "habit"]
+        self.assertTrue(findings)
         for row in rows:
-            key = (row["register"], row.get("parameter") or row["kind"])
-            if key == ("history", "carb_ratio"):
-                self.assertEqual(
-                    first_sentence(row["headline"]),
-                    "Past setting, no change suggested.")
-                seen.add(key)
-                continue
-            if key not in expected_by_key:
-                continue
-            self.assertEqual(first_sentence(row["headline"]), expected_by_key[key])
-            seen.add(key)
-        self.assertEqual(seen, {*expected_by_key, ("history", "carb_ratio")})
-
-        self.assertEqual(
-            first_sentence(isf_held_row["headline"]),
-            "No direction is called: rescue-carb history doesn't cover "
-            "this window.")
-        self.assertEqual(
-            first_sentence(ranking["headline"]),
-            "Ranks among this window's findings.")
-        self.assertEqual(
-            first_sentence(not_ranking["headline"]),
-            "Not ranked in this window yet.")
-
-        for row in [*rows, isf_held_row, ranking, not_ranking]:
-            headline = row["headline"]
-            head = first_sentence(headline)
-            self.assertFalse(
-                head.startswith("Delivered"),
-                f"{row.get('register')}/{row.get('parameter') or row['kind']}: "
-                f"{headline!r}")
-            self.assertFalse(
-                head.startswith("Measured"),
-                f"{row.get('register')}/{row.get('parameter') or row['kind']}: "
-                f"{headline!r}")
+            self.assertTrue(row["headline"], row)
+            self.assertFalse(first_sentence(row["headline"]).startswith(
+                ("Delivered", "Measured")), row["headline"])
 
     def test_rerun_of_the_same_window_yields_the_same_headline(self):
         projection = gen.projection()
@@ -2291,7 +1951,7 @@ class LateBolusCauseRowTest(unittest.TestCase):
                 projection = prepare_findings_projection(
                     analysis={}, exposures=build_exposures(store),
                     scenarios=build_scenarios(store).to_dict(),
-                ).project(WindowQuery.whole_day(), None)
+                ).project(WindowQuery.whole_day())
         return next((r for r in projection["rows"] if r.get("id") == "finding:late_bolus"), None)
 
     def test_late_meals_that_stayed_in_range_serve_no_cause_row(self):

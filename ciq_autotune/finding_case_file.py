@@ -309,7 +309,7 @@ class PreparedCases:
         }
 
 
-def prepare(store, *, query, version, analysis, exposures, scenarios, selected_id=None,
+def prepare(store, *, query, version, analysis, exposures, scenarios,
             analysis_generation="standalone:0"):
     """Materialize queue, opportunities, attribution, and traces in one read snapshot."""
     store.conn.execute("BEGIN")
@@ -323,9 +323,7 @@ def prepare(store, *, query, version, analysis, exposures, scenarios, selected_i
         projection = findings_projection.prepare_findings_projection(
             analysis=analysis, exposures=exposures, scenarios=scenarios,
         )
-        findings = projection.project(
-            query, selected_id, analysis_generation=analysis_generation,
-        )
+        findings = projection.project(query, analysis_generation=analysis_generation)
         pattern_exposures, _patterns = outcome_window_population(
             analysis, exposures, scenarios, query,
         )

@@ -29,7 +29,7 @@ const LABEL_SPACE = 12;
 /** Every two neighbouring axis labels stand at least LABEL_SPACE apart;
  *  returns how many labels and tick marks there are. */
 async function ticksClear(canvasElement: HTMLElement) {
-  const labels = [...canvasElement.querySelectorAll<SVGTextElement>('.ui-evidence__tick')]
+  const labels = [...canvasElement.querySelectorAll<SVGTextElement>('.ui-chart__tick')]
     .map((label) => label.getBoundingClientRect());
   for (let i = 1; i < labels.length; i += 1) {
     await expect(labels[i].left - labels[i - 1].right).toBeGreaterThanOrEqual(LABEL_SPACE);
@@ -54,15 +54,15 @@ export const Uncertain: Story = {
   },
 };
 
-/** A 320 px phone: the axis is too short for every tick's label, so one is left
- *  out (its mark stays) rather than running into the unit-bearing last label. */
+/** A 320 px phone: every tick keeps its mark, and a label that would run into
+ *  its neighbour would be left out, the last always shown; none touch. */
 export const Narrow: Story = {
   args: { data: isfState('supported') },
   parameters: { frame: { width: 320 } },
   play: async ({ canvasElement }) => {
     const { labels, marks } = await ticksClear(canvasElement);
-    await expect(labels).toBeLessThan(marks);
-    await expect(canvasElement.querySelector('.ui-evidence__unit')).not.toBeNull();
+    await expect(labels).toBeLessThanOrEqual(marks);
+    await expect(canvasElement.querySelector('.ui-chart__caption')).not.toBeNull();
   },
 };
 
@@ -73,7 +73,7 @@ export const EdgeCounts: Story = {
     const edges = [...canvasElement.querySelectorAll<SVGTextElement>('[data-edge]')];
     await expect(edges.map((edge) => edge.dataset.edge).sort()).toEqual(['above', 'below']);
     const marks = [...canvasElement.querySelectorAll<SVGGraphicsElement>(
-      '.ui-evidence__night, .ui-evidence__band, .ui-evidence__current, .ui-evidence__estimate')];
+      '.ui-evidence__dot, .ui-chart__band, .ui-chart__current, .ui-chart__estimate')];
     for (const edge of edges) {
       const box = edge.getBoundingClientRect();
       await expect(marks.filter((mark) => overlaps(box, mark.getBoundingClientRect())).length).toBe(0);

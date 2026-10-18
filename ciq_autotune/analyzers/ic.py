@@ -2890,6 +2890,11 @@ def _analyze_ic_blocks_shared(
                 "ledger": _pooled_ledger(pool, fit.ownership_by_run),
                 "points": meal_points,
                 "runs": run_rows,
+                # The meal runs the block's estimate counts, each with its ratio: the
+                # Setting card's dots and its Meal runs count read this one list
+                # (ADR 523), never a filter of ``runs`` re-applied by the reader.
+                "counted_runs": [{"t": row["t"], "true_ic": row["true_ic"]}
+                                 for row in run_rows if row["in_pool"]],
                 "end_band_mgdl": RUN_END_BAND_MGDL,
                 "run_ends": _run_ends(run_rows),
             },

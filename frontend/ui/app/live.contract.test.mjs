@@ -131,8 +131,10 @@ const EXPECTED = {
       moves: [{ name: null, slot: null, before: 40, after: 32, units: 'mg/dL/U' }] } },
   },
   // A queued carb ratio: its card draws the block, current → suggested and range.
+  // Its move strengthens the ratio, so it answers highs after meals and never
+  // lows after meals (ADR 530).
   'basal-and-carb-ratio-lower': {
-    queue: ['setting:basal_rate', 'pattern:highs_after_meals', 'pattern:lows_after_meals', 'setting:carb_ratio'],
+    queue: ['setting:basal_rate', 'pattern:highs_after_meals', 'setting:carb_ratio'],
     ic: { title: 'I:C', units: 'g/U', start: 0, end: 1440, current: 10, suggested: 9, estimate: 8, lo: 8, hi: 8,
       // The meal runs the estimate counts: the stat row's count and the chart's dots (ADR 523).
       count: { label: 'Meal runs', value: 8 }, dots: 8 },

@@ -68,16 +68,16 @@
      }
     },
     {
-     "action": "carb_ratio",
-     "admission_route": "setting_staging",
+     "action": null,
+     "admission_route": "none",
      "collapse": "remain_pattern",
      "k": 0,
      "key": "lows_after_meals",
      "member_set_fingerprint": "13141e472c40a768",
      "members": [
       {
-       "action": "carb_ratio",
-       "admitted": true,
+       "action": null,
+       "admitted": false,
        "hi": null,
        "k": 24,
        "kind": "setting",
@@ -101,7 +101,7 @@
       "verdict": "withheld"
      },
      "seriousness": null,
-     "settled_price": 66,
+     "settled_price": 0,
      "subject": "pattern:lows_after_meals",
      "title": "Lows after meals",
      "wide": false,
@@ -365,96 +365,6 @@
      "support": null,
      "tier": "next_in_line",
      "title": "Highs after meals",
-     "verdict_counts": null,
-     "verdict_counts_by_family": null,
-     "window_scope": "window"
-    },
-    {
-     "anchored_by": "ic:720",
-     "annotation": null,
-     "appearances": null,
-     "asserts_move": null,
-     "chips": [
-      "lows",
-      "meals"
-     ],
-     "claimed_by": null,
-     "count_sentences": [
-      {
-       "count": 0,
-       "denominator": 1,
-       "noun": "meals",
-       "outcome": "ran low",
-       "sentence": "0 of 1 meals ran low"
-      }
-     ],
-     "current": null,
-     "direction": null,
-     "episodes": null,
-     "estimate": null,
-     "event_chart": null,
-     "evidence": null,
-     "fold_sentences": null,
-     "headline": "Lows after meals in 0 of 1 meals",
-     "id": "pattern:lows_after_meals",
-     "kind": "pattern",
-     "label": null,
-     "lever": null,
-     "members": null,
-     "parameter": null,
-     "pattern": {
-      "action": "carb_ratio",
-      "admission_route": "setting_staging",
-      "collapse": "remain_pattern",
-      "k": 0,
-      "key": "lows_after_meals",
-      "member_set_fingerprint": "13141e472c40a768",
-      "members": [
-       {
-        "action": "carb_ratio",
-        "admitted": true,
-        "hi": null,
-        "k": 24,
-        "kind": "setting",
-        "lo": null,
-        "price": 66,
-        "producer": "tuning_levers",
-        "seriousness": null,
-        "seriousness_segments": [],
-        "subject": "setting:carb_ratio"
-       }
-      ],
-      "n": 1,
-      "rate": 0.0,
-      "rate_levers": [
-       "habit:meal_over_delivery"
-      ],
-      "rate_producer": "exposures",
-      "readiness": {
-       "count": 1,
-       "gate": 12,
-       "verdict": "withheld"
-      },
-      "seriousness": null,
-      "settled_price": 66,
-      "subject": "pattern:lows_after_meals",
-      "title": "Lows after meals",
-      "wide": false,
-      "wilson": {
-       "hi": 0.6216,
-       "lo": 0.0
-      }
-     },
-     "pattern_chart": null,
-     "priority": 66,
-     "rank_note": "Ranked with its setting",
-     "recommended": null,
-     "register": "finding",
-     "served_as": null,
-     "span": null,
-     "support": null,
-     "tier": "next_in_line",
-     "title": "Lows after meals",
      "verdict_counts": null,
      "verdict_counts_by_family": null,
      "window_scope": "window"
@@ -785,6 +695,88 @@
       }
      },
      "window_scope": "window"
+    },
+    {
+     "anchored_by": null,
+     "annotation": null,
+     "appearances": null,
+     "asserts_move": null,
+     "chips": [
+      "lows",
+      "meals"
+     ],
+     "claimed_by": null,
+     "count_sentences": null,
+     "current": null,
+     "direction": null,
+     "episodes": null,
+     "estimate": null,
+     "event_chart": null,
+     "evidence": null,
+     "fold_sentences": null,
+     "headline": "Lows after meals",
+     "id": "pattern:lows_after_meals",
+     "kind": "pattern",
+     "label": null,
+     "lever": null,
+     "members": null,
+     "parameter": null,
+     "pattern": {
+      "action": null,
+      "admission_route": "none",
+      "collapse": "remain_pattern",
+      "k": 0,
+      "key": "lows_after_meals",
+      "member_set_fingerprint": "13141e472c40a768",
+      "members": [
+       {
+        "action": null,
+        "admitted": false,
+        "hi": null,
+        "k": 24,
+        "kind": "setting",
+        "lo": null,
+        "price": 66,
+        "producer": "tuning_levers",
+        "seriousness": null,
+        "seriousness_segments": [],
+        "subject": "setting:carb_ratio"
+       }
+      ],
+      "n": 1,
+      "rate": 0.0,
+      "rate_levers": [
+       "habit:meal_over_delivery"
+      ],
+      "rate_producer": "exposures",
+      "readiness": {
+       "count": 1,
+       "gate": 12,
+       "verdict": "withheld"
+      },
+      "seriousness": null,
+      "settled_price": 0,
+      "subject": "pattern:lows_after_meals",
+      "title": "Lows after meals",
+      "wide": false,
+      "wilson": {
+       "hi": 0.6216,
+       "lo": 0.0
+      }
+     },
+     "pattern_chart": null,
+     "priority": null,
+     "rank_note": null,
+     "recommended": null,
+     "register": "finding",
+     "served_as": null,
+     "span": null,
+     "support": null,
+     "tier": "noted",
+     "title": "Lows after meals",
+     "verdict_counts": null,
+     "verdict_counts_by_family": null,
+     "window_scope": "window"
     }
    ],
    "schema": "diagnose-findings-v3",
@@ -861,16 +853,16 @@
      }
     },
     {
-     "action": "carb_ratio",
-     "admission_route": "setting_staging",
+     "action": null,
+     "admission_route": "none",
      "collapse": "remain_pattern",
      "k": 0,
      "key": "lows_after_meals",
      "member_set_fingerprint": "13141e472c40a768",
      "members": [
       {
-       "action": "carb_ratio",
-       "admitted": true,
+       "action": null,
+       "admitted": false,
        "hi": null,
        "k": 24,
        "kind": "setting",
@@ -894,7 +886,7 @@
       "verdict": "withheld"
      },
      "seriousness": null,
-     "settled_price": 66,
+     "settled_price": 0,
      "subject": "pattern:lows_after_meals",
      "title": "Lows after meals",
      "wide": false,
@@ -1332,96 +1324,6 @@
       }
      },
      "window_scope": "window"
-    },
-    {
-     "anchored_by": "ic:720",
-     "annotation": null,
-     "appearances": null,
-     "asserts_move": null,
-     "chips": [
-      "lows",
-      "meals"
-     ],
-     "claimed_by": null,
-     "count_sentences": [
-      {
-       "count": 0,
-       "denominator": 3,
-       "noun": "meals",
-       "outcome": "ran low",
-       "sentence": "0 of 3 meals ran low"
-      }
-     ],
-     "current": null,
-     "direction": null,
-     "episodes": null,
-     "estimate": null,
-     "event_chart": null,
-     "evidence": null,
-     "fold_sentences": null,
-     "headline": "Lows after meals in 0 of 3 meals",
-     "id": "pattern:lows_after_meals",
-     "kind": "pattern",
-     "label": null,
-     "lever": null,
-     "members": null,
-     "parameter": null,
-     "pattern": {
-      "action": "carb_ratio",
-      "admission_route": "setting_staging",
-      "collapse": "remain_pattern",
-      "k": 0,
-      "key": "lows_after_meals",
-      "member_set_fingerprint": "13141e472c40a768",
-      "members": [
-       {
-        "action": "carb_ratio",
-        "admitted": true,
-        "hi": null,
-        "k": 24,
-        "kind": "setting",
-        "lo": null,
-        "price": 66,
-        "producer": "tuning_levers",
-        "seriousness": null,
-        "seriousness_segments": [],
-        "subject": "setting:carb_ratio"
-       }
-      ],
-      "n": 3,
-      "rate": 0.0,
-      "rate_levers": [
-       "habit:meal_over_delivery"
-      ],
-      "rate_producer": "exposures",
-      "readiness": {
-       "count": 3,
-       "gate": 12,
-       "verdict": "withheld"
-      },
-      "seriousness": null,
-      "settled_price": 66,
-      "subject": "pattern:lows_after_meals",
-      "title": "Lows after meals",
-      "wide": false,
-      "wilson": {
-       "hi": 0.3538,
-       "lo": 0.0
-      }
-     },
-     "pattern_chart": null,
-     "priority": 66,
-     "rank_note": "Ranked with its setting",
-     "recommended": null,
-     "register": "finding",
-     "served_as": null,
-     "span": null,
-     "support": null,
-     "tier": "next_in_line",
-     "title": "Lows after meals",
-     "verdict_counts": null,
-     "verdict_counts_by_family": null,
-     "window_scope": "whole_day"
     },
     {
      "anchored_by": null,
@@ -2048,6 +1950,88 @@
       }
      },
      "window_scope": "window"
+    },
+    {
+     "anchored_by": null,
+     "annotation": null,
+     "appearances": null,
+     "asserts_move": null,
+     "chips": [
+      "lows",
+      "meals"
+     ],
+     "claimed_by": null,
+     "count_sentences": null,
+     "current": null,
+     "direction": null,
+     "episodes": null,
+     "estimate": null,
+     "event_chart": null,
+     "evidence": null,
+     "fold_sentences": null,
+     "headline": "Lows after meals",
+     "id": "pattern:lows_after_meals",
+     "kind": "pattern",
+     "label": null,
+     "lever": null,
+     "members": null,
+     "parameter": null,
+     "pattern": {
+      "action": null,
+      "admission_route": "none",
+      "collapse": "remain_pattern",
+      "k": 0,
+      "key": "lows_after_meals",
+      "member_set_fingerprint": "13141e472c40a768",
+      "members": [
+       {
+        "action": null,
+        "admitted": false,
+        "hi": null,
+        "k": 24,
+        "kind": "setting",
+        "lo": null,
+        "price": 66,
+        "producer": "tuning_levers",
+        "seriousness": null,
+        "seriousness_segments": [],
+        "subject": "setting:carb_ratio"
+       }
+      ],
+      "n": 3,
+      "rate": 0.0,
+      "rate_levers": [
+       "habit:meal_over_delivery"
+      ],
+      "rate_producer": "exposures",
+      "readiness": {
+       "count": 3,
+       "gate": 12,
+       "verdict": "withheld"
+      },
+      "seriousness": null,
+      "settled_price": 0,
+      "subject": "pattern:lows_after_meals",
+      "title": "Lows after meals",
+      "wide": false,
+      "wilson": {
+       "hi": 0.3538,
+       "lo": 0.0
+      }
+     },
+     "pattern_chart": null,
+     "priority": null,
+     "rank_note": null,
+     "recommended": null,
+     "register": "finding",
+     "served_as": null,
+     "span": null,
+     "support": null,
+     "tier": "noted",
+     "title": "Lows after meals",
+     "verdict_counts": null,
+     "verdict_counts_by_family": null,
+     "window_scope": "whole_day"
     }
    ],
    "schema": "diagnose-findings-v3",
@@ -2124,16 +2108,16 @@
      }
     },
     {
-     "action": "carb_ratio",
-     "admission_route": "setting_staging",
+     "action": null,
+     "admission_route": "none",
      "collapse": "remain_pattern",
      "k": 0,
      "key": "lows_after_meals",
      "member_set_fingerprint": "13141e472c40a768",
      "members": [
       {
-       "action": "carb_ratio",
-       "admitted": true,
+       "action": null,
+       "admitted": false,
        "hi": null,
        "k": 24,
        "kind": "setting",
@@ -2157,7 +2141,7 @@
       "verdict": "withheld"
      },
      "seriousness": null,
-     "settled_price": 66,
+     "settled_price": 0,
      "subject": "pattern:lows_after_meals",
      "title": "Lows after meals",
      "wide": false,
@@ -2426,96 +2410,6 @@
      "window_scope": "window"
     },
     {
-     "anchored_by": "ic:720",
-     "annotation": null,
-     "appearances": null,
-     "asserts_move": null,
-     "chips": [
-      "lows",
-      "meals"
-     ],
-     "claimed_by": null,
-     "count_sentences": [
-      {
-       "count": 0,
-       "denominator": 1,
-       "noun": "meals",
-       "outcome": "ran low",
-       "sentence": "0 of 1 meals ran low"
-      }
-     ],
-     "current": null,
-     "direction": null,
-     "episodes": null,
-     "estimate": null,
-     "event_chart": null,
-     "evidence": null,
-     "fold_sentences": null,
-     "headline": "Lows after meals in 0 of 1 meals",
-     "id": "pattern:lows_after_meals",
-     "kind": "pattern",
-     "label": null,
-     "lever": null,
-     "members": null,
-     "parameter": null,
-     "pattern": {
-      "action": "carb_ratio",
-      "admission_route": "setting_staging",
-      "collapse": "remain_pattern",
-      "k": 0,
-      "key": "lows_after_meals",
-      "member_set_fingerprint": "13141e472c40a768",
-      "members": [
-       {
-        "action": "carb_ratio",
-        "admitted": true,
-        "hi": null,
-        "k": 24,
-        "kind": "setting",
-        "lo": null,
-        "price": 66,
-        "producer": "tuning_levers",
-        "seriousness": null,
-        "seriousness_segments": [],
-        "subject": "setting:carb_ratio"
-       }
-      ],
-      "n": 1,
-      "rate": 0.0,
-      "rate_levers": [
-       "habit:meal_over_delivery"
-      ],
-      "rate_producer": "exposures",
-      "readiness": {
-       "count": 1,
-       "gate": 12,
-       "verdict": "withheld"
-      },
-      "seriousness": null,
-      "settled_price": 66,
-      "subject": "pattern:lows_after_meals",
-      "title": "Lows after meals",
-      "wide": false,
-      "wilson": {
-       "hi": 0.6216,
-       "lo": 0.0
-      }
-     },
-     "pattern_chart": null,
-     "priority": 66,
-     "rank_note": "Ranked with its setting",
-     "recommended": null,
-     "register": "finding",
-     "served_as": null,
-     "span": null,
-     "support": null,
-     "tier": "next_in_line",
-     "title": "Lows after meals",
-     "verdict_counts": null,
-     "verdict_counts_by_family": null,
-     "window_scope": "window"
-    },
-    {
      "anchored_by": null,
      "annotation": "fasting data agrees with the set factor, but recurring correction-linked lows call for weaker corrections",
      "appearances": null,
@@ -2632,6 +2526,88 @@
      "support": null,
      "tier": "noted",
      "title": "Lows after correcting highs",
+     "verdict_counts": null,
+     "verdict_counts_by_family": null,
+     "window_scope": "window"
+    },
+    {
+     "anchored_by": null,
+     "annotation": null,
+     "appearances": null,
+     "asserts_move": null,
+     "chips": [
+      "lows",
+      "meals"
+     ],
+     "claimed_by": null,
+     "count_sentences": null,
+     "current": null,
+     "direction": null,
+     "episodes": null,
+     "estimate": null,
+     "event_chart": null,
+     "evidence": null,
+     "fold_sentences": null,
+     "headline": "Lows after meals",
+     "id": "pattern:lows_after_meals",
+     "kind": "pattern",
+     "label": null,
+     "lever": null,
+     "members": null,
+     "parameter": null,
+     "pattern": {
+      "action": null,
+      "admission_route": "none",
+      "collapse": "remain_pattern",
+      "k": 0,
+      "key": "lows_after_meals",
+      "member_set_fingerprint": "13141e472c40a768",
+      "members": [
+       {
+        "action": null,
+        "admitted": false,
+        "hi": null,
+        "k": 24,
+        "kind": "setting",
+        "lo": null,
+        "price": 66,
+        "producer": "tuning_levers",
+        "seriousness": null,
+        "seriousness_segments": [],
+        "subject": "setting:carb_ratio"
+       }
+      ],
+      "n": 1,
+      "rate": 0.0,
+      "rate_levers": [
+       "habit:meal_over_delivery"
+      ],
+      "rate_producer": "exposures",
+      "readiness": {
+       "count": 1,
+       "gate": 12,
+       "verdict": "withheld"
+      },
+      "seriousness": null,
+      "settled_price": 0,
+      "subject": "pattern:lows_after_meals",
+      "title": "Lows after meals",
+      "wide": false,
+      "wilson": {
+       "hi": 0.6216,
+       "lo": 0.0
+      }
+     },
+     "pattern_chart": null,
+     "priority": null,
+     "rank_note": null,
+     "recommended": null,
+     "register": "finding",
+     "served_as": null,
+     "span": null,
+     "support": null,
+     "tier": "noted",
+     "title": "Lows after meals",
      "verdict_counts": null,
      "verdict_counts_by_family": null,
      "window_scope": "window"
@@ -4913,6 +4889,168 @@
      "appearances": null,
      "asserts_move": null,
      "chips": [
+      "lows",
+      "meals"
+     ],
+     "claimed_by": null,
+     "count_sentences": [
+      {
+       "count": 0,
+       "denominator": 3,
+       "noun": "meals",
+       "outcome": "ran low",
+       "sentence": "0 of 3 meals ran low"
+      }
+     ],
+     "current": null,
+     "direction": null,
+     "episodes": null,
+     "estimate": null,
+     "event_chart": null,
+     "evidence": null,
+     "fold_sentences": null,
+     "headline": "Lows after meals in 0 of 3 meals",
+     "id": "pattern:lows_after_meals",
+     "kind": "pattern",
+     "label": null,
+     "lever": null,
+     "members": null,
+     "parameter": null,
+     "pattern": {
+      "action": "carb_ratio",
+      "admission_route": "setting_staging",
+      "collapse": "remain_pattern",
+      "k": 0,
+      "key": "lows_after_meals",
+      "member_set_fingerprint": "13141e472c40a768",
+      "members": [
+       {
+        "action": "carb_ratio",
+        "admitted": true,
+        "hi": null,
+        "k": 24,
+        "kind": "setting",
+        "lo": null,
+        "price": 86,
+        "producer": "tuning_levers",
+        "seriousness": null,
+        "seriousness_segments": [],
+        "subject": "setting:carb_ratio"
+       }
+      ],
+      "n": 3,
+      "rate": 0.0,
+      "rate_levers": [
+       "habit:meal_over_delivery"
+      ],
+      "rate_producer": "exposures",
+      "readiness": {
+       "count": 3,
+       "gate": 12,
+       "verdict": "withheld"
+      },
+      "seriousness": null,
+      "settled_price": 86,
+      "subject": "pattern:lows_after_meals",
+      "title": "Lows after meals",
+      "wide": false,
+      "wilson": {
+       "hi": 0.3538,
+       "lo": 0.0
+      }
+     },
+     "pattern_chart": null,
+     "priority": 86,
+     "rank_note": "Ranked with its setting",
+     "recommended": null,
+     "register": "finding",
+     "served_as": null,
+     "span": null,
+     "support": null,
+     "tier": "next_in_line",
+     "title": "Lows after meals",
+     "verdict_counts": null,
+     "verdict_counts_by_family": null,
+     "window_scope": "whole_day"
+    },
+    {
+     "anchored_by": null,
+     "annotation": "post-meal corrections imply meals are under-covered, so a tighter (smaller) carb ratio would dose more per carb",
+     "appearances": null,
+     "asserts_move": null,
+     "chips": [
+      "highs"
+     ],
+     "claimed_by": null,
+     "count_sentences": null,
+     "current": 5.7,
+     "direction": "lower",
+     "episodes": null,
+     "estimate": {
+      "confidence": 0.8,
+      "hi": 4.2857,
+      "lo": 4.2857,
+      "method": "bootstrap-inverse-ratio-wls-clustered",
+      "n": 24,
+      "n_clusters": 24,
+      "value": 4.2857,
+      "wide": false
+     },
+     "event_chart": null,
+     "evidence": null,
+     "fold_sentences": null,
+     "headline": "Post-meal corrections imply meals are under-covered, so a tighter (smaller) carb ratio would dose more per carb. Measured 4.3 g/U across 24 meal runs against 5.7 programmed.",
+     "id": "ic:720",
+     "kind": "setting",
+     "label": "Evening",
+     "lever": null,
+     "members": [
+      {
+       "current": 5.7,
+       "estimate": {
+        "confidence": 0.8,
+        "hi": 4.2857,
+        "lo": 4.2857,
+        "method": "bootstrap-inverse-ratio-wls-clustered",
+        "n": 24,
+        "n_clusters": 24,
+        "value": 4.2857,
+        "wide": false
+       },
+       "recommended": 5.0,
+       "start_min": 720
+      }
+     ],
+     "parameter": "carb_ratio",
+     "pattern": null,
+     "pattern_chart": null,
+     "priority": 86,
+     "rank_note": null,
+     "recommended": 5.0,
+     "register": "assert",
+     "served_as": null,
+     "span": {
+      "end_min": 1440,
+      "label": "12:00 to 24:00",
+      "start_min": 720
+     },
+     "support": {
+      "n": 24,
+      "noun": "meal runs",
+      "run_days": 90
+     },
+     "tier": "next_in_line",
+     "title": "Carb ratio 12:00 to 24:00 · lower",
+     "verdict_counts": null,
+     "verdict_counts_by_family": null,
+     "window_scope": "window"
+    },
+    {
+     "anchored_by": "ic:720",
+     "annotation": null,
+     "appearances": null,
+     "asserts_move": null,
+     "chips": [
       "highs",
       "meals"
      ],
@@ -5188,168 +5326,6 @@
        "outranked": 0
       }
      },
-     "window_scope": "window"
-    },
-    {
-     "anchored_by": "ic:0",
-     "annotation": null,
-     "appearances": null,
-     "asserts_move": null,
-     "chips": [
-      "lows",
-      "meals"
-     ],
-     "claimed_by": null,
-     "count_sentences": [
-      {
-       "count": 0,
-       "denominator": 3,
-       "noun": "meals",
-       "outcome": "ran low",
-       "sentence": "0 of 3 meals ran low"
-      }
-     ],
-     "current": null,
-     "direction": null,
-     "episodes": null,
-     "estimate": null,
-     "event_chart": null,
-     "evidence": null,
-     "fold_sentences": null,
-     "headline": "Lows after meals in 0 of 3 meals",
-     "id": "pattern:lows_after_meals",
-     "kind": "pattern",
-     "label": null,
-     "lever": null,
-     "members": null,
-     "parameter": null,
-     "pattern": {
-      "action": "carb_ratio",
-      "admission_route": "setting_staging",
-      "collapse": "remain_pattern",
-      "k": 0,
-      "key": "lows_after_meals",
-      "member_set_fingerprint": "13141e472c40a768",
-      "members": [
-       {
-        "action": "carb_ratio",
-        "admitted": true,
-        "hi": null,
-        "k": 24,
-        "kind": "setting",
-        "lo": null,
-        "price": 86,
-        "producer": "tuning_levers",
-        "seriousness": null,
-        "seriousness_segments": [],
-        "subject": "setting:carb_ratio"
-       }
-      ],
-      "n": 3,
-      "rate": 0.0,
-      "rate_levers": [
-       "habit:meal_over_delivery"
-      ],
-      "rate_producer": "exposures",
-      "readiness": {
-       "count": 3,
-       "gate": 12,
-       "verdict": "withheld"
-      },
-      "seriousness": null,
-      "settled_price": 86,
-      "subject": "pattern:lows_after_meals",
-      "title": "Lows after meals",
-      "wide": false,
-      "wilson": {
-       "hi": 0.3538,
-       "lo": 0.0
-      }
-     },
-     "pattern_chart": null,
-     "priority": 86,
-     "rank_note": "Ranked with its setting",
-     "recommended": null,
-     "register": "finding",
-     "served_as": null,
-     "span": null,
-     "support": null,
-     "tier": "next_in_line",
-     "title": "Lows after meals",
-     "verdict_counts": null,
-     "verdict_counts_by_family": null,
-     "window_scope": "whole_day"
-    },
-    {
-     "anchored_by": null,
-     "annotation": "post-meal corrections imply meals are under-covered, so a tighter (smaller) carb ratio would dose more per carb",
-     "appearances": null,
-     "asserts_move": null,
-     "chips": [
-      "highs"
-     ],
-     "claimed_by": null,
-     "count_sentences": null,
-     "current": 5.7,
-     "direction": "lower",
-     "episodes": null,
-     "estimate": {
-      "confidence": 0.8,
-      "hi": 4.2857,
-      "lo": 4.2857,
-      "method": "bootstrap-inverse-ratio-wls-clustered",
-      "n": 24,
-      "n_clusters": 24,
-      "value": 4.2857,
-      "wide": false
-     },
-     "event_chart": null,
-     "evidence": null,
-     "fold_sentences": null,
-     "headline": "Post-meal corrections imply meals are under-covered, so a tighter (smaller) carb ratio would dose more per carb. Measured 4.3 g/U across 24 meal runs against 5.7 programmed.",
-     "id": "ic:720",
-     "kind": "setting",
-     "label": "Evening",
-     "lever": null,
-     "members": [
-      {
-       "current": 5.7,
-       "estimate": {
-        "confidence": 0.8,
-        "hi": 4.2857,
-        "lo": 4.2857,
-        "method": "bootstrap-inverse-ratio-wls-clustered",
-        "n": 24,
-        "n_clusters": 24,
-        "value": 4.2857,
-        "wide": false
-       },
-       "recommended": 5.0,
-       "start_min": 720
-      }
-     ],
-     "parameter": "carb_ratio",
-     "pattern": null,
-     "pattern_chart": null,
-     "priority": 86,
-     "rank_note": null,
-     "recommended": 5.0,
-     "register": "assert",
-     "served_as": null,
-     "span": {
-      "end_min": 1440,
-      "label": "12:00 to 24:00",
-      "start_min": 720
-     },
-     "support": {
-      "n": 24,
-      "noun": "meal runs",
-      "run_days": 90
-     },
-     "tier": "next_in_line",
-     "title": "Carb ratio 12:00 to 24:00 · lower",
-     "verdict_counts": null,
-     "verdict_counts_by_family": null,
      "window_scope": "window"
     },
     {
@@ -6003,16 +5979,16 @@
      }
     },
     {
-     "action": "carb_ratio",
-     "admission_route": "setting_staging",
+     "action": null,
+     "admission_route": "none",
      "collapse": "remain_pattern",
      "k": 0,
      "key": "lows_after_meals",
      "member_set_fingerprint": "13141e472c40a768",
      "members": [
       {
-       "action": "carb_ratio",
-       "admitted": true,
+       "action": null,
+       "admitted": false,
        "hi": null,
        "k": 24,
        "kind": "setting",
@@ -6036,7 +6012,7 @@
       "verdict": "withheld"
      },
      "seriousness": null,
-     "settled_price": 66,
+     "settled_price": 0,
      "subject": "pattern:lows_after_meals",
      "title": "Lows after meals",
      "wide": false,
@@ -6300,96 +6276,6 @@
      "support": null,
      "tier": "next_in_line",
      "title": "Highs after meals",
-     "verdict_counts": null,
-     "verdict_counts_by_family": null,
-     "window_scope": "window"
-    },
-    {
-     "anchored_by": "ic:720",
-     "annotation": null,
-     "appearances": null,
-     "asserts_move": null,
-     "chips": [
-      "lows",
-      "meals"
-     ],
-     "claimed_by": null,
-     "count_sentences": [
-      {
-       "count": 0,
-       "denominator": 1,
-       "noun": "meals",
-       "outcome": "ran low",
-       "sentence": "0 of 1 meals ran low"
-      }
-     ],
-     "current": null,
-     "direction": null,
-     "episodes": null,
-     "estimate": null,
-     "event_chart": null,
-     "evidence": null,
-     "fold_sentences": null,
-     "headline": "Lows after meals in 0 of 1 meals",
-     "id": "pattern:lows_after_meals",
-     "kind": "pattern",
-     "label": null,
-     "lever": null,
-     "members": null,
-     "parameter": null,
-     "pattern": {
-      "action": "carb_ratio",
-      "admission_route": "setting_staging",
-      "collapse": "remain_pattern",
-      "k": 0,
-      "key": "lows_after_meals",
-      "member_set_fingerprint": "13141e472c40a768",
-      "members": [
-       {
-        "action": "carb_ratio",
-        "admitted": true,
-        "hi": null,
-        "k": 24,
-        "kind": "setting",
-        "lo": null,
-        "price": 66,
-        "producer": "tuning_levers",
-        "seriousness": null,
-        "seriousness_segments": [],
-        "subject": "setting:carb_ratio"
-       }
-      ],
-      "n": 1,
-      "rate": 0.0,
-      "rate_levers": [
-       "habit:meal_over_delivery"
-      ],
-      "rate_producer": "exposures",
-      "readiness": {
-       "count": 1,
-       "gate": 12,
-       "verdict": "withheld"
-      },
-      "seriousness": null,
-      "settled_price": 66,
-      "subject": "pattern:lows_after_meals",
-      "title": "Lows after meals",
-      "wide": false,
-      "wilson": {
-       "hi": 0.6216,
-       "lo": 0.0
-      }
-     },
-     "pattern_chart": null,
-     "priority": 66,
-     "rank_note": "Ranked with its setting",
-     "recommended": null,
-     "register": "finding",
-     "served_as": null,
-     "span": null,
-     "support": null,
-     "tier": "next_in_line",
-     "title": "Lows after meals",
      "verdict_counts": null,
      "verdict_counts_by_family": null,
      "window_scope": "window"
@@ -6668,6 +6554,88 @@
       }
      },
      "window_scope": "window"
+    },
+    {
+     "anchored_by": null,
+     "annotation": null,
+     "appearances": null,
+     "asserts_move": null,
+     "chips": [
+      "lows",
+      "meals"
+     ],
+     "claimed_by": null,
+     "count_sentences": null,
+     "current": null,
+     "direction": null,
+     "episodes": null,
+     "estimate": null,
+     "event_chart": null,
+     "evidence": null,
+     "fold_sentences": null,
+     "headline": "Lows after meals",
+     "id": "pattern:lows_after_meals",
+     "kind": "pattern",
+     "label": null,
+     "lever": null,
+     "members": null,
+     "parameter": null,
+     "pattern": {
+      "action": null,
+      "admission_route": "none",
+      "collapse": "remain_pattern",
+      "k": 0,
+      "key": "lows_after_meals",
+      "member_set_fingerprint": "13141e472c40a768",
+      "members": [
+       {
+        "action": null,
+        "admitted": false,
+        "hi": null,
+        "k": 24,
+        "kind": "setting",
+        "lo": null,
+        "price": 66,
+        "producer": "tuning_levers",
+        "seriousness": null,
+        "seriousness_segments": [],
+        "subject": "setting:carb_ratio"
+       }
+      ],
+      "n": 1,
+      "rate": 0.0,
+      "rate_levers": [
+       "habit:meal_over_delivery"
+      ],
+      "rate_producer": "exposures",
+      "readiness": {
+       "count": 1,
+       "gate": 12,
+       "verdict": "withheld"
+      },
+      "seriousness": null,
+      "settled_price": 0,
+      "subject": "pattern:lows_after_meals",
+      "title": "Lows after meals",
+      "wide": false,
+      "wilson": {
+       "hi": 0.6216,
+       "lo": 0.0
+      }
+     },
+     "pattern_chart": null,
+     "priority": null,
+     "rank_note": null,
+     "recommended": null,
+     "register": "finding",
+     "served_as": null,
+     "span": null,
+     "support": null,
+     "tier": "noted",
+     "title": "Lows after meals",
+     "verdict_counts": null,
+     "verdict_counts_by_family": null,
+     "window_scope": "window"
     }
    ],
    "schema": "diagnose-findings-v3",
@@ -6744,16 +6712,16 @@
      }
     },
     {
-     "action": "carb_ratio",
-     "admission_route": "setting_staging",
+     "action": null,
+     "admission_route": "none",
      "collapse": "remain_pattern",
      "k": 0,
      "key": "lows_after_meals",
      "member_set_fingerprint": "13141e472c40a768",
      "members": [
       {
-       "action": "carb_ratio",
-       "admitted": true,
+       "action": null,
+       "admitted": false,
        "hi": null,
        "k": 24,
        "kind": "setting",
@@ -6777,7 +6745,7 @@
       "verdict": "withheld"
      },
      "seriousness": null,
-     "settled_price": 66,
+     "settled_price": 0,
      "subject": "pattern:lows_after_meals",
      "title": "Lows after meals",
      "wide": false,
@@ -7046,96 +7014,6 @@
      "window_scope": "window"
     },
     {
-     "anchored_by": "ic:720",
-     "annotation": null,
-     "appearances": null,
-     "asserts_move": null,
-     "chips": [
-      "lows",
-      "meals"
-     ],
-     "claimed_by": null,
-     "count_sentences": [
-      {
-       "count": 0,
-       "denominator": 1,
-       "noun": "meals",
-       "outcome": "ran low",
-       "sentence": "0 of 1 meals ran low"
-      }
-     ],
-     "current": null,
-     "direction": null,
-     "episodes": null,
-     "estimate": null,
-     "event_chart": null,
-     "evidence": null,
-     "fold_sentences": null,
-     "headline": "Lows after meals in 0 of 1 meals",
-     "id": "pattern:lows_after_meals",
-     "kind": "pattern",
-     "label": null,
-     "lever": null,
-     "members": null,
-     "parameter": null,
-     "pattern": {
-      "action": "carb_ratio",
-      "admission_route": "setting_staging",
-      "collapse": "remain_pattern",
-      "k": 0,
-      "key": "lows_after_meals",
-      "member_set_fingerprint": "13141e472c40a768",
-      "members": [
-       {
-        "action": "carb_ratio",
-        "admitted": true,
-        "hi": null,
-        "k": 24,
-        "kind": "setting",
-        "lo": null,
-        "price": 66,
-        "producer": "tuning_levers",
-        "seriousness": null,
-        "seriousness_segments": [],
-        "subject": "setting:carb_ratio"
-       }
-      ],
-      "n": 1,
-      "rate": 0.0,
-      "rate_levers": [
-       "habit:meal_over_delivery"
-      ],
-      "rate_producer": "exposures",
-      "readiness": {
-       "count": 1,
-       "gate": 12,
-       "verdict": "withheld"
-      },
-      "seriousness": null,
-      "settled_price": 66,
-      "subject": "pattern:lows_after_meals",
-      "title": "Lows after meals",
-      "wide": false,
-      "wilson": {
-       "hi": 0.6216,
-       "lo": 0.0
-      }
-     },
-     "pattern_chart": null,
-     "priority": 66,
-     "rank_note": "Ranked with its setting",
-     "recommended": null,
-     "register": "finding",
-     "served_as": null,
-     "span": null,
-     "support": null,
-     "tier": "next_in_line",
-     "title": "Lows after meals",
-     "verdict_counts": null,
-     "verdict_counts_by_family": null,
-     "window_scope": "window"
-    },
-    {
      "anchored_by": null,
      "annotation": null,
      "appearances": [
@@ -7322,6 +7200,88 @@
      "verdict_counts": null,
      "verdict_counts_by_family": null,
      "window_scope": "window"
+    },
+    {
+     "anchored_by": null,
+     "annotation": null,
+     "appearances": null,
+     "asserts_move": null,
+     "chips": [
+      "lows",
+      "meals"
+     ],
+     "claimed_by": null,
+     "count_sentences": null,
+     "current": null,
+     "direction": null,
+     "episodes": null,
+     "estimate": null,
+     "event_chart": null,
+     "evidence": null,
+     "fold_sentences": null,
+     "headline": "Lows after meals",
+     "id": "pattern:lows_after_meals",
+     "kind": "pattern",
+     "label": null,
+     "lever": null,
+     "members": null,
+     "parameter": null,
+     "pattern": {
+      "action": null,
+      "admission_route": "none",
+      "collapse": "remain_pattern",
+      "k": 0,
+      "key": "lows_after_meals",
+      "member_set_fingerprint": "13141e472c40a768",
+      "members": [
+       {
+        "action": null,
+        "admitted": false,
+        "hi": null,
+        "k": 24,
+        "kind": "setting",
+        "lo": null,
+        "price": 66,
+        "producer": "tuning_levers",
+        "seriousness": null,
+        "seriousness_segments": [],
+        "subject": "setting:carb_ratio"
+       }
+      ],
+      "n": 1,
+      "rate": 0.0,
+      "rate_levers": [
+       "habit:meal_over_delivery"
+      ],
+      "rate_producer": "exposures",
+      "readiness": {
+       "count": 1,
+       "gate": 12,
+       "verdict": "withheld"
+      },
+      "seriousness": null,
+      "settled_price": 0,
+      "subject": "pattern:lows_after_meals",
+      "title": "Lows after meals",
+      "wide": false,
+      "wilson": {
+       "hi": 0.6216,
+       "lo": 0.0
+      }
+     },
+     "pattern_chart": null,
+     "priority": null,
+     "rank_note": null,
+     "recommended": null,
+     "register": "finding",
+     "served_as": null,
+     "span": null,
+     "support": null,
+     "tier": "noted",
+     "title": "Lows after meals",
+     "verdict_counts": null,
+     "verdict_counts_by_family": null,
+     "window_scope": "window"
     }
    ],
    "schema": "diagnose-findings-v3",
@@ -7398,16 +7358,16 @@
      }
     },
     {
-     "action": "carb_ratio",
-     "admission_route": "setting_staging",
+     "action": null,
+     "admission_route": "none",
      "collapse": "remain_pattern",
      "k": 0,
      "key": "lows_after_meals",
      "member_set_fingerprint": "13141e472c40a768",
      "members": [
       {
-       "action": "carb_ratio",
-       "admitted": true,
+       "action": null,
+       "admitted": false,
        "hi": null,
        "k": 24,
        "kind": "setting",
@@ -7431,7 +7391,7 @@
       "verdict": "withheld"
      },
      "seriousness": null,
-     "settled_price": 66,
+     "settled_price": 0,
      "subject": "pattern:lows_after_meals",
      "title": "Lows after meals",
      "wide": false,
@@ -7869,96 +7829,6 @@
       }
      },
      "window_scope": "window"
-    },
-    {
-     "anchored_by": "ic:720",
-     "annotation": null,
-     "appearances": null,
-     "asserts_move": null,
-     "chips": [
-      "lows",
-      "meals"
-     ],
-     "claimed_by": null,
-     "count_sentences": [
-      {
-       "count": 0,
-       "denominator": 3,
-       "noun": "meals",
-       "outcome": "ran low",
-       "sentence": "0 of 3 meals ran low"
-      }
-     ],
-     "current": null,
-     "direction": null,
-     "episodes": null,
-     "estimate": null,
-     "event_chart": null,
-     "evidence": null,
-     "fold_sentences": null,
-     "headline": "Lows after meals in 0 of 3 meals",
-     "id": "pattern:lows_after_meals",
-     "kind": "pattern",
-     "label": null,
-     "lever": null,
-     "members": null,
-     "parameter": null,
-     "pattern": {
-      "action": "carb_ratio",
-      "admission_route": "setting_staging",
-      "collapse": "remain_pattern",
-      "k": 0,
-      "key": "lows_after_meals",
-      "member_set_fingerprint": "13141e472c40a768",
-      "members": [
-       {
-        "action": "carb_ratio",
-        "admitted": true,
-        "hi": null,
-        "k": 24,
-        "kind": "setting",
-        "lo": null,
-        "price": 66,
-        "producer": "tuning_levers",
-        "seriousness": null,
-        "seriousness_segments": [],
-        "subject": "setting:carb_ratio"
-       }
-      ],
-      "n": 3,
-      "rate": 0.0,
-      "rate_levers": [
-       "habit:meal_over_delivery"
-      ],
-      "rate_producer": "exposures",
-      "readiness": {
-       "count": 3,
-       "gate": 12,
-       "verdict": "withheld"
-      },
-      "seriousness": null,
-      "settled_price": 66,
-      "subject": "pattern:lows_after_meals",
-      "title": "Lows after meals",
-      "wide": false,
-      "wilson": {
-       "hi": 0.3538,
-       "lo": 0.0
-      }
-     },
-     "pattern_chart": null,
-     "priority": 66,
-     "rank_note": "Ranked with its setting",
-     "recommended": null,
-     "register": "finding",
-     "served_as": null,
-     "span": null,
-     "support": null,
-     "tier": "next_in_line",
-     "title": "Lows after meals",
-     "verdict_counts": null,
-     "verdict_counts_by_family": null,
-     "window_scope": "whole_day"
     },
     {
      "anchored_by": null,
@@ -8533,6 +8403,88 @@
       }
      },
      "window_scope": "window"
+    },
+    {
+     "anchored_by": null,
+     "annotation": null,
+     "appearances": null,
+     "asserts_move": null,
+     "chips": [
+      "lows",
+      "meals"
+     ],
+     "claimed_by": null,
+     "count_sentences": null,
+     "current": null,
+     "direction": null,
+     "episodes": null,
+     "estimate": null,
+     "event_chart": null,
+     "evidence": null,
+     "fold_sentences": null,
+     "headline": "Lows after meals",
+     "id": "pattern:lows_after_meals",
+     "kind": "pattern",
+     "label": null,
+     "lever": null,
+     "members": null,
+     "parameter": null,
+     "pattern": {
+      "action": null,
+      "admission_route": "none",
+      "collapse": "remain_pattern",
+      "k": 0,
+      "key": "lows_after_meals",
+      "member_set_fingerprint": "13141e472c40a768",
+      "members": [
+       {
+        "action": null,
+        "admitted": false,
+        "hi": null,
+        "k": 24,
+        "kind": "setting",
+        "lo": null,
+        "price": 66,
+        "producer": "tuning_levers",
+        "seriousness": null,
+        "seriousness_segments": [],
+        "subject": "setting:carb_ratio"
+       }
+      ],
+      "n": 3,
+      "rate": 0.0,
+      "rate_levers": [
+       "habit:meal_over_delivery"
+      ],
+      "rate_producer": "exposures",
+      "readiness": {
+       "count": 3,
+       "gate": 12,
+       "verdict": "withheld"
+      },
+      "seriousness": null,
+      "settled_price": 0,
+      "subject": "pattern:lows_after_meals",
+      "title": "Lows after meals",
+      "wide": false,
+      "wilson": {
+       "hi": 0.3538,
+       "lo": 0.0
+      }
+     },
+     "pattern_chart": null,
+     "priority": null,
+     "rank_note": null,
+     "recommended": null,
+     "register": "finding",
+     "served_as": null,
+     "span": null,
+     "support": null,
+     "tier": "noted",
+     "title": "Lows after meals",
+     "verdict_counts": null,
+     "verdict_counts_by_family": null,
+     "window_scope": "whole_day"
     }
    ],
    "schema": "diagnose-findings-v3",
@@ -8609,16 +8561,16 @@
      }
     },
     {
-     "action": "carb_ratio",
-     "admission_route": "setting_staging",
+     "action": null,
+     "admission_route": "none",
      "collapse": "remain_pattern",
      "k": 0,
      "key": "lows_after_meals",
      "member_set_fingerprint": "13141e472c40a768",
      "members": [
       {
-       "action": "carb_ratio",
-       "admitted": true,
+       "action": null,
+       "admitted": false,
        "hi": null,
        "k": 24,
        "kind": "setting",
@@ -8642,7 +8594,7 @@
       "verdict": "withheld"
      },
      "seriousness": null,
-     "settled_price": 66,
+     "settled_price": 0,
      "subject": "pattern:lows_after_meals",
      "title": "Lows after meals",
      "wide": false,
@@ -8911,96 +8863,6 @@
      "window_scope": "window"
     },
     {
-     "anchored_by": "ic:720",
-     "annotation": null,
-     "appearances": null,
-     "asserts_move": null,
-     "chips": [
-      "lows",
-      "meals"
-     ],
-     "claimed_by": null,
-     "count_sentences": [
-      {
-       "count": 0,
-       "denominator": 1,
-       "noun": "meals",
-       "outcome": "ran low",
-       "sentence": "0 of 1 meals ran low"
-      }
-     ],
-     "current": null,
-     "direction": null,
-     "episodes": null,
-     "estimate": null,
-     "event_chart": null,
-     "evidence": null,
-     "fold_sentences": null,
-     "headline": "Lows after meals in 0 of 1 meals",
-     "id": "pattern:lows_after_meals",
-     "kind": "pattern",
-     "label": null,
-     "lever": null,
-     "members": null,
-     "parameter": null,
-     "pattern": {
-      "action": "carb_ratio",
-      "admission_route": "setting_staging",
-      "collapse": "remain_pattern",
-      "k": 0,
-      "key": "lows_after_meals",
-      "member_set_fingerprint": "13141e472c40a768",
-      "members": [
-       {
-        "action": "carb_ratio",
-        "admitted": true,
-        "hi": null,
-        "k": 24,
-        "kind": "setting",
-        "lo": null,
-        "price": 66,
-        "producer": "tuning_levers",
-        "seriousness": null,
-        "seriousness_segments": [],
-        "subject": "setting:carb_ratio"
-       }
-      ],
-      "n": 1,
-      "rate": 0.0,
-      "rate_levers": [
-       "habit:meal_over_delivery"
-      ],
-      "rate_producer": "exposures",
-      "readiness": {
-       "count": 1,
-       "gate": 12,
-       "verdict": "withheld"
-      },
-      "seriousness": null,
-      "settled_price": 66,
-      "subject": "pattern:lows_after_meals",
-      "title": "Lows after meals",
-      "wide": false,
-      "wilson": {
-       "hi": 0.6216,
-       "lo": 0.0
-      }
-     },
-     "pattern_chart": null,
-     "priority": 66,
-     "rank_note": "Ranked with its setting",
-     "recommended": null,
-     "register": "finding",
-     "served_as": null,
-     "span": null,
-     "support": null,
-     "tier": "next_in_line",
-     "title": "Lows after meals",
-     "verdict_counts": null,
-     "verdict_counts_by_family": null,
-     "window_scope": "window"
-    },
-    {
      "anchored_by": null,
      "annotation": null,
      "appearances": null,
@@ -9065,6 +8927,88 @@
      "support": null,
      "tier": "noted",
      "title": "Lows after correcting highs",
+     "verdict_counts": null,
+     "verdict_counts_by_family": null,
+     "window_scope": "window"
+    },
+    {
+     "anchored_by": null,
+     "annotation": null,
+     "appearances": null,
+     "asserts_move": null,
+     "chips": [
+      "lows",
+      "meals"
+     ],
+     "claimed_by": null,
+     "count_sentences": null,
+     "current": null,
+     "direction": null,
+     "episodes": null,
+     "estimate": null,
+     "event_chart": null,
+     "evidence": null,
+     "fold_sentences": null,
+     "headline": "Lows after meals",
+     "id": "pattern:lows_after_meals",
+     "kind": "pattern",
+     "label": null,
+     "lever": null,
+     "members": null,
+     "parameter": null,
+     "pattern": {
+      "action": null,
+      "admission_route": "none",
+      "collapse": "remain_pattern",
+      "k": 0,
+      "key": "lows_after_meals",
+      "member_set_fingerprint": "13141e472c40a768",
+      "members": [
+       {
+        "action": null,
+        "admitted": false,
+        "hi": null,
+        "k": 24,
+        "kind": "setting",
+        "lo": null,
+        "price": 66,
+        "producer": "tuning_levers",
+        "seriousness": null,
+        "seriousness_segments": [],
+        "subject": "setting:carb_ratio"
+       }
+      ],
+      "n": 1,
+      "rate": 0.0,
+      "rate_levers": [
+       "habit:meal_over_delivery"
+      ],
+      "rate_producer": "exposures",
+      "readiness": {
+       "count": 1,
+       "gate": 12,
+       "verdict": "withheld"
+      },
+      "seriousness": null,
+      "settled_price": 0,
+      "subject": "pattern:lows_after_meals",
+      "title": "Lows after meals",
+      "wide": false,
+      "wilson": {
+       "hi": 0.6216,
+       "lo": 0.0
+      }
+     },
+     "pattern_chart": null,
+     "priority": null,
+     "rank_note": null,
+     "recommended": null,
+     "register": "finding",
+     "served_as": null,
+     "span": null,
+     "support": null,
+     "tier": "noted",
+     "title": "Lows after meals",
      "verdict_counts": null,
      "verdict_counts_by_family": null,
      "window_scope": "window"

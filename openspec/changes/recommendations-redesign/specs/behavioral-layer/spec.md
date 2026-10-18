@@ -252,7 +252,8 @@ chartability predicate's alone and SHALL NOT decide membership.
 The findings projection SHALL present the one urgency ranking without giving a
 Priority two ranked positions. A Pattern served with admission route
 `setting_staging` SHALL carry `anchored_by`, the id of the first served, priced,
-asserting row of its setting's parameter in queue order, and SHALL
+asserting row of its setting's parameter in queue order whose direction fits the
+Pattern (ADR 530), and SHALL
 sort directly after that row, its claimed causes directly after it. With no such
 row served it SHALL carry no anchor. Its Priority SHALL remain the Pattern producer's.
 
@@ -271,8 +272,9 @@ input, Pattern price, support floor, staging predicate or cap SHALL change.
 
 - **GIVEN** the findings-fixture projection's whole day
 - **WHEN** the queue is published
-- **THEN** Highs after meals and Lows after meals carry `anchored_by` "ic:720" and
-  follow it, each with `rank_note` "Ranked with its setting"
+- **THEN** Highs after meals carries `anchored_by` "ic:720", a strengthening
+  move, and follows it with `rank_note` "Ranked with its setting"
+- **AND** Lows after meals carries no anchor
 - **AND** every top-level `next_in_line` row precedes every top-level
   `worth_a_look` row
 
@@ -298,6 +300,44 @@ input, Pattern price, support floor, staging predicate or cap SHALL change.
   episode each are top-level rows
 - **WHEN** the whole-day queue is published
 - **THEN** the correction-factor row, unpriced, sorts before both causes
+
+### Requirement: A carb-ratio move rides only on the meal Pattern its direction answers
+
+A Pattern's carb-ratio setting member SHALL admit, and carry the action, only
+through an asserting carb-ratio block whose published direction fits the Pattern
+(ADR 530). A strengthening move (direction "lower": fewer grams per unit) SHALL fit
+Highs after meals only. A weakening move (direction "raise") SHALL fit Lows after
+meals only. A member whose move points the other way SHALL stay in its Pattern,
+unadmitted, with no action, and with no seriousness taken from that move. Guidance
+SHALL serve a setting-admitted Pattern only the action rows whose direction fits
+it. The rule SHALL live in the Pattern roster, and no reader SHALL re-derive it.
+
+#### Scenario: A strengthening move is offered under highs after meals only
+
+- **GIVEN** the QA case ic-lower, whose one block asserts 8 g/U against 10
+  programmed
+- **WHEN** the Pattern roster and guidance are built
+- **THEN** Highs after meals admits the carb-ratio member, carries its 9 g/U action
+  and sits with the block's row
+- **AND** Lows after meals keeps the member unadmitted with no action, admission
+  route `none`, and no anchor
+
+#### Scenario: A weakening move is offered under lows after meals only
+
+- **GIVEN** the QA case ic-raise, whose one block asserts 12 g/U against 10
+  programmed
+- **WHEN** the Pattern roster and guidance are built
+- **THEN** Lows after meals admits the carb-ratio member and carries its 11 g/U
+  action
+- **AND** Highs after meals keeps the member unadmitted with no action
+
+#### Scenario: Two blocks moving opposite ways split across the two Patterns
+
+- **GIVEN** the QA case ic-split-directions: a morning block that strengthens to
+  9 g/U and an evening block that weakens to 13.5 g/U
+- **WHEN** guidance and the findings projection are built
+- **THEN** Highs after meals carries only the morning action and sits with `ic:0`
+- **AND** Lows after meals carries only the evening action and sits with `ic:720`
 
 ### Requirement: A Pattern case file serves its episodes and Typical aligned at one start
 

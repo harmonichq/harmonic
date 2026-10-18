@@ -693,9 +693,10 @@ class QueueOrderTest(unittest.TestCase):
         rows = self.global_rows
         ids = [row["id"] for row in rows]
         by_id = {row["id"]: row for row in rows}
+        # ic:720 is a strengthening move, so only highs after meals sits with it;
+        # lows after meals is not staged by it (ADR 530).
         anchors = {
             "pattern:highs_after_meals": "ic:720",
-            "pattern:lows_after_meals": "ic:720",
         }
         for pattern, anchor in anchors.items():
             with self.subTest(pattern=pattern):
@@ -774,13 +775,13 @@ class PatternProjectionTest(unittest.TestCase):
     def test_a_thin_window_does_not_make_a_staged_pattern_uncertain(self):
         """ADR 485: precision alone never makes a Pattern Uncertain. A Pattern the
         carb-ratio staging admits holds at its low end even on a one-meal window."""
-        def lows_after_meals(query):
+        def highs_after_meals(query):
             return next(pattern for pattern in self.projection.project(query)["outcome_patterns"]
-                        if pattern["key"] == "lows_after_meals")
+                        if pattern["key"] == "highs_after_meals")
 
-        whole = lows_after_meals(WindowQuery.whole_day())
-        scoped = lows_after_meals(WindowQuery.clock(720, 840))
-        self.assertEqual((whole["k"], whole["n"], whole["wide"]), (0, 3, False))
+        whole = highs_after_meals(WindowQuery.whole_day())
+        scoped = highs_after_meals(WindowQuery.clock(720, 840))
+        self.assertEqual((whole["k"], whole["n"], whole["wide"]), (1, 3, False))
         self.assertEqual(scoped["admission_route"], "setting_staging")
         self.assertEqual((scoped["k"], scoped["n"], scoped["wide"]), (0, 1, False))
 

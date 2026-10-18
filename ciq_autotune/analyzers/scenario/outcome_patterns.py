@@ -36,6 +36,22 @@ _ROSTER = (
 
 _SETTING_ROWS = {"carb_ratio": "ic_blocks"}
 
+_SETTING_DIRECTIONS = {"highs_after_meals": "lower", "lows_after_meals": "raise"}
+"""The one carb-ratio move direction each meal Pattern answers (ADR 530).
+
+Highs after meals answers only a strengthening move (lower g/U, more insulin per
+gram); lows after meals only a weakening one (higher g/U).
+"""
+
+
+def setting_move_fits(key: str, direction: str | None) -> bool:
+    """Whether a setting move in ``direction`` belongs under meal Pattern ``key`` (ADR 530).
+
+    The direction is the setting owner's published one, so a move it names fits
+    exactly one meal Pattern and an undirected row fits neither.
+    """
+    return direction == _SETTING_DIRECTIONS[key]
+
 
 def opportunity_readiness(key: str, analysis: dict, exposures: dict) -> dict:
     """Read one Pattern's opportunity criterion from its published source family.
@@ -140,13 +156,16 @@ def _setting_seriousness(
 
 
 def _setting_member(
-    analysis: dict, candidate_rows: Iterable[dict], parameter: str | None,
+    analysis: dict, candidate_rows: Iterable[dict], parameter: str | None, key: str,
 ) -> list[dict]:
     """Compose one setting member without reclassifying its owner's verdicts.
 
-    Categorical seriousness uses the first asserting member's harm when present,
-    otherwise the first relevant member harm (including an owner-published hold).
-    Price remains the tuning Lever's parameter-level Priority.
+    The member admits only through an asserting row whose published direction
+    fits the Pattern (ADR 530); a move the other way stays out of its admission
+    and its seriousness. Categorical seriousness uses the first fitting asserting
+    row's harm when present, otherwise the first relevant member harm (including
+    an owner-published hold). Price remains the tuning Lever's parameter-level
+    Priority.
     """
     if parameter is None:
         return []
@@ -156,10 +175,14 @@ def _setting_member(
         return []
     channel = row.get("recurrence_channel") or {}
     source_rows = analysis.get(_SETTING_ROWS[parameter]) or ()
-    admitted_row = next((item for item in source_rows if item.get("asserts_move")), None)
+    admitted_row = next((item for item in source_rows if item.get("asserts_move")
+                         and setting_move_fits(key, item.get("direction"))), None)
     candidate = next((item for item in candidate_rows
                       if item.get("subject") == f"setting:{parameter}"), None)
-    published_rows = (candidate or {}).get("members") or ()
+    published = (candidate or {}).get("members") or ()
+    opposite = [item for item in published if item.get("direction") is not None
+                and not setting_move_fits(key, item["direction"])]
+    published_rows = [item for item in published if item not in opposite]
     admitted = admitted_row is not None
     lo, hi = channel.get("lo"), channel.get("hi")
     seriousness_row = admitted_row
@@ -167,6 +190,10 @@ def _setting_member(
         seriousness_row = next((item for item in published_rows
                                 if item.get("harm") is not None), seriousness_row)
     seriousness, seriousness_segments = _setting_seriousness(candidate, seriousness_row)
+    opposite_spans = {(item["span"]["start_min"], item["span"]["end_min"])
+                      for item in opposite}
+    seriousness_segments = [item for item in seriousness_segments
+                            if (item["start_min"], item["end_min"]) not in opposite_spans]
     return [{
         "subject": f"setting:{parameter}", "kind": "setting", "k": channel.get("k", 0),
         "price": row.get("priority", 0), "admitted": admitted,
@@ -219,7 +246,7 @@ def build_outcome_patterns(analysis: dict, exposures: dict, scenarios: dict, *,
         members = _habit_members(scenarios, habit_levers,
                                  exposures=exposures if scoped_population else None,
                                  family=family) + _setting_member(
-            analysis, candidate_rows, setting,
+            analysis, candidate_rows, setting, key,
         )
         k = len(credited_claims(exposures, family, rate_levers))
         n = ((exposures.get("exposures") or {}).get(family) or {}).get("n", 0)

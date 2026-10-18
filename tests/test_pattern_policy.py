@@ -32,7 +32,7 @@ class OutcomePatternPolicyTest(unittest.TestCase):
                     "kind": "ic_runs", "k": 1, "n": 12, "lo": .15, "hi": .35,
                 },
             }],
-            "ic_blocks": [{"asserts_move": True, "safety_status": "lower",
+            "ic_blocks": [{"asserts_move": True, "safety_status": "lower", "direction": "lower",
                            "start_min": 0, "end_min": 1440, "evidence": {},
                            "guidance": None}],
         }
@@ -50,7 +50,7 @@ class OutcomePatternPolicyTest(unittest.TestCase):
                 "parameter": "carb_ratio", "priority": 10,
                 "recurrence_channel": {"kind": "ic_runs", "k": 1, "n": 12},
             }],
-            "ic_blocks": [{"asserts_move": True, "safety_status": "lower",
+            "ic_blocks": [{"asserts_move": True, "safety_status": "lower", "direction": "lower",
                            "start_min": 0, "end_min": 1440, "evidence": {},
                            "guidance": None}],
         }
@@ -76,7 +76,7 @@ class OutcomePatternPolicyTest(unittest.TestCase):
                     "kind": "ic_runs", "k": 1, "n": 12, "lo": .01, "hi": .05,
                 },
             }],
-            "ic_blocks": [{"asserts_move": True, "safety_status": "lower",
+            "ic_blocks": [{"asserts_move": True, "safety_status": "lower", "direction": "lower",
                            "start_min": 0, "end_min": 1440, "evidence": {},
                            "guidance": None}],
         }

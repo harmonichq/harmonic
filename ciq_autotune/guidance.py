@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 
-from .analyzers.scenario.outcome_patterns import _GATES, build_outcome_patterns
+from .analyzers.scenario.outcome_patterns import _GATES, build_outcome_patterns, setting_move_fits
 from .analyzers.scenario.levers import Lever, title as lever_title
 from .watched_change import is_pinnable
 from .window_membership import _hhmm as _clock_label
@@ -276,7 +276,11 @@ def _pattern_candidate(pattern, sources):
     selected_source = sources.get(chosen["subject"]) if chosen is not None else None
     if selected_source is not None:
         if chosen["kind"] == "setting":
+            # Only the moves whose direction fits this Pattern ride on it (ADR 530).
             action = deepcopy(selected_source.get("action"))
+            if action is not None:
+                action = [row for row in action
+                          if setting_move_fits(pattern["key"], row["direction"])]
         elif chosen["kind"] == "habit":
             # The roster's admission is authoritative.  A legacy source row may
             # have applied the retired Priority threshold and withheld this action.

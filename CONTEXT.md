@@ -444,7 +444,8 @@ highs after treating lows, or lows after correcting highs. Every Pattern carries
 least one habit a Focus can pin; overnight lows reach the wearer through the basal
 setting, not through a Pattern (ADR 499). A Pattern owns members, one rate on one denominator and one
 chart; it is the subject the app prices, leads with, sets aside and follows as a
-Focus.
+Focus. A carb-ratio move rides only on the meal Pattern its direction answers: a
+stronger ratio on highs after meals, a weaker one on lows after meals (ADR 530).
 _Avoid_: shape, trend, theme, cluster, problem.
 
 **Concern**:

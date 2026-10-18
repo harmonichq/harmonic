@@ -34976,7 +34976,7 @@
             "wide": false
           },
           {
-            "action": "carb_ratio",
+            "action": null,
             "collapse": "remain_pattern",
             "k": 0,
             "key": "lows_after_meals",
@@ -35106,31 +35106,6 @@
           },
           {
             "chips": [
-              "lows",
-              "meals"
-            ],
-            "claimed_by": null,
-            "count_sentences": [
-              {
-                "count": 0,
-                "denominator": 8,
-                "noun": "meals",
-                "outcome": "ran low",
-                "sentence": "0 of 8 meals ran low"
-              }
-            ],
-            "fold_sentences": null,
-            "id": "pattern:lows_after_meals",
-            "kind": "pattern",
-            "lever": null,
-            "members": null,
-            "parameter": null,
-            "served_as": null,
-            "span": null,
-            "title": "Lows after meals"
-          },
-          {
-            "chips": [
               "highs"
             ],
             "claimed_by": null,
@@ -35161,6 +35136,23 @@
             "served_as": null,
             "span": null,
             "title": "Lows after correcting highs"
+          },
+          {
+            "chips": [
+              "lows",
+              "meals"
+            ],
+            "claimed_by": null,
+            "count_sentences": null,
+            "fold_sentences": null,
+            "id": "pattern:lows_after_meals",
+            "kind": "pattern",
+            "lever": null,
+            "members": null,
+            "parameter": null,
+            "served_as": null,
+            "span": null,
+            "title": "Lows after meals"
           }
         ]
       },
@@ -35207,11 +35199,11 @@
           },
           {
             "acknowledgment": null,
-            "admitted": true,
+            "admitted": false,
             "decided_at": null,
             "kind": "pattern",
-            "priority": 91,
-            "queued": true,
+            "priority": 0,
+            "queued": false,
             "set_aside": false,
             "subject": "pattern:lows_after_meals",
             "title": "Lows after meals",

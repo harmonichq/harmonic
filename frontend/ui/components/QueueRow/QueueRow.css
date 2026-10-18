@@ -66,6 +66,11 @@
    title line, sitting on the value beneath it, left edges aligned. */
 .ui-qrow__body--trailing .ui-qrow__title,
 .ui-qrow__body--trailing .ui-qrow__meta { grid-column: 1; }
+/* Beside a trailing value the title keeps to its one line, cut short with an
+   ellipsis when the column is too narrow for it on this renderer, so the row is
+   two lines with or without the value (§2.5, 2026-10-14). The full title is
+   still the row's text, and its accessible name. */
+.ui-qrow__body--trailing .ui-qrow__title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ui-qrow__caption {
   grid-column: 2;
   grid-row: 1;

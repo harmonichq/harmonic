@@ -803,8 +803,10 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
     share one scale and path module and one stylesheet, and the Changes
     trace (ADR 524) draws its bands and gap-broken lines with the same module.
   - **Desktop Queue list.** 440 px wide, from 400, so a row's title and its
-    trailing value share one line for every Pattern title: a row stays the
-    same height with or without the value.
+    trailing value share one line for every Pattern title. A title still too
+    long for its column beside the value (a narrower phone, wider type) is cut
+    with an ellipsis on that one line, so a row stays two lines and the same
+    height with or without the value; the open card prints it whole.
 
 - **2026-10-14 — answers kept across visits, and stale beats blank (#522).**
   On the home server every screen waited on the engine, on every visit and

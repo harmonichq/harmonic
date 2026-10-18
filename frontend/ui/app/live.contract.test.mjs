@@ -133,6 +133,9 @@ const EXPECTED = {
       count: { label: 'Meal runs', value: 8 }, dots: 8 },
     isf: null,
     change: { kind: 'none' },
+    // Done on the I:C card waits for the pump like any Setting (#518).
+    done: { subject: 'setting:carb_ratio', waiting: { subject: 'setting:carb_ratio', title: 'I:C', block: { start: 0, end: 1440 },
+      moves: [{ name: null, slot: null, before: 10, after: 9, units: 'g/U' }] } },
   },
   // Lows after correcting highs, served as its one admitted habit, counts the low
   // a stacked pair of corrections reached as well as that habit's own two.
@@ -144,6 +147,7 @@ const EXPECTED = {
       caseFile: { summary: { claimed: 3, denominator: 6, noun: 'lows' }, outcome: 'nadir', impact: null } },
     isf: null,
     change: { kind: 'none' },
+    done: null,
   },
   'c3-trial': {
     queue: ['setting:basal_rate'],

@@ -62,6 +62,61 @@ class DurableApiTest(unittest.TestCase):
             self.assertEqual(store.follow_up_frontier()["reconciled_input_revision"],
                              store.input_data_revision())
 
+    def test_an_unreconciled_input_keeps_naming_the_active_trial_and_grants_nothing(self):
+        # #557: a fetch commits its status, as it commits each window, before it
+        # reconciles. A read in between named no active change, so Changes said
+        # "No active change" over a live Trial. It names the change the frontier
+        # last admitted, and grants no End and no Focus pin until a reconcile.
+        record = self._manufacture_frontier_trial(changed_at="2099-01-02 09:00:00")
+        with Store.open(self.path) as store:
+            store.record_fetch_result(attempted_at="2026-09-11 12:00:00", ok=True, written={})
+            self.assertNotEqual(store.follow_up_frontier()["reconciled_input_revision"],
+                                store.input_data_revision())
+        roster = self.client.get("/api/verify/trials", headers=self.headers)
+        self.assertEqual(roster.status_code, 200, roster.text)
+        admission = roster.json()["admission"]
+        self.assertEqual({key: admission[key] for key in (
+            "state", "reason", "active_kind", "active_id", "can_finish_trial", "focus_pin")}, {
+            "state": "unavailable", "reason": "reconciliation_required",
+            "active_kind": "trial", "active_id": record["id"], "can_finish_trial": False,
+            "focus_pin": {"available": False, "reason": "reconciliation_required"}})
+
+    def test_saving_credentials_keeps_the_active_trial_admitted(self):
+        # #557: a credentials save advanced the input revision and never
+        # reconciled, so admission stayed unavailable until the next fetch.
+        record = self._manufacture_frontier_trial(changed_at="2099-01-02 09:00:00")
+        client = TestClient(create_app(
+            db_path=self.path, token="synthetic-token", enable_fetch_loop=False,
+            key_path=self.directory.name + "/synthetic.key"))
+        saved = client.post("/api/credentials", headers=self.headers, json={
+            "email": "synthetic@example.invalid", "password": "synthetic", "region": "US"})
+        self.assertEqual(saved.status_code, 200, saved.text)
+        admission = client.get("/api/plan/history", headers=self.headers).json()["admission"]
+        self.assertEqual((admission["state"], admission["active_kind"], admission["active_id"]),
+                         ("available", "trial", record["id"]))
+
+    def test_a_late_conclusion_keeps_the_active_trial_admitted(self):
+        # #557: a late conclusion never reconciles (it must not open another
+        # watch), so it left a current frontier one revision behind. It carries
+        # a frontier that was current forward, and admission stays available.
+        from tests.test_follow_up_store import ending, trial
+        with Store.open(self.path) as store:
+            with store.follow_up_transaction():
+                expired = store.save_follow_up_record({
+                    **trial("basal:0:20260902090000"),
+                    "ending": ending("expired_unreviewed", None)})
+        live = self._manufacture_frontier_trial(changed_at="2099-01-02 09:00:00")
+        with Store.open_readonly(self.path) as store:
+            revision = store.input_data_revision()
+        response = self.client.post(
+            f"/api/verify/trials/{expired['id']}/conclusion", headers=self.headers,
+            json={"request_id": "late-conclusion", "input_revision": revision,
+                  "conclusion": "The later evidence still supports the change."})
+        self.assertEqual(response.status_code, 200, response.text)
+        admission = self.client.get("/api/plan/history", headers=self.headers).json()["admission"]
+        self.assertEqual((admission["state"], admission["active_kind"], admission["active_id"]),
+                         ("available", "trial", live["id"]))
+
     def test_startup_recovers_stale_frontier_without_reopening_an_expired_trial(self):
         from tests.test_follow_up_store import ending
         record = self._manufacture_frontier_trial(

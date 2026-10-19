@@ -1777,14 +1777,33 @@ def setting_acknowledgments(store) -> Dict[str, dict]:
 
 
 def follow_up_admission(store, *, now):
-    """Project the committed frontier; an unreconciled input grants no permission."""
+    """Project the committed frontier; an unreconciled input grants no permission.
+
+    An input committed since the last reconcile, as each window of a fetch is
+    before the fetch reconciles, leaves the frontier behind. The verdict is then
+    unavailable and permits no End and no Focus pin, but still names the change
+    the frontier last admitted: stale beats falsely current (#557)."""
+    unreconciled = {"state": "unavailable", "reason": "reconciliation_required", "can_finish_trial": False,
+                    "focus_pin": {"available": False, "reason": "reconciliation_required"}}
     frontier = store.follow_up_frontier()
-    verdict = {"state": "available", "reason": "no_active_change", "active_kind": None,
-               "active_id": None, "maturity": None, "can_finish_trial": False,
-               "focus_pin": {"available": False, "reason": "reconciliation_required"},
-               "ending": _unavailable("not_recorded")}
-    if frontier is None or frontier["reconciled_input_revision"] != store.input_data_revision():
-        return {**verdict, "state": "unavailable", "reason": "reconciliation_required"}
+    if frontier is None:
+        return {**_no_admitted_change(), **unreconciled}
+    verdict = _admitted_change(store, frontier, now)
+    if frontier["reconciled_input_revision"] != store.input_data_revision():
+        return {**verdict, **unreconciled}
+    return verdict
+
+
+def _no_admitted_change():
+    return {"state": "available", "reason": "no_active_change", "active_kind": None,
+            "active_id": None, "maturity": None, "can_finish_trial": False,
+            "focus_pin": {"available": False, "reason": "reconciliation_required"},
+            "ending": _unavailable("not_recorded")}
+
+
+def _admitted_change(store, frontier, now):
+    """The change a frontier admits, as of the reconcile that wrote it."""
+    verdict = _no_admitted_change()
     record = _served_frontier_record(store, frontier)
     if record:
         verdict["ending"] = record["ending"]

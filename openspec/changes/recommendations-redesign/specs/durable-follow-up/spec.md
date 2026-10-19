@@ -27,3 +27,38 @@ SHALL be the lever's own comparison.
   Pattern key
 - **WHEN** the Focus list is read
 - **THEN** it serves that Focus under `habit:<lever>`
+
+### Requirement: An unreconciled admission still names the change it admitted
+
+When an input has committed since the follow-up frontier was last reconciled, as
+each window of a fetch does before the fetch reconciles, the admission SHALL be
+unavailable for reconciliation and SHALL permit no End and no Focus pin. It
+SHALL still name the change the frontier last admitted, its kind, identity and
+maturity, so a read in that span shows the active change as last known rather
+than no active change (#557).
+
+#### Scenario: A fetch's status write does not hide the active Trial
+
+- **GIVEN** a synthetic store whose reconciled frontier admits a live Trial
+- **WHEN** a fetch status is recorded and the Trial roster is read before any
+  reconcile
+- **THEN** the admission is unavailable for reconciliation, with no End and no
+  Focus pin
+- **AND** it names that Trial as the active change
+
+### Requirement: No local write leaves a current frontier behind
+
+A credentials save and a pattern sign-off SHALL run the existing local
+reconciliation after they commit, as a carb, prompt or preference write does. A
+late conclusion, which never reconciles, SHALL carry a frontier that was current
+when it began forward with it, and SHALL leave one that was behind for the next
+reconcile (#557).
+
+#### Scenario: Each write keeps the admission available
+
+- **GIVEN** a synthetic store whose frontier is reconciled, admitting a live
+  Trial where one is recorded
+- **WHEN** credentials are saved, a cleared pattern is signed off, or an expired
+  Trial takes a late conclusion
+- **THEN** the next admission read is available
+- **AND** it names the live Trial it admitted

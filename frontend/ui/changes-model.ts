@@ -8,9 +8,8 @@
 // A store is one entry of `answers.changes`: its admission names the active
 // change; its trials hold every Trial on the roster, the active one with its
 // retained comparison; its focuses hold the Focus records.
-import type { Change } from './Delta';
 import { answers, sourced, type Sourced } from './answers';
-import { formatValue } from './provenance.js';
+import { delta, type Change } from './direction';
 import { PARAMETER_FORMATS, PARAMETER_NAMES, PARAMETER_UNITS } from './settings-model';
 
 export type ChangesStore = keyof typeof answers.changes;
@@ -24,7 +23,8 @@ export type OutcomeRow = {
   unit: string;
   /** The Trial's own target metric: the row its result reads. */
   target: boolean;
-  /** After against before, toned by the engine's own verdict on this row. */
+  /** After against before, green or red by the way it moved for its metric
+   *  (direction.ts); the engine's verdict is the result pill's, never this. */
   delta: Change;
 };
 
@@ -145,21 +145,6 @@ const FOCUS_OUTCOMES = ['peak', 'nadir', 'tir', 'tbr', 'tar'] as const;
 const RANGES = ['tir', 'tbr', 'tar'] as const;
 const GLUCOSE = ['mean', 'gmi', 'cv'] as const;
 
-/** After against before, as printed: the amount ordered larger − smaller, its
- *  direction, and the tone of the engine's verdict on the row (favourable,
- *  concerning). A row the engine judges unclear, or serves only as context,
- *  stays neutral whichever way it moved: no colour the engine has not served. */
-export function delta(before: Sourced<number>, after: Sourced<number>, state: string | undefined): Change {
-  const rises = after.value >= before.value;
-  const amount = sourced<number>(rises ? `${after.source} − ${before.source}` : `${before.source} − ${after.source}`,
-    after.format);
-  if (formatValue(amount.value, after.format) === formatValue(0, after.format)) {
-    return { direction: null, tone: null, amount };
-  }
-  const tone = state === 'favorable' ? 'favorable' : state === 'concerning' ? 'adverse' : null;
-  return { direction: rises ? 'up' : 'down', tone, amount };
-}
-
 // The engine's assessment states, in the glossary's result words.
 const RESULTS: Record<string, Result> = { favorable: 'better', concerning: 'worse', unclear: 'unclear' };
 
@@ -218,16 +203,16 @@ function outcomeRows(path: string, rows: readonly Outcome[], targets: readonly s
     const format = row.unit === 'mg/dL' ? 'round' : 'fixed1';
     const before = sourced<number>(`${path}[key=${key}].0.before`, format);
     const after = sourced<number>(`${path}[key=${key}].0.after`, format);
-    return [{ key, before, after, unit: row.unit, target: targets.includes(key),
-      delta: delta(before, after, row.assessment?.state) }];
+    return [{ key, before, after, unit: row.unit, target: targets.includes(key), delta: delta(before, after, key) }];
   });
 }
 
 /** A Trial's metric rows, each read as its comparison is collected (#554):
- *  every row with a before, its after as far as the after arm has one, and
- *  its Δ toned by the engine's verdict only once the Trial has matured. */
+ *  every row with a before, its after and Δ as far as the after arm has one,
+ *  the Δ coloured by its direction whether or not the Trial has matured
+ *  (§2.5, 2026-10-19). */
 function metricRows(path: string, rows: readonly Outcome[], targets: readonly string[],
-  keys: readonly OutcomeRow['key'][], maturing: boolean): MetricRow[] {
+  keys: readonly OutcomeRow['key'][]): MetricRow[] {
   return keys.flatMap((key) => {
     const row = rows.find((r) => r.key === key);
     if (!row || row.before === null) return [];
@@ -235,12 +220,13 @@ function metricRows(path: string, rows: readonly Outcome[], targets: readonly st
     const before = sourced<number>(`${path}[key=${key}].0.before`, format);
     const after = row.after === null ? null : sourced<number>(`${path}[key=${key}].0.after`, format);
     return [{ key, before, after, unit: row.unit, target: targets.includes(key),
-      delta: after && delta(before, after, maturing ? undefined : row.assessment?.state) }];
+      delta: after && delta(before, after, key) }];
   });
 }
 
 /** A basal Trial's Control-IQ rows: the delivered rate, and the share of the
- *  time above and below the programmed rate. The engine judges none of them. */
+ *  time above and below the programmed rate. Neither way is better for any of
+ *  them, so their Δ stays neutral. */
 function basalRows(path: string, views: Comparison['views']): MetricRow[] {
   if (!views.before?.basal) return [];
   // An after arm with no delivery read yet serves none (#554): its column stays empty.
@@ -251,7 +237,7 @@ function basalRows(path: string, views: Comparison['views']): MetricRow[] {
     const before = sourced<number>(`${path}.views.before.basal.${key}`, format);
     const after = read ? sourced<number>(`${path}.views.after.basal.${key}`, format) : null;
     return { key, before, after, unit: key === 'delivered' ? 'U/h' : '%', target: false,
-      delta: after && delta(before, after, undefined) };
+      delta: after && delta(before, after, key) };
   });
 }
 
@@ -335,8 +321,8 @@ function trialData(name: ChangesStore, trial: TrialRow): TrialData {
     result: !maturing && target ? RESULTS[target.assessment?.state ?? ''] ?? null : null,
     trace: comparison ? trace(compared, trial.parameter, comparison.views) : null,
     ranges: comparison
-      ? metricRows(`${compared}.outcomes`, comparison.outcomes, trial.target_metrics, RANGES, maturing) : [],
-    glucose: comparison ? metricRows(`${compared}.outcomes`, comparison.outcomes, [], GLUCOSE, maturing) : [],
+      ? metricRows(`${compared}.outcomes`, comparison.outcomes, trial.target_metrics, RANGES) : [],
+    glucose: comparison ? metricRows(`${compared}.outcomes`, comparison.outcomes, [], GLUCOSE) : [],
     readings: comparison ? {
       before: sourced(`${compared}.outcomes[key=tir].0.denominators.before`),
       after: sourced(`${compared}.outcomes[key=tir].0.denominators.after`),
@@ -346,10 +332,11 @@ function trialData(name: ChangesStore, trial: TrialRow): TrialData {
   };
 }
 
-function adherence(path: string, unit: string, state: string): NonNullable<FocusData['adherence']> {
+// How often the habit happened: the habit happening less is the good way.
+function adherence(path: string, unit: string): NonNullable<FocusData['adherence']> {
   const before = sourced<number>(`${path}.tracking.adherence.before.rate`, 'pct1');
   const after = sourced<number>(`${path}.tracking.adherence.after.rate`, 'pct1');
-  return { before, after, unit, delta: delta(before, after, state) };
+  return { before, after, unit, delta: delta(before, after, 'habit') };
 }
 
 /** The active change: its Trial or Focus, or none. */
@@ -372,7 +359,7 @@ export function change(name: ChangesStore): ChangeData {
         required: sourced(`${path}.tracking.readiness.required`),
         unit: tracked.readiness.unit,
       },
-      adherence: tracked && adherence(path, tracked.readiness.unit, tracked.adherence.assessment.state),
+      adherence: tracked && adherence(path, tracked.readiness.unit),
       result: tracked && !maturing ? RESULTS[tracked.adherence.assessment.state] ?? null : null,
       outcomes: tracked ? outcomeRows(`${path}.tracking.outcomes`, tracked.outcomes, [], FOCUS_OUTCOMES) : [],
     };

@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, within } from 'storybook/test';
+import { expectToned } from '../../direction-check';
 import { formatValue } from '../../provenance.js';
 import {
   habitState, pattern, patternState, settingState, snoozed, type PatternData, type QueueStore,
@@ -35,7 +36,8 @@ function patternRow(name: 'traces_band' | 'traces_episodes'): PatternRow {
 const served = (store: QueueStore, key: string) => rowOf(pattern(store, key));
 
 /** The delta reads the Pattern's own value minus Typical, each as the open
- *  card prints it: ▲ or ▼ and the difference, in mg/dL, in neutral ink. */
+ *  card prints it: ▲ or ▼ and the difference, in mg/dL, green or red by the
+ *  way it moved (§2.5, 2026-10-19). Returns its colour. */
 async function expectDelta(canvasElement: HTMLElement, args: PatternRow, caption: 'Peak' | 'Nadir') {
   const { own, typical } = args.impact!;
   const difference = Number(formatValue(own.value, own.format)) - Number(formatValue(typical.value, typical.format));
@@ -43,7 +45,7 @@ async function expectDelta(canvasElement: HTMLElement, args: PatternRow, caption
   await expect(canvas.getByText(caption)).toBeInTheDocument();
   const delta = canvasElement.querySelector('.ui-delta') as HTMLElement;
   await expect(delta.textContent).toBe(`${difference >= 0 ? '▲' : '▼'} ${Math.abs(difference)} mg/dL`);
-  await expect(delta.className).toBe('ui-delta');
+  return expectToned(caption, delta);
 }
 
 export const Default: Story = {
@@ -61,13 +63,17 @@ export const MidSwipe: Story = { args: { ...patternRow('traces_episodes'), swipi
 export const HighWithDelta: Story = {
   args: served('wearer', 'highs_after_meals'),
   play: async ({ args, canvasElement }) => {
-    await expectDelta(canvasElement, args as PatternRow, 'Peak');
+    // The Pattern peaks above Typical: the bad way, red.
+    await expect(await expectDelta(canvasElement, args as PatternRow, 'Peak')).toBe('adverse');
     await expect(canvasElement.textContent).not.toContain('·');
   },
 };
 export const LowWithDelta: Story = {
   args: served('wearer', 'lows_after_meals'),
-  play: async ({ args, canvasElement }) => expectDelta(canvasElement, args as PatternRow, 'Nadir'),
+  // The Pattern's nadir falls below Typical's: the bad way, red.
+  play: async ({ args, canvasElement }) => {
+    await expect(await expectDelta(canvasElement, args as PatternRow, 'Nadir')).toBe('adverse');
+  },
 };
 export const NoImpact: Story = {
   args: served('wearer', 'lows_after_correcting_highs'),

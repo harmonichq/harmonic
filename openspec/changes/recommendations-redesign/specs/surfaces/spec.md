@@ -188,8 +188,8 @@ SHALL read it from the roster, not the guidance. A maturing Trial SHALL show its
 data as it forms (ADR 554): its meals, its trace and every metric module over
 what its after period has read so far, each glucose module closed by the
 readings it is read from, before → after; an after period with nothing read yet
-SHALL show the before values beside an empty after. While it matures no Δ SHALL
-be toned and no result shown.
+SHALL show the before values beside an empty after. While it matures no result
+SHALL be shown; each Δ SHALL still take its direction's colour (ADR 558).
 
 #### Scenario: A maturing Trial shows its data as it forms
 
@@ -199,7 +199,7 @@ be toned and no result shown.
 - **THEN** it reads Maturing with Meals before and after, the trace at each meal
   bolus for both periods, In range / Below 70 / Above 180 and Mean / GMI / CV,
   and each glucose module's Readings before → after
-- **AND** no Δ is toned and no End is offered
+- **AND** no result and no End is offered
 
 #### Scenario: A Trial in its first hours shows an empty after period
 
@@ -221,6 +221,33 @@ be toned and no result shown.
 - **GIVEN** an active Trial that has not matured
 - **WHEN** Changes renders
 - **THEN** it reads Maturing and offers no End
+
+### Requirement: Every change is coloured by its direction
+
+Every change the app draws between two values (a Δ: ▲ or ▼ and the amount)
+SHALL be green where the value moved the good way for its metric and red where
+it moved the bad way, on every screen: In range up; Below 70, Above 180, Mean,
+GMI and CV down; Peak down; Nadir up; a Focus's habit share down. A Δ that
+prints as zero SHALL have no arrow and no colour, and a Δ on a metric where
+neither way is better (a basal Trial's Control-IQ rows) SHALL keep its arrow in
+neutral ink. The colour SHALL NOT stand for the engine's verdict on the change,
+which only the result pill carries (ADR 558).
+
+#### Scenario: A maturing Trial's changes are coloured as they form
+
+- **GIVEN** a basal Trial six days in whose In range has risen and whose Mean
+  has risen
+- **WHEN** Changes renders
+- **THEN** In range's Δ is a green ▲ and Mean's a red ▲, and Control-IQ's
+  Delivered, Above and Below are neutral
+- **AND** it reads Maturing with no result
+
+#### Scenario: The Overview colours every metric's change
+
+- **GIVEN** a window whose previous period has data
+- **WHEN** Overview renders
+- **THEN** each of In range, Mean, GMI, CV, Below 70 and Above 180 shows its
+  change green or red by the way it moved
 
 ### Requirement: Overview reports the standard metrics over a chosen window
 

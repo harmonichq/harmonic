@@ -1,18 +1,12 @@
 // A change between two served values (§2.3 ban 4): ▲ or ▼ and the amount,
-// coloured favourable or adverse, so the arrow and the colour say the same
-// thing twice. A change with no tone stays in neutral ink; one that prints as
-// zero has no arrow. MetricFigure and ChangeCard both draw it, so a change
-// reads the same on every screen.
-import type { Sourced } from './answers';
+// green where it moved the good way for its metric and red the bad way
+// (direction.ts), so the arrow and the colour say the same thing twice. A
+// change on a metric with no good way stays in neutral ink; one that prints as
+// zero has no arrow. MetricFigure, ChangeMetrics, ChangeCard and QueueRow all
+// draw it, so a change reads the same on every screen.
+import type { Change } from './direction';
 import { Num } from './Num';
 import './shared.css';
-
-export type Change = {
-  direction: 'up' | 'down' | null;
-  tone: 'favorable' | 'adverse' | null;
-  /** Never negative: the formula is ordered larger − smaller. */
-  amount: Sourced<number>;
-};
 
 export function Delta({ change, unit }: { change: Change; unit?: string }) {
   return (

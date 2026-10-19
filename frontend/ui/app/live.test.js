@@ -48,7 +48,7 @@ function fakeClient(served = history()) {
       ? { selected: { title: 'Pattern', lever_title: 'Habit', reassessment: { comparison: { ...comparison, outcomes: [] } } } }
       : { trials: served.trials, focuses: served.focuses, admission: served.admission, input_revision: 7 })),
     fetchDiagnoseFindingCasePreparation: answer('case-preparation', () => ({ projection_id: 'fp' })),
-    fetchDiagnoseFindingCase: answer('case', () => ({ traces: { anchor: 'bolus', window_min: [-30, 240], pattern: { episodes: [], points: [] }, typical: { points: [] } } })),
+    fetchDiagnoseFindingCase: answer('case', () => ({ summary: { claimed: 1, denominator: 2, noun: 'meals' }, traces: { anchor: 'bolus', window_min: [-30, 240], pattern: { episodes: [], points: [] }, typical: { points: [] } } })),
     fetchOutcomes: answer('outcomes', () => ({})),
     fetchExploreTimeOfDay: answer('time-of-day', () => ({})),
     fetchDayNavigator: answer('navigator', (month) => ({ month: month ?? '2026-01', days: [] })),
@@ -520,4 +520,57 @@ test('the Queue and Overview keep only what their charts draw, so the remembered
   assert.deepEqual(live.answers.overview.wearer.analyze['14'].basal[1], {
     slot: 1, current: 0.6, asserts_move: false, direction: null, estimate: { value: 0.5, lo: 0.4, hi: 0.6 },
   });
+});
+
+test('a standalone habit\'s case file is read, queued or snoozed, and kept to its count and chart (ADR 528)', async () => {
+  const fake = fakeClient();
+  const habit = (lever, setAside) => ({ subject: `habit:${lever}`, kind: 'habit', lever, title: 'Habit', units: null,
+    priority: 1, admitted: true, preference: { set_aside: setAside }, decision: null });
+  fake.client.fetchGuidance = () => Promise.resolve({ analysis_generation: 'g1', candidates: [
+    habit('missed_meal', false), habit('other_habit', true),
+    { ...habit('unadmitted', false), admitted: false }] });
+  fake.client.fetchDiagnoseFindings = () => Promise.resolve({ outcome_patterns: [], rows: [
+    { id: 'finding:missed_meal', kind: 'habit', chips: ['highs'] },
+    { id: 'finding:other_habit', kind: 'habit', chips: ['highs'] },
+    { id: 'finding:unadmitted', kind: 'habit', chips: ['highs'] }] });
+  const finding = [];
+  fake.client.fetchDiagnoseFindingCase = ({ finding_id: id }) => {
+    finding.push(id);
+    return Promise.resolve({ projection: {}, occurrences: [], verdict_counts: {},
+      summary: { claimed: 2, denominator: 6, noun: 'highs' },
+      traces: { anchor: 'meal_start', window_min: [-60, 300],
+        pattern: { anchors: ['2024-05-24 13:30:00'], episodes: [[{ minute: -60, bg: 110 }]], points: [] },
+        typical: { anchors: ['2024-05-26 12:00:00'], points: [] } } });
+  };
+  const live = createLive({ client: fake.client, glossary: [] });
+  await live.readTab('queue');
+  assert.deepEqual(finding.sort(), ['finding:missed_meal', 'finding:other_habit'], 'each admitted habit, by its finding');
+  const queue = live.answers.queue.wearer;
+  assert.deepEqual(queue.cases.missed_meal, {
+    summary: { claimed: 2, denominator: 6, noun: 'highs' },
+    traces: { anchor: 'meal_start', window_min: [-60, 300], pattern: { episodes: [[{ minute: -60, bg: 110 }]], points: [] },
+      typical: { points: [] } },
+  });
+  assert.deepEqual(queue.findings.rows.map((r) => r.id), ['finding:missed_meal', 'finding:other_habit']);
+});
+
+test('Pin on a standalone habit pins its lever under the habit\'s own subject, with no Pattern or outcome window', async () => {
+  const fake = fakeClient();
+  fake.client.fetchGuidance = () => Promise.resolve({ analysis_generation: 'g1', candidates: [
+    { subject: 'habit:missed_meal', kind: 'habit', lever: 'missed_meal', title: 'Habit', units: null, priority: 1,
+      admitted: true, preference: { set_aside: false }, decision: null },
+    { subject: 'pattern:p0', pattern_key: 'p0', kind: 'pattern', title: 'Pattern', units: null, priority: 0,
+      admitted: true, preference: { set_aside: false }, decision: null }] });
+  const pinned = [];
+  fake.client.pinFocus = (body) => { pinned.push(body); return Promise.resolve({}); };
+  fake.client.resolveFocus = () => Promise.resolve({});
+  fake.client.finishTrial = () => Promise.resolve({});
+  const live = createLive({ client: fake.client, glossary: [] });
+  await live.readTab('queue');
+  await live.queueWrites.pin('habit:missed_meal');
+  await live.queueWrites.pin('pattern:p0');
+  const [habit, pattern] = pinned.map(({ request_id: id, ...rest }) => (assert.match(id, /^[0-9a-f]{32}$/), rest));
+  assert.deepEqual(habit, { lever: 'missed_meal', subject: 'habit:missed_meal', input_revision: 7, analysis_generation: 'g1' });
+  assert.deepEqual(pattern, { pattern_key: 'p0', outcome_window: { start_min: 0, end_min: 1440 }, subject: 'pattern:p0',
+    input_revision: 7, analysis_generation: 'g1' });
 });

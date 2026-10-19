@@ -1,6 +1,7 @@
 // QueueRow (§4.2): a collapsed recommendation. A 44 px column holds the
-// kind's glyph, which is the kind's only mark: it is named "Pattern" or
-// "Setting" for assistive tech, and no kind pill repeats it. Then the
+// kind's glyph, which is the kind's only mark: it is named "Pattern", "Habit"
+// (a standalone habit, ADR 528) or "Setting" for assistive tech, and no kind
+// pill repeats it. A habit's row is a Pattern's, with its own glyph. Then the
 // title, then one quiet line: the magnitude alone ("9 of 71 lows"); the causes
 // are the open card's to name. A setting row's title is its kind word with its time block beside it in meta
 // ink (ISF, one fasting value, has none), and current → suggested takes the magnitude's place.
@@ -31,7 +32,7 @@ import './QueueRow.css';
 
 type Layout = 'phone' | 'desktop';
 
-const KIND = { pattern: 'Pattern', setting: 'Setting' } as const;
+const KIND = { pattern: 'Pattern', habit: 'Habit', setting: 'Setting' } as const;
 /** The Snooze reveal's width, which a swipe opens to. */
 const REVEAL = 88;
 
@@ -51,7 +52,7 @@ export type QueueRowProps =
       snoozed?: { until: Sourced<string>; onRestore?: () => void };
     } & (
       | {
-          kind: 'pattern'; magnitude: Magnitude;
+          kind: 'pattern' | 'habit'; magnitude: Magnitude;
           /** Null or absent: no trailing value. */
           impact?: Impact | null;
         }
@@ -96,7 +97,7 @@ export function QueueRow(props: QueueRowProps) {
     );
   }
   const { title, kind, selected = false, onSelect, snoozed } = props;
-  const impact = kind === 'pattern' ? props.impact : null;
+  const impact = kind === 'setting' ? null : props.impact;
   const body = (
     <>
       <span className="ui-qrow__glyph" role="img" aria-label={KIND[kind]}><Icon name={kind} /></span>

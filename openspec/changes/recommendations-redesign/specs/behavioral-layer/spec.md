@@ -384,6 +384,34 @@ correction with no other within the stacking window either side (ADR 523).
 - **WHEN** its case file is read
 - **THEN** it serves no episodes and serves each bin's median over the nine
 
+### Requirement: A standalone habit's case file serves its chart in a Pattern's shape
+
+The case file of every habit no Pattern owns SHALL serve `traces` in a Pattern
+case file's shape, with its bins, its ten-minute lead and its eight-episode cut
+(ADR 523). Its own episodes SHALL be the episodes the habit claims and Typical its
+event comparison's comparison cohort, each aligned where that comparison aligns it,
+over the habit's comparison window, so the chart and the comparison are one
+membership. A missed meal SHALL start at the meal: each claimed rise at its
+detected onset and each completed carb-bolus meal at its bolus, over −60 to 300
+minutes. The chart SHALL be the same whichever alignment the case file is read at.
+Its `summary` SHALL count the same claimed episodes of the habit's own denominator
+(ADR 528).
+
+#### Scenario: A missed meal is drawn from each rise against the meals bolused for
+
+- **GIVEN** the `behavioral-missed-meal` QA case, whose missed-meal habit claims
+  two rises with onsets at 13:30 on 24 and 25 May, beside meals bolused for at
+  12:00 on 26 May and 10:00 on 29 May
+- **WHEN** its `finding:missed_meal` case file is read
+- **THEN** its chart starts at `meal_start` over −60 to 300 minutes, draws those
+  two rises against those two meals, serves no bin (none has three readings), and
+  its summary counts 2 of 6 highs
+
+#### Scenario: Only the habits no Pattern owns carry a chart start
+
+- **WHEN** the outcome roster owns every lever but the missed meal
+- **THEN** the missed meal is the one habit with a trace chart start
+
 ### Requirement: A low a correction habit claims names the dose it followed
 
 The exposures feed SHALL serve, on each low a correction habit claims, the time

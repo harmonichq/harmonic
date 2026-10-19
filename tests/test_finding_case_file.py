@@ -259,9 +259,11 @@ def test_all_seven_levers_publish_one_exact_case_file_population(lever):
     case = prepared.case(f"finding:{lever.value}", "event", None)
 
     policy = policy_for(lever)
+    # A habit no Pattern owns also serves its card's trace chart (ADR 528).
     assert set(case) == {"schema", "projection_id", "finding", "window", "family",
                          "summary", "verdict_counts", "occurrences", "projection",
-                         "selection", "population", "cross_population"}
+                         "selection", "population", "cross_population",
+                         *(["traces"] if lever in finding_case_file._HABIT_TRACE_CHART else [])}
     assert case["schema"] == "diagnose-finding-case-file-v1"
     assert case["family"] == case["population"] == policy.recurrence_noun
     assert case["summary"]["noun"] == finding_case_file._noun(policy.recurrence_family)

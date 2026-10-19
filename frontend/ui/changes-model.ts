@@ -96,9 +96,10 @@ export type TrialData = {
 
 export type FocusData = {
   kind: 'focus';
-  /** The watched habit's served title, and the pattern it was pinned from. */
+  /** The watched habit's served title, and the pattern it was pinned from:
+   *  none for a Focus pinned on a standalone habit (ADR 528). */
   habit: string;
-  pattern: string;
+  pattern: string | null;
   pinnedAt: Sourced<string>;
   /** Collecting its after period: no after data yet, or fewer counted events
    *  than the engine's gate. */
@@ -181,6 +182,8 @@ type TrialRow = {
 };
 type FocusRow = {
   id: number;
+  /** Served only for a Focus pinned from a Pattern. */
+  pattern_key?: string | null;
   title: string;
   lever_title: string;
   pinned_at: string;
@@ -328,7 +331,7 @@ export function change(name: ChangesStore): ChangeData {
     return {
       kind: 'focus',
       habit: focus.lever_title,
-      pattern: focus.title,
+      pattern: focus.pattern_key ? focus.title : null,
       pinnedAt: sourced(`${path}.pinned_at`, 'date'),
       maturing,
       counted: tracked && {

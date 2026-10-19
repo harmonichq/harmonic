@@ -102,7 +102,13 @@ Two committed outputs, one generator, one ``--check``:
   whose ISF the engine supports a change for and so queues;
   ``carb-ratio-supported`` is ``scripts/qa_e2e_cases.py``'s
   ``basal-and-carb-ratio-lower`` case, whose meals support lowering the carb
-  ratio, so its I:C Setting queues; and the unsynced
+  ratio, so its I:C Setting queues; a standalone habit (ADR 528), the missed
+  meal no Pattern owns, is queued in three: ``missed-meal`` is the
+  ``behavioral-missed-meal`` case, two rises its habit claims, each drawn;
+  ``missed-meal-pinned`` (Queue and Changes) the same once the person pins it
+  through ``POST /api/focus``, its Focus under the habit's own key; and
+  ``wearer-habit`` the wearer skipping the lunch bolus every weekday of the
+  last four weeks, more rises than the chart draws one by one; and the unsynced
   store records its guidance disposition. Each Queue store's ``analyze`` holds
   its first ISF segment, trimmed as the Overview's is, for the Queue's ISF
   card, and each carb-ratio block the engine stages a move for, with the meal
@@ -110,7 +116,8 @@ Two committed outputs, one generator, one ``--check``:
   Queue store also holds ``cases``: every admitted Pattern's event-aligned case
   file from ``/api/diagnose/finding-case-file``, trimmed to its trace chart
   (ADR 523): the Pattern's episodes or its median and band, and Typical's, for
-  the open card's chart and impact line.
+  the open card's chart and impact line; and every admitted standalone habit's,
+  by its lever, with the count its row and card print (ADR 528).
 
   ``status.failed`` adds one invented failed sync attempt, through
   ``Store.record_fetch_result``, so the Settings alert has a served
@@ -214,6 +221,12 @@ OVERVIEW_LABELS = ("vs",)
 # nights at a true ISF of 33 mg/dL/U under 8 mg/dL of sensor noise.
 ISF_SUPPORTED = {"true_isf": 33.0, "noise_sd": 8.0}
 CARB_RATIO_CASE = "basal-and-carb-ratio-lower"
+# A standalone habit (ADR 528): the QA case whose two rises its missed-meal habit
+# claims, and the wearer's lunch never bolused for on every weekday (the wearer's
+# days start on a Monday) of the last four weeks, more rises than the chart draws
+# one by one.
+MISSED_MEAL_CASE = "behavioral-missed-meal"
+HABIT_UNBOLUSED = tuple(day for day in range(ui_patient.DAYS - 28, ui_patient.DAYS) if day % 7 < 5)
 # Dates print as "26 Sep" (§1.2 the Overview's span "30 Sep – 13 Oct", §1.3
 # "Until <date>"); the month abbreviations are plain interface words (§2.5,
 # 2026-10-13).
@@ -488,6 +501,20 @@ def fixtures() -> dict:
                 case for case in qa_e2e_cases.QA_CASES if case.name == CARB_RATIO_CASE))
         queue["carb-ratio-supported"] = _queue_store(_serve(carb_ratio))
 
+        # A standalone habit (ADR 528): its two rises, then pinned, and the
+        # wearer's many.
+        missed_meal = scratch / "missed-meal.sqlite"
+        with Store.open(str(missed_meal)) as store:
+            qa_e2e_cases.materialize_case(store, next(
+                case for case in qa_e2e_cases.QA_CASES if case.name == MISSED_MEAL_CASE))
+        missed_meal_client = _serve(missed_meal)
+        queue["missed-meal"] = _queue_store(missed_meal_client)
+        _pin_habit(missed_meal_client)
+        queue["missed-meal-pinned"] = _queue_store(missed_meal_client)
+        changes["missed-meal-pinned"] = _changes_store(missed_meal_client)
+        _, habitual = _wearer(scratch, "wearer-habit", trial=False, unbolused=HABIT_UNBOLUSED)
+        queue["wearer-habit"] = _queue_store(habitual)
+
         unsynced = scratch / "wearer-unsynced.sqlite"
         with Store.open(str(unsynced)):
             pass
@@ -748,7 +775,7 @@ def _changes_store(client: TestClient) -> dict:
         if f["status"] != "active" and "kind" not in (f.get("ending") or {}):
             continue
         detail =_get(client, "/api/verify/trials", kind="focus", selected=str(f["id"]))["selected"]
-        focuses.append({**{field: f[field] for field in ("id", "lever", "pattern_key", "pinned_at", "status")},
+        focuses.append({**{field: f.get(field) for field in ("id", "lever", "pattern_key", "pinned_at", "status")},
                         "title": detail["title"], "lever_title": detail["lever_title"],
                         **({"tracking": _focus_tracking(client, f["id"])} if f["status"] == "active" else {}),
                         **({"ending": _focus_ending(f["ending"])} if "kind" in (f.get("ending") or {}) else {})})
@@ -1010,6 +1037,13 @@ def _pin(client: TestClient) -> None:
     raise SystemExit("the engine lets the wearer pin no pattern")
 
 
+def _pin_habit(client: TestClient) -> None:
+    """Pin a Focus on the first standalone habit the Queue holds (ADR 528)."""
+    habit = next(c for c in _get(client, "/api/guidance")["candidates"]
+                 if c["kind"] == "habit" and c["admitted"])
+    _post(client, "/api/focus", {"lever": habit["lever"]})
+
+
 ROW_FIELDS = ("id", "kind", "title", "chips", "claimed_by", "lever", "parameter",
               "count_sentences", "fold_sentences", "span", "members", "served_as")
 
@@ -1022,9 +1056,12 @@ def _queue_store(client: TestClient) -> dict:
     trials = _get(client, "/api/verify/trials")
     focus = _get(client, "/api/focus")
     # A pattern that collapses to its one member is served as that member's
-    # habit row ("finding:<lever>"), which the Queue reads it through.
+    # habit row ("finding:<lever>"), which the Queue reads it through; a
+    # standalone habit's own row is its card's tone (ADR 528).
+    habits = [c["subject"] for c in guidance["candidates"] if c["kind"] == "habit" and c["admitted"]]
     collapsed = {f"finding:{p['action'].split(':', 1)[1]}" for p in findings["outcome_patterns"]
                  if p.get("collapse") == "collapse_to_member" and p.get("action")}
+    collapsed |= {f"finding:{subject.split(':', 1)[1]}" for subject in habits}
     return {
         "findings": {
             "outcome_patterns": [
@@ -1077,12 +1114,12 @@ def _queue_store(client: TestClient) -> dict:
         },
         "focus": {
             "focuses": [
-                {field: f[field] for field in ("id", "lever", "pattern_key", "status")}
+                {field: f.get(field) for field in ("id", "lever", "subject", "pattern_key", "status")}
                 for f in focus["focuses"]
             ],
         },
-        "cases": _pattern_cases(client, [c["subject"] for c in guidance["candidates"]
-                                         if c["kind"] == "pattern" and c["admitted"]]),
+        "cases": _cases(client, [c["subject"] for c in guidance["candidates"]
+                                 if c["kind"] == "pattern" and c["admitted"]] + habits),
     }
 
 
@@ -1094,19 +1131,32 @@ def _traces(served: dict) -> dict:
             "typical": {"points": served["typical"]["points"]}}
 
 
-def _pattern_cases(client: TestClient, subjects: list[str]) -> dict:
-    """Each admitted Pattern's event-aligned case file, trimmed to its trace chart,
-    by pattern key. A Pattern whose case file serves no inspectable member (404)
-    has no entry."""
+def _case_file(subject: str, served: dict) -> dict:
+    """A case file trimmed to what its card reads: a Pattern's trace chart (ADR
+    523), and a standalone habit's with the count its card prints, the habit's own
+    claimed of its denominator (ADR 528). The live adapter trims the same."""
+    if subject.startswith("habit:"):
+        return {"summary": {field: served["summary"][field] for field in ("claimed", "denominator", "noun")},
+                "traces": _traces(served["traces"])}
+    return {"traces": _traces(served["traces"])}
+
+
+def _cases(client: TestClient, subjects: list[str]) -> dict:
+    """Each admitted Pattern's and standalone habit's event-aligned case file,
+    trimmed to its card, by its key: the pattern key, or the habit's lever, whose
+    case file is its finding's. One whose case file serves no inspectable member
+    (404) has no entry."""
     preparation = _get(client, "/api/diagnose/finding-case-file-preparation")
     cases = {}
     for subject in subjects:
+        kind, key = subject.split(":", 1)
         response = client.get("/api/diagnose/finding-case-file", params={
-            "projection_id": preparation["projection_id"], "finding_id": subject, "alignment": "event"})
+            "projection_id": preparation["projection_id"],
+            "finding_id": f"finding:{key}" if kind == "habit" else subject, "alignment": "event"})
         if response.status_code == 404:
             continue
         response.raise_for_status()
-        cases[subject.removeprefix("pattern:")] = {"traces": _traces(response.json()["traces"])}
+        cases[key] = _case_file(subject, response.json())
     return cases
 
 
@@ -1123,6 +1173,24 @@ def _patterns(store: dict) -> list[dict]:
         out.append({"key": key, "episodes": None if episodes is None else len(episodes),
                     "gap": any(b["minute"] - a["minute"] > 10 for episode in episodes or ()
                                for a, b in zip(episode, episode[1:]))})
+    return out
+
+
+def _habits(stores: dict) -> list[dict]:
+    """Queued standalone habits with a served case file (ADR 528), by store: how
+    many episodes the chart draws one by one (None for a median and band), and
+    whether a Focus is pinned on the habit itself."""
+    out = []
+    for name, store in stores.items():
+        for candidate in store["guidance"]["candidates"]:
+            key = candidate["subject"].removeprefix("habit:")
+            if candidate["kind"] != "habit" or not candidate["queued"] or key not in store["cases"]:
+                continue
+            episodes = store["cases"][key]["traces"]["pattern"]["episodes"]
+            out.append({"store": name, "subject": candidate["subject"],
+                        "episodes": None if episodes is None else len(episodes),
+                        "pinned": any(f["status"] == "active" and f["subject"] == candidate["subject"]
+                                      for f in store["focus"]["focuses"])})
     return out
 
 
@@ -1183,6 +1251,12 @@ def states(queue: dict) -> dict:
                    if f["status"] == "active"), None)
     uncertain = next((p["key"] for p in queue["wearer"]["findings"]["outcome_patterns"]
                       if p.get("wide") is True and any(q["key"] == p["key"] for q in patterns)), None)
+    habits = _habits({name: queue[name] for name in ("missed-meal", "missed-meal-pinned", "wearer-habit")})
+
+    def habit(rule):
+        found = [h for h in habits if rule(h)]
+        return {"store": found[0]["store"], "subject": found[0]["subject"]} if found else None
+
     found = {
         # The trace chart's two forms (ADR 523): each episode, or the median and band.
         "traces_episodes": pattern(lambda p: p["episodes"]),
@@ -1195,8 +1269,14 @@ def states(queue: dict) -> dict:
         "range_collapsed": block(lambda b: b["collapsed"]),
         "zero_variance": block(lambda b: not b["spread"]),
         "traces_gap": pattern(lambda p: p["gap"]),
+        # A standalone habit's card (ADR 528): its episodes each drawn, or their
+        # median and band, and pinned.
+        "habit_episodes": habit(lambda h: h["episodes"] and not h["pinned"]),
+        "habit_band": habit(lambda h: h["episodes"] is None and not h["pinned"]),
+        "habit_pinned": habit(lambda h: h["pinned"]),
     }
-    required = ("traces_episodes", "traces_band", "pinned", "setting", "setting_trial")
+    required = ("traces_episodes", "traces_band", "pinned", "setting", "setting_trial",
+                "habit_episodes", "habit_band", "habit_pinned")
     missing = [name for name in required if found[name] is None]
     if missing:
         raise SystemExit(f"the simulated wearer no longer serves: {', '.join(missing)}")

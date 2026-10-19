@@ -1293,10 +1293,10 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                     or (identity is not None and receipt["id"] != identity)):
                 raise FollowUpConflict("request_identity_mismatch", store.input_data_revision())
             if operation == "pin":
+                from .watched_change import focus_subject
                 expected = (f"pattern:{payload['pattern_key']}" if payload.get("pattern_key")
                             else "habit:" + str(payload.get("lever")))
-                actual = (receipt["result"]["record"].get("subject")
-                          or "habit:" + receipt["result"]["record"]["lever"])
+                actual = focus_subject(receipt["result"]["record"])
                 if actual != expected:
                     raise FollowUpConflict("request_identity_mismatch", store.input_data_revision())
                 scope = (receipt["result"]["record"].get("decision_context") or {}).get("outcome_window")
@@ -1488,13 +1488,17 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
 
     @app.get("/api/focus")
     def list_focus_endpoint(_: None = Depends(require_token)) -> dict:
-        from .watched_change import pinnable_levers
+        from .watched_change import focus_subject, pinnable_levers
         guidance = guidance_or_unavailable()
         patterns = [row for row in guidance["candidates"]
                     if _pinnable_pattern_member(row) is not None]
         with Store.open_queryonly(db_path) as store:
             store.conn.execute("BEGIN")
-            return {"focuses": store.follow_up_records("focus"), "pinnable": sorted(pinnable_levers()),
+            # Each Focus is served under its own key (ADR 528), a record from before
+            # habits had one included.
+            return {"focuses": [{**record, "subject": focus_subject(record)}
+                                for record in store.follow_up_records("focus")],
+                    "pinnable": sorted(pinnable_levers()),
                     "pinnable_patterns": [{"key": row["pattern_key"], "subject": row["subject"],
                                            "readiness": row["readiness"]} for row in patterns],
                     **follow_up_read(store)}
@@ -1569,8 +1573,9 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 if candidate["readiness"]["verdict"] != "ready":
                     raise FollowUpConflict("ineligible_source", store.input_data_revision())
             focus = store.pin_focus(lever, at.strftime("%Y-%m-%d %H:%M:%S"), pattern_key)
+            # A Focus keeps its own key (ADR 528): its Pattern's, or a standalone habit's.
             return store.save_follow_up_record({"kind": "focus", "id": focus["id"], "version": "386:1", **focus,
-                **({"subject": subject} if pattern_key else {}),
+                "subject": subject,
                 "decision_context": source_context(source, candidate, at, outcome_window=scope),
                 "comparison_context": capture_comparison_context(store, at=at, input_revision=store.input_data_revision())})
         return lifecycle("pin", "focus", None, payload, durable=durable, mutate=pin, creation=True)

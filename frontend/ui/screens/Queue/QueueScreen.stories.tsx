@@ -22,6 +22,9 @@ import { QueueScreen, type QueueScreenProps } from './QueueScreen';
 //   still state.
 // - Done (#518): a fresh wearer's basal card Done and undone, and the same card
 //   back Not on pump after an unchanged sync.
+// - A standalone habit (ADR 528): open in the wearer's Queue beside its
+//   Patterns, its row's glyph named Habit; pinned, the Focus pill in Pin's
+//   place; and a live Pin, which shows the Focus pill at once.
 // Two desktop plays: selecting a row opens it; Snooze shows the bar, and Undo
 // puts the item back.
 const meta: Meta<typeof QueueScreen> = {
@@ -330,6 +333,44 @@ const isfPlay: Story['play'] = async ({ canvasElement }) => {
   await expect(within(canvasElement.querySelector('.ui-isf') as HTMLElement).getByRole('button', { name: 'Snooze' }))
     .toBeInTheDocument();
 };
+// A standalone habit (ADR 528), open: its row is a Pattern's with the Habit
+// glyph, and its card the PatternCard, the chart's episodes named Habit, with
+// Pin and Snooze beneath. Pinned, the Focus pill takes Pin's place.
+const HABIT_OPEN = { store: fixtures.states.habit_band.store, open: fixtures.states.habit_band.subject } as QueueScreenProps;
+const HABIT_PINNED = {
+  store: fixtures.states.habit_pinned.store, open: fixtures.states.habit_pinned.subject,
+} as QueueScreenProps;
+const habitPlay = (layout: 'phone' | 'desktop', pinned: boolean): Story['play'] => async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  const card = canvasElement.querySelector('.ui-pcard') as HTMLElement;
+  await expect(within(card).getByRole('heading', { level: 2, name: 'Missed / unannounced meal' })).toBeInTheDocument();
+  await expect(card.querySelector('.ui-chart__legend')!.textContent).toContain('Habit');
+  await expect(within(card).queryByRole('button', { name: 'Pin' }) === null).toBe(pinned);
+  await expect(card.querySelector('.ui-pcard__action [data-state="focus"]') !== null).toBe(pinned);
+  await expect(within(card).getByRole('button', { name: 'Snooze' })).toBeInTheDocument();
+  // Desktop lists the habit's row beside the open card, its glyph named Habit.
+  if (layout === 'desktop') await expect(canvas.getByRole('img', { name: 'Habit' })).toBeInTheDocument();
+};
+export const HabitOpenPhone: Story = { ...story('phone', HABIT_OPEN), play: habitPlay('phone', false) };
+export const HabitOpenDesktop: Story = { ...story('desktop', HABIT_OPEN), play: habitPlay('desktop', false) };
+export const HabitPinnedPhone: Story = { ...story('phone', HABIT_PINNED), play: habitPlay('phone', true) };
+export const HabitPinnedDesktop: Story = { ...story('desktop', HABIT_PINNED), play: habitPlay('desktop', true) };
+// Live: Pin on the habit's card shows the Focus pill at once, while the write
+// is in flight.
+const livePinPlay: Story['play'] = async ({ canvasElement }) => {
+  const card = canvasElement.querySelector('.ui-pcard') as HTMLElement;
+  await userEvent.click(within(card).getByRole('button', { name: 'Pin' }));
+  await waitFor(() => expect(card.querySelector('.ui-pcard__action [data-state="focus"]')).not.toBeNull());
+  await expect(within(card).queryByRole('button', { name: 'Pin' })).toBeNull();
+};
+const pinInFlight = (): QueueScreenProps['writes'] => ({ ...liveWrites()!, pin: () => new Promise<void>(() => {}) });
+export const LiveHabitPinPhone: Story = {
+  ...story('phone', { ...HABIT_OPEN, writes: pinInFlight() }), play: livePinPlay,
+};
+export const LiveHabitPinDesktop: Story = {
+  ...story('desktop', { ...HABIT_OPEN, writes: pinInFlight() }), play: livePinPlay,
+};
+
 export const IsfSettingPhone: Story = { ...story('phone', { store: ISF_STORE, open: 'setting:isf' }), play: isfPlay };
 export const IsfSettingDesktop: Story = { ...story('desktop', { store: ISF_STORE, open: 'setting:isf' }), play: isfPlay };
 

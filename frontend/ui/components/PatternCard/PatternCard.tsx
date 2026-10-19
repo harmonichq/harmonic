@@ -11,6 +11,11 @@
 // Snooze is the lesser action, a centred text action beneath Pin (Apple's
 // primary-plus-"Not Now" stack). The header holds the title and the collapse
 // chevron, which a screen drops where the card does not collapse (desktop).
+//
+// The same card draws a standalone habit (§4.2 HabitCard, ADR 528): its count,
+// its trace chart with its episodes named Habit, and Pin or the Focus pill with
+// Snooze beneath, as a Pattern's. The engine serves no Uncertain verdict and no
+// impact line for a habit, so it shows neither.
 import { Icon } from '../../icons';
 import { Num } from '../../Num';
 import type { PatternData } from '../../queue-model';
@@ -69,7 +74,11 @@ export function PatternCard(props: PatternCardProps) {
           )}
         </>
       )}
-      {data.traces && <div className="ui-pcard__chart"><TraceChart data={data.traces} /></div>}
+      {data.traces && (
+        <div className="ui-pcard__chart">
+          <TraceChart data={data.traces} own={data.kind === 'habit' ? 'Habit' : 'Pattern'} />
+        </div>
+      )}
       <div className="ui-pcard__action">
         {data.pinned ? <StatePill state="focus" /> : <Button kind="primary" label="Pin" onClick={onPin} />}
       </div>

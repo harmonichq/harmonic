@@ -8,7 +8,7 @@
 // `analyze.<window>`; a window the live adapter has not read yet is absent.
 // The Meal size card reads one fixed window, under `meal_size`.
 import { answers, sourced, type Format, type Sourced } from './answers';
-import { formatValue } from './provenance.js';
+import { delta, type Change, type Metric } from './direction';
 import { PARAMETER_FORMATS, PARAMETER_UNITS } from './settings-model';
 
 export type OverviewStore = keyof typeof answers.overview;
@@ -81,15 +81,15 @@ export function tirBands(window: Window): TirBands {
 
 export type MetricKey = 'tir' | 'mean_glucose' | 'gmi' | 'cv' | 'tbr_lvl1' | 'tar_lvl1';
 
-/** How each metric prints, and which way is good (the consensus targets'
- *  direction: more time in range, less of everything else). */
-export const METRICS: Record<MetricKey, { format: Format; better: 'up' | 'down' }> = {
-  tir: { format: 'fixed1', better: 'up' },
-  mean_glucose: { format: 'round', better: 'down' },
-  gmi: { format: 'fixed1', better: 'down' },
-  cv: { format: 'fixed1', better: 'down' },
-  tbr_lvl1: { format: 'fixed1', better: 'down' },
-  tar_lvl1: { format: 'fixed1', better: 'down' },
+/** How each metric prints, and its name in the table of good ways its change
+ *  is coloured by (direction.ts). */
+export const METRICS: Record<MetricKey, { format: Format; delta: Metric }> = {
+  tir: { format: 'fixed1', delta: 'tir' },
+  mean_glucose: { format: 'round', delta: 'mean' },
+  gmi: { format: 'fixed1', delta: 'gmi' },
+  cv: { format: 'fixed1', delta: 'cv' },
+  tbr_lvl1: { format: 'fixed1', delta: 'tbr' },
+  tar_lvl1: { format: 'fixed1', delta: 'tar' },
 };
 
 export type MetricData = {
@@ -134,25 +134,13 @@ export function period(store: OverviewStore | 'wearer', window: Window): PeriodD
   };
 }
 
-import type { Change } from './Delta';
 export type { Change };
 
-/** The change against the previous period, as printed: an amount that is never
- *  negative (the formula is ordered larger − smaller) and a direction; neither
- *  direction nor tone when it prints as zero. Null when either side is not
- *  served. */
+/** The change against the previous period, as printed, green or red by the way
+ *  it moved for its metric (direction.ts). Null when either side is not served. */
 export function change({ metric: key, value, previous }: MetricData): Change | null {
   if (value.value === null || previous.value === null) return null;
-  const { format, better } = METRICS[key];
-  const rises = value.value >= previous.value;
-  const amount = sourced<number>(rises ? `${value.source} − ${previous.source}` : `${previous.source} − ${value.source}`,
-    format);
-  if (formatValue(amount.value, format) === formatValue(0, format)) return { direction: null, tone: null, amount };
-  const direction = rises ? 'up' : 'down';
-  // Colour only the below- and above-range shares; every other change keeps a
-  // neutral arrow (operator, 2026-10-13: "quiet the colors down").
-  const toned = key === 'tbr_lvl1' || key === 'tar_lvl1';
-  return { direction, tone: toned ? (direction === better ? 'favorable' : 'adverse') : null, amount };
+  return delta({ ...previous, value: previous.value }, { ...value, value: value.value }, METRICS[key].delta);
 }
 
 const SCANNED_STORES = ['wearer', 'wearer-pinned', 'wearer-worse', 'wearer-unsynced'] as const;

@@ -7,8 +7,7 @@
 // A store is one entry of `answers.queue`; the screens will hand the same
 // answers in from the live API.
 import { answers, sourced, type Sourced } from './answers';
-import { delta } from './changes-model';
-import type { Change } from './Delta';
+import { delta, type Change } from './direction';
 import { isfData, type IsfAnswer, type IsfData } from './overview-model';
 import { PARAMETER_FORMATS, PARAMETER_NAMES } from './settings-model';
 
@@ -200,9 +199,9 @@ function impact(name: QueueStore, key: string, tone: Tone, served: ServedTraces)
 }
 
 /** The collapsed row's impact: the Pattern's own value against Typical, as
- *  printed (own − typical; the arrow carries the sign). Neutral: the engine
- *  judges neither cohort better or worse, so no colour (§2.5, 2026-10-14). */
-export const impactChange = (impact: Impact): Change => delta(impact.typical, impact.own, undefined);
+ *  printed (own − typical; the arrow carries the sign), green or red by the
+ *  way a Peak or a Nadir is better (§2.5, 2026-10-19). */
+export const impactChange = (impact: Impact): Change => delta(impact.typical, impact.own, impact.kind);
 
 export function basalSetting(name: QueueStore, startMin: number): SettingData {
   const s = store(name);

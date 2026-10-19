@@ -14,7 +14,9 @@ Status: **exploring** (#481).
   Revised 2026-10-14 by the operator's decisions in §2.5 (#524): the current
   change leads, with what it did to glucose in its block as modules beneath
   it, and the last change's one row became "Previous", a drill-down to every
-  previous change.
+  previous change. Revised 2026-10-19 (§2.5, colour shows direction): every
+  Δ is green or red by the way it moved, maturing or matured; the verdict is
+  the pill's alone.
 - **Overview screen locked 2026-10-13**: Storybook `Screens/Overview` at commit
   `0b0b78d8`: one page with no scrolling, one time-in-ranges bar for the
   selected window, colour only on Below 70 and Above 180. The operator:
@@ -24,7 +26,9 @@ Status: **exploring** (#481).
   switch and the recent-days strip is gone; an ISF estimate card below the
   summary; each window compared with the period of the same length before it,
   its date span on the line under the window switch. Revised again 2026-10-14
-  (§2.5, the charts): a basal estimate card beside the ISF card.
+  (§2.5, the charts): a basal estimate card beside the ISF card. Revised
+  2026-10-19 (§2.5, colour shows direction): every metric's change is green
+  or red by the way it moved, not only Below 70 and Above 180.
 - **Day screen locked 2026-10-13**: Storybook `Screens/Day` at commit
   `4972898a`: the date in the header as a drop-down month of gapless weeks,
   the current week as a gapless ribbon on desktop, the day's insulin as one
@@ -102,7 +106,7 @@ Each row lists a screen's states. Labels only; no state uses prose.
 | Queue | Ranked cards, top card expanded | "0 patterns" label | Card skeletons | Unavailable + Retry | A card expanded; mid-swipe; just snoozed (bar "Snoozed · Until <date>" + Undo); just Done (bar "Waiting for pump" + Undo, §2.5); a Setting Not on pump (§2.5); a Habit open, and pinned (§2.5, 2026-10-19); Snoozed footer when N > 0 |
 | Queue · Snoozed | Each snoozed item as its Queue row, plus "Until <date>" + Restore | Not reachable (the footer is hidden at 0) | — | Unavailable + Retry | Restored (row leaves) |
 | Queue · setting detail | current → estimate, range, n, chart | — | Chart skeleton | Unavailable | A queued ISF: the Overview's ISF card in the Queue's frame (§2.5, 2026-10-14) |
-| Changes | The current Trial (head, trace, ranges, Mean/GMI/CV, Basal vs Pump profile) or Focus, then the Previous row with its count | "No active change" label; no Previous row at 0 | Skeleton | Unavailable + Retry | Maturing, every module as its data forms, each glucose module with its Readings, no Δ toned; first hours (an empty after: Meals after 0, each after blank) (§2.5, 2026-10-19); Matured (result pill); a carb ratio Trial (Meals before / after; its trace meal by meal under three meals); a whole-profile switch (each setting it moved); **End** (Focus: anytime; Trial: once matured) → confirm sheet → ended; Waiting for pump rows after a Done, between the current change and Previous (§2.5) |
+| Changes | The current Trial (head, trace, ranges, Mean/GMI/CV, Basal vs Pump profile) or Focus, then the Previous row with its count | "No active change" label; no Previous row at 0 | Skeleton | Unavailable + Retry | Maturing, every module as its data forms, each glucose module with its Readings, each Δ green or red by its direction (§2.5, 2026-10-19, colour shows direction); first hours (an empty after: Meals after 0, each after blank) (§2.5, 2026-10-19); Matured (result pill); a carb ratio Trial (Meals before / after; its trace meal by meal under three meals); a whole-profile switch (each setting it moved); **End** (Focus: anytime; Trial: once matured) → confirm sheet → ended; Waiting for pump rows after a Done, between the current change and Previous (§2.5) |
 | Changes · Previous | Every previous change, newest first, no cutoff: setting and block, date, before → after per setting, the result where one was saved | Not reachable (the row is hidden at 0) | — | Unavailable + Retry | — |
 | Overview | 14 d selected; one scrolling page, the summary (window switch, date span, In range, metrics, glucose profile) its first screenful, the ISF and basal estimates below, then Meal size (§2.5, 2026-10-19) | "No data" label per window, in the ISF or basal estimate when none is served, and in Meal size when no meal is counted | Skeleton; a window not yet read shows its profile's and estimates' skeletons; Meal size its skeleton until read | Unavailable + Retry | 30 d / 90 d selected; a previous period without data (the span alone, no changes); the ISF estimate with a supported change (current → recommended), held, Uncertain, with nights beyond its axis; Meal size with a size of one meal, or of none ("–") |
 | Day | Latest day with data | "No data" for a day without readings | Chart skeleton | Unavailable + Retry | Month dropped down from the header's day; desktop: the selected week as a ribbon; the Lows row when its count > 0, and under it the Rises row when its count > 0 (§2.5, 2026-10-14 Rises) |
@@ -375,8 +379,10 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   element (▲/▼, the amount, favourable or adverse colour) now serves both
   MetricFigure and ChangeCard. On a change, a row is green or red only where
   the engine judged that row better or worse; an unclear or context row moves
-  in neutral ink. Every derived difference is taken between the values as
-  printed, so a delta always equals the numbers beside it.
+  in neutral ink (superseded 2026-10-19, colour shows direction, below: a row
+  is green or red by the way it moved). Every derived difference is taken
+  between the values as printed, so a delta always equals the numbers beside
+  it.
 - **2026-10-13 — the last change is one row** (superseded 2026-10-14 by
   Previous, below). The operator: "the previous
   change should show as a small row that can be extended … I guess we can
@@ -393,7 +399,8 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   chose one bar for the selected window over the brief's three ("one bar for
   the selected window as built"), and "quiet the colors down": on the Overview
   only Below 70 and Above 180 changes take red or green; every other change
-  keeps a neutral arrow, as the brief had it.
+  keeps a neutral arrow, as the brief had it. (The colour rule is superseded
+  2026-10-19, colour shows direction, below; the one bar stands.)
 - **2026-10-13 — charts take their container's width.** The operator: "fix
   the chart width to be responsive on desktop." The Setting card's evidence
   chart had stayed at its phone width inside a wide desktop card; every chart
@@ -516,7 +523,9 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   Delta of the Pattern's own value minus Typical (each as the open card prints
   it), in mg/dL. The pair is stacked, left edges aligned (§2.2). The Delta is
   neutral ink: the engine judges neither cohort better or worse, so the arrow
-  alone gives the direction. Mock B's two flaws are not carried over: the
+  alone gives the direction (superseded 2026-10-19, colour shows direction,
+  below: a higher Peak or a lower Nadir than Typical is red, the reverse
+  green). Mock B's two flaws are not carried over: the
   value fits the row's two lines, so a row is the same height with or without
   it, and the chevron stays on the title line. A row with no impact (no case
   file, a standalone habit, a Setting) has no trailing value. The open card
@@ -624,7 +633,8 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   window (14 d against the 14 days before it, 30 against 30, 90 against 90),
   which the engine serves with each window's outcomes, by the same definitions.
   The colour rule is unchanged: only Below 70 and Above 180 take favourable or
-  adverse colour. A previous period without data shows no changes (§4.2
+  adverse colour (superseded 2026-10-19, colour shows direction, below: every
+  metric's change is coloured by the way it moved). A previous period without data shows no changes (§4.2
   MetricFigure).
 - **2026-10-14 — the window's date span, and the comparison named once.** The
   operator: "Name a date span entirely, not just a single 'to'". The header's
@@ -1020,12 +1030,47 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
     carry theirs.
   - **Only the verdict waits.** The pill stays Maturing, no result is shown,
     and no Δ is toned until the Trial has matured, whatever the engine has
-    already judged; the arrow and the amount stay, in neutral ink.
+    already judged; the arrow and the amount stay, in neutral ink. (The
+    untoned Δ is superseded the same day, colour shows direction, below:
+    each Δ takes its direction's colour while the Trial matures. The pill
+    and the withheld result stand.)
   - **An after with nothing read yet is empty, not missing.** In the hours
     after a change the screen shows the before values beside a blank after,
     with no Δ, Meals after 0 and the trace legend's "After 0"; the trace
     draws the before period alone.
   - **Words.** "Readings" joins the plain interface words (§2.5, 2026-10-13).
+- **2026-10-19 — colour shows direction (#558).** A maturing Trial's every Δ
+  was grey, even In range up seven points. The operator: "Color shows
+  direction. We can have vaguely good or bad changes that should indicate
+  that they're good or bad via color plus arrow regardless of whether the
+  change itself should be kept or not. those are separate". Built on the
+  locked Changes, Overview and Queue screens; §1.3 and §4.2 follow.
+  - **Every Δ, one rule.** A Δ is green (`--wk-status-favorable`) where its
+    value moved the good way for its metric and red (`--wk-status-adverse`)
+    where it moved the bad way, the ▲ or ▼ saying the same thing. It is
+    neutral ink with no arrow where it prints unchanged, and neutral ink with
+    its arrow where neither way is better. The rule holds wherever a Δ is
+    drawn: Changes' modules, maturing or matured; a Focus's habit share and
+    outcomes; the Overview's metrics against the previous period; a Queue
+    row's Peak or Nadir against Typical.
+  - **The good ways.** In range up; Below 70, Above 180, Mean, GMI and CV
+    down; Peak down; Nadir up; how often a Focus's habit happened down (the
+    way the engine assesses that rate). Neither way is better for a basal
+    Trial's Delivered, Above and Below against the Pump profile. The table
+    has one home in the library (`frontend/ui/direction.ts`), which Changes,
+    the Overview and the Queue all read. The engine serves no direction per
+    metric, so no served shape changes and no ADR is owed.
+  - **The verdict is the pill's.** Better / Worse / Unclear stays the
+    engine's result, in the state pill, and still waits until a Trial has
+    matured. Colour never stands for it: an Unclear Trial can show green and
+    red rows, and a Better one a red row.
+  - **Counts carry no Δ.** Readings, Meals before / after and Days stay
+    without one.
+  - **Supersedes** the 2026-10-13 rule that a change row is coloured only
+    where the engine judged it, the 2026-10-13 Overview rule that only Below
+    70 and Above 180 take colour ("quiet the colors down"), the 2026-10-14
+    neutral Queue impact, and the 2026-10-19 (#554) untoned Δ while a Trial
+    matures. Everything else in those amendments stands.
 
 - **2026-10-19 — Meal size fits beside the estimates (#559).** On the
   built card, the operator: "meal size card is way too big and doesn't match
@@ -1156,6 +1201,19 @@ unless noted. Loading is a skeleton of the component's own shape.
      after a Done (§2.5, 2026-10-14 Done); "Not saved" + Retry.
    - Fields: the snooze-until date (now + 14 d).
    - Desktop: the same, at the bottom of the detail pane; Undo also on ⌘Z.
+28. **Delta**: one change between two served values, ▲ or ▼ and the amount
+    (larger − smaller, between the values as printed), with an optional unit;
+    every change on every screen is one (§2.5, 2026-10-13 and 2026-10-19).
+    - States: the good way for its metric (green, `--wk-status-favorable`);
+      the bad way (red, `--wk-status-adverse`); a metric where neither way is
+      better (its arrow, neutral ink); unchanged as printed (no arrow,
+      neutral ink).
+    - The good ways, one table (`frontend/ui/direction.ts`): In range up;
+      Below 70, Above 180, Mean, GMI, CV down; Peak down; Nadir up; a habit's
+      share down; none for Control-IQ's Delivered, Above and Below. Never the
+      engine's verdict, which is the StatePill's.
+    - Fields: the two values it compares, as each caller serves them.
+    - Desktop: the same.
 
 **Queue**
 
@@ -1166,9 +1224,10 @@ unless noted. Loading is a skeleton of the component's own shape.
    ("9 of 71 lows") and no cause (§2.5, 2026-10-14: "drop the leading cause
    entirely"; the open card names the causes). A Pattern with an impact ends in a trailing value:
    the caption Peak (high) or Nadir (low) on the title line, and beneath it
-   the shared Delta (▲ / ▼ and the amount, neutral ink) of own − Typical as
-   printed, with mg/dL. The row is two lines with or without it, and the
-   chevron sits on the title line (§2.5, 2026-10-14).
+   the shared Delta (▲ / ▼ and the amount) of own − Typical as printed, with
+   mg/dL, green or red by its direction: a lower Peak or a higher Nadir is
+   the good way (§2.5, 2026-10-19). The row is two lines with or without it,
+   and the chevron sits on the title line (§2.5, 2026-10-14).
    - States: default (multi-cause, no cause named); selected (desktop);
      mid-swipe (snooze reveal); single cause (the same row; the no-cause
      state is retired with the overnight Pattern, ADR 499);
@@ -1284,10 +1343,11 @@ unless noted. Loading is a skeleton of the component's own shape.
       (bands derived as differences).
     - Desktop: the same.
 14. **MetricFigure**: a value, its unit, and its change against the previous
-    period of the same length (arrow, units; better/worse colour only on Below
-    70 and Above 180), the difference taken between the values as printed.
-    - States: better; worse; unchanged (neutral); not available; no previous
-      data (no change).
+    period of the same length (a Delta: arrow, units, green or red by its
+    direction on every metric, §2.5 2026-10-19), the difference taken between
+    the values as printed.
+    - States: moved the good way (green); the bad way (red); unchanged
+      (neutral); not available; no previous data (no change).
     - Fields: `outcomes_*.metrics.tir, mean_glucose, gmi, cv, tbr_lvl1,
       tar_lvl1`, and the same under `outcomes_*.previous.metrics`.
     - Desktop: the same, in a row.
@@ -1369,7 +1429,9 @@ unless noted. Loading is a skeleton of the component's own shape.
       Meals after; End at its foot once matured.
     - A Focus: how often the habit happened before → after, its meals as
       ticks against the gate, and Before/After values with a Δ once matured,
-      with End. A Focus pinned on a Habit has no Pattern: its title line is
+      with End. The share's Δ and each outcome's are green or red by their
+      direction (the habit less often, Peak lower, Nadir higher), whatever
+      the verdict in the pill (§2.5, 2026-10-19). A Focus pinned on a Habit has no Pattern: its title line is
       the habit and its date (§2.5, 2026-10-19).
     - States: Trial maturing; Trial matured with a result (Better / Worse /
       Unclear); carb ratio Trial (meals); whole-profile switch; Focus with no
@@ -1408,14 +1470,17 @@ unless noted. Loading is a skeleton of the component's own shape.
 24. **ChangeMetrics**: one module of a Trial's metrics, before → after with
     the shared Delta, in fixed columns shared by every module (§2.5,
     2026-10-14).
-    - States: In range / Below 70 / Above 180 (the target metric strong, its
-      Δ toned by the engine's verdict once the Trial has matured); Mean / GMI /
-      CV (never toned); Basal vs Pump profile: Delivered (U/h), Above and
-      Below (% of the time); a glucose module closed by its "Readings" row,
-      before → after; a maturing Trial's module (no Δ toned); an after with
-      nothing read yet (each after blank, no Δ) (§2.5, 2026-10-19).
+    - Every Δ green or red by the way it moved for its metric, maturing or
+      matured, never by the engine's verdict (§2.5, 2026-10-19, colour shows
+      direction).
+    - States: In range / Below 70 / Above 180 (the target metric strong);
+      Mean / GMI / CV; Basal vs Pump profile: Delivered (U/h), Above and
+      Below (% of the time), where neither way is better (neutral Δ); a
+      glucose module closed by its "Readings" row, before → after, with no
+      Δ; a maturing Trial's module (each Δ coloured as a matured one's); an
+      after with nothing read yet (each after blank, no Δ) (§2.5, 2026-10-19).
     - Fields: the comparison's `outcomes[key=tir|tbr|tar|mean|gmi|cv].before,
-      after, assessment.state`; `outcomes[key=tir].denominators.before, after`
+      after`; `outcomes[key=tir].denominators.before, after`
       (Readings); `views.before|after.basal.delivered, above, below` (ADR 524,
       ADR 554).
     - Desktop: the same, the pane's width.

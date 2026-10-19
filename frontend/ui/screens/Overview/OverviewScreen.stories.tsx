@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, within } from 'storybook/test';
+import { expectDirections } from '../../direction-check';
 import { OverviewScreen, type OverviewScreenProps } from './OverviewScreen';
 
 // The Overview screen in each state §1.3 lists, at phone (390) and desktop
@@ -41,6 +42,9 @@ const comparesWith = (window: '14' | '30' | '90', previous: boolean): Story['pla
   await expect(line.textContent!.includes('vs previous')).toBe(previous);
   const changes = canvasElement.querySelectorAll(`[data-source*="outcomes.${window}.previous.metrics."]`);
   await expect(changes.length > 0).toBe(previous);
+  // Every metric's change is green or red by the way it moved (§2.5, 2026-10-19).
+  await expect((await expectDirections(canvasElement, '.ui-metric', '.ui-metric__label')).length)
+    .toBe(previous ? 6 : 0);
 };
 
 export const DefaultPhone: Story = { ...story('phone', { store: 'wearer' }), play: comparesWith('14', true) };

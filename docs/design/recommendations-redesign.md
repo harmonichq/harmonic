@@ -47,6 +47,10 @@ Status: **exploring** (#481).
 - **Rises on Day, 2026-10-14** (#529, §2.5): the operator's decision Q20 = A,
   built on the locked Day screen; Storybook `Screens/Day` (Rises, Rises
   prompts, Rise recorded, Rises flow, No rises) and `PromptCard` (Rise).
+- **A standalone habit's card, 2026-10-19** (#528, §2.5): the operator's
+  decision, built on the locked Queue screen; Storybook `HabitCard`, `QueueRow`
+  (Habit) and `Screens/Queue` (Habit open, Habit pinned), and `ChangeCard`
+  (Habit Focus).
 - **Meal size on the Overview, 2026-10-19** (#501, §2.5): the operator's
   approved card, built on the locked Overview screen; Storybook `MealSizeCard`
   (Populated, Sparse, Empty sizes, No data, Loading) and `Screens/Overview`.
@@ -61,7 +65,7 @@ consolidated brief from the first exploration (2026-10-12) as decision history.
 
 | Tab | Owns | Owns nothing else |
 |---|---|---|
-| **Queue** | The ranked recommendations, from Patterns and Settings, and the Snoozed list. | No logging, no status, no counters. |
+| **Queue** | The ranked recommendations, from Patterns, Habits and Settings, and the Snoozed list. | No logging, no status, no counters. |
 | **Changes** | The current watched change (one Trial or one Focus) with what a Trial did to glucose in its block, and Previous: every earlier change (§2.5, 2026-10-14). | Nothing to act on but End. |
 | **Overview** | Standard metrics over 14, 30 or 90 days against the period of the same length before, the selected window's time-in-ranges bar and glucose profile, the ISF and basal estimates, and Meal size over the last 90 days (§2.5, 2026-10-19). | No Queue items and nothing to act on: the ISF estimate shows the engine's supported change as the Queue's card does, but changes nothing. |
 | **Day** | One day's glucose, insulin and carbs, the day navigator, carb logging and Prompts: Lows and Rises. | No aggregates beyond that day. |
@@ -92,7 +96,7 @@ Each row lists a screen's states. Labels only; no state uses prose.
 
 | Screen | Default | Empty | Loading | Error | Other states |
 |---|---|---|---|---|---|
-| Queue | Ranked cards, top card expanded | "0 patterns" label | Card skeletons | Unavailable + Retry | A card expanded; mid-swipe; just snoozed (bar "Snoozed · Until <date>" + Undo); just Done (bar "Waiting for pump" + Undo, §2.5); a Setting Not on pump (§2.5); Snoozed footer when N > 0 |
+| Queue | Ranked cards, top card expanded | "0 patterns" label | Card skeletons | Unavailable + Retry | A card expanded; mid-swipe; just snoozed (bar "Snoozed · Until <date>" + Undo); just Done (bar "Waiting for pump" + Undo, §2.5); a Setting Not on pump (§2.5); a Habit open, and pinned (§2.5, 2026-10-19); Snoozed footer when N > 0 |
 | Queue · Snoozed | Each snoozed item as its Queue row, plus "Until <date>" + Restore | Not reachable (the footer is hidden at 0) | — | Unavailable + Retry | Restored (row leaves) |
 | Queue · setting detail | current → estimate, range, n, chart | — | Chart skeleton | Unavailable | A queued ISF: the Overview's ISF card in the Queue's frame (§2.5, 2026-10-14) |
 | Changes | The current Trial (head, trace, ranges, Mean/GMI/CV, Basal vs Pump profile) or Focus, then the Previous row with its count | "No active change" label; no Previous row at 0 | Skeleton | Unavailable + Retry | Maturing; Matured (result pill); a carb ratio Trial (Meals before / after; its trace meal by meal under three meals); a whole-profile switch (each setting it moved); **End** (Focus: anytime; Trial: once matured) → confirm sheet → ended; Waiting for pump rows after a Done, between the current change and Previous (§2.5) |
@@ -143,7 +147,8 @@ the system's own edge-swipe back is left to the platform, never overridden.
 |---|---|---|
 | **Queue** | noun | The ranked list of recommendations. |
 | **Pattern** | noun | A recurring glucose outcome the engine detected, such as highs after meals. |
-| **Pin** | verb | Start a Focus on a Pattern's habit. |
+| **Pin** | verb | Start a Focus on a Pattern's habit, or on a Habit. |
+| **Habit** | noun | Something you do that the engine counts toward a glucose outcome, queued on its own when no Pattern holds it, such as a meal with no bolus. |
 | **Focus** | noun | A habit you pinned, watched for adherence and outcome. |
 | **Trial** | noun | A pump setting change the app detected, watched against its before period. |
 | **Change** | noun | A Trial or a Focus. One is active at a time. |
@@ -158,7 +163,7 @@ the system's own edge-swipe back is left to the platform, never overridden.
 | **Range** | noun | The engine's interval for a Setting's estimate. |
 | **Uncertain** | state | Not yet clear enough to act on: the evidence behind it is thin. |
 | **Peak / Nadir** | noun | The highest or lowest glucose after an event such as a meal, as the median across the events counted, in mg/dL. |
-| **Typical** | noun | The same for the comparison events: similar events that did not end in the Pattern's outcome. |
+| **Typical** | noun | The same for the comparison events: similar events that did not end in the Pattern's or the Habit's outcome. |
 | **Glucose profile** | noun | Glucose by time of day over the selected window (14, 30 or 90 days): the median and the 10th–90th percentile spread. |
 | **Fasting** | state | No food and no recent bolus: the nights an ISF estimate is read from. |
 | **Median** | noun | The middle value: of the profile at that time of day, or of a meal size's meals. |
@@ -250,7 +255,7 @@ in §2.
 | Answer button (Prompt) | 44 px, outlined neutral, equal widths. |
 | List row | 48 px minimum, label left, value right, optional ›. |
 | Numeric input | Sized to 3 digits, unit inline, the system numeric keyboard. |
-| State pill | Borderless tinted tag: 18 px, 2 px radius, uppercase 11 px label, the state's tone at 15% fill (Unclear on the rail surface). No outline, so it never reads as a button. Item kinds take no pill: the kind glyph carries Pattern vs Setting. |
+| State pill | Borderless tinted tag: 18 px, 2 px radius, uppercase 11 px label, the state's tone at 15% fill (Unclear on the rail surface). No outline, so it never reads as a button. Item kinds take no pill: the kind glyph carries Pattern, Habit or Setting. |
 | Badge | 16 px; a count pill or an alert "!". |
 | Caption + value pair | A caption names the value it sits with and reads as one unit with it: stacked, the caption directly above the value, left edges aligned (Nights / Range); or inline, the caption before the value on the value's own baseline (`align-items: baseline`), never centred against it. |
 | Tab bar item / rail item | 44 px target, 24 px glyph above the label. The phone tab bar is 64 px tall above the device's bottom inset (none on a phone without one), its items centred in it (§2.5, 2026-10-14). The selected item carries Material 3's active indicator: a pill behind the icon, 64 x 32 px on the tab bar and 56 x 32 on the rail, fully rounded, `--primary` at 18%, the icon centred in it and the label below it. The icon and label take the accent. Badges stay top-right of the icon, above the pill. The pill fades and scales in over `--ui-motion-standard` and is instant under reduced motion. |
@@ -910,6 +915,45 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   - **Words.** "Rise" joins §1.5. "Lows" and "Rises" are the rows' labels,
     the plurals of the Low and the Rise they list.
 
+- **2026-10-19 — a standalone habit is its own Queue card (#528).** The engine
+  queues a habit no Pattern owns, the missed meal ("Missed / unannounced
+  meal"), and the Queue drew none: it dropped every habit. The operator had
+  chosen a habit card with an occurrence chart (Q23 = A). On its open
+  questions he decided: the count leads in a Pattern's form, "N of M"; the
+  approved trace chart; no Uncertain unless the engine serves one; and habits
+  get their own Focus key. On its overlap with Day's Rises: "Day is just a
+  place to explore things." On when, correcting an earlier note that it waits
+  for the drill-down: "The standalone habit card can be built. Now." Only the
+  cause choice on Pin for a multi-cause Pattern waits for the drill-down
+  (#532). Built in #528 (ADR 528); §1.1, §1.3, §1.5, §2.2 and §4.2 follow.
+  - **The row** is a Pattern row with the Habit glyph, a loop of two arrows,
+    named "Habit" for assistive tech. Its second line is the count, "2 of 6
+    highs": the episodes the habit claims of its own denominator and noun, as
+    its case file serves them. It has no trailing value, as the 2026-10-14
+    amendment already had it for a standalone habit.
+  - **The card** is the PatternCard (§4.2 HabitCard): the count in figure
+    type, the TraceChart, and Pin, with Snooze centred beneath it. The chart
+    aligns each episode the habit claims at its start against Typical. For a
+    missed meal that is each rise at its detected onset, against the meals
+    bolused for, each at its bolus. It spans −60 to 300 minutes, the habit's
+    own comparison window. Eight or fewer episodes are thin traces; more are
+    the habit's median over its band. The legend names the episodes "Habit".
+    The engine serves the episodes, the bands and the count, and the card
+    computes none.
+  - **No Uncertain and no impact line.** The engine's Uncertain verdict (ADR
+    485) is a Pattern's admission at its low end, and it serves none for a
+    habit, so the card carries no tag. The impact line stays a Pattern's.
+  - **Pin** starts a Focus on the habit itself, kept under the habit's own key
+    (`habit:missed_meal`), never through a Pattern. Pinned, the card shows the
+    Focus pill in Pin's place with Snooze beneath, as a PatternCard does.
+    Pinning a Pattern is unchanged: a Pattern with several habits still pins
+    its first, and a cause chooser waits for the drill-down (#532).
+  - **On Changes** a habit's Focus is followed as a Pattern's is. The habit is
+    the title, with its date beside it and no Pattern name, because it has
+    none. Previous names it by the habit.
+  - **Words.** "Habit" joins §1.5: the legend prints it and the glyph is named
+    it.
+
 - **2026-10-19 — Meal size on the Overview (#501).** #499 dropped the engine's
   eating-sequence detectors, and the question they answered, how much more
   glucose climbs after a bigger meal, came back as a report. An analysis of the
@@ -974,8 +1018,10 @@ nothing is removed from the engine or the fixtures for them.
 
 ## 4. Component inventory (approved 2026-10-12)
 
-Twenty-six components (the TraceChart replaced the CauseWaffle and the
-BasalCard joined, §2.5 2026-10-14; the MealSizeCard joined, §2.5 2026-10-19). Screens are composed only from these. Every state listed
+Twenty-seven components (the TraceChart replaced the CauseWaffle and the
+BasalCard joined, §2.5 2026-10-14; the HabitCard joined, drawn by the
+PatternCard's component, §2.5 2026-10-19; the MealSizeCard joined, §2.5
+2026-10-19). Screens are composed only from these. Every state listed
 gets a Storybook story in step 3. "Fields" are the only served data a component
 may display; derived values name their formula in the provenance table.
 
@@ -1047,8 +1093,9 @@ unless noted. Loading is a skeleton of the component's own shape.
 **Queue**
 
 7. **QueueRow**: a collapsed recommendation, with a leading 20 px kind glyph
-   (Pattern: rising dots; Setting: sliders; named "Pattern" / "Setting" for
-   assistive tech, and no kind pill), its title, one magnitude
+   (Pattern: rising dots; Habit: a loop of two arrows, §2.5 2026-10-19;
+   Setting: sliders; named "Pattern" / "Habit" / "Setting" for assistive tech,
+   and no kind pill), its title, one magnitude
    ("9 of 71 lows") and no cause (§2.5, 2026-10-14: "drop the leading cause
    entirely"; the open card names the causes). A Pattern with an impact ends in a trailing value:
    the caption Peak (high) or Nadir (low) on the title line, and beneath it
@@ -1059,14 +1106,17 @@ unless noted. Loading is a skeleton of the component's own shape.
      mid-swipe (snooze reveal); single cause (the same row; the no-cause
      state is retired with the overnight Pattern, ADR 499);
      with impact, high (Peak) or
-     low (Nadir); without impact (no trailing value); setting (current →
+     low (Nadir); without impact (no trailing value); habit (the Pattern
+     row with the Habit glyph; its magnitude the habit's case file's count; no
+     trailing value; §2.5 2026-10-19); setting (current →
      suggested replaces the magnitude; a queued ISF's row has no time block,
      §2.5 2026-10-14); setting Not on pump (the StatePill on the title line,
      inside its 22 px, so the row keeps its height; §2.5 2026-10-14 Done);
      snoozed (read-only: no chevron, swipe
      or selection; a last line "Until <date>" + Restore); loading.
    - Fields: `guidance.candidates[].title, kind, priority, admitted,
-     preference`; `findings.outcome_patterns[].k, n` and the noun; the
+     preference`; `findings.outcome_patterns[].k, n` and the noun; a habit's
+     case file's `summary.claimed, denominator, noun` (ADR 528); the
      impact as
      PatternCard reads it (the case file's `traces`, ADR 523), its delta the
      derived `own − typical`.
@@ -1086,6 +1136,21 @@ unless noted. Loading is a skeleton of the component's own shape.
      denominator, noun); the case file's `traces` (the chart, and the impact
      line: each cohort's highest or lowest served median at or after minute 0).
    - Desktop: fills the detail pane up to 720 px; no collapse chevron.
+26. **HabitCard** (§2.5, 2026-10-19): a standalone habit's open card, drawn by
+    the PatternCard's component from the habit's served data: the count in
+    figure type ("2 of 6 highs"), a TraceChart of the habit's episodes against
+    Typical with its episodes named Habit in the legend, and Pin. No
+    Uncertain (the engine serves none for a habit) and no impact line. Pinned,
+    the Focus pill takes Pin's place; Snooze is the text action centred 16 px
+    beneath either.
+    - States: episodes drawn (eight or fewer); median and band (more than
+      eight); pinned; loading.
+    - Fields: `guidance.candidates[subject=habit:<lever>].title`; the habit's
+      findings row's `chips` (the tone); its case file's (`finding:<lever>`)
+      `summary.claimed, denominator, noun` and `traces` (ADR 528);
+      `focus.focuses[].subject, status` (pinned: an active Focus under the
+      habit's own key).
+    - Desktop: fills the detail pane up to 720 px; no collapse chevron.
 9. **TraceChart** (replaces the CauseWaffle, §2.5 2026-10-14): a Pattern's
    episodes against Typical, aligned at their start; glucose up on the one
    glucose axis every chart uses (at least 50–220 mg/dL, "mg/dL", 100 / 200 /
@@ -1094,7 +1159,8 @@ unless noted. Loading is a skeleton of the component's own shape.
    median over its 25–75 band; the Pattern each episode's thin trace in its
    glucose colour (eight or fewer), else its coloured median over its band. A
    gap in the readings or in the served bins is left blank, never bridged.
-   Legend: Pattern, Typical (each only when drawn).
+   Legend: Pattern (Habit on a HabitCard, §2.5 2026-10-19), Typical (each
+   only when drawn).
    - States: episodes; episodes with a gap; median and band; empty ("No data").
    - Fields: the case file's `traces.anchor, window_min,
      pattern.episodes[][].minute, bg, pattern.points[], typical.points[]`
@@ -1204,7 +1270,7 @@ unless noted. Loading is a skeleton of the component's own shape.
       asserts_move, direction`, read from `/api/analyze?window=N`.
     - Desktop: half the Overview's body, beside the IsfCard.
 
-26. **MealSizeCard** (§2.5, 2026-10-19): how far glucose climbs after meals of
+27. **MealSizeCard** (§2.5, 2026-10-19): how far glucose climbs after meals of
     each size, over the last 90 days whatever window is selected, below the ISF
     and basal estimates, their size. Titled "Meal size" with the window's days
     ("90 d") in meta ink. One dot row per size, <25 g, 25–39 g, 40–59 g and
@@ -1233,7 +1299,8 @@ unless noted. Loading is a skeleton of the component's own shape.
       Meals after; End at its foot once matured.
     - A Focus: how often the habit happened before → after, its meals as
       ticks against the gate, and Before/After values with a Δ once matured,
-      with End.
+      with End. A Focus pinned on a Habit has no Pattern: its title line is
+      the habit and its date (§2.5, 2026-10-19).
     - States: Trial maturing; Trial matured with a result (Better / Worse /
       Unclear); carb ratio Trial (meals); whole-profile switch; Focus with no
       data yet; Focus maturing; Focus matured with a result (the engine's

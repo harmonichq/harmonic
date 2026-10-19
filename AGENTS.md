@@ -88,8 +88,10 @@ generator emits instead of the showcase.
   and asserts each of the five tabs' screen models against literal values per
   store. The showcase covers every tab; `isf-strengthen` adds a queued
   correction factor, `c3-trial` an active Trial, `basal-and-carb-ratio-lower` a
-  queued carb ratio, and `pattern-correction-collapse` a Pattern served as its
-  one habit, with its case file. A new screen-model fact is asserted here.
+  queued carb ratio, `pattern-correction-collapse` a Pattern served as its
+  one habit, with its case file, and `behavioral-missed-meal` a standalone
+  habit's card, pinned into a Focus on the habit itself and ended (ADR 528). A
+  new screen-model fact is asserted here.
 - `frontend/app.browser.test.mjs` is the one browser smoke test: the built app
   opens each of its five tabs once at 1440×900, and each draws its primary
   content with no skeleton and no Unavailable. Its context sends

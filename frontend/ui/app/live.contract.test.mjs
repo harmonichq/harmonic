@@ -11,6 +11,7 @@
 //   uv run python scripts/smoke_app.py --case pattern-correction-fold --then node --test frontend/ui/app/live.contract.test.mjs
 //   uv run python scripts/smoke_app.py --case basal-and-carb-ratio-lower --then node --test frontend/ui/app/live.contract.test.mjs
 //   uv run python scripts/smoke_app.py --case pattern-correction-collapse --then node --test frontend/ui/app/live.contract.test.mjs
+//   uv run python scripts/smoke_app.py --case behavioral-missed-meal --then node --test frontend/ui/app/live.contract.test.mjs
 //
 // smoke_app names the serve in HARMONIC_URL and the store in HARMONIC_CASE.
 // Every expected value is a literal read once from that store's served answers,
@@ -165,6 +166,21 @@ const EXPECTED = {
     change: { kind: 'none' },
     done: null,
   },
+  // A standalone habit (ADR 528): the missed meal no Pattern owns is its own
+  // card. Its count is its case file's, the rises it claims of its own highs; its
+  // chart each rise from its onset, against the meals bolused for (two, too few
+  // for a band); and Pin starts a Focus on the habit itself, with no Pattern.
+  'behavioral-missed-meal': {
+    queue: ['habit:missed_meal'],
+    habit: { subject: 'habit:missed_meal', title: 'Missed / unannounced meal',
+      magnitude: { count: 2, denominator: 6, noun: 'highs' },
+      traces: { anchor: 'meal_start', window: [-60, 300], episodes: 2, patternBins: 0, typicalBins: 0, typical: 2 } },
+    isf: null,
+    change: { kind: 'none' },
+    done: null,
+    pin: { subject: 'habit:missed_meal',
+      focus: { kind: 'focus', habit: 'Missed / unannounced meal', pattern: null, maturing: true } },
+  },
   'c3-trial': {
     queue: ['setting:basal_rate'],
     basal: { start: 60, end: 90, current: 0.6, suggested: 0.48, trial: false },
@@ -241,6 +257,26 @@ test(`the live adapter serves each tab's model from the ${CASE} store`, async (t
         for (const occurrence of served.occurrences) assert.equal(occurrence.outcome?.kind, caseFile.outcome, occurrence.anchor.t);
       }
     }
+    if (expected.habit) {
+      // The habit's card, as served: its count, its chart, unpinned; and its row
+      // and card read one population, the case file's own.
+      const { subject, title, magnitude, traces } = expected.habit;
+      const item = ranking.find((i) => i.subject === subject);
+      assert.equal(item.kind, 'habit');
+      const habit = item.data;
+      assert.deepEqual([habit.kind, habit.title, habit.uncertain, habit.impact, habit.pinned],
+        ['habit', title, false, null, false]);
+      assert.deepEqual(habit.magnitude, magnitude);
+      assert.deepEqual({
+        anchor: habit.traces.anchor, window: habit.traces.window, episodes: habit.traces.episodes?.length ?? null,
+        patternBins: habit.traces.pattern.length, typicalBins: habit.traces.typical.length,
+      }, (({ typical, ...drawn }) => drawn)(traces));
+      const { projection_id } = await client.fetchDiagnoseFindingCasePreparation();
+      const served = await client.fetchDiagnoseFindingCase({ projection_id, finding_id: subject.replace('habit:', 'finding:'),
+        alignment: 'event' });
+      assert.equal(served.summary.claimed, served.traces.pattern.anchors.length, 'each claimed episode is drawn');
+      assert.equal(served.traces.typical.anchors.length, traces.typical, 'Typical episodes drawn');
+    }
     const isf = values(queue.isfSetting('wearer'));
     if (expected.isf === null) assert.equal(isf, null);
     else for (const [key, value] of Object.entries(expected.isf)) assert.equal(isf[key], value, `ISF ${key}`);
@@ -290,6 +326,23 @@ test(`the live adapter serves each tab's model from the ${CASE} store`, async (t
     assert.deepEqual(queued(), expected.queue, 'Undo puts it back');
     assert.deepEqual(values(changes.waiting('wearer')), []);
   });
+
+  if (expected.pin) {
+    // Pin on a standalone habit's card (ADR 528): a Focus on the habit itself,
+    // under its own key, which the card shows pinned and Changes follows as a
+    // Focus with no Pattern; End resolves it, and the card is unpinned again.
+    await t.test('Pin a habit, then End its Focus', async () => {
+      const { subject, focus } = expected.pin;
+      const card = () => values(queue.ranking('wearer')).find((i) => i.subject === subject).data;
+      await live.queueWrites.pin(subject);
+      assert.equal(card().pinned, true, 'the card shows the Focus pill');
+      const active = values(changes.change('wearer'));
+      for (const [key, value] of Object.entries(focus)) assert.deepEqual(active[key], value, `focus ${key}`);
+      await live.changesWrites.end();
+      assert.equal(values(changes.change('wearer')).kind, 'none');
+      assert.equal(card().pinned, false, 'the card offers Pin again');
+    });
+  }
 
   if (expected.findings) {
     // Every finding the engine served on a day reaches its Day model: a bolus it

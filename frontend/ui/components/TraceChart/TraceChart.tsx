@@ -6,12 +6,14 @@
 // engine serves eight or fewer, else its coloured median over its band. A
 // stretch an episode has no readings for, or a bin the engine serves no band
 // for, is left blank rather than bridged. Dotted lines mark 70 and 180 mg/dL;
-// a meal's window opens before its bolus, so a hairline marks minute 0.
+// a meal's window opens before its bolus, so a hairline marks minute 0, and a
+// minute before it is signed with a minus ("−60").
 //
 // Everything drawn is served: the episodes, and each cohort's bins with their
 // median and band (the engine serves a bin only from three readings). The
 // chart computes no band and chooses no episode. A Pattern with nothing to
-// draw says "No data".
+// draw says "No data". A standalone habit's card draws the same chart, its own
+// episodes named Habit in the legend (ADR 528).
 import { glucoseDomain, glucoseFraction } from '../../glucose-zones';
 import { useWidth } from '../../measure';
 import type { TraceData } from '../../queue-model';
@@ -28,7 +30,11 @@ const BIN = 5;        // the engine's bins are 5 minutes apart
 const READING_GAP = 10; // two readings further apart than this are a gap
 const REFERENCES = [70, 180];
 
-export function TraceChart({ data }: { data: TraceData }) {
+export function TraceChart({ data, own = 'Pattern' }: {
+  data: TraceData;
+  /** What the legend names the card's own episodes: its Pattern, or its habit. */
+  own?: 'Pattern' | 'Habit';
+}) {
   const [box, width] = useWidth<HTMLDivElement>();
   const { window: [start, end], episodes, pattern, typical, tone } = data;
   const drawn = (episodes?.length ?? 0) > 0 || pattern.length > 0 || typical.length > 0;
@@ -96,7 +102,7 @@ export function TraceChart({ data }: { data: TraceData }) {
                 <g key={m}>
                   <line x1={x(m)} x2={x(m)} y1={AXIS} y2={AXIS + 4} className="ui-chart__axis" />
                   <text x={x(m)} y={AXIS + 16} className="ui-chart__tick"
-                    textAnchor={i === xTicks.length - 1 ? 'end' : 'middle'}>{m}</text>
+                    textAnchor={i === xTicks.length - 1 ? 'end' : 'middle'}>{m < 0 ? `−${-m}` : m}</text>
                 </g>
               ))}
               <text x={0} y={AXIS + 34} className="ui-chart__caption">Minutes</text>
@@ -106,7 +112,7 @@ export function TraceChart({ data }: { data: TraceData }) {
       </div>
       <ChartLegend keys={[
         ...((episodes ?? pattern).length > 0
-          ? [{ label: 'Pattern', swatch: episodes ? 'line' as const : 'band-line' as const, tone: toneClass }] : []),
+          ? [{ label: own, swatch: episodes ? 'line' as const : 'band-line' as const, tone: toneClass }] : []),
         ...(typical.length > 0 ? [{ label: 'Typical', swatch: 'band-line' as const, tone: 'ui-chart__typical' }] : []),
       ]} />
     </div>

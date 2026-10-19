@@ -18,7 +18,8 @@
 //   again only after a write that changes it, or on the tab's Retry;
 // - a detail read is made only for what a screen draws: Changes reads at most
 //   the active change's detail, never one per Focus or Trial; the Queue reads a
-//   case file only for each Pattern it ranks;
+//   case file only for each Pattern it ranks, and for a standalone habit it
+//   holds, whose row prints its case file's count (ADR 528);
 // - the badges' reads (status, Prompts) are shared, and refreshed by the
 //   writes that change them.
 //
@@ -50,6 +51,12 @@ const NO_STATUS = { last_attempt_at: null, last_success_at: null, last_error: nu
 const traceChart = ({ anchor, window_min, pattern, typical }) => ({
   anchor, window_min, pattern: { episodes: pattern.episodes, points: pattern.points }, typical: { points: typical.points },
 });
+
+/** gen_ui_fixtures._case_file: a case file as its card reads it: a Pattern's trace chart (ADR 523), and a
+ *  standalone habit's with the count its card prints, the habit's own claimed of its denominator (ADR 528). */
+const caseFile = (subject, { summary, traces }) => (subject.startsWith('habit:')
+  ? { summary: { claimed: summary.claimed, denominator: summary.denominator, noun: summary.noun }, traces: traceChart(traces) }
+  : { traces: traceChart(traces) });
 
 /** gen_ui_fixtures._ic_blocks: the carb-ratio blocks the engine stages a move for, with the runs they count. */
 const icBlocks = (blocks) => blocks.filter((b) => b.asserts_move).map((b) => ({
@@ -203,21 +210,23 @@ export function createLive({ client, glossary, memory = null }) {
     answers.outcomes = Object.fromEntries(WINDOWS.map((w, i) => [w, served[i]]));
   });
 
-  /** gen_ui_fixtures._pattern_cases: each ranked Pattern's case file, its trace chart (ADR 523). */
+  /** gen_ui_fixtures._cases: each subject's case file, by its key (a Pattern's, or a habit's lever): a
+   *  Pattern's is its own subject, a habit's its finding (ADR 528). */
   async function cases(subjects) {
     if (subjects.length === 0) return {};
     const preparation = await client.fetchDiagnoseFindingCasePreparation();
     const out = {};
     await Promise.all(subjects.map(async (subject) => {
+      const [kind, key] = subject.split(':');
       let answer;
       try {
-        answer = await client.fetchDiagnoseFindingCase({
-          projection_id: preparation.projection_id, finding_id: subject, alignment: 'event' });
+        answer = await client.fetchDiagnoseFindingCase({ projection_id: preparation.projection_id,
+          finding_id: kind === 'habit' ? `finding:${key}` : subject, alignment: 'event' });
       } catch (error) {
         if (error?.status === 404) return; // no inspectable member: no chart, no impact line
         throw error;
       }
-      out[subject.replace(/^pattern:/, '')] = { traces: traceChart(answer.traces) };
+      out[key] = caseFile(subject, answer);
     }));
     return out;
   }
@@ -225,13 +234,16 @@ export function createLive({ client, glossary, memory = null }) {
   const queue = () => once('queue', async () => {
     const [served, guided, analysis, roster, focused] = await Promise.all([
       findings(), guidance(), analyze(), trials(), focus()]);
-    // gen_ui_fixtures._queue_store: the rows a Queue component reads, among them every admitted setting block.
-    const collapsed = new Set(served.outcome_patterns
+    // gen_ui_fixtures._queue_store: the rows a Queue component reads, among them every admitted setting block
+    // and each admitted standalone habit's own row, which its card's tone is read from (ADR 528).
+    const habits = guided.candidates.filter((c) => c.kind === 'habit' && c.admitted).map((c) => c.subject);
+    const habitRows = new Set([...served.outcome_patterns
       .filter((p) => p.collapse === 'collapse_to_member' && p.action)
-      .map((p) => `finding:${p.action.split(':')[1]}`));
-    const rows = served.rows.filter((r) => r.kind === 'pattern' || r.claimed_by || collapsed.has(r.id)
+      .map((p) => `finding:${p.action.split(':')[1]}`), ...habits.map((s) => `finding:${s.split(':')[1]}`)]);
+    const rows = served.rows.filter((r) => r.kind === 'pattern' || r.claimed_by || habitRows.has(r.id)
       || (r.kind === 'setting' && r.members?.length));
-    // Only the Patterns the Queue ranks open into a card; a snoozed one is a row.
+    // Only the Patterns the Queue ranks open into a card; a snoozed one is a row. A habit's row, snoozed
+    // or not, prints the count its case file serves.
     const ranked = guided.candidates
       .filter((c) => c.kind === 'pattern' && c.admitted && !c.preference.set_aside).map((c) => c.subject);
     answers.queue.wearer = {
@@ -240,7 +252,7 @@ export function createLive({ client, glossary, memory = null }) {
       analyze: { basal: stagedSlots(analysis.basal), isf: analysis.isf.slice(0, 1), ic_blocks: icBlocks(analysis.ic_blocks) },
       trials: roster,
       focus: focused,
-      cases: await cases(ranked),
+      cases: await cases([...ranked, ...habits]),
     };
   });
 
@@ -423,13 +435,16 @@ export function createLive({ client, glossary, memory = null }) {
         identities.delete(`undo ${appliedAt}`);
       }, FOLLOW_UP, both);
     },
+    /** Pin a Pattern's habit, or a standalone habit itself: its Focus is its own, with no Pattern and no
+     *  outcome window (ADR 528). */
     pin: async (subject) => {
       const [guided, focused] = await Promise.all([guidance(), focus()]);
       const candidate = guided.candidates.find((c) => c.subject === subject);
+      const target = candidate?.kind === 'habit' ? { lever: candidate.lever }
+        : { pattern_key: candidate?.pattern_key ?? subject.replace(/^pattern:/, ''), outcome_window: WHOLE_DAY };
       await write(async () => {
         await client.pinFocus({
-          pattern_key: candidate?.pattern_key ?? subject.replace(/^pattern:/, ''), outcome_window: WHOLE_DAY,
-          request_id: requestId(`pin ${subject}`), input_revision: focused.input_revision, subject,
+          ...target, request_id: requestId(`pin ${subject}`), input_revision: focused.input_revision, subject,
           analysis_generation: guided.analysis_generation,
         });
         identities.delete(`pin ${subject}`);

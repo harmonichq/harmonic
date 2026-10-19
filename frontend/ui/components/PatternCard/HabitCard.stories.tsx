@@ -1,0 +1,94 @@
+import type { Meta, StoryObj } from '@storybook/react-vite';
+import { expect, fn, userEvent, within } from 'storybook/test';
+import { habitState } from '../../queue-model';
+import { PatternCard } from './PatternCard';
+
+// The HabitCard (§4.2, §2.5 2026-10-19, ADR 528): a standalone habit's open
+// card, which the PatternCard draws from the habit's served data. One story per
+// state, each a served answer the fixture generator picked:
+// - Episodes: the missed-meal QA case, its two rises each drawn. Its two meals
+//   bolused for are too few for a band of three readings, so no Typical.
+// - Band: the wearer skipping the lunch bolus every weekday of four weeks,
+//   more rises than the chart draws one by one, as the habit's median and band.
+// - Pinned: the QA case once its person pinned the habit, the Focus pill in
+//   Pin's place.
+// - Loading: the card's skeleton.
+// Every state at the phone's 390 and the desktop detail pane's 720.
+const meta = {
+  title: 'HabitCard',
+  component: PatternCard,
+  parameters: { frame: { width: 390 } },
+} satisfies Meta<typeof PatternCard>;
+export default meta;
+
+type Story = StoryObj<typeof meta>;
+const DESKTOP = { frame: { width: 720 } };
+
+const episodes = habitState('habit_episodes').data;
+const band = habitState('habit_band').data;
+const pinned = habitState('habit_pinned').data;
+
+/** What every habit card shows: its count, its chart with its episodes named
+ *  Habit (and Typical where the engine serves its band), Snooze beneath, and
+ *  neither an Uncertain tag nor an impact line, which the engine serves only for
+ *  a Pattern. */
+async function habitCard(canvasElement: HTMLElement, data: typeof episodes) {
+  const canvas = within(canvasElement);
+  await expect(canvas.getByRole('heading', { level: 2, name: data.title })).toBeInTheDocument();
+  await expect(canvasElement.querySelector('.ui-pcard__magnitude')!.textContent)
+    .toBe(`${data.magnitude!.count.value}of ${data.magnitude!.denominator.value} ${data.magnitude!.noun}`);
+  const legend = [...canvasElement.querySelectorAll('.ui-chart__legend')].map((key) => key.textContent).join(' ');
+  await expect(legend).toContain('Habit');
+  await expect(legend.includes('Typical')).toBe(data.traces!.typical.length > 0);
+  await expect(legend).not.toContain('Pattern');
+  await expect(canvasElement.querySelector('[data-state="uncertain"], .ui-pcard__impact')).toBeNull();
+  await expect(canvas.getByRole('button', { name: 'Snooze' })).toBeInTheDocument();
+}
+
+/** The chart draws what the engine served: one trace per episode, or one band. */
+const drawn = (data: typeof episodes): Story['play'] => async ({ canvasElement }) => {
+  await habitCard(canvasElement, data);
+  const traces = canvasElement.querySelectorAll('.ui-chart__high .ui-chart__series-trace').length;
+  const bands = canvasElement.querySelectorAll('.ui-chart__high .ui-chart__series-band').length;
+  if (data.traces!.episodes) {
+    await expect(traces).toBeGreaterThanOrEqual(data.traces!.episodes.length);
+    await expect(bands).toBe(0);
+  } else {
+    await expect(traces).toBe(0);
+    await expect(bands).toBeGreaterThan(0);
+  }
+};
+
+/** Unpinned, Pin is the card's one primary, and pressing it asks to pin. */
+const pins: Story['play'] = async (context) => {
+  await drawn(episodes)!(context);
+  const { args, canvasElement } = context;
+  await userEvent.click(within(canvasElement).getByRole('button', { name: 'Pin' }));
+  await expect((args as unknown as { onPin: ReturnType<typeof fn> }).onPin).toHaveBeenCalledOnce();
+};
+
+/** Pinned, the Focus pill takes Pin's place and Snooze stays beneath it. */
+const pinnedPlay: Story['play'] = async ({ canvasElement }) => {
+  await habitCard(canvasElement, pinned);
+  const canvas = within(canvasElement);
+  await expect(canvas.queryByRole('button', { name: 'Pin' })).toBeNull();
+  const pill = canvasElement.querySelector('.ui-pcard__action [data-state="focus"]') as HTMLElement;
+  await expect(pill.textContent).toBe('Focus');
+  const snooze = canvas.getByRole('button', { name: 'Snooze' }).getBoundingClientRect();
+  await expect(snooze.top).toBeGreaterThan(pill.getBoundingClientRect().bottom);
+};
+
+const unpinned = (data: typeof episodes) => ({ data, onPin: fn(), onSnooze: fn() });
+
+export const Episodes: Story = { args: unpinned(episodes), play: pins };
+export const EpisodesDesktop: Story = {
+  args: { ...unpinned(episodes), collapsible: false }, parameters: DESKTOP, play: pins,
+};
+export const Band: Story = { args: unpinned(band), play: drawn(band) };
+export const BandDesktop: Story = { args: { ...unpinned(band), collapsible: false }, parameters: DESKTOP, play: drawn(band) };
+export const Pinned: Story = { args: { data: pinned, onSnooze: fn() }, play: pinnedPlay };
+export const PinnedDesktop: Story = {
+  args: { data: pinned, onSnooze: fn(), collapsible: false }, parameters: DESKTOP, play: pinnedPlay,
+};
+export const Loading: Story = { args: { loading: true } };
+export const LoadingDesktop: Story = { args: { loading: true }, parameters: DESKTOP };

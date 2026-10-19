@@ -22,7 +22,9 @@
 // for the outcomes its Pattern maps to (Peak, Nadir) and the glossary
 // metrics. Its result is the engine's verdict on the habit, so the figure is
 // the row it reads. End at any time. Before any data arrives after the pin,
-// the Focus shows Maturing and its title only. No active change is a label.
+// the Focus shows Maturing and its title only. A Focus pinned on a standalone
+// habit (ADR 528) has no Pattern, so its meta line is its date alone. No active
+// change is a label.
 //
 // `confirm` is what the screen anchors under End once it is pressed: on
 // desktop, the confirmation popover (§1.3a), its arrow on End.
@@ -172,7 +174,9 @@ function Focus({ data, onEnd, confirm }: { data: FocusData } & Ends) {
       </div>
       <h2 className="ui-change__title">
         {data.habit}{' '}
-        <span className="ui-change__meta">{data.pattern} · <span className="ui-change__date"><Num value={data.pinnedAt} /></span></span>
+        <span className="ui-change__meta">
+          {data.pattern && <>{data.pattern} · </>}<span className="ui-change__date"><Num value={data.pinnedAt} /></span>
+        </span>
       </h2>
       {data.adherence && !data.maturing && (
         <div className="ui-change__figure">

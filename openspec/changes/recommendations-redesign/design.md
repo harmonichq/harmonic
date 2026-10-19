@@ -1371,6 +1371,73 @@ fixture loses its row copies, and the scan's dose-ratio baseline is re-recorded
 without the two deleted captures' entries. The backend's drift checks fall from ten
 to five.
 
+## ADR 528 — A standalone habit is its own Queue card, with its case file's chart and count, and a Focus under its own key
+
+**Context.** Guidance serves a habit no Pattern owns as its own candidate,
+`habit:<lever>`, admitted on its scenario Priority. Today that is only the missed
+meal: the outcome roster owns the other six levers. The Queue's model dropped
+every habit, so an admitted missed meal never showed. Its case file served a
+count but no chart. A Focus matched its card only by `pattern_key`, which a habit
+lacks. `POST /api/focus` already pinned a lever, but stored no subject for it, and
+the Focus list and the active watch served a subject only beside a Pattern key.
+The operator decided (#528, 2026-10-19): the count in a Pattern's form, "N of M";
+the approved trace chart; no Uncertain unless the engine serves one; and habits
+get their own Focus key. Then: "The standalone habit card can be built. Now."
+Only a cause choice on a multi-cause Pattern's Pin waits for the drill-down
+(#532).
+
+**Decision.**
+
+- *The chart.* A habit's case file (`finding:<lever>`) serves `traces` in the
+  Pattern card's shape (ADR 523) when its lever is in `_HABIT_TRACE_CHART`.
+  `pattern` holds the episodes the habit claims; `typical` holds its event
+  comparison's comparison cohort. Each is aligned where that comparison aligns
+  it, over the habit's own comparison window. Both cohorts come from
+  `_event_cohorts`, the one membership the event comparison is built from, so
+  the chart is that comparison. For the missed meal, each claimed rise is drawn
+  from its detected onset against the completed carb-bolus meals from their
+  bolus, −60 to 300 minutes, anchor `meal_start`. Bins, the ten-minute lead and
+  the eight-episode cut are ADR 523's. The table holds exactly the levers no
+  Pattern owns, and a test pins that.
+- *The count.* The card prints the case file's `summary`: claimed of
+  denominator, with its noun. That is the habit's own recurrence population. It
+  equals the scenario confidence the guidance prices the habit on, and it is the
+  population the chart draws. The habit's findings row is not read for its
+  count, because its sentences count the exposure feed's attributions per
+  family, over a different denominator. On the wearer who skips weekday lunch
+  boluses, the row says 6 of 26 highs and the case file 6 of 24. The row is read
+  only for its chips, the card's tone, as a Pattern's row is.
+- *No Uncertain, no impact line.* ADR 485's Uncertain is a Pattern's verdict on
+  its admission at the low end of its evidence, and the engine serves none for a
+  standalone habit. The scenario confidence's own `wide` flag is a different
+  fact and is not read as Uncertain.
+- *The Focus key.* Every Focus has one subject: `pattern:<key>` when it carries a
+  Pattern key, else `habit:<lever>` (`watched_change.focus_subject`). Every new
+  pin stores it. The Focus list, the active watch and the pin's retry check all
+  serve or compare it through that one function, so a record from before habits
+  had a key reads as its habit. The live adapter pins a habit by its lever, with
+  the habit's subject and no outcome window, which is a Pattern's scoped
+  admission. The Queue marks a habit pinned by an active Focus under its subject,
+  and a Pattern still by its `pattern_key`.
+- *Changes.* The follow-up comparison's existing lever path follows a habit's
+  Focus: no Pattern key, the fourteen-day elapsed gate, and the lever's own
+  outcome series. Its card names no Pattern.
+
+**Not changed.** Pattern pinning: a Pattern with several habits still pins its
+first pinnable one (`_pinnable_pattern_member`), and no cause chooser is added
+(#532). Guidance admission, priorities and the Queue's order. No analyzer, cap,
+floor or staging predicate changes, and no served suggestion moves.
+
+**Consequences.** The missed-meal comparison fixture's case files carry
+`traces`. The UI fixtures add three stores: `missed-meal`, `missed-meal-pinned`
+(with its Changes) and `wearer-habit`. They trim each habit case file to its
+`summary` and `traces`, keep each admitted habit's findings row, and carry each
+Focus's `subject`, as the live adapter does. A seventh contract leg,
+`behavioral-missed-meal`, asserts the card and pins and ends a habit's Focus.
+"Habit" joins the lock's glossary. The test that asserted a lever pin's active
+watch carried no subject now asserts its habit subject. Its point from #385
+stands: snoozing the habit leaves the watch unchanged.
+
 ## ADR 501 — The Overview's Meal size card reads one 90-day window of the engine's own meals
 
 **Context.** #499 dropped the engine's eating-sequence detectors, and with them its

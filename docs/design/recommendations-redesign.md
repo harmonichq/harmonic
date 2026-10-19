@@ -265,7 +265,7 @@ in §2.
 | State pill | Borderless tinted tag: 18 px, 2 px radius, uppercase 11 px label, the state's tone at 15% fill (Unclear on the rail surface). No outline, so it never reads as a button. Item kinds take no pill: the kind glyph carries Pattern, Habit or Setting. |
 | Badge | 16 px; a count pill or an alert "!". |
 | Caption + value pair | A caption names the value it sits with and reads as one unit with it: stacked, the caption directly above the value, left edges aligned (Nights / Range); or inline, the caption before the value on the value's own baseline (`align-items: baseline`), never centred against it. |
-| Tab bar item / rail item | 44 px target, 24 px glyph above the label. The phone tab bar is 64 px tall above the device's bottom inset (none on a phone without one), its items centred in it (§2.5, 2026-10-14). The selected item carries Material 3's active indicator: a pill behind the icon, 64 x 32 px on the tab bar and 56 x 32 on the rail, fully rounded, `--primary` at 18%, the icon centred in it and the label below it. The icon and label take the accent. Badges stay top-right of the icon, above the pill. The pill fades and scales in over `--ui-motion-standard` and is instant under reduced motion. |
+| Tab bar item / rail item | 44 px target, 24 px glyph above the label. The phone tab bar is 64 px tall above the device's bottom inset (none on a phone without one, and none on Firefox for Android, §2.5 2026-10-19), its items centred in it (§2.5, 2026-10-14). The selected item carries Material 3's active indicator: a pill behind the icon, 64 x 32 px on the tab bar and 56 x 32 on the rail, fully rounded, `--primary` at 18%, the icon centred in it and the label below it. The icon and label take the accent. Badges stay top-right of the icon, above the pill. The pill fades and scales in over `--ui-motion-standard` and is instant under reduced motion. |
 | Sheet | Bottom-attached, 12 px top radius, grabber. |
 | Popover | Anchored to its trigger. |
 | Transient bar | Above the tab bar, label and one text action. |
@@ -1111,6 +1111,28 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   - **The title** is unchanged: "Meal size" in the setting cards' strong title
     style with "90 d" in their meta slot, as "ISF estimate".
 
+- **2026-10-19 — no inset on Firefox for Android (#567).** The operator,
+  with a screenshot of the phone tab bar, "firefox on android": about 60 px
+  of empty bar still sat between the labels and the system navigation bar
+  (3-button navigation, a normal tab). Chrome on the same phone was right.
+  Firefox for Android draws no page under the system navigation bar (Mozilla
+  bug 1813454, open). Since Firefox 150 it still reports that bar's height
+  as the bottom safe-area inset while its address bar is at the top. Mozilla
+  bug 2057232 (open, regressed by bug 1994149) measures 48.3 px with 3-button
+  navigation and 24.15 px with gestures. The bar took that inset, so it
+  reserved the navigation bar a second time. Its root was not the cause: it
+  is `100dvh`, which equals the visible height in every engine tested. On
+  Gecko the bar now takes no device inset, so it is 64 px on Firefox for
+  Android. Every other engine keeps the inset it reports: an iPhone's home
+  indicator (WebKit, in every iPhone browser), and Chrome's edge-to-edge
+  inset. `viewport-fit=cover` stays: Gecko reads it only to set the
+  display-cutout mode, never to decide the CSS inset, so dropping it would
+  not have moved the bar. This is revisited if Firefox for Android starts
+  drawing pages under the navigation bar (bug 1813454). The NavBar stories,
+  the five phone screens and the Queue's HomeIndicatorPhone each assert the
+  bar is 64 px plus its simulated inset, its items 10 px above that inset,
+  and nothing below it (§2.2 Tab bar / rail item, §4.2 NavBar).
+
 ### 2.6 Deferred (not cut)
 Not built in the current screens. The engine still serves what each needs, and
 nothing is removed from the engine or the fixtures for them.
@@ -1161,7 +1183,8 @@ unless noted. Loading is a skeleton of the component's own shape.
 1. **NavBar**: the phone tab bar and the desktop/tablet rail; five items, an
    icon above a label; the selected item has a pill behind its icon (§2.5,
    2026-10-14). The phone tab bar is 64 px above the device's bottom inset,
-   with 24 px glyphs, its items centred in it (§2.5, 2026-10-14).
+   with 24 px glyphs, its items centred in it (§2.5, 2026-10-14); on Firefox
+   for Android it takes no inset (§2.5, 2026-10-19).
    - States: default; item selected; with a count badge; with an alert badge.
    - Fields: `prompts[answer=null]` length, Lows and Rises (Day count); `status.last_error` and
      `status.last_success_at` (Settings alert).

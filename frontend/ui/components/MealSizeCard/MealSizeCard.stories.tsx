@@ -3,14 +3,16 @@ import { expect } from 'storybook/test';
 import { mealSize, type MealSizeData } from '../../overview-model';
 import { MealSizeCard } from './MealSizeCard';
 
-// §4.2 MealSizeCard (ADR 501), each state a store the generator serves
+// §4.2 MealSizeCard (ADR 501, #559), each state a store the generator serves
 // (gen_ui_fixtures._require_meal_sizes fails if one stops):
 // - Populated: the simulated wearer's 84 days, a meal in every size and a few
-//   at 60 g+; phone at 390, desktop at the half pane it shares, and a 320 px phone.
+//   at 60 g+; phone at 390 (the strips, then the rows beneath), desktop at the
+//   Overview's full row (each size one row, its numbers beside its strip), and
+//   a 320 px phone.
 // - Sparse: the same wearer's first five days, one meal at 60 g+.
 // - Empty sizes: the QA showcase, whose meals are all 40 g or more.
 // - No data (the unsynced store) and not yet read (the skeleton).
-// The Overview's own stories show it on the screen, Stale among them.
+// The Overview's own stories show it on the screen beside the estimates.
 const meta = {
   title: 'MealSizeCard',
   component: MealSizeCard,
@@ -19,7 +21,7 @@ const meta = {
 export default meta;
 
 type Story = StoryObj<typeof meta>;
-const DESKTOP = { frame: { width: 560 } };
+const DESKTOP = { frame: { width: 1120 } };
 
 const served = (store: Parameters<typeof mealSize>[0]): MealSizeData => {
   const data = mealSize(store);
@@ -32,15 +34,19 @@ const emptySizes = served('showcase');
 
 /** The least rendered space between two axis labels, so two never read as one. */
 const LABEL_SPACE = 12;
+/** A served median: signed, with a true minus, or "0". */
+const SIGNED = /^([+−]\d+|0)$/;
 
-/** Each row draws one dot per served meal, its median tick when it has a
- *  meal, and its 25–75% band when that spans; no two axis labels touch. */
-const drawn = (data: MealSizeData): Story['play'] => async ({ canvasElement }) => {
+/** Each strip draws one dot per served meal, its median tick when it has a
+ *  meal, and its Range line when that spans; no two axis labels touch; one
+ *  table row per size, each median signed. */
+const drawn = (data: MealSizeData, layout: 'wide' | 'narrow'): Story['play'] => async ({ canvasElement }) => {
+  await expect(canvasElement.querySelector(`.ui-meal-size__body--${layout}`)).not.toBeNull();
   for (const [i, row] of data.rows.entries()) {
-    const g = canvasElement.querySelector(`[data-size="${i}"]`)!;
-    await expect(g.querySelectorAll('.ui-chart__dot').length).toBe(row.climbs.length);
-    await expect(g.querySelectorAll('.ui-chart__median').length).toBe(row.median ? 1 : 0);
-    await expect(g.querySelectorAll('.ui-chart__spread').length)
+    const strip = canvasElement.querySelector(`[data-size="${i}"]`)!;
+    await expect(strip.querySelectorAll('.ui-meal-size__dot').length).toBe(row.climbs.length);
+    await expect(strip.querySelectorAll('.ui-chart__median').length).toBe(row.median ? 1 : 0);
+    await expect(strip.querySelectorAll('.ui-meal-size__range').length)
       .toBe(row.p25 !== null && row.p75 !== null && row.p75 > row.p25 ? 1 : 0);
   }
   const labels = [...canvasElement.querySelectorAll<SVGTextElement>('.ui-chart__tick')]
@@ -48,43 +54,44 @@ const drawn = (data: MealSizeData): Story['play'] => async ({ canvasElement }) =
   for (let i = 1; i < labels.length; i += 1) {
     await expect(labels[i].left - labels[i - 1].right).toBeGreaterThanOrEqual(LABEL_SPACE);
   }
-  // Every dot and mark stays inside the card's chart.
-  const chart = canvasElement.querySelector('.ui-chart')!.getBoundingClientRect();
-  for (const mark of canvasElement.querySelectorAll('.ui-chart__dot, .ui-chart__median, .ui-chart__spread')) {
-    const box = mark.getBoundingClientRect();
-    await expect(box.left).toBeGreaterThanOrEqual(chart.left - 0.5);
-    await expect(box.right).toBeLessThanOrEqual(chart.right + 0.5);
+  const rows = [...canvasElement.querySelectorAll('[role="row"]')].filter((row) => row.querySelector('[role="rowheader"]'));
+  await expect(rows.length).toBe(data.rows.length);
+  for (const climb of canvasElement.querySelectorAll('.ui-meal-size__climb')) {
+    const text = climb.textContent!;
+    if (text !== '–') await expect(text).toMatch(SIGNED);
   }
-  // The table: one row per size, its count, and three medians.
-  await expect(canvasElement.querySelectorAll('tbody tr').length).toBe(data.rows.length);
 };
 
-export const Populated: Story = { args: { data: populated }, play: drawn(populated) };
-export const PopulatedDesktop: Story = { args: { data: populated }, parameters: DESKTOP, play: drawn(populated) };
-export const Narrow: Story = { args: { data: populated }, parameters: { frame: { width: 320 } }, play: drawn(populated) };
+export const Populated: Story = { args: { data: populated }, play: drawn(populated, 'narrow') };
+export const PopulatedDesktop: Story = { args: { data: populated }, parameters: DESKTOP, play: drawn(populated, 'wide') };
+export const Narrow: Story = {
+  args: { data: populated }, parameters: { frame: { width: 320 } }, play: drawn(populated, 'narrow'),
+};
 
-/** One meal at 60 g+: one dot, its median tick, no band, and a count of 1. */
+/** One meal at 60 g+: one dot, its median tick, no Range line, and a count of "1 meal". */
 export const Sparse: Story = {
   args: { data: sparse },
   play: async (context) => {
-    await drawn(sparse)!(context);
+    await drawn(sparse, 'narrow')!(context);
     const last = sparse.rows.length - 1;
     await expect(sparse.rows[last].climbs.length).toBe(1);
     const count = context.canvasElement.querySelector(`[data-source="${sparse.rows[last].meals.source}"]`);
-    await expect(count?.textContent).toBe('1');
+    await expect(count?.parentElement?.textContent).toBe('1 meal');
   },
 };
-export const SparseDesktop: Story = { args: { data: sparse }, parameters: DESKTOP, play: drawn(sparse) };
+export const SparseDesktop: Story = { args: { data: sparse }, parameters: DESKTOP, play: drawn(sparse, 'wide') };
 
 /** A size with no meal keeps its row: its label, no dot, and "–" for each median. */
 export const EmptySizes: Story = {
   args: { data: emptySizes },
+  parameters: DESKTOP,
   play: async (context) => {
-    await drawn(emptySizes)!(context);
+    await drawn(emptySizes, 'wide')!(context);
     const empty = emptySizes.rows.findIndex((row) => row.climbs.length === 0);
     await expect(empty).toBeGreaterThanOrEqual(0);
-    const cells = [...context.canvasElement.querySelectorAll('tbody tr')[empty].querySelectorAll('td')];
-    await expect(cells.map((cell) => cell.querySelector('.ui-meal-size__value')!.textContent)).toEqual(['–', '–', '–']);
+    const rows = [...context.canvasElement.querySelectorAll('[role="row"]')].filter((row) => row.querySelector('[role="rowheader"]'));
+    const cells = [...rows[empty].querySelectorAll('.ui-meal-size__value')];
+    await expect(cells.map((cell) => cell.textContent!.charAt(0))).toEqual(['–', '–', '–']);
   },
 };
 export const NoData: Story = { args: { data: mealSize('wearer-unsynced') } };

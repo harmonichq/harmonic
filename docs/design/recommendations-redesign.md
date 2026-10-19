@@ -167,7 +167,7 @@ the system's own edge-swipe back is left to the platform, never overridden.
 | **Done** | verb | Mark a Setting's change as programmed into the pump. The next sync checks it. |
 | **Waiting for pump** | state | Done, and no sync has shown the pump since. |
 | **Not on pump** | state | The sync after a Done found the Setting unchanged on the pump. |
-| **Range** | noun | The engine's interval for a Setting's estimate. |
+| **Range** | noun | The engine's interval for a Setting's estimate, or the middle half (25–75%) of a meal size's Climbs. |
 | **Uncertain** | state | Not yet clear enough to act on: the evidence behind it is thin. |
 | **Peak / Nadir** | noun | The highest or lowest glucose after an event such as a meal, as the median across the events counted, in mg/dL. |
 | **Typical** | noun | The same for the comparison events: similar events that did not end in the Pattern's or the Habit's outcome. |
@@ -176,7 +176,7 @@ the system's own edge-swipe back is left to the platform, never overridden.
 | **Median** | noun | The middle value: of the profile at that time of day, or of a meal size's meals. |
 | **Meal size** | noun | A meal's carbs in grams: under 25, 25–39, 40–59 or 60 and over. Meal size counts the last 90 days' meals that began at or under 180 mg/dL with glucose flat before the bolus. |
 | **Climb** | metric | How far glucose rose after a meal: its highest reading in the 3 hours after the bolus, before any next meal, less the reading at the bolus, in mg/dL. |
-| **To peak** | metric | Minutes from a meal's bolus to the reading its Climb is read from. |
+| **Peak at** | metric | Minutes from a meal's bolus to the reading its Climb is read from. |
 | **At 3 h** | metric | Glucose 3 hours after a meal's bolus less the reading at the bolus, in mg/dL, for a meal no later meal began within those 3 hours. |
 | **Rise** | noun | Glucose above 250 mg/dL with no meal bolus in the 2.5 hours before it and no low or Suspend it climbed from: carbs the pump may not have been told about. |
 | **Yes / No / False low / Not sure** | answer | The answers to whether carbs were eaten for a low or a rise. False low marks a low's reading itself as invalid; a rise has none. |
@@ -1072,6 +1072,45 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
     neutral Queue impact, and the 2026-10-19 (#554) untoned Δ while a Trial
     matures. Everything else in those amendments stands.
 
+- **2026-10-19 — Meal size fits beside the estimates (#559).** On the
+  built card, the operator: "meal size card is way too big and doesn't match
+  the others color or dimensionally", and that it "doesn't really match the
+  mockup". On desktop it stood three times the ISF and basal cards' height,
+  alone in its row, in a neutral grey band and white tick. The card now
+  follows the approved mock in the setting cards' colours and size:
+  - **Its row.** On desktop it spans the row beneath the ISF and basal
+    estimates, and every row of the cards is one height, which the estimates
+    set (`grid-auto-rows: 1fr`). The grid keeps the lock's two columns, the
+    estimates keep their half, and no row is left half empty. Its content
+    fits inside that height; the Overview's story asserts both. Phone: one
+    column, in proportion with the estimates.
+  - **Each size a thin strip**, about a line of text tall: its meals as small,
+    half-transparent dots, spread at most a dot either side by the chart
+    family's one beeswarm and left to overlap past that; its 25–75% (Range) a
+    thick line in its colour; its median a short ink tick, as the mock draws
+    it. Dots inside the Range draw brighter, the rest recede, as on the ISF
+    card. Faint grid lines at the ticks, a stronger one at 0.
+  - **Colour.** The sizes take a sequential ramp of the estimate blue mixed
+    with ink (40, 60, 80 and 100 %), the smallest lightest, so the card reads
+    in the ISF and basal cards' blue; each size's label carries its swatch.
+    Not the warn tone for 60 g+: warn means "look again" (Not on pump), and
+    the engine judges no size, so no size takes it.
+  - **The numbers on the rows.** Wide (the desktop row), each size is one row
+    aligned like a table: its swatch and bounds over its meal count, its
+    strip, then Climb, Peak at and At 3 h, At 3 h over its own meal count.
+    Narrow (the phone), the strips stand together and the same rows follow
+    beneath them, as in the mock. Values are signed, "+24" and "−6" with a
+    true minus; the old "-6" read as "- 6". The count stays "85 meals" in
+    meta ink at caption size, the app's own count wording ("38 of 137
+    meals"), not the mock's "n 85": "n" is no word the app prints.
+  - **The legend** is the setting cards' style and wording: Meal, Median,
+    Range, on the line beneath the axis with "Climb · mg/dL". "To peak"
+    becomes "Peak at", the mock's column; Range's meaning widens to a size's
+    middle half. The mock's caption and footnote sentences stay off (§2.3
+    ban 1).
+  - **The title** is unchanged: "Meal size" in the setting cards' strong title
+    style with "90 d" in their meta slot, as "ISF estimate".
+
 ### 2.6 Deferred (not cut)
 Not built in the current screens. The engine still serves what each needs, and
 nothing is removed from the engine or the fixtures for them.
@@ -1360,21 +1399,24 @@ unless noted. Loading is a skeleton of the component's own shape.
 
 27. **MealSizeCard** (§2.5, 2026-10-19): how far glucose climbs after meals of
     each size, over the last 90 days whatever window is selected, below the ISF
-    and basal estimates, their size. Titled "Meal size" with the window's days
-    ("90 d") in meta ink. One dot row per size, <25 g, 25–39 g, 40–59 g and
-    60 g+, on one shared Climb axis: a dot per counted meal, the size's 25–75%
-    band and median tick; a zero line; "Climb · mg/dL" beneath the ticks;
-    legend Meal, Median, 25–75%. Beneath, aligned like a table: each size over
-    its meal count, then the medians Climb (mg/dL), To peak (min) and At 3 h
-    (mg/dL), At 3 h over its own meal count. Nothing to act on.
-    - States: populated; a size of one meal (one dot, no band); a size of no
-      meal (its row, "–"); no data ("No data"); not yet read (its skeleton).
+    and basal estimates, their height (§2.5, 2026-10-19 #559). Titled "Meal
+    size" with the window's days ("90 d") in meta ink. One thin strip per size,
+    <25 g, 25–39 g, 40–59 g and 60 g+, each in its shade of the estimate blue,
+    on one shared Climb axis: a half-transparent dot per counted meal, the
+    size's Range a thick line, its median a short ink tick; grid lines at the
+    ticks; "Climb · mg/dL" and the legend Meal, Median, Range beneath the axis.
+    Each size's swatch and bounds over its meal count, then the signed medians
+    Climb, Peak at (min) and At 3 h, At 3 h over its own meal count, aligned
+    like a table: on the strip's row when wide, beneath the strips when narrow.
+    Nothing to act on.
+    - States: populated; a size of one meal (one dot, no Range line); a size of
+      no meal (its row, "–"); no data ("No data"); not yet read (its skeleton).
     - Fields: `meal_size.window.data_days`; `meal_size.sizes[].carbs_from,
       carbs_to, meals[].climb` and its length, `climb.median, p25, p75`,
       `to_peak.median`, `at_3h.median, count`, read from
       `/api/explore/meal-size`.
-    - Desktop: half the Overview's body, in the row after the IsfCard and the
-      BasalCard.
+    - Desktop: the Overview's full width, the row after the IsfCard and the
+      BasalCard, at their height (every row of the cards one height).
 
 **Changes**
 

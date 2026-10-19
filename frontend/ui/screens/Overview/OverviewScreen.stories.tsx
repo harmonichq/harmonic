@@ -96,6 +96,31 @@ const scrolled: Story['play'] = async ({ canvasElement }) => {
 export const ScrolledPhone: Story = { ...story('phone', { store: 'wearer' }), play: scrolled };
 export const ScrolledDesktop: Story = { ...story('desktop', { store: 'wearer' }), play: scrolled };
 
+/** How tall a card's own content is: its last child's foot and the card's
+ *  bottom padding, whatever height the grid stretched it to. */
+const contentHeight = (card: Element) =>
+  [...card.children].at(-1)!.getBoundingClientRect().bottom - card.getBoundingClientRect().top + 16;
+
+/** #559: on desktop the Meal size card spans the row beneath the ISF and basal
+ *  estimates, and all three are one height, which the estimates set: the Meal
+ *  size card's content fits inside it. */
+const oneHeight: Story['play'] = async ({ canvasElement }) => {
+  const [isf, basal, meals] = [...canvasElement.querySelectorAll('.ui-overview__estimates > .ui-scard')];
+  await expect(meals.classList.contains('ui-meal-size')).toBe(true);
+  const heights = [isf, basal, meals].map((card) => card.getBoundingClientRect().height);
+  await expect(Math.abs(heights[0] - heights[2])).toBeLessThan(0.5);
+  await expect(Math.abs(heights[1] - heights[2])).toBeLessThan(0.5);
+  await expect(contentHeight(meals)).toBeLessThanOrEqual(Math.max(contentHeight(isf), contentHeight(basal)) + 0.5);
+  await expect(meals.getBoundingClientRect().width).toBeGreaterThan(isf.getBoundingClientRect().width * 2);
+};
+/** #559: on the phone the Meal size card keeps the estimates' proportions. */
+const inProportion: Story['play'] = async ({ canvasElement }) => {
+  const [, basal, meals] = [...canvasElement.querySelectorAll('.ui-overview__estimates > .ui-scard')];
+  await expect(meals.getBoundingClientRect().height).toBeLessThanOrEqual(basal.getBoundingClientRect().height * 1.4);
+};
+export const EstimatesDesktop: Story = { ...story('desktop', { store: 'wearer' }), play: oneHeight };
+export const EstimatesPhone: Story = { ...story('phone', { store: 'wearer' }), play: inProportion };
+
 /** Choosing 30 d shows that window's metrics, glucose profile and ISF estimate. */
 const choose30: Story['play'] = async ({ canvasElement }) => {
   const canvas = within(canvasElement);

@@ -37,9 +37,9 @@
    matters (a setting's range, a size's 25–75%), receded outside it. */
 .ui-chart__dot { fill: var(--wk-ink-meta); fill-opacity: .55; }
 .ui-chart__dot--in { fill: var(--wk-ink); fill-opacity: 1; }
-/* A dot row's 25–75% behind its dots, and its median across them (#501): neutral
-   ink, since a report's median is no setting's estimate. */
-.ui-chart__spread { fill: var(--wk-ink-meta); fill-opacity: .2; }
+/* A dot row's Range as a thick line in the estimate blue (a Meal size strip
+   takes its size's shade of it), and its median a short ink tick (#501, #559). */
+.ui-chart__range { stroke: var(--ui-estimate); stroke-width: 3; stroke-linecap: round; }
 .ui-chart__median { stroke: var(--wk-ink); stroke-width: 2; }
 
 /* A series' tone: Typical grey; a Pattern in its glucose colour. */

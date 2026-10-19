@@ -1,43 +1,88 @@
 /* The Setting card's surface and title (SettingCard.css, IsfCard.css) and the
-   chart family's marks (Chart.css); only what differs is here (#501). */
+   chart family's axis, grid and median (Chart.css); only what differs is here
+   (#501, #559). */
 
-/* A row's size label, in the chart's gutter. */
-.ui-chart__svg .ui-meal-size__size { fill: var(--wk-ink-body); font-size: var(--ui-type-label); }
+/* The sizes' sequential ramp of the estimate blue, the smallest lightest. */
+.ui-meal-size__s0 { --ui-size: color-mix(in oklab, var(--ui-estimate) 40%, var(--wk-ink)); }
+.ui-meal-size__s1 { --ui-size: color-mix(in oklab, var(--ui-estimate) 60%, var(--wk-ink)); }
+.ui-meal-size__s2 { --ui-size: color-mix(in oklab, var(--ui-estimate) 80%, var(--wk-ink)); }
+.ui-meal-size__s3 { --ui-size: var(--ui-estimate); }
 
-/* The table beneath: aligned like a table, with no rules or cells (§2.5,
-   2026-10-14): the size column left, each median right-aligned in tabular
-   numerals, a caption over its unit, a count beneath its value. */
-.ui-meal-size__table {
-  width: 100%;
-  margin-top: 16px;
-  padding-top: 12px;
-  border-top: 1px solid var(--wk-rule);
-  border-collapse: separate;
-  border-spacing: 0;
-  font-variant-numeric: tabular-nums;
+.ui-meal-size__body { margin-top: 12px; }
+
+/* One grid per block, its rows laid into it, aligned like a table with no
+   rules or cells. */
+.ui-meal-size__grid { display: grid; align-items: center; font-variant-numeric: tabular-nums; }
+.ui-meal-size__row { display: contents; }
+.ui-meal-size__grid--wide {
+  grid-template-columns: max-content minmax(0, 1fr) repeat(3, max-content);
+  column-gap: 20px;
+  row-gap: 4px;
 }
-.ui-meal-size__table th,
-.ui-meal-size__table td { padding: 0; font-weight: var(--ui-weight-regular); text-align: right; vertical-align: top; }
-.ui-meal-size__table th[scope="row"] { text-align: left; }
-.ui-meal-size__table thead th { padding-bottom: 4px; padding-left: 12px; }
-.ui-meal-size__table tbody th,
-.ui-meal-size__table tbody td { padding-top: 10px; }
-.ui-meal-size__table tbody td { padding-left: 12px; }
-.ui-meal-size__table .ui-caption { display: block; line-height: 14px; white-space: nowrap; }
-.ui-meal-size__unit,
+.ui-meal-size__grid--strips {
+  grid-template-columns: max-content minmax(0, 1fr);
+  column-gap: 12px;
+  row-gap: 2px;
+}
+.ui-meal-size__grid--table {
+  grid-template-columns: minmax(0, 1fr) repeat(3, max-content);
+  column-gap: 20px;
+  row-gap: 6px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--wk-rule);
+}
+.ui-meal-size__head > * { text-align: right; white-space: nowrap; }
+.ui-meal-size__head > :first-child { text-align: left; }
+
+/* A size: its swatch and bounds, its meal count beneath. */
+.ui-meal-size__size { display: flex; flex-direction: column; }
+.ui-meal-size__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--wk-ink-body);
+  font-size: var(--ui-type-label);
+  line-height: 20px;
+  white-space: nowrap;
+}
+.ui-meal-size__swatch { width: 10px; height: 10px; border-radius: 2px; background: var(--ui-size); }
 .ui-meal-size__count {
   display: block;
   color: var(--wk-ink-meta);
-  font-size: var(--ui-type-label);
-  line-height: 18px;
+  font-size: var(--ui-type-caption);
+  line-height: 13px;
   white-space: nowrap;
 }
+.ui-meal-size__size .ui-meal-size__count { padding-left: 18px; }
+
+/* A median: body type, right-aligned; At 3 h's count beneath it. */
 .ui-meal-size__value {
-  display: block;
+  align-self: start;
   color: var(--wk-ink);
   font-size: var(--ui-type-body);
-  line-height: 22px;
+  line-height: 20px;
+  text-align: right;
   white-space: nowrap;
 }
+.ui-meal-size__climb { font-weight: var(--ui-weight-strong); }
+.ui-meal-size__unit { color: var(--wk-ink-meta); font-size: var(--ui-type-label); }
 
-.ui-meal-size__skeleton { display: block; height: 320px; margin-top: 16px; }
+/* A size's strip: half-transparent dots in its colour, brighter inside its
+   Range, the Range a thick line through them. */
+.ui-meal-size__strip { display: block; }
+.ui-meal-size__dot { fill: var(--ui-size); fill-opacity: .35; }
+.ui-meal-size__dot--in { fill-opacity: .8; }
+.ui-meal-size__range { stroke: var(--ui-size); stroke-width: 3; stroke-linecap: round; }
+
+/* Beneath the axis: what it measures, and the legend on the same line. */
+.ui-meal-size__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 16px;
+  margin-top: 6px;
+}
+.ui-meal-size__foot .ui-chart__caption { color: var(--wk-ink-meta); font-size: var(--ui-type-caption); }
+.ui-meal-size__foot .ui-chart__legend { margin-top: 0; }

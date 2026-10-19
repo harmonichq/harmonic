@@ -1,5 +1,9 @@
 ## ADR 202 — Meal bolus fell short recurs over completed carb-bolus meals
 
+> Superseded in part by `ADR 553` (`openspec/changes/recommendations-redesign/design.md`):
+> one 70 mg/dL low line, and every lever's attributed count is a subset of its
+> population by construction, so the compatibility clamps below are retired.
+
 Meal bolus fell short makes a claim about an eligible meal dose and its later
 outcome. Its recurrence denominator is therefore the completed carb-bolus meal
 population, rather than the high excursions where the outcome was observed.

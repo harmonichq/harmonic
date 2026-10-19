@@ -42,7 +42,8 @@ from .payload import PreemptedLows
 # floor now live on ``ScenarioConfig`` (``preempted_printed_low_window_min`` /
 # ``preempted_attributability_floor_u`` — the live values the functions read). Kept
 # here as module aliases because the pre-empted-low tests import them. The proximity
-# "near" test reuses the engine's own low-anchor line (``anchor_near_low_mgdl``, 75).
+# "near" test reads its own printed (near-)low line (``preempted_printed_low_mgdl``,
+# 75).
 PRINTED_LOW_WINDOW_MIN = ScenarioConfig().preempted_printed_low_window_min
 ATTRIBUTABILITY_FLOOR_U = ScenarioConfig().preempted_attributability_floor_u
 
@@ -70,13 +71,14 @@ def _printed_low_near(
     entry: CarbEntry, cgm: Sequence[CgmReading],
     *, scenario_config: ScenarioConfig = ScenarioConfig(),
 ) -> bool:
-    """True iff the CGM reached a printed (near-)low (≤ ``gate_low_mgdl``) near ``entry``.
+    """True iff the CGM reached a printed (near-)low (≤ ``preempted_printed_low_mgdl``)
+    near ``entry``.
 
-    Such an entry is a hand-logged printed-low *treatment*, not a pre-empted low —
-    the low the engine would have anchored anyway (ADR 0011 Coverage). Excluded.
+    Such an entry is a hand-logged printed-low *treatment*, not a pre-empted low
+    (ADR 0011 Coverage). Excluded.
     """
     window_min = scenario_config.preempted_printed_low_window_min
-    low_mgdl = scenario_config.anchor_near_low_mgdl
+    low_mgdl = scenario_config.preempted_printed_low_mgdl
     lo = entry.t - timedelta(minutes=window_min)
     hi = entry.t + timedelta(minutes=window_min)
     return any(

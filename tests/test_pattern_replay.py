@@ -88,6 +88,7 @@ EXPECTED_ACTIVE_KINDS = {
     "delivery-basal-legacy-open": "trial",
     "delivery-basal-across-midnight": "trial",
     "delivery-basal-whole-day": "trial",
+    "behavioral-over-treated-near-low": None,
 }
 
 

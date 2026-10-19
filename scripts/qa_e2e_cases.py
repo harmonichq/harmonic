@@ -922,6 +922,23 @@ def _materialize_behavioral_over_treated_low(store) -> None:
     store.upsert_bolus(bolus)
 
 
+def _materialize_behavioral_over_treated_near_low(store) -> None:
+    """The over-treated-low story plus one dip to 72 mg/dL that rebounds to 244 (#553).
+
+    The dip never reaches 70, so it is no low: nothing claims it, and the habit's row,
+    its case file and its price all count the same sub-70 lows.
+    """
+    _materialize_behavioral_over_treated_low(store)
+    day = datetime.combine(date(2024, 5, 1) + timedelta(days=20), datetime.min.time())
+    down = tuple(100.0 - (100.0 - 72.0) * i / 4 for i in range(5))
+    up = tuple(72.0 + (244.0 - 72.0) * i / 8 for i in range(1, 9))
+    values = (100.0,) * 5 + down[1:] + up
+    store.upsert_cgm([{
+        "EventDateTime": (day + timedelta(minutes=13 * 60 + 15 + 5 * i)).strftime("%F %T"),
+        "Readings (CGM / BGM)": value, "Description": "Synthetic EGV",
+    } for i, value in enumerate(values)])
+
+
 def _materialize_behavioral_over_treated_rebound_ownership(store) -> None:
     """Write two Highs an over-treated low's rebound owns and one it does not (#422).
 
@@ -6742,4 +6759,16 @@ QA_CASES += (
     QaCase('delivery-basal-whole-day',
         partial(_materialize_delivery_basal_block_trial, lane=_DELIVERY_WHOLE_DAY),
         _DELIVERY_WHOLE_DAY_EXPECTATION, _DELIVERY_BLOCK_DAYS),
+)
+
+# #553: one low line. The over-treated-low story plus a 72 mg/dL dip that rebounds to
+# 244: no low, so no claim, and every count reads the same sub-70 lows.
+QA_CASES += (
+    QaCase(
+        "behavioral-over-treated-near-low",
+        _materialize_behavioral_over_treated_near_low,
+        next(case for case in QA_CASES
+             if case.name == "behavioral-over-treated-low").expectation,
+        30,
+    ),
 )

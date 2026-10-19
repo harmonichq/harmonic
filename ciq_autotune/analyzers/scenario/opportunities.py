@@ -51,10 +51,7 @@ def build_opportunities(
     Corrections use adjacent pairs in ``(t, seq_num)`` order, so equal-time
     corrections stay distinct and deterministic.
     """
-    anchors = collect_anchors(
-        bolus, cgm, basal, scenario_config=scenario_config,
-        low_mgdl=scenario_config.gate_low_mgdl,
-    )
+    anchors = collect_anchors(bolus, cgm, basal, scenario_config=scenario_config)
     families: dict[Exposure, list[Opportunity]] = {item: [] for item in Exposure}
     for meal in group_meals(bolus, scenario_config=scenario_config):
         families[Exposure.MEALS].append(Opportunity(

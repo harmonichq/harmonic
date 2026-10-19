@@ -59,7 +59,6 @@ from .analyzers.classifiers.user_override import count_overrides
 from .analyzers.scenario_config import ScenarioConfig
 from .analyzers.ic import TARGET_BG, IcConfig, meal_start_bg
 from .analyzers.scenario import (
-    LEVER_EXPOSURE,
     Lever,
     compute_preempted_lows,
     low_prompt_answers,
@@ -1025,7 +1024,7 @@ def summarize_trend(
             w_bolus, ctx_bolus, ctx_cgm, ctx_basal
         )
         for lever in _BEHAVIOR_ORDER:
-            n = exposure_counts.get(LEVER_EXPOSURE[lever], 0)
+            n = exposure_counts.get(policy_for(lever).recurrence_family, 0)
             if lever is Lever.CORRECTION_STACKING:
                 k = min(cs_behavior, n)
                 point = BehaviorPoint(
@@ -1035,9 +1034,9 @@ def summarize_trend(
                     harm=min(cs_harm, k),
                 )
             else:
-                # Legacy Exposure opportunities can omit an actionable episode;
-                # retain their audited served-account clamp.
-                k = min(attributed.get(lever, 0), n)
+                # The claimed members of the lever's recurrence population, so
+                # never above it (#553).
+                k = attributed.get(lever, 0)
                 point = BehaviorPoint(
                     attributed=k, exposure_n=n, problem_rate=(k / n) if n else 0.0
                 )

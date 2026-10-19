@@ -393,9 +393,8 @@ def compare_follow_up(store, *, record, data_cutoff, input_revision, context_mod
         pattern_key = record.get("pattern_key")
         if pattern_key is None and (record.get("subject") or "").startswith("pattern:"):
             pattern_key = record["subject"].split(":", 1)[1]
-        # The published exposure feed uses collect_anchors' near-low population,
-        # not build_opportunities' stricter gate-low population. Preserve full
-        # context through the read cutoff, then assign anchors to exact arms.
+        # Preserve full context through the read cutoff, then assign anchors to
+        # exact arms.
         anchors = (collect_anchors(bolus, cgm, basal,
                    scenario_config=ScenarioConfig(**context["configuration"]))
                    if pattern_key else ())

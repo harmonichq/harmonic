@@ -17109,6 +17109,11 @@
   },
   "glossary": [
     {
+      "kind": "metric",
+      "meaning": "Glucose 3 hours after a meal's bolus less the reading at the bolus, in mg/dL, for a meal no later meal began within those 3 hours.",
+      "term": "At 3 h"
+    },
+    {
       "kind": "noun",
       "meaning": "The insulin the pump delivered steadily through the day, including Control-IQ's changes to the programmed rate.",
       "term": "Basal"
@@ -17122,6 +17127,11 @@
       "kind": "noun",
       "meaning": "A Trial or a Focus. One is active at a time.",
       "term": "Change"
+    },
+    {
+      "kind": "metric",
+      "meaning": "How far glucose rose after a meal: its highest reading in the 3 hours after the bolus, before any next meal, less the reading at the bolus, in mg/dL.",
+      "term": "Climb"
     },
     {
       "kind": "noun",
@@ -17205,7 +17215,12 @@
     },
     {
       "kind": "noun",
-      "meaning": "The middle value of the profile at that time of day.",
+      "meaning": "A meal's carbs in grams: under 25, 25–39, 40–59 or 60 and over. Meal size counts the last 90 days' meals that began at or under 180 mg/dL with glucose flat before the bolus.",
+      "term": "Meal size"
+    },
+    {
+      "kind": "noun",
+      "meaning": "The middle value: of the profile at that time of day, or of a meal size's meals.",
       "term": "Median"
     },
     {
@@ -17282,6 +17297,11 @@
       "kind": "noun",
       "meaning": "The vendor account the data syncs from.",
       "term": "Tandem Source"
+    },
+    {
+      "kind": "metric",
+      "meaning": "Minutes from a meal's bolus to the reading its Climb is read from.",
+      "term": "To peak"
     },
     {
       "kind": "noun",
@@ -19472,6 +19492,182 @@
               "recommended": null
             }
           ]
+        }
+      }
+    },
+    "showcase": {
+      "meal_size": {
+        "horizon_hours": 3,
+        "sizes": [
+          {
+            "at_3h": {
+              "count": 0,
+              "median": null
+            },
+            "carbs_from": null,
+            "carbs_to": 25,
+            "climb": {
+              "median": null,
+              "p25": null,
+              "p75": null
+            },
+            "meals": [],
+            "to_peak": {
+              "median": null
+            }
+          },
+          {
+            "at_3h": {
+              "count": 0,
+              "median": null
+            },
+            "carbs_from": 25,
+            "carbs_to": 40,
+            "climb": {
+              "median": null,
+              "p25": null,
+              "p75": null
+            },
+            "meals": [],
+            "to_peak": {
+              "median": null
+            }
+          },
+          {
+            "at_3h": {
+              "count": 31,
+              "median": 6.400000000000006
+            },
+            "carbs_from": 40,
+            "carbs_to": 60,
+            "climb": {
+              "median": 7.0,
+              "p25": 4.450000000000003,
+              "p75": 9.549999999999997
+            },
+            "meals": [
+              {
+                "climb": -36.80000000000001
+              },
+              {
+                "climb": 12.799999999999997
+              },
+              {
+                "climb": 9.700000000000003
+              },
+              {
+                "climb": 10.5
+              },
+              {
+                "climb": 4.700000000000003
+              },
+              {
+                "climb": 9.5
+              },
+              {
+                "climb": 9.599999999999994
+              },
+              {
+                "climb": 5.5
+              },
+              {
+                "climb": 4.5
+              },
+              {
+                "climb": -0.09999999999999432
+              },
+              {
+                "climb": 2.799999999999997
+              },
+              {
+                "climb": 4.799999999999997
+              },
+              {
+                "climb": 7.0
+              },
+              {
+                "climb": 9.299999999999997
+              },
+              {
+                "climb": 10.900000000000006
+              },
+              {
+                "climb": 1.5999999999999943
+              },
+              {
+                "climb": 7.700000000000003
+              },
+              {
+                "climb": 15.299999999999997
+              },
+              {
+                "climb": 11.799999999999997
+              },
+              {
+                "climb": 6.400000000000006
+              },
+              {
+                "climb": 6.200000000000003
+              },
+              {
+                "climb": 9.200000000000003
+              },
+              {
+                "climb": 6.900000000000006
+              },
+              {
+                "climb": 4.400000000000006
+              },
+              {
+                "climb": 8.099999999999994
+              },
+              {
+                "climb": 0.4000000000000057
+              },
+              {
+                "climb": 3.5999999999999943
+              },
+              {
+                "climb": 9.299999999999997
+              },
+              {
+                "climb": 8.700000000000003
+              },
+              {
+                "climb": 70.0
+              },
+              {
+                "climb": -0.4000000000000057
+              }
+            ],
+            "to_peak": {
+              "median": 5.0
+            }
+          },
+          {
+            "at_3h": {
+              "count": 1,
+              "median": 95.5
+            },
+            "carbs_from": 60,
+            "carbs_to": null,
+            "climb": {
+              "median": 153.0,
+              "p25": 153.0,
+              "p75": 153.0
+            },
+            "meals": [
+              {
+                "climb": 153.0
+              }
+            ],
+            "to_peak": {
+              "median": 120.0
+            }
+          }
+        ],
+        "window": {
+          "data_days": 90
         }
       }
     },
@@ -28065,6 +28261,887 @@
         ],
         "month": "2025-05"
       },
+      "meal_size": {
+        "horizon_hours": 3,
+        "sizes": [
+          {
+            "at_3h": {
+              "count": 55,
+              "median": 32.0
+            },
+            "carbs_from": null,
+            "carbs_to": 25,
+            "climb": {
+              "median": 49.0,
+              "p25": 21.0,
+              "p75": 79.0
+            },
+            "meals": [
+              {
+                "climb": 190.0
+              },
+              {
+                "climb": 60.0
+              },
+              {
+                "climb": 114.0
+              },
+              {
+                "climb": 149.0
+              },
+              {
+                "climb": 42.0
+              },
+              {
+                "climb": 99.0
+              },
+              {
+                "climb": 25.0
+              },
+              {
+                "climb": 46.0
+              },
+              {
+                "climb": 62.0
+              },
+              {
+                "climb": 52.0
+              },
+              {
+                "climb": 96.0
+              },
+              {
+                "climb": -9.0
+              },
+              {
+                "climb": 94.0
+              },
+              {
+                "climb": 8.0
+              },
+              {
+                "climb": 4.0
+              },
+              {
+                "climb": 150.0
+              },
+              {
+                "climb": 99.0
+              },
+              {
+                "climb": -2.0
+              },
+              {
+                "climb": -5.0
+              },
+              {
+                "climb": 10.0
+              },
+              {
+                "climb": 34.0
+              },
+              {
+                "climb": 58.0
+              },
+              {
+                "climb": 13.0
+              },
+              {
+                "climb": 49.0
+              },
+              {
+                "climb": 24.0
+              },
+              {
+                "climb": -6.0
+              },
+              {
+                "climb": 11.0
+              },
+              {
+                "climb": 77.0
+              },
+              {
+                "climb": 39.0
+              },
+              {
+                "climb": 28.0
+              },
+              {
+                "climb": 79.0
+              },
+              {
+                "climb": 79.0
+              },
+              {
+                "climb": 18.0
+              },
+              {
+                "climb": 35.0
+              },
+              {
+                "climb": -3.0
+              },
+              {
+                "climb": 40.0
+              },
+              {
+                "climb": -2.0
+              },
+              {
+                "climb": 26.0
+              },
+              {
+                "climb": 50.0
+              },
+              {
+                "climb": 67.0
+              },
+              {
+                "climb": 95.0
+              },
+              {
+                "climb": -2.0
+              },
+              {
+                "climb": 106.0
+              },
+              {
+                "climb": 86.0
+              },
+              {
+                "climb": -8.0
+              },
+              {
+                "climb": 77.0
+              },
+              {
+                "climb": 0.0
+              },
+              {
+                "climb": 8.0
+              },
+              {
+                "climb": 14.0
+              },
+              {
+                "climb": 59.0
+              },
+              {
+                "climb": 69.0
+              },
+              {
+                "climb": 33.0
+              },
+              {
+                "climb": 28.0
+              },
+              {
+                "climb": 33.0
+              },
+              {
+                "climb": 74.0
+              },
+              {
+                "climb": 69.0
+              },
+              {
+                "climb": 31.0
+              },
+              {
+                "climb": 107.0
+              },
+              {
+                "climb": 122.0
+              },
+              {
+                "climb": 16.0
+              },
+              {
+                "climb": 70.0
+              },
+              {
+                "climb": 81.0
+              },
+              {
+                "climb": 30.0
+              },
+              {
+                "climb": 56.0
+              },
+              {
+                "climb": 86.0
+              },
+              {
+                "climb": 55.0
+              },
+              {
+                "climb": 10.0
+              },
+              {
+                "climb": 28.0
+              },
+              {
+                "climb": 138.0
+              },
+              {
+                "climb": 67.0
+              },
+              {
+                "climb": 27.0
+              },
+              {
+                "climb": 31.0
+              },
+              {
+                "climb": 94.0
+              },
+              {
+                "climb": 54.0
+              },
+              {
+                "climb": 92.0
+              }
+            ],
+            "to_peak": {
+              "median": 110.0
+            }
+          },
+          {
+            "at_3h": {
+              "count": 74,
+              "median": 39.0
+            },
+            "carbs_from": 25,
+            "carbs_to": 40,
+            "climb": {
+              "median": 64.0,
+              "p25": 23.5,
+              "p75": 88.5
+            },
+            "meals": [
+              {
+                "climb": 64.0
+              },
+              {
+                "climb": 62.0
+              },
+              {
+                "climb": 217.0
+              },
+              {
+                "climb": -10.0
+              },
+              {
+                "climb": 85.0
+              },
+              {
+                "climb": 85.0
+              },
+              {
+                "climb": 41.0
+              },
+              {
+                "climb": 150.0
+              },
+              {
+                "climb": -1.0
+              },
+              {
+                "climb": 105.0
+              },
+              {
+                "climb": 121.0
+              },
+              {
+                "climb": 71.0
+              },
+              {
+                "climb": 41.0
+              },
+              {
+                "climb": 110.0
+              },
+              {
+                "climb": 61.0
+              },
+              {
+                "climb": 39.0
+              },
+              {
+                "climb": 69.0
+              },
+              {
+                "climb": -2.0
+              },
+              {
+                "climb": 98.0
+              },
+              {
+                "climb": 73.0
+              },
+              {
+                "climb": 32.0
+              },
+              {
+                "climb": 131.0
+              },
+              {
+                "climb": -7.0
+              },
+              {
+                "climb": 18.0
+              },
+              {
+                "climb": 97.0
+              },
+              {
+                "climb": 3.0
+              },
+              {
+                "climb": 0.0
+              },
+              {
+                "climb": 87.0
+              },
+              {
+                "climb": 49.0
+              },
+              {
+                "climb": 22.0
+              },
+              {
+                "climb": 104.0
+              },
+              {
+                "climb": 4.0
+              },
+              {
+                "climb": 41.0
+              },
+              {
+                "climb": 109.0
+              },
+              {
+                "climb": 18.0
+              },
+              {
+                "climb": -2.0
+              },
+              {
+                "climb": 27.0
+              },
+              {
+                "climb": 158.0
+              },
+              {
+                "climb": 25.0
+              },
+              {
+                "climb": 82.0
+              },
+              {
+                "climb": 88.0
+              },
+              {
+                "climb": 96.0
+              },
+              {
+                "climb": 58.0
+              },
+              {
+                "climb": 70.0
+              },
+              {
+                "climb": -3.0
+              },
+              {
+                "climb": 64.0
+              },
+              {
+                "climb": 51.0
+              },
+              {
+                "climb": 61.0
+              },
+              {
+                "climb": 123.0
+              },
+              {
+                "climb": 14.0
+              },
+              {
+                "climb": 81.0
+              },
+              {
+                "climb": -6.0
+              },
+              {
+                "climb": 64.0
+              },
+              {
+                "climb": 80.0
+              },
+              {
+                "climb": 75.0
+              },
+              {
+                "climb": 12.0
+              },
+              {
+                "climb": 0.0
+              },
+              {
+                "climb": 98.0
+              },
+              {
+                "climb": 82.0
+              },
+              {
+                "climb": 3.0
+              },
+              {
+                "climb": 87.0
+              },
+              {
+                "climb": 90.0
+              },
+              {
+                "climb": 122.0
+              },
+              {
+                "climb": 68.0
+              },
+              {
+                "climb": 87.0
+              },
+              {
+                "climb": 45.0
+              },
+              {
+                "climb": 49.0
+              },
+              {
+                "climb": 29.0
+              },
+              {
+                "climb": 107.0
+              },
+              {
+                "climb": 12.0
+              },
+              {
+                "climb": -11.0
+              },
+              {
+                "climb": 69.0
+              },
+              {
+                "climb": 42.0
+              },
+              {
+                "climb": 30.0
+              },
+              {
+                "climb": 22.0
+              },
+              {
+                "climb": 74.0
+              },
+              {
+                "climb": 6.0
+              },
+              {
+                "climb": 43.0
+              },
+              {
+                "climb": -6.0
+              },
+              {
+                "climb": 117.0
+              },
+              {
+                "climb": 87.0
+              },
+              {
+                "climb": 99.0
+              },
+              {
+                "climb": 86.0
+              },
+              {
+                "climb": 27.0
+              },
+              {
+                "climb": 99.0
+              },
+              {
+                "climb": 99.0
+              },
+              {
+                "climb": 124.0
+              },
+              {
+                "climb": 69.0
+              },
+              {
+                "climb": 74.0
+              },
+              {
+                "climb": 41.0
+              },
+              {
+                "climb": 82.0
+              },
+              {
+                "climb": 42.0
+              },
+              {
+                "climb": 67.0
+              },
+              {
+                "climb": 7.0
+              },
+              {
+                "climb": 118.0
+              },
+              {
+                "climb": 87.0
+              },
+              {
+                "climb": 83.0
+              },
+              {
+                "climb": 21.0
+              },
+              {
+                "climb": 30.0
+              },
+              {
+                "climb": 58.0
+              },
+              {
+                "climb": 122.0
+              },
+              {
+                "climb": 63.0
+              },
+              {
+                "climb": -1.0
+              },
+              {
+                "climb": 92.0
+              },
+              {
+                "climb": -7.0
+              },
+              {
+                "climb": 77.0
+              },
+              {
+                "climb": 89.0
+              },
+              {
+                "climb": 37.0
+              },
+              {
+                "climb": -10.0
+              },
+              {
+                "climb": 99.0
+              },
+              {
+                "climb": -2.0
+              },
+              {
+                "climb": 9.0
+              },
+              {
+                "climb": 120.0
+              },
+              {
+                "climb": 72.0
+              },
+              {
+                "climb": 63.0
+              },
+              {
+                "climb": -7.0
+              },
+              {
+                "climb": 59.0
+              },
+              {
+                "climb": 122.0
+              },
+              {
+                "climb": 35.0
+              },
+              {
+                "climb": 88.0
+              },
+              {
+                "climb": 91.0
+              },
+              {
+                "climb": -13.0
+              },
+              {
+                "climb": 131.0
+              }
+            ],
+            "to_peak": {
+              "median": 110.0
+            }
+          },
+          {
+            "at_3h": {
+              "count": 40,
+              "median": 30.5
+            },
+            "carbs_from": 40,
+            "carbs_to": 60,
+            "climb": {
+              "median": 63.0,
+              "p25": 32.0,
+              "p75": 108.5
+            },
+            "meals": [
+              {
+                "climb": 38.0
+              },
+              {
+                "climb": 70.0
+              },
+              {
+                "climb": 114.0
+              },
+              {
+                "climb": 79.0
+              },
+              {
+                "climb": 105.0
+              },
+              {
+                "climb": 33.0
+              },
+              {
+                "climb": 126.0
+              },
+              {
+                "climb": 22.0
+              },
+              {
+                "climb": 20.0
+              },
+              {
+                "climb": 21.0
+              },
+              {
+                "climb": 54.0
+              },
+              {
+                "climb": 89.0
+              },
+              {
+                "climb": 17.0
+              },
+              {
+                "climb": 48.0
+              },
+              {
+                "climb": 130.0
+              },
+              {
+                "climb": 73.0
+              },
+              {
+                "climb": 68.0
+              },
+              {
+                "climb": 28.0
+              },
+              {
+                "climb": 116.0
+              },
+              {
+                "climb": 231.0
+              },
+              {
+                "climb": 153.0
+              },
+              {
+                "climb": 78.0
+              },
+              {
+                "climb": 75.0
+              },
+              {
+                "climb": 110.0
+              },
+              {
+                "climb": 104.0
+              },
+              {
+                "climb": 151.0
+              },
+              {
+                "climb": 131.0
+              },
+              {
+                "climb": 31.0
+              },
+              {
+                "climb": 13.0
+              },
+              {
+                "climb": 50.0
+              },
+              {
+                "climb": -4.0
+              },
+              {
+                "climb": 70.0
+              },
+              {
+                "climb": 57.0
+              },
+              {
+                "climb": 61.0
+              },
+              {
+                "climb": 63.0
+              },
+              {
+                "climb": 57.0
+              },
+              {
+                "climb": 154.0
+              },
+              {
+                "climb": 19.0
+              },
+              {
+                "climb": 43.0
+              },
+              {
+                "climb": 97.0
+              },
+              {
+                "climb": -4.0
+              },
+              {
+                "climb": 51.0
+              },
+              {
+                "climb": 107.0
+              },
+              {
+                "climb": 46.0
+              },
+              {
+                "climb": 54.0
+              },
+              {
+                "climb": 100.0
+              },
+              {
+                "climb": 126.0
+              },
+              {
+                "climb": 7.0
+              },
+              {
+                "climb": 146.0
+              },
+              {
+                "climb": 232.0
+              },
+              {
+                "climb": 104.0
+              },
+              {
+                "climb": 10.0
+              },
+              {
+                "climb": 30.0
+              },
+              {
+                "climb": 47.0
+              },
+              {
+                "climb": 132.0
+              },
+              {
+                "climb": 63.0
+              },
+              {
+                "climb": 19.0
+              },
+              {
+                "climb": 48.0
+              },
+              {
+                "climb": 194.0
+              },
+              {
+                "climb": 24.0
+              },
+              {
+                "climb": -6.0
+              },
+              {
+                "climb": 152.0
+              },
+              {
+                "climb": 81.0
+              }
+            ],
+            "to_peak": {
+              "median": 115.0
+            }
+          },
+          {
+            "at_3h": {
+              "count": 3,
+              "median": 34.0
+            },
+            "carbs_from": 60,
+            "carbs_to": null,
+            "climb": {
+              "median": 67.5,
+              "p25": 64.0,
+              "p75": 79.25
+            },
+            "meals": [
+              {
+                "climb": 63.0
+              },
+              {
+                "climb": 67.0
+              },
+              {
+                "climb": 83.0
+              },
+              {
+                "climb": 36.0
+              },
+              {
+                "climb": 124.0
+              },
+              {
+                "climb": 68.0
+              }
+            ],
+            "to_peak": {
+              "median": 122.5
+            }
+          }
+        ],
+        "window": {
+          "data_days": 90
+        }
+      },
       "time_of_day": {
         "14": {
           "pooled": {
@@ -31059,6 +32136,134 @@
       }
     },
     "wearer-first-days": {
+      "meal_size": {
+        "horizon_hours": 3,
+        "sizes": [
+          {
+            "at_3h": {
+              "count": 4,
+              "median": 52.5
+            },
+            "carbs_from": null,
+            "carbs_to": 25,
+            "climb": {
+              "median": 106.5,
+              "p25": 69.75,
+              "p75": 140.25
+            },
+            "meals": [
+              {
+                "climb": 190.0
+              },
+              {
+                "climb": 60.0
+              },
+              {
+                "climb": 114.0
+              },
+              {
+                "climb": 149.0
+              },
+              {
+                "climb": 42.0
+              },
+              {
+                "climb": 99.0
+              }
+            ],
+            "to_peak": {
+              "median": 117.5
+            }
+          },
+          {
+            "at_3h": {
+              "count": 2,
+              "median": 94.5
+            },
+            "carbs_from": 25,
+            "carbs_to": 40,
+            "climb": {
+              "median": 64.0,
+              "p25": 62.0,
+              "p75": 85.0
+            },
+            "meals": [
+              {
+                "climb": 64.0
+              },
+              {
+                "climb": 62.0
+              },
+              {
+                "climb": 217.0
+              },
+              {
+                "climb": -10.0
+              },
+              {
+                "climb": 85.0
+              }
+            ],
+            "to_peak": {
+              "median": 110.0
+            }
+          },
+          {
+            "at_3h": {
+              "count": 2,
+              "median": 30.0
+            },
+            "carbs_from": 40,
+            "carbs_to": 60,
+            "climb": {
+              "median": 74.5,
+              "p25": 62.0,
+              "p75": 87.75
+            },
+            "meals": [
+              {
+                "climb": 38.0
+              },
+              {
+                "climb": 70.0
+              },
+              {
+                "climb": 114.0
+              },
+              {
+                "climb": 79.0
+              }
+            ],
+            "to_peak": {
+              "median": 110.0
+            }
+          },
+          {
+            "at_3h": {
+              "count": 1,
+              "median": 13.0
+            },
+            "carbs_from": 60,
+            "carbs_to": null,
+            "climb": {
+              "median": 63.0,
+              "p25": 63.0,
+              "p75": 63.0
+            },
+            "meals": [
+              {
+                "climb": 63.0
+              }
+            ],
+            "to_peak": {
+              "median": 115.0
+            }
+          }
+        ],
+        "window": {
+          "data_days": 90
+        }
+      },
       "time_of_day": {
         "14": {
           "pooled": {
@@ -34069,6 +35274,80 @@
     "wearer-unsynced": {
       "guidance": {
         "disposition": "unavailable"
+      },
+      "meal_size": {
+        "horizon_hours": 3,
+        "sizes": [
+          {
+            "at_3h": {
+              "count": 0,
+              "median": null
+            },
+            "carbs_from": null,
+            "carbs_to": 25,
+            "climb": {
+              "median": null,
+              "p25": null,
+              "p75": null
+            },
+            "meals": [],
+            "to_peak": {
+              "median": null
+            }
+          },
+          {
+            "at_3h": {
+              "count": 0,
+              "median": null
+            },
+            "carbs_from": 25,
+            "carbs_to": 40,
+            "climb": {
+              "median": null,
+              "p25": null,
+              "p75": null
+            },
+            "meals": [],
+            "to_peak": {
+              "median": null
+            }
+          },
+          {
+            "at_3h": {
+              "count": 0,
+              "median": null
+            },
+            "carbs_from": 40,
+            "carbs_to": 60,
+            "climb": {
+              "median": null,
+              "p25": null,
+              "p75": null
+            },
+            "meals": [],
+            "to_peak": {
+              "median": null
+            }
+          },
+          {
+            "at_3h": {
+              "count": 0,
+              "median": null
+            },
+            "carbs_from": 60,
+            "carbs_to": null,
+            "climb": {
+              "median": null,
+              "p25": null,
+              "p75": null
+            },
+            "meals": [],
+            "to_peak": {
+              "median": null
+            }
+          }
+        ],
+        "window": null
       },
       "outcomes": {
         "14": {

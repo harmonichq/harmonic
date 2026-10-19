@@ -40,6 +40,7 @@ from .explore_exposures import build_exposures
 from .explore_time_of_day import DATA_DAYS as TIME_OF_DAY_DAYS
 from .explore_time_of_day import DEFAULT_DATA_DAYS as TIME_OF_DAY_DEFAULT_DAYS
 from .explore_time_of_day import build_time_of_day
+from .meal_size import build_meal_size
 from .events import CarbEntry, parse_t
 from . import findings_projection as findings_projection_module
 from .findings_projection import prepare_findings_projection
@@ -141,7 +142,7 @@ def _analysis_payload(result) -> dict:
 # Trial roster, the watched change and the pattern sweep read follow-up state,
 # and are deliberately absent.
 _RECORDED_DATA_RESULTS = frozenset((
-    "analyze", "scenarios", "exposures", "explore-time-of-day",
+    "analyze", "scenarios", "exposures", "explore-time-of-day", "meal-size",
     "findings-history-snapshot", "outcomes", "day-navigator", "model-view",
     "timeline", "catalog",
 ))
@@ -766,6 +767,13 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                                 detail=f"days must be one of {list(TIME_OF_DAY_DAYS)}")
         return fixed_response(fixed(("explore-time-of-day", days), "time-of-day-v1",
                                     lambda store: build_time_of_day(store, days=days)))
+
+    @app.get("/api/explore/meal-size")
+    def explore_meal_size_endpoint(_: None = Depends(require_token)) -> dict:
+        """The Overview's Meal size card (#501, ADR 501): the climb after each
+        counted meal of the last 90 days, by size, and each size's medians. It
+        reads only recorded data, so it is one fixed result."""
+        return fixed_response(fixed(("meal-size",), "meal-size-v1", build_meal_size))
 
     @app.get("/api/explore/exposures")
     def explore_exposures_endpoint(_: None = Depends(require_token)) -> dict:
@@ -1686,6 +1694,8 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             *((f"analyze-{days}", lambda days=days: analyze_endpoint(
                 window=days, ignore_changes=False, pool=False))
               for days in TIME_OF_DAY_DAYS if days != 30),
+            # The Overview's Meal size card, which reads one fixed 90 days.
+            ("meal-size", lambda: explore_meal_size_endpoint()),
             ("day-navigator", lambda: day_navigator_endpoint()),
             ("day-latest", warm_day(0)),
             ("day-before-latest", warm_day(1)),

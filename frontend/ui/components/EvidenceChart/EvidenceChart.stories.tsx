@@ -25,7 +25,7 @@ const argsOf = ({ dots, roster, field, current, estimate, lo, hi, units, axis }:
 
 /** No two dots overlap, however many share a value. */
 const dotsClear: Story['play'] = async ({ canvasElement }) => {
-  const dots = [...canvasElement.querySelectorAll<SVGCircleElement>('.ui-evidence__dot')]
+  const dots = [...canvasElement.querySelectorAll<SVGCircleElement>('.ui-chart__dot')]
     .map((dot) => [Number(dot.getAttribute('cx')), Number(dot.getAttribute('cy'))]);
   const touching = dots.filter(([x, y], i) => dots.some(([u, v], j) => j > i && Math.hypot(u - x, v - y) < 5.5));
   await expect(touching.length).toBe(0);

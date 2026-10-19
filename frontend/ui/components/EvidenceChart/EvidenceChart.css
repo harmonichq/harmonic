@@ -1,3 +1,0 @@
-/* The dots; the axis, marks and band are the chart family's (Chart.css). */
-.ui-evidence__dot { fill: var(--wk-ink-meta); fill-opacity: .55; }
-.ui-evidence__dot--in { fill: var(--wk-ink); fill-opacity: 1; }

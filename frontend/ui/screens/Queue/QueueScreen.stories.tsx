@@ -327,7 +327,7 @@ const isfPlay: Story['play'] = async ({ canvasElement }) => {
   // Every fasting night is a dot, or counted at the end of the axis it lies beyond.
   const beyond = [...canvasElement.querySelectorAll('.ui-isf [data-edge]')]
     .reduce((sum, edge) => sum + Number(edge.textContent!.replace(/\D/g, '')), 0);
-  await expect(canvasElement.querySelectorAll('.ui-isf .ui-evidence__dot').length + beyond).toBe(isf.data.fits.length);
+  await expect(canvasElement.querySelectorAll('.ui-isf .ui-chart__dot').length + beyond).toBe(isf.data.fits.length);
   const captions = [...canvasElement.querySelectorAll('.ui-isf .ui-scard__facts dt')].map((dt) => dt.textContent);
   await expect(captions).toEqual(['Estimate', 'Range', 'Fasting nights']);
   await expect(within(canvasElement.querySelector('.ui-isf') as HTMLElement).getByRole('button', { name: 'Snooze' }))
@@ -386,7 +386,7 @@ const settingPlay = (title: string, units: string): Story['play'] => async ({ ca
   await expect(canvas.getAllByText(units).length).toBeGreaterThan(0);
   const captions = [...canvasElement.querySelectorAll('.ui-scard__facts dt')].map((dt) => dt.textContent);
   await expect(captions).toEqual(['Estimate', 'Range', 'Meal runs']);
-  await expect(canvasElement.querySelectorAll('.ui-evidence__dot').length).toBeGreaterThan(0);
+  await expect(canvasElement.querySelectorAll('.ui-chart__dot').length).toBeGreaterThan(0);
 };
 export const IcSettingPhone: Story = { ...story('phone', { store: IC_STORE, open: 'setting:carb_ratio' }), play: settingPlay('I:C', 'g/U') };
 export const IcSettingDesktop: Story = { ...story('desktop', { store: IC_STORE, open: 'setting:carb_ratio' }), play: settingPlay('I:C', 'g/U') };

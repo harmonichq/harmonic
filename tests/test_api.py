@@ -1608,6 +1608,7 @@ class CachePreWarmTest(unittest.TestCase):
         ("scenarios", "ciq_autotune.analyzers.scenario", "build_scenarios"),
         ("exposures", "ciq_autotune.api", "build_exposures"),
         ("explore-time-of-day", "ciq_autotune.api", "build_time_of_day"),
+        ("meal-size", "ciq_autotune.api", "build_meal_size"),
         ("outcomes", "ciq_autotune.outcomes", "summarize_outcomes"),
         ("finding-case-file", "ciq_autotune.api", "prepare_finding_cases"),
         ("trials", "ciq_autotune.watched_change", "review_trials"),
@@ -1665,6 +1666,8 @@ class CachePreWarmTest(unittest.TestCase):
             ("/api/explore/time-of-day", {"days": 90}),
             ("/api/analyze", {"window": 14}),
             ("/api/analyze", {"window": 90}),
+            # The Overview's Meal size card, over its one 90-day window.
+            ("/api/explore/meal-size", {}),
             # The Day screen: its navigator, then the latest day and the one before.
             ("/api/day-navigator", {}),
             ("/api/timeline", {"start": "2026-06-05T00:00:00", "end": "2026-06-06T00:00:00"}),
@@ -2015,7 +2018,8 @@ class CachePreWarmTest(unittest.TestCase):
             self.assertEqual(after_warm, {"analyze": 4,
                                           "outcomes-trend": 0, "scenarios": 1,
                                           "exposures": 1,
-                                          "explore-time-of-day": 3, "outcomes": 3,
+                                          "explore-time-of-day": 3, "meal-size": 1,
+                                          "outcomes": 3,
                                           "finding-case-file": 1, "trials": 1,
                                           "day-navigator": 1, "model-view": 2,
                                           "timeline": 2})
@@ -2026,6 +2030,7 @@ class CachePreWarmTest(unittest.TestCase):
                 ("explore-time-of-day", 14),
                 ("explore-time-of-day", 30), ("explore-time-of-day", 90),
                 ("outcomes", 14), ("outcomes", 30), ("outcomes", 90),
+                ("meal-size",),
                 ("scenarios", 30), ("exposures",),
                 ("finding-case-file",),
                 ("day-navigator", None),

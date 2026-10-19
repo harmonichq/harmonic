@@ -33,6 +33,15 @@
 .ui-chart__estimate-label { fill: var(--ui-estimate); font-weight: var(--ui-weight-strong); }
 .ui-chart__word { font-weight: var(--ui-weight-regular); }
 
+/* A dot row's dots (EvidenceChart, MealSizeCard): bright inside the band that
+   matters (a setting's range, a size's 25–75%), receded outside it. */
+.ui-chart__dot { fill: var(--wk-ink-meta); fill-opacity: .55; }
+.ui-chart__dot--in { fill: var(--wk-ink); fill-opacity: 1; }
+/* A dot row's 25–75% behind its dots, and its median across them (#501): neutral
+   ink, since a report's median is no setting's estimate. */
+.ui-chart__spread { fill: var(--wk-ink-meta); fill-opacity: .2; }
+.ui-chart__median { stroke: var(--wk-ink); stroke-width: 2; }
+
 /* A series' tone: Typical grey; a Pattern in its glucose colour. */
 .ui-chart__typical { --ui-series: var(--wk-ink-meta); }
 .ui-chart__high { --ui-series: var(--glucose-high); }

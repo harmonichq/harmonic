@@ -6,6 +6,7 @@
 // answers sit under `overview.<store>`. The glucose profile and the ISF
 // estimate are served per window, under `time_of_day.<window>` and
 // `analyze.<window>`; a window the live adapter has not read yet is absent.
+// The Meal size card reads one fixed window, under `meal_size`.
 import { answers, sourced, type Format, type Sourced } from './answers';
 import { formatValue } from './provenance.js';
 import { PARAMETER_FORMATS, PARAMETER_UNITS } from './settings-model';
@@ -278,6 +279,77 @@ export function isfState(name: 'supported' | 'held' | 'uncertain' | 'edges'): Is
   const data = isfEstimate(store as OverviewStore, window as Window);
   if (!data || data === 'none') throw new Error(`${store} serves no ISF estimate at ${window} d`);
   return data;
+}
+
+// --- MealSizeCard --------------------------------------------------------------
+
+/** One meal size, as the engine serves it (#501, ADR 501): its carbs bound
+ *  (`from` ≤ carbs < `to`, either open), each counted meal's climb, and the
+ *  medians the table prints. Nothing here is computed: the bar is the served
+ *  25th–75th percentiles, the tick the served median. */
+export type MealSizeRow = {
+  /** The label's bounds: "<25 g" (no `from`), "25–39 g" (`last` = to − 1), "60 g+" (no `to`). */
+  from: Sourced<number> | null;
+  to: Sourced<number> | null;
+  last: Sourced<number> | null;
+  /** One dot per counted meal, at its climb (mg/dL). */
+  climbs: number[];
+  /** The served median and 25th–75th percentiles of the climbs; null with no meal. */
+  median: Sourced<number> | null;
+  p25: number | null;
+  p75: number | null;
+  toPeak: Sourced<number> | null;
+  at3h: Sourced<number> | null;
+  /** How many meals the row counts, and how many of them At 3 h was read from. */
+  meals: Sourced<number>;
+  at3hMeals: Sourced<number>;
+};
+export type MealSizeData = {
+  days: Sourced<number>;
+  /** The hours At 3 h is read at, the engine's own horizon. */
+  hours: Sourced<number>;
+  rows: MealSizeRow[];
+};
+
+type MealSizeAnswer = {
+  window: { data_days: number } | null;
+  horizon_hours: number;
+  sizes: {
+    carbs_from: number | null; carbs_to: number | null; meals: { climb: number }[];
+    climb: { median: number | null; p25: number | null; p75: number | null };
+    to_peak: { median: number | null };
+    at_3h: { count: number; median: number | null };
+  }[];
+};
+
+/** The Meal size card, over its one window: null when it has not been read
+ *  yet, 'none' when the engine counts no meal in it. */
+export function mealSize(store: OverviewStore): MealSizeData | 'none' | null {
+  const served = (answers.overview[store] as { meal_size?: MealSizeAnswer }).meal_size;
+  if (!served) return null;
+  if (!served.window || served.sizes.every((size) => size.meals.length === 0)) return 'none';
+  const root = `overview.${store}.meal_size`;
+  const median = (path: string, value: number | null) => (value === null ? null : sourced<number>(path, 'round'));
+  return {
+    days: sourced(`${root}.window.data_days`),
+    hours: sourced(`${root}.horizon_hours`),
+    rows: served.sizes.map((size, i) => {
+      const at = `${root}.sizes.${i}`;
+      return {
+        from: size.carbs_from === null ? null : sourced(`${at}.carbs_from`),
+        to: size.carbs_to === null ? null : sourced(`${at}.carbs_to`),
+        last: size.carbs_from === null || size.carbs_to === null ? null : sourced(`${at}.carbs_to − 1`),
+        climbs: size.meals.map((meal) => meal.climb),
+        median: median(`${at}.climb.median`, size.climb.median),
+        p25: size.climb.p25,
+        p75: size.climb.p75,
+        toPeak: median(`${at}.to_peak.median`, size.to_peak.median),
+        at3h: median(`${at}.at_3h.median`, size.at_3h.median),
+        meals: sourced(`${at}.meals.length`),
+        at3hMeals: sourced(`${at}.at_3h.count`),
+      };
+    }),
+  };
 }
 
 // --- DayRibbon ---------------------------------------------------------------

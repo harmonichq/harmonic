@@ -78,6 +78,15 @@ const basalSlots = (basal) => basal.map((b) => ({
   estimate: b.estimate && { value: b.estimate.value, lo: b.estimate.lo, hi: b.estimate.hi },
 }));
 
+/** gen_ui_fixtures._meal_size: the Meal size card's answer, each meal kept as the dot it draws (its climb),
+ *  and the window as the days its title prints (#501). */
+const mealSizes = ({ window, horizon_hours, sizes }) => ({
+  window: window && { data_days: window.data_days },
+  horizon_hours,
+  sizes: sizes.map(({ carbs_from, carbs_to, meals, climb, to_peak, at_3h }) => ({
+    carbs_from, carbs_to, meals: meals.map((meal) => ({ climb: meal.climb })), climb, to_peak, at_3h })),
+});
+
 /** The model-view trimmed to what the Day chart marks: the day's findings,
  *  each anchor's time, kind and glucose and the habits it counts toward
  *  (mirrors gen_ui_fixtures.model_view_marks). */
@@ -189,6 +198,10 @@ export function createLive({ client, glossary, memory = null }) {
   const isf = (window) => once(`isf ${window}`, async () => {
     const answer = window === DEFAULT_ANALYSIS ? await analyze() : await client.fetchAnalysis(Number(window));
     answers.overview.wearer.analyze[window] = { isf: answer.isf.slice(0, 1), basal: basalSlots(answer.basal) };
+  });
+  /** The Meal size card, over its one 90-day window whatever window the Overview shows (#501). */
+  const mealSize = () => once('meal-size', async () => {
+    answers.overview.wearer.meal_size = mealSizes(await client.fetchMealSize());
   });
   /** What the Overview reads for a window it shows: its profile and its ISF and basal estimates. */
   const overviewWindow = (window) => Promise.all([timeOfDay(window), isf(window)]);
@@ -322,8 +335,8 @@ export function createLive({ client, glossary, memory = null }) {
   const TABS = {
     queue: { read: queue, keys: ['queue', 'findings', 'guidance', 'analyze', 'trials', 'focus'] },
     changes: { read: changes, keys: ['changes', 'trials'] },
-    overview: { read: () => Promise.all([outcomes(), overviewWindow(FIRST_WINDOW)]),
-      keys: ['outcomes', ...WINDOWS.flatMap((w) => [`time-of-day ${w}`, `isf ${w}`])] },
+    overview: { read: () => Promise.all([outcomes(), mealSize(), overviewWindow(FIRST_WINDOW)]),
+      keys: ['outcomes', 'meal-size', ...WINDOWS.flatMap((w) => [`time-of-day ${w}`, `isf ${w}`])] },
     // Day reads the engine's one target range, which every window's profile serves; the Overview's first.
     day: { read: () => Promise.all([navigator(), timeOfDay(FIRST_WINDOW)]),
       keys: ['navigator', `time-of-day ${FIRST_WINDOW}`] },

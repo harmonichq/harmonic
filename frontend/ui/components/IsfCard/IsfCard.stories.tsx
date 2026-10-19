@@ -73,7 +73,7 @@ export const EdgeCounts: Story = {
     const edges = [...canvasElement.querySelectorAll<SVGTextElement>('[data-edge]')];
     await expect(edges.map((edge) => edge.dataset.edge).sort()).toEqual(['above', 'below']);
     const marks = [...canvasElement.querySelectorAll<SVGGraphicsElement>(
-      '.ui-evidence__dot, .ui-chart__band, .ui-chart__current, .ui-chart__estimate')];
+      '.ui-chart__dot, .ui-chart__band, .ui-chart__current, .ui-chart__estimate')];
     for (const edge of edges) {
       const box = edge.getBoundingClientRect();
       await expect(marks.filter((mark) => overlaps(box, mark.getBoundingClientRect())).length).toBe(0);

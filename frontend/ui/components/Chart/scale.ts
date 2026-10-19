@@ -1,7 +1,8 @@
 // The chart family's one scale (§2.2 Charts, ADR 523): the round ticks an axis
-// covers its marks with, which of them keep a label, and the paths a line or a
-// band is drawn with. EvidenceChart, TraceChart, BasalCard's day chart and
-// ChangeTrace all read this module, so their axes snap, label and break the
+// covers its marks with, which of them keep a label, the paths a line or a
+// band is drawn with, and the dot row's beeswarm. EvidenceChart, TraceChart,
+// BasalCard's day chart, ChangeTrace and MealSizeCard all read this module, so
+// their axes snap, label and break the same way and every dot row spreads the
 // same way; the glucose axis itself is glucose-zones' one rule.
 
 const STEPS = [0.01, 0.02, 0.025, 0.05, 0.1, 0.2, 0.25, 0.5, 1, 2, 2.5, 5, 10, 20, 25, 50, 100, 200, 250, 500];
@@ -58,3 +59,27 @@ export const linePath = (points: readonly [number, number][]) =>
 /** One closed SVG area between an upper and a lower edge over the same xs. */
 export const bandPath = (points: readonly [number, number, number][]) => `${linePath(points.map(([x, upper]) => [x, upper]))} ${
   [...points].reverse().map(([x, , lower]) => `L${x.toFixed(1)},${lower.toFixed(1)}`).join(' ')} Z`;
+
+/** A dot row's dot radius, and the pitch from one dot to the next: a 6 px dot and its gap. */
+export const DOT_R = 3;
+export const DOT_PITCH = 6.6;
+
+/** A symmetric beeswarm (ADR 523): each dot, left to right, takes the level
+ *  nearest the row where it touches no dot already placed, at most `maxLevels`
+ *  either side (the outermost when none is free). Returns each dot's level,
+ *  in the order of `xs`. */
+export function swarm(xs: number[], maxLevels = 5): number[] {
+  const order = xs.map((x, i) => ({ x, i })).sort((a, b) => a.x - b.x);
+  const placed: { x: number; level: number }[] = [];
+  const levels = new Array<number>(xs.length);
+  for (const { x, i } of order) {
+    let chosen = 0;
+    for (let k = 0; k <= 2 * maxLevels; k += 1) {
+      chosen = k === 0 ? 0 : (k % 2 ? -1 : 1) * Math.ceil(k / 2);
+      if (!placed.some((p) => Math.hypot(p.x - x, (p.level - chosen) * DOT_PITCH) < DOT_PITCH - 0.4)) break;
+    }
+    placed.push({ x, level: chosen });
+    levels[i] = chosen;
+  }
+  return levels;
+}

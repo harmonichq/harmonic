@@ -210,7 +210,12 @@ recommended only when the analyzer's ISF staging verdict supports the change,
 and beside it, the same size, the basal estimate: the day's 48 half-hour slots,
 the programmed rate stepped, each slot's estimate over its range, and a mark on
 each slot whose staging verdict asserts a move, in its served direction (ADR 523).
-Overview SHALL carry nothing to act on.
+Below them, the same size, it SHALL show Meal size over the last 90 days whatever
+window is selected: one dot row per size on one Climb axis, a dot per counted meal
+with the size's served 25–75% and median, and beneath, aligned like a table, each
+size's meal count and median Climb, To peak and At 3 h, At 3 h over its own count.
+It SHALL compute none of these and print no explanatory text (ADR 501). Overview
+SHALL carry nothing to act on.
 
 #### Scenario: A held ISF shows its estimate without a recommendation
 
@@ -224,6 +229,13 @@ Overview SHALL carry nothing to act on.
 - **GIVEN** the showcase, whose basal analyzer lowers 03:00 and 03:30
 - **WHEN** Overview renders the 14-day window
 - **THEN** the basal estimate draws all 48 slots and marks those two ▼
+
+#### Scenario: Meal size keeps its window when another is chosen
+
+- **GIVEN** the showcase, whose meals are all 40 g or more
+- **WHEN** Overview renders, at any window
+- **THEN** Meal size reads 90 d, draws 31 meals at 40–59 g and one at 60 g+, and
+  shows "–" and 0 meals for the two smaller sizes
 
 ### Requirement: Day shows one day with its insulin, carb logging and Prompts
 

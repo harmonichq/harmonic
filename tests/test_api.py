@@ -2211,6 +2211,17 @@ class ApiPatternSignOffTest(unittest.TestCase):
             reviews = store.pattern_reviews(era)
         self.assertEqual(reviews["low__full__dow-6"]["decision"], "approved")
 
+    def test_a_sign_off_leaves_follow_up_admission_reconciled(self):
+        # #557: a sign-off advanced the input revision and never reconciled, so
+        # admission read unavailable until the next fetch.
+        from ciq_autotune.watched_change import reconcile_ingested_follow_up
+        with Store.open(self.tmp.name) as store:
+            reconcile_ingested_follow_up(store)
+        self.assertEqual(self.client.get("/api/plan/history").json()["admission"]["state"], "available")
+        approve = self.client.post("/api/pattern-sweep/approve", json={"cell_id": "low__full__dow-6"})
+        self.assertEqual(approve.status_code, 200, approve.text)
+        self.assertEqual(self.client.get("/api/plan/history").json()["admission"]["state"], "available")
+
 
 if __name__ == "__main__":
     unittest.main()

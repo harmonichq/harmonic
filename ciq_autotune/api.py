@@ -913,6 +913,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
 
     def _record_pattern_decision(payload: dict, decision: str) -> dict:
         from .pattern_sweep import sweep_from_store
+        from .watched_change import reconcile_ingested_follow_up
         cell_id = payload.get("cell_id")
         if not cell_id:
             raise HTTPException(status_code=400, detail="cell_id is required")
@@ -930,6 +931,9 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             era_str = payload_now["era_start"] or ""
             store.record_pattern_review(cell_id=cell_id, era_start=era_str,
                                         decision=decision)
+            # The sign-off advances the input revision, which leaves the
+            # follow-up frontier behind until something reconciles it (#557).
+            reconcile_ingested_follow_up(store)
         invalidate()  # a sign-off changes the ready-for-review queue (#267)
         return {"cell_id": cell_id, "era_start": era_str, "decision": decision}
 
@@ -986,10 +990,15 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         email: str = Body(...), password: str = Body(...), region: str = Body("US"),
         _: None = Depends(require_token),
     ) -> dict:
+        from .watched_change import reconcile_ingested_follow_up
         with Store.open(db_path) as store:
             credentials.save_credentials(store, email, password, region, key_path=key_path)
+            # The save advances the input revision, which leaves the follow-up
+            # frontier behind until something reconciles it (#557).
+            reconcile_ingested_follow_up(store)
         # No cached result reads the credentials: only the fetch's login and the
-        # uncached credentials read do, so a save invalidates nothing (#522).
+        # uncached credentials read do. The reconcile writes follow-up state alone.
+        follow_up_written()
         return {"configured": True}
 
     @app.get("/api/status")
@@ -1341,6 +1350,12 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             with Store.open(db_path) as store:
                 before = store.input_data_revision()
                 with store.follow_up_transaction():
+                    # A write that does not reconcile carries a frontier that was
+                    # current forward, since it changes nothing a reconcile reads,
+                    # and leaves one that was behind for the next reconcile (#557).
+                    frontier = store.follow_up_frontier()
+                    carried = (not reconcile and frontier is not None
+                               and frontier["reconciled_input_revision"] == store.input_data_revision())
                     saved = retry(store)
                     if saved is not None:
                         return saved
@@ -1363,7 +1378,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                     if durable and revision == before:
                         revision += 1
                     frontier = store.follow_up_frontier()
-                    if reconcile and frontier is not None:
+                    if (reconcile or carried) and frontier is not None:
                         store.advance_follow_up_frontier(frontier["trial_id"], frontier["detected_at"],
                                                          reconciled_input_revision=store.input_data_revision())
                     result = {**{key: record[key] for key in (

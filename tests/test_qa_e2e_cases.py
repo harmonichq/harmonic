@@ -120,7 +120,7 @@ class QaE2ECasesTest(unittest.TestCase):
                 "highs_after_meals", "lows_after_meals", "highs_after_treating_lows",
                 "lows_after_correcting_highs",
             })
-            rendered_by_id = {row["id"]: row for row in wrap(prepared)["rendered_rows"]}
+            headers = wrap(prepared)["behavioral_case_headers"]
             rows_by_id = {row["id"]: row for row in projection["rows"]}
             for key, pattern in patterns.items():
                 with self.subTest(key=key):
@@ -149,14 +149,14 @@ class QaE2ECasesTest(unittest.TestCase):
                         self.assertEqual(clock_case[field], case_file[field])
                     if collapsed:
                         continue
-                    rendered = rendered_by_id[pattern["subject"]]
-                    self.assertEqual(rendered["pattern_chart"], row["pattern_chart"])
-                    self.assertEqual(rendered["case_header"]["summary"], case_file["summary"])
+                    header = headers[pattern["subject"]]
+                    self.assertEqual(header["pattern_chart"], row["pattern_chart"])
+                    self.assertEqual(header["summary"], case_file["summary"])
 
     def test_outcome_pattern_expectation_is_required(self):
         with self.assertRaises(TypeError):
             QaExpectation(
-                {}, {}, {}, frozenset(), frozenset(), {}, frozenset(), frozenset(),
+                {}, {}, {}, frozenset(), frozenset(), frozenset(), frozenset(),
             )
 
     def test_existing_cases_reject_an_extra_behavioral_summary_expectation(self):
@@ -287,12 +287,11 @@ class QaE2ECasesTest(unittest.TestCase):
                 with self.assertRaises(AssertionError):
                     assert_expectation(replace(case, expectation=expectation), execution)
 
-    def test_showcase_exact_rest_windows_and_history_series_are_load_bearing(self):
+    def test_showcase_exact_rest_windows_and_rows_are_load_bearing(self):
         case = next(case for case in QA_CASES if case.name == "showcase")
         execution = _execution(case)
         perturbations = (
             replace(case.expectation, rest_windows=frozenset()),
-            replace(case.expectation, history_series={}),
             replace(case.expectation, behavioral_rows=frozenset()),
             replace(case.expectation, finding_titles=frozenset()),
         )

@@ -6,7 +6,6 @@ itself (that is covered by the analyzer/facade tests).
 """
 
 import contextlib
-import json
 import os
 import sqlite3
 from concurrent.futures import ThreadPoolExecutor
@@ -32,11 +31,7 @@ except ImportError:  # pragma: no cover
     _HAS_TCONNECTSYNC = False
 
 from ciq_autotune.result import SCHEMA_VERSION
-from ciq_autotune.derived_artifacts import (
-    _canonical,
-    load_latest_prior,
-    sidecar_path,
-)
+from ciq_autotune.derived_artifacts import load_latest_prior, sidecar_path
 from ciq_autotune.settings import parse_pump_settings
 from ciq_autotune.store import Store
 
@@ -672,26 +667,6 @@ class DurableArtifactApiTest(unittest.TestCase):
                 pass
         self.tmp.close()
 
-    def test_isf_steps_are_durable_but_not_public_findings_data(self):
-        """The shared analyzer adjunct survives both sidecars, not projections."""
-        from ciq_autotune.api import create_app
-        client = TestClient(create_app(db_path=self.tmp.name, token=None, enable_fetch_loop=False))
-        self.assertEqual(client.get("/api/analyze", params={"pool": True}).status_code, 200)
-        findings = client.get("/api/diagnose/findings")
-        self.assertEqual(findings.status_code, 200)
-        with sqlite3.connect(sidecar_path(self.tmp.name)) as sidecar:
-            payloads = dict(sidecar.execute(
-                "SELECT coordinates, payload FROM artifacts WHERE coordinates IN (?, ?)",
-                (_canonical(("analyze", 30, False, True)),
-                 _canonical(("findings-history-snapshot", 30))),
-            ).fetchall())
-        self.assertIn("_isf_rest_window_steps",
-                      json.loads(payloads[_canonical(("analyze", 30, False, True))]))
-        self.assertIn("_isf_rest_window_steps", json.loads(
-            payloads[_canonical(("findings-history-snapshot", 30))]
-        )["findings"]["analysis"])
-        self.assertNotIn("_isf_rest_window_steps", findings.text)
-
     def test_same_fixed_key_serves_labeled_prior_only_while_recomputing(self):
         """A public fixed route keeps its exact predecessor visible during a rebuild."""
         from ciq_autotune.api import create_app
@@ -1288,17 +1263,6 @@ class ApiAuthTest(unittest.TestCase):
     def test_plan_history_requires_token(self):
         self.assertEqual(self.client.get("/api/plan/history").status_code, 401)
 
-    def test_history_events_authenticates_before_query_validation(self):
-        path = "/api/diagnose/carb-ratio-history/events"
-        self.assertEqual(self.client.get(path).status_code, 401)
-        self.assertEqual(self.client.get(
-            path, headers={"Authorization": "Bearer wrong"},
-            params={"history_id": "malformed"}).status_code, 401)
-        authenticated = self.client.get(
-            path, headers={"Authorization": "Bearer s3cret"})
-        self.assertEqual(authenticated.status_code, 400)
-        self.assertEqual(authenticated.json()["detail"]["code"], "invalid_history_id")
-
     def test_root_does_not_require_token(self):
         # No login screen (#10): the shell itself must load unauthenticated.
         r = self.client.get("/", headers={"Authorization": "Bearer nope"})
@@ -1645,7 +1609,6 @@ class CachePreWarmTest(unittest.TestCase):
         ("exposures", "ciq_autotune.api", "build_exposures"),
         ("explore-time-of-day", "ciq_autotune.api", "build_time_of_day"),
         ("outcomes", "ciq_autotune.outcomes", "summarize_outcomes"),
-        ("isf-rest-window-evidence", "ciq_autotune.api", "prepare_isf_rest_window_evidence"),
         ("finding-case-file", "ciq_autotune.api", "prepare_finding_cases"),
         ("trials", "ciq_autotune.watched_change", "review_trials"),
         ("day-navigator", "ciq_autotune.day_navigator", "build_day_navigator"),
@@ -2053,7 +2016,6 @@ class CachePreWarmTest(unittest.TestCase):
                                           "outcomes-trend": 0, "scenarios": 1,
                                           "exposures": 1,
                                           "explore-time-of-day": 3, "outcomes": 3,
-                                          "isf-rest-window-evidence": 0,
                                           "finding-case-file": 1, "trials": 1,
                                           "day-navigator": 1, "model-view": 2,
                                           "timeline": 2})
@@ -2065,7 +2027,7 @@ class CachePreWarmTest(unittest.TestCase):
                 ("explore-time-of-day", 30), ("explore-time-of-day", 90),
                 ("outcomes", 14), ("outcomes", 30), ("outcomes", 90),
                 ("scenarios", 30), ("exposures",),
-                ("finding-case-file", None, None),
+                ("finding-case-file",),
                 ("day-navigator", None),
                 ("model-view", "2026-06-05"), ("model-view", "2026-06-04"),
             )

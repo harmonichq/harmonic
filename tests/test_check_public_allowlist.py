@@ -3,9 +3,8 @@
 
 Grammar and precedence tests drive ``allowlist_rules`` directly — no
 filesystem or git needed. One end-to-end test runs ``check_public_allowlist``
-against the real repo and the real committed allowlist, matching this repo's
-convention (see ``test_check_demo_fixtures.py``) of pinning one smoke test to
-the unmodified tree alongside the isolated unit tests.
+against the real repo and the real committed allowlist, pinning one smoke
+test to the unmodified tree alongside the isolated unit tests.
 """
 from __future__ import annotations
 
@@ -108,7 +107,7 @@ class TestPrecedence(unittest.TestCase):
 
 class TestCheckAgainstRealRepo(unittest.TestCase):
     """One end-to-end smoke test against the actual committed allowlist and
-    the actual tracked tree (matches test_check_demo_fixtures.py's pattern)."""
+    the actual tracked tree."""
 
     def test_committed_allowlist_parses_and_dispositions_every_tracked_file(self) -> None:
         self.assertEqual(check_public_allowlist.main(), 0)

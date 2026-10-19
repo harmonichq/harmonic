@@ -537,16 +537,8 @@ class ShippedConfigTest(unittest.TestCase):
         read the new file and wrote down why."""
         config = scan.load_config()
         self.assertTrue(all(reason for reason in config.authorized_synthetic.values()))
-        self.assertEqual(
-            sorted(config.authorized_synthetic),
-            sorted(
-                f"mockups/diagnose-workstation.synthetic/{name}.capture.json"
-                for name in (
-                    "explore-day", "explore-exposures", "ic-blocks",
-                    "ic-blocks-asserting", "settings-audit",
-                )
-            ),
-        )
+        # ADR 547 deleted the five demo captures it named; nothing is cleared now.
+        self.assertEqual(sorted(config.authorized_synthetic), [])
 
 
 class DoseRatioBaselineTest(unittest.TestCase):

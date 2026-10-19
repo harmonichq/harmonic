@@ -37,44 +37,23 @@ from .analyze import analyze
 from .analyzers.scenario.levers import Lever
 from .config import resolve_runtime_configuration
 from .explore_exposures import build_exposures
-from .basal_night_evidence import (
-    IncompleteBasalNightEvidence,
-    UnknownBasalSlot,
-    dump_basal_night_evidence,
-    prepare_basal_night_evidence,
-    rebuild_basal_night_evidence,
-)
 from .explore_time_of_day import DATA_DAYS as TIME_OF_DAY_DAYS
 from .explore_time_of_day import DEFAULT_DATA_DAYS as TIME_OF_DAY_DEFAULT_DAYS
 from .explore_time_of_day import build_time_of_day
 from .events import CarbEntry, parse_t
-from .model import ModelConfig
 from . import findings_projection as findings_projection_module
 from .findings_projection import prepare_findings_projection
 from .finding_case_file import (
     prepare as prepare_finding_cases,
     wrap as wrap_finding_cases,
 )
-from .ic_history import InvalidIcHistoryId, InvalidIcRunId
-from .ic_history_events import (
-    HistoryAgedOut,
-    HistoryUnavailable,
-    UnknownHistoryId,
-    UnknownHistoryRunId,
-    prepare_ic_history_events,
-)
-from .ic_block_evidence import UnknownIcBlockId, prepare_ic_block_evidence
-from .isf_rest_window_evidence import prepare_isf_rest_window_evidence
 from .window_membership import WindowQuery
 from .result import SCHEMA_VERSION
 from .result_cache import ResultCache, open_tally
 from .safety import _MIN_SUPPORTED_NIGHTS
 from .derived_artifacts import (
-    discard_artifact, dump_findings, dump_ic_history,
-    dump_ic_block_evidence, FixedResult, InputRevisionChanged, is_sidecar_rebuilt,
-    load_latest_prior, load_or_compute,
-    rebuild_findings, rebuild_ic_history,
-    rebuild_ic_block_evidence,
+    discard_artifact, dump_findings, FixedResult, InputRevisionChanged,
+    is_sidecar_rebuilt, load_latest_prior, load_or_compute, rebuild_findings,
 )
 from .store import Store, wall_clock_now
 from .guidance import baseline_for, is_preference_subject
@@ -163,9 +142,7 @@ def _analysis_payload(result) -> dict:
 # and are deliberately absent.
 _RECORDED_DATA_RESULTS = frozenset((
     "analyze", "scenarios", "exposures", "explore-time-of-day",
-    "findings-history-snapshot", "basal-night-evidence",
-    "ic-block-evidence-preparation", "ic-block-evidence-snapshot",
-    "isf-rest-window-evidence", "outcomes", "day-navigator", "model-view",
+    "findings-history-snapshot", "outcomes", "day-navigator", "model-view",
     "timeline", "catalog",
 ))
 
@@ -388,32 +365,13 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         return {**payload, "input_data_age": age}
 
     def canonical_pooled_analysis(window: int, *, serve_stale=True):
-        """The shared pooled analysis plus retained ISF step identities."""
+        """The shared pooled analysis every findings consumer reads."""
         def build(store):
-            captured = []
-            payload = analyze(
+            return _analysis_payload(analyze(
                 store, window_days=window, ignore_setting_changes=False,
                 pool_agreeing_basal_regimes=True, carb_entries=store.carb_entries(),
                 prompt_responses=store.prompt_responses(),
-                isf_fasting_evidence_sink=captured.append,
-            )
-            payload = _analysis_payload(payload)
-            if len(captured) != 1:
-                raise ValueError("ISF analyzer did not retain fasting evidence")
-            # The retained rows are an internal fixed-artifact adjunct: only the
-            # ISF evidence projection reads them, and /api/analyze strips them.
-            # They persist in analyze-v1 and, via dump_findings wholesale under
-            # _analysis, in every retained findings-history-v1 revision (about
-            # 150–200 KB per real 30-day revision); the findings projection's
-            # correction-factor headline (#306) reads no slot from this
-            # evidence — every slot is a row field — so it never reads the key.
-            payload["_isf_rest_window_steps"] = [
-                {"insulin_acted": round(step.insulin_acted, 4),
-                 "dbg": round(step.dbg, 2),
-                 "window_id": f"rest:{step.cluster.isoformat()}"}
-                for step in captured[0].steps
-            ]
-            return payload
+            ))
         return fixed(("analyze", window, False, True), "analyze-v1", build,
                      serve_stale=serve_stale)
 
@@ -434,17 +392,6 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         ).value
         return analysis, exposures, scenarios
 
-    def basal_night_evidence_preparation(window):
-        """One fixed analyzer-owned basal roster set per source window."""
-        if window != findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS:
-            raise ValueError("basal night evidence requires its fixed source window")
-        return fixed(
-            ("basal-night-evidence", window), "basal-night-evidence-v1",
-            lambda store: prepare_basal_night_evidence(findings_products(window)[0]),
-            dump=dump_basal_night_evidence, rebuild=rebuild_basal_night_evidence,
-            serve_stale=False,
-        )
-
     def recover_sidecar_projection(key, marker, value, project, reload):
         try:
             return fixed_response(value, project) if isinstance(value, FixedResult) else project(value)
@@ -458,32 +405,28 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             return (fixed_response(replacement, project)
                     if isinstance(replacement, FixedResult) else project(replacement))
 
-    def history_snapshot(window: int):
-        """One coherent findings + history-evidence preparation per cache version.
+    def findings_snapshot(window: int):
+        """One coherent findings preparation per cache version.
 
         The heavy read is the preparation (the analysis, the exposures feed and the
         scenario report for one findings window); projecting a clock window out of it
         is pure dict work, so the cache key covers the only parameter that changes
         what is read. Like every other heavy read it answers from the cache until a
-        write bumps it.
+        write bumps it. Its key and marker keep their ``history`` names (ADR 547):
+        the derived-results file deletes an older row only under the same key and
+        marker, so a renamed key would strand the last snapshot an install wrote.
         """
         key = ("findings-history-snapshot", window)
-        def compute(store):
+        def compute():
             analysis, exposures, scenarios = findings_products(window)
-            findings = prepare_findings_projection(
+            return prepare_findings_projection(
                 analysis=analysis, exposures=exposures, scenarios=scenarios,
             )
-            return (findings, prepare_ic_history_events(store, findings))
-        # Store both reconstructible preparations as one plain tuple payload.
-        def dump_pair(pair):
-            return {"findings": dump_findings(pair[0]), "events": dump_ic_history(pair[1])}
-        def rebuild_pair(value):
-            return (rebuild_findings(value["findings"]), rebuild_ic_history(value["events"]))
         def build_snapshot():
             try:
                 return load_or_compute(
                     db_path, key, compute, shape_marker="findings-history-v1",
-                    dump=dump_pair, rebuild=rebuild_pair, with_age=True)
+                    dump=dump_findings, rebuild=rebuild_findings, with_age=True)
             except InputRevisionChanged as error:
                 raise ResultCache.GenerationChanged(
                     "input data changed during findings snapshot") from error
@@ -503,13 +446,13 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 acknowledgments = setting_acknowledgments(store)
                 preferences = store.guidance_preferences()
             try:
-                generation, snapshot = history_snapshot(findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS)
+                generation, findings = findings_snapshot(findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS)
             except ResultCache.GenerationChanged:
                 continue
             with Store.open_queryonly(db_path) as store:
                 if store.input_data_revision() != revision:
                     continue
-            payload = snapshot[0].guidance(
+            payload = findings.guidance(
                 active_watch=watch.to_dict() if watch is not None else None,
                 preferences=preferences, acknowledgments=acknowledgments,
                 analysis_generation=f"guidance:{generation}:r{revision}")
@@ -526,81 +469,37 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             logger.exception("guidance source unavailable")
             raise HTTPException(status_code=503, detail="guidance is unavailable") from error
 
-    def ic_block_evidence_preparation():
-        """One current I:C meal-run preparation per cache generation."""
-        key = ("ic-block-evidence-preparation",)
-        def compute(store):
-            analysis, _exposures, _scenarios = findings_products(
-                findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS,
-            )
-            return prepare_ic_block_evidence(store, analysis)
-        try:
-            return fixed(key, "ic-block-evidence-v2", compute,
-                         dump=dump_ic_block_evidence,
-                         rebuild=rebuild_ic_block_evidence,
-                         serve_stale=False)
-        except InputRevisionChanged as error:
-            raise ResultCache.GenerationChanged(
-                "input data changed during I:C block evidence preparation") from error
-
-    def ic_block_evidence_snapshot():
-        """Publish one current-block preparation with its matching generation."""
-        return cache.stable_read(
-            ("ic-block-evidence-snapshot",), ic_block_evidence_preparation,
-            validate=current_fixed_result,
-        )
-    def isf_rest_window_evidence_preparation(window: int):
-        """One complete fasting-step population for the fixed Diagnose window."""
-        key = ("isf-rest-window-evidence", window)
-        def compute(store):
-            analysis = canonical_pooled_analysis(window, serve_stale=False).value
-            return prepare_isf_rest_window_evidence(analysis)
-        return fixed(key, "isf-rest-window-evidence-v1", compute, serve_stale=False)
-
     def _case_error(status, code, message):
         return JSONResponse(
             status_code=status,
             content={"detail": {"code": code, "message": message}},
         )
 
-    def _case_params(request, case=False):
-        allowed = (
-            {"projection_id", "finding_id", "lever", "alignment", "occ"}
-            if case else {"start_min", "end_min", "lever"}
-        )
+    def _case_params(request):
+        allowed = {"projection_id", "finding_id", "lever", "alignment", "occ"}
         params = request.query_params
         if any(key not in allowed or len(params.getlist(key)) != 1 for key in params):
             raise ValueError("unknown or repeated query parameter")
-        if case:
-            pid = params.get("projection_id")
-            finding = params.get("finding_id")
-            lever = params.get("lever")
-            alignment = params.get("alignment")
-            occ = params.get("occ")
-            valid_findings = {f"finding:{lever.value}" for lever in Lever}
-            valid_findings |= findings_projection_module.PATTERN_SUBJECTS
-            if (not isinstance(pid, str) or not re.fullmatch(r"fp_[0-9a-f]{32}", pid)
-                    or ((finding is None) == (lever is None))
-                    or (finding is not None and finding not in valid_findings)
-                    or (lever is not None and lever not in {item.value for item in Lever})
-                    or alignment not in {"clock", "event"}
-                    or (occ is not None and not re.fullmatch(r"[om]_[0-9a-f]{32}", occ))):
-                raise ValueError("malformed case-file coordinate")
-            return pid, finding, lever, alignment, occ
-        start, end = params.get("start_min"), params.get("end_min")
+        pid = params.get("projection_id")
+        finding = params.get("finding_id")
         lever = params.get("lever")
-        if lever is not None and lever not in {item.value for item in Lever}:
-            raise ValueError("malformed case-file lever")
-        if (start is None) != (end is None):
-            raise ValueError("a window needs both start_min and end_min, or neither")
-        if start is None:
-            return WindowQuery.whole_day(), lever
-        if not start.isdecimal() or not end.isdecimal():
-            raise ValueError("window coordinates must be decimal minutes")
-        return WindowQuery.clock(int(start), int(end)), lever
+        alignment = params.get("alignment")
+        occ = params.get("occ")
+        valid_findings = {f"finding:{lever.value}" for lever in Lever}
+        valid_findings |= findings_projection_module.PATTERN_SUBJECTS
+        if (not isinstance(pid, str) or not re.fullmatch(r"fp_[0-9a-f]{32}", pid)
+                or ((finding is None) == (lever is None))
+                or (finding is not None and finding not in valid_findings)
+                or (lever is not None and lever not in {item.value for item in Lever})
+                or alignment not in {"clock", "event"}
+                or (occ is not None and not re.fullmatch(r"[om]_[0-9a-f]{32}", occ))):
+            raise ValueError("malformed case-file coordinate")
+        return pid, finding, lever, alignment, occ
 
-    def _prepared_cases(query):
-        key = ("finding-case-file", query.start_min, query.end_min)
+    def _prepared_cases():
+        """The whole-day case-file preparation, the one the app reads (ADR 547)."""
+        key = ("finding-case-file",)
+        query = WindowQuery.whole_day()
         def build(version):
             with Store.open_queryonly(db_path) as store:
                 analysis, exposures, scenarios = findings_products(
@@ -713,11 +612,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             if pool:
                 return fixed_response(
                     canonical_pooled_analysis(window),
-                    lambda value: {
-                        **{key: item for key, item in value.items()
-                           if key != "_isf_rest_window_steps"},
-                        "basal_support_floor": _MIN_SUPPORTED_NIGHTS,
-                    },
+                    lambda value: {**value, "basal_support_floor": _MIN_SUPPORTED_NIGHTS},
                 )
             return fixed_response(fixed(key, "analyze-v1", lambda store: _analysis_payload(analyze(
                 store, window_days=window, ignore_setting_changes=ignore_changes,
@@ -883,33 +778,21 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
 
     @app.get("/api/diagnose/findings")
     def diagnose_findings_endpoint(
-        start_min: Optional[int] = None, end_min: Optional[int] = None,
         window: int = findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS,
         _: None = Depends(require_token),
     ) -> dict:
-        """The findings queue for one clock window (#730).
+        """The whole-day findings queue (#730), the one window the Queue reads.
 
-        Omit both bounds for the whole day, the window the Queue reads; send both
-        for a clock window. Everything the queue shows — register, merged spans,
-        outcome anchoring, window-local denominators, order — is decided behind
-        :meth:`FindingsProjection.project`; this route only picks the window.
+        Everything the queue shows — register, merged spans, outcome anchoring,
+        denominators, order — is decided behind :meth:`FindingsProjection.project`.
         """
-        if (start_min is None) != (end_min is None):
-            raise HTTPException(
-                status_code=400,
-                detail="a window needs both start_min and end_min, or neither",
-            )
         try:
-            query = (WindowQuery.whole_day() if start_min is None
-                     else WindowQuery.clock(start_min, end_min))
-        except ValueError as error:
-            raise HTTPException(status_code=400, detail=str(error)) from error
-        try:
-            generation, snapshot = history_snapshot(window)
+            generation, snapshot = findings_snapshot(window)
             return recover_sidecar_projection(
                 ("findings-history-snapshot", window), "findings-history-v1", snapshot,
-                lambda pair: pair[0].project(query, analysis_generation=generation),
-                lambda: history_snapshot(window)[1])
+                lambda findings: findings.project(
+                    WindowQuery.whole_day(), analysis_generation=generation),
+                lambda: findings_snapshot(window)[1])
         except ResultCache.GenerationChanged as error:
             raise HTTPException(status_code=409, detail={
                 "code": "analysis_generation_mismatch",
@@ -965,146 +848,12 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             follow_up_written()
         return {"subject": subject, "set_aside": False}
 
-    @app.get("/api/diagnose/carb-ratio-block-evidence")
-    def diagnose_ic_block_evidence_endpoint(
-        block_id: Optional[str] = None,
-        analysis_generation: Optional[str] = None,
-        _: None = Depends(require_token),
-    ) -> dict:
-        """Exact current-block meal-run roster and analyzer-bounded CGM series."""
-        if block_id is None or not block_id.isdecimal():
-            raise HTTPException(status_code=400, detail={
-                "code": "invalid_block_id", "message": "block_id must be a decimal minute"})
-        if analysis_generation is None:
-            raise HTTPException(status_code=400, detail={
-                "code": "analysis_generation_required",
-                "message": "analysis_generation is required"})
-        try:
-            generation, result = ic_block_evidence_snapshot()
-            if analysis_generation != generation:
-                raise HTTPException(status_code=409, detail={
-                    "code": "analysis_generation_mismatch",
-                    "message": "Evidence changed. Refresh findings.",
-                })
-            return fixed_response(result, lambda prepared: prepared.project(
-                int(block_id), analysis_generation=generation,
-            ))
-        except UnknownIcBlockId as error:
-            raise HTTPException(status_code=404, detail={
-                "code": "block_not_found", "message": "Current I:C block was not found.",
-            }) from error
-        except ResultCache.GenerationChanged as error:
-            raise HTTPException(status_code=409, detail={
-                "code": "analysis_generation_mismatch",
-                "message": "Evidence changed. Refresh findings.",
-            }) from error
-    @app.get("/api/diagnose/basal-night-evidence")
-    def diagnose_basal_night_evidence_endpoint(
-        slot: Optional[int] = None,
-        window: int = findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS,
-        _: None = Depends(require_token),
-    ) -> dict:
-        """Analyzer-owned nightly delivered-versus-programmed basal evidence."""
-        n_slots = 24 * 60 // ModelConfig().slot_minutes
-        if slot is None or not 0 <= slot < n_slots:
-            raise HTTPException(status_code=400, detail="slot must name a basal clock slot")
-        if window != findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS:
-            raise HTTPException(status_code=400, detail=(
-                "basal night evidence requires its fixed source window"))
-        try:
-            result = basal_night_evidence_preparation(window)
-            return recover_sidecar_projection(
-                ("basal-night-evidence", window), "basal-night-evidence-v1", result,
-                lambda prepared: prepared.project(
-                    slot, analysis_generation=cache.generation),
-                lambda: basal_night_evidence_preparation(window),
-            )
-        except UnknownBasalSlot as error:
-            raise HTTPException(status_code=404, detail="basal slot was not found") from error
-        except IncompleteBasalNightEvidence as error:
-            raise HTTPException(status_code=500, detail="basal night evidence is incomplete") from error
-
-    @app.get("/api/diagnose/carb-ratio-history/events")
-    def diagnose_ic_history_events_endpoint(
-        history_id: Optional[str] = None,
-        analysis_generation: Optional[str] = None,
-        selected_run_id: Optional[str] = None,
-        _: None = Depends(require_token),
-    ) -> dict:
-        """Exact 90-day event evidence for one active history catalog identity."""
-        if history_id is None:
-            raise HTTPException(status_code=400, detail={
-                "code": "invalid_history_id", "message": "history_id is required"})
-        if analysis_generation is None:
-            raise HTTPException(status_code=400, detail={
-                "code": "analysis_generation_required",
-                "message": "analysis_generation is required"})
-        try:
-            generation, snapshot = history_snapshot(30)
-            if analysis_generation != generation:
-                raise HTTPException(status_code=409, detail={
-                    "code": "analysis_generation_mismatch",
-                    "message": "Evidence changed. Refresh findings.",
-                })
-            return recover_sidecar_projection(
-                ("findings-history-snapshot", 30), "findings-history-v1", snapshot,
-                lambda pair: pair[1].project(history_id, selected_run_id,
-                                             analysis_generation=generation),
-                lambda: history_snapshot(30)[1])
-        except (InvalidIcHistoryId, InvalidIcRunId) as error:
-            code = ("invalid_history_id" if isinstance(error, InvalidIcHistoryId)
-                    else "invalid_history_run_id")
-            raise HTTPException(status_code=400, detail={
-                "code": code, "message": str(error)}) from error
-        except UnknownHistoryId as error:
-            raise HTTPException(status_code=404, detail={
-                "code": "history_not_found",
-                "message": "Past-setting evidence was not found.",
-            }) from error
-        except UnknownHistoryRunId as error:
-            raise HTTPException(status_code=404, detail={
-                "code": "history_run_not_found",
-                "message": "Meal-run evidence is not a member of this history item.",
-            }) from error
-        except HistoryAgedOut as error:
-            raise HTTPException(status_code=410, detail={
-                "code": "history_aged_out",
-                "message": "Past-setting evidence aged out of the 90-day window.",
-            }) from error
-        except HistoryUnavailable as error:
-            raise HTTPException(status_code=410, detail={
-                "code": "history_unavailable",
-                "message": (
-                    "Past-setting evidence no longer maps to one current program block."
-                ),
-            }) from error
-        except ResultCache.GenerationChanged as error:
-            raise HTTPException(status_code=409, detail={
-                "code": "analysis_generation_mismatch",
-                "message": "Evidence changed. Refresh findings.",
-            }) from error
-
-    @app.get("/api/diagnose/isf-rest-window-evidence")
-    def diagnose_isf_rest_window_evidence_endpoint(
-        window: int = findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS,
-        _: None = Depends(require_token),
-    ) -> dict:
-        """Analyzer-owned rest windows and complete qualifying fasting steps."""
-        if window != findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS:
-            raise HTTPException(status_code=400, detail=(
-                "ISF rest-window evidence requires the fixed "
-                f"{findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS}-day window"))
-        return fixed_response(
-            isf_rest_window_evidence_preparation(window), lambda preparation: preparation.project())
-
     @app.get("/api/diagnose/finding-case-file-preparation")
     def finding_case_file_preparation(request: Request, _: None = Depends(require_token)):
+        if request.query_params:
+            return _case_error(400, "invalid_request", "the preparation takes no parameters")
         try:
-            query, _lever = _case_params(request)
-        except ValueError as error:
-            return _case_error(400, "invalid_request", str(error))
-        try:
-            prepared, reason = _prepared_cases(query)
+            prepared, reason = _prepared_cases()
             if reason == "capacity":
                 return _case_error(503, "preparation_capacity", "All preparations are leased.")
             if reason == "changed":
@@ -1117,7 +866,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     @app.get("/api/diagnose/finding-case-file")
     def finding_case_file(request: Request, _: None = Depends(require_token)):
         try:
-            projection_id, finding_id, lever, alignment, occ = _case_params(request, True)
+            projection_id, finding_id, lever, alignment, occ = _case_params(request)
         except ValueError as error:
             return _case_error(400, "invalid_request", str(error))
         prepared = cache.acquire_preparation(projection_id)
@@ -1788,9 +1537,9 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             # copy and the durable source generation; it cannot waive a scoped
             # readiness verdict or derive membership in this endpoint.
             try:
-                generation, snapshot = history_snapshot(
+                generation, findings = findings_snapshot(
                     findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS)
-                scoped = snapshot[0].project(
+                scoped = findings.project(
                     WindowQuery.clock(scope["start_min"], scope["end_min"]),
                     analysis_generation=generation,
                 )
@@ -1917,7 +1666,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         return (
             # The snapshot's first input, warmed as its own shape.
             ("analyze-pooled", lambda: analyze_endpoint(window=30, ignore_changes=False, pool=True)),
-            ("findings-history", lambda: history_snapshot(
+            ("findings-history", lambda: findings_snapshot(
                 findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS)),
             ("analyze", lambda: analyze_endpoint(window=30, ignore_changes=False, pool=False)),
             ("finding-case-file", lambda: finding_case_file_preparation(

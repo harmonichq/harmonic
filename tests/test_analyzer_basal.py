@@ -29,7 +29,7 @@ from ciq_autotune.analyzers.tuning_priority import (
     ic_headline_block,
     price_ic_blocks,
 )
-from ciq_autotune.events import BasalEvent, BolusEvent, CgmReading
+from ciq_autotune.events import BasalEvent, BolusEvent, CarbEntry, CgmReading
 from ciq_autotune.harm import HarmArm, HarmConfig, PrintedLow
 from ciq_autotune.model import ModelConfig
 from ciq_autotune.result import IcBlock, SegmentEstimate, SlotEstimate
@@ -1164,6 +1164,134 @@ class SlotLeanMagnitudeTest(unittest.TestCase):
         # Bottom half sits higher than the full median → clamp to 0, not negative.
         pairs = [(1.0, 100.0), (1.0, 110.0), (0.5, 160.0), (0.5, 170.0)]
         self.assertEqual(_slot_lean_magnitude(pairs), 0.0)
+
+
+# The slot's setting-epoch cut for the six-cause nights: nights 1-3 predate it.
+_SETTING_CUT = {0: datetime(2026, 2, 4)}
+
+
+def _six_cause_nights():
+    """Sixteen synthetic nights in slot 00:00 (#434).
+
+    Nights 1-3 predate the setting cut, nights 4-11 are steady, and nights 12-16
+    are each excluded by one cause: 12 suspended at a low, 13 high, 14 under a 2 U
+    bolus given 30 minutes before, 15 under a 20 g Carb log entry, and 16 rising
+    1 mg/dL/min while still inside the range.
+    """
+    basal, cgm, bolus, carbs = [], [], [], []
+    for day in range(1, 17):
+        start = datetime(2026, 2, day)
+        if day == 12:
+            basal.append(BasalEvent(start, "algorithmDelivery (control-iq suspension)",
+                                    30, 0.0, 0.6))
+        else:
+            basal.append(BasalEvent(start, "algorithmDelivery", 30, 0.8, 0.6))
+        for minute in range(-60, 36, 5):
+            bg = {12: 60, 13: 220}.get(day, 120)
+            if day == 16:
+                bg = 80 + (minute + 60)  # 80 to 175 mg/dL, never out of range
+            cgm.append(CgmReading(start + timedelta(minutes=minute), bg, "EGV"))
+        if day == 14:
+            bolus.append(BolusEvent(start - timedelta(minutes=30), insulin=2.0))
+        if day == 15:
+            carbs.append(CarbEntry(start - timedelta(minutes=5), 20.0, "exact", "manual"))
+    return basal, cgm, bolus, carbs
+
+
+class BasalExcludedNightAccountingTest(unittest.TestCase):
+    """The analyzer's public result retains every omitted source night."""
+
+    @staticmethod
+    def _nights(rates):
+        basal, cgm = [], []
+        for day, rate in enumerate(rates, 1):
+            start = datetime(2026, 2, day)
+            basal.append(BasalEvent(start, "algorithmDelivery", 30, rate, 0.6))
+            cgm.extend(CgmReading(start + timedelta(minutes=minute), 120, "EGV")
+                       for minute in range(0, 36, 5))
+        return basal, cgm
+
+    def test_mid_slot_epoch_cut_counts_pre_cut_nights_outside_the_roster(self):
+        basal, cgm = self._nights([0.8, 0.8, 0.8, 0.8])
+        slot = analyze_basal(
+            basal, cgm, [], [],
+            slot_starts={0: datetime(2026, 2, 4, 0, 15)},
+        )[0]
+        self.assertEqual([point["date"] for point in slot.evidence["points"]], ["2026-02-04"])
+        self.assertEqual(slot.evidence["excluded_night_count"], 3)
+
+    def test_regime_b_post_only_keeps_omitted_pre_cut_nights_accounted(self):
+        basal, cgm = self._nights([0.8, 0.8, 0.8, 1.2, 1.2, 1.2])
+        slot = analyze_basal(
+            basal, cgm, [], [], pool_agreeing_regimes=True,
+            slot_starts={0: datetime(2026, 2, 4)},
+        )[0]
+        self.assertEqual(slot.evidence["pooling"]["pooled"], False)
+        self.assertEqual(len(slot.evidence["night_roster"]), 3)
+        self.assertEqual(slot.evidence["excluded_night_count"], 3)
+
+
+class BasalExcludedNightReasonsTest(unittest.TestCase):
+    """Every excluded night carries one reason, by the fixed rank order (#434)."""
+
+    def test_six_causes_land_in_six_reasons_and_sum_to_the_count(self):
+        basal, cgm, bolus, carbs = _six_cause_nights()
+        slot = analyze_basal(basal, cgm, bolus, [], carb_entries=carbs,
+                             slot_starts=_SETTING_CUT)[0]
+
+        self.assertEqual(slot.evidence["excluded_night_reasons"], {
+            "before_current_setting": 3, "below_range_or_suspended": 1,
+            "above_range": 1, "insulin_acting": 1, "carb_log": 1, "other": 1,
+        })
+        self.assertEqual(slot.evidence["excluded_night_count"], 8)
+        self.assertEqual(len(slot.evidence["night_roster"]), 8)
+
+    def test_a_low_minute_outranks_a_high_night(self):
+        basal, cgm, bolus, carbs = _six_cause_nights()
+        dip = datetime(2026, 2, 13, 0, 10)
+        cgm = [CgmReading(r.t, 60, r.type) if r.t == dip else r for r in cgm]
+        slot = analyze_basal(basal, cgm, bolus, [], carb_entries=carbs,
+                             slot_starts=_SETTING_CUT)[0]
+
+        self.assertEqual(slot.evidence["excluded_night_reasons"], {
+            "before_current_setting": 3, "below_range_or_suspended": 2,
+            "above_range": 0, "insulin_acting": 1, "carb_log": 1, "other": 1,
+        })
+        self.assertEqual(slot.evidence["excluded_night_count"], 8)
+
+    def test_pooled_pre_cut_nights_leave_the_setting_reason(self):
+        basal, cgm, bolus, carbs = _six_cause_nights()
+        slot = analyze_basal(basal, cgm, bolus, [], carb_entries=carbs,
+                             slot_starts=_SETTING_CUT, pool_agreeing_regimes=True)[0]
+
+        self.assertEqual(slot.evidence["pooling"], {"pooled": True})
+        self.assertEqual(slot.evidence["excluded_night_reasons"], {
+            "before_current_setting": 0, "below_range_or_suspended": 1,
+            "above_range": 1, "insulin_acting": 1, "carb_log": 1, "other": 1,
+        })
+        self.assertEqual(slot.evidence["excluded_night_count"], 5)
+
+    def test_a_high_pre_cut_night_is_named_by_whether_pooling_returned_its_era(self):
+        basal, cgm, bolus, carbs = _six_cause_nights()
+        high = datetime(2026, 2, 3).date()
+        cgm = [CgmReading(r.t, 220, r.type) if r.t.date() == high else r for r in cgm]
+
+        unpooled = analyze_basal(basal, cgm, bolus, [], carb_entries=carbs,
+                                 slot_starts=_SETTING_CUT)[0]
+        pooled = analyze_basal(basal, cgm, bolus, [], carb_entries=carbs,
+                               slot_starts=_SETTING_CUT, pool_agreeing_regimes=True)[0]
+
+        self.assertEqual(unpooled.evidence["excluded_night_reasons"], {
+            "before_current_setting": 3, "below_range_or_suspended": 1,
+            "above_range": 1, "insulin_acting": 1, "carb_log": 1, "other": 1,
+        })
+        self.assertEqual(unpooled.evidence["excluded_night_count"], 8)
+        self.assertEqual(pooled.evidence["pooling"], {"pooled": True})
+        self.assertEqual(pooled.evidence["excluded_night_reasons"], {
+            "before_current_setting": 0, "below_range_or_suspended": 1,
+            "above_range": 2, "insulin_acting": 1, "carb_log": 1, "other": 1,
+        })
+        self.assertEqual(pooled.evidence["excluded_night_count"], 6)
 
 
 if __name__ == "__main__":

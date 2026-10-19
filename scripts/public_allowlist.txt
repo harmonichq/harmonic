@@ -94,15 +94,8 @@ docs/kb/reading-day.md
 docs/kb/reading-diagnose.md
 docs/kb/the-plan-tab.md
 
-# --- mockups/ is exact-path only (§1.6.6); nothing else in the tree ships
-# from that directory.
-# The committed synthetic set the engine generators read, extension-scoped
-# (§1.6.7).
-mockups/diagnose-workstation.synthetic/** {.json,.mjs}
-
 # --- .claude/: the local demo + generators CI depends on (§1.6, §1.6 [R3])
 .claude/launch.json
-.claude/qa/gen_synthetic_fixtures.py
 .claude/qa/demo_serve.py
 .claude/qa/gen_issue_677_capture.py
 

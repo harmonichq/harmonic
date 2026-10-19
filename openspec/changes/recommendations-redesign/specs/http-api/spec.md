@@ -166,8 +166,7 @@ recorded-data revision. Such a write SHALL keep every cached result whose builde
 reads only recorded data (readings, deliveries, boluses, carbs, prompt answers,
 settings captures and pump events): the analysis and the scenario report at
 every window, the exposure feed, the time-of-day profile, the findings snapshot,
-the basal-night, carb-ratio block and ISF rest-window evidence, outcomes, the
-day navigator, the model-view, the timeline, and the static catalog (#522,
+outcomes, the day navigator, the model-view, the timeline, and the static catalog (#522,
 #538). The guidance read SHALL still compose the kept findings snapshot with the
 follow-up state it reads at the new input revision, so its ranking reflects the
 write. Every result that reads follow-up state — the Trial roster, the watched
@@ -190,7 +189,7 @@ cached result reads them (#522).
 - **WHEN** its selected candidate is snoozed and the guidance read again — in the
   same process, and by a freshly started server over the same store
 - **THEN** neither read computes the analysis, the scenario report, the exposure
-  feed, the findings projection or the carb-ratio history
+  feed or the findings projection
 - **AND** both serve the snoozed candidate set aside, no longer select it, and carry
   the advanced input revision and a new analysis generation
 
@@ -328,41 +327,40 @@ the readings.
 - **THEN** its readings still run from two hours before the crossing on to the
   peak
 
-## MODIFIED Requirements
-
-### Requirement: Historical findings and event evidence share one restart-safe generation
+### Requirement: The findings answer carries one restart-safe generation
 
 The system SHALL satisfy the following:
 
-`GET /api/diagnose/findings` and
-`GET /api/diagnose/carb-ratio-history/events` are projections of one cached historical
-snapshot: the analyzer-owned findings catalog and the exact event series prepared
-from that catalog. Both schemas carry the same opaque `analysis_generation`, formed
-from a collision-resistant per-app incarnation plus the cache's monotonic data
-version. The stable read returns the token and prepared value only when no cache bump
-crossed the computation; it retries a bounded number of times and fails with a
-structured 409 rather than attaching a new token to crossed bytes. A restarted app
-always has a different incarnation even when it opens unchanged database bytes.
+`GET /api/diagnose/findings` is a projection of one cached findings snapshot. Its
+schema carries an opaque `analysis_generation`, formed from a collision-resistant
+per-app incarnation plus the cache's monotonic data version. The stable read
+returns the token and prepared value only when no cache bump crossed the
+computation; it retries a bounded number of times and fails with a structured 409
+rather than attaching a new token to crossed bytes. A restarted app always has a
+different incarnation even when it opens unchanged database bytes.
 
-The findings endpoint takes no history selection and serves no past-setting row,
-selection disposition, register tally or chip tally (ADR 531): its answer is the
-window, the findings window, the rows and the Pattern roster. The history-events
-endpoint requires `history_id` and the findings generation, accepts an optional member
-`selected_run_id`, and returns the complete analyzer-published 90-day roster and
-series without recomputing membership. Missing or malformed inputs are structured
-400 responses; canonical identities or runs absent from the catalog membership are
-404; a stale generation is `analysis_generation_mismatch` at 409; and `aged_out`
-versus `unavailable` are distinct structured 410 outcomes. Bearer authentication is
-checked before any of those validation or data responses.
+The findings endpoint answers for the whole day only: it takes no clock window and
+no history selection, and serves no past-setting row, selection disposition,
+register tally or chip tally (ADR 531, ADR 547). Its answer is the window, the
+findings window, the rows and the Pattern roster. No route serves a past
+setting's event evidence (ADR 547). Bearer authentication is checked before any
+data response. The endpoint does not change the Finding case-file contract, and
+its projection may not infer schedule membership, lifecycle, support, or
+actionability.
 
-Neither endpoint changes the Finding case-file contract, and neither projection may
-infer schedule membership, lifecycle, support, or actionability. Selecting a run
-changes only the echoed selection; it does not filter `run_ids` or `series`.
+#### Scenario: A crossed computation is labelled with the version it read
 
-#### Scenario: Historical findings and event evidence share one restart-safe generation
+- **GIVEN** a write that bumps the cache while the findings snapshot is computing
+- **WHEN** the findings are served
+- **THEN** the answer's `analysis_generation` names the data version its rows were
+  computed at, never the one before
 
-- **WHEN** the capability evaluates the behavior described by this requirement
-- **THEN** the stated behavior applies
+#### Scenario: The findings answer is the whole day
+
+- **WHEN** the findings are requested
+- **THEN** the answer's window is unscoped and its rows are the whole day's
+
+## MODIFIED Requirements
 
 ### Requirement: The heavy read endpoints answer from one per-process result cache
 
@@ -503,6 +501,59 @@ invalidates through the loop's own hook, specified below.
   presents advice derived from data the store no longer holds, with nothing in the
   response marking it stale
 
+### Requirement: Finding case files are bound to one snapshot preparation.
+
+The system SHALL satisfy the following:
+
+`GET /api/diagnose/finding-case-file-preparation` takes no parameters. It builds
+the whole-day Findings queue and its case-file population inside one SQLite read
+snapshot, and returns an opaque, versioned preparation identity with its
+coordinates, the case header of each inspectable Finding and the Findings it
+withholds; it serves no copy of the findings rows (ADR 547), which the Queue reads
+from `/api/diagnose/findings`. `GET /api/diagnose/finding-case-file` requires that
+preparation identity, the published lever-and-window Finding coordinate, an
+alignment, and an optional Occurrence coordinate; it projects only from the
+retained preparation rather than recomputing against a newer population.
+
+The preparation registry is bounded, expiring, lock-coupled, and single-flight.
+A data-version bump prevents an in-flight older preparation from becoming newly
+addressable. An expired or unknown well-formed id returns `409 stale_projection`;
+malformed coordinates, and any parameter on the preparation, return `400
+invalid_request`; an unavailable Finding or Occurrence returns the contract's
+explicit unavailable state. These routes do not widen or replace
+`/api/diagnose/findings`, `/api/explore/exposures`, or the event-comparison
+endpoint.
+
+For the Missed / unannounced meal Finding's event projection, the server owns two
+separate comparison cohorts: Highs attributed to Missed / unannounced meal and
+all completed carb-bolus announced meals, regardless of outcome. It anchors the
+first at detected rise onset and the second at completed carb-bolus time, using
+the fixed `[-60, +300]` minute window, and publishes the missed and announced
+counts and the count of Highs outside the comparison, including an explicit zero
+state. This comparison account is independent of the Finding's five-way High
+verdict denominator and does not replace the High roster or attribution account.
+
+#### Scenario: Finding case files are bound to one snapshot preparation.
+
+- **WHEN** the capability evaluates the behavior described by this requirement
+- **THEN** the stated behavior applies
+
+#### Scenario: The preparation serves no copy of the rows
+
+- **WHEN** the preparation is requested
+- **THEN** it serves its schema, identity, coordinates, case headers and withheld
+  Findings, and no findings rows
+- **AND** a request carrying a clock window is refused with `400 invalid_request`
+
+#### Scenario: Missed meal publishes the Highs outside its comparison
+
+- **GIVEN** a synthetic store whose Missed / unannounced meal case file has six
+  Highs, two attributed and one near miss
+- **WHEN** its event case file is requested
+- **THEN** the response serves missed 2, nearly matched 1, the announced count, and
+  3 Highs outside the comparison
+- **AND** it serves no not-comparable count
+
 ## REMOVED Requirements
 
 ### Requirement: Saving a Plan draft is the one deliberate exception, and a future exception must meet its standard
@@ -522,3 +573,10 @@ invalidates through the loop's own hook, specified below.
 **Reason:** There is no pending Plan any more; a recorded Plan is a Done that waits on its own card (#518, ADR 518). It is restated with that scenario as "A floored stamp never sorts before the latest capture, Done or Focus pin".
 
 **Migration:** None.
+
+### Requirement: Historical findings and event evidence share one restart-safe generation
+
+**Reason:** The past-setting event-evidence route it paired with the findings answer is removed (ADR 547): the five-tab app never reads it, and the findings snapshot no longer prepares its event series.
+
+**Migration:** Read "The findings answer carries one restart-safe generation", ADDED in this change, which keeps the findings answer's generation contract.
+

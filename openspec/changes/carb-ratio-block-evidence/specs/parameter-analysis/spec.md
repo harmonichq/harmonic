@@ -49,43 +49,26 @@ count from the estimate, the bounds or the run identity.
 - **THEN** each counted run's published fit weight equals the weight the fit gave
   that same run, and the fit's runs are exactly the counted runs
 
-### Requirement: A carb-ratio block publishes its meals' plain readings
+### Requirement: A carb-ratio block publishes the lows its harm arm attributes
 
 The system SHALL satisfy the following:
 
-For each meal dosed in a block's hours, the block-evidence payload publishes the
-meal's own plain reading over its post-meal window, from its bolus to the
-analyzer's post-meal horizon: its peak and nadir with their minutes after the
-bolus, and an outcome — above the band, below it, both, in range, or unread when
-the window holds no reading. It also publishes the minutes to the run's next bolus
-(a bolus under thirty minutes later is the same meal and is skipped), the peak
-before that next bolus, and whether the meal is on a counted run. The band is the
-analyzer's own in-range band, published once. The tally counts those outcomes, the
-meals on counted runs, and how many of those peaked above the band before their
-next bolus and anywhere in their window, and publishes the length of the window
-every meal was read over, so no client restates it. A store reading with no glucose value is dropped once,
-where every window is sliced, so a sensor gap is never read as a glucose value.
-The projection layer publishes the readings and tally, because it holds the store;
-the block stamper publishes neither. The block's harm arm publishes its listed
-lows, gate, nudge, day count and seriousness, and each low's run, its group (on a
-counted run, on a run not counted, or after a bolus that is not one of these
-meals), its minutes after its bolus and that bolus's carbs; the harm row adds the
-group counts and their total, the median, least and greatest minutes after the bolus over exactly
-those lows, and one sentence on how the lows on counted runs bear on the move. The
-surface prints every sentence verbatim and composes none.
+The block's harm arm publishes its listed lows, gate, nudge, day count and
+seriousness, and each low's run, its group (on a counted run, on a run not
+counted, or after a bolus that is not one of these meals), its minutes after its
+bolus and that bolus's carbs; the harm row adds the group counts and their total,
+the median, least and greatest minutes after the bolus over exactly those lows,
+and one sentence on how the lows on counted runs bear on the move. For each meal
+dosed in the block's hours the block publishes the minutes to the run's next
+bolus (a bolus under thirty minutes later is the same meal and is skipped) and
+whether the meal is on a counted run. No route reads a meal's own glucose over
+its post-meal window or tallies those readings (ADR 547). The surface prints every
+sentence verbatim and composes none.
 
-#### Scenario: A pooled chain spikes, then prints a low
+#### Scenario: A pooled chain prints a low
 
 - **GIVEN** a manufactured block whose pooled chain rises above the band after its
   block-hours meal and later prints a low attributed to that meal
-- **WHEN** the block evidence is published
-- **THEN** its tally counts at least one meal above the band, its harm evidence
-  lists the low on a counted run with its minutes after its bolus, and its group
-  total counts it
-
-#### Scenario: A sensor gap is not a reading
-
-- **GIVEN** a meal window holding a store reading with no glucose value
-- **WHEN** the block evidence is prepared
-- **THEN** the preparation succeeds, the gap reading appears in no meal reading and
-  no run series, and a window holding only the gap reads as unread
+- **WHEN** the block's evidence is published
+- **THEN** its harm evidence lists the low on a counted run with its minutes after
+  its bolus, and its group total counts it

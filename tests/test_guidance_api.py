@@ -69,12 +69,9 @@ class GuidanceApiTest(unittest.TestCase):
         roster = client.get("/api/focus").json()
         offered = roster["pinnable_patterns"][0]
         guidance = client.get("/api/guidance").json()
+        # In this window the Pattern collapses to its served child; that is not
+        # permission to lose the Pattern's producer-owned admission on the write path.
         scope = {"start_min": 720, "end_min": 1080}
-        prepared = client.get("/api/diagnose/finding-case-file-preparation", params=scope).json()
-        # The public scoped presentation intentionally collapses this Pattern
-        # into its served child; it is not permission to lose the Pattern's
-        # producer-owned admission on the write path.
-        self.assertIn("finding:over_treated_low", {row["id"] for row in prepared["rendered_rows"]})
         response = client.post("/api/focus", json={
             "pattern_key": offered["key"], "subject": offered["subject"], "outcome_window": scope,
             "request_id": "00000000-0000-4000-8000-000000000404",
@@ -218,9 +215,7 @@ class GuidanceApiTest(unittest.TestCase):
              patch.object(api_mod, "build_exposures",
                           counting("exposures", api_mod.build_exposures)), \
              patch.object(api_mod, "prepare_findings_projection",
-                          counting("findings", api_mod.prepare_findings_projection)), \
-             patch.object(api_mod, "prepare_ic_history_events",
-                          counting("history", api_mod.prepare_ic_history_events)):
+                          counting("findings", api_mod.prepare_findings_projection)):
             saved = client.put(f"/api/guidance/preferences/{subject}",
                                json={"generation": current["analysis_generation"]})
             self.assertEqual(saved.status_code, 200, saved.text)
@@ -284,12 +279,6 @@ class GuidanceApiTest(unittest.TestCase):
             ("/api/scenarios", {}), ("/api/scenarios", {"window": 14}),
             ("/api/explore/exposures", {}), ("/api/explore/time-of-day", {"days": 14}),
             ("/api/diagnose/findings", {}),
-            ("/api/diagnose/carb-ratio-history/events",
-             {"history_id": "unknown", "analysis_generation": "unknown"}),
-            ("/api/diagnose/carb-ratio-block-evidence",
-             {"block_id": "0", "analysis_generation": "unknown"}),
-            ("/api/diagnose/basal-night-evidence", {"slot": 0}),
-            ("/api/diagnose/isf-rest-window-evidence", {}),
             ("/api/outcomes", {"window": 14}), ("/api/day-navigator", {}),
             ("/api/model-view", {"date": day}),
             ("/api/timeline", {"start": start.isoformat(),

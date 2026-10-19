@@ -1,7 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, within } from 'storybook/test';
 import { formatValue } from '../../provenance.js';
-import { pattern, patternState, settingState, snoozed, type PatternData, type QueueStore } from '../../queue-model';
+import {
+  habitState, pattern, patternState, settingState, snoozed, type PatternData, type QueueStore,
+} from '../../queue-model';
 import { QueueRow, type QueueRowProps } from './QueueRow';
 
 // One story per state (§4.2 QueueRow), each the simulated wearer's own
@@ -10,7 +12,8 @@ import { QueueRow, type QueueRowProps } from './QueueRow';
 // with its Until and Restore. (The no-cause state is retired, ADR 499.)
 // The trailing impact (§2.5, 2026-10-14): a high row with its Peak delta, a
 // low row with its Nadir delta, and a row whose Pattern serves too few episodes for a median, with
-// no trailing value.
+// no trailing value. A standalone habit's row (ADR 528): the Pattern row with
+// the Habit glyph, its count the habit's case file's, and no trailing value.
 const meta = {
   title: 'QueueRow',
   component: QueueRow,
@@ -20,10 +23,10 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-type PatternRow = Extract<QueueRowProps, { kind: 'pattern' }>;
+type PatternRow = Extract<QueueRowProps, { kind: 'pattern' | 'habit' }>;
 
 const rowOf = (data: PatternData): PatternRow =>
-  ({ kind: 'pattern', title: data.title, magnitude: data.magnitude!, impact: data.impact });
+  ({ kind: data.kind, title: data.title, magnitude: data.magnitude!, impact: data.impact });
 
 function patternRow(name: 'traces_band' | 'traces_episodes'): PatternRow {
   return rowOf(patternState(name));
@@ -89,5 +92,20 @@ export const Snoozed: Story = {
 export const SnoozedDesktop: Story = {
   args: { ...Snoozed.args, layout: 'desktop' } as QueueRowProps,
   parameters: { frame: { width: 400, padding: 24 } },
+};
+/** A habit's row names its glyph Habit, prints the count its case file serves
+ *  ("2 of 6 highs"), and ends in no trailing value. */
+const habitRow: Story['play'] = async ({ args, canvasElement }) => {
+  const row = args as PatternRow;
+  await expect(within(canvasElement).getByRole('img', { name: 'Habit' })).toBeInTheDocument();
+  await expect(canvasElement.querySelector('.ui-qrow__magnitude')!.textContent)
+    .toBe(`${row.magnitude.count.value} of ${row.magnitude.denominator.value} ${row.magnitude.noun}`);
+  await expect(canvasElement.querySelector('.ui-qrow__impact, .ui-qrow__caption')).toBeNull();
+};
+export const Habit: Story = { args: rowOf(habitState('habit_episodes').data), play: habitRow };
+export const HabitSelectedDesktop: Story = {
+  args: { ...rowOf(habitState('habit_band').data), layout: 'desktop', selected: true },
+  parameters: { frame: { width: 400, padding: 24 } },
+  play: habitRow,
 };
 export const Loading: Story = { args: { loading: true } };

@@ -5,7 +5,9 @@
 // bar; the open item shows its card in the row's place (accordion; the others
 // stay rows), with Snooze as a text action centred beneath Pin, or at a
 // Setting card's foot (the swipe is its shortcut). A queued ISF opens into the
-// Overview's ISF card in the Queue's frame (§2.5, 2026-10-14). A quiet "Snoozed · N" row ends the list when anything is
+// Overview's ISF card in the Queue's frame (§2.5, 2026-10-14). A standalone habit
+// is a Pattern's row and card with its own glyph, its Pin a Focus on the habit
+// itself (ADR 528). A quiet "Snoozed · N" row ends the list when anything is
 // snoozed, and drills down to the Snoozed list (§2.2 Drill-down: "‹ Queue",
 // each its Queue row with Until and Restore); back returns with the same
 // item open.
@@ -111,7 +113,7 @@ function Row({ item, layout, selected, swiping, onSelect, onSnooze, until, onRes
     return <QueueRow kind="setting" title={item.data.title} setting={item.data} layout={layout}
       selected={selected} swiping={swiping} onSelect={onSelect} onSnooze={onSnooze} snoozed={snoozed} />;
   }
-  return <QueueRow kind="pattern" title={item.data.title} magnitude={item.data.magnitude!}
+  return <QueueRow kind={item.kind} title={item.data.title} magnitude={item.data.magnitude!}
     impact={item.data.impact} layout={layout} selected={selected} swiping={swiping} onSelect={onSelect}
     onSnooze={onSnooze} snoozed={snoozed} />;
 }

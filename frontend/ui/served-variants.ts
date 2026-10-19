@@ -8,7 +8,8 @@
 // - A Trial whose parameter the app has no name for, as a newer engine might serve.
 // - A Queue whose ranking holds candidates the Queue cannot draw: an ISF and an
 //   I:C Setting the findings serve no admitted row for, a Pattern the findings
-//   hold no row for, and a candidate of a kind the app does not know.
+//   hold no row for, a standalone habit the case files serve nothing for, and a
+//   candidate of a kind the app does not know.
 // - A Pattern whose trace chart is served with nothing to draw (ADR 523).
 // - A day navigator with no readings, as a store before its first sync serves it.
 // - A day with no Control-IQ boluses: the latest day's timeline with
@@ -42,8 +43,9 @@ function add(section: 'changes' | 'queue' | 'days', name: string, store: unknown
 
 add('changes', 'wearer-unnamed', trialAs('wearer', 'reservoir_volume'));
 
-/** The wearer's Queue with every Setting candidate queued, and one queued
- *  Pattern the findings serve no row for. */
+/** The wearer's Queue with every Setting candidate queued, one queued Pattern
+ *  the findings serve no row for, one queued habit no case file is served for,
+ *  and one candidate of a kind the app does not know. */
 const queue = clone(fixtures.queue.wearer) as typeof fixtures.queue.wearer;
 for (const candidate of queue.guidance.candidates) {
   if (candidate.kind === 'setting') Object.assign(candidate, { admitted: true, set_aside: false, queued: true });
@@ -51,7 +53,8 @@ for (const candidate of queue.guidance.candidates) {
 const pattern = queue.guidance.candidates.find((c) => c.kind === 'pattern')!;
 queue.guidance.candidates.push(
   { ...pattern, subject: 'pattern:unserved', title: 'Unserved', priority: 1000, queued: true },
-  { ...pattern, subject: 'habit:missed_meal', kind: 'habit', title: 'Unknown', priority: 1001, queued: true },
+  { ...pattern, subject: 'habit:missed_meal', kind: 'habit', title: 'Unserved', priority: 1001, queued: true },
+  { ...pattern, subject: 'reminder:unknown', kind: 'reminder', title: 'Unknown', priority: 1002, queued: true },
 );
 add('queue', 'wearer-undrawable', queue);
 

@@ -70,6 +70,13 @@ const PATHS = {
       <path d="M3 18h18" /><circle cx="6" cy="13" r="1.6" /><circle cx="12" cy="10" r="1.6" /><circle cx="18" cy="7" r="1.6" />
     </>
   ),
+  // A Habit is something done again and again: Feather's "repeat" (MIT licence,
+  // feathericons.com), a loop of two arrows (§4.2 QueueRow, ADR 528).
+  habit: (
+    <>
+      <path d="M17 1l4 4-4 4" /><path d="M3 11V9a4 4 0 0 1 4-4h14" /><path d="M7 23l-4-4 4-4" /><path d="M21 13v2a4 4 0 0 1-4 4H3" />
+    </>
+  ),
   // A Setting is a value you adjust: sliders.
   setting: (
     <>

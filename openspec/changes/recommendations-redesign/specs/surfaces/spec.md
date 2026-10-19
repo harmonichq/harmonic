@@ -82,7 +82,14 @@ member, in the shape a basal run serves its slots, so its card draws the block,
 current → recommended and its range. A Pattern served as its one habit SHALL be
 drawn with the Pattern's own count and its rate levers' credited shares, which
 that habit's row serves for it, and its case file SHALL be read under the
-Pattern's subject. A Setting card's primary SHALL be Done (#518), where Pin sits on a
+Pattern's subject. A standalone habit the guidance admits, one no Pattern owns,
+SHALL be its own item (ADR 528): its row a Pattern's row with the Habit glyph and
+no trailing value, and its card a Pattern's card, counting the episodes its case
+file claims of its denominator and drawing its case file's trace chart, its own
+episodes named Habit. Its card SHALL carry no Uncertain tag and no impact line,
+which the engine serves only for a Pattern. Its Pin SHALL start a Focus on the
+habit itself, under the habit's own subject, and its card SHALL show the Focus
+pill while that Focus is active. A Setting card's primary SHALL be Done (#518), where Pin sits on a
 Pattern card: it SHALL take the card out of the Queue at once, with a bar reading
 "Waiting for pump" and an Undo that withdraws it. A Setting the guidance serves
 as `not_on_pump` SHALL carry the Not on pump pill on its row and its card. Every
@@ -128,6 +135,24 @@ least one item is snoozed.
 - **THEN** its chart draws that one episode from the low's nadir over 0 to 180
   minutes against the other four lows' median and band, and no impact line, since
   one episode serves no bin
+
+#### Scenario: A standalone habit is its own card
+
+- **GIVEN** the `behavioral-missed-meal` QA case, whose missed-meal habit no
+  Pattern owns and the guidance admits
+- **WHEN** the Queue renders
+- **THEN** it holds one Habit card, Missed / unannounced meal, counting 2 of 6
+  highs, its chart drawing those two rises, with no Uncertain tag and no impact
+  line
+
+#### Scenario: Pin on a habit starts a Focus on that habit
+
+- **GIVEN** the same case
+- **WHEN** the person presses Pin on its card
+- **THEN** a Focus starts under `habit:missed_meal`, with no Pattern, and the card
+  shows the Focus pill
+- **AND** Changes shows that Focus titled by the habit, with no Pattern name
+- **AND** once the Focus is ended the card offers Pin again
 
 #### Scenario: A queued carb ratio counts its meal runs
 

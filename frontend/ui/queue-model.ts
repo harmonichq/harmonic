@@ -31,11 +31,11 @@ export type Impact = { kind: 'peak' | 'nadir'; own: Sourced<number>; typical: So
 export type TraceBin = { minute: number; n: number; median: number; p25: number; p75: number };
 
 /** The open card's trace chart, as the case file serves it (ADR 523): the
- *  start every episode is aligned at, the minutes drawn, the Pattern's own
- *  episodes (null when there are more than eight, which it then serves as its
- *  bins), and Typical's bins. */
+ *  start every episode is aligned at, the minutes drawn, the Pattern's (or a
+ *  standalone habit's, ADR 528) own episodes (null when there are more than
+ *  eight, which it then serves as its bins), and Typical's bins. */
 export type TraceData = {
-  anchor: 'bolus' | 'correction' | 'nadir';
+  anchor: 'bolus' | 'correction' | 'nadir' | 'meal_start';
   window: [number, number];
   tone: Tone;
   episodes: { minute: number; bg: number }[][] | null;
@@ -43,7 +43,11 @@ export type TraceData = {
   typical: TraceBin[];
 };
 
+/** An open Pattern card's data, or a standalone habit's: a habit the engine
+ *  queues on its own, no Pattern owning it, is drawn by the same card (ADR 528),
+ *  with no Uncertain (the engine serves none for a habit) and no impact line. */
 export type PatternData = {
+  kind: 'pattern' | 'habit';
   title: string;
   tone: Tone;
   /** Null when the engine serves no count for this pattern. */
@@ -117,6 +121,7 @@ export function pattern(name: QueueStore, key: string): PatternData {
   const tone: Tone = row.chips?.includes('highs') ? 'high' : 'low';
   const served = (s.cases as Record<string, { traces: ServedTraces }>)[key]?.traces;
   return {
+    kind: 'pattern',
     title: outcome?.title ?? row.title,
     tone,
     magnitude: sentences?.length
@@ -126,10 +131,7 @@ export function pattern(name: QueueStore, key: string): PatternData {
           noun: sentences[0].noun,
         }
       : null,
-    traces: served ? {
-      anchor: served.anchor, window: served.window_min, tone,
-      episodes: served.pattern.episodes, pattern: served.pattern.points, typical: served.typical.points,
-    } : null,
+    traces: served ? traceData(served, tone) : null,
     uncertain: (outcome?.wide as boolean | null | undefined) === true,
     pinned: s.focus.focuses.some((f) => f.status === 'active' && f.pattern_key === key),
     impact: served ? impact(name, key, tone, served) : null,
@@ -142,6 +144,43 @@ type ServedTraces = {
   pattern: { episodes: TraceData['episodes']; points: TraceBin[] };
   typical: { points: TraceBin[] };
 };
+
+const traceData = (served: ServedTraces, tone: Tone): TraceData => ({
+  anchor: served.anchor, window: served.window_min, tone,
+  episodes: served.pattern.episodes, pattern: served.pattern.points, typical: served.typical.points,
+});
+
+/** A standalone habit's case file, as its card reads it (ADR 528): the habit's
+ *  own claimed episodes of its denominator, and its trace chart. */
+type HabitCase = { summary: { claimed: number; denominator: number; noun: string }; traces: ServedTraces };
+
+/** A standalone habit the engine queues on its own (ADR 528), drawn as a
+ *  Pattern is: its served title, the count its case file serves (the same
+ *  population its chart draws), the trace chart, and Pin's Focus, keyed by the
+ *  habit's own subject. Its tone is its findings row's, as a Pattern's is. Null
+ *  when the findings or the case files serve nothing for it. */
+export function habit(name: QueueStore, subject: string): PatternData | null {
+  const s = store(name);
+  const key = subject.split(':')[1];
+  const served = (s.cases as Record<string, HabitCase | undefined>)[key];
+  const row = s.findings.rows.find((r) => r.id === `finding:${key}`);
+  const candidate = s.guidance.candidates.find((c) => c.subject === subject);
+  if (!served?.summary || !row || !candidate) return null;
+  const tone: Tone = row.chips?.includes('highs') ? 'high' : 'low';
+  const path = `queue.${name}.cases.${key}.summary`;
+  return {
+    kind: 'habit',
+    title: candidate.title,
+    tone,
+    magnitude: {
+      count: sourced(`${path}.claimed`), denominator: sourced(`${path}.denominator`), noun: served.summary.noun,
+    },
+    traces: traceData(served.traces, tone),
+    uncertain: false,
+    pinned: s.focus.focuses.some((f) => f.status === 'active' && f.subject === subject),
+    impact: null,
+  };
+}
 
 /** The impact pair from the Pattern's served trace chart, or null when either
  *  cohort serves no bin from the start on. Each value is the served median at
@@ -275,11 +314,18 @@ export function isfSetting(name: QueueStore): IsfSettingData | null {
 /** The story states the generator found in the served answers, by name. */
 const states = () => answers.states;
 type PatternState = 'traces_episodes' | 'traces_band' | 'traces_gap' | 'pinned' | 'uncertain';
+type HabitState = 'habit_episodes' | 'habit_band' | 'habit_pinned';
 type SettingState = 'setting' | 'setting_trial';
 
 export function patternState(name: PatternState): PatternData {
   const { store, pattern: key } = states()[name];
   return pattern(store as QueueStore, key);
+}
+
+/** A standalone habit's story state (ADR 528): its store and subject. */
+export function habitState(name: HabitState): { store: QueueStore; subject: string; data: PatternData } {
+  const { store, subject } = states()[name] as { store: QueueStore; subject: string };
+  return { store, subject, data: habit(store, subject)! };
 }
 
 export function settingState(name: SettingState): SettingData {
@@ -290,7 +336,7 @@ export function settingState(name: SettingState): SettingData {
 // --- The Queue screen --------------------------------------------------------
 
 export type QueueItem =
-  | { subject: string; kind: 'pattern'; data: PatternData }
+  | { subject: string; kind: 'pattern' | 'habit'; data: PatternData }
   | { subject: string; kind: 'setting'; data: SettingData }
   | { subject: string; kind: 'isf'; data: IsfSettingData };
 
@@ -303,6 +349,10 @@ function item(name: QueueStore, candidate: Candidate): QueueItem | null {
   if (candidate.kind === 'pattern') {
     const key = candidate.subject.split(':')[1];
     return patternRow(name, key).row ? { subject: candidate.subject, kind: 'pattern', data: pattern(name, key) } : null;
+  }
+  if (candidate.kind === 'habit') {
+    const data = habit(name, candidate.subject);
+    return data ? { subject: candidate.subject, kind: 'habit', data } : null;
   }
   if (candidate.subject === 'setting:basal_rate') {
     // The basal Setting opens on its admitted block, the earliest in the day.

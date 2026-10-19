@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { fixtures } from '../../fixtures';
+import { expectDirections } from '../../direction-check';
 import { failsOnce } from '../../flaky';
 import { CHANGES_UNNAMED } from '../../served-variants';
 import { ChangesScreen, type ChangesScreenProps } from './ChangesScreen';
@@ -16,8 +17,9 @@ import { ChangesScreen, type ChangesScreenProps } from './ChangesScreen';
 //   Control-IQ against the Pump profile.
 // - A carb ratio Trial a few days in: Meals before and after, its trace at
 //   each in-block meal bolus, the after arm meal by meal, and every module as
-//   its data forms, each glucose module closed by its Readings, no Δ toned
-//   while it matures (§2.5, 2026-10-19).
+//   its data forms, each glucose module closed by its Readings (§2.5,
+//   2026-10-19), every Δ coloured by its direction while it matures (§2.5,
+//   2026-10-19, "Color shows direction").
 // - The same Trial in its first hours: the before arm in full, and an empty
 //   after arm (no meals, no line, each after empty and without a Δ).
 // - A whole-profile switch: each setting it moved, the trace across the day.
@@ -72,17 +74,29 @@ const UNAVAILABLE = { store: 'wearer', state: unavailable ? 'unavailable' : 'rea
 
 export const DefaultPhone = story('phone', DEFAULT);
 export const DefaultDesktop = story('desktop', DEFAULT);
-export const TrialMaturingPhone = story('phone', MATURING);
-export const TrialMaturingDesktop = story('desktop', MATURING);
+// Six days in, the basal Trial's every Δ is green or red by the way it moved
+// (In range up, Mean up, Control-IQ's rows neutral), while the pill stays
+// Maturing and no result is shown: the colour is not the verdict.
+const metricsOf = (canvasElement: HTMLElement) => [...canvasElement.querySelectorAll('.ui-metrics')] as HTMLElement[];
+const directionsOf = (canvasElement: HTMLElement) =>
+  expectDirections(canvasElement, '.ui-metrics__row', '.ui-metrics__label');
+const maturingPlay: Story['play'] = async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  await expect(canvas.getByText('Maturing')).toBeInTheDocument();
+  for (const result of ['Better', 'Worse', 'Unclear']) await expect(canvas.queryByText(result)).toBeNull();
+  await expect(await directionsOf(canvasElement)).toEqual(
+    ['favorable', 'favorable', 'favorable', 'adverse', 'adverse', 'favorable', null, null, null]);
+};
+export const TrialMaturingPhone: Story = { ...story('phone', MATURING), play: maturingPlay };
+export const TrialMaturingDesktop: Story = { ...story('desktop', MATURING), play: maturingPlay };
 export const TrialMaturedPhone = story('phone', MATURED);
 export const TrialMaturedDesktop = story('desktop', MATURED);
 export const TrialWorsePhone = story('phone', WORSE);
 export const TrialWorseDesktop = story('desktop', WORSE);
 // A maturing Trial shows its data as it forms (§2.5, 2026-10-19): the meals,
 // the trace and every metric module over what the after arm has read so far,
-// each glucose module with its Readings; the pill stays Maturing, no Δ is
-// toned and End is not offered.
-const metricsOf = (canvasElement: HTMLElement) => [...canvasElement.querySelectorAll('.ui-metrics')] as HTMLElement[];
+// each glucose module with its Readings; the pill stays Maturing, every Δ is
+// coloured by its direction (here all the good way) and End is not offered.
 const formingPlay: Story['play'] = async ({ canvasElement }) => {
   const canvas = within(canvasElement);
   await expect(canvas.getByText('Maturing')).toBeInTheDocument();
@@ -95,7 +109,7 @@ const formingPlay: Story['play'] = async ({ canvasElement }) => {
     await expect(within(module).getByText('Readings')).toBeInTheDocument();
     for (const after of module.querySelectorAll('.ui-metrics__after')) await expect(after.textContent).not.toBe('');
   }
-  await expect(canvasElement.querySelector('.ui-delta--favorable, .ui-delta--adverse')).toBeNull();
+  await expect(await directionsOf(canvasElement)).toEqual(Array(6).fill('favorable'));
 };
 export const CarbRatioMaturingPhone: Story = { ...story('phone', CARB_RATIO), play: formingPlay };
 export const CarbRatioMaturingDesktop: Story = { ...story('desktop', CARB_RATIO), play: formingPlay };

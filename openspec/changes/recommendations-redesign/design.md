@@ -1816,3 +1816,35 @@ reads unavailable while the frontier is behind.
 **Consequences.** Four API tests: the unreconciled admission naming its Trial,
 and the credentials save, the sign-off and the late conclusion each leaving the
 admission available. All four failed first with the operator's symptom.
+
+## ADR 558 — A change is coloured by its direction, never by the verdict
+
+Amends ADR 554. Connor, 2026-10-19, of a maturing Trial whose every Δ was grey
+while In range rose seven points: "Color shows direction. We can have vaguely
+good or bad changes that should indicate that they're good or bad via color
+plus arrow regardless of whether the change itself should be kept or not.
+those are separate".
+
+**Decision.**
+
+- **Colour is the direction's.** Every Δ the app draws is green where its value
+  moved the good way for its metric, red the bad way, and neutral where it
+  prints unchanged or neither way is better: Changes' modules maturing or
+  matured, a Focus's habit share and outcomes, the Overview's metrics against
+  the previous period, and a Queue row's Peak or Nadir against Typical.
+- **One table of good ways, in the library.** In range up; Below 70, Above 180,
+  Mean, GMI and CV down; Peak down; Nadir up; a Focus's habit share down, as the
+  engine assesses that rate; none for a basal Trial's Control-IQ rows. It lives
+  in `frontend/ui/direction.ts`, beside the one function that builds every Δ,
+  which the Changes, Overview and Queue models all call. The engine serves no
+  direction per metric, so no served shape changes; this is a presentation
+  rule, not a second verdict.
+- **The verdict stays the pill's.** Better / Worse / Unclear is still the
+  engine's served result, hidden until a Trial matures (ADR 554's "Only the
+  verdict waits" stands for the pill). ADR 554's untoned Δ while maturing is
+  withdrawn, and so is the earlier rule that a row takes colour only where the
+  engine judged it.
+
+**Consequences.** The models no longer read a row's `assessment.state` for
+colour. The stories check each Δ's colour against the lock's own list of good
+ways, and the contract test asserts each trial case's colours as literals.

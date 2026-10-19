@@ -4,10 +4,10 @@
 //
 // The change is a Delta (the one change element, shared with ChangeCard): ▲ or
 // ▼ and the amount in the metric's own unit, the difference of the values as
-// printed. Only Below 70 and Above 180 are coloured favourable or adverse; the
-// others keep a neutral arrow. A change that prints as zero has no arrow and
-// stays in neutral ink. A metric the engine does not serve, or a previous
-// period without data, shows no change.
+// printed, green where it moved the good way for its metric and red the bad
+// way (§2.5, 2026-10-19). A change that prints as zero has no arrow and stays
+// in neutral ink. A metric the engine does not serve, or a previous period
+// without data, shows no change.
 import { ZoneSwatch } from '../../glucose-zones';
 import { change, type MetricData, type MetricKey } from '../../overview-model';
 import { Delta } from '../../Delta';

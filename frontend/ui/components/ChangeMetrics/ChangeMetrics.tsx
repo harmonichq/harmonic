@@ -1,9 +1,11 @@
 // ChangeMetrics (§4.2, §2.5 2026-10-14): one module of a Trial's metrics,
 // before → after with the Δ, beneath its ChangeCard. Each row is its metric's
 // name, the before value receded, →, the after value strong, its unit, and the
-// shared Delta (▲/▼ and the amount, green or red only where the engine judged
-// that row better or worse; neutral where unclear, and on every row the engine
-// does not judge). The Trial's own target metric is strong.
+// shared Delta (▲/▼ and the amount, green where it moved the good way for its
+// metric and red the bad way, maturing or matured; neutral on Control-IQ's
+// rows, where neither way is better, §2.5 2026-10-19). Whether the change is
+// kept is the result pill's, never the colour's. The Trial's own target
+// metric is strong.
 //
 // The values align like a table without drawing one (the operator: "we don't
 // need to make it look like a table, but the data should align like a

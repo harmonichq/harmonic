@@ -195,13 +195,16 @@ const EXPECTED = {
     trial: { block: [180, 210], moves: [['03:00', 0.6, 0.54, 'U/h']], meals: null,
       trace: { alignment: 'clock', episodes: [13, 15] },
       modules: { ranges: ['tir', 'tbr', 'tar'], glucose: ['mean', 'gmi', 'cv'], basal: ['delivered', 'above', 'below'] },
-      delivered: [0.48, 0.48], readings: [78, 90] },
+      delivered: [0.48, 0.48], readings: [78, 90],
+      // Every row but CV prints unchanged, so only CV, lower, is coloured: green.
+      tones: { tir: null, tbr: null, tar: null, mean: null, gmi: null, cv: 'favorable',
+        delivered: null, above: null, below: null } },
     previous: [],
   },
   // #554: a carb ratio Trial six days in, retained by a release before #503 and #553.
   // Maturing, it shows its data as it forms: each arm's meals, the trace at
-  // each meal bolus, every glucose module over the readings read so far, no
-  // result and no Δ toned.
+  // each meal bolus, every glucose module over the readings read so far, and
+  // no result.
   'c3-ic-trial': {
     queue: [],
     isf: null,
@@ -210,7 +213,9 @@ const EXPECTED = {
     trial: { block: [660, 840], moves: [['11:00', 5, 4.4, 'g/U']], meals: { before: 24, after: 6 },
       trace: { alignment: 'meal', episodes: [24, 6] },
       modules: { ranges: ['tir', 'tbr', 'tar'], glucose: ['mean', 'gmi', 'cv'], basal: [] },
-      delivered: null, readings: [1440, 360] },
+      delivered: null, readings: [1440, 360],
+      // Its arms print the same on every row: no arrow, neutral.
+      tones: { tir: null, tbr: null, tar: null, mean: null, gmi: null, cv: null } },
     previous: [],
   },
 };
@@ -318,12 +323,10 @@ test(`the live adapter serves each tab's model from the ${CASE} store`, async (t
       }
       // Each glucose module's readings, before and after (#554).
       assert.deepEqual([active.readings.before, active.readings.after], trial.readings);
-      // A maturing Trial claims nothing yet: no result and no Δ toned (#554).
-      if (active.maturing) {
-        for (const row of [...active.ranges, ...active.glucose, ...active.basal]) {
-          assert.equal(row.delta?.tone ?? null, null, `${row.key} untoned while maturing`);
-        }
-      }
+      // Each Δ green or red by the way it moved, maturing or matured; neutral
+      // where neither way is better (§2.5, 2026-10-19). The verdict is the result's.
+      assert.deepEqual(Object.fromEntries([...active.ranges, ...active.glucose, ...active.basal]
+        .map((row) => [row.key, row.delta?.tone ?? null])), trial.tones, 'Δ colours');
     }
     if (expected.previous) {
       const previous = values(changes.previousChanges('wearer'));

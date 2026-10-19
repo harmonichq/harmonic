@@ -182,6 +182,9 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
   const fetchExploreTimeOfDay = (days) =>
     api('/api/explore/time-of-day' + (days ? '?days=' + encodeURIComponent(days) : ''));
 
+  /** GET /api/explore/meal-size — the Meal size card: the climb after each counted meal of the last 90 days, by size (#501). */
+  const fetchMealSize = () => api('/api/explore/meal-size');
+
   /**
    * GET /api/day-navigator[?month=YYYY-MM] — each day of the month (the latest
    * with data when none is named), ± a week of pad: its lows, highs, in-range
@@ -241,7 +244,7 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
     fetchDiagnoseFindings, fetchAnalysis,
     fetchDiagnoseFindingCasePreparation, fetchDiagnoseFindingCase,
     fetchVerifyTrials, finishTrial, fetchFocuses, pinFocus, resolveFocus,
-    fetchOutcomes, fetchExploreTimeOfDay, fetchDayNavigator,
+    fetchOutcomes, fetchExploreTimeOfDay, fetchMealSize, fetchDayNavigator,
     fetchTimeline, fetchCarbs, fetchModelView, createCarb, updateCarb, fetchPrompts, answerPrompt,
   };
 }

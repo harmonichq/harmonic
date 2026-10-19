@@ -223,13 +223,14 @@ class GuidanceApiTest(unittest.TestCase):
 
     def test_preference_write_keeps_every_recorded_data_result(self):
         """#522, #538: a snooze writes follow-up state only, so the Overview's and
-        the Day screen's results survive it, and so does the default analysis."""
+        the Day screen's results survive it, and so does the default analysis.
+        #501: the Meal size card's among them."""
         import ciq_autotune.api as api_mod
         import ciq_autotune.analyzers.scenario as scenario_mod
         import ciq_autotune.outcomes as outcomes_mod
         _tmp, app, client = self._case_client("behavioral-carb-undercount")
         day = client.get("/api/status").json()["latest_data_day"]
-        counts = {"outcomes": 0, "model-view": 0, "analyze": 0}
+        counts = {"outcomes": 0, "model-view": 0, "analyze": 0, "meal-size": 0}
 
         def counting(label, real):
             def run(*args, **kwargs):
@@ -241,30 +242,35 @@ class GuidanceApiTest(unittest.TestCase):
                           counting("outcomes", outcomes_mod.summarize_outcomes)), \
              patch.object(scenario_mod, "build_model_view",
                           counting("model-view", scenario_mod.build_model_view)), \
-             patch.object(api_mod, "analyze", counting("analyze", api_mod.analyze)):
+             patch.object(api_mod, "analyze", counting("analyze", api_mod.analyze)), \
+             patch.object(api_mod, "build_meal_size",
+                          counting("meal-size", api_mod.build_meal_size)):
             def read_all():
                 for path, params in (("/api/outcomes", {"window": 14}),
                                      ("/api/model-view", {"date": day}),
                                      ("/api/analyze", {"window": 14}),
-                                     ("/api/analyze", {})):
+                                     ("/api/analyze", {}),
+                                     ("/api/explore/meal-size", {})):
                     self.assertEqual(client.get(path, params=params).status_code, 200, path)
             read_all()
-            self.assertEqual(counts, {"outcomes": 1, "model-view": 1, "analyze": 2})
+            self.assertEqual(counts, {"outcomes": 1, "model-view": 1, "analyze": 2, "meal-size": 1})
             current = client.get("/api/guidance").json()  # its own pooled analysis
             self.assertEqual(counts["analyze"], 3)
             saved = client.put("/api/guidance/preferences/pattern:highs_after_meals",
                                json={"generation": current["analysis_generation"]})
             self.assertEqual(saved.status_code, 200, saved.text)
+            # Kept in memory, not merely reloadable from the derived results.
+            self.assertTrue(app.state.result_cache.contains(("meal-size",)))
             read_all()
             # Nothing is computed again: the default analysis is keyed by the
             # recorded-data revision, which the snooze did not advance.
-            self.assertEqual(counts, {"outcomes": 1, "model-view": 1, "analyze": 3})
+            self.assertEqual(counts, {"outcomes": 1, "model-view": 1, "analyze": 3, "meal-size": 1})
             # A carb write changes recorded data, so everything is read again.
             logged = client.post("/api/carbs", json={
                 "t": f"{day} 12:00:00", "grams": 10, "certainty": "exact"})
             self.assertEqual(logged.status_code, 200, logged.text)
             read_all()
-            self.assertEqual(counts, {"outcomes": 2, "model-view": 2, "analyze": 5})
+            self.assertEqual(counts, {"outcomes": 2, "model-view": 2, "analyze": 5, "meal-size": 2})
 
     def test_a_snooze_reranks_the_queue_from_the_derived_results_without_recomputing(self):
         """#538: after a snooze the guidance ranks from the findings snapshot and the

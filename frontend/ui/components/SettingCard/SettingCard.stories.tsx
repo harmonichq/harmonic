@@ -46,7 +46,7 @@ export const CarbRatio: Story = {
     // count is that one list's length.
     const edges = [...canvasElement.querySelectorAll('[data-edge] tspan')]
       .reduce((sum, edge) => sum + Number(edge.textContent), 0);
-    await expect(canvasElement.querySelectorAll('.ui-evidence__dot').length + edges).toBe(carbRatio.count.value.value);
+    await expect(canvasElement.querySelectorAll('.ui-chart__dot').length + edges).toBe(carbRatio.count.value.value);
   },
 };
 export const CarbRatioDesktop: Story = { args: { data: carbRatio }, parameters: { frame: { width: 720 } } };

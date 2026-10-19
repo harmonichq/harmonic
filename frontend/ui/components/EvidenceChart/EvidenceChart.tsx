@@ -23,9 +23,8 @@
 import type { Sourced } from '../../answers';
 import { formatValue } from '../../provenance.js';
 import { useWidth } from '../../measure';
-import { labelledTicks, niceTicks } from '../Chart/scale';
+import { DOT_PITCH as PITCH, DOT_R as R, labelledTicks, niceTicks, swarm } from '../Chart/scale';
 import '../Chart/Chart.css';
-import './EvidenceChart.css';
 
 export type EvidenceChartProps = {
   dots: readonly { rate: Sourced<number> }[];
@@ -42,33 +41,12 @@ export type EvidenceChartProps = {
   axis: string;
 };
 
-const R = 3;
-const PITCH = 6.6;      // a 6 px dot and the gap to the next
-const MAX_LEVELS = 5;   // either side of the row
 const LABEL_ROW = 18;
 const PLOT_TOP = 2 * LABEL_ROW + 6;
 const EDGE_LABEL = 26;  // an edge count's width, "‹ 12" at 13 px
 const EDGE_GUTTER = EDGE_LABEL + 8; // the count and its clearance from the plot
 const LABEL_CHAR = 7.4; // a 13 px Inter character, generously
 const TICK_CHAR = 6.6;  // an 11 px Inter tick character, generously
-
-/** A symmetric beeswarm: each dot, left to right, takes the level nearest the
- *  row where it touches no dot already placed (the outermost when none is free). */
-function swarm(xs: number[]): number[] {
-  const order = xs.map((x, i) => ({ x, i })).sort((a, b) => a.x - b.x);
-  const placed: { x: number; level: number }[] = [];
-  const levels = new Array<number>(xs.length);
-  for (const { x, i } of order) {
-    let chosen = 0;
-    for (let k = 0; k <= 2 * MAX_LEVELS; k += 1) {
-      chosen = k === 0 ? 0 : (k % 2 ? -1 : 1) * Math.ceil(k / 2);
-      if (!placed.some((p) => Math.hypot(p.x - x, (p.level - chosen) * PITCH) < PITCH - 0.4)) break;
-    }
-    placed.push({ x, level: chosen });
-    levels[i] = chosen;
-  }
-  return levels;
-}
 
 /** A mark's label, on the side away from the other mark unless the chart's
  *  edge leaves no room there. */
@@ -140,7 +118,7 @@ export function EvidenceChart({ dots, roster, field, current, estimate, lo, hi, 
       <g aria-hidden="true">
         {inside.map((value, i) => (
           <circle key={i} cx={x(value)} cy={row + levels[i] * PITCH} r={R}
-            className={value >= lo.value && value <= hi.value ? 'ui-evidence__dot ui-evidence__dot--in' : 'ui-evidence__dot'} />
+            className={value >= lo.value && value <= hi.value ? 'ui-chart__dot ui-chart__dot--in' : 'ui-chart__dot'} />
         ))}
       </g>
       {below > 0 && (

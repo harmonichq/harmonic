@@ -12,8 +12,9 @@ import { OverviewScreen, type OverviewScreenProps } from './OverviewScreen';
 // Plays per size: choosing 30 d shows that window's metrics, profile and ISF
 // estimate; each window's date line and changes name the period before it, or
 // none; and the page scrolls as one, the summary first, the ISF and basal
-// estimates below (ADR 523). At 90 d the basal card marks the slots the engine
-// stages a move for.
+// estimates below (ADR 523), then the Meal size card (ADR 501), which keeps its
+// one 90-day window whatever window is chosen. At 90 d the basal card marks the
+// slots the engine stages a move for.
 const meta: Meta<typeof OverviewScreen> = {
   title: 'Screens/Overview',
   component: OverviewScreen,
@@ -52,16 +53,26 @@ export const Window90Phone: Story = { ...story('phone', { store: 'wearer', windo
 export const Window90Desktop: Story = {
   ...story('desktop', { store: 'wearer', window: '90' }), play: comparesWith('90', false),
 };
-export const NoDataPhone = story('phone', { store: 'wearer-unsynced' });
-export const NoDataDesktop = story('desktop', { store: 'wearer-unsynced' });
+/** No readings: every card says No data, the Meal size card among them. */
+const noData: Story['play'] = async ({ canvasElement }) => {
+  const card = canvasElement.querySelector('.ui-meal-size')!;
+  await expect(card.querySelector('.ui-isf__none')?.textContent).toBe('No data');
+};
+export const NoDataPhone: Story = { ...story('phone', { store: 'wearer-unsynced' }), play: noData };
+export const NoDataDesktop: Story = { ...story('desktop', { store: 'wearer-unsynced' }), play: noData };
 export const LoadingPhone = story('phone', { store: 'wearer', state: 'loading' });
 export const LoadingDesktop = story('desktop', { store: 'wearer', state: 'loading' });
 export const UnavailablePhone = story('phone', { store: 'wearer', state: 'unavailable' });
 export const UnavailableDesktop = story('desktop', { store: 'wearer', state: 'unavailable' });
 // Stale (§2.5, 2026-10-14): the last answers, kept on screen under Unavailable
 // and Retry, when reading them again failed.
-export const StalePhone = story('phone', { store: 'wearer', state: 'stale' });
-export const StaleDesktop = story('desktop', { store: 'wearer', state: 'stale' });
+// The Meal size card keeps drawing its last answer, as every card does.
+const stale: Story['play'] = async ({ canvasElement }) => {
+  await expect(canvasElement.querySelector('[data-source="overview.wearer.meal_size.window.data_days"]')).not.toBeNull();
+  await expect(canvasElement.querySelectorAll('.ui-meal-size .ui-chart__dot').length).toBeGreaterThan(0);
+};
+export const StalePhone: Story = { ...story('phone', { store: 'wearer', state: 'stale' }), play: stale };
+export const StaleDesktop: Story = { ...story('desktop', { store: 'wearer', state: 'stale' }), play: stale };
 
 /** The page scrolls as one: the summary fills the first screen (the profile
  *  ends inside it), the ISF and basal estimates follow, and scrolled to the end
@@ -94,6 +105,8 @@ const choose30: Story['play'] = async ({ canvasElement }) => {
   await expect(at('overview.wearer.time_of_day.14.')).toBeNull();
   await expect(at('overview.wearer.analyze.30.')).not.toBeNull();
   await expect(at('overview.wearer.analyze.14.')).toBeNull();
+  // The Meal size card reads its one window, whichever is chosen.
+  await expect(at('overview.wearer.meal_size.window.data_days')).not.toBeNull();
 };
 
 export const ChooseWindowPhone: Story = { ...story('phone', { store: 'wearer' }), play: choose30 };

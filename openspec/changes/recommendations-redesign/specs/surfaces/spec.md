@@ -194,7 +194,7 @@ be toned and no result shown.
 #### Scenario: A maturing Trial shows its data as it forms
 
 - **GIVEN** the `c3-ic-trial` QA case, a carb ratio Trial six days in that a
-  release before #503 retained
+  release before #503 and #553 retained
 - **WHEN** Changes renders
 - **THEN** it reads Maturing with Meals before and after, the trace at each meal
   bolus for both periods, In range / Below 70 / Above 180 and Mean / GMI / CV,

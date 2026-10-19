@@ -136,8 +136,8 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
                          window_start=start, window_end=now, bound_classifier_context=False)
     # Each family lists its recurrence population and nothing else (#550): the
     # opportunities the engine prices a habit over, so an anchor the episode walk
-    # adds outside them (a near-low, a rebound's synthesized High, the first
-    # correction of the window, which pairs with nothing) is no occurrence.
+    # adds outside them (a rebound's synthesized High, the first correction of the
+    # window, which pairs with nothing) is no occurrence.
     member_of = _opportunity_identities(evaluated.families)
     # The one opportunity each attributed episode's claim is associated with.
     claims = {row.episode_id: row for row in evaluated.attributed if row.anchor_t is not None}

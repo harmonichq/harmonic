@@ -196,7 +196,8 @@ evaluation reads, including their endpoint rule. It SHALL NOT judge a low, a
 rebound or ownership itself. A High that no low owns SHALL be judged exactly as
 before. Every sub-70 low SHALL keep its own "did you treat this low?" prompt. A
 low refuted by a `no` answer owns nothing, so its rebound High SHALL be judged on
-its own. No detector,
+its own. A dip that stays above 70 mg/dL is no low (#553): it SHALL raise no low
+prompt and own no High. No detector,
 staging predicate, cap, support floor, segmentation rule, rebound horizon, bar or
 meal stop, or context-gate default SHALL change.
 
@@ -208,12 +209,13 @@ meal stop, or context-gate default SHALL change.
 - **THEN** it raises one "did you treat this low?" prompt at the nadir
 - **AND** it raises no "did you eat here?" prompt for the High
 
-#### Scenario: A near-low's rebound raises no prompt
+#### Scenario: A near-low owns no rebound, so its High is asked about
 
-- **GIVEN** a 72 mg/dL nadir that rebounds into a High, within 90 minutes of the
-  nadir or later
+- **GIVEN** a 72 mg/dL nadir that rebounds with no bolus into a High, within 90
+  minutes of the nadir or later
 - **WHEN** the prompt queue derives its candidates
-- **THEN** it raises no prompt for the near-low or for the High
+- **THEN** it raises no prompt for the dip
+- **AND** it raises a "did you eat here?" prompt at the High's onset
 
 #### Scenario: A refuted low's rebound High is asked about
 
@@ -456,15 +458,14 @@ The exposure feed SHALL list, in each family, that family's recurrence populatio
 and nothing else (#550): every meal, every low run below the gate low line,
 every high run at or over the high line, and every adjacent pair of user
 corrections, anchored at its second dose. No other anchor of the episode walk
-SHALL be an Occurrence: not a near-low, not the High synthesized at an
-over-treated low's rebound, and not a correction that closes no pair. The feed
+SHALL be an Occurrence: not the High synthesized at an over-treated low's rebound,
+and not a correction that closes no pair. The feed
 SHALL place each attributed episode's claim on the one opportunity the engine
 associates it with (its recurrence anchor), and on no other anchor. An opportunity
 two claims share SHALL carry both levers, the first as its cause, and the later
 claim SHALL keep the minute its own consequence landed at. A claim the engine
-associates with no opportunity, such as a near-low's, SHALL be counted by no
-findings row, no case file and no Pattern; the engine's own priced confidence
-keeps its compatibility clamp for it (ADR 202).
+associates with no opportunity SHALL be counted by no findings row, no case file,
+no Pattern and no priced confidence (#553).
 
 A habit's findings row SHALL count the habit once, in its own recurrence family:
 its claims over that family's Occurrences, each judged at the minute that habit's
@@ -479,8 +480,8 @@ none of these counts.
   lunch bolus, whose episode walk visited 26 highs, two of them an over-treated
   low's rebound below 250
 - **WHEN** the findings answer and the missed-meal case file are read
-- **THEN** the Missed / unannounced meal row serves one count sentence, 12 of 24
-  highs, and its case file's summary counts 12 of 24 highs
+- **THEN** the Missed / unannounced meal row serves one count sentence, 13 of 24
+  highs, and its case file's summary counts 13 of 24 highs
 - **AND** the row serves no correction-cluster sentence
 
 #### Scenario: Correction pairs, not correction boluses
@@ -490,13 +491,14 @@ none of these counts.
 - **WHEN** its findings answer and Correction stacking case file are read
 - **THEN** the row counts 2 of 7 correction clusters, as its case file does
 
-#### Scenario: A near-low is no low
+#### Scenario: A dip above the low line joins no population
 
-- **GIVEN** the `pattern-near-tie` QA case, whose nine low anchors include two
-  dips to 74 and 75 mg/dL
+- **GIVEN** the `pattern-near-tie` QA case, whose CGM dips to 74 and 75 mg/dL
+  without reaching 70 besides its seven lows
 - **WHEN** its findings answer and Over-treated low case file are read
-- **THEN** the row counts 1 of 7 lows, as its case file does, and Highs after
-  treating lows counts over the same 7 lows
+- **THEN** neither dip is a low anchor
+- **AND** the row counts 1 of 7 lows, as its case file and the engine's confidence
+  do, and Highs after treating lows counts over the same 7 lows
 
 #### Scenario: An over-treated low claimed from its rebound sits on its crash low
 
@@ -505,6 +507,86 @@ none of these counts.
 - **WHEN** the exposure feed is built
 - **THEN** it serves no high, and the crash low carries its own cause and then
   Over-treated low
+
+### Requirement: A fired over-treated low's rebound owns every High it reaches
+
+A Low is a CGM run at or under 70 mg/dL (#553); a dip that stays above it owns
+nothing. When an eligible Low's over-treated-low judgment fires, that Low SHALL own every
+real CGM High run that begins after its nadir and at or before its guarded rebound
+terminal, whether the High shares the Low's Episode or falls in a later one. A #155
+synthesized rebound High-moment SHALL own through its own span, from the crash
+nadir to the guarded terminal. A Low whose judgment does not fire owns nothing:
+under its bar, owned by an announced meal, or refuted by a `no` answer. A High run
+that begins after the terminal SHALL be judged on its own. Ownership SHALL be read
+from the shared evaluation's own fired judgment, and no consumer SHALL re-judge it.
+Ownership SHALL be span membership: the evaluation SHALL record every owned High,
+whatever its own classifiers return.
+
+An owned High SHALL NOT attribute Missed / unannounced meal (ADR 499). Only an
+outcome of that classifier that would otherwise match SHALL become a
+non-match with silence reason `upstream_cause`, whose detail names the owning
+Low's nadir value and time. Every non-matching exit SHALL keep its own reason and
+detail. These include too little data (`insufficient_data`), a flat or slow rise,
+a digestion tail or no counted meal bolus (`no_trigger`), no correction following
+(`horizon_expired`), and the context gate's own verdict. The classifier SHALL judge the context gate under the scenario
+configuration it was given.
+
+The owning Episode's scored span SHALL reach the later of its guarded terminal and
+the end of every High run it owns. It SHALL never reach past the guarded scan's
+meal-bolus stop, the next substantial carb-tagged meal bolus after the nadir. It
+SHALL still stop at the next Episode that bears a Lever. An owned High SHALL NOT count toward the highs "no cause detected"
+total, even when its own Episode draws no Lever. It SHALL remain a non-driver
+Occurrence with no attributed Lever. No staging predicate, cap, support floor,
+segmentation rule, gate lookback, rebound horizon or rebound bar SHALL change.
+
+#### Scenario: A slow rebound that splits off is not a missed meal
+
+- **GIVEN** a synthetic window in which, on several days, a sub-70 Low rebounds
+  with no bolus into a High that crosses 250 mg/dL more than 90 minutes after the
+  Low run ends and before the guarded terminal
+- **WHEN** the shared evaluation runs
+- **THEN** each rebound is attributed Over-treated low exactly once
+- **AND** no Episode attributes Missed / unannounced meal to the High, whose own Episode is silent with `upstream_cause`
+
+#### Scenario: A slow approach to the High is still owned
+
+- **GIVEN** a Low whose rebound climbs fast, then creeps across 250 mg/dL too slowly
+  to count as a rise, more than 90 minutes after the Low run ends
+- **WHEN** the shared evaluation runs and the exposures producer tallies highs
+- **THEN** the High's verdicts keep `no_trigger`
+- **AND** the High is recorded as owned and is not counted as uncaused
+
+#### Scenario: A near-low owns no rebound inside its Episode
+
+- **GIVEN** a 72 mg/dL nadir that rebounds with no bolus into a 270 mg/dL High
+  inside the same Episode
+- **WHEN** the shared evaluation runs
+- **THEN** no Episode attributes Over-treated low and the Episode owns no High
+- **AND** the Episode attributes Missed / unannounced meal to the High
+
+#### Scenario: A High beyond the rebound is still judged on its own
+
+- **GIVEN** a Low whose rebound settles in range before a later unbolused rise, and
+  a continuous climb that first crosses 250 mg/dL after the 180-minute horizon
+- **WHEN** the shared evaluation runs
+- **THEN** each of those Highs still attributes Missed / unannounced meal
+
+#### Scenario: The rebound's out-of-range time counts on the Low's Episode
+
+- **GIVEN** a split-off owned High in an Episode that draws no Lever
+- **WHEN** the Over-treated-low Episode is scored
+- **THEN** its span reaches the later of the guarded terminal and the owned High
+  run's end
+- **AND** a later Episode that bears a Lever still bounds it
+- **AND** a substantial meal bolused during the owned High ends the span no later
+  than that bolus
+
+#### Scenario: An owned High is explained, not uncaused
+
+- **GIVEN** a window whose only High is owned by an over-treated Low and sits in an
+  Episode that draws no Lever
+- **WHEN** the exposures producer tallies the highs family
+- **THEN** that High is not counted as uncaused and carries no attributed Lever
 
 ## MODIFIED Requirements
 
@@ -581,6 +663,13 @@ levers both derive from the same Exposure opportunities.
 Every lever recurs over its own Exposure family, named by that family's noun
 (ADR 499).
 
+A lever's attributed count SHALL be the distinct members of its recurrence
+population its claims sit on, through the evaluation's one association, so it is a
+subset of its denominator by construction (#553). Claims that share a member SHALL
+count once, represented by their worst Episode. A claim that sits on no member SHALL
+be priced by no confidence and counted by no tally. No consumer SHALL clamp a
+lever's attributed count to its denominator, or its denominator to its count.
+
 "Missed / unannounced meal" is the only lever whose comparison crosses
 populations: it recurs over highs and compares against completed carb-bolus
 meals. Every other lever compares within its own population, and the three
@@ -595,6 +684,16 @@ cross-population flag, so no consumer infers either from a lever's name.
 - **WHEN** the capability evaluates the behavior described by this requirement
 - **THEN** the stated behavior applies
 
+#### Scenario: A habit's price counts the members its claims sit on
+
+- **GIVEN** the `behavioral-over-treated-near-low` QA case: two over-treated sub-70
+  lows among six, and a 72 mg/dL dip that rebounds to 244 mg/dL
+- **WHEN** the scenario, the findings answer and the Over-treated low case file are
+  read
+- **THEN** the Over-treated low confidence, its row and its case file's summary all
+  read 2 of 6 lows
+- **AND** no Episode and no Occurrence sits at the dip
+
 #### Scenario: A split meal is one completed meal
 
 - **GIVEN** a synthetic store with a 45 g completed meal bolus and a 20 g completed
@@ -602,84 +701,6 @@ cross-population flag, so no consumer infers either from a lever's name.
 - **WHEN** the meals Exposure family and the completed carb-bolus comparison
   population are built
 - **THEN** each holds one meal for the pair, identified by the first bolus
-
-### Requirement: An over-treated low's fired rebound owns every High it reaches
-
-When an eligible Low's over-treated-low judgment fires, that Low SHALL own every
-real CGM High run that begins after its nadir and at or before its guarded rebound
-terminal, whether the High shares the Low's Episode or falls in a later one. A #155
-synthesized rebound High-moment SHALL own through its own span, from the crash
-nadir to the guarded terminal. A Low whose judgment does not fire owns nothing:
-under its bar, owned by an announced meal, or refuted by a `no` answer. A High run
-that begins after the terminal SHALL be judged on its own. Ownership SHALL be read
-from the shared evaluation's own fired judgment, and no consumer SHALL re-judge it.
-Ownership SHALL be span membership: the evaluation SHALL record every owned High,
-whatever its own classifiers return.
-
-An owned High SHALL NOT attribute Missed / unannounced meal (ADR 499). Only an
-outcome of that classifier that would otherwise match SHALL become a
-non-match with silence reason `upstream_cause`, whose detail names the owning
-Low's nadir value and time. Every non-matching exit SHALL keep its own reason and
-detail. These include too little data (`insufficient_data`), a flat or slow rise,
-a digestion tail or no counted meal bolus (`no_trigger`), no correction following
-(`horizon_expired`), and the context gate's own verdict. The classifier SHALL judge the context gate under the scenario
-configuration it was given.
-
-The owning Episode's scored span SHALL reach the later of its guarded terminal and
-the end of every High run it owns. It SHALL never reach past the guarded scan's
-meal-bolus stop, the next substantial carb-tagged meal bolus after the nadir. It
-SHALL still stop at the next Episode that bears a Lever. An owned High SHALL NOT count toward the highs "no cause detected"
-total, even when its own Episode draws no Lever. It SHALL remain a non-driver
-Occurrence with no attributed Lever. No staging predicate, cap, support floor,
-segmentation rule, gate lookback, rebound horizon or rebound bar SHALL change.
-
-#### Scenario: A slow rebound that splits off is not a missed meal
-
-- **GIVEN** a synthetic window in which, on several days, a sub-70 Low rebounds
-  with no bolus into a High that crosses 250 mg/dL more than 90 minutes after the
-  Low run ends and before the guarded terminal
-- **WHEN** the shared evaluation runs
-- **THEN** each rebound is attributed Over-treated low exactly once
-- **AND** no Episode attributes Missed / unannounced meal to the High, whose own Episode is silent with `upstream_cause`
-
-#### Scenario: A slow approach to the High is still owned
-
-- **GIVEN** a Low whose rebound climbs fast, then creeps across 250 mg/dL too slowly
-  to count as a rise, more than 90 minutes after the Low run ends
-- **WHEN** the shared evaluation runs and the exposures producer tallies highs
-- **THEN** the High's verdicts keep `no_trigger`
-- **AND** the High is recorded as owned and is not counted as uncaused
-
-#### Scenario: A near-low rebound inside its own Episode is not a missed-meal candidate
-
-- **GIVEN** a 72 mg/dL nadir that rebounds into a High inside the same Episode
-- **WHEN** the shared evaluation runs
-- **THEN** the Episode keeps Over-treated low
-- **AND** no missed-meal match remains for that High
-
-#### Scenario: A High beyond the rebound is still judged on its own
-
-- **GIVEN** a Low whose rebound settles in range before a later unbolused rise, and
-  a continuous climb that first crosses 250 mg/dL after the 180-minute horizon
-- **WHEN** the shared evaluation runs
-- **THEN** each of those Highs still attributes Missed / unannounced meal
-
-#### Scenario: The rebound's out-of-range time counts on the Low's Episode
-
-- **GIVEN** a split-off owned High in an Episode that draws no Lever
-- **WHEN** the Over-treated-low Episode is scored
-- **THEN** its span reaches the later of the guarded terminal and the owned High
-  run's end
-- **AND** a later Episode that bears a Lever still bounds it
-- **AND** a substantial meal bolused during the owned High ends the span no later
-  than that bolus
-
-#### Scenario: An owned High is explained, not uncaused
-
-- **GIVEN** a window whose only High is owned by an over-treated Low and sits in an
-  Episode that draws no Lever
-- **WHEN** the exposures producer tallies the highs family
-- **THEN** that High is not counted as uncaused and carries no attributed Lever
 
 ### Requirement: Case-file Occurrences serve the facts their anchor has
 
@@ -797,6 +818,12 @@ carb-ratio analyzer's meal and run ledgers SHALL be unchanged.
   over-delivery judges the suspend for that meal, never for its top-up
 
 ## REMOVED Requirements
+
+### Requirement: An over-treated low's fired rebound owns every High it reaches
+
+**Reason:** ADR 553 sets one 70 mg/dL low line ("70 everywhere"), so a near-low owns no rebound and one of this requirement's scenarios now asserts the opposite of the system. Its surviving behavior is restated as "A fired over-treated low's rebound owns every High it reaches": a MODIFIED block cannot drop a scenario, so the requirement takes a new header.
+
+**Migration:** Read "A fired over-treated low's rebound owns every High it reaches", ADDED in this change.
 
 ### Requirement: Sequence competition prices observed impact before ownership
 

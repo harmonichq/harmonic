@@ -1516,6 +1516,9 @@ serving its state. The showcase's contract leg asserts its literals. The lock's
 
 ## ADR 550 — A habit is counted over its recurrence population, from one source
 
+> Superseded in part by `ADR 553` (below): no claim sits on a near-low, and the
+> engine's clamp this record kept under "Not changed" is retired.
+
 **Context.** A standalone habit's findings row and its case file counted one claim
 set over two populations. On the synthetic `wearer-habit` store (the wearer
 skipping the weekday lunch bolus) the missed-meal row said 12 of 26 highs and
@@ -1602,7 +1605,92 @@ sentence, so "clusters" leaves the UI allow-list. The two-family Cause scenario 
 the count-sentence requirement now serves one sentence, and a new requirement
 states the one population.
 
-## ADR 554 — A maturing Trial shows its data as it forms, and a retired knob no longer voids a retained comparison
+## ADR 553 — One low line: 70 mg/dL everywhere
+
+**Context.** Harmonic drew two low lines. Episodes anchored a low at a 75 mg/dL
+near-low line (`anchor_near_low_mgdl`, #112), so a 72 → 244 rebound was claimed as
+an Over-treated low, while the lows every habit and Pattern is counted over stayed
+the sub-70 runs (`gate_low_mgdl`). Such a claim sat on no member of its own
+population. ADR 202 kept a compatibility clamp for it (`n = max(n, k)` in the
+engine, `k = min(k, n)` in the trend), and ADR 550 left the engine pricing it while
+the row and case file counted only claims on the population. On the synthetic
+`wearer-habit` store the Over-treated low row said 10 of 41 lows while the engine
+priced 12 of 41. The new QA case `behavioral-over-treated-near-low` (the
+over-treated-low story plus one 72 → 244 dip) priced 3 of 6 at priority 34 beside
+a 2 of 6 row, and its case file was withheld as inconsistent. The decision is
+"70 everywhere" (Connor, 2026-10-19).
+
+**Decision.**
+
+- *One low line.* A low is a CGM run at or under `gate_low_mgdl` (70), anchored at
+  its nadir. The near-low pass and `anchor_near_low_mgdl` go. A dip that stays above
+  70 is no low: no anchor, no claim, no population member, no low prompt, and it
+  owns no High. Its rebound High is judged on its own.
+- *The levers it reached.* Over-treated low was the only lever that could claim a
+  near-low, through its 180 mg/dL rebound bar for a nadir above 70. That bar is now
+  unreachable (every judged nadir is a low anchor's, at or under 70) and goes, so one
+  160 mg/dL bar applies. Highs after treating lows follows its habit. Correction on
+  active insulin already required a nadir at or under 70 in its classifier. The
+  other levers recur over meals, highs or correction pairs. The event comparison's
+  Correction on active insulin "near" projection read a lows Occurrence at 71–75,
+  which the lows feed has not served since ADR 550; it goes. Correction stacking's
+  near read stays: it reads the CGM after a stack, not a low.
+- *k is the members claimed.* The engine prices a habit's `k` as the distinct
+  members of its recurrence population its claims sit on, through the evaluation's
+  one association (`Evaluation.attributed`). Episodes claiming one member share one
+  occurrence, represented by the worst. An episode whose claim sits on no member
+  stays in the report but in no pattern. The trend's and the Overview's tally
+  (`tally_attributions`) counts the same way. Every claimed member is one of the
+  `n`, so `k <= n` holds by construction, and both ADR 202 clamps go. Measured
+  before removing them: across every QA case, no claim is unassociated and no two
+  claims of one lever share a member. A future unassociated claim cannot break the
+  bound: it goes unpriced, and its case file is still withheld by name (ADR 488).
+  The Overview clean rate's `min(k, n)` stays. It sums several levers into one
+  family, and two of them can claim one low (a crash's own cause and its
+  over-treatment), so it is not ADR 202's clamp. Correction stacking's trend clamps
+  on its own classifier counts stay too.
+- *Lines that are not a low.* Three thresholds keep their values because none
+  anchors anything or denominates a habit. Meal over-delivery's suspend outcome
+  line (`suspend_near_low_mgdl`, 75) feeds Lows after meals and its carb-ratio
+  member. The pre-empted-low printed-low proximity line (75) feeds the
+  correction-factor strengthen gate and the carb-ratio analyzer, and is now its own
+  field, `preempted_printed_low_mgdl`, because the field it read is gone. The
+  override tile's harm line (`user_override_harm_low_mgdl`, 80) is not a lever.
+  Moving any of them would move a setting suggestion or a served count. Time below
+  range, the Day's lows, low prompts and the settings analyzers' printed lows already
+  used the 70 line.
+- *The noun.* The population stays "lows". With one line it means one thing, and
+  CONTEXT.md now defines a Low.
+
+**Supersedes.** ADR 202's compatibility-clamp column, which recorded clamps
+"because actionable near-low rebounds can exist without a sub-70 recurrence
+opportunity". It also covers ADR 202's other clamp rationales: each lever's
+attributed count is now a subset of its population by construction. It also
+supersedes ADR 550's "Not changed" paragraph: no claim sits on a near-low, so the
+engine, the row, the case file and the Pattern read one count. The rest of both
+records stands.
+
+**Not changed.** No suggestion, cap, support floor, staging predicate, segmentation
+rule, gate lookback or rebound horizon.
+
+**Consequences.** On every existing QA case, no count, price, priority, Pattern or
+Queue row moves. `pattern-near-tie` and `isf-range-hold` each lose two lever-less
+near-low episodes, so `pattern-near-tie`'s evidence episode ids renumber. The new
+case prices 2 of 6 at priority 28 (was 3 of 6 at 34), and its row, case file and
+price agree. Its literal expectation is the over-treated-low story's own: the dip
+changes nothing. The UI fixtures regenerate. `wearer` prices Over-treated low 8 of
+33 (was 9), and Highs after treating lows drops 39 → 38 (31 → 30 in the five
+fixture stores built on it). `wearer-habit` prices Over-treated low 10 of 41 (was
+12), and its Pattern drops 34 → 31. Its Missed / unannounced meal reads 13 of 24
+highs (was 12) at 60 (was 58): the High a near-low's rebound used to own is now
+judged on its own, as an unbolused rise. Such a High now raises a "did you eat
+here?" prompt. The scenario configuration's identity changes (one field gone, one
+added), so a Focus retained under the earlier configuration reads
+`unsupported_retained_execution`, ADR 462's existing rule for a changed
+computation. Unit fixtures whose boluses carried no `seq_num` gain one, as every
+stored bolus has (`bolus_events.seq_num` is `NOT NULL`).
+
+## ADR 554 — A maturing Trial shows its data as it forms, and a Trial's identity is not a configuration it never runs
 
 Amends ADR 524. Connor, live on 2026-10-19, on a carb ratio Trial five days in
 whose Changes screen showed only its head card and the Previous row: "Can we
@@ -1622,13 +1710,24 @@ comparison.
 
 **Decision.**
 
-- **A retained context executes when every knob the running configuration reads
-  holds its saved value.** A saved knob the configuration no longer has can
-  change no computation the running code makes, so it is not part of the
-  identity, and the comparison runs the saved values of the knobs it reads. A
-  knob changed, or one the running code reads that the context lacks, still
-  refuses it (ADR 462): a new knob's default is not known to be what the earlier
-  release did.
+- **A Trial's identity is its context version and policy stamp.** ADR 462 named
+  the scenario configuration "a Focus executes" as part of a retained
+  computation's identity. A Trial's comparison runs none of it: the only reads
+  of the retained configuration are a Focus's anchors and its habit's
+  observations. Comparing a Trial's saved configuration refused it for a change
+  it could not feel. #553 (ADR 553) showed the cost a second time on the day it
+  merged: it retired the 75 mg/dL near-low anchor line and added
+  `preempted_printed_low_mgdl`, so every record saved before it lacked a
+  current knob and would have read unsupported again, Connor's Trial included.
+  A Trial is now refused only for its version or its policy stamp.
+- **A Focus executes its saved configuration, so the configuration stays its
+  identity, by the knobs the running code reads.** Every current knob must hold
+  its saved value, so a knob changed, added since, or moved refuses it. A saved
+  knob the configuration no longer has, as #503 retired seven, can change no
+  current computation and is ignored. No rename mapping is kept: #553 split the
+  75 line in two, and the half a Focus anchors on moved to the 70 line, a
+  change in what a pre-#553 Focus computes, so refusing it is the honest answer
+  and a mapping that let the renamed half through would hide it.
 - **An after period with no readings yet is served empty, not withheld.** In the
   hours after a change the after period has read nothing; the comparison is
   available with the before period in full and an empty after (no meals, a trace
@@ -1650,8 +1749,8 @@ comparison.
   early.
 
 **Consequences.** A new QA case, `c3-ic-trial`, retains a carb ratio Trial
-through the earlier release's configuration (a retained context is written once,
-so the case captures it that way); it backs an API test and a new contract leg
+through a configuration from before #503 and #553 (a retained context is written
+once, so the case captures it that way); it backs an API test and a new contract leg
 in CI's app job, and fails with Connor's symptom without the fix. The UI
 fixtures gain each comparison row's readings and a store for a carb ratio Trial
 in its first hours (`wearer-ic-first-hours`), which the stories draw beside the

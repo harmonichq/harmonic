@@ -1,8 +1,8 @@
 """Anchors — the actionable instants the raw timeline is segmented around (#70 §1).
 
 An **anchor** is a moment worth reasoning about: a meal bolus, a user correction,
-the nadir of a CGM low run, the peak of a CGM high run, or the start of a
-Control-IQ defensive-suspend episode. The scenario engine clusters anchors into
+the nadir of a CGM low run (at or under 70 mg/dL), the peak of a CGM high run, or
+the start of a Control-IQ defensive-suspend episode. The scenario engine clusters anchors into
 episodes (:mod:`.segment`) and runs the instance classifiers at each one
 (:mod:`.attribute`).
 
@@ -24,12 +24,10 @@ from ..classifiers.context_gate import _is_suspend
 from ..meals import Meal, group_meals
 from ..scenario_config import ScenarioConfig
 
-# The meal floor, user-correction floor, near-low anchor line, high line, run gap, and
-# meal forward-reach now live on ``ScenarioConfig`` (the ``anchor_*`` fields). The
-# near-low anchor line (``anchor_near_low_mgdl`` = 75) is deliberately looser than the
-# exposure / gate low line (``gate_low_mgdl`` = 70): a dip to 71-75 is attributable (a
-# 72 → 244 rebound is a textbook over-treated low, #112) but is not itself "a low you
-# had", so it must NOT widen the LOWS exposure denominator (see engine._exposure_counts).
+# The meal floor, user-correction floor, high line, run gap, and meal forward-reach live
+# on ``ScenarioConfig`` (the ``anchor_*`` fields). A low is anchored at the one low line,
+# ``gate_low_mgdl`` (70): a dip that stays above it is no low, so nothing can be claimed
+# on it and it joins no population (#553, which retired #112's 75 mg/dL near-low line).
 
 
 class AnchorKind(str, Enum):
@@ -169,40 +167,6 @@ def _cgm_run_anchors(
     return out
 
 
-def _low_anchors(
-    readings: Sequence[CgmReading], near_low_mgdl: float, run_gap: timedelta,
-    *, scenario_config: ScenarioConfig = ScenarioConfig(),
-) -> List[Anchor]:
-    """Low nadir anchors: every sub-70 run, plus *purely* near-low runs (#112).
-
-    Two passes, kept strictly additive so sub-70 anchoring is byte-identical to the
-    pre-#112 behavior:
-
-    * **sub-70 runs** are anchored at :data:`GATE_LOW_MGDL` exactly as before — same
-      run boundaries, same nadir instants, same spans. Anything that dipped below 70
-      is a real "low you had" and its episode must not move.
-    * **near-low runs** (a run whose readings stay in ``(70, near_low_mgdl]`` and never
-      touch sub-70) are anchored too, so a 72 → 244 over-treatment can be attributed
-      (:func:`~ciq_autotune.analyzers.scenario.attribute._low_lever`'s ≥180 tier). A
-      near-low run that *does* dip below 70 is dropped here — it is already the sub-70
-      pass's run, and re-anchoring it would widen that run's span and shift the
-      untouched sub-70 episode.
-
-    When ``near_low_mgdl <= gate_low_mgdl`` (the exposure count re-anchors at 70) the
-    second pass is a no-op, so the result is exactly the sub-70 pass.
-    """
-    gate_low_mgdl = scenario_config.gate_low_mgdl
-    sub70 = _cgm_run_anchors(readings, AnchorKind.LOW, gate_low_mgdl, run_gap)
-    if near_low_mgdl <= gate_low_mgdl:
-        return sub70
-    near = [
-        a
-        for a in _cgm_run_anchors(readings, AnchorKind.LOW, near_low_mgdl, run_gap)
-        if a.bg is not None and a.bg > gate_low_mgdl
-    ]
-    return sub70 + near
-
-
 def _suspend_anchors(
     basal_events: Sequence[BasalEvent], group_gap: timedelta
 ) -> List[Anchor]:
@@ -241,20 +205,13 @@ def collect_anchors(
     basal_events: Sequence[BasalEvent] = (),
     *,
     scenario_config: ScenarioConfig = ScenarioConfig(),
-    low_mgdl: Optional[float] = None,
 ) -> List[Anchor]:
     """All anchors in the window, sorted by time.
 
     Meal boluses, user corrections, CGM low nadirs, CGM high peaks, and
     defensive-suspend episode starts — the candidate instants
     :mod:`.segment` clusters into episodes.
-
-    ``low_mgdl`` overrides the low-anchor line (defaults to
-    ``scenario_config.anchor_near_low_mgdl``); the engine passes ``gate_low_mgdl`` to
-    re-anchor lows at 70 for the honest exposure count.
     """
-    if low_mgdl is None:
-        low_mgdl = scenario_config.anchor_near_low_mgdl
     high_mgdl = scenario_config.anchor_high_mgdl
     run_gap = timedelta(minutes=scenario_config.anchor_run_gap_min)
     anchors: List[Anchor] = []
@@ -282,8 +239,8 @@ def collect_anchors(
         if _is_user_correction(b, scenario_config=scenario_config):
             anchors.append(Anchor(t=b.t, kind=AnchorKind.CORRECTION, bolus=b))
 
-    anchors += _low_anchors(
-        cgm_readings, low_mgdl, run_gap, scenario_config=scenario_config
+    anchors += _cgm_run_anchors(
+        cgm_readings, AnchorKind.LOW, scenario_config.gate_low_mgdl, run_gap
     )
     anchors += _cgm_run_anchors(cgm_readings, AnchorKind.HIGH, high_mgdl, run_gap)
     anchors += _suspend_anchors(

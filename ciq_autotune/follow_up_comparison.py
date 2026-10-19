@@ -53,18 +53,17 @@ def _execution():
     return {"policy": "340:1/386:1/387:1", "configuration": asdict(ScenarioConfig())}
 
 
-def _retained_configuration(context):
-    """The scenario configuration a retained context executes, or None when the
-    current code cannot execute it as saved (ADR 462, ADR 554).
+def _focus_configuration(context):
+    """The scenario configuration a retained Focus context executes, or None when
+    the current code cannot execute it as saved (ADR 462, ADR 554).
 
-    Every knob the current configuration reads must hold its saved value; a knob
-    it does not read, because a later release retired it (#503 took seven), can
-    change no current computation and is not part of the identity."""
-    current = _execution()
-    if context.get("policy") != current["policy"]:
-        return None
+    Every knob the current configuration reads must hold its saved value, so a knob
+    added since, or one whose value moved (#553 moved the anchored low line from 75
+    to 70), refuses it. A saved knob the current configuration no longer has, as
+    #503 retired seven, can change no current computation and is not part of the
+    identity."""
     saved = context.get("configuration") or {}
-    knobs = current["configuration"]
+    knobs = _execution()["configuration"]
     if any(name not in saved or saved[name] != value for name, value in knobs.items()):
         return None
     return ScenarioConfig(**{name: saved[name] for name in knobs})
@@ -291,8 +290,13 @@ def compare_follow_up(store, *, record, data_cutoff, input_revision, context_mod
     source = (context.get("source_snapshot") or {}).get("captured_at")
     if source is None or _time(source) > cutoff:
         return unavailable("context_after_ending")
-    configuration = _retained_configuration(context) if context.get("version") == _VERSION else None
-    if configuration is None:
+    if context.get("version") != _VERSION or context.get("policy") != _execution()["policy"]:
+        return unavailable("unsupported_retained_execution")
+    # Only a Focus executes its scenario configuration (its anchors and its habit's
+    # observations); a Trial's comparison reads none of it, so its saved
+    # configuration is no part of a Trial's identity (ADR 554).
+    configuration = _focus_configuration(context) if record["kind"] == "focus" else None
+    if record["kind"] == "focus" and configuration is None:
         return unavailable("unsupported_retained_execution")
     programmed = context.get("programmed_isf")
     if not programmed or programmed.get("value") is None or programmed.get("unit") != "mg/dL/U":
@@ -411,9 +415,8 @@ def compare_follow_up(store, *, record, data_cutoff, input_revision, context_mod
         pattern_key = record.get("pattern_key")
         if pattern_key is None and (record.get("subject") or "").startswith("pattern:"):
             pattern_key = record["subject"].split(":", 1)[1]
-        # The published exposure feed uses collect_anchors' near-low population,
-        # not build_opportunities' stricter gate-low population. Preserve full
-        # context through the read cutoff, then assign anchors to exact arms.
+        # Preserve full context through the read cutoff, then assign anchors to
+        # exact arms.
         anchors = (collect_anchors(bolus, cgm, basal,
                    scenario_config=configuration)
                    if pattern_key else ())

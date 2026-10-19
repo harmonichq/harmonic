@@ -100,12 +100,16 @@ class FollowUpComparisonTest(unittest.TestCase):
                 result = self.compare(store, {**record, "comparison_context": retained}, datetime(2026, 6, 12))
                 self.assertEqual(result["availability"], {"state": "available", "reason": None})
 
-    def test_a_context_saved_before_a_knob_was_retired_is_read(self):
-        """#554: a knob the scenario configuration has since retired (#503 took
-        seven) is one no current computation reads, so a context that still
-        carries it executes as saved. A knob the current code reads still
-        refuses it, changed or absent."""
-        retired = {"meal_bolus_short_min_carbs": 10.0, "meal_bolus_short_correction_floor_u": 0.5}
+    def test_a_context_saved_by_an_earlier_configuration(self):
+        """#554: a context an earlier release saved, its configuration still carrying
+        the seven knobs #503 retired and the 75 mg/dL near-low line #553 retired
+        (anchoring moved to the 70 line; the pre-empted-low test kept 75 under a
+        new name). A Trial's comparison executes no scenario configuration, so it
+        reads the same as a fresh context; only a changed policy refuses it. A Focus
+        executes its configuration: a retired knob is ignored, and a knob added,
+        moved or changed refuses it."""
+        earlier = {"meal_bolus_short_min_carbs": 10.0, "meal_bolus_short_correction_floor_u": 1.0,
+                   "anchor_near_low_mgdl": 75.0, "preempted_printed_low_mgdl": None}
 
         def configured(context, **changes):
             configuration = {**context["configuration"], **changes}
@@ -113,6 +117,20 @@ class FollowUpComparisonTest(unittest.TestCase):
 
         store = self.store(cgm_ramp(10, 15, 40, 180, 1.4, 140) + cgm_ramp(11, 15, 40, 180, 1.4, 140))
         focus = self.focus(store, datetime(2026, 6, 11))
+        focus_context = focus["comparison_context"]
+        for label, changes, state in (
+                ("retired knobs", {"meal_bolus_short_min_carbs": 10.0}, "available"),
+                ("a changed knob", {"anchor_meal_min_carbs": 11.0}, "unavailable"),
+                ("a knob added since", {"preempted_printed_low_mgdl": None}, "unavailable"),
+                ("before #503 and #553", earlier, "unavailable")):
+            with self.subTest("focus", saved=label):
+                result = self.compare(store, {**focus, "comparison_context": configured(focus_context, **changes)},
+                                      datetime(2026, 6, 12))
+                self.assertEqual(result["availability"]["state"], state)
+                if state == "available":
+                    self.assertEqual(result, self.compare(store, focus, datetime(2026, 6, 12)))
+                else:
+                    self.assertEqual(result["availability"]["reason"], "unsupported_retained_execution")
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "synthetic.sqlite"
             _seed_block_ic_switch(path)
@@ -121,20 +139,17 @@ class FollowUpComparisonTest(unittest.TestCase):
                          "block": [720, 900], "members": [720], "detected_at": str(SWITCH), "before": 5.0,
                          "after": 4.4, "comparison_context": capture_comparison_context(
                              setting_store, at=SWITCH, input_revision=1)}
-                for label, owner, record, cutoff in (("focus", store, focus, datetime(2026, 6, 12)),
-                                                     ("carb ratio trial", setting_store, trial, NOW)):
-                    context = record["comparison_context"]
-                    for changes, state in ((retired, "available"),
-                                           ({**retired, "anchor_meal_min_carbs": 11.0}, "unavailable"),
-                                           ({"anchor_meal_min_carbs": None}, "unavailable")):
-                        with self.subTest(label, changes=sorted(changes)):
-                            result = self.compare(owner, {**record, "comparison_context": configured(context, **changes)},
-                                                  cutoff)
-                            self.assertEqual(result["availability"]["state"], state)
-                            if state == "unavailable":
-                                self.assertEqual(result["availability"]["reason"], "unsupported_retained_execution")
-                            else:
-                                self.assertEqual(result, self.compare(owner, record, cutoff))
+                fresh = self.compare(setting_store, trial, NOW)
+                context = trial["comparison_context"]
+                for label, saved in (("before #503 and #553", configured(context, **earlier)),
+                                     ("a changed knob", configured(context, anchor_meal_min_carbs=11.0))):
+                    with self.subTest("trial", saved=label):
+                        self.assertEqual(self.compare(setting_store, {**trial, "comparison_context": saved}, NOW),
+                                         fresh)
+                self.assertEqual(fresh["availability"]["state"], "available")
+                refused = self.compare(setting_store, {**trial, "comparison_context": {
+                    **configured(context, **earlier), "policy": "retired"}}, NOW)
+                self.assertEqual(refused["availability"]["reason"], "unsupported_retained_execution")
 
     def test_retained_context_survives_profile_change_and_record_is_unchanged(self):
         from ciq_autotune.settings import ProfileSegment, ProfileSettings, PumpSettings, Snapshot

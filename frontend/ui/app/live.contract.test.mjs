@@ -198,7 +198,7 @@ const EXPECTED = {
       delivered: [0.48, 0.48], readings: [78, 90] },
     previous: [],
   },
-  // #554: a carb ratio Trial six days in, retained by a release before #503.
+  // #554: a carb ratio Trial six days in, retained by a release before #503 and #553.
   // Maturing, it shows its data as it forms: each arm's meals, the trace at
   // each meal bolus, every glucose module over the readings read so far, no
   // result and no Δ toned.

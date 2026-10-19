@@ -365,7 +365,7 @@ class DurableApiTest(unittest.TestCase):
 
     def test_a_maturing_trial_retained_before_a_knob_was_retired_serves_its_comparison(self):
         """#554: the c3-ic-trial store's carb ratio Trial, six days in and retained
-        by a release before #503, serves the comparison Changes draws while it
+        by a release before #503 and #553, serves the comparison Changes draws while it
         matures: each arm's meals, its meal-aligned trace and every metric over
         its own readings, with no direction claimed before maturity."""
         import subprocess
@@ -767,7 +767,9 @@ class DurableApiTest(unittest.TestCase):
             self.assertEqual(read({"selected": identity}), results["original"])
 
             # Change executable configuration, not clinical verdicts or stored data.
-            # Current context changes; retained execution becomes explicitly unavailable.
+            # Current context changes and is read anew; a Trial's retained comparison
+            # executes no configuration, so it still reads as it did (ADR 554; a
+            # Focus's refusal is test_follow_up_comparison's).
             def configured(**kwargs):
                 return ScenarioConfig(**{"anchor_meal_min_carbs": 11.0, **kwargs})
             with patch("ciq_autotune.follow_up_comparison.ScenarioConfig", new=configured):
@@ -782,8 +784,8 @@ class DurableApiTest(unittest.TestCase):
                         self.assertNotEqual(reassessment["comparison_context"]["id"],
                             results[mode]["selected"]["reassessment"]["comparison_context"]["id"])
                     else:
-                        self.assertEqual(reassessment["comparison"]["availability"]["reason"],
-                                         "unsupported_retained_execution")
+                        self.assertEqual(reassessment["comparison"]["availability"],
+                                         results[mode]["selected"]["reassessment"]["comparison"]["availability"])
             with Store.open_queryonly(self.path) as store:
                 self.assertEqual(store.input_data_revision(), revision)
                 self.assertEqual(store.follow_up_frontier(), frontier)

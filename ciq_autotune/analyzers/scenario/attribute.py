@@ -67,8 +67,7 @@ from .segment import (
 
 # The return-to-range target and the #155 split context pad live on
 # ``ScenarioConfig`` (the ``attribute_*`` fields). The over-treated bar reads
-# ``segment_rebound_high_mgdl`` / ``segment_range_high_mgdl`` and the low line
-# ``gate_low_mgdl``.
+# ``segment_rebound_high_mgdl``.
 
 # --- Low-prompt answers → over-treated-low evidence tier (#129 / ADR 0008, #400) --
 
@@ -225,19 +224,17 @@ def over_treated_rebound_judgment(
 ) -> OverTreatedReboundJudgment:
     """Judge one eligible low from its guarded rebound result (#104/#112/#400).
 
-    Applies the existing tiered firing bar and its 20 mg/dL near floor. Classification
-    remains shape-only: residual bolus IOB does **not** move either boundary.
+    Applies the firing bar and its 20 mg/dL near floor. Every judged low is at or
+    under the one low line (#553), so one bar applies; #112's 180 mg/dL bar for a
+    near-low nadir went with the near-low anchors. Classification remains shape-only:
+    residual bolus IOB does **not** move either boundary.
     """
     rebound = guarded_rebound(
         cgm, nadir_t,
         stop_at=_next_meal_bolus_t(bolus, nadir_t, scenario_config=scenario_config),
         scenario_config=scenario_config,
     )
-    rebound_bar = (
-        scenario_config.segment_range_high_mgdl
-        if (nadir_bg is not None and nadir_bg > scenario_config.gate_low_mgdl)
-        else scenario_config.segment_rebound_high_mgdl
-    )
+    rebound_bar = scenario_config.segment_rebound_high_mgdl
     near_floor = rebound_bar - 20.0
     if rebound.peak is None:
         verdict = Verdict(
@@ -586,7 +583,7 @@ def _low_lever(
     # Correction-on-IOB (#150) follows over-treated-low in chronological precedence.
     # Retain its match too for sequence competition. Back-scans for the single
     # user correction that landed on live IOB. ``nadir`` is the sub-70 outcome the
-    # classifier gates on (near-lows are rejected inside it).
+    # classifier gates on.
     coi = classify_correction_on_iob(
         anchor.t, nadir, cgm, bolus, basal, scenario_config=scenario_config
     )
@@ -1004,10 +1001,9 @@ def split_caused_over_treatments(
 
     Gated to "the low has its own cause" (:func:`_low_has_own_cause`): a plain daytime
     over-treatment whose only lesson is the over-treatment is left untouched — a single
-    ``over_treated_low`` on the low, byte-identical to today (AC2). A near-low nadir has
-    no sub-70 cause, so it never splits either. Runs after :func:`split_low_rebounds`
-    (which already gives a downstream rebounding low its own head-of-cluster episode),
-    so each candidate low leads its group.
+    ``over_treated_low`` on the low, byte-identical to today (AC2). Runs after
+    :func:`split_low_rebounds` (which already gives a downstream rebounding low its own
+    head-of-cluster episode), so each candidate low leads its group.
     """
     out: List[EpisodeAnchors] = []
     for ep in episodes:

@@ -922,6 +922,23 @@ def _materialize_behavioral_over_treated_low(store) -> None:
     store.upsert_bolus(bolus)
 
 
+def _materialize_behavioral_over_treated_near_low(store) -> None:
+    """The over-treated-low story plus one dip to 72 mg/dL that rebounds to 244 (#553).
+
+    The dip never reaches 70, so it is no low: nothing claims it, and the habit's row,
+    its case file and its price all count the same sub-70 lows.
+    """
+    _materialize_behavioral_over_treated_low(store)
+    day = datetime.combine(date(2024, 5, 1) + timedelta(days=20), datetime.min.time())
+    down = tuple(100.0 - (100.0 - 72.0) * i / 4 for i in range(5))
+    up = tuple(72.0 + (244.0 - 72.0) * i / 8 for i in range(1, 9))
+    values = (100.0,) * 5 + down[1:] + up
+    store.upsert_cgm([{
+        "EventDateTime": (day + timedelta(minutes=13 * 60 + 15 + 5 * i)).strftime("%F %T"),
+        "Readings (CGM / BGM)": value, "Description": "Synthetic EGV",
+    } for i, value in enumerate(values)])
+
+
 def _materialize_behavioral_over_treated_rebound_ownership(store) -> None:
     """Write two Highs an over-treated low's rebound owns and one it does not (#422).
 
@@ -3394,22 +3411,25 @@ def _materialize_c3_trial(store, *, finished=False, preempted=False):
         reconcile_ingested_follow_up(store)
 
 
-# The seven meal-bolus-short knobs #503 retired, at their last defaults: every
-# Trial and Focus a release before it retained carries them in its saved
-# scenario configuration (#554).
-_RETIRED_KNOBS = {
+# The knobs a release before #503 and #553 had that the configuration has since
+# retired, at their last defaults: #503's seven meal-bolus-short knobs and #553's
+# 75 mg/dL near-low anchor line. Every Trial and Focus such a release retained
+# carries them in its saved scenario configuration (#554).
+_EARLIER_KNOBS = {
     'meal_bolus_short_rise_slope_mgdl_min': 1.0, 'meal_bolus_short_slope_lookback_min': 20,
     'meal_bolus_short_digestion_lookback_min': 150, 'meal_bolus_short_min_carbs': 10.0,
     'meal_bolus_short_correction_horizon_min': 180.0, 'meal_bolus_short_correction_floor_u': 1.0,
-    'meal_bolus_short_dose_split_grace_min': 30.0,
+    'meal_bolus_short_dose_split_grace_min': 30.0, 'anchor_near_low_mgdl': 75.0,
 }
+# The knob #553 added since: such a release's configuration has none.
+_LATER_KNOBS = ('preempted_printed_low_mgdl',)
 
 
 def _materialize_c3_ic_trial(store):
     """A carb ratio Trial six days in (#554): a lunch every day of the month, the
     11:00–14:00 carb ratio strengthened on 25 May, and the Trial retained by a
-    release before #503, its saved configuration still carrying the knobs that
-    release had."""
+    release before #503 and #553, its saved configuration that release's: the
+    knobs it had, and none it lacked."""
     from dataclasses import replace
     from unittest.mock import patch
     import ciq_autotune.follow_up_comparison as comparison
@@ -3435,7 +3455,8 @@ def _materialize_c3_ic_trial(store):
 
     def earlier_release():
         execution = current()
-        return {**execution, 'configuration': {**execution['configuration'], **_RETIRED_KNOBS}}
+        knobs = {name: value for name, value in execution['configuration'].items() if name not in _LATER_KNOBS}
+        return {**execution, 'configuration': {**knobs, **_EARLIER_KNOBS}}
 
     # A retained context is written once, so the Trial is retained as that
     # release retained it.
@@ -4242,7 +4263,7 @@ QA_CASES += (
                                                                                                   'no_data': 0,
                                                                                                   'clean': 0})},
                       uncaused_highs=0), 30),
-    # #554: the maturing carb ratio Trial a release before #503 retained. Its
+    # #554: the maturing carb ratio Trial a release before #503 and #553 retained. Its
     # flat lane queues nothing; Changes reads its comparison.
     QaCase('c3-ic-trial', _materialize_c3_ic_trial,
         QaExpectation(analyzer_rows={},
@@ -6899,4 +6920,16 @@ QA_CASES += (
     QaCase('delivery-basal-whole-day',
         partial(_materialize_delivery_basal_block_trial, lane=_DELIVERY_WHOLE_DAY),
         _DELIVERY_WHOLE_DAY_EXPECTATION, _DELIVERY_BLOCK_DAYS),
+)
+
+# #553: one low line. The over-treated-low story plus a 72 mg/dL dip that rebounds to
+# 244: no low, so no claim, and every count reads the same sub-70 lows.
+QA_CASES += (
+    QaCase(
+        "behavioral-over-treated-near-low",
+        _materialize_behavioral_over_treated_near_low,
+        next(case for case in QA_CASES
+             if case.name == "behavioral-over-treated-low").expectation,
+        30,
+    ),
 )

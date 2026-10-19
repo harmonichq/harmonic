@@ -70,6 +70,7 @@ EXPECTED_CASE_NAMES = (
     "c4-isf-late-read",
     "delivery-basal-block", "delivery-basal-legacy", "delivery-basal-legacy-open",
     "delivery-basal-across-midnight", "delivery-basal-whole-day",
+    "behavioral-over-treated-near-low",
 )
 
 
@@ -152,6 +153,44 @@ class QaE2ECasesTest(unittest.TestCase):
                     header = headers[pattern["subject"]]
                     self.assertEqual(header["pattern_chart"], row["pattern_chart"])
                     self.assertEqual(header["summary"], case_file["summary"])
+
+    def test_an_over_treated_near_low_is_unclaimed_and_one_count_is_served(self):
+        # #553: one low line. The case's 72 mg/dL dip rebounds to 244 and is no low,
+        # so nothing claims it; the habit's row, its case file and the engine's price
+        # read the same sub-70 lows.
+        case = next(case for case in QA_CASES
+                    if case.name == "behavioral-over-treated-near-low")
+        with tempfile.NamedTemporaryFile(suffix=".sqlite") as database:
+            with Store.open(database.name) as store:
+                materialize_case(store, case)
+            with Store.open_readonly(database.name) as store:
+                execution = execute_case(store, case)
+                prepared = prepare_case_files(
+                    store, query=WindowQuery.whole_day(), version=0,
+                    analysis=execution.analysis, exposures=execution.exposures,
+                    scenarios=execution.scenarios, analysis_generation="qa:0",
+                )
+                case_file = prepared.case("finding:over_treated_low", "event", None)
+        dip = "2024-05-21 13:"
+        for family in execution.exposures["exposures"].values():
+            self.assertFalse([item for item in family["occurrences"]
+                              if item["t"].startswith(dip)])
+        self.assertFalse([episode for episode in execution.scenarios["episodes"].values()
+                          if episode["start"].startswith(dip)])
+        [row] = [row for row in execution.findings["whole_day"]["rows"]
+                 if row.get("lever") == "over_treated_low"]
+        [sentence] = row["count_sentences"]
+        [priced] = [pattern["confidence"] for pattern in
+                    execution.scenarios["patterns"] + execution.scenarios["low_confidence"]
+                    if pattern["lever"] == "over_treated_low"]
+        self.assertIsNotNone(case_file)
+        self.assertEqual(
+            {(sentence["count"], sentence["denominator"]),
+             (case_file["summary"]["claimed"], case_file["summary"]["denominator"]),
+             (priced["k"], priced["n"])},
+            {(2, 6)},
+        )
+        self.assertEqual((sentence["noun"], case_file["summary"]["noun"]), ("lows", "lows"))
 
     def test_outcome_pattern_expectation_is_required(self):
         with self.assertRaises(TypeError):

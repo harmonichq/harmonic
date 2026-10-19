@@ -25,11 +25,13 @@ A retained comparison context SHALL carry its context version, the comparison's
 policy stamp and the scenario configuration, and SHALL NOT carry a hash of the
 installed source files. The comparison SHALL refuse a retained context with
 reason `unsupported_retained_execution` only when its context version or policy
-stamp differs from the running comparison's, or when a knob the running scenario
-configuration reads is missing from the retained configuration or holds another
-value there. A knob the retained configuration carries that the running
-configuration no longer has SHALL be ignored, and the comparison SHALL execute
-the retained values of the knobs it reads (ADR 554). A context saved with a
+stamp differs from the running comparison's, or, for a Focus, which executes its
+scenario configuration, when a knob the running configuration reads is missing
+from the retained configuration or holds another value there. A Trial's
+comparison executes no scenario configuration, so its retained configuration
+SHALL NOT refuse it. A knob a Focus's retained configuration carries that the
+running configuration no longer has SHALL be ignored, and the Focus's comparison
+SHALL execute the retained values of the knobs it reads (ADR 554). A context saved with a
 source-file hash SHALL be read with that field ignored. The store SHALL accept
 an available comparison context without a source-file hash.
 
@@ -40,19 +42,27 @@ an available comparison context without a source-file hash.
 - **WHEN** the record is read with a Retained context reassessment
 - **THEN** the reassessment is available
 
-#### Scenario: A context saved before a knob was retired is read
+#### Scenario: A Trial saved by an earlier configuration is read
 
-- **GIVEN** a retained context saved by a release before #503, whose
-  configuration still carries the seven knobs #503 retired, every other knob as
-  the running configuration holds it
+- **GIVEN** a Trial whose retained configuration a release before #503 and #553
+  saved: the knobs since retired, and none added since
+- **WHEN** the record is read with a Retained context reassessment
+- **THEN** the reassessment is available, and equals the one a fresh context
+  gives
+
+#### Scenario: A Focus saved before a knob was retired is read
+
+- **GIVEN** a Focus whose retained configuration carries a knob the running
+  configuration no longer has, every other knob as the running configuration
+  holds it
 - **WHEN** the record is read with a Retained context reassessment
 - **THEN** the reassessment is available, and equals the one its context would
-  give without the retired knobs
+  give without the retired knob
 
 #### Scenario: A changed comparison policy is still refused
 
 - **GIVEN** a retained context whose policy stamp differs from the running
-  comparison's, or whose configuration holds another value for, or lacks, a knob
-  the running configuration reads
+  comparison's, or a Focus whose retained configuration holds another value
+  for, or lacks, a knob the running configuration reads
 - **WHEN** the record is read with a Retained context reassessment
 - **THEN** it is unavailable with reason `unsupported_retained_execution`

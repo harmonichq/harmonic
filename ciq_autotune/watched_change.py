@@ -534,6 +534,16 @@ def is_pinnable(lever: str, pattern_key: str | None = None) -> bool:
                for key, _title, levers, _rates, _setting, _family in _ROSTER)
 
 
+def focus_subject(record: dict) -> str:
+    """A Focus's one key (ADR 528): the Pattern it was pinned from, else its habit.
+
+    A Focus pinned from a standalone habit's card keeps ``habit:<lever>``. A Focus
+    recorded before habits had a key carries no subject, and reads as its habit.
+    """
+    key = record.get("pattern_key")
+    return f"pattern:{key}" if key else f"habit:{record['lever']}"
+
+
 def _focus_identity(store, focus: dict) -> dict:
     """Join retained Pattern identity onto the legacy Focus row when present."""
     record = store.follow_up_record("focus", focus["id"])
@@ -556,7 +566,7 @@ class FocusView:
     pinned_at: str
     status: str
     target_metric: str
-    subject: str | None = None
+    subject: str
     pattern_key: str | None = None
     kind: str = field(default="focus", init=False)
 
@@ -568,8 +578,8 @@ class FocusView:
             "pinned_at": self.pinned_at,
             "status": self.status,
             "target_metric": self.target_metric,
-            **({"subject": self.subject, "pattern_key": self.pattern_key}
-               if self.pattern_key else {}),
+            "subject": self.subject,
+            **({"pattern_key": self.pattern_key} if self.pattern_key else {}),
         }
 
 
@@ -587,8 +597,7 @@ def focus_view(focus_row: dict) -> FocusView:
     key = focus_row.get("pattern_key")
     return FocusView(lever=focus_row["lever"], title=title,
                      pinned_at=focus_row["pinned_at"], status=focus_row["status"],
-                     target_metric=target, subject=f"pattern:{key}" if key else None,
-                     pattern_key=key)
+                     target_metric=target, subject=focus_subject(focus_row), pattern_key=key)
 
 
 # --- the one-active resolution (Trial XOR Focus, pump wins) -----------------

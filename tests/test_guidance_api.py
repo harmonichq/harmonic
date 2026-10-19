@@ -64,6 +64,86 @@ class GuidanceApiTest(unittest.TestCase):
         self.assertEqual(resolved.status_code, 200, resolved.text)
         self.assertEqual(app.state.result_cache.version - before, 2)
 
+    def test_a_standalone_habit_is_queued_with_its_case_file_and_trace_chart(self):
+        """#528: a habit no Pattern owns is its own Queue candidate, and its case
+        file serves the card's count and its trace chart (ADR 528)."""
+        _tmp, _app, client = self._case_client("behavioral-missed-meal")
+        candidate = next(row for row in client.get("/api/guidance").json()["candidates"]
+                         if row["subject"] == "habit:missed_meal")
+        self.assertEqual((candidate["kind"], candidate["admitted"], candidate["lever"]),
+                         ("habit", True, "missed_meal"))
+        preparation = client.get("/api/diagnose/finding-case-file-preparation").json()
+        response = client.get("/api/diagnose/finding-case-file", params={
+            "projection_id": preparation["projection_id"], "finding_id": "finding:missed_meal",
+            "alignment": "event"})
+        self.assertEqual(response.status_code, 200, response.text)
+        case = response.json()
+        self.assertEqual(case["summary"], {"claimed": 2, "denominator": 6, "noun": "highs"})
+        traces = case["traces"]
+        self.assertEqual((traces["anchor"], traces["window_min"]), ("meal_start", [-60, 300]))
+        self.assertEqual(len(traces["pattern"]["episodes"]), case["summary"]["claimed"])
+        self.assertEqual(traces["typical"]["anchors"], ["2024-05-26 12:00:00", "2024-05-29 10:00:00"])
+
+    def test_pinning_a_standalone_habit_creates_a_focus_under_the_habits_own_key(self):
+        """#528: Pin on a habit's card starts a Focus on that habit, never through a
+        Pattern, and the Focus is served and followed up under ``habit:<lever>``."""
+        _tmp, app, client = self._case_client("behavioral-missed-meal")
+        roster = client.get("/api/focus").json()
+        guidance = client.get("/api/guidance").json()
+        before = app.state.result_cache.version
+        response = client.post("/api/focus", json={
+            "lever": "missed_meal", "subject": "habit:missed_meal",
+            "request_id": "00000000-0000-4000-8000-000000000528",
+            "input_revision": roster["input_revision"], "analysis_generation": guidance["analysis_generation"],
+        })
+        self.assertEqual(response.status_code, 200, response.text)
+        record = response.json()["record"]
+        self.assertEqual((record["lever"], record["subject"]), ("missed_meal", "habit:missed_meal"))
+        self.assertNotIn("pattern_key", record)
+        self.assertEqual(record["decision_context"]["subjects"], ["habit:missed_meal"])
+        self.assertNotIn("outcome_window", record["decision_context"])
+        listed = client.get("/api/focus").json()["focuses"]
+        self.assertEqual([(f["subject"], f["status"]) for f in listed], [("habit:missed_meal", "active")])
+        active = client.get("/api/guidance").json()["active_watch"]
+        self.assertEqual((active["subject"], active["title"]), ("habit:missed_meal", "Missed / unannounced meal"))
+        self.assertNotIn("pattern_key", active)
+        # The Changes screen follows it up as it does a Pattern's Focus: the roster
+        # names it by its own key, its title is the habit's name, and before any
+        # data after the pin its retained comparison waits for that data.
+        changes = client.get("/api/verify/trials", params={
+            "kind": "focus", "selected": str(record["id"]), "assessment": "retained"}).json()
+        self.assertEqual([(f["subject"], f.get("pattern_key")) for f in changes["focuses"]],
+                         [("habit:missed_meal", None)])
+        detail = changes["selected"]
+        self.assertEqual((detail["title"], detail["lever_title"]),
+                         ("Missed / unannounced meal", "Missed / unannounced meal"))
+        self.assertEqual(detail["reassessment"]["comparison"]["availability"],
+                         {"state": "unavailable", "reason": "data_not_yet_arrived"})
+        # Pinned again with the same request, the receipt is the same Focus.
+        retried = client.post("/api/focus", json={
+            "lever": "missed_meal", "subject": "habit:missed_meal",
+            "request_id": "00000000-0000-4000-8000-000000000528",
+            "input_revision": roster["input_revision"], "analysis_generation": guidance["analysis_generation"],
+        })
+        self.assertEqual(retried.json()["record"]["id"], record["id"])
+        resolved = client.post(f"/api/focus/{record['id']}/resolve")
+        self.assertEqual(resolved.status_code, 200, resolved.text)
+        self.assertEqual(app.state.result_cache.version - before, 2)
+
+    def test_a_focus_recorded_before_habits_had_a_key_is_served_as_its_habit(self):
+        """ADR 528: a lever Focus stored with no subject (as every one was before
+        habits had a key) is listed under ``habit:<lever>``."""
+        tmp, _app, client = self._case_client("behavioral-missed-meal")
+        self.assertEqual(client.post("/api/focus", json={"lever": "missed_meal"}).status_code, 200)
+        with Store.open(tmp.name) as store, store.conn:
+            store.conn.execute("UPDATE follow_up_records SET record_json = json_remove(record_json, '$.subject') "
+                               "WHERE kind = 'focus'")
+        with Store.open_readonly(tmp.name) as store:
+            self.assertNotIn("subject", store.follow_up_records("focus")[0])
+        listed = client.get("/api/focus").json()["focuses"]
+        self.assertEqual([f["subject"] for f in listed], ["habit:missed_meal"])
+        self.assertEqual(client.get("/api/guidance").json()["active_watch"]["subject"], "habit:missed_meal")
+
     def test_pattern_focus_accepts_a_ready_scoped_pattern_that_collapses_to_its_member(self):
         _tmp, _app, client = self._case_client("c3-pin")
         roster = client.get("/api/focus").json()
@@ -654,7 +734,9 @@ class GuidanceApiTest(unittest.TestCase):
         ).status_code, 200)
         current = client.get("/api/guidance", headers=headers).json()
         self.assertEqual(current["active_watch"]["kind"], "focus")
-        self.assertNotIn("subject", current["active_watch"])
+        # The Focus keeps the habit's own key (ADR 528); a preference on that subject
+        # still leaves the watch as it was.
+        self.assertEqual(current["active_watch"]["subject"], "habit:missed_meal")
         response = client.put(
             "/api/guidance/preferences/habit:missed_meal", headers=headers,
             json={"generation": current["analysis_generation"]},

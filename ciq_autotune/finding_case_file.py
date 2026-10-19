@@ -237,7 +237,23 @@ class PreparedCases:
                         "noun": _population_noun(policy)},
             "verdict_counts": counts, "occurrences": occurrences,
             "projection": projection, "selection": selection,
+            **({"traces": self._habit_traces(lever, roster, claimed_ids)}
+               if finding_keyed and lever in _HABIT_TRACE_CHART else {}),
         }
+
+    def _habit_traces(self, lever, roster, claimed_ids):
+        """A standalone habit's card chart (ADR 528), in the Pattern card's shape (ADR
+        523): the episodes the habit claims and Typical, its event comparison's own
+        Matched and comparison cohorts, each aligned where that comparison aligns it,
+        over the habit's comparison window."""
+        window = policy_for(lever).comparison_window
+        cohorts = _event_cohorts(lever, roster, claimed_ids, self.cgm, self.bolus,
+                                 self.source_window_days, self.basal)
+        return {"anchor": _HABIT_TRACE_CHART[lever], "window_min": list(window),
+                "pattern": _trace_cohort([t for _id, t in cohorts.matched], self.cgm, window,
+                                         episodes=True),
+                "typical": _trace_cohort([t for _id, t in cohorts.comparison], self.cgm, window,
+                                         episodes=False)}
 
     def _pattern_case(self, finding_id, alignment, occ):
         """Expose one Pattern's already-built Exposure population.
@@ -387,6 +403,13 @@ _TRACE_CHART = {
     "lows_after_meals": ("bolus", (-30, 240)),
     "highs_after_treating_lows": ("nadir", (0, 180)),
     "lows_after_correcting_highs": ("correction", (0, 240)),
+}
+# A standalone habit's card chart (ADR 528): what its episodes are aligned at. Only
+# a habit no Pattern owns is queued as its own card, so each such habit has one, and
+# only those. A missed meal is aligned at the meal's start: each rise at its detected
+# onset, each meal bolused for at its bolus.
+_HABIT_TRACE_CHART = {
+    Lever.MISSED_MEAL: "meal_start",
 }
 # Up to this many Pattern episodes are served one by one; more are served as their
 # median and band alone.
@@ -866,6 +889,53 @@ def _comparison_window(lever, roster):
 _BAND_ORDER = ("fired", "near_miss", "clean", "outranked", "no_data")
 
 
+@dataclass(frozen=True)
+class _EventCohorts:
+    """The event comparison's three cohorts, each member as ``(id, aligned at)``."""
+    matched: tuple
+    near: tuple
+    comparison: tuple
+    # The roster verdicts a same-population comparison holds; none cross-population.
+    held: frozenset
+
+
+def _event_cohorts(lever, roster, claimed_ids, cgm, bolus, source_window_days, basal=()):
+    """Who is in each of ADR 180's three event cohorts, and the time each is aligned at.
+
+    The event comparison and a habit's trace chart (ADR 528) both read it, so the
+    chart's episodes and Typical are the comparison's own Matched and comparison
+    cohorts.
+    """
+    policy = policy_for(lever)
+    matched = ([member for member in roster if member.id in claimed_ids]
+               if policy.cross_population else
+               [member for member in roster if member.verdict == "fired"])
+    near = [member for member in roster if member.verdict == "near_miss"]
+    matched_ids = {member.id for member in matched}
+    near = [member for member in near if member.id not in matched_ids]
+    comparison_population = policy.comparison_population(roster, bolus)
+    if policy.cross_population:
+        times = [row.t for row in basal] + [row.t for row in cgm]
+        end = max(times) if times else None
+        start = end - timedelta(days=source_window_days) if end is not None else None
+        comparison = tuple(
+            (_opaque("m_", row.seq_num), row.t) for row in comparison_population
+            if start is not None and start <= row.t <= end
+        )
+        held = frozenset()
+    else:
+        near_ids = {item.id for item in near}
+        members = [member for member in comparison_population
+                   if member.id not in matched_ids and member.id not in near_ids]
+        comparison = tuple((member.id, member.opportunity.anchor_t) for member in members)
+        held = frozenset(member.verdict for member in members)
+    return _EventCohorts(
+        matched=tuple((member.id, _comparison_anchor(member, lever)) for member in matched),
+        near=tuple((member.id, _comparison_anchor(member, lever)) for member in near),
+        comparison=comparison, held=held,
+    )
+
+
 def _event(lever, roster, claimed_ids, cgm, bolus, source_window_days, basal=()):
     """Build ADR 180's one server-owned three-cohort event comparison.
 
@@ -875,36 +945,13 @@ def _event(lever, roster, claimed_ids, cgm, bolus, source_window_days, basal=())
     """
     window = _comparison_window(lever, roster)
     policy = policy_for(lever)
-    matched = ([member for member in roster if member.id in claimed_ids]
-               if policy.cross_population else
-               [member for member in roster if member.verdict == "fired"])
-    near = [member for member in roster if member.verdict == "near_miss"]
-    matched_ids = {member.id for member in matched}
-    near = [member for member in near if member.id not in matched_ids]
-    cross_exposure = policy.cross_population
-    comparison_population = policy.comparison_population(roster, bolus)
-    if cross_exposure:
-        times = [row.t for row in basal] + [row.t for row in cgm]
-        end = max(times) if times else None
-        start = end - timedelta(days=source_window_days) if end is not None else None
-        comparison_rows = (
-            tuple(row for row in comparison_population if start <= row.t <= end)
-            if start is not None else ()
-        )
-        comparison_traces = [_comparison_trace(_opaque("m_", row.seq_num), row.t, cgm, window)
-                             for row in comparison_rows]
-    else:
-        comparison = [member for member in comparison_population
-                      if member.id not in matched_ids
-                      and member.id not in {item.id for item in near}]
-        comparison_traces = [_comparison_trace(member.id, member.opportunity.anchor_t, cgm, window)
-                             for member in comparison]
-    matched_traces = [_comparison_trace(member.id,
-                                        _comparison_anchor(member, lever),
-                                        cgm, window) for member in matched]
-    near_traces = [_comparison_trace(member.id,
-                                     _comparison_anchor(member, lever),
-                                     cgm, window) for member in near]
+    cohorts = _event_cohorts(lever, roster, claimed_ids, cgm, bolus, source_window_days, basal)
+    comparison_traces = [_comparison_trace(occurrence_id, t, cgm, window)
+                         for occurrence_id, t in cohorts.comparison]
+    matched_traces = [_comparison_trace(occurrence_id, t, cgm, window)
+                      for occurrence_id, t in cohorts.matched]
+    near_traces = [_comparison_trace(occurrence_id, t, cgm, window)
+                   for occurrence_id, t in cohorts.near]
     matched_cohort = event_comparison.project_cohort("matched", matched_traces, window)
     near_cohort = event_comparison.project_cohort("nearly_matched", near_traces, window)
     comparison_cohort = event_comparison.project_cohort("comparison", comparison_traces, window)
@@ -921,11 +968,10 @@ def _event(lever, roster, claimed_ids, cgm, bolus, source_window_days, basal=())
     # band's order. A same-population comparison is the roster less its Meets
     # criteria and Borderline Occurrences, so it holds exactly its members'
     # verdicts; a cross-population comparison holds no roster Occurrence.
-    held = set() if policy.cross_population else {member.verdict for member in comparison}
     for cohort in (matched_cohort, near_cohort, comparison_cohort):
         cohort["band_states"] = ([cohort["band_verdict"]] if cohort["band_verdict"] else
                                  [state for state in _BAND_ORDER
-                                  if cohort is comparison_cohort and state in held])
+                                  if cohort is comparison_cohort and state in cohorts.held])
     if policy.cross_population:
         matched_cohort["anchor"] = {"kind": "detected_rise_onset", "label": "Detected rise onset"}
         near_cohort["anchor"] = {"kind": "detected_rise_onset", "label": "Detected rise onset"}
@@ -945,7 +991,7 @@ def _event(lever, roster, claimed_ids, cgm, bolus, source_window_days, basal=())
     outside_comparison = sum(member.id not in cohort_ids for member in roster)
     return {"alignment": "event", "anchor": anchor, "window_min": list(window),
             "cohorts": [matched_cohort, near_cohort, comparison_cohort],
-            "counts": {"matched": len(matched), "nearly_matched": len(near),
+            "counts": {"matched": len(cohorts.matched), "nearly_matched": len(cohorts.near),
                        "comparison": len(comparison_traces),
                        "outside_comparison": outside_comparison},
             "comparison": {"name": policy.comparison_name,

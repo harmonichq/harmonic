@@ -12,7 +12,8 @@
 // midnight in HH:MM, `day` as the day of the month of a YYYY-MM-DD date,
 // `date` as the day and month of a served date or time ("19 May"), `time` as
 // the HH:MM of a served "YYYY-MM-DD HH:MM:SS" time, `until` as the date
-// fourteen days after a served time (§1.5 Snooze: "for 14 days"), and `share`
+// fourteen days after a served time (§1.5 Snooze: "for 14 days"), `signed` a
+// whole number with its sign, "+24" or "−6" (a true minus, #559), and `share`
 // a whole percent of a
 // quotient whose operands print to one decimal, as a day's insulin parts do.
 // The 54–69 band prints tbr_lvl1 − tbr_lvl2 as fixed1; a part's share of the
@@ -97,6 +98,10 @@ export const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', '
 export function formatValue(value, format) {
   if (!format) return String(value);
   if (format === 'round') return String(Math.round(value));
+  if (format === 'signed') {
+    const whole = Math.round(value);
+    return whole > 0 ? `+${whole}` : whole < 0 ? `\u2212${-whole}` : '0';
+  }
   if (format === 'fixed1') return value.toFixed(1);
   if (format === 'fixed2') return value.toFixed(2);
   if (format === 'pct1') return (value * 100).toFixed(1);

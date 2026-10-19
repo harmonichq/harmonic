@@ -624,7 +624,7 @@ _Avoid_: post-meal crash (too narrow — a nadir can be 90 without a crash), flo
 **Climb**:
 How far glucose rose after a meal: its **Arc peak** less its start reading, the
 last reading at or up to 15 minutes before the first bolus, in mg/dL. Read only by
-the Overview's **Meal size** card, beside the minutes to that peak (To peak) and the
+the Overview's **Meal size** card, beside the minutes to that peak (Peak at) and the
 change at three hours (At 3 h, only for a meal no later meal began within them).
 The Arc peak stays absolute everywhere else; Climb is the card's one relative
 measure (ADR 501).

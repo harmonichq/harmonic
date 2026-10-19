@@ -136,3 +136,8 @@ test('(e) a share resolves over the values as printed', () => {
   assert.match(check([{ text: '47.1', source: 'ins.basal ÷ ins.total', format: 'share' }])[0],
     /^\(e\) "47\.1" is not ins\.basal ÷ ins\.total as share \(47\)/);
 });
+
+test('a signed value prints its sign, a true minus and no stray space (#559)', async () => {
+  const { formatValue } = await import('./provenance.js');
+  assert.deepEqual([24.4, -6.2, 0, -0.4, 0.4].map((v) => formatValue(v, 'signed')), ['+24', '−6', '0', '0', '0']);
+});

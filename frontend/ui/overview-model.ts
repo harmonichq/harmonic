@@ -317,7 +317,8 @@ export function mealSize(store: OverviewStore): MealSizeData | 'none' | null {
   if (!served) return null;
   if (!served.window || served.sizes.every((size) => size.meals.length === 0)) return 'none';
   const root = `overview.${store}.meal_size`;
-  const median = (path: string, value: number | null) => (value === null ? null : sourced<number>(path, 'round'));
+  const median = (path: string, value: number | null, format: Format) =>
+    (value === null ? null : sourced<number>(path, format));
   return {
     days: sourced(`${root}.window.data_days`),
     hours: sourced(`${root}.horizon_hours`),
@@ -328,11 +329,11 @@ export function mealSize(store: OverviewStore): MealSizeData | 'none' | null {
         to: size.carbs_to === null ? null : sourced(`${at}.carbs_to`),
         last: size.carbs_from === null || size.carbs_to === null ? null : sourced(`${at}.carbs_to − 1`),
         climbs: size.meals.map((meal) => meal.climb),
-        median: median(`${at}.climb.median`, size.climb.median),
+        median: median(`${at}.climb.median`, size.climb.median, 'signed'),
         p25: size.climb.p25,
         p75: size.climb.p75,
-        toPeak: median(`${at}.to_peak.median`, size.to_peak.median),
-        at3h: median(`${at}.at_3h.median`, size.at_3h.median),
+        toPeak: median(`${at}.to_peak.median`, size.to_peak.median, 'round'),
+        at3h: median(`${at}.at_3h.median`, size.at_3h.median, 'signed'),
         meals: sourced(`${at}.meals.length`),
         at3hMeals: sourced(`${at}.at_3h.count`),
       };

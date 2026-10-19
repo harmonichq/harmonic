@@ -1,7 +1,7 @@
 // The Overview screen (§1.1, §1.3), composed only from the library's
 // components: standard metrics over the selected window against the period of
 // the same length before it, its time-in-ranges bar, its glucose profile, and
-// the ISF and basal estimates. Nothing to act on.
+// the ISF and basal estimates, and the Meal size card (#501). Nothing to act on.
 //
 // The window control picks 14, 30 or 90 d (a window the served coverage falls
 // short of is disabled). The line under it is the window's date span and,
@@ -15,21 +15,24 @@
 // One scrolling page (§2.2 Scrolling, §2.5 2026-10-14): the summary — the
 // window switch and its date line, In range, the metrics and the profile — is
 // the first screenful, and the ISF and basal estimates follow it, two cards of
-// one size (ADR 523). Phone: one column under the fixed header, above the tab
-// bar, with a shorter profile plot so the summary fits, the basal card under
-// the ISF card. Desktop: the rail and one pane, the metrics beside the profile,
-// the two estimates side by side beneath both.
+// one size (ADR 523), then the Meal size card, the same size (ADR 501). Phone:
+// one column under the fixed header, above the tab bar, with a shorter profile
+// plot so the summary fits, each card under the one before. Desktop: the rail
+// and one pane, the metrics beside the profile, the cards two to a row beneath
+// both.
 //
 // The profile and the estimates are read per window: choosing a window
 // reports it (`onWindow`), and until its answers land each shows its skeleton.
+// The Meal size card reads its one 90-day window whatever window is chosen.
 import { useEffect, useState } from 'react';
 import { answers, sourced } from '../../answers';
 import {
-  basalEstimate, isfEstimate, metric, period, profile, tirBands, type MetricKey, type Window,
+  basalEstimate, isfEstimate, mealSize, metric, period, profile, tirBands, type MetricKey, type Window,
 } from '../../overview-model';
 import { BasalCard } from '../../components/BasalCard/BasalCard';
 import { GlucoseProfile } from '../../components/GlucoseProfile/GlucoseProfile';
 import { IsfCard } from '../../components/IsfCard/IsfCard';
+import { MealSizeCard } from '../../components/MealSizeCard/MealSizeCard';
 import { MetricFigure } from '../../components/MetricFigure/MetricFigure';
 import { NavBar, type NavHooks } from '../../components/NavBar/NavBar';
 import { Num } from '../../Num';
@@ -164,6 +167,7 @@ export function OverviewScreen({
     <div className="ui-overview__estimates">
       <IsfCard data={store === 'wearer' ? isfEstimate('wearer', window) : 'none'} />
       <BasalCard data={store === 'wearer' ? basalEstimate('wearer', window) : 'none'} />
+      <MealSizeCard data={mealSize(store)} />
     </div>
   );
 

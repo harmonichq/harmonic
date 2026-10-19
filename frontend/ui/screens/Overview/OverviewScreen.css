@@ -29,8 +29,8 @@
 .ui-overview__profile { display: flex; flex-direction: column; margin-top: 16px; }
 .ui-overview__skeleton { display: block; height: 240px; }
 .ui-overview__none { margin: 12px 0 0; color: var(--wk-ink-meta); font-size: var(--ui-type-body); }
-/* The ISF and basal estimates: one column on the phone, side by side and the
-   same size on desktop (ADR 523). */
+/* The ISF and basal estimates and the Meal size card: one column on the phone,
+   two to a row and the same size on desktop (ADR 523, ADR 501). */
 .ui-overview__estimates { display: grid; gap: 24px; margin-top: 24px; }
 
 /* Desktop: the rail and one pane that scrolls as a whole; the metrics beside

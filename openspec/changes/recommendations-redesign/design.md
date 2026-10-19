@@ -1370,3 +1370,79 @@ its QA and parameter-analysis deltas keep only the analyzer's facts. The missed-
 fixture loses its row copies, and the scan's dose-ratio baseline is re-recorded
 without the two deleted captures' entries. The backend's drift checks fall from ten
 to five.
+
+## ADR 501 — The Overview's Meal size card reads one 90-day window of the engine's own meals
+
+**Context.** #499 dropped the engine's eating-sequence detectors, and with them its
+only answer to "how much more does glucose climb after a bigger meal". #501 asked for
+that as an Overview report instead. An analysis of Connor's own sixteen weeks (562
+meals) found bigger meals climb higher and peak later, and the landing at three to
+four hours mostly flat but for 60 g and over. Shown the mock, Connor (2026-10-19):
+"that meal size card is nice. Hell yeah." and "let's build the meal size card". He
+then asked for none of the mock's explanatory text on the card (lock §2.3 ban 1).
+
+**Decision.**
+
+1. *One read, one fixed window.* `GET /api/explore/meal-size` serves the last 90
+   pump-local calendar days ending after the newest CGM day: the glucose profile's
+   window rule at the Overview's longest window. The card ignores the window switch
+   and its title prints the served 90 ("Meal size 90 d"). At 14 or 30 days, 60 g+
+   would hold a handful of meals.
+2. *The engine's own meals.* A meal is `group_meals`' (ADR 470: a first carb bolus
+   of at least 10 g and its same-meal top-ups), grouped over the whole bolus history,
+   as the profile's meal count is. Its carbs are `Meal.carbs`.
+3. *Which meals count.* The start is the last reading at or up to 15 minutes before
+   the first bolus, and it must be at or under the range line
+   (`segment_range_high_mgdl`, 180). The Late bolus classifier must have found
+   glucose flat before the bolus, its `no_trigger` verdict. It is handed the engine's
+   context, readings, boluses and basal within `engine_context_pad_min` of the meal.
+   The meal's Arc peak must exist. A false low's readings are left out, as the
+   profile leaves them out.
+4. *Why that verdict, not `matched`.* `matched` (late) also requires the meal to have
+   run above 180. Leaving out only matched meals would drop the rising meals that
+   climbed high and keep the ones that did not, an outcome filter on the very climb
+   being measured. `no_trigger` is the classifier's own judgement that the dose led
+   the rise. A meal it calls rising for any reason (an upstream low, a prior dose, a
+   high start, or nothing) is out, and so is one too sparse to judge. The card adds
+   no slope rule of its own (AGENTS.md: keep policy in its owner). The event
+   comparison already reads `no_trigger` as "fully judged, nothing fired".
+5. *What is read per meal.* Climb is the Arc peak (`meal_peak`: the highest reading
+   in the three hours after the bolus, cut at the next meal) less the start. To peak
+   is the minutes from the bolus to that reading. At 3 h is the reading at three
+   hours (the last at or up to 15 minutes before it) less the start, read only when
+   no later meal began by then. The three hours is `ARC_PEAK_HORIZON_MIN`, served as
+   `horizon_hours`, so the card prints the engine's own.
+6. *The sizes and their statistics.* Under 25 g, 25–39, 40–59, 60 and over, served
+   as `carbs_from` ≤ carbs < `carbs_to`. Each size serves its meals (time, carbs,
+   climb, to peak, at 3 h), the median and inclusive 25th and 75th percentiles of the
+   climbs (`trial_evidence`'s method), the median to peak, and the median at 3 h with
+   its own count. A size with no meal serves nulls. The frontend computes no
+   statistic.
+7. *Every count names its population.* At 3 h is read from a subset of a size's
+   meals, so the card prints that subset's count under it, beside the size's own
+   count under its label.
+8. *Cache.* The read is one fixed result, `("meal-size",)`, marker `meal-size-v1`,
+   keyed by the recorded-data revision (ADR 538). It reads only recorded data, so it
+   joins `_RECORDED_DATA_RESULTS`, and a follow-up write keeps it in memory. The warm
+   roster warms it after the Overview's windows. The live adapter reads it once with
+   the Overview tab, whatever window is shown, and keeps each meal as its dot (its
+   climb), as `gen_ui_fixtures._meal_size` does.
+9. *One dot row.* The beeswarm, the dot size and pitch and the dot styles move from
+   EvidenceChart into the chart module (`Chart/scale.ts`, `Chart.css`), and both
+   charts read them. The card's median and 25–75% are neutral ink, not the accent:
+   a report's median is no setting's estimate.
+
+**Words.** Meal size, Climb, To peak and At 3 h join lock §1.5. Median widens to a
+size's meals, and "min" is a unit. Rise is the unbolused high's term already, so the
+card never uses it. CONTEXT.md records Climb as the Arc peak less the start, the
+card's one relative measure; the Arc peak stays absolute everywhere else.
+
+**Dosing.** The card judges no setting and no habit. It is never a Queue item, a
+Focus or a setting move, and no analyzer, staging predicate, cap or floor changes.
+
+**Consequences.** The component library gains the MealSizeCard and its stories:
+populated, sparse 60 g+, sizes with no meal, no data and loading. Stale is the
+Overview's own story. The UI fixtures serve it for the wearer, its first days, the
+unsynced store and the QA showcase, and the generator fails if any of those stops
+serving its state. The showcase's contract leg asserts its literals. The lock's
+§2.6 heading, dropped by #529's amendment, is restored.

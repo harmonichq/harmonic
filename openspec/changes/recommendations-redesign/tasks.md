@@ -23,3 +23,4 @@
 - [ ] 6.5 The PR's CI finishes within #475's budget, measured on its run
 - [x] 6.6 The findings answer serves only what the app reads, and the desk mirror's fixture inputs go (#531, ADR 531)
 - [x] 6.7 The desk's last evidence routes, scoped window, row copies and demo set go (#547, ADR 547)
+- [x] 6.8 The Overview's Meal size card reads one 90-day window of the engine's own meals (#501, ADR 501)

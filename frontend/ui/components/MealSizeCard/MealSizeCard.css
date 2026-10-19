@@ -1,0 +1,43 @@
+/* The Setting card's surface and title (SettingCard.css, IsfCard.css) and the
+   chart family's marks (Chart.css); only what differs is here (#501). */
+
+/* A row's size label, in the chart's gutter. */
+.ui-chart__svg .ui-meal-size__size { fill: var(--wk-ink-body); font-size: var(--ui-type-label); }
+
+/* The table beneath: aligned like a table, with no rules or cells (§2.5,
+   2026-10-14): the size column left, each median right-aligned in tabular
+   numerals, a caption over its unit, a count beneath its value. */
+.ui-meal-size__table {
+  width: 100%;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--wk-rule);
+  border-collapse: separate;
+  border-spacing: 0;
+  font-variant-numeric: tabular-nums;
+}
+.ui-meal-size__table th,
+.ui-meal-size__table td { padding: 0; font-weight: var(--ui-weight-regular); text-align: right; vertical-align: top; }
+.ui-meal-size__table th[scope="row"] { text-align: left; }
+.ui-meal-size__table thead th { padding-bottom: 4px; padding-left: 12px; }
+.ui-meal-size__table tbody th,
+.ui-meal-size__table tbody td { padding-top: 10px; }
+.ui-meal-size__table tbody td { padding-left: 12px; }
+.ui-meal-size__table .ui-caption { display: block; line-height: 14px; white-space: nowrap; }
+.ui-meal-size__unit,
+.ui-meal-size__count {
+  display: block;
+  color: var(--wk-ink-meta);
+  font-size: var(--ui-type-label);
+  line-height: 18px;
+  white-space: nowrap;
+}
+.ui-meal-size__value {
+  display: block;
+  color: var(--wk-ink);
+  font-size: var(--ui-type-body);
+  line-height: 22px;
+  white-space: nowrap;
+}
+
+.ui-meal-size__skeleton { display: block; height: 320px; margin-top: 16px; }

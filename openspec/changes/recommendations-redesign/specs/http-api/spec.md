@@ -165,9 +165,9 @@ frontier, the Plan history — and advance the input revision but not the
 recorded-data revision. Such a write SHALL keep every cached result whose builder
 reads only recorded data (readings, deliveries, boluses, carbs, prompt answers,
 settings captures and pump events): the analysis and the scenario report at
-every window, the exposure feed, the time-of-day profile, the findings snapshot,
-outcomes, the day navigator, the model-view, the timeline, and the static catalog (#522,
-#538). The guidance read SHALL still compose the kept findings snapshot with the
+every window, the exposure feed, the time-of-day profile, the meal-size read, the
+findings snapshot, outcomes, the day navigator, the model-view, the timeline, and the
+static catalog (#522, #538, #501). The guidance read SHALL still compose the kept findings snapshot with the
 follow-up state it reads at the new input revision, so its ranking reflects the
 write. Every result that reads follow-up state — the Trial roster, the watched
 change, the pattern sweep — and every case-file preparation SHALL be dropped or
@@ -176,8 +176,8 @@ cached result reads them (#522).
 
 #### Scenario: A snooze keeps every recorded-data result
 
-- **GIVEN** the 14-day outcomes, a day's model-view and the analysis at 14 and 30
-  days are cached
+- **GIVEN** the 14-day outcomes, a day's model-view, the analysis at 14 and 30
+  days and the meal-size read are cached
 - **WHEN** a candidate is snoozed
 - **THEN** every one of them answers without recomputing
 - **AND WHEN** carbs are logged
@@ -327,6 +327,51 @@ the readings.
 - **THEN** its readings still run from two hours before the crossing on to the
   peak
 
+### Requirement: The meal-size read serves the climb after meals of each size
+
+`GET /api/explore/meal-size` SHALL serve, over the last 90 pump-local calendar days
+ending after the newest CGM day, the engine's meals (`group_meals`, at least 10 g)
+that began at or under 180 mg/dL, read from the last reading at or up to 15 minutes
+before the first bolus, that the Late bolus classifier found flat before the bolus
+(its `no_trigger` verdict), and that have an Arc peak. For each it SHALL serve the
+climb (the Arc peak less the start), the minutes to that peak, and the change at
+three hours, only when no later meal began by then. It SHALL group them into four
+sizes, under 25 g, 25–39, 40–59, and 60 and over, each with its meals, the median
+and 25th and 75th percentiles of their climbs, the median minutes to peak, and the
+median change at three hours with how many meals it was read from. It SHALL serve
+the window's days and the three hours (`horizon_hours`). The read SHALL be one fixed
+result keyed by the recorded-data revision (ADR 501).
+
+#### Scenario: Each size serves its meals and medians
+
+- **GIVEN** a flat 120 mg/dL history with meals of 15, 20, 25, 39, 40, 45, 50
+  (30 g and a top-up), 60 and 90 g
+- **WHEN** the meal-size read is requested
+- **THEN** each meal is served in its size with its climb, minutes to peak and change
+  at three hours, the 30 g meal and its top-up as one 50 g meal, and each size's
+  medians and percentiles are those of its meals
+
+#### Scenario: A meal bolused into a rise is left out
+
+- **GIVEN** a meal bolused while glucose rose from 120 to 156 over the half hour
+  before it, which then peaks at 175
+- **WHEN** the meal-size read is requested
+- **THEN** that meal is not served, though the Late bolus classifier did not call it
+  late
+
+#### Scenario: A meal that starts high, or has no start, is left out
+
+- **WHEN** a meal is bolused at 200 mg/dL, or with no reading in the quarter hour
+  before it
+- **THEN** the meal-size read does not serve it
+
+#### Scenario: A later meal cuts the climb and withholds the change at three hours
+
+- **GIVEN** a 90 g meal and another meal two hours later
+- **WHEN** the meal-size read is requested
+- **THEN** the first meal's climb is read from its highest reading up to the second
+  meal, and it serves no change at three hours
+
 ### Requirement: The findings answer carries one restart-safe generation
 
 The system SHALL satisfy the following:
@@ -416,7 +461,7 @@ The warm pass covers exactly what the app's five tabs read, in the order a visit
 needs it (#522): the analysis, pooled and live; the findings and guidance
 snapshot; the Finding case-file preparation; the Trial roster; the outcomes, the
 glucose profile and the analysis for each window the Overview switches between;
-the day navigator; and the model-view and timeline of the latest day with
+the Overview's meal-size read; the day navigator; and the model-view and timeline of the latest day with
 readings and the day before it. Nothing the app does not read is warmed. Any
 other date, month, or window stays lazy, so a warm cannot grow without bound;
 selected case-file projections likewise stay lazy behind their warmed prepared

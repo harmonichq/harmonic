@@ -85,7 +85,16 @@ const EXPECTED = {
     previous: [{ title: 'I:C', block: null, moves: [[null, 12, 10, 'g/U']], result: null }],
     overview: { tir: 98.6, previous: 100, isf: { current: 40, recommended: null, uncertain: true, nights: 14 },
       // The 48 half-hour slots, and the moves the basal analyzer stages (ADR 523).
-      basal: { slots: 48, estimated: 48, moves: [[180, 'lower'], [210, 'lower']] } },
+      basal: { slots: 48, estimated: 48, moves: [[180, 'lower'], [210, 'lower']] },
+      // Meal size over its one 90 days (ADR 501): each size's bounds, its meals,
+      // and its median Climb, To peak and At 3 h as printed, At 3 h over its own
+      // count. The showcase's meals are all 40 g or more.
+      mealSize: { days: 90, hours: 3, rows: [
+        [null, 25, 0, null, null, null, 0],
+        [25, 40, 0, null, null, null, 0],
+        [40, 60, 31, 7, 5, 6, 31],
+        [60, null, 1, 153, 120, 96, 1],
+      ] } },
     day: { latest: '2024-06-30', insulin: 19.56, firstLowBg: 48 },
     // Five lows and no rise: Day's Lows row alone.
     prompts: { lows: 5, rises: [] },
@@ -328,6 +337,14 @@ test(`the live adapter serves each tab's model from the ${CASE} store`, async (t
       slots: basal.slots.length, estimated: basal.slots.filter((slot) => slot.estimate).length,
       moves: basal.slots.filter((slot) => slot.move).map((slot) => [slot.start, slot.move]),
     }, expected.overview.basal);
+    const meals = values(overview.mealSize('wearer'));
+    const printed = (value) => (value === null ? null : Math.round(value));
+    assert.deepEqual({
+      days: meals.days, hours: meals.hours,
+      rows: meals.rows.map((row) => [row.from, row.to, row.climbs.length, printed(row.median), printed(row.toPeak),
+        printed(row.at3h), row.at3hMeals]),
+    }, expected.overview.mealSize);
+    for (const row of meals.rows) assert.equal(row.meals, row.climbs.length, 'one dot per counted meal');
   });
 
   await t.test('Day', async () => {

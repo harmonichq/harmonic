@@ -51,6 +51,7 @@ function fakeClient(served = history()) {
     fetchDiagnoseFindingCase: answer('case', () => ({ traces: { anchor: 'bolus', window_min: [-30, 240], pattern: { episodes: [], points: [] }, typical: { points: [] } } })),
     fetchOutcomes: answer('outcomes', () => ({})),
     fetchExploreTimeOfDay: answer('time-of-day', () => ({})),
+    fetchMealSize: answer('meal-size', () => ({ window: null, sizes: [] })),
     fetchDayNavigator: answer('navigator', (month) => ({ month: month ?? '2026-01', days: [] })),
     fetchCredentials: answer('credentials', () => ({ configured: false, email: null, region: null })),
     fetchPumpSettings: answer('pump', () => ({ configured: false })),
@@ -136,7 +137,7 @@ test('switching tabs back and forth reads nothing again', async () => {
   await readSettings(live);
   assert.equal(fake.calls.length, first);
   // One read of each shared answer across every tab: the badges, the roster, the guidance.
-  for (const name of ['status', 'prompts', 'guidance', 'focus', 'navigator', 'time-of-day']) {
+  for (const name of ['status', 'prompts', 'guidance', 'focus', 'navigator', 'time-of-day', 'meal-size']) {
     assert.equal(fake.count(name), 1, name);
   }
   assert.equal(fake.count('trials', (c) => !detail(c)), 1);
@@ -520,4 +521,28 @@ test('the Queue and Overview keep only what their charts draw, so the remembered
   assert.deepEqual(live.answers.overview.wearer.analyze['14'].basal[1], {
     slot: 1, current: 0.6, asserts_move: false, direction: null, estimate: { value: 0.5, lo: 0.4, hi: 0.6 },
   });
+});
+
+test('the Overview reads the Meal size once, whatever its window, kept to what the card draws (#501)', async () => {
+  const fake = fakeClient();
+  const meal = { t: '2024-05-01 12:00:00', carbs: 30, climb: 62, to_peak: 75, at_3h: 4 };
+  const size = (from, to, meals) => ({ carbs_from: from, carbs_to: to, meals,
+    climb: { median: 62, p25: 62, p75: 62 }, to_peak: { median: 75 }, at_3h: { count: 1, median: 4 } });
+  fake.client.fetchMealSize = (...args) => {
+    fake.calls.push({ name: 'meal-size', args });
+    return Promise.resolve({ window: { start: '2024-02-01 00:00:00', end: '2024-05-01 00:00:00', data_days: 90 },
+      horizon_hours: 3, sizes: [size(null, 25, []), size(25, 40, [meal]), size(40, 60, []), size(60, null, [])] });
+  };
+  const live = createLive({ client: fake.client, glossary: [] });
+  await live.readTab('overview');
+  for (const window of ['30', '90', '14']) await live.readWindow(window);
+  await live.readTab('overview');
+  assert.equal(fake.count('meal-size'), 1, 'one read, whatever window is shown');
+  assert.deepEqual(live.answers.overview.wearer.meal_size, {
+    window: { data_days: 90 },
+    horizon_hours: 3,
+    sizes: [size(null, 25, []), size(25, 40, [{ climb: 62 }]), size(40, 60, []), size(60, null, [])],
+  }, 'each meal kept as the dot it draws, its time and carbs left behind');
+  await live.retryTab('overview');
+  assert.equal(fake.count('meal-size'), 2, 'the Overview\'s Retry reads it again');
 });

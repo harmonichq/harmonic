@@ -15,7 +15,6 @@ import math
 
 from .analyzers.classifiers import (
     classify_carb_undercount,
-    classify_correction_on_iob,
     classify_correction_stacking,
     classify_late_bolus,
 )
@@ -84,23 +83,6 @@ FACTOR_LABELS = {
 COHORTS = {"fired", "another_factor", "near_rule", "neutral", "excluded"}
 COHORT_ORDER = ("fired", "near_rule", "neutral")
 COHORT_EPISODES_FIELD = "episodes"
-_BOUNDARY_FACTS = {
-    "implied_carbs_g": ("Implied carbs", "g"),
-    "logged_carbs_g": ("Logged carbs", "g"),
-    "ratio": ("Carb ratio", "×"),
-    "gap_g": ("Carb gap", "g"),
-    "pre_bolus_slope_mgdl_min": ("Pre-bolus slope", "mg/dL/min"),
-    "suspend_duration_min": ("Suspend duration", "min"),
-    "gate_window_nadir_mgdl": ("Gate-window nadir", "mg/dL"),
-    "nadir_mgdl": ("Nadir", "mg/dL"),
-    "guarded_rebound_peak_mgdl": ("Guarded rebound peak", "mg/dL"),
-    "live_bar_mgdl": ("Live bar", "mg/dL"),
-    "observed_nadir_mgdl": ("Observed nadir", "mg/dL"),
-    "downstream_nadir_mgdl": ("Downstream nadir", "mg/dL"),
-    "iob_at_correction_u": ("IOB at correction", "U"),
-    "stack_gap_min": ("Stack gap", "min"),
-    "iob_at_stack_u": ("IOB at stack", "U"),
-}
 
 
 def _dt(value: str) -> datetime:
@@ -220,27 +202,6 @@ def _over_treated_low_route(anchor, nadir, cgm, bolus) -> tuple[dict | None, boo
             "provenance": "shared guarded-rebound judgment",
         }, False
     return None, reason == "no_trigger"
-
-
-def _correction_on_iob_near(anchor, nadir, cgm, bolus, basal) -> dict | None:
-    if nadir is None or not 70 < nadir <= 75:
-        return None
-    # The production classifier gates on the supplied nadir before evaluating
-    # every other condition. Supplying its unchanged live edge (70) proves all
-    # remaining current gates while retaining the observed 71–75 value below.
-    verdict = classify_correction_on_iob(
-        anchor, 70, cgm, bolus, basal, scenario_config=CONFIG
-    )
-    if not verdict.matched:
-        return None
-    return {
-        "boundary": {
-            "observed_nadir_mgdl": nadir,
-            "live_low_line_mgdl": 70,
-            "iob_at_correction_u": round(verdict.iob_at_correction, 2),
-        },
-        "provenance": "ADR 676 near-low projection after all remaining current gates",
-    }
 
 
 def _correction_stacking_read(
@@ -388,14 +349,11 @@ def _route_low(
     rebound_near, rebound_neutral = _over_treated_low_route(
         anchor, nadir, cgm, bolus
     )
-    coi_near = _correction_on_iob_near(anchor, nadir, cgm, bolus, basal)
     stacking_near, stacking_verdict = _correction_stacking_read(
         episode_corrections, bolus, cgm, basal
     )
     if rebound_near:
         near["over_treated_low"] = rebound_near
-    if coi_near:
-        near["correction_on_iob"] = coi_near
     if stacking_near:
         near["correction_stacking"] = stacking_near
 

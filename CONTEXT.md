@@ -414,8 +414,16 @@ _Avoid_: story, narrative, situation.
 
 **Anchor**:
 An actionable instant the timeline is segmented around — a meal bolus, a
-correction, a CGM low nadir or high peak, or the start of a CIQ suspend.
+correction, a **Low**'s nadir or a high peak, or the start of a CIQ suspend.
 _Avoid_: marker, point, moment.
+
+**Low**:
+A CGM run at or under 70 mg/dL, anchored at its nadir — the one low line (ADR 553).
+It is the low a habit claims, the member of the lows population every habit and
+Pattern is counted over, and the low a prompt asks about. A dip that stays above 70
+is no Low: nothing is claimed on it and it owns no rebound.
+_Avoid_: near-low as a kind of low (the 75 mg/dL lines meal over-delivery and
+pre-empted lows read are their own thresholds, not lows).
 
 **Episode**:
 A cluster of anchors treated as one coherent event to reason about and attribute.

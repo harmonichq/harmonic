@@ -1516,6 +1516,9 @@ serving its state. The showcase's contract leg asserts its literals. The lock's
 
 ## ADR 550 — A habit is counted over its recurrence population, from one source
 
+> Superseded in part by `ADR 553` (below): no claim sits on a near-low, and the
+> engine's clamp this record kept under "Not changed" is retired.
+
 **Context.** A standalone habit's findings row and its case file counted one claim
 set over two populations. On the synthetic `wearer-habit` store (the wearer
 skipping the weekday lunch bolus) the missed-meal row said 12 of 26 highs and
@@ -1601,3 +1604,88 @@ highs reach 250. The UI fixtures regenerate; no Queue row prints a correction-cl
 sentence, so "clusters" leaves the UI allow-list. The two-family Cause scenario of
 the count-sentence requirement now serves one sentence, and a new requirement
 states the one population.
+
+## ADR 553 — One low line: 70 mg/dL everywhere
+
+**Context.** Harmonic drew two low lines. Episodes anchored a low at a 75 mg/dL
+near-low line (`anchor_near_low_mgdl`, #112), so a 72 → 244 rebound was claimed as
+an Over-treated low, while the lows every habit and Pattern is counted over stayed
+the sub-70 runs (`gate_low_mgdl`). Such a claim sat on no member of its own
+population. ADR 202 kept a compatibility clamp for it (`n = max(n, k)` in the
+engine, `k = min(k, n)` in the trend), and ADR 550 left the engine pricing it while
+the row and case file counted only claims on the population. On the synthetic
+`wearer-habit` store the Over-treated low row said 10 of 41 lows while the engine
+priced 12 of 41. The new QA case `behavioral-over-treated-near-low` (the
+over-treated-low story plus one 72 → 244 dip) priced 3 of 6 at priority 34 beside
+a 2 of 6 row, and its case file was withheld as inconsistent. The decision is
+"70 everywhere" (Connor, 2026-10-19).
+
+**Decision.**
+
+- *One low line.* A low is a CGM run at or under `gate_low_mgdl` (70), anchored at
+  its nadir. The near-low pass and `anchor_near_low_mgdl` go. A dip that stays above
+  70 is no low: no anchor, no claim, no population member, no low prompt, and it
+  owns no High. Its rebound High is judged on its own.
+- *The levers it reached.* Over-treated low was the only lever that could claim a
+  near-low, through its 180 mg/dL rebound bar for a nadir above 70. That bar is now
+  unreachable (every judged nadir is a low anchor's, at or under 70) and goes, so one
+  160 mg/dL bar applies. Highs after treating lows follows its habit. Correction on
+  active insulin already required a nadir at or under 70 in its classifier. The
+  other levers recur over meals, highs or correction pairs. The event comparison's
+  Correction on active insulin "near" projection read a lows Occurrence at 71–75,
+  which the lows feed has not served since ADR 550; it goes. Correction stacking's
+  near read stays: it reads the CGM after a stack, not a low.
+- *k is the members claimed.* The engine prices a habit's `k` as the distinct
+  members of its recurrence population its claims sit on, through the evaluation's
+  one association (`Evaluation.attributed`). Episodes claiming one member share one
+  occurrence, represented by the worst. An episode whose claim sits on no member
+  stays in the report but in no pattern. The trend's and the Overview's tally
+  (`tally_attributions`) counts the same way. Every claimed member is one of the
+  `n`, so `k <= n` holds by construction, and both ADR 202 clamps go. Measured
+  before removing them: across every QA case, no claim is unassociated and no two
+  claims of one lever share a member. A future unassociated claim cannot break the
+  bound: it goes unpriced, and its case file is still withheld by name (ADR 488).
+  The Overview clean rate's `min(k, n)` stays. It sums several levers into one
+  family, and two of them can claim one low (a crash's own cause and its
+  over-treatment), so it is not ADR 202's clamp. Correction stacking's trend clamps
+  on its own classifier counts stay too.
+- *Lines that are not a low.* Three thresholds keep their values because none
+  anchors anything or denominates a habit. Meal over-delivery's suspend outcome
+  line (`suspend_near_low_mgdl`, 75) feeds Lows after meals and its carb-ratio
+  member. The pre-empted-low printed-low proximity line (75) feeds the
+  correction-factor strengthen gate and the carb-ratio analyzer, and is now its own
+  field, `preempted_printed_low_mgdl`, because the field it read is gone. The
+  override tile's harm line (`user_override_harm_low_mgdl`, 80) is not a lever.
+  Moving any of them would move a setting suggestion or a served count. Time below
+  range, the Day's lows, low prompts and the settings analyzers' printed lows already
+  used the 70 line.
+- *The noun.* The population stays "lows". With one line it means one thing, and
+  CONTEXT.md now defines a Low.
+
+**Supersedes.** ADR 202's compatibility-clamp column, which recorded clamps
+"because actionable near-low rebounds can exist without a sub-70 recurrence
+opportunity". It also covers ADR 202's other clamp rationales: each lever's
+attributed count is now a subset of its population by construction. It also
+supersedes ADR 550's "Not changed" paragraph: no claim sits on a near-low, so the
+engine, the row, the case file and the Pattern read one count. The rest of both
+records stands.
+
+**Not changed.** No suggestion, cap, support floor, staging predicate, segmentation
+rule, gate lookback or rebound horizon.
+
+**Consequences.** On every existing QA case, no count, price, priority, Pattern or
+Queue row moves. `pattern-near-tie` and `isf-range-hold` each lose two lever-less
+near-low episodes, so `pattern-near-tie`'s evidence episode ids renumber. The new
+case prices 2 of 6 at priority 28 (was 3 of 6 at 34), and its row, case file and
+price agree. Its literal expectation is the over-treated-low story's own: the dip
+changes nothing. The UI fixtures regenerate. `wearer` prices Over-treated low 8 of
+33 (was 9), and Highs after treating lows drops 39 → 38 (31 → 30 in the five
+fixture stores built on it). `wearer-habit` prices Over-treated low 10 of 41 (was
+12), and its Pattern drops 34 → 31. Its Missed / unannounced meal reads 13 of 24
+highs (was 12) at 60 (was 58): the High a near-low's rebound used to own is now
+judged on its own, as an unbolused rise. Such a High now raises a "did you eat
+here?" prompt. The scenario configuration's identity changes (one field gone, one
+added), so a Focus retained under the earlier configuration reads
+`unsupported_retained_execution`, ADR 462's existing rule for a changed
+computation. Unit fixtures whose boluses carried no `seq_num` gain one, as every
+stored bolus has (`bolus_events.seq_num` is `NOT NULL`).

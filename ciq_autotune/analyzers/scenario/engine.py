@@ -8,9 +8,9 @@ The public face of epic #70's layer 3. It:
    observed impact for sequence competition and chronological order otherwise;
 3. **groups** episodes into policy-owned occurrences and patterns by lever;
 4. **scores** each pattern with #58 :class:`~ciq_autotune.uncertainty.Confidence`
-   — ``n`` = recurrence population, ``k`` = unique occurrences that went bad this
-   way, ``effect`` = typical hypo-weighted occurrence severity
-   (:mod:`.severity`) — selects a **hero** (highest-severity credible episode), and
+   — ``n`` = recurrence population, ``k`` = the members of it a claim of this lever
+   sits on (so ``k <= n`` by construction, #553), ``effect`` = typical hypo-weighted
+   occurrence severity (:mod:`.severity`) — selects a **hero** (highest-severity credible episode), and
    **ranks** patterns by aggregate severity (#77);
 5. emits the :class:`~.payload.ScenarioReport` (#70 §5): patterns without confident
    rate signal collapse behind the low-confidence expander (unless they are a
@@ -20,7 +20,7 @@ The public face of epic #70's layer 3. It:
 Public entry points:
 
 * :func:`attributed_occurrences` — contextual attribution with owned recurrence
-  anchors; :func:`tally_attributions` keeps its legacy all-input aggregation.
+  anchors; :func:`tally_attributions` counts them per lever without narration.
 * :func:`assemble` — the pure core: event lists in, ``ScenarioReport`` out. All the
   judgment lives here; it takes no store, so it is fully unit-testable.
 * :func:`build_scenarios` — the store-facing wrapper the API calls: reads the
@@ -119,24 +119,25 @@ def tally_attributions(
     scenario_config: ScenarioConfig = ScenarioConfig(),
     low_answers: Sequence[LowPromptAnswer] = (),
 ) -> Tuple[Dict[Exposure, int], Dict[Lever, int]]:
-    """Exposure counts and unique attributed recurrence counts, without narration.
+    """Exposure counts and each lever's claimed population members, without narration.
 
-    The legacy all-input aggregation keeps unavailable ownership rows: an absent
-    comparison anchor does not erase an existing attribution.
+    A lever's count is the members of its recurrence population its claims sit on
+    (#553), as :func:`assemble` prices it, so it never exceeds that population.
     """
     evaluated = evaluate(bolus_events, cgm_readings, basal_events, isf=isf,
                          scenario_config=scenario_config, low_answers=low_answers,
                          bound_classifier_context=False)
     exposure_counts = {family: len(rows) for family, rows in evaluated.families.items()}
     attributed: Dict[Lever, int] = {}
-    seen = set()
-    for row in evaluated.attributed:
-        key = (row.lever, row.recurrence_id)
-        if key in seen:
-            continue
-        seen.add(key)
-        attributed[row.lever] = attributed.get(row.lever, 0) + 1
+    for lever, _family, _key in {_claimed_member(row) for row in evaluated.attributed
+                                 if row.anchor_t is not None}:
+        attributed[lever] = attributed.get(lever, 0) + 1
     return exposure_counts, attributed
+
+
+def _claimed_member(row: AttributedOccurrence) -> tuple:
+    """The population member one associated claim sits on, keyed by its lever."""
+    return row.lever, row.driver_family, row.driver_source_key
 
 
 def _build_episode(
@@ -276,16 +277,14 @@ def _score_pattern(
 ) -> Confidence:
     """The #58 :class:`Confidence` for a lever's pattern.
 
-    ``k`` = unique policy occurrences attributed to this lever; ``n`` = the lever's
-    recurrence population (never below ``k`` in served output);
+    ``k`` = the members of the lever's recurrence population its claims sit on, one
+    representative episode each; ``n`` = that population. Every member is one of the
+    ``n``, so ``k <= n`` needs no clamp (#553 retired ADR 202's).
     ``effect`` = mean normalized hypo-weighted severity across occurrence heroes
     (the "typical severity" that feeds both scoring and the recurrence line).
     """
     k = len(episodes)
-    # Near-low rebound episodes can be actionable even where no sub-70 anchor was
-    # emitted. Those legacy Exposure populations still need this compatibility
-    # clamp; ADR 202 records the audited exception explicitly.
-    n = max(recurrence_counts[lever], k)
+    n = recurrence_counts[lever]
     effects = [
         normalized_severity(ep.severity, scenario_config=scenario_config)
         for ep in episodes
@@ -328,6 +327,12 @@ def assemble(
                          window_start=parse_t(window["start"]) if window and window.get("start") else None,
                          window_end=parse_t(window["end"]) if window and window.get("end") else None)
     recurrence_counts = evaluated.recurrence_counts
+    # A lever's occurrence is the population member its claim sits on (#553): episodes
+    # claiming one member share the first one's occurrence id, and an episode whose
+    # claim sits on no member is priced in no pattern.
+    claims = {row.episode_id: _claimed_member(row) for row in evaluated.attributed
+              if row.anchor_t is not None}
+    member_occurrence = {}
     episodes = {}
     by_lever = {}
     occurrence_ids = {}
@@ -342,8 +347,11 @@ def assemble(
             continue
         episode, lever = built
         episodes[episode.id] = episode
+        member = claims.get(item.id)
+        if member is None:
+            continue
         by_lever.setdefault(lever, []).append(episode)
-        occurrence_ids[episode.id] = item.occurrence_id
+        occurrence_ids[episode.id] = member_occurrence.setdefault(member, item.occurrence_id)
 
     # Build a scored pattern per lever with >= _MIN_OCCURRENCES episodes. Over-treated
     # lows are exempt from the one-off gate (#104): each is a discrete, dangerous event

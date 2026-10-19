@@ -96,10 +96,10 @@ def cgm_flat(day, h, m, bg, minutes, step=5):
     return cgm_ramp(day, h, m, bg, 0.0, minutes, step)
 
 
-def meal(day, h, m, carbs=45.0, dose=10.0, carb_ratio=10.0):
+def meal(day, h, m, carbs=45.0, dose=10.0, carb_ratio=10.0, seq_num=None):
     return BolusEvent(
         t=datetime(2026, 6, day, h, m, 0), insulin=dose, carbs=carbs,
-        carb_ratio=carb_ratio, completion="Completed",
+        carb_ratio=carb_ratio, completion="Completed", seq_num=seq_num,
     )
 
 
@@ -243,10 +243,15 @@ class PostMealSuspendAttributionTest(unittest.TestCase):
 
 
 def dose_stamped_ic_fixture():
-    """Four runaway meals: three stamped I:C values and one unstamped (~25%)."""
+    """Four runaway meals: three stamped I:C values and one unstamped (~25%).
+
+    Each bolus carries the pump sequence number every stored bolus has, so each claim
+    sits on its own meal (#553).
+    """
     bolus, cgm = [], []
     for day, carb_ratio in zip((15, 16, 17, 18), (5.1, 4.0, 5.4, None)):
-        bolus.append(meal(day, 8, 0, carbs=30.0, dose=6.0, carb_ratio=carb_ratio))
+        bolus.append(meal(day, 8, 0, carbs=30.0, dose=6.0, carb_ratio=carb_ratio,
+                          seq_num=day))
         cgm.extend(
             cgm_flat(day, 6, 0, 145, 30)
             + cgm_ramp(day, 8, 0, 145, 3.6, 60)
@@ -1586,13 +1591,13 @@ def _arc_bolus(mo, day, h, m, insulin, carbs):
 
 
 # Invented evening arcs on the CGM + bolus schema the scenario engine reads. The
-# nadir/rebound pair of each is the #112 acceptance signal, and is the only property
-# the assertions below depend on — the individual readings are filler that carries it.
+# nadir/rebound pair of each is the only property the assertions below depend on —
+# the individual readings are filler that carries it.
 #
 # A near-low that dips to 73, is treated with unbolused rescue carbs after a dinner
-# bolus, and rockets to 238: a textbook over-treated low the old sub-70 anchor line
-# would have missed by 3 mg/dL.
-# SYNTHETIC-FIXTURE: invented CGM arc; preserves a near-low nadir just above the old sub-70 line that rebounds hard — the #112 acceptance shape.
+# bolus, and rockets to 238. #112 claimed it as an over-treated low; with one low
+# line (#553) a dip that never reaches 70 is not a low, so nothing claims it.
+# SYNTHETIC-FIXTURE: invented CGM arc; preserves a near-low nadir just above the sub-70 line that rebounds hard — the shape #553 stops claiming.
 _DEEP_REBOUND_CGM = (
     "17:00:121,17:05:124,17:10:127,17:15:129,17:20:130,17:25:133,17:30:132,17:35:121,"
     "17:40:114,17:45:106,17:50:99,17:55:93,18:00:89,18:05:86,18:10:87,18:15:96,"
@@ -1603,56 +1608,38 @@ _DEEP_REBOUND_CGM = (
     "21:05:236,21:10:220,21:15:216,21:20:218,21:25:214"
 )
 # A second, independent near-low: dips to 74 and rebounds to 204 within the hour.
-# SYNTHETIC-FIXTURE: invented CGM arc; preserves a second, independent near-low/rebound pair, proving the #112 fix isn't overfit to one arc.
+# SYNTHETIC-FIXTURE: invented CGM arc; preserves a second, independent near-low/rebound pair, so #553 is not pinned on one arc.
 _SECOND_REBOUND_CGM = (
     "14:45:119,14:50:114,14:55:108,15:00:102,15:05:95,15:10:91,15:15:87,15:20:78,"
     "15:25:76,15:30:74,15:35:84,15:40:98,15:45:109,15:50:117,15:55:128,16:00:136,"
     "16:05:137,16:10:159,16:15:172,16:20:176,16:25:183,16:30:193,16:35:196,16:40:203,"
     "16:45:201,16:50:204,16:55:192,17:00:184,17:05:173,17:10:152"
 )
-# The explicit negative: a near-low wobble — dips to 73 but only recovers to 174,
-# short of the 180 near-low rebound bar, so it is NOT an over-treated low (a shallow
-# wobble, not a rescue-carb spike).
-# SYNTHETIC-FIXTURE: invented CGM arc; preserves a near-low that recovers short of the rebound bar — the negative control for #112.
-_SHALLOW_WOBBLE_CGM = (
-    "15:30:88,15:35:85,15:40:81,15:45:78,15:50:76,15:55:75,16:00:74,16:05:73,16:10:81,"
-    "16:15:95,16:20:96,16:25:114,16:30:146,16:35:168,16:40:174,16:45:161,16:50:159,"
-    "16:55:158,17:00:156,17:05:162,17:10:160"
-)
 
 
-class NearLowReboundTest(unittest.TestCase):
-    """#112: a near-low (nadir 70–75) that rebounds hard is an over-treated low.
+class OneLowLineTest(unittest.TestCase):
+    """#553: one low line, 70 mg/dL. A dip that stays above it is not a low.
 
-    The over-treated-low shape is defined by the *rebound*, not the nadir depth. A 73
-    → 238 is a textbook over-treatment, but the sub-70 anchor line missed it by
-    3 mg/dL (inside Dexcom noise), so the whole day produced zero episodes. The fix
-    widens low anchoring to nadir ≤ 75 and gates near-lows on a tiered rebound bar
-    (≥180, vs the sub-70 ≥160) so genuine over-treatments surface while shallow
-    wobbles don't.
+    #112 anchored lows at a 75 mg/dL near-low line so a 73 → 238 rebound could be
+    claimed as an over-treated low, while the lows every habit is counted over stayed
+    sub-70. The claim then sat on no member of its own population. A near-low is now
+    no anchor at all: nothing claims it and it joins no population.
 
     ``isf`` is left ``None`` so carb-undercount can't attribute — the shape where the
-    dinner bolus falls through to the low and the day yields exactly one episode.
+    dinner bolus falls through to the low.
     """
 
-    def test_near_low_rebound_is_a_single_over_treated_low(self):
-        # AC1 / AC6: the 73 → 238 evening → EXACTLY ONE episode, over_treated_low,
-        # trigger=low (before #112: zero episodes the whole day). One episode, not two
-        # — the near-low must not over-split.
+    def test_an_over_treated_near_low_is_not_claimed(self):
         cgm = _arc_cgm(3, 4, _DEEP_REBOUND_CGM)
         bolus = [
             _arc_bolus(3, 4, 17, 50, 5.80, 32.0),    # dinner bolus
             _arc_bolus(3, 4, 20, 20, 1.50, None),    # correction into the rebound
         ]
         report = assemble(bolus, cgm, [], isf=None)
-        eps = list(report.episodes.values())
-        self.assertEqual(len(eps), 1)
-        self.assertEqual(eps[0].lever, Lever.OVER_TREATED_LOW)
-        self.assertEqual(eps[0].trigger, "low")
+        levers = {e.lever for e in report.episodes.values()}
+        self.assertNotIn(Lever.OVER_TREATED_LOW, levers)
 
-    def test_second_near_low_rebound_also_surfaces(self):
-        # AC2: a second, independent day (74 → 204) — proves it isn't overfit to the
-        # first arc.
+    def test_a_second_over_treated_near_low_is_not_claimed(self):
         cgm = _arc_cgm(3, 11, _SECOND_REBOUND_CGM)
         bolus = [
             _arc_bolus(3, 11, 16, 15, 1.50, None),
@@ -1660,37 +1647,21 @@ class NearLowReboundTest(unittest.TestCase):
         ]
         report = assemble(bolus, cgm, [], isf=None)
         levers = {e.lever for e in report.episodes.values()}
-        self.assertIn(Lever.OVER_TREATED_LOW, levers)
-
-    def test_shallow_wobble_is_not_an_over_treated_low(self):
-        # AC3: a 73 → 174 wobble clears the sub-70 160 bar but not the near-low 180
-        # bar, so it must NOT mint an over-treated low.
-        cgm = _arc_cgm(3, 18, _SHALLOW_WOBBLE_CGM)
-        bolus = [_arc_bolus(3, 18, 16, 45, 2.40, None)]
-        report = assemble(bolus, cgm, [], isf=None)
-        levers = {e.lever for e in report.episodes.values()}
         self.assertNotIn(Lever.OVER_TREATED_LOW, levers)
 
-    def test_near_low_rebound_bar_is_180_not_160(self):
-        # The tier boundary itself: a near-low (nadir 72) rebounding to 172 does NOT
-        # fire, but the same nadir rebounding to 182 does. (Sub-70's 160 bar is
-        # covered by OverTreatedLowTest.test_rebound_threshold_is_160.)
-        def near_low(rebound):
-            # 90 -> 72 over 20 min, then 72 -> rebound over 30 min, then settle.
-            fall = cgm_ramp(15, 12, 0, 90, -0.9, 20)         # -> 72
-            rise = cgm_ramp(15, 12, 20, 72, (rebound - 72) / 30.0, 30)
-            settle = cgm_ramp(15, 12, 50, rebound, -1.0, 40)
-            c = fall + rise + settle
-            ep = [e for e in segment(collect_anchors([], c, []))
-                  if any(a.kind is AnchorKind.LOW for a in e.anchors)][0]
-            return attribute(ep, c, [], [], isf=None).lever
+    def test_a_near_low_is_no_low_anchor(self):
+        # 90 -> 72 over 20 min, then a hard rebound: no LOW anchor, so no episode can
+        # be judged on it. The same arc dipping to 66 is a low.
+        def low_anchors(nadir):
+            fall = cgm_ramp(15, 12, 0, 90, (nadir - 90) / 20.0, 20)
+            rise = cgm_ramp(15, 12, 20, nadir, (240 - nadir) / 30.0, 30)
+            c = fall + rise
+            return [a for a in collect_anchors([], c, []) if a.kind is AnchorKind.LOW]
 
-        self.assertIsNone(near_low(172.0))                    # below the 180 bar
-        self.assertEqual(near_low(182.0), Lever.OVER_TREATED_LOW)
+        self.assertEqual(low_anchors(72.0), [])
+        self.assertEqual([a.bg for a in low_anchors(66.0)], [66.0])
 
-    def test_sub70_exposure_denominator_ignores_near_lows(self):
-        # AC4: a dip to 73 is NOT "a low you had" — it must not enter the LOWS
-        # exposure count. Only the sub-70 run counts.
+    def test_lows_population_counts_only_sub70_runs(self):
         from ciq_autotune.analyzers.scenario.engine import _exposure_counts
         from ciq_autotune.analyzers.scenario.levers import Exposure
 
@@ -1745,10 +1716,10 @@ class OverTreatedLowSpanTest(unittest.TestCase):
     an intervening (lever-less) anchor was truncated off and the excursion scored ~0.
     """
 
-    # A near-low (nadir 72 > 70) that rebounds past 180 to a 210 peak, then declines
-    # back to a flat in-range plateau. Near-low so worst_bg reports the peak (a sub-70
-    # nadir would dominate worst_bg); mirrors the deep-rebound arc's spike shape.
-    def _near_low_rebound(self, day=10, h=19, m=0):
+    # A low at the line (nadir 70) that rebounds past 160 to a 210 peak, then declines
+    # back to a flat in-range plateau. At the line so worst_bg reports the peak (a
+    # deeper nadir would dominate worst_bg); mirrors the deep-rebound arc's spike shape.
+    def _line_low_rebound(self, day=10, h=19, m=0):
         t0 = datetime(2026, 6, day, h, m, 0)
 
         def seg(off, start_bg, slope, minutes, step=5):
@@ -1758,8 +1729,8 @@ class OverTreatedLowSpanTest(unittest.TestCase):
                     for k in range(minutes // step + 1)]
 
         cgm = (seg(0, 100, 0.0, 20)
-               + seg(20, 100, -(100 - 72) / 20.0, 20)      # -> 72 near-low nadir at +40
-               + seg(40, 72, (210 - 72) / 40.0, 40)         # -> 210 rebound peak at +80
+               + seg(20, 100, -(100 - 70) / 20.0, 20)      # -> 70 nadir at +40
+               + seg(40, 70, (210 - 70) / 40.0, 40)         # -> 210 rebound peak at +80
                + seg(80, 210, -(210 - 120) / 60.0, 60)      # decline back toward range
                + seg(140, 120, 0.0, 40))                    # settled plateau
         ep = [e for e in segment(collect_anchors([], cgm, []))
@@ -1778,7 +1749,7 @@ class OverTreatedLowSpanTest(unittest.TestCase):
         # AC5: one scanner. The peak and the terminal come from the same scan, and the
         # thin ``guarded_rebound_peak`` accessor equals ``guarded_rebound(...).peak`` —
         # the split, the label, and the scored span can never disagree.
-        cgm, _ep, nadir_t = self._near_low_rebound()
+        cgm, _ep, nadir_t = self._line_low_rebound()
         gr = guarded_rebound(cgm, nadir_t)
         self.assertIsInstance(gr, GuardedRebound)
         self.assertEqual(gr.peak, 210.0)
@@ -1790,9 +1761,9 @@ class OverTreatedLowSpanTest(unittest.TestCase):
         # AC2/AC3 (lever-less direction): an intervening anchor whose group attributes no
         # lever (simulated by an early ``next_start`` with no lever-bearing neighbour)
         # must NOT truncate the low. The span reaches the guarded-scan terminal, so
-        # severity/worst_bg cover the whole excursion — the 210 peak, not the in-range
-        # near-low run that scores 0.
-        cgm, ep, nadir_t = self._near_low_rebound()
+        # severity/worst_bg cover the whole excursion — the 210 peak, not the low run
+        # at the line that scores 0.
+        cgm, ep, nadir_t = self._line_low_rebound()
         lever_less_at = nadir_t + timedelta(minutes=15)
         episode, lever = self._build(cgm, ep, next_start=lever_less_at, next_lever_start=None)
         self.assertEqual(lever, Lever.OVER_TREATED_LOW)
@@ -1801,14 +1772,14 @@ class OverTreatedLowSpanTest(unittest.TestCase):
         self.assertGreater(episode.end, lever_less_at)
         # Pinned extended-span severity/worst_bg so the scored span can't silently drift.
         self.assertEqual(episode.worst_bg, 210.0)
-        self.assertAlmostEqual(episode.severity, 438.75, places=2)
+        self.assertAlmostEqual(episode.severity, 437.5, places=2)
 
     def test_clamps_at_lever_bearing_neighbour(self):
         # AC3 (lever-bearing direction): a lever-bearing neighbour that starts inside the
         # rebound hump DOES clamp the low at its start — two lever-bearing episodes never
         # overlap. The peak past the clamp is excluded, so the span scores 0 over the
         # in-range slice up to the neighbour.
-        cgm, ep, nadir_t = self._near_low_rebound()
+        cgm, ep, nadir_t = self._line_low_rebound()
         neighbour_at = nadir_t + timedelta(minutes=25)      # mid-rebound, BG still climbing
         episode, lever = self._build(
             cgm, ep, next_start=nadir_t + timedelta(minutes=15), next_lever_start=neighbour_at)
@@ -2289,7 +2260,7 @@ class AttributedOccurrenceOwnershipTest(unittest.TestCase):
                 else:
                     self.assertNotIn(Lever.OVER_TREATED_LOW, tally)
 
-    def test_split_rebound_retains_nadir_and_unassociated_near_low_is_not_dropped(self):
+    def test_split_rebound_retains_nadir_and_a_near_low_is_never_claimed(self):
         from ciq_autotune.analyzers.scenario import attributed_occurrences, tally_attributions
         cgm = (cgm_flat(19,18,40,120,20) + cgm_ramp(19,19,0,120,1.75,40)
                + cgm_ramp(19,19,40,190,-1.4,100) + cgm_ramp(19,21,20,50,4,40)
@@ -2300,11 +2271,10 @@ class AttributedOccurrenceOwnershipTest(unittest.TestCase):
         self.assertEqual(rebound.driver_family,Exposure.LOWS)
         near = _arc_cgm(3,4,_DEEP_REBOUND_CGM)
         bolus = [_arc_bolus(3,4,17,50,5.8,32), _arc_bolus(3,4,20,20,1.5,None)]
+        # #553: a 73 mg/dL dip is no low, so no claim exists to leave unassociated.
         rows = attributed_occurrences(bolus,near,isf=None)
-        row = next(r for r in rows if r.lever is Lever.OVER_TREATED_LOW)
-        self.assertIsNone(row.anchor_t)
-        self.assertEqual(row.unavailable_reason,"unassociated_recurrence_anchor")
-        self.assertEqual(tally_attributions(bolus,near,isf=None)[1][Lever.OVER_TREATED_LOW],1)
+        self.assertEqual([r for r in rows if r.lever is Lever.OVER_TREATED_LOW], [])
+        self.assertNotIn(Lever.OVER_TREATED_LOW, tally_attributions(bolus,near,isf=None)[1])
 
 
 class FollowUpObservationTest(unittest.TestCase):
@@ -2428,20 +2398,17 @@ class OverTreatedReboundOwnershipTest(unittest.TestCase):
         self.assertEqual([e.lever for e in report.episodes.values()],
                          [Lever.OVER_TREATED_LOW] * 4)
 
-    def test_near_low_rebound_inside_its_episode_prices_no_missed_meal(self):
+    def test_a_near_low_owns_no_rebound_so_its_high_is_judged_alone(self):
+        # #553: a dip to 72 is no low, so it owns nothing; the 270 High it climbs to
+        # has no bolus behind it and reads as the unbolused rise it is.
         cgm = cgm_trace(10, [(0, 110), (30, 110), (60, 72), (130, 270), (190, 180),
                              (250, 144)])
         evaluation = evaluate([], cgm, [])
         [episode] = evaluation.episodes
-        self.assertEqual(episode.attribution.lever, Lever.OVER_TREATED_LOW)
-        self.assertEqual(self._matched(episode), {Lever.OVER_TREATED_LOW})
-        self.assertNotIn(Lever.MISSED_MEAL,
+        self.assertEqual(episode.attribution.owned_highs, ())
+        self.assertNotIn(Lever.OVER_TREATED_LOW,
                          set().union(*(self._matched(e) for e in evaluation.episodes)))
-        high = self._high(episode)
-        self.assertEqual([h for h, _ in episode.attribution.owned_highs], [high])
-        mm = self._verdicts(episode, high)["missed_meal"]
-        self.assertEqual(mm.silence_reason, SilenceReason.UPSTREAM_CAUSE)
-        self.assertIn("72 mg/dL at 14:00", mm.detail)
+        self.assertEqual(episode.attribution.lever, Lever.MISSED_MEAL)
 
     @staticmethod
     def _caused_low(day, *, bridge):

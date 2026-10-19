@@ -25,3 +25,4 @@
 - [x] 6.7 The desk's last evidence routes, scoped window, row copies and demo set go (#547, ADR 547)
 - [x] 6.8 A standalone habit is its own Queue card, pinned into a Focus under its own key (#528, ADR 528)
 - [x] 6.9 The Overview's Meal size card reads one 90-day window of the engine's own meals (#501, ADR 501)
+- [x] 6.10 One low line, 70 mg/dL everywhere: a habit's price, row and case file count one population (#553, ADR 553)

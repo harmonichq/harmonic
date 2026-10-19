@@ -209,9 +209,8 @@ def build_candidates(
 
     Reuses the scenario engine's detection (no new detectors, per #70/#128):
 
-    * **sub-70 lows** — every genuine low run (nadir anchored at
-      ``ScenarioConfig.gate_low_mgdl``, so near-lows at 71–75 are excluded — a dip to 72 is not
-      "a low you had"). Day or night; an over-treated-low attribution is still just a
+    * **sub-70 lows** — every low run (nadir anchored at the one low line,
+      ``ScenarioConfig.gate_low_mgdl``; a dip to 72 is no low). Day or night; an over-treated-low attribution is still just a
       low here, so the same nadir yields exactly one prompt.
     * **missed meals** — each HIGH-run onset the ``missed-meal`` classifier matches
       (a meal-shaped rise with no bolus behind it), unless the shared evaluation
@@ -230,8 +229,7 @@ def build_candidates(
     candidates: List[Prompt] = []
     scenario_config = ScenarioConfig()
     anchors = collect_anchors(
-        bolus_events, cgm_readings, basal_events,
-        scenario_config=scenario_config, low_mgdl=scenario_config.gate_low_mgdl,
+        bolus_events, cgm_readings, basal_events, scenario_config=scenario_config,
     )
     owned = {high for episode in evaluate(bolus_events, cgm_readings, basal_events,
                                           scenario_config=scenario_config,

@@ -14,8 +14,9 @@ the per-lever classifiers). Keep them distinct — do not fold one into the othe
 
 **Behavior-preserving.** Every field's default is the exact value the constant it
 replaced carried; several near-identical numbers are deliberately distinct fields
-(see the ``anchor_near_low_mgdl`` / ``gate_low_mgdl`` pair below), so a 70 and a 75
-that happen to look alike are *not* merged. The defaults are not user-tweakable —
+(see ``gate_low_mgdl`` and the 75 mg/dL ``suspend_near_low_mgdl`` /
+``preempted_printed_low_mgdl`` lines below), so a 70 and a 75 that happen to look
+alike are *not* merged. The defaults are not user-tweakable —
 they are hand-tuned by agents as the algorithm developed and stay code-owned (#114).
 
 **Why it lives at ``analyzers/`` and not inside the ``scenario`` package.** Roughly
@@ -52,11 +53,6 @@ class ScenarioConfig:
     #: The user-correction floor (U) for anchoring — the provenance-less fallback for a
     #: pure correction and the admission floor on a mixed bolus's correction component.
     anchor_user_correction_floor_u: float = 1.0
-    #: Low-anchor threshold: any CGM run whose nadir reaches this is anchored. This is
-    #: the near-low line (75), deliberately looser than the exposure/gate low line
-    #: (``gate_low_mgdl`` = 70) — a dip to 71-75 is attributable but is not "a low you
-    #: had", so it must not widen the LOWS denominator. **Distinct from gate_low_mgdl.**
-    anchor_near_low_mgdl: float = 75.0
     #: A CGM run whose peak reaches this is a high; its peak is anchored.
     anchor_high_mgdl: float = 250.0
     #: Readings within this gap are one CGM run; a wider gap closes the run.
@@ -68,9 +64,10 @@ class ScenarioConfig:
     anchor_meal_reach_min: float = 300.0
 
     # --- context gate (classifiers/context_gate.py) -----------------------------
-    #: A CGM reading at/under this is a "low" for gating/exposure — the ~70 mg/dL line.
-    #: **Distinct from anchor_near_low_mgdl (75)**: there is an explicit code comment
-    #: marking the divergence; do not merge them.
+    #: The one low line (#553): a CGM run at/under this is a low — the run the engine
+    #: anchors, the lows population every habit and Pattern is counted over, and the
+    #: context gate's upstream low. #112's 75 mg/dL near-low anchor line is retired: a
+    #: dip that stays above 70 is no low and nothing is claimed on it.
     gate_low_mgdl: float = 70.0
     #: How far back the context gate looks for an upstream cause (recovery rise).
     gate_lookback_min: float = 90.0
@@ -165,6 +162,11 @@ class ScenarioConfig:
     #: A `source='manual'` entry is a pre-empted low only if the CGM never reached a
     #: printed (near-)low nadir within this window on each side of the entry.
     preempted_printed_low_window_min: float = 30.0
+    #: The printed (near-)low line that proximity test reads. It kept the 75 mg/dL value
+    #: of the retired near-low anchor line it once shared (#553): the pre-empted rescues
+    #: feed the correction-factor strengthen gate and the carb-ratio analyzer, so moving
+    #: it would move a setting suggestion. It is no low line: nothing is anchored on it.
+    preempted_printed_low_mgdl: float = 75.0
     #: Attributability floor on residual bolus IOB (U) at the rescue instant (ADR 0012 §3).
     preempted_attributability_floor_u: float = 0.3
 

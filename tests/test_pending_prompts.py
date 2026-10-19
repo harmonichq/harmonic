@@ -194,12 +194,15 @@ class OwnedHighTest(unittest.TestCase):
                 self.assertEqual(detector_times(build_candidates([], cgm)),
                                  [(DETECTOR_LOW, REBOUND_NADIR_T)])
 
-    def test_near_low_rebound_raises_no_prompt(self):
+    def test_a_near_low_owns_no_rebound_so_its_high_is_asked_about(self):
+        # #553: a dip to 72 is no low. It raises no low prompt and owns no High, so
+        # the unbolused rise after it asks its own question.
         for rise_min in (70, 120):           # the 250 crossing lands 65 and 110 min after
             with self.subTest(rise_min=rise_min):
                 cgm = a_rebound(72, rise_min)
                 self.assertTrue(classify_missed_meal(first_at_or_above(cgm, 250), cgm).matched)
-                self.assertEqual(detector_times(build_candidates([], cgm)), [])
+                self.assertEqual(detector_times(build_candidates([], cgm)),
+                                 [(DETECTOR_MISSED_MEAL, first_at_or_above(cgm, 250))])
 
     def test_unbolused_rise_with_no_low_still_raises_its_prompt(self):
         cgm = cgm_legs(REBOUND_T0, 110, (60, 110), (120, 270), (60, 180), (60, 144))

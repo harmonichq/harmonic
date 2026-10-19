@@ -344,8 +344,7 @@ def in_span_dates(text: str, config: ScanConfig) -> dict[str, int]:
     """Distinct in-span dates in ``text``, mapped to the line of first sight.
 
     Out-of-span dates pass silently, which is the intended behaviour for
-    invented fixtures — ``explore-day.capture.json``'s 2020 dates, for
-    instance (plan §3.1 [R8]).
+    invented fixtures dated outside the span (plan §3.1 [R8]).
     """
     seen: dict[str, int] = {}
     for match in _DATE_RE.finditer(text):

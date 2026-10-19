@@ -3,7 +3,6 @@
 from copy import deepcopy
 from dataclasses import replace
 from datetime import datetime, timedelta
-import json
 import tempfile
 import threading
 import time
@@ -551,79 +550,26 @@ def test_rebound_relative_membership_uses_linked_high_outcome_in_wrapping_window
     assert case["projection"]["clock"]["buckets"][0]["occurrence_ids"] == [member.id]
 
 
-def test_named_field_wrapper_preserves_unknown_row_and_top_level_field():
+def test_wrap_serves_no_copy_of_the_rows_and_leaves_them_untouched():
+    # ADR 547: the Queue reads the rows from the findings answer, so the
+    # preparation serves its identity, coordinates and case headers only.
     lever = Lever.LATE_BOLUS
     unknown = {"id": "future:row", "register": "future", "nested": {"bytes": [1, 2]}}
     findings = _findings(lever, extra_rows=(unknown,))
-    findings["future_field"] = {"sentinel": ["unchanged"]}
-    findings["rows"][1].update({
-        "priority": 42,
-        "tier": "worth_a_look",
-        "chips": ["lows", "meals"],
-        "future_policy": {"opaque": [1, {"two": 2}]},
-    })
     original = deepcopy(findings)
     prepared = _prepared(lever, findings=findings)
     payload = wrap(prepared)
-    assert payload["findings"] == original
-    assert payload["rendered_rows"][0] == unknown
-    behavioral = payload["rendered_rows"][1]
-    assert behavioral["evidence"] is None
-    assert behavioral["case_header"] == payload["behavioral_case_headers"][behavioral["id"]]
-    changed_fields = {
-        key for key in set(original["rows"][1]) | set(behavioral)
-        if original["rows"][1].get(key) != behavioral.get(key)
-    }
-    allowed_changes = {
-        "appearances", "episodes", "evidence", "verdict_counts",
-        "verdict_counts_by_family", "event_chart", "case_header", "headline",
-    }
-    assert changed_fields <= allowed_changes
-    assert allowed_changes - {"episodes"} <= changed_fields
-    for key in set(original["rows"][1]) - allowed_changes:
-        before = json.dumps(original["rows"][1][key], separators=(",", ":")).encode()
-        after = json.dumps(behavioral[key], separators=(",", ":")).encode()
-        assert after == before
-    assert json.dumps(payload["findings"]["future_field"]).encode() == json.dumps(
-        original["future_field"]
-    ).encode()
+    assert set(payload) == {"schema", "projection_id", "coordinates",
+                            "behavioral_case_headers", "withheld_findings"}
+    assert set(payload["behavioral_case_headers"]) == {findings["rows"][1]["id"]}
     assert findings == original
-
-
-def test_two_family_rendered_row_leads_with_the_case_file_and_says_so():
-    lever = Lever.LATE_BOLUS
-    findings = _findings(lever)
-    row = findings["rows"][0]
-    row["tier"] = "worth_a_look"
-    # The projection sorts appearances by family name, so the case file's own
-    # family arrives second on any finding claimed in two families.
-    row["appearances"] = [
-        {"family": "correction_clusters", "noun": "correction clusters", "n": 2, "m": 2},
-        {"family": "meals", "noun": "meals", "n": 3, "m": 20},
-    ]
-    row["headline"] = findings_projection._finding_headline(row)
-    prepared = _prepared(lever, findings=findings)
-    summary = prepared.case(row["id"], "clock", None)["summary"]
-    projected = deepcopy(row["appearances"])
-    payload = wrap(prepared)
-    rendered = payload["rendered_rows"][0]
-    assert rendered["appearances"] == [
-        {"family": "meals", "noun": summary["noun"],
-         "n": summary["claimed"], "m": summary["denominator"]},
-        {"family": "correction_clusters", "noun": "correction clusters", "n": 2, "m": 2},
-    ]
-    assert rendered["headline"] == (
-        f"Ranks among this window's findings. Showed up in {summary['claimed']} of "
-        f"{summary['denominator']} {summary['noun']} in this window."
-    )
-    assert payload["findings"]["rows"][0]["appearances"] == projected
 
 
 def test_noncanonical_attribution_is_withheld_instead_of_rendered():
     lever = Lever.CORRECTION_ON_IOB
     prepared = _prepared(lever, withheld=frozenset({lever}))
     payload = wrap(prepared)
-    assert payload["rendered_rows"] == []
+    assert payload["behavioral_case_headers"] == {}
     assert payload["withheld_findings"] == [{
         "finding_id": "finding:correction_on_iob",
         "code": "uninspectable_attribution",
@@ -972,7 +918,7 @@ def test_pattern_case_is_chartless_without_a_served_habit_or_population():
     assert prepared.case("pattern:highs_after_meals", "event", None) is None
 
 
-def test_wrap_keeps_pattern_headline_and_drops_only_uninspectable_claimed_member():
+def test_wrap_heads_a_pattern_and_withholds_only_its_uninspectable_member():
     lever = Lever.CARB_UNDERCOUNT
     findings = _pattern_findings(
         "highs_after_meals", (lever,), k=1, n=1, rate_levers=(lever,),
@@ -992,18 +938,14 @@ def test_wrap_keeps_pattern_headline_and_drops_only_uninspectable_claimed_member
 
     payload = wrap(prepared)
 
-    pattern = payload["rendered_rows"][0]
-    assert [row["id"] for row in payload["rendered_rows"]] == [
-        "pattern:highs_after_meals",
-    ]
-    assert pattern["headline"] == "Highs After Meals in 1 of 1 meals"
-    assert pattern["appearances"] is None and pattern["episodes"] is None
-    assert pattern["pattern_chart"]["key"] == "highs_after_meals"
-    assert "event_chart" not in pattern["case_header"]
+    assert list(payload["behavioral_case_headers"]) == ["pattern:highs_after_meals"]
+    header = payload["behavioral_case_headers"]["pattern:highs_after_meals"]
+    assert header["pattern_chart"]["key"] == "highs_after_meals"
+    assert "event_chart" not in header
     assert payload["withheld_findings"][0]["finding_id"] == "finding:carb_undercount"
 
 
-def test_wrap_passes_through_a_chartless_pattern_unchanged():
+def test_wrap_heads_no_chartless_pattern():
     member_lever = Lever.CORRECTION_ON_IOB
     rate_lever = Lever.CORRECTION_STACKING
     findings = _pattern_findings(
@@ -1015,12 +957,8 @@ def test_wrap_passes_through_a_chartless_pattern_unchanged():
 
     payload = wrap(prepared)
 
-    pattern = payload["rendered_rows"][0]
-    assert pattern == findings["rows"][0]
-    assert "case_header" not in pattern
-    assert pattern["id"] not in payload["behavioral_case_headers"]
-    assert payload["rendered_rows"][1]["id"] == "finding:correction_on_iob"
-    assert payload["rendered_rows"][1]["case_header"]["finding_id"] == (
+    assert findings["rows"][0]["id"] not in payload["behavioral_case_headers"]
+    assert payload["behavioral_case_headers"]["finding:correction_on_iob"]["finding_id"] == (
         "finding:correction_on_iob"
     )
 
@@ -1201,12 +1139,7 @@ def test_preparation_withholds_an_inconsistent_case_by_name_and_keeps_the_rest(m
         "code": "inconsistent_projection",
         "message": "Case population is inconsistent.",
     }]
-    assert "finding:late_bolus" not in [row["id"] for row in body["rendered_rows"]]
     assert "finding:late_bolus" not in body["behavioral_case_headers"]
-    assert [row["id"] for row in body["rendered_rows"]] == [
-        row["id"] for row in consistent["rendered_rows"]
-        if row["id"] != "finding:late_bolus"
-    ]
     assert (body["behavioral_case_headers"]["finding:carb_undercount"]
             == consistent["behavioral_case_headers"]["finding:carb_undercount"])
     for alignment in ("clock", "event"):

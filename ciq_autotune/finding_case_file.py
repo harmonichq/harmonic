@@ -599,10 +599,15 @@ def _association(attr, episode, by_family):
 
 
 def wrap(prepared):
-    rendered, headers, withheld = [], {}, []
+    """The preparation the app reads: its identity, coordinates and case headers.
+
+    It serves no copy of the findings rows (ADR 547): the Queue reads them from
+    the findings answer, and the app reads only ``projection_id`` from here.
+    """
+    headers, withheld = {}, []
     for row in prepared.findings["rows"]:
         if row.get("register") != "finding":
-            rendered.append(deepcopy(row)); continue
+            continue
         finding_id = row["id"]
         try:
             case = prepared.case(finding_id, "clock", None)
@@ -614,64 +619,32 @@ def wrap(prepared):
                              "message": "Case population is inconsistent."})
             continue
         if case is None:
-            if row.get("kind") == "pattern":
-                rendered.append(deepcopy(row)); continue
-            withheld.append({"finding_id": finding_id,
-                             "code": "uninspectable_attribution",
-                             "message": "Canonical association is unavailable."})
+            if row.get("kind") != "pattern":
+                withheld.append({"finding_id": finding_id,
+                                 "code": "uninspectable_attribution",
+                                 "message": "Canonical association is unavailable."})
             continue
         chart_key = "pattern_chart" if row.get("kind") == "pattern" else "event_chart"
-        header = {"finding_id": finding_id, "lever": case["finding"]["lever"],
-                  "title": case["finding"]["title"], "family": case["family"],
-                  # A prepared case IS its own event-chart coordinate: the case
-                  # file projects an event comparison for every lever it holds.
-                  # Gating this on the queue projection's family map published
-                  # `null` for a case the server serves — correction stacking is
-                  # counted in correction clusters, not the lows that map names —
-                  # leaving the reader no By-event path into it.
-                  chart_key: (deepcopy(row["pattern_chart"])
-                              if chart_key == "pattern_chart" else
-                              {"lever": case["finding"]["lever"],
-                               "window": prepared.query.to_dict()}),
-                  "summary": case["summary"], "verdict_counts": case["verdict_counts"],
-                  "inspectability": "ready"}
-        changed = deepcopy(row)
-        if row.get("kind") == "pattern":
-            changed.update({"pattern_chart": header["pattern_chart"],
-                            "case_header": header})
-            rendered.append(changed); headers[finding_id] = header
-            continue
-        anchored = {"family": case["family"], "noun": case["summary"]["noun"],
-                    "n": case["summary"]["claimed"],
-                    "m": case["summary"]["denominator"]}
-        # The case file owns its own family's counts; every other family the
-        # projection published stays, at the projection's counts, because a
-        # finding claimed in two families keeps both.  The anchored family
-        # leads, and the list is NOT re-sorted: `_finding_headline` composes
-        # from `appearances[0]`, and the projection's family-name sort is
-        # exactly what once announced a fifteen-occurrence habit as a
-        # one-occurrence one.
-        # A projection row always carries the key, but a hand-built prepared
-        # row (`scripts/gen_missed_meal_comparison_fixtures.py`) need not.
-        others = [item for item in changed.get("appearances") or ()
-                  if item["family"] != anchored["family"]]
-        changed.update({"appearances": [anchored, *others],
-                        "episodes": case["summary"]["claimed"], "evidence": None,
-                        "verdict_counts": case["verdict_counts"],
-                        "verdict_counts_by_family": {case["family"]: case["verdict_counts"]},
-                        "event_chart": header["event_chart"],
-                        "case_header": header})
-        # Recomposed from the row the reader is shown, through the projection's
-        # own sanctioned template, so the queue detail, the case header summary
-        # and the served sentence are three printings of one fact.
-        changed["headline"] = findings_projection._finding_headline(changed)
-        rendered.append(changed); headers[finding_id] = header
+        headers[finding_id] = {
+            "finding_id": finding_id, "lever": case["finding"]["lever"],
+            "title": case["finding"]["title"], "family": case["family"],
+            # A prepared case IS its own event-chart coordinate: the case
+            # file projects an event comparison for every lever it holds.
+            # Gating this on the queue projection's family map published
+            # `null` for a case the server serves — correction stacking is
+            # counted in correction clusters, not the lows that map names —
+            # leaving the reader no By-event path into it.
+            chart_key: (deepcopy(row["pattern_chart"])
+                        if chart_key == "pattern_chart" else
+                        {"lever": case["finding"]["lever"],
+                         "window": prepared.query.to_dict()}),
+            "summary": case["summary"], "verdict_counts": case["verdict_counts"],
+            "inspectability": "ready"}
     return {"schema": PREPARATION_SCHEMA, "projection_id": prepared.projection_id,
             "coordinates": {
                 "source_window_days": prepared.source_window_days,
                 "window": prepared.query.to_dict(),
             },
-            "findings": deepcopy(prepared.findings), "rendered_rows": rendered,
             "behavioral_case_headers": headers, "withheld_findings": withheld}
 
 

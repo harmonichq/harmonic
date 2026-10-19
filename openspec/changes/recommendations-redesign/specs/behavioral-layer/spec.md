@@ -5,7 +5,7 @@
 When one Finding's case-file projection cannot satisfy its own consistency checks,
 case-file preparation SHALL withhold that Finding by name with the code
 `inconsistent_projection` and SHALL still serve every other Finding's case. The
-withheld Finding SHALL leave the rendered rows and the case headers, and no count
+withheld Finding SHALL leave the case headers, and no count
 from the rejected projection SHALL be served. Requesting the withheld Finding's case
 SHALL still answer the inconsistency error (ADR 488).
 
@@ -15,7 +15,8 @@ SHALL still answer the inconsistency error (ADR 488).
   case-file projection fails its own consistency checks
 - **WHEN** the Finding case files are prepared
 - **THEN** the preparation names that Finding as withheld with `inconsistent_projection`
-- **AND** every other rendered Finding is served as it would be without the disagreement
+- **AND** every other Finding's case header is served as it would be without the
+  disagreement
 
 ### Requirement: Pattern populations preserve bounded episode ownership
 
@@ -412,7 +413,7 @@ named as that row's cause. The case producer's own test proves it (ADR 531).
 
 #### Scenario: An out-of-family member is judged by no row or reason
 
-- **GIVEN** the findings-fixture inputs over the workstation exposure feed, with
+- **GIVEN** the findings-fixture inputs over that fixture's own exposure feed, with
   scenario Patterns for Correction on active insulin and Correction stacking, whose
   roster then carries both under Lows after correcting highs
 - **WHEN** the case producer serves that Pattern's clock case, whole and selected
@@ -420,37 +421,6 @@ named as that row's cause. The case producer's own test proves it (ADR 531).
 - **THEN** no row's member is Correction stacking
 - **AND** every selected reason carries a habit entry for Correction on active
   insulin only
-
-### Requirement: Manufactured workstation rows carry only shapes their producer can serve
-
-Every exposure Occurrence the Diagnose workstation fixture generator manufactures
-SHALL carry only what the real exposure feed can serve for its family: the anchor
-kind and label the episode view serves for that family (low · Low, meal · Meal
-bolus, high · High, correction · Correction); exactly the classifier verdicts the
-attribution step judges at that anchor kind (a low: Over-treated low and Correction
-on active insulin; a meal: Carb undercount, Late bolus and Meal over-delivery; a
-high: Missed / unannounced meal; a correction: Correction
-stacking, and only as its episode's stacking dose or last correction); each silence
-reason from the closed silence-reason set; a claim only by a lever the attribution
-step can drive from that anchor kind, so a correction row is claimed by Correction
-stacking and never by Correction on active insulin, which only a low drives; on a
-claimed row, its claiming lever's verdict matched, with that verdict's sentence as
-the row's cause text, and every other judged classifier unmatched; on an unclaimed
-row, every judged classifier unmatched and no cause text; and on a High, an anchor
-glucose at or above the high-anchor threshold. A manufactured case-file member its
-lever claims SHALL carry its recorded sentence as its cause text, as the producer's
-attribution does.
-
-#### Scenario: Every manufactured row is a servable shape
-
-- **GIVEN** the committed workstation payload
-- **WHEN** each of its exposure Occurrences is read
-- **THEN** its kind, label and judged classifier set are its family's
-- **AND** no verdict names a classifier that is not a Lever or a silence reason
-  outside the closed set
-- **AND** a claimed row's claiming lever is one its anchor kind can drive, and that
-  lever's verdict reads matched with its detail equal to the row's text
-- **AND** a High's anchor glucose reaches the high-anchor threshold
 
 ## MODIFIED Requirements
 
@@ -814,6 +784,6 @@ carb-ratio analyzer's meal and run ledgers SHALL be unchanged.
 
 ### Requirement: Manufactured browser-gate rows carry only shapes their producer can serve
 
-**Reason:** The browser gates are gone (ADR 495), and the event-comparison capture whose comparison rows it constrained, the before-and-after projection it recorded and the frozen clock case its last scenario read are removed (#531, ADR 531). The workstation rows' shape rule is restated as "Manufactured workstation rows carry only shapes their producer can serve".
+**Reason:** The browser gates are gone (ADR 495), and the event-comparison capture whose comparison rows it constrained, the before-and-after projection it recorded and the frozen clock case its last scenario read are removed (#531, ADR 531). The workstation demo set whose manufactured rows it constrained is deleted too (ADR 547): its one reader beyond its own checks, the Pattern-producer tests, now reads the findings fixture's exposure feed.
 
-**Migration:** Read "Manufactured workstation rows carry only shapes their producer can serve", ADDED in this change.
+**Migration:** None. The findings fixture's exposure feed is the real producer's own output.

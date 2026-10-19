@@ -82,8 +82,7 @@ span. Cases SHALL cover every ISF and I:C condition in the design matrix,
 including direction-only non-stageable ISF, explicit 30-day I:C collecting, quiet
 I:C, and an active past setting. Their isolated executions SHALL compare exact
 analyzer rows, queue rows and absences, support values, staging values, the single
-Fasting ISF row's keyed rest windows, and one keyed I:C history series per active
-identity. The queue serves only asserting setting rows and Findings, so a held,
+Fasting ISF row's keyed rest windows. The queue serves only asserting setting rows and Findings, so a held,
 no-clean-day or past-setting state is proved by its analyzer row and its absence
 from the queue (ADR 531).
 
@@ -252,6 +251,80 @@ suite as the projection input and the recorded 62.93 s whole-pytest baseline /
 - **THEN** every meal Late bolus fires on peaks above 180 after its bolus, and
   `behavioral-late-bolus`'s seventh meal, peaking at exactly 180, reads clean with
   `stayed_in_range`
+
+### Requirement: The shared expectation contract proves basal states exactly
+
+Each basal coverage case SHALL materialize manufactured source rows into one
+isolated store and SHALL run production analysis, exposure, scenario and findings
+composition. `AnalyzerRowKey` SHALL be analyzer family plus its
+emitted parameter key: basal clock-slot label, ISF segment, or I:C block.
+`ExpectedAnalyzerRow` SHALL be family-discriminated from the serialized-row dump:
+basal SHALL contain exact `safety_status`, top-level `direction`, `asserts_move`,
+and `omitted: frozenset[str]`; ISF SHALL contain exact `asserts_move`, `direction`
+read from `evidence["direction"]`, and `omitted`; I:C SHALL contain exact `state`,
+`direction`, `held_reason`, `asserts_move`, conditionally present
+`days_observed`, and `omitted`. `omitted` SHALL compare exactly and SHALL range
+only over the family's serialized field names outside its value-pinned list. A
+value-pinned field whose value is `None` SHALL be pinned as that value and SHALL
+NOT also appear in `omitted`. Basal no-baseline SHALL use
+`omitted={"current"}` because `current` is outside basal's value-pinned list and
+serializes as `None`; ISF direction-only SHALL use
+`omitted={"recommended"}`. I:C collecting and asserting rows SHALL pin exact
+emitted `days_observed`; every other I:C row SHALL include `days_observed` in
+`omitted`, and its non-collecting span guard SHALL be exact `state`.
+`QaExpectation` SHALL gain
+`analyzer_rows: Mapping[AnalyzerRowKey, ExpectedAnalyzerRow]`. Whole-set equality
+SHALL fail on every unexpected or missing analyzer key without a separate absence
+collection. `QaCase` SHALL gain
+`target_family: Literal["basal", "isf", "ic"] | None`. Every new #192 coverage
+case SHALL name its family; `showcase`, `setting-recommendation`, and
+`behavioral-precedence` SHALL use `None`. `assert_expectation` SHALL pin a named
+target family's full emitted key set and each other family's exact set of keys
+outside its measured quiet predicate. A `None` target SHALL pin that measured
+non-quiet complement in all three families. The quiet predicates are: basal
+quiet SHALL mean `safety_status` in
+`{NO_CHANGE, NO_DATA, None}` (a `NO_DATA` blind slot has no estimate and cannot
+hide a move); ISF quiet SHALL mean `asserts_move == false` with no
+`evidence["direction"]`; I:C quiet SHALL mean `state` in `collecting`,
+`below-floor`, or `unmeasured-alone`, or `state == "numeric"` with
+`asserts_move == false` and no `held_reason`. The non-target set SHALL be the
+exact measured complement of those predicates, never an assumed-empty set, so
+stray states fail closed without repeating every quiet row. `QaCase` SHALL also gain
+`scoped_windows: tuple[tuple[int, int], ...]`, expressed in clock minutes and
+empty by default; `execute_case` SHALL project `whole_day()` and every declared
+window through `WindowQuery.clock`. Queue rows and absences SHALL be keyed by
+`(window | "whole_day", row key)`. `QaExpectation` SHALL also compare support
+through `support: Mapping[AnalyzerRowKey, ExpectedSupport]`. Basal support SHALL
+pin `evidence["directional_support_count"]` (`analyzers/basal.py:562-564`); ISF
+support SHALL pin `evidence["n_steps"]` (`analyzers/isf.py:634-645`); I:C support
+SHALL pin top-level `n_runs` and
+`evidence["eligibility"]["effective_run_count"]` (`result.py:330-366`;
+`analyzers/ic.py:2511-2518`). Support SHALL distinguish
+`basal-insufficient-seven-night` from
+`basal-insufficient-unsupported-sign`, and `ic-quiet-seven-run` from `ic-raise`.
+The single Fasting ISF row's rest windows SHALL be an exact set
+keyed by `(date, start, end)`.
+
+Every case's target-family map SHALL be authored by hand as one literal per-case
+default `ExpectedAnalyzerRow` plus named per-key literal overrides from the design
+matrix. Neither default nor overrides SHALL be constructed from a `QaExecution`
+or analyzer output at test time. At least one generated `test_case_*` SHALL
+perturb the default row rather than a named override and SHALL fail. Queue rows
+and absences, support and rest windows SHALL follow the same
+literal-only rule. Existing `behavioral_rows` and `finding_titles` SHALL be
+retained verbatim; the extended contract SHALL add to them and replace neither.
+Fixture inputs SHALL NOT set analyzer verdicts, directions, held reasons,
+registers, ranks, or queue rows. Perturbing any expected row, queue absence,
+support value, or staging value SHALL fail. The basal cases SHALL cover every basal
+condition in the design matrix.
+
+#### Scenario: The eight-night basal floor is data-produced
+
+- **GIVEN** isolated basal cases with seven and eight informative non-tie nights
+- **WHEN** production analysis and findings projection run
+- **THEN** the seven-night case publishes its exact held contract without staging
+- **AND** the supported eight-night case stages only when the family-corrected
+  sign test also passes
 
 ## REMOVED Requirements
 

@@ -2,7 +2,7 @@
 """Reject a shipping document that points at a file the public tree excludes
 (#728, cutover plan Phase 2.2).
 
-``docs/scope/``, ``mockups/`` (bar a handful of exact paths) and
+``docs/scope/``, ``mockups/`` and
 the private tooling directories do not ship. A README or spec that links into
 one of them reads fine in this repository and is a dead end in the published
 one — three such links existed when this check was written, and the fourth is
@@ -147,6 +147,13 @@ PINNED = {
         "this check's own docstring, naming the directories it exists to catch"
         " references into.",
     ("scripts/check_public_links.py", "docs/scope/"): "the same docstring.",
+    ("scripts/check_public_links.py", "mockups/"):
+        "the same docstring. Nothing under mockups/ ships since the Diagnose demo"
+        " set was deleted (ADR 547).",
+    ("tests/test_check_public_links.py", "mockups/"): "the same, in its docstring.",
+    ("openspec/specs/qa-e2e-database/spec.md", "mockups/"):
+        "the retired-store requirement names a directory its guard's executable"
+        " surface covers; the rule is about the directory, not a pointer into it.",
     ("scripts/check_public_links.py", "mockups/INDEX.md"):
         "the same docstring's worked example of a prose path reference.",
     ("scripts/check_adr_numbers.py", "openspec/changes/"):

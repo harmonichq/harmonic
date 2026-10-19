@@ -1262,3 +1262,111 @@ The component library's fixtures are regenerated too. Their carb-ratio store
 (basal-and-carb-ratio-lower) no longer queues Lows after meals, and that store's
 contract test now expects the Queue to hold the basal Setting, Highs after meals
 and the carb-ratio Setting.
+
+## ADR 547 — The desk's last evidence routes, scoped window, row copies and demo set go
+
+**Context.** ADR 531 left seven desk-era reads in place because #531 named only the
+findings answer and the Plan routes: the carb-ratio history-events, carb-ratio
+block-evidence, basal night-evidence and ISF rest-window routes; the case-file
+preparation's `findings` and `rendered_rows` copies; the findings route's clock
+window; and the Diagnose workstation demo set (`mockups/diagnose-workstation.synthetic`).
+#547 removes each once an unfiltered whole-tree grep proves nothing reads it. That
+grep excludes only `node_modules`, `.git`, `dist` and `.venv`, so `frontend/index.html`
+and `frontend/ui` are in it. Connor approved the AGENTS.md edits.
+
+**What reads them.** The live adapter (`frontend/ui/app/live.js`, through
+`frontend/data.js`) and the UI fixture generator (`scripts/gen_ui_fixtures.py`)
+read the findings answer with no window, and read only `projection_id` from the
+preparation. The warm roster warms neither of the four evidence routes nor a clock
+window. Each evidence route's other readers were its own tests, its own fixture
+generator and fixture, and two lists in other tests: the follow-up-state survey and
+the warm-roster builder count. The server's one other reader was the findings
+snapshot. That snapshot prepared the past-setting event series beside the findings
+on every cold read, and only the history-events route projected it. The QA
+harness's `history_series` expectation was that route's projection, pinned again.
+The demo set's only reader outside its own drift check and shape tests was two
+Pattern-producer tests in `tests/test_findings_projection.py`, which read the
+exposure rows in its `payload.json`.
+
+**Decision.**
+
+1. *The four evidence routes go*, with their modules (`ic_history_events.py`,
+   `ic_block_evidence.py`, `basal_night_evidence.py`,
+   `isf_rest_window_evidence.py`). Their derived-results codecs, preparations,
+   recorded-data cache keys, fixtures, generators, CI drift steps and AGENTS.md
+   lines go with them. The ISF route's `_isf_rest_window_steps` adjunct, which
+   the pooled analysis stamped and `/api/analyze` then stripped, goes too, so the
+   analysis answer is byte-identical.
+2. *The findings snapshot holds the findings alone.* It keeps its durable key
+   `findings-history-snapshot` and marker `findings-history-v1`. The derived-results
+   file deletes an older row only under the same key and marker, so a renamed key
+   would strand the last multi-megabyte snapshot every install wrote. The new code's
+   source fingerprint already keeps a pre-change row from being read.
+3. *The preparation serves no copy of the rows.* `wrap` keeps the identity,
+   coordinates, case headers and withheld Findings. Building the rendered rows and
+   recomposing their headlines go. The Queue reads its rows from the findings
+   answer, whose headline composer is unchanged.
+4. *Neither route takes a clock window.* The findings route answers the whole day,
+   and a stray `start_min` changes nothing, as `selected_id` changes nothing (ADR 531).
+   The preparation takes no parameter at all and refuses any one with
+   `400 invalid_request`. That includes its old `lever`, which it validated and
+   then ignored. Its in-memory key is now `("finding-case-file",)`.
+5. *The demo set goes whole*: its ten files, `.claude/qa/gen_synthetic_fixtures.py`,
+   `scripts/check_demo_fixtures.py` and its test, the shape tests
+   (`tests/test_synthetic_fixture_shapes.py`), the allowlist lines and the scan's five
+   `authorized-synthetic` clearances. The two Pattern-producer tests now read the
+   findings fixture generator's own exposure feed (`gen.exposures()`). It holds
+   the shapes they need, an unclaimed meal and Correction on active insulin lows,
+   and both tests pass unchanged on it.
+6. *Analyzer coverage that ran through a route moves to the analyzer.* The basal
+   excluded-night reasons and accounting tests join `tests/test_analyzer_basal.py`.
+   The carb-ratio block's published facts are run reasons, ends, fit weights, the
+   rule sentence, post-correction totals, harm lows and groups, next-bolus minutes
+   and fractional ownership. Their tests now read the analyzer's serialized block in
+   `tests/test_ic_block_published_facts.py`, which was `test_ic_block_evidence.py`.
+   The wrapping-window case membership test prepares the case file over each window
+   directly. Tests that pinned only a route's projection, its guard or its HTTP
+   errors are deleted.
+
+**Not in this change, and why.**
+
+- The clock-window projection stays. The Pattern Focus pin admits its scope through
+  `FindingsProjection.project(WindowQuery.clock(...))`, and the follow-up
+  comparison, the store's follow-up reads and the QA harness's `scoped_windows`
+  read it too. The case-file module keeps its `query` parameter, and its tests
+  exercise it with clock windows.
+- The preparation's `behavioral_case_headers` and `withheld_findings` stay. #547
+  does not name them, and they are the preparation's own account of which cases it
+  serves and which it withholds (ADR 488), though the app reads neither.
+- The analyzer's fasting-evidence hook (`analyze(..., isf_fasting_evidence_sink=)`,
+  `analyze_isf(..., fasting_evidence_sink=)`) keeps no caller. It is analyzer
+  code, which this change does not touch. So are the past-setting identity
+  decoders in `ic_history.py`, which `tests/test_analyzer_ic.py` round-trips.
+- The scanner's `authorized-synthetic` clearance stays as a mechanism with an empty
+  list. It is the scan's tested policy for a human-cleared file, and only the files
+  it cleared are gone.
+- The findings route's source-window parameter (`window`) is not the scoped
+  window, and is untouched.
+- An install's derived-results file keeps the last row of each retired shape
+  (`basal-night-evidence`, `ic-block-evidence-preparation`,
+  `isf-rest-window-evidence`): one row each, never read again, and disposable with
+  the file.
+
+**Dosing.** No analyzer, staging predicate, cap, floor or served suggestion changes.
+The analysis answer, the findings answer and the guidance serve the same bytes as
+before. The QA cases keep every analyzer, queue, support, rest-window, behavioral,
+title and Pattern expectation, and lose only the history series.
+
+**Consequences.** The spec deltas remove "Historical findings and event evidence
+share one restart-safe generation" and restate it, without the event evidence, as
+"The findings answer carries one restart-safe generation". They also remove "The
+basal analyzer names one reason for every excluded night" and restate it, without
+its night-evidence scenario, as "Every excluded basal night carries one
+analyzer-named reason", and they remove "A rendered Finding row states one
+denominator". They modify the basal glucose-evidence, case-file preparation and QA
+shared-expectation requirements, and drop the ADDED workstation-rows requirement.
+The carb-ratio-block-evidence change loses its never-archived http-api delta, and
+its QA and parameter-analysis deltas keep only the analyzer's facts. The missed-meal
+fixture loses its row copies, and the scan's dose-ratio baseline is re-recorded
+without the two deleted captures' entries. The backend's drift checks fall from ten
+to five.

@@ -13,7 +13,7 @@ import pathlib
 import random
 import tempfile
 import unittest
-from datetime import datetime, timedelta
+from datetime import datetime
 from unittest.mock import patch
 
 try:
@@ -46,10 +46,8 @@ from ciq_autotune.events import BolusEvent
 from ciq_autotune.harm import HarmArm, HarmConfig, PrintedLow
 from ciq_autotune.safety import Status
 from ciq_autotune.store import Store
-from ciq_autotune.ic_history import (
-    HistoryIdentity, RunIdentity, encode_history_id, encode_run_id,
-)
-from ciq_autotune.result import IcHistory, IcHistoryRunRecord
+from ciq_autotune.ic_history import HistoryIdentity, encode_history_id
+from ciq_autotune.result import IcHistory
 from ciq_autotune.uncertainty import Estimate
 from ciq_autotune.window_membership import DAY_MINUTES
 from ciq_autotune.analyzers.basal import analyze_basal
@@ -112,21 +110,18 @@ def _direction_only_isf_analysis(base_analysis=None):
     return analysis, segments[0], lever
 
 
-def _with_history(projection, *, lifecycle="active", start_min=420,
-                  end_min=720, regime_end="2026-08-01T12:00:00", runs=None,
-                  past_setting=5.0,
+def _with_history(projection, *, start_min=420, end_min=720,
+                  regime_end="2026-08-01T12:00:00", past_setting=5.0,
                   annotation="Analyzer-owned history conclusion."):
+    """The projection with one active past-setting row appended to its analysis."""
     history = IcHistory(
         history_id=encode_history_id(
             HistoryIdentity(start_min, end_min, past_setting)),
         block_start_min=start_min, block_end_min=end_min, label="Breakfast",
-        past_setting=past_setting,
-        programmed_now=None if lifecycle == "unavailable" else 6.0,
-        estimate=(None if lifecycle != "active" else
-                  Estimate(value=4.6, lo=4.4, hi=4.8, n=3, method="clustered")),
-        support=3 if lifecycle == "active" else None,
-        annotation=annotation if lifecycle == "active" else None,
-        lifecycle=lifecycle, regime_end=regime_end, runs=list(runs or []),
+        past_setting=past_setting, programmed_now=6.0,
+        estimate=Estimate(value=4.6, lo=4.4, hi=4.8, n=3, method="clustered"),
+        support=3, annotation=annotation,
+        lifecycle="active", regime_end=regime_end, runs=[],
     )
     analysis = dict(projection._analysis)
     analysis["ic_history"] = [*(analysis.get("ic_history") or []), history.to_dict()]
@@ -878,9 +873,7 @@ class PatternProjectionTest(unittest.TestCase):
         from ciq_autotune.analyzers.scenario.levers import title
         from ciq_autotune.analyzers.scenario.outcome_patterns import build_outcome_patterns
 
-        root = pathlib.Path(__file__).resolve().parents[1]
-        exposures = json.loads((root / "mockups" / "diagnose-workstation.synthetic"
-                                / "payload.json").read_text())["exposures"]
+        exposures = gen.exposures()
         # A memberless Pattern with k > 0: one unclaimed meal re-marked as claimed by
         # Meal over-delivery, in the shape the producer serves (that verdict matched
         # with its sentence as the row's text, every other judged classifier calm).
@@ -918,9 +911,7 @@ class PatternProjectionTest(unittest.TestCase):
         from ciq_autotune.findings_projection import pattern_rate_family
         from ciq_autotune.uncertainty import Confidence
 
-        root = pathlib.Path(__file__).resolve().parents[1]
-        exposures = json.loads((root / "mockups" / "diagnose-workstation.synthetic"
-                                / "payload.json").read_text())["exposures"]
+        exposures = gen.exposures()
         scenarios = json.loads(json.dumps(self.projection._scenarios))
         for lever, n, k, basis in ((Lever.CORRECTION_ON_IOB, 45, 8, "lower_bound"),
                                    (Lever.CORRECTION_STACKING, 40, 5, "low_confidence")):
@@ -1287,21 +1278,6 @@ class FindingsEndpointTest(unittest.TestCase):
         self.assertEqual(body["analysis_generation"], "findings-http:0")
         self.assertFalse(body["window"]["scoped"])
 
-    def test_a_clock_window_scopes_it(self):
-        r = self.client.get("/api/diagnose/findings",
-                            params={"start_min": 270, "end_min": 480})
-        self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.json()["window"]["label"], "04:30–08:00")
-
-    def test_half_a_window_is_a_bad_request(self):
-        r = self.client.get("/api/diagnose/findings", params={"start_min": 270})
-        self.assertEqual(r.status_code, 400)
-
-    def test_a_zero_width_window_is_a_bad_request(self):
-        r = self.client.get("/api/diagnose/findings",
-                            params={"start_min": 600, "end_min": 600})
-        self.assertEqual(r.status_code, 400)
-
     def test_the_route_default_reads_the_canonical_source_window(self):
         import ciq_autotune.api as api_mod
         from unittest.mock import patch
@@ -1340,8 +1316,7 @@ class FindingsEndpointTest(unittest.TestCase):
 
         with patch.object(api_mod, "prepare_findings_projection", counting):
             self.client.get("/api/diagnose/findings")                       # miss
-            self.client.get("/api/diagnose/findings",
-                            params={"start_min": 270, "end_min": 480})  # same read
+            self.client.get("/api/diagnose/findings")                       # same read
             self.assertEqual(len(calls), 1)
 
             r = self.client.post("/api/carbs", json={
@@ -1372,162 +1347,10 @@ class FindingsEndpointTest(unittest.TestCase):
         self.assertNotIn(history.history_id, {row["id"] for row in body["rows"]})
         self.assertEqual({row["register"] for row in body["rows"]}, {"assert", "finding"})
 
-    def test_history_events_validate_generation_and_both_identity_codecs(self):
-        generation = self.client.get("/api/diagnose/findings").json()[
-            "analysis_generation"]
-        unknown_id = encode_history_id(HistoryIdentity(420, 720, 7.0))
-
-        missing_generation = self.client.get(
-            "/api/diagnose/carb-ratio-history/events", params={"history_id": unknown_id})
-        malformed_run = self.client.get(
-            "/api/diagnose/carb-ratio-history/events", params={
-                "history_id": unknown_id,
-                "analysis_generation": generation,
-                "selected_run_id": "icr1_not-canonical",
-            })
-        unknown = self.client.get(
-            "/api/diagnose/carb-ratio-history/events", params={
-                "history_id": unknown_id,
-                "analysis_generation": generation,
-            })
-
-        self.assertEqual(
-            (missing_generation.status_code,
-             missing_generation.json()["detail"]["code"]),
-            (400, "analysis_generation_required"))
-        self.assertEqual(
-            (malformed_run.status_code, malformed_run.json()["detail"]["code"]),
-            (400, "invalid_history_run_id"))
-        self.assertEqual(
-            (unknown.status_code, unknown.json()["detail"]["code"]),
-            (404, "history_not_found"))
-
-    def test_active_history_events_share_generation_and_exact_membership(self):
-        import ciq_autotune.api as api_mod
-        from unittest.mock import patch
-
-        meal = datetime(2026, 6, 3, 0, 10)
-        run = IcHistoryRunRecord(
-            run_id=encode_run_id(RunIdentity(meal)),
-            first_member_at=meal.isoformat(), last_member_at=meal.isoformat(),
-            member_offsets_min=[0.0], cgm_start_min=-10.0,
-            cgm_end_min=20.0, outcome_min=15.0,
-        )
-        projection, history = _with_history(gen.empty_projection(), runs=[run])
-        with patch.object(api_mod, "prepare_findings_projection",
-                          lambda *args, **kwargs: projection):
-            findings = self.client.get(
-                "/api/diagnose/findings", params={"selected_id": history.history_id}).json()
-            response = self.client.get(
-                "/api/diagnose/carb-ratio-history/events", params={
-                    "history_id": history.history_id,
-                    "analysis_generation": findings["analysis_generation"],
-                    "selected_run_id": run.run_id,
-                })
-
-        self.assertEqual(response.status_code, 200, response.text)
-        body = response.json()
-        self.assertEqual(body["analysis_generation"], findings["analysis_generation"])
-        self.assertEqual(body["run_ids"], [run.run_id])
-        self.assertEqual(body["selected_run_id"], run.run_id)
-        self.assertEqual(body["series"][0]["run_id"], run.run_id)
-
-    def test_history_events_reject_generation_change_and_nonmember(self):
-        import ciq_autotune.api as api_mod
-        from unittest.mock import patch
-
-        meal = datetime(2026, 6, 3, 0, 10)
-        run = IcHistoryRunRecord(
-            run_id=encode_run_id(RunIdentity(meal)),
-            first_member_at=meal.isoformat(), last_member_at=meal.isoformat(),
-            member_offsets_min=[0.0], cgm_start_min=-10.0,
-            cgm_end_min=20.0, outcome_min=15.0,
-        )
-        projection, history = _with_history(gen.empty_projection(), runs=[run])
-        with patch.object(api_mod, "prepare_findings_projection",
-                          lambda *args, **kwargs: projection):
-            generation = self.client.get("/api/diagnose/findings").json()["analysis_generation"]
-            nonmember = self.client.get(
-                "/api/diagnose/carb-ratio-history/events", params={
-                    "history_id": history.history_id,
-                    "analysis_generation": generation,
-                    "selected_run_id": encode_run_id(
-                        RunIdentity(meal + timedelta(days=1))),
-                })
-            self.client.post("/api/carbs", json={
-                "t": "2026-06-03 10:05:00", "grams": 8, "certainty": "exact"})
-            stale = self.client.get(
-                "/api/diagnose/carb-ratio-history/events", params={
-                    "history_id": history.history_id,
-                    "analysis_generation": generation,
-                })
-
-        self.assertEqual((nonmember.status_code, nonmember.json()["detail"]["code"]),
-                         (404, "history_run_not_found"))
-        self.assertEqual(stale.status_code, 409)
-        self.assertEqual(stale.json()["detail"], {
-            "code": "analysis_generation_mismatch",
-            "message": "Evidence changed. Refresh findings.",
-        })
-
-    def test_history_events_publish_distinct_retirement_outcomes(self):
-        import ciq_autotune.api as api_mod
-        from ciq_autotune.api import create_app
-        from unittest.mock import patch
-
-        cases = (
-            ("aged_out", "history_aged_out",
-             "Past-setting evidence aged out of the 90-day window."),
-            ("unavailable", "history_unavailable",
-             "Past-setting evidence no longer maps to one current program block."),
-        )
-        for lifecycle, code, message in cases:
-            with self.subTest(lifecycle=lifecycle):
-                # Each mocked projection is an artificial source state. Real
-                # stores advance their durable revision between states.
-                from ciq_autotune.derived_artifacts import sidecar_path
-                pathlib.Path(sidecar_path(self.tmp.name)).unlink(missing_ok=True)
-                projection, history = _with_history(
-                    gen.empty_projection(), lifecycle=lifecycle)
-                client = TestClient(create_app(
-                    db_path=self.tmp.name, token=None, enable_fetch_loop=False,
-                    analysis_incarnation=f"retirement-{lifecycle}"))
-                with patch.object(api_mod, "prepare_findings_projection",
-                                  lambda *args, **kwargs: projection):
-                    generation = client.get("/api/diagnose/findings", params={
-                        "selected_id": history.history_id}).json()["analysis_generation"]
-                    response = client.get(
-                        "/api/diagnose/carb-ratio-history/events", params={
-                            "history_id": history.history_id,
-                            "analysis_generation": generation,
-                        })
-                self.assertEqual(response.status_code, 410)
-                self.assertEqual(response.json()["detail"],
-                                 {"code": code, "message": message})
-
     def test_retired_behavioral_event_comparison_route_is_not_served(self):
         response = self.client.get(
             "/api/diagnose/event-comparison", params={"view": "meals"})
         self.assertEqual(response.status_code, 404)
-
-    def test_process_restart_rejects_a_prior_generation(self):
-        from ciq_autotune.api import create_app
-
-        first = TestClient(create_app(
-            db_path=self.tmp.name, token=None, enable_fetch_loop=False,
-            analysis_incarnation="before-restart"))
-        restarted = TestClient(create_app(
-            db_path=self.tmp.name, token=None, enable_fetch_loop=False,
-            analysis_incarnation="after-restart"))
-        old_generation = first.get("/api/diagnose/findings").json()["analysis_generation"]
-        response = restarted.get(
-            "/api/diagnose/carb-ratio-history/events", params={
-                "history_id": encode_history_id(HistoryIdentity(420, 720, 7.0)),
-                "analysis_generation": old_generation,
-            })
-        self.assertEqual(response.status_code, 409)
-        self.assertEqual(response.json()["detail"]["code"],
-                         "analysis_generation_mismatch")
 
     def test_bump_during_preparation_retries_before_labeling_the_response(self):
         import ciq_autotune.api as api_mod
@@ -1805,11 +1628,6 @@ class HeadlineTest(unittest.TestCase):
                 "rescue-carb history doesn't cover this window"
             ),
         }
-        # No `_isf_rest_window_steps`: the harness shape. `execute_case` and
-        # `scripts/gen_findings_projection_fixtures.py` never stamp that key —
-        # only the live `/api/analyze` path does (`ciq_autotune/api.py`'s
-        # `canonical_pooled_analysis`) — and the ISF templates below read no
-        # slot from it, so its absence must never change the served sentence.
         return {"window_days": 30, "basal": [], "ic_blocks": [], "isf": [row]}
 
     def test_correction_factor_assert_headline_with_no_retained_steps(self):

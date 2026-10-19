@@ -12,7 +12,7 @@ RETIRED_PATTERN = re.compile(
     "revise" + "-e2e|revise" + "_e2e|gen_" + "revise" + "_e2e_db"
 )
 # The closed executable surface: every file under these roots, plus only the
-# executable JavaScript under mockups/ (its markdown and JSON are historical
+# executable JavaScript in the mockups directory (its markdown and JSON are historical
 # evidence, not consumers). docs/ and openspec/ are decision history and are
 # deliberately outside the scan.
 EXECUTABLE_FILES = ("AGENTS.md",)

@@ -1153,3 +1153,10 @@ SHALL enter the set-aside comparison state.
 **Reason:** Its recurring-lows scenario titles a held row and its text names the JS findings mirror; the findings answer serves no held row and the mirror is gone (#531, ADR 531). It is restated without them as "Setting findings are titled by their user labels".
 
 **Migration:** Read "Setting findings are titled by their user labels", ADDED in this change.
+
+### Requirement: A rendered Finding row states one denominator
+
+**Reason:** The case-file preparation no longer serves rendered rows or a copy of the findings (ADR 547). The five-tab app reads only the preparation's identity, and the Queue reads its rows, headlines and counts from the findings answer, whose headline composer this change leaves alone.
+
+**Migration:** None. A Finding's row, headline and counts are the findings answer's; its case header still states its own case file's summary.
+

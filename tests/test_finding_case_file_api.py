@@ -104,18 +104,11 @@ class FindingCaseFileRouteTest(unittest.TestCase):
         self.assertEqual(payload["schema"], "diagnose-finding-case-file-preparation-v1")
         self.assertRegex(payload["projection_id"], r"^fp_[0-9a-f]{32}$")
         self.assertEqual(payload["coordinates"]["source_window_days"], 30)
-        self.assertEqual([row["kind"] for row in payload["rendered_rows"]],
-                         ["pattern"] * 4)
-        self.assertTrue(all(row["pattern_chart"] is None
-                            for row in payload["rendered_rows"]))
+        # ADR 547: no copy of the findings rows rides on the preparation.
         self.assertEqual(set(payload), {"schema", "projection_id", "coordinates",
-                                       "findings", "rendered_rows",
                                        "behavioral_case_headers", "withheld_findings"})
-        self.assertEqual(set(payload["findings"]), {
-            "schema", "analysis_generation", "window", "findings_window", "rows",
-            "outcome_patterns",
-        })
-        self.assertEqual(payload["findings"]["analysis_generation"], "case-http:0")
+        self.assertEqual((payload["behavioral_case_headers"], payload["withheld_findings"]),
+                         ({}, []))
 
     def test_chartable_pattern_clock_case_reaches_the_public_route(self):
         from ciq_autotune.finding_case_file import prepare as prepare_case_files
@@ -218,7 +211,7 @@ class FindingCaseFileRouteTest(unittest.TestCase):
         self.assertTrue(detail["glucose"])
         self.assertIn("markers", detail)
 
-    def test_preparation_forwards_its_window_and_generation_and_takes_no_selection(self):
+    def test_preparation_reads_the_whole_day_and_takes_no_parameters(self):
         class Projection:
             _scenarios = {}
 
@@ -237,33 +230,26 @@ class FindingCaseFileRouteTest(unittest.TestCase):
             "ciq_autotune.finding_case_file.findings_projection.prepare_findings_projection",
             return_value=projection,
         ):
-            response = self.client.get(
-                "/api/diagnose/finding-case-file-preparation",
-                params={"start_min": 0, "end_min": 300},
-            )
-            # ADR 531: the desk's past-setting selection is gone from the read.
-            selected = self.client.get(
-                "/api/diagnose/finding-case-file-preparation",
-                params={"selected_id": "ich1_selected"},
-            )
+            response = self.client.get("/api/diagnose/finding-case-file-preparation")
+            # ADR 531: the desk's past-setting selection is gone from the read, and
+            # ADR 547: so is its clock window.
+            refused = [self.client.get("/api/diagnose/finding-case-file-preparation",
+                                       params=params)
+                       for params in ({"selected_id": "ich1_selected"},
+                                      {"start_min": 0, "end_min": 300})]
 
         self.assertEqual(response.status_code, 200, response.text)
         payload = response.json()
         self.assertEqual(projection.arguments,
-                         (WindowQuery.clock(0, 300).to_dict(), "case-http:0"))
-        self.assertEqual(payload["findings"]["rows"], payload["rendered_rows"])
-        self.assertEqual((selected.status_code, selected.json()["detail"]["code"]),
-                         (400, "invalid_request"))
+                         (WindowQuery.whole_day().to_dict(), "case-http:0"))
+        self.assertEqual(payload["coordinates"]["window"], WindowQuery.whole_day().to_dict())
+        self.assertEqual([(r.status_code, r.json()["detail"]["code"]) for r in refused],
+                         [(400, "invalid_request")] * 2)
 
     def test_raw_query_failures_use_the_structured_400_envelope(self):
         for url in (
-            "/api/diagnose/finding-case-file-preparation?start_min=1",
-            "/api/diagnose/finding-case-file-preparation?start_min=x&end_min=2",
-            "/api/diagnose/finding-case-file-preparation?start_min=-1&end_min=2",
-            "/api/diagnose/finding-case-file-preparation?start_min=1.5&end_min=2",
-            "/api/diagnose/finding-case-file-preparation?start_min=1&start_min=2&end_min=3",
-            "/api/diagnose/finding-case-file-preparation?start_min=1&end_min=2&end_min=3",
-            "/api/diagnose/finding-case-file-preparation?start_min=0&end_min=1441",
+            "/api/diagnose/finding-case-file-preparation?end_min=300&start_min=0",
+            "/api/diagnose/finding-case-file-preparation?lever=late_bolus",
             "/api/diagnose/finding-case-file-preparation?unknown=1",
             "/api/diagnose/finding-case-file?projection_id=nope",
             "/api/diagnose/finding-case-file?projection_id=fp_00000000000000000000000000000000"
@@ -424,7 +410,7 @@ class FindingCaseFileRouteTest(unittest.TestCase):
         def worker():
             entered.wait()
             ids.append(self.client.get(
-                "/api/diagnose/finding-case-file-preparation?start_min=60&end_min=120"
+                "/api/diagnose/finding-case-file-preparation"
             ).json()["projection_id"])
 
         first = threading.Thread(target=worker)
@@ -444,7 +430,7 @@ class FindingCaseFileRouteTest(unittest.TestCase):
         self.app.state.finding_case_file_before_commit = bump_once
         try:
             response = self.client.get(
-                "/api/diagnose/finding-case-file-preparation?start_min=120&end_min=180"
+                "/api/diagnose/finding-case-file-preparation"
             )
         finally:
             self.app.state.finding_case_file_before_commit = None
@@ -470,7 +456,7 @@ class FindingCaseFileRouteTest(unittest.TestCase):
             with patch("ciq_autotune.finding_case_file.uuid.uuid4",
                        side_effect=identities):
                 response = self.client.get(
-                    "/api/diagnose/finding-case-file-preparation?start_min=300&end_min=360"
+                    "/api/diagnose/finding-case-file-preparation"
                 )
         finally:
             self.app.state.finding_case_file_before_commit = None
@@ -491,7 +477,7 @@ class FindingCaseFileRouteTest(unittest.TestCase):
         self.app.state.finding_case_file_before_commit = self.app.state.result_cache.bump
         try:
             response = self.client.get(
-                "/api/diagnose/finding-case-file-preparation?start_min=180&end_min=240"
+                "/api/diagnose/finding-case-file-preparation"
             )
         finally:
             self.app.state.finding_case_file_before_commit = None
@@ -507,7 +493,7 @@ class FindingCaseFileRouteTest(unittest.TestCase):
                 ("occupied", index), lambda version, fake=fake: fake,
             )
         response = self.client.get(
-            "/api/diagnose/finding-case-file-preparation?start_min=240&end_min=300"
+            "/api/diagnose/finding-case-file-preparation"
         )
         self.assertEqual(response.status_code, 503)
         self.assertEqual(response.json()["detail"]["code"], "preparation_capacity")
@@ -557,7 +543,7 @@ class FindingCaseFileRouteTest(unittest.TestCase):
         cache = self.app.state.result_cache
         broken = Broken()
         cache.get_or_build_preparation(
-            ("finding-case-file", None, None), lambda version: broken,
+            ("finding-case-file",), lambda version: broken,
         )
         response = self.client.get("/api/diagnose/finding-case-file-preparation")
         self.assertEqual(response.status_code, 500)
@@ -628,12 +614,6 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
                 preparation_response = client.get("/api/diagnose/finding-case-file-preparation")
                 self.assertEqual(preparation_response.status_code, 200)
                 preparation = preparation_response.json()
-                prepared_finding = next(
-                    row for row in preparation["findings"]["rows"]
-                    if row.get("lever") == "over_treated_low"
-                )
-                self.assertEqual(prepared_finding["evidence"], finding["evidence"])
-                self.assertEqual(prepared_finding["verdict_counts"], finding["verdict_counts"])
 
                 case_response = client.get("/api/diagnose/finding-case-file", params={
                     "projection_id": preparation["projection_id"],
@@ -690,18 +670,11 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
 
     def assert_preparation_tree(self, prepared):
         self.assertEqual(set(prepared), {
-            "schema", "projection_id", "coordinates", "findings", "rendered_rows",
+            "schema", "projection_id", "coordinates",
             "behavioral_case_headers", "withheld_findings",
         })
         self.assertEqual(set(prepared["coordinates"]), {"source_window_days", "window"})
         self.assert_window_tree(prepared["coordinates"]["window"])
-        findings = prepared["findings"]
-        self.assertEqual(set(findings), {
-            "schema", "analysis_generation", "window", "findings_window", "rows",
-            "outcome_patterns",
-        })
-        self.assert_window_tree(findings["window"])
-        self.assertEqual(set(findings["findings_window"]), {"days", "start", "end"})
         for header in prepared["behavioral_case_headers"].values():
             self.assertEqual(set(header), {
                 "finding_id", "lever", "title", "family", "summary",
@@ -813,14 +786,6 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
         self.assert_preparation_tree(prepared)
         self.assertEqual(prepared["schema"],
                          "diagnose-finding-case-file-preparation-v1")
-        self.assertEqual(
-            [row["id"] for row in prepared["rendered_rows"]],
-            [row["id"] for row in prepared["findings"]["rows"]],
-        )
-        for source, rendered in zip(
-                prepared["findings"]["rows"], prepared["rendered_rows"]):
-            if source.get("register") != "finding":
-                self.assertEqual(rendered, source)
 
         case_url = (
             "/api/diagnose/finding-case-file"
@@ -858,16 +823,14 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
         self.assert_case_tree(clock.json())
 
     def _real_case(
-        self, lever, cgm, bolus=(), basal=(), *, query=None,
+        self, lever, cgm, bolus=(), basal=(), *,
         selected_verdict="fired", select_claimed=False,
     ):
         with tempfile.NamedTemporaryFile(suffix=".sqlite") as database:
             _seed_events(database.name, cgm, bolus, basal)
             with TestClient(create_app(
                     db_path=database.name, token=None, enable_fetch_loop=False)) as client:
-                prepared = client.get(
-                    "/api/diagnose/finding-case-file-preparation", params=query or {},
-                )
+                prepared = client.get("/api/diagnose/finding-case-file-preparation")
                 self.assertEqual(prepared.status_code, 200)
                 projection_id = prepared.json()["projection_id"]
                 response = client.get(
@@ -908,14 +871,12 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
                 self.assertEqual(selected.status_code, 200, selected.text)
                 return case, selected.json()
 
-    def _real_preparation(self, cgm, bolus=(), basal=(), *, query=None):
+    def _real_preparation(self, cgm, bolus=(), basal=()):
         with tempfile.NamedTemporaryFile(suffix=".sqlite") as database:
             _seed_events(database.name, cgm, bolus, basal)
             with TestClient(create_app(
                     db_path=database.name, token=None, enable_fetch_loop=False)) as client:
-                response = client.get(
-                    "/api/diagnose/finding-case-file-preparation", params=query or {},
-                )
+                response = client.get("/api/diagnose/finding-case-file-preparation")
                 self.assertEqual(response.status_code, 200, response.text)
                 return response.json()
 
@@ -1071,10 +1032,7 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
         readings = [point for day in range(1, 5)
                     for point in _low_rebound(day, nadir=72, rebound=244)]
         prepared = self._real_preparation(readings)
-        self.assertNotIn(
-            "finding:over_treated_low",
-            [row["id"] for row in prepared["rendered_rows"]],
-        )
+        self.assertNotIn("finding:over_treated_low", prepared["behavioral_case_headers"])
         self.assertIn({
             "finding_id": "finding:over_treated_low",
             "code": "uninspectable_attribution",
@@ -1134,10 +1092,7 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
             for day in range(1, 5)
         ]
         prepared = self._real_preparation(readings, announced)
-        self.assertNotIn(
-            "finding:over_treated_low",
-            [row["id"] for row in prepared["rendered_rows"]],
-        )
+        self.assertNotIn("finding:over_treated_low", prepared["behavioral_case_headers"])
         self.assertNotIn(
             "finding:over_treated_low",
             [row["finding_id"] for row in prepared["withheld_findings"]],
@@ -1258,22 +1213,34 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
              {"carb_ratio": 10.0}),
             (711, base + timedelta(minutes=80), 4.0, None),
         ]
-        rebound_case, _ = self._real_case(
-            "over_treated_low", readings, bolus,
-            query={"start_min": 23 * 60 + 50, "end_min": 30},
-        )
+        # No route serves a clock window (ADR 547), so the case file is prepared
+        # over each window directly from the seeded store.
+        from ciq_autotune.analyze import analyze
+        from ciq_autotune.analyzers.scenario import build_scenarios
+        from ciq_autotune.explore_exposures import build_exposures
+        from ciq_autotune.finding_case_file import prepare
+
+        with tempfile.NamedTemporaryFile(suffix=".sqlite") as database:
+            _seed_events(database.name, readings, bolus)
+            with Store.open_readonly(database.name) as store:
+                inputs = {
+                    "analysis": analyze(
+                        store, window_days=30, pool_agreeing_basal_regimes=True,
+                        carb_entries=store.carb_entries(),
+                        prompt_responses=store.prompt_responses()).to_dict(),
+                    "exposures": build_exposures(store, window_days=30),
+                    "scenarios": build_scenarios(store, window_days=30).to_dict(),
+                }
+                rebound, crash_only = (
+                    prepare(store, query=WindowQuery.clock(*window), version=0,
+                            analysis_generation="case-window:0", **inputs)
+                    for window in ((23 * 60 + 50, 30), (23 * 60 + 10, 23 * 60 + 40)))
+        rebound_case = rebound.case("finding:over_treated_low", "event", None)
         self.assertEqual(rebound_case["summary"], {
             "claimed": 1, "denominator": 1, "noun": "lows",
         })
         self.assertTrue(rebound_case["window"]["scoped"])
         self.assertEqual(rebound_case["occurrences"][0]["anchor"]["t"],
                          "2026-06-01 23:20:00")
-
-        crash_only = self._real_preparation(
-            readings, bolus,
-            query={"start_min": 23 * 60 + 10, "end_min": 23 * 60 + 40},
-        )
-        self.assertNotIn(
-            "finding:over_treated_low",
-            [row["id"] for row in crash_only["rendered_rows"]],
-        )
+        self.assertNotIn("finding:over_treated_low",
+                         [row["id"] for row in crash_only.findings["rows"]])

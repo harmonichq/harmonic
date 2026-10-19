@@ -99,19 +99,10 @@ prose-exempt scripts/public_scan_config.txt dose-ratio | the generated baseline 
 # free text nobody validates — so granted on the presence of two keys it was a
 # blanket waiver of rule 1, the rule that caught all three contaminated
 # fixtures, available to any JSON that typed them. The clearance is therefore
-# enumerated: the five files below, and nothing else. A NEW file carrying both
-# keys is scanned like any other until it is named here.
-#
-# All five are the Diagnose workstation's committed demo captures, generated
-# from a seeded PRNG and byte-compared against a fresh generator run by
-# scripts/check_demo_fixtures.py on every PR — so their contents are held
-# synthetic mechanically, not by the stamp's say-so. Adding a sixth means
-# reading the file and saying why here.
-authorized-synthetic mockups/diagnose-workstation.synthetic/explore-day.capture.json | seeded-PRNG demo capture, regenerated and byte-compared in CI
-authorized-synthetic mockups/diagnose-workstation.synthetic/explore-exposures.capture.json | seeded-PRNG demo capture, regenerated and byte-compared in CI
-authorized-synthetic mockups/diagnose-workstation.synthetic/ic-blocks.capture.json | seeded-PRNG demo capture, regenerated and byte-compared in CI
-authorized-synthetic mockups/diagnose-workstation.synthetic/ic-blocks-asserting.capture.json | seeded-PRNG demo capture, regenerated and byte-compared in CI
-authorized-synthetic mockups/diagnose-workstation.synthetic/settings-audit.capture.json | seeded-PRNG demo capture, regenerated and byte-compared in CI
+# enumerated, one exact path per line, and today it names none: the five
+# Diagnose workstation demo captures it cleared were deleted with the demo set
+# (ADR 547). A NEW file carrying both keys is scanned like any other until it
+# is named here, and adding one means reading the file and saying why here.
 
 # --- The acknowledged rule5-dose-ratio set (§0.5.5.3, #728) --------------
 # Rule 5's dose/ratio term is broad by design and CANNOT reach zero: prose in
@@ -143,8 +134,8 @@ authorized-synthetic mockups/diagnose-workstation.synthetic/settings-audit.captu
 # which prints the full delta first. Never edit it by hand: the digest is
 # checked at parse time and a hand edit fails the config closed.
 # BEGIN dose-ratio baseline
-dose-ratio-baseline 213 7a3f27a1de39ff5d3db89297a2af8af561ca825d05bcda6644da3dea336ee338
-dose-ratio-ack CONTEXT.md:545 | 0.2 U
+dose-ratio-baseline 212 23951750c1d0a6f539c6ce78dff8ce777e79c343819f2c8e8c49ec8b15f894d1
+dose-ratio-ack CONTEXT.md:546 | 0.2 U
 dose-ratio-ack CONTEXT.md:77 | 1 U : 36 mg/dL
 dose-ratio-ack CONTEXT.md:99 | 0.5 U
 dose-ratio-ack DESIGN.md:165 | 1 U : 36 mg/dL
@@ -167,39 +158,37 @@ dose-ratio-ack ciq_autotune/insulin.py:220 | 0.1 U
 dose-ratio-ack ciq_autotune/pattern_sweep.py:1042 | 1 U
 dose-ratio-ack ciq_autotune/tandemsource_map.py:207 | 65.535 U
 dose-ratio-ack docs/kb/start-here.md:12 | 4.5 U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:1007 | 4.3 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:1529 | 1.00 U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:1736 | 1 U : 37.6 mg/dL
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:1431 | 1.00 U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:1638 | 1 U : 37.6 mg/dL
 dose-ratio-ack frontend/__fixtures__/findings-projection.json:214 | 4.3 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:2270 | 4.3 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:2544 | 1 U : 37.6 mg/dL
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:2682 | 1.00 U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:2754 | 1 U : 37.6 mg/dL
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:2898 | 4.3 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:3048 | 1 U : 37.6 mg/dL
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:3281 | 1 U : 37.6 mg/dL
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:3425 | 4.3 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:3600 | 1 U : 37.6 mg/dL
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:4000 | 1 U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:4033 | 1 U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:4066 | 1 U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:4099 | 1 U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:4126 | 4.6 U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:4137 | 4.6 U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:4864 | 6 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:5309 | 4.3 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:5458 | 1.00 U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:599 | 1 U : 37.6 mg/dL
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:6149 | 4.3 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:6890 | 4.3 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:7544 | 4.3 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:8066 | 1.00 U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:8755 | 4.3 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:9115 | 1.00 U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:9279 | 4.3 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:9701 | 4.3 g/U
-dose-ratio-ack mockups/diagnose-workstation.synthetic/ic-block-evidence.capture.json:2486 | 0.1 g/U
-dose-ratio-ack mockups/diagnose-workstation.synthetic/ic-history-events.capture.json:2288 | 6 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:2254 | 4.3 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:2438 | 1 U : 37.6 mg/dL
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:2658 | 1.00 U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:2730 | 1 U : 37.6 mg/dL
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:2874 | 4.3 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:3024 | 1 U : 37.6 mg/dL
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:3257 | 1 U : 37.6 mg/dL
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:3401 | 4.3 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:3576 | 1 U : 37.6 mg/dL
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:3976 | 1 U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:4009 | 1 U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:4042 | 1 U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:4075 | 1 U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:4102 | 4.6 U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:4113 | 4.6 U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:4840 | 6 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:5002 | 4.3 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:509 | 1 U : 37.6 mg/dL
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:5434 | 1.00 U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:6125 | 4.3 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:6858 | 4.3 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:7504 | 4.3 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:7936 | 1.00 U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:8707 | 4.3 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:9059 | 1.00 U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:9223 | 4.3 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:9645 | 4.3 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:999 | 4.3 g/U
 dose-ratio-ack openspec/specs/behavioral-layer/spec.md:1125 | 4.5 U
 dose-ratio-ack openspec/specs/behavioral-layer/spec.md:1126 | 2 U
 dose-ratio-ack openspec/specs/behavioral-layer/spec.md:1129 | 6.5 U
@@ -231,7 +220,7 @@ dose-ratio-ack openspec/specs/surfaces/spec.md:3241 | 4.8 g/U
 dose-ratio-ack openspec/specs/surfaces/spec.md:3249 | 1 U
 dose-ratio-ack openspec/specs/surfaces/spec.md:3570 | 0.60 U
 dose-ratio-ack scripts/gen_chart_builder_fixtures.py:152 | 0.04 U
-dose-ratio-ack scripts/qa_e2e_cases.py:1689 | 0.5 U
+dose-ratio-ack scripts/qa_e2e_cases.py:1656 | 0.5 U
 dose-ratio-ack scripts/ui_patient.py:107 | 1.80 U
 dose-ratio-ack scripts/ui_patient.py:30 | 0.35 U
 dose-ratio-ack scripts/ui_patient.py:47 | 6 U
@@ -240,6 +229,7 @@ dose-ratio-ack tests/test_analyzer_basal.py:110 | 0.9 U
 dose-ratio-ack tests/test_analyzer_basal.py:1114 | 0.30 U
 dose-ratio-ack tests/test_analyzer_basal.py:1115 | 0.80 U
 dose-ratio-ack tests/test_analyzer_basal.py:1118 | 0.30 U
+dose-ratio-ack tests/test_analyzer_basal.py:1177 | 2 U
 dose-ratio-ack tests/test_analyzer_coverage.py:437 | 0.6 U
 dose-ratio-ack tests/test_analyzer_coverage.py:752 | 6 g/U
 dose-ratio-ack tests/test_analyzer_ic.py:1019 | 10U
@@ -280,7 +270,6 @@ dose-ratio-ack tests/test_analyzer_ic.py:780 | 1.0U
 dose-ratio-ack tests/test_analyzer_ic.py:794 | 1.8U
 dose-ratio-ack tests/test_analyzer_ic.py:796 | 1.0U
 dose-ratio-ack tests/test_analyzer_ic.py:847 | 2.8U
-dose-ratio-ack tests/test_basal_night_evidence.py:35 | 2 U
 dose-ratio-ack tests/test_classifier_correction_on_iob.py:11 | 1 U
 dose-ratio-ack tests/test_classifier_correction_on_iob.py:116 | 0.5 U
 dose-ratio-ack tests/test_classifier_correction_on_iob.py:14 | 0.5 U
@@ -289,12 +278,13 @@ dose-ratio-ack tests/test_classifier_correction_stacking.py:137 | 1U
 dose-ratio-ack tests/test_classifier_correction_stacking.py:150 | 0.1 U
 dose-ratio-ack tests/test_classifier_correction_stacking.py:158 | 0.1 U
 dose-ratio-ack tests/test_harm_basal_arm.py:101 | 0.01 U
-dose-ratio-ack tests/test_ic_block_evidence.py:193 | 4.0 g/U
-dose-ratio-ack tests/test_ic_block_evidence.py:650 | 7.5 g/U
-dose-ratio-ack tests/test_ic_block_evidence.py:665 | 5.0 g/U
-dose-ratio-ack tests/test_ic_block_evidence.py:666 | 3.75 g/U
-dose-ratio-ack tests/test_ic_block_evidence.py:667 | 9 U
-dose-ratio-ack tests/test_ic_block_evidence.py:702 | 1.5 U
+dose-ratio-ack tests/test_ic_block_published_facts.py:117 | 5.0 g/U
+dose-ratio-ack tests/test_ic_block_published_facts.py:153 | 4.0 g/U
+dose-ratio-ack tests/test_ic_block_published_facts.py:339 | 7.5 g/U
+dose-ratio-ack tests/test_ic_block_published_facts.py:354 | 5.0 g/U
+dose-ratio-ack tests/test_ic_block_published_facts.py:355 | 3.75 g/U
+dose-ratio-ack tests/test_ic_block_published_facts.py:356 | 9 U
+dose-ratio-ack tests/test_ic_block_published_facts.py:390 | 1.5 U
 dose-ratio-ack tests/test_ic_blocks.py:158 | 4.0 g/U
 dose-ratio-ack tests/test_ic_blocks.py:181 | 12 U
 dose-ratio-ack tests/test_ic_blocks.py:234 | 8.0 g/U

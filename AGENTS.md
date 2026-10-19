@@ -100,29 +100,24 @@ Both run in CI's `app` job, hand-listed. They fail closed without a serve, and
 the browser smoke fails closed without a driver. Their files are deliberately
 outside the fast gate's `*.test.js` glob, because they need a server.
 
-The backend job also runs ten **drift checks**, so a committed
-generator-authored artifact can never silently diverge from its generator. Nine
+The backend job also runs five **drift checks**, so a committed
+generator-authored artifact can never silently diverge from its generator. Four
 are listed below; the component library's fixture generator reads inputs the
 public tree excludes (the redesign lock and the QA store), so its `--check`
 command lives in `.github/workflows/ci.yml`:
 
 ```sh
 uv run python scripts/gen_chart_builder_fixtures.py --check
-uv run python scripts/check_demo_fixtures.py   # the Diagnose synthetic set the shape tests read
 uv run python scripts/gen_qa_e2e_db.py --check
 uv run python scripts/gen_findings_projection_fixtures.py --check
-uv run python scripts/gen_ic_history_event_fixtures.py --check
-uv run python scripts/gen_ic_block_evidence_fixtures.py --check
-uv run python scripts/gen_basal_night_evidence_fixtures.py --check
-uv run python scripts/gen_isf_rest_window_evidence_fixtures.py --check
 uv run python scripts/gen_missed_meal_comparison_fixtures.py --check
 ```
 
 Every committed fixture in this repository is synthetic, and the contamination
 scan will not let one ship unless it carries a provenance stamp from that scan's
-closed set. Most carry a `_generated_by` + `_note` pair; the Diagnose demo
-captures instead carry an `authorized` + `synthetic` pair, which is honoured
-only for the paths `scripts/public_scan_config.txt` names one by one. If you add
+closed set. Most carry a `_generated_by` + `_note` pair. The `authorized` +
+`synthetic` pair is honoured only for a path `scripts/public_scan_config.txt`
+names one by one, and it names none since the Diagnose demo set went (ADR 547). If you add
 a fixture, add its generator and its `--check` step in the same change — a
 fixture without a generator is how real data gets committed.
 

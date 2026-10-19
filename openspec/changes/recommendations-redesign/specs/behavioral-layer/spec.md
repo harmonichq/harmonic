@@ -450,6 +450,62 @@ named as that row's cause. The case producer's own test proves it (ADR 531).
 - **AND** every selected reason carries a habit entry for Correction on active
   insulin only
 
+### Requirement: A habit is counted over its recurrence population, from one source
+
+The exposure feed SHALL list, in each family, that family's recurrence population
+and nothing else (#550): every meal, every low run below the gate low line,
+every high run at or over the high line, and every adjacent pair of user
+corrections, anchored at its second dose. No other anchor of the episode walk
+SHALL be an Occurrence: not a near-low, not the High synthesized at an
+over-treated low's rebound, and not a correction that closes no pair. The feed
+SHALL place each attributed episode's claim on the one opportunity the engine
+associates it with (its recurrence anchor), and on no other anchor. An opportunity
+two claims share SHALL carry both levers, the first as its cause, and the later
+claim SHALL keep the minute its own consequence landed at. A claim the engine
+associates with no opportunity, such as a near-low's, SHALL be counted by no
+findings row, no case file and no Pattern; the engine's own priced confidence
+keeps its compatibility clamp for it (ADR 202).
+
+A habit's findings row SHALL count the habit once, in its own recurrence family:
+its claims over that family's Occurrences, each judged at the minute that habit's
+consequence landed. Over the whole day its count SHALL equal its case file's
+`summary`, which SHALL read the same association, and a Pattern's `n` SHALL be
+the same population its rate habits are counted over. The frontend SHALL derive
+none of these counts.
+
+#### Scenario: A standalone habit's row and case file print one count
+
+- **GIVEN** the synthetic `wearer-habit` store, the wearer skipping the weekday
+  lunch bolus, whose episode walk visited 26 highs, two of them an over-treated
+  low's rebound below 250
+- **WHEN** the findings answer and the missed-meal case file are read
+- **THEN** the Missed / unannounced meal row serves one count sentence, 12 of 24
+  highs, and its case file's summary counts 12 of 24 highs
+- **AND** the row serves no correction-cluster sentence
+
+#### Scenario: Correction pairs, not correction boluses
+
+- **GIVEN** the `behavioral-correction-stacking` QA case, with eight user
+  corrections
+- **WHEN** its findings answer and Correction stacking case file are read
+- **THEN** the row counts 2 of 7 correction clusters, as its case file does
+
+#### Scenario: A near-low is no low
+
+- **GIVEN** the `pattern-near-tie` QA case, whose nine low anchors include two
+  dips to 74 and 75 mg/dL
+- **WHEN** its findings answer and Over-treated low case file are read
+- **THEN** the row counts 1 of 7 lows, as its case file does, and Highs after
+  treating lows counts over the same 7 lows
+
+#### Scenario: An over-treated low claimed from its rebound sits on its crash low
+
+- **GIVEN** a low with its own cause whose over-treatment is split into a rebound
+  High that never reaches 250
+- **WHEN** the exposure feed is built
+- **THEN** it serves no high, and the crash low carries its own cause and then
+  Over-treated low
+
 ## MODIFIED Requirements
 
 ### Requirement: The findings projection serves each count-bearing row's count sentences
@@ -458,10 +514,9 @@ The findings projection SHALL serve count sentences in the form
 `n of d noun outcome`, each with its count, denominator, noun and outcome words
 served as their own values alongside the whole sentence. A Pattern row that
 carries a count and a denominator SHALL serve exactly one, its outcome words
-keyed by the Pattern's own served key. A Cause row SHALL serve one per family
-appearance it already serves, in the served appearance order and never merged
-into a total, each outcome keyed by the Cause's own lever together with that
-appearance's family. The outcome words SHALL come from one closed table owned by
+keyed by the Pattern's own served key. A Cause row SHALL serve exactly one, for
+the one appearance it serves: its own recurrence family (#550). Its outcome SHALL
+be keyed by the Cause's own lever together with that family. The outcome words SHALL come from one closed table owned by
 the projection. Two Patterns or two Causes that share a family SHALL be able to
 serve different outcomes. A Pattern key, or a lever-and-family pair the
 projection can emit, that has no entry SHALL fail the projection's tests rather
@@ -474,12 +529,11 @@ change.
 
 #### Scenario: A cause row serves its outcome per appearance
 
-- **GIVEN** a synthetic store whose window holds a Cause row appearing in two
-  families
-- **WHEN** the findings projection is read for that window
-- **THEN** the row serves two count sentences in appearance order, each with the
-  count, denominator and noun of its own appearance, followed by that lever's
-  outcome words for that family
+- **GIVEN** the findings-fixture inputs, where Carb undercount claims a meal whose
+  episode also runs to a high
+- **WHEN** the findings projection is read for the whole day
+- **THEN** the Carb undercount row serves one count sentence, on meals, with the
+  count, denominator and noun of its one appearance and its outcome words for meals
 - **AND** the row's tier, rank, priority, register and headline are unchanged
 
 #### Scenario: Opposite outcomes in one family stay apart

@@ -355,8 +355,8 @@ def test_case_file_consumes_the_authoritative_verdict_order(monkeypatch):
     monkeypatch.setattr(findings_projection, "FINDING_VERDICTS", reordered)
 
     case = _prepared(Lever.LATE_BOLUS).case("finding:late_bolus", "event", None)
-    _, authoritative_counts, _ = findings_projection._lever_evidence(
-        Lever.LATE_BOLUS.value, ["meals"], {"meals": []},
+    _, authoritative_counts = findings_projection._lever_evidence(
+        Lever.LATE_BOLUS.value, [], "meals",
     )
 
     assert tuple(authoritative_counts) == reordered
@@ -799,9 +799,10 @@ def test_a_meal_two_rate_levers_claim_is_credited_once_to_the_first():
         "carb_undercount": ("pattern", 2, 3), "late_bolus": ("pattern", 1, 3),
     }
     assert sum(share["count"] for share in shares.values()) == pattern["k"]
-    # Each cause keeps its own count; only the Pattern's share is credited once.
+    # Each cause keeps its own count of the meals it claims (#550); only the
+    # Pattern's share is credited once.
     assert [rows[f"finding:{lever}"]["appearances"][0]["n"]
-            for lever in ("carb_undercount", "late_bolus")] == [1, 2]
+            for lever in ("carb_undercount", "late_bolus")] == [2, 2]
 
 
 def test_outranked_meals_stay_outside_the_patterns_claimed_count():

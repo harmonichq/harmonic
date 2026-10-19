@@ -4,10 +4,12 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 
+from .analyzers.scenario.anchors import AnchorKind
 from .analyzers.scenario.evaluation import evaluate
 from .analyzers.scenario.engine import _effective_isf, low_prompt_answers
-from .analyzers.scenario.levers import Lever, outcome_kind, title
-from .analyzers.scenario.model_view import _build_episode_view, _fmt, _is_driver, stacking_reached_low
+from .analyzers.scenario.levers import Exposure, Lever, outcome_kind, title
+from .analyzers.scenario.model_view import _build_episode_view, _fmt, stacking_reached_low
+from .analyzers.scenario.opportunities import canonical_anchor_key
 from .analyzers.scenario_config import ScenarioConfig
 from .false_low import drop_readings, false_low_span_records, spans_from_records
 
@@ -51,19 +53,45 @@ def _exposure_verdict(verdict: dict) -> dict:
     }
 
 
+def _opportunity_identities(families):
+    """Return the recurrence opportunity an episode anchor is, or ``None``.
+
+    A glucose or meal anchor is its canonical opportunity when that opportunity is
+    in its family's population. A correction is the pair it closes: the pair is
+    anchored at its second dose, as the engine anchors it.
+    """
+    keys = {family: {item.source_key for item in items} for family, items in families.items()}
+    pair_of = {item.members[1].seq_num: item.source_key
+               for item in families[Exposure.CORRECTION_CLUSTERS]}
+
+    def member_of(anchor):
+        if anchor.kind is AnchorKind.CORRECTION:
+            key = pair_of.get(anchor.bolus.seq_num)
+            return None if key is None else (Exposure.CORRECTION_CLUSTERS, key)
+        family, key = canonical_anchor_key(anchor)
+        return (family, key) if family is not None and key in keys[family] else None
+
+    return member_of
+
+
 def build_exposures(store, *, window_days: int = 30) -> dict:
     """Return recent scenario anchors flattened for the Diagnose workstation.
 
+    Each family's occurrences are its recurrence population (#550): one per
+    opportunity the engine prices a habit over (meals, sub-70 lows, highs at or over
+    250, correction pairs), never an anchor the episode walk adds outside them.
     Three whole-window tallies come out beside each family's occurrence list, and
     ``clean`` and ``uncaused`` are **not** the same question (#63):
 
-    * ``attributed`` — this occurrence is its episode's driver.
-    * ``attributed_levers`` — every lever this feed maps onto this opportunity, including
-      the cross-family low reached by correction stacking. The primary driver fields
-      stay unchanged.
-    * ``clean`` = ``n - attributed`` — this occurrence is not the driver. It says
-      nothing about the episode: a high in a meal-driven episode is "clean" while its
-      episode carries a lever, because the meal anchor drove it.
+    * ``attributed`` — an episode's claim is associated with this occurrence: the
+      one opportunity the engine counts that claim on. Its first claim names
+      ``cause_lever``.
+    * ``attributed_levers`` — every lever this feed maps onto this opportunity: each
+      claim associated with it, and the cross-family low reached by correction
+      stacking. The primary driver fields stay unchanged.
+    * ``clean`` = ``n - attributed`` — no claim is associated with this occurrence.
+      It says nothing about the episode: a high in a meal-driven episode is "clean"
+      while its episode carries a lever, because the meal anchor drove it.
     * ``uncaused`` — this occurrence's EPISODE drew no lever anywhere, in any family.
       This is the only one of the three that answers "the app found no cause for this
       at all", which is why the Diagnose surface counts highs with it rather than with
@@ -106,6 +134,15 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
     evaluated = evaluate(window_bolus, window_cgm, window_basal, isf=isf,
                          scenario_config=scenario_config, low_answers=low_answers,
                          window_start=start, window_end=now, bound_classifier_context=False)
+    # Each family lists its recurrence population and nothing else (#550): the
+    # opportunities the engine prices a habit over, so an anchor the episode walk
+    # adds outside them (a near-low, a rebound's synthesized High, the first
+    # correction of the window, which pairs with nothing) is no occurrence.
+    member_of = _opportunity_identities(evaluated.families)
+    # The one opportunity each attributed episode's claim is associated with.
+    claims = {row.episode_id: row for row in evaluated.attributed if row.anchor_t is not None}
+    by_identity = {}
+    claimed = []
     # A classifier's padded context can reach an opportunity in another episode.
     # Cross-family attribution is therefore opportunistic: stamp a target only when
     # this feed also emitted that opportunity, and otherwise preserve the feed.
@@ -140,14 +177,12 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
         for source_anchor, anchor in zip(
             sorted(episode_anchors.anchors, key=lambda item: item.t), episode["anchors"],
         ):
-            family = families.get(_FAMILY_FOR_KIND.get(anchor["kind"]))
-            if family is None:
+            identity = member_of(source_anchor)
+            if identity is None:
                 continue
-            attributed = _is_driver(source_anchor, attribution)
+            family_name = identity[0].value
             if attribution.lever is None and source_anchor not in owned_highs:
-                uncaused[_FAMILY_FOR_KIND[anchor["kind"]]] += 1
-            lever = episode["lever"] if attributed else None
-            cause_title = title(Lever(lever)) if lever is not None else None
+                uncaused[family_name] += 1
             occurrence = {
                 "t": anchor["t"],
                 "date": anchor["t"][:10],
@@ -160,26 +195,47 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
                 "kind": anchor["kind"],
                 "label": anchor["label"],
                 "state": anchor["state"],
-                "attributed": attributed,
-                "attributed_levers": [lever] if lever is not None else [],
-                "cause_lever": lever,
-                "cause_title": cause_title,
-                "text": episode["steps"][0]["text"] if attributed else "",
+                "attributed": False,
+                "attributed_levers": [],
+                "cause_lever": None,
+                "cause_title": None,
+                "text": "",
                 "verdicts": [
                     _exposure_verdict(verdict) for verdict in anchor["verdicts"]
                 ],
                 "ep_id": episode["id"],
             }
-            if lever is not None and outcome_minute is not None:
-                occurrence["outcome_minute"] = outcome_minute
+            families[family_name]["occurrences"].append(occurrence)
+            by_identity[identity] = occurrence
+        claim = claims.get(evaluated_episode.id)
+        if claim is not None:
+            lever = claim.lever.value
             # The correction a low this episode's correction habit claims followed:
             # its own verdict's judged dose (ADR 523).
-            corrected = next((verdict.correction_t for verdict in retained.get(id(source_anchor), ())
-                              if lever is not None and verdict.classifier == lever
-                              and verdict.matched and verdict.correction_t is not None), None)
-            if corrected is not None:
-                occurrence["corrections"] = {lever: _fmt(corrected)}
-            family["occurrences"].append(occurrence)
+            corrected = next((verdict.correction_t
+                              for verdict in retained.get(id(attribution.driver_anchor), ())
+                              if verdict.classifier == lever and verdict.matched
+                              and verdict.correction_t is not None), None)
+            claimed.append(((claim.driver_family, claim.driver_source_key), lever,
+                            outcome_minute, episode["steps"][0]["text"], corrected))
+
+    # A claim lands once the walk is done: an over-treated low claimed from its
+    # rebound's High is the crash low, which an earlier episode emitted. The first
+    # claim on an opportunity is its cause; every claim is one of its levers, and a
+    # later one keeps where its own consequence landed.
+    for identity, lever, outcome_minute, text, corrected in claimed:
+        target = by_identity[identity]
+        target["attributed_levers"].append(lever)
+        if corrected is not None:
+            target.setdefault("corrections", {})[lever] = _fmt(corrected)
+        if target["cause_lever"] is not None:
+            if outcome_minute is not None:
+                target.setdefault("lever_outcome_minutes", {})[lever] = outcome_minute
+            continue
+        target.update(attributed=True, cause_lever=lever, cause_title=title(Lever(lever)),
+                      text=text)
+        if outcome_minute is not None:
+            target["outcome_minute"] = outcome_minute
 
     for family_name, target_t, lever, outcome_minute, dose_t in target_attributions:
         target = next(

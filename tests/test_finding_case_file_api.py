@@ -1028,16 +1028,24 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
                     detail["anchor"]["bg"],
                 )
 
-    def test_analyzer_built_near_lows_are_withheld_not_relabelled(self):
+    def test_analyzer_built_near_lows_are_no_lows_and_claim_nothing(self):
+        """A 72 mg/dL dip is attributable but is not a low (``gate_low_mgdl``), so an
+        over-treatment claimed on it sits in no population (#550): no row counts it
+        as a low, and no case file is prepared for it, rather than one relabelled."""
         readings = [point for day in range(1, 5)
                     for point in _low_rebound(day, nadir=72, rebound=244)]
-        prepared = self._real_preparation(readings)
+        with tempfile.NamedTemporaryFile(suffix=".sqlite") as database:
+            _seed_events(database.name, readings)
+            with TestClient(create_app(
+                    db_path=database.name, token=None, enable_fetch_loop=False)) as client:
+                findings = client.get("/api/diagnose/findings").json()
+                prepared = client.get("/api/diagnose/finding-case-file-preparation").json()
+        self.assertNotIn("finding:over_treated_low", [row["id"] for row in findings["rows"]])
+        pattern = next(item for item in findings["outcome_patterns"]
+                       if item["key"] == "highs_after_treating_lows")
+        self.assertEqual((pattern["k"], pattern["n"]), (0, 0))
         self.assertNotIn("finding:over_treated_low", prepared["behavioral_case_headers"])
-        self.assertIn({
-            "finding_id": "finding:over_treated_low",
-            "code": "uninspectable_attribution",
-            "message": "Canonical association is unavailable.",
-        }, prepared["withheld_findings"])
+        self.assertEqual(prepared["withheld_findings"], [])
 
     def test_announced_meal_low_is_a_clean_case_member_without_withholding(self):
         readings = _low_rebound(1) + _low_rebound(2)

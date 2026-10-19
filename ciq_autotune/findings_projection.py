@@ -14,8 +14,9 @@ Two registers, assigned by one mechanical rule and stamped on every row as
   the ISF analyzer's own ``evidence.direction`` for ISF). ISF stageability is a
   separate explicit verdict carried beside this register. Contiguous asserting
   basal slots sharing a direction are ONE row named by its span (term 13).
-* ``finding`` — one row per behavioral finding NAME (term 35), carrying each family
-  appearance's own window-local ``n of m`` denominators. A Pattern row is one too.
+* ``finding`` — one row per behavioral finding NAME (term 35), carrying its one
+  window-local ``n of m``, counted in its own recurrence family (#550). A Pattern
+  row is one too.
 
 A parameter that asserts no direction is never listed, in any window (term 38). The
 desk's held, blind and past-setting rows left with the desk (ADR 531).
@@ -54,40 +55,18 @@ from dataclasses import dataclass
 from typing import Dict, List, Optional, Sequence, Tuple
 
 from .analyzers.ic import BLOCK_WINDOW_DAYS
+from .analyzers.scenario.evidence_population import policy_for
 # `_chips_for` (#61) asks each lever what kind of anchor its consequence lands on.
-from .analyzers.scenario.levers import Exposure, Lever, exposure, outcome_kind, title
+from .analyzers.scenario.levers import Exposure, Lever, outcome_kind, title
 from .analyzers.scenario.outcome_patterns import (
     _ROSTER, build_outcome_patterns, credited_claims, outcome_window_population,
     setting_move_fits,
 )
-from .window_membership import DAY_MINUTES, WindowQuery, outcome_minute
+from .window_membership import DAY_MINUTES, WindowQuery, claim_minute
 
 SCHEMA = "diagnose-findings-v3"
 
 _SLOT_MINUTES = 30
-
-# Case-file event charts use the Finding lever and the server-owned clock window.
-# The mapping remains here with the projection that publishes the coordinate; it
-# no longer borrows the retired standalone comparison route vocabulary.
-_EVENT_CHART_FAMILIES = {
-    "carb_undercount": "meals",
-    "late_bolus": "meals",
-    "meal_over_delivery": "meals",
-    "missed_meal": "highs",
-    "over_treated_low": "lows",
-    "correction_on_iob": "lows",
-    # Correction stacking is counted in correction clusters, never in lows. The
-    # retired standalone route filed it under its "lows" VIEW; carrying that view
-    # name over as a family published `null` for every correction-stacking
-    # Finding, leaving the queue no By-event path into a case the server serves.
-    "correction_stacking": "correction_clusters",
-}
-
-
-def event_chart_coordinate(lever: str, query: WindowQuery, families: Sequence[str]):
-    if _EVENT_CHART_FAMILIES.get(lever) not in families:
-        return None
-    return {"lever": lever, "window": query.to_dict()}
 
 # The exposure family a queue row's denominator is counted in, and the noun it is
 # counted with (term 16: every denominator names its own noun). Keyed by the family
@@ -434,75 +413,56 @@ class FindingsProjection:
 
     def _finding_rows(self, query: WindowQuery) -> List[dict]:
         families = (self._exposures.get("exposures") or {})
-        # Every occurrence, re-anchored to its finding's outcome, kept only where
-        # that outcome lands inside the window. The family denominator is filtered
-        # by the same anchor, so it can never be smaller than what it denominates.
-        in_window: Dict[str, List[dict]] = {}
+        # A habit is counted once, in its own recurrence family (#550): each claim
+        # sits on the one opportunity the engine counts it on, so the row's count is
+        # its case file's and its guidance's, never a second family's.
+        claims: Dict[str, List[dict]] = {}
         for family, payload in families.items():
-            in_window[family] = [
-                occurrence for occurrence in payload.get("occurrences") or []
-                if query.contains(outcome_minute(occurrence, self._exposures))
-            ]
-
-        by_lever: Dict[str, dict] = {}
-        for family, occurrences in in_window.items():
-            denominator = len(occurrences)
-            counted: Dict[str, List[dict]] = {}
-            for occurrence in occurrences:
-                lever = occurrence.get("cause_lever")
-                if lever is None:
-                    continue
-                counted.setdefault(lever, []).append(occurrence)
-            for lever, hits in counted.items():
-                entry = by_lever.setdefault(lever, {
-                    "title": hits[0].get("cause_title"),
-                    "appearances": [],
-                    "episodes": set(),
-                    # The families this lever actually claims occurrences in — the
-                    # evidence block and its verdict band are drawn over exactly
-                    # these families' in-window occurrences, never just the hits.
-                    "families": [],
-                })
-                entry["appearances"].append({
-                    "family": family,
-                    "noun": _FAMILY_NOUN.get(family, family),
-                    "n": len(hits),
-                    "m": denominator,
-                })
-                entry["episodes"].update(hit.get("ep_id") for hit in hits)
-                entry["families"].append(family)
-
+            for occurrence in payload.get("occurrences") or []:
+                for lever in occurrence.get("attributed_levers") or ():
+                    if policy_for(lever).recurrence_family.value == family:
+                        claims.setdefault(lever, []).append(occurrence)
         priced = _pattern_priorities(self._scenarios)
         rows = []
-        for lever, entry in by_lever.items():
-            entry["appearances"].sort(key=lambda a: a["family"])
-            evidence, verdict_counts, verdict_counts_by_family = _lever_evidence(
-                lever, entry["families"], in_window,
-            )
+        for lever, claimed in claims.items():
+            family = policy_for(lever).recurrence_family.value
+            # Every occurrence, re-anchored to where this lever's consequence
+            # landed, kept only where that lands inside the window. The family
+            # denominator is filtered by the same anchor, so it can never be smaller
+            # than what it denominates.
+            inside = (lambda occurrence, lever=lever: query.contains(
+                claim_minute(occurrence, lever, self._exposures)))
+            hits = [occurrence for occurrence in claimed if inside(occurrence)]
+            if not hits:
+                continue
+            population = [occurrence for occurrence in families[family]["occurrences"]
+                          if inside(occurrence)]
+            evidence, verdict_counts = _lever_evidence(lever, population, family)
             rows.append(_row(
                 id=f"finding:{lever}",
                 register="finding",
                 kind="habit",
                 lever=lever,
-                title=entry["title"],
+                title=title(Lever(lever)),
                 priority=priced.get(lever),
-                appearances=entry["appearances"],
-                # Episodes, not occurrences: one episode showing up in two families
-                # is one thing that happened, and the count that orders the unpriced
-                # tail must say so.
-                episodes=len(entry["episodes"]),
+                appearances=[{"family": family, "noun": _FAMILY_NOUN[family],
+                              "n": len(hits), "m": len(population)}],
+                # The claimed occurrences, which order the unpriced tail: one claim
+                # per attributed episode, each on one opportunity.
+                episodes=len(hits),
                 # ADR 41: every in-window occurrence this finding's band counts,
                 # carrying the event id(s) and clock key the canvas joins on, plus
                 # its five-state verdict *relative to this lever* — never dropped
                 # just because it wasn't the one that fired (item 3).
                 evidence=evidence,
-                # Kept for compatibility (a single-family lever's total IS its one
-                # family's count); a multi-family lever's band must key off
-                # `verdict_counts_by_family` instead (finding 1) so the band and the
-                # roster it scopes share one denominator.
+                # The band over the row's one family, served under that family too
+                # (finding 1) so the band and the roster it scopes share one
+                # denominator.
                 verdict_counts=verdict_counts,
-                verdict_counts_by_family=verdict_counts_by_family,
-                event_chart=event_chart_coordinate(lever, query, entry["families"]),
+                verdict_counts_by_family={family: dict(verdict_counts)},
+                # Every habit's case file projects an event comparison over its own
+                # family, which is the one family its row is counted in.
+                event_chart={"lever": lever, "window": query.to_dict()},
             ))
         return rows
 
@@ -528,6 +488,9 @@ def _occurrence_verdict(occurrence: dict, lever: str) -> str:
     attribution; ``outranked`` is reserved for an occurrence where this lever's
     classifier never matched anything and some OTHER lever drove the episode.
 
+    * this lever claims the occurrence (``attributed_levers``) → ``fired``, as
+      its case file counts it, even where its claim came from another
+      episode's anchor (an over-treated low claimed from its rebound's High).
     * this lever's classifier matched → ``fired`` (row-relative: it fired
       whether or not it drove the episode).
     * this lever's classifier ran and came back a loud near-miss → ``near_miss``.
@@ -544,6 +507,8 @@ def _occurrence_verdict(occurrence: dict, lever: str) -> str:
       the episode (``outranked`` — something is known to have happened here,
       just not attributed to this lever).
     """
+    if lever in (occurrence.get("attributed_levers") or ()):
+        return "fired"
     own = next(
         (v for v in occurrence.get("verdicts") or [] if v.get("classifier") == lever),
         None,
@@ -561,42 +526,28 @@ def _occurrence_verdict(occurrence: dict, lever: str) -> str:
 
 
 def _lever_evidence(
-    lever: str, families: Sequence[str], in_window: Dict[str, List[dict]],
-) -> Tuple[List[dict], Dict[str, int], Dict[str, Dict[str, int]]]:
+    lever: str, occurrences: Sequence[dict], family: str,
+) -> Tuple[List[dict], Dict[str, int]]:
     """The evidence rows and verdict-band counts one finding row publishes.
 
-    Drawn over every in-window occurrence of every family this lever claims a hit
-    in — not just its hits — so the band's ``outranked``/``near_miss``/``no_data``/
-    ``clean`` counts (which the frontend may not derive) have something to count.
-
-    Returns the evidence list, the total counts (kept for compatibility — a row
-    that claims one family still wants one number), and the SAME counts broken
-    out per family (finding 1): a multi-family lever's roster and its band must
-    share one denominator, which only the family it is currently framing on can
-    give it.
+    Drawn over every in-window occurrence of the lever's own family — not just its
+    hits — so the band's ``outranked``/``near_miss``/``no_data``/``clean`` counts
+    (which the frontend may not derive) have something to count.
     """
     counts = {category: 0 for category in FINDING_VERDICTS}
-    counts_by_family: Dict[str, Dict[str, int]] = {}
     evidence = []
-    # Sorted, not first-seen: the family a lever hits first is an accident of the
-    # exposures dict's own key order, and `appearances` already sorts alphabetically
-    # for the same reason (a stable answer independent of that order).
-    for family in sorted(set(families)):
-        family_counts = {category: 0 for category in FINDING_VERDICTS}
-        for occurrence in in_window.get(family, []):
-            category = _occurrence_verdict(occurrence, lever)
-            counts[category] += 1
-            family_counts[category] += 1
-            evidence.append({
-                "ep_id": occurrence.get("ep_id"),
-                "t": occurrence.get("t"),
-                "date": occurrence.get("date"),
-                "family": family,
-                "kind": occurrence.get("kind"),
-                "verdict": category,
-            })
-        counts_by_family[family] = family_counts
-    return evidence, counts, counts_by_family
+    for occurrence in occurrences:
+        category = _occurrence_verdict(occurrence, lever)
+        counts[category] += 1
+        evidence.append({
+            "ep_id": occurrence.get("ep_id"),
+            "t": occurrence.get("t"),
+            "date": occurrence.get("date"),
+            "family": family,
+            "kind": occurrence.get("kind"),
+            "verdict": category,
+        })
+    return evidence, counts
 
 
 def _title(name: str, direction: Optional[str]) -> str:
@@ -686,9 +637,8 @@ def _ic_headline(row: dict) -> str:
 
 
 def _finding_headline(row: dict) -> str:
-    # `_finding_rows` never publishes a row without one: `by_lever[lever]` is
-    # only created in the same iteration that appends its first appearance
-    # (`findings_projection.py`'s `_finding_rows`).
+    # `_finding_rows` publishes each habit row with its one appearance, in its
+    # own family, and only once the habit has a claim there.
     appearance = row["appearances"][0]
     verdict = ("Ranks among this window's findings" if row.get("tier") in _RANKING_TIERS
                else "Not ranked in this window yet")
@@ -745,39 +695,19 @@ _PATTERN_OUTCOME = {
 }
 
 _CAUSE_OUTCOME = {
-    # Closed over the code-derived cross product (coordinator decision, #413 review
-    # round 2): every `Lever` member (levers.py) x every family a Cause appearance
-    # can be filed under — the four exposure families `explore_exposures._FAMILY_FOR_KIND`
-    # names (lows / meals / highs / correction_clusters). Never widened or narrowed
-    # from fixture output.
+    # Closed over the code-derived pairs a Cause sentence can be counted in (#413,
+    # narrowed by #550): every `Lever` in its own recurrence family, the one family
+    # its row counts it in, and every Pattern rate lever in its Pattern's family,
+    # where a fold leads with its share. Never widened or narrowed from fixture
+    # output.
     ("carb_undercount", "meals"): "ran high",
-    ("carb_undercount", "highs"): "followed an undercounted meal",
-    ("carb_undercount", "lows"): "followed an undercounted meal",
-    ("carb_undercount", "correction_clusters"): "followed an undercounted meal",
     ("late_bolus", "meals"): "ran high",
-    ("late_bolus", "highs"): "followed a late bolus",
-    ("late_bolus", "lows"): "followed a late bolus",
-    ("late_bolus", "correction_clusters"): "followed a late bolus",
     ("meal_over_delivery", "meals"): "ran low",
-    ("meal_over_delivery", "lows"): "followed a strong meal dose",
-    ("meal_over_delivery", "highs"): "followed a strong meal dose",
-    ("meal_over_delivery", "correction_clusters"): "followed a strong meal dose",
     ("over_treated_low", "lows"): "rebounded high",
-    ("over_treated_low", "highs"): "followed an over-treated low",
-    ("over_treated_low", "meals"): "followed an over-treated low",
-    ("over_treated_low", "correction_clusters"): "followed an over-treated low",
     ("correction_stacking", "correction_clusters"): "went low",
     ("correction_stacking", "lows"): "followed stacked corrections",
-    ("correction_stacking", "meals"): "followed stacked corrections",
-    ("correction_stacking", "highs"): "followed stacked corrections",
     ("correction_on_iob", "lows"): "followed a correction on active insulin",
-    ("correction_on_iob", "correction_clusters"): "followed a correction on active insulin",
-    ("correction_on_iob", "meals"): "followed a correction on active insulin",
-    ("correction_on_iob", "highs"): "followed a correction on active insulin",
     ("missed_meal", "highs"): "had no bolus nearby",
-    ("missed_meal", "meals"): "had no bolus nearby",
-    ("missed_meal", "lows"): "had no bolus nearby",
-    ("missed_meal", "correction_clusters"): "had no bolus nearby",
 }
 
 
@@ -831,8 +761,7 @@ def _served_as(pattern: dict, exposures: dict) -> dict:
 
 
 def _cause_count_sentences(row: dict) -> Optional[List[dict]]:
-    """One sentence per served family appearance, in appearance order (already
-    alphabetical — ``_finding_rows`` sorts ``appearances`` for the same reason)."""
+    """One sentence per served family appearance: the habit's own family (#550)."""
     sentences = []
     for appearance in row["appearances"] or []:
         key = (row["lever"], appearance["family"])

@@ -23,13 +23,12 @@ except ImportError:  # pragma: no cover
     _HAS_FASTAPI = False
 
 from ciq_autotune.analyzers.isf import analyze_isf
+from ciq_autotune.analyzers.scenario.evidence_population import policy_for
 from ciq_autotune.analyzers.scenario.levers import Lever, outcome_kind
 from ciq_autotune.analyzers.scenario.outcome_patterns import _ROSTER, outcome_window_population
 from ciq_autotune.analyzers.tuning_priority import build_tuning_levers
-from ciq_autotune.explore_exposures import _FAMILY_FOR_KIND
 from ciq_autotune.findings_projection import (
     _CAUSE_OUTCOME,
-    _EVENT_CHART_FAMILIES,
     _headline_for,
     _PATTERN_CHIPS,
     _PATTERN_OUTCOME,
@@ -41,7 +40,6 @@ from ciq_autotune.findings_projection import (
     pattern_chartable,
     prepare_findings_projection,
 )
-from ciq_autotune.event_comparison import FACTOR_LABELS
 from ciq_autotune.events import BolusEvent
 from ciq_autotune.harm import HarmArm, HarmConfig, PrintedLow
 from ciq_autotune.safety import Status
@@ -260,11 +258,13 @@ class CountSentenceTest(unittest.TestCase):
         self.assertNotEqual(_PATTERN_OUTCOME["highs_after_meals"],
                             _PATTERN_OUTCOME["lows_after_meals"])
 
-    def test_a_two_family_cause_serves_two_sentences_agreeing_with_its_appearances(self):
+    def test_a_cause_serves_one_sentence_agreeing_with_its_one_appearance(self):
         rows = self.projection.project(WindowQuery.whole_day())["rows"]
         row = next(r for r in rows if r.get("lever") == "carb_undercount")
-        self.assertEqual(len(row["appearances"]), 2)
-        self.assertEqual(len(row["count_sentences"]), 2)
+        # Counted in its own family only (#550): meals, never the highs it ran to.
+        self.assertEqual([appearance["family"] for appearance in row["appearances"]],
+                         ["meals"])
+        self.assertEqual(len(row["count_sentences"]), 1)
         for appearance, sentence in zip(row["appearances"], row["count_sentences"]):
             self.assertEqual(sentence["count"], appearance["n"])
             self.assertEqual(sentence["denominator"], appearance["m"])
@@ -276,19 +276,17 @@ class CountSentenceTest(unittest.TestCase):
                 f"{appearance['n']} of {appearance['m']} {appearance['noun']} {outcome}",
             )
 
-    def test_the_outcome_table_covers_the_code_derived_cross_product_exactly(self):
-        """``_CAUSE_OUTCOME``'s keys equal every ``Lever`` member x every family a
-        Cause appearance can be filed under — both sets read from code, never
-        from fixture output (coordinator decision, #413 review round 2).
+    def test_the_outcome_table_covers_the_code_derived_pairs_exactly(self):
+        """``_CAUSE_OUTCOME``'s keys equal every pair a Cause sentence is counted in,
+        read from code, never from fixture output (#413 review round 2, #550).
 
-        The four exposure families come from ``explore_exposures._FAMILY_FOR_KIND``.
-        Every lever's policy sets ``recurrence_family`` to an exposure (ADR 499), so
-        `_finding_rows` can file its appearances under any of the four exposure
-        families and each needs its own entry.
+        A habit's row counts it only in its own recurrence family, and a fold
+        leads a Pattern rate lever with its share in the Pattern's family.
         """
-        expected = set()
-        for lever in Lever:
-            expected.update((lever.value, family) for family in _FAMILY_FOR_KIND.values())
+        expected = {(lever.value, policy_for(lever).recurrence_family.value)
+                    for lever in Lever}
+        expected.update((lever, family) for _key, _title, _habits, rate_levers, _setting,
+                        family in _ROSTER for lever in rate_levers)
         self.assertEqual(set(_CAUSE_OUTCOME), expected)
 
     def test_headline_is_computed_independently_of_count_sentences(self):
@@ -449,17 +447,19 @@ class ChipProjectionTest(unittest.TestCase):
 
     def test_episode_levers_chip_by_their_closed_outcome_kind(self):
         levers = list(Lever)
-        occurrences = []
+        families = {}
         for index, lever in enumerate(levers):
-            occurrences.append({
+            family = policy_for(lever).recurrence_family.value
+            families.setdefault(family, {"occurrences": []})["occurrences"].append({
                 "t": f"2026-08-17 {index:02d}:00:00", "date": "2026-08-17",
-                "kind": "high", "cause_lever": lever.value,
+                "kind": family, "cause_lever": lever.value,
+                "attributed_levers": [lever.value],
                 "cause_title": lever.value, "ep_id": lever.value,
                 "verdicts": [],
             })
         projection = FindingsProjection(
             _analysis={"window_days": 30},
-            _exposures={"exposures": {"highs": {"occurrences": occurrences}}},
+            _exposures={"exposures": families},
             _scenarios={"patterns": [], "low_confidence": []},
             _outcome_patterns=[],
         )
@@ -470,8 +470,11 @@ class ChipProjectionTest(unittest.TestCase):
         rows = projection.project(WindowQuery.clock(0, len(levers) * 60))["rows"]
         self.assertEqual(len(rows), len(levers))
         for row in rows:
-            expected = "highs" if outcome_kind(row["lever"]) == "high" else "lows"
-            self.assertEqual(row["chips"], [expected], row["lever"])
+            family = policy_for(row["lever"]).recurrence_family.value
+            expected = ["highs" if outcome_kind(row["lever"]) == "high" else "lows"]
+            expected += {"meals": ["meals"], "correction_clusters": ["corrections"]}.get(
+                family, [])
+            self.assertEqual(row["chips"], expected, row["lever"])
 
 
 class PublicProducerPopulationProjectionTest(unittest.TestCase):
@@ -526,7 +529,8 @@ class PublicProducerPopulationProjectionTest(unittest.TestCase):
                          {"claimed": 2, "denominator": 2, "noun": "lows"})
         self.assertEqual([item["member"] for item in pattern_case["occurrences"]],
                          ["habit:correction_stacking"] * 2)
-        self.assertEqual((clusters["n"], clusters["attributed"]), (8, 2))
+        # Seven pairs of eight corrections (#550): the first pairs with nothing.
+        self.assertEqual((clusters["n"], clusters["attributed"]), (7, 2))
         self.assertEqual(
             sum(item["cause_lever"] == "correction_stacking"
                 for item in clusters["occurrences"]),
@@ -576,34 +580,23 @@ class PublicProducerPopulationProjectionTest(unittest.TestCase):
 
 
 class EventChartProjectionTest(unittest.TestCase):
-    def test_canonical_factors_publish_their_coordinates_when_the_family_is_present(self):
-        # The families come from the projection's OWN mapping, not the retired
-        # standalone route's VIEW_CONFIG: that route filed correction stacking
-        # under its "lows" view, while the exposure it is counted in is
-        # correction clusters. Reading the view names here is what let the
-        # mismatch publish `null` for a whole lever unnoticed.
+    def test_every_habit_row_publishes_its_coordinate(self):
+        # A habit is counted only in its own recurrence family (#550), the family its
+        # case file projects an event comparison over, so every habit row carries
+        # its coordinate. Correction stacking's is its correction pairs, never lows.
         exposures = {}
-        expected = {}
-        by_family: dict[str, list[str]] = {}
-        for lever, family in _EVENT_CHART_FAMILIES.items():
-            by_family.setdefault(family, []).append(lever)
-        for hour, (family, levers) in enumerate(by_family.items()):
-            occurrences = []
-            for offset, factor in enumerate(levers):
-                occurrences.append({
-                    "t": f"2026-08-17 {hour * 6 + offset:02d}:00:00",
-                    "date": "2026-08-17",
-                    "kind": family,
-                    "cause_lever": factor,
-                    "cause_title": FACTOR_LABELS.get(factor, factor),
-                    "ep_id": factor,
-                    "verdicts": [],
-                })
-                expected[factor] = {
-                    "lever": factor,
-                    "window": WindowQuery.whole_day().to_dict(),
-                }
-            exposures[family] = {"occurrences": occurrences}
+        for hour, lever in enumerate(Lever):
+            family = policy_for(lever).recurrence_family.value
+            exposures.setdefault(family, {"occurrences": []})["occurrences"].append({
+                "t": f"2026-08-17 {hour:02d}:00:00",
+                "date": "2026-08-17",
+                "kind": family,
+                "cause_lever": lever.value,
+                "attributed_levers": [lever.value],
+                "cause_title": lever.value,
+                "ep_id": lever.value,
+                "verdicts": [],
+            })
 
         rows = FindingsProjection(
             _analysis={"window_days": 30},
@@ -614,54 +607,19 @@ class EventChartProjectionTest(unittest.TestCase):
 
         self.assertEqual(
             {row["lever"]: row["event_chart"] for row in rows},
-            expected,
+            {lever.value: {"lever": lever.value,
+                           "window": WindowQuery.whole_day().to_dict()}
+             for lever in Lever},
         )
 
-    def test_ineligible_findings_and_settings_publish_explicit_null(self):
+    def test_settings_publish_explicit_null(self):
         settings = [
             row for row in gen.projection().project(WindowQuery.whole_day())["rows"]
             if row["register"] != "finding"
         ]
-        unsupported = FindingsProjection(
-            _analysis={"window_days": 30},
-            _exposures={"exposures": {"highs": {"occurrences": [{
-                "t": "2026-08-17 09:00:00",
-                "date": "2026-08-17",
-                "kind": "highs",
-                "cause_lever": "missed_meal",
-                "cause_title": "Missed / unannounced meal",
-                "ep_id": "missed-meal",
-                "verdicts": [],
-            }]}}},
-            _scenarios={"patterns": [], "low_confidence": []},
-            _outcome_patterns=[],
-        ).project(WindowQuery.whole_day())["rows"][0]
-
+        self.assertTrue(settings)
         self.assertTrue(all("event_chart" in row for row in settings))
         self.assertTrue(all(row["event_chart"] is None for row in settings))
-        self.assertEqual(unsupported["event_chart"], {
-            "lever": "missed_meal",
-            "window": WindowQuery.whole_day().to_dict(),
-        })
-
-    def test_a_compatible_factor_without_its_event_family_publishes_null(self):
-        projection = FindingsProjection(
-            _analysis={"window_days": 30},
-            _exposures={"exposures": {"highs": {"occurrences": [{
-                "t": "2026-08-17 09:00:00",
-                "date": "2026-08-17",
-                "kind": "highs",
-                "cause_lever": "late_bolus",
-                "cause_title": "Late bolus",
-                "ep_id": "late-bolus-high-only",
-                "verdicts": [],
-            }]}}},
-            _scenarios={"patterns": [], "low_confidence": []},
-            _outcome_patterns=[],
-        )
-
-        row = projection.project(WindowQuery.whole_day())["rows"][0]
-        self.assertIsNone(row["event_chart"])
 
 
 class QueueOrderTest(unittest.TestCase):
@@ -1091,8 +1049,8 @@ class FoldSentenceTest(unittest.TestCase):
         self.assertEqual(cause["claimed_by"], pattern["id"])
         self.assertEqual([item["sentence"] for item in pattern["count_sentences"]],
                          ["2 of 2 lows followed a correction"])
-        clusters = {"sentence": "2 of 8 correction clusters went low", "count": 2,
-                    "denominator": 8, "noun": "correction clusters", "outcome": "went low"}
+        clusters = {"sentence": "2 of 7 correction clusters went low", "count": 2,
+                    "denominator": 7, "noun": "correction clusters", "outcome": "went low"}
         self.assertEqual(cause.get("fold_sentences"), [
             {"sentence": "2 of 2 lows followed stacked corrections", "count": 2,
              "denominator": 2, "noun": "lows", "outcome": "followed stacked corrections",
@@ -1102,7 +1060,7 @@ class FoldSentenceTest(unittest.TestCase):
         # The cause's own count and the Pattern's count stay as served.
         self.assertEqual(cause["count_sentences"], [clusters])
         self.assertEqual(cause["appearances"], [{
-            "family": "correction_clusters", "noun": "correction clusters", "n": 2, "m": 8,
+            "family": "correction_clusters", "noun": "correction clusters", "n": 2, "m": 7,
         }])
         self.assertEqual(
             [(item["subject"], item["admitted"]) for item in pattern["pattern"]["members"]],
@@ -1135,22 +1093,6 @@ class FoldSentenceTest(unittest.TestCase):
                          [["2 of 6 meals ran high"], ["1 of 6 meals ran high"]])
         self.assertEqual(tuple(whole_day["outcome_patterns"]),
                          case.expectation.outcome_patterns)
-
-    def test_a_two_family_rate_lever_sets_its_other_family_outside_the_count(self):
-        rows = {row["id"]: row
-                for row in gen.projection().project(WindowQuery.whole_day())["rows"]}
-        pattern = rows["pattern:highs_after_meals"]
-        cause = rows["finding:carb_undercount"]
-
-        self.assertEqual(cause["claimed_by"], pattern["id"])
-        self.assertEqual(
-            [(item["scope"], item["sentence"]) for item in cause.get("fold_sentences") or []],
-            [("pattern", "1 of 3 meals ran high"),
-             ("outside", "2 of 4 highs followed an undercounted meal")],
-        )
-        self.assertEqual([item["sentence"] for item in cause["count_sentences"]],
-                         ["2 of 4 highs followed an undercounted meal",
-                          "1 of 3 meals ran high"])
 
     def test_a_pattern_serving_no_count_credits_no_share(self):
         rows = {row["id"]: row

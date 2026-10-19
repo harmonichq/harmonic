@@ -1159,12 +1159,6 @@
      "annotation": null,
      "appearances": [
       {
-       "family": "highs",
-       "m": 4,
-       "n": 2,
-       "noun": "highs"
-      },
-      {
        "family": "meals",
        "m": 3,
        "n": 1,
@@ -1179,13 +1173,6 @@
      "claimed_by": "pattern:highs_after_meals",
      "count_sentences": [
       {
-       "count": 2,
-       "denominator": 4,
-       "noun": "highs",
-       "outcome": "followed an undercounted meal",
-       "sentence": "2 of 4 highs followed an undercounted meal"
-      },
-      {
        "count": 1,
        "denominator": 3,
        "noun": "meals",
@@ -1195,7 +1182,7 @@
      ],
      "current": null,
      "direction": null,
-     "episodes": 2,
+     "episodes": 1,
      "estimate": null,
      "event_chart": {
       "lever": "carb_undercount",
@@ -1207,38 +1194,6 @@
       }
      },
      "evidence": [
-      {
-       "date": "2026-08-13",
-       "ep_id": "2026-08-13-ep0",
-       "family": "highs",
-       "kind": "high",
-       "t": "2026-08-13 14:35:00",
-       "verdict": "no_data"
-      },
-      {
-       "date": "2026-08-17",
-       "ep_id": "ep2",
-       "family": "highs",
-       "kind": "high",
-       "t": "2026-08-17 09:05:00",
-       "verdict": "fired"
-      },
-      {
-       "date": "2026-08-17",
-       "ep_id": "ep6",
-       "family": "highs",
-       "kind": "high",
-       "t": "2026-08-17 21:40:00",
-       "verdict": "no_data"
-      },
-      {
-       "date": "2026-08-17",
-       "ep_id": "ep11",
-       "family": "highs",
-       "kind": "high",
-       "t": "2026-08-17 10:15:00",
-       "verdict": "fired"
-      },
       {
        "date": "2026-08-17",
        "ep_id": "ep2",
@@ -1272,17 +1227,9 @@
        "outcome": "ran high",
        "scope": "pattern",
        "sentence": "1 of 3 meals ran high"
-      },
-      {
-       "count": 2,
-       "denominator": 4,
-       "noun": "highs",
-       "outcome": "followed an undercounted meal",
-       "scope": "outside",
-       "sentence": "2 of 4 highs followed an undercounted meal"
       }
      ],
-     "headline": "Ranks among this window's findings. Showed up in 2 of 4 highs in this window.",
+     "headline": "Ranks among this window's findings. Showed up in 1 of 3 meals in this window.",
      "id": "finding:carb_undercount",
      "kind": "habit",
      "label": null,
@@ -1302,19 +1249,12 @@
      "title": "Carb undercount",
      "verdict_counts": {
       "clean": 1,
-      "fired": 3,
+      "fired": 1,
       "near_miss": 1,
-      "no_data": 2,
+      "no_data": 0,
       "outranked": 0
      },
      "verdict_counts_by_family": {
-      "highs": {
-       "clean": 0,
-       "fired": 2,
-       "near_miss": 0,
-       "no_data": 2,
-       "outranked": 0
-      },
       "meals": {
        "clean": 1,
        "fired": 1,
@@ -3819,14 +3759,10 @@
      "uncaused": 0
     },
     "highs": {
-     "attributed": 2,
-     "by_cause": {
-      "Carb undercount": 2
-     },
-     "clean": 2,
-     "levers": [
-      "carb_undercount"
-     ],
+     "attributed": 0,
+     "by_cause": {},
+     "clean": 4,
+     "levers": [],
      "n": 4,
      "occurrences": [
       {
@@ -3856,37 +3792,27 @@
        "worst_bg": 48.0
       },
       {
-       "attributed": true,
-       "attributed_levers": [
-        "carb_undercount"
-       ],
-       "bg": 243.0,
+       "attributed": false,
+       "attributed_levers": [],
+       "bg": 263.0,
        "carbs": null,
-       "cause_lever": "carb_undercount",
-       "cause_title": "Carb undercount",
+       "cause_lever": null,
+       "cause_title": null,
        "date": "2026-08-17",
        "ep_id": "ep2",
        "insulin": null,
        "kind": "high",
        "label": "High",
-       "state": "fired",
+       "state": "clean",
        "t": "2026-08-17 09:05:00",
-       "text": "Bolused 45 g at 07:10 and glucose still ran to 243.",
-       "verdicts": [
-        {
-         "classifier": "carb_undercount",
-         "detail": "Bolused 45 g at 07:10 and glucose still ran to 243.",
-         "evidence_tier": "observed",
-         "matched": true,
-         "silence_reason": null
-        }
-       ],
-       "worst_bg": 243.0
+       "text": "",
+       "verdicts": [],
+       "worst_bg": 263.0
       },
       {
        "attributed": false,
        "attributed_levers": [],
-       "bg": 201.0,
+       "bg": 251.0,
        "carbs": null,
        "cause_lever": null,
        "cause_title": null,
@@ -3899,38 +3825,28 @@
        "t": "2026-08-17 21:40:00",
        "text": "",
        "verdicts": [],
-       "worst_bg": 201.0
+       "worst_bg": 251.0
       },
       {
-       "attributed": true,
-       "attributed_levers": [
-        "carb_undercount"
-       ],
-       "bg": 210.0,
+       "attributed": false,
+       "attributed_levers": [],
+       "bg": 258.0,
        "carbs": null,
-       "cause_lever": "carb_undercount",
-       "cause_title": "Carb undercount",
+       "cause_lever": null,
+       "cause_title": null,
        "date": "2026-08-17",
        "ep_id": "ep11",
        "insulin": null,
        "kind": "high",
        "label": "High",
-       "state": "fired",
+       "state": "clean",
        "t": "2026-08-17 10:15:00",
-       "text": "A late meal bolus at 10:15 still ran high.",
-       "verdicts": [
-        {
-         "classifier": "carb_undercount",
-         "detail": "A late meal bolus at 10:15 still ran high.",
-         "evidence_tier": "observed",
-         "matched": true,
-         "silence_reason": null
-        }
-       ],
-       "worst_bg": 245.0
+       "text": "",
+       "verdicts": [],
+       "worst_bg": 258.0
       }
      ],
-     "uncaused": 1
+     "uncaused": 2
     },
     "lows": {
      "attributed": 2,
@@ -4148,17 +4064,17 @@
        "label": "Meal",
        "state": "fired",
        "t": "2026-08-17 07:10:00",
-       "text": "Bolused 45 g at 07:10 and glucose still ran to 243.",
+       "text": "Bolused 45 g at 07:10 and glucose still ran to 263.",
        "verdicts": [
         {
          "classifier": "carb_undercount",
-         "detail": "Bolused 45 g at 07:10 and glucose still ran to 243.",
+         "detail": "Bolused 45 g at 07:10 and glucose still ran to 263.",
          "evidence_tier": "observed",
          "matched": true,
          "silence_reason": null
         }
        ],
-       "worst_bg": 243.0
+       "worst_bg": 263.0
       },
       {
        "attributed": false,
@@ -5162,12 +5078,6 @@
      "annotation": null,
      "appearances": [
       {
-       "family": "highs",
-       "m": 4,
-       "n": 2,
-       "noun": "highs"
-      },
-      {
        "family": "meals",
        "m": 3,
        "n": 1,
@@ -5182,13 +5092,6 @@
      "claimed_by": "pattern:highs_after_meals",
      "count_sentences": [
       {
-       "count": 2,
-       "denominator": 4,
-       "noun": "highs",
-       "outcome": "followed an undercounted meal",
-       "sentence": "2 of 4 highs followed an undercounted meal"
-      },
-      {
        "count": 1,
        "denominator": 3,
        "noun": "meals",
@@ -5198,7 +5101,7 @@
      ],
      "current": null,
      "direction": null,
-     "episodes": 2,
+     "episodes": 1,
      "estimate": null,
      "event_chart": {
       "lever": "carb_undercount",
@@ -5210,38 +5113,6 @@
       }
      },
      "evidence": [
-      {
-       "date": "2026-08-13",
-       "ep_id": "2026-08-13-ep0",
-       "family": "highs",
-       "kind": "high",
-       "t": "2026-08-13 14:35:00",
-       "verdict": "no_data"
-      },
-      {
-       "date": "2026-08-17",
-       "ep_id": "ep2",
-       "family": "highs",
-       "kind": "high",
-       "t": "2026-08-17 09:05:00",
-       "verdict": "fired"
-      },
-      {
-       "date": "2026-08-17",
-       "ep_id": "ep6",
-       "family": "highs",
-       "kind": "high",
-       "t": "2026-08-17 21:40:00",
-       "verdict": "no_data"
-      },
-      {
-       "date": "2026-08-17",
-       "ep_id": "ep11",
-       "family": "highs",
-       "kind": "high",
-       "t": "2026-08-17 10:15:00",
-       "verdict": "fired"
-      },
       {
        "date": "2026-08-17",
        "ep_id": "ep2",
@@ -5275,17 +5146,9 @@
        "outcome": "ran high",
        "scope": "pattern",
        "sentence": "1 of 3 meals ran high"
-      },
-      {
-       "count": 2,
-       "denominator": 4,
-       "noun": "highs",
-       "outcome": "followed an undercounted meal",
-       "scope": "outside",
-       "sentence": "2 of 4 highs followed an undercounted meal"
       }
      ],
-     "headline": "Ranks among this window's findings. Showed up in 2 of 4 highs in this window.",
+     "headline": "Ranks among this window's findings. Showed up in 1 of 3 meals in this window.",
      "id": "finding:carb_undercount",
      "kind": "habit",
      "label": null,
@@ -5305,19 +5168,12 @@
      "title": "Carb undercount",
      "verdict_counts": {
       "clean": 1,
-      "fired": 3,
+      "fired": 1,
       "near_miss": 1,
-      "no_data": 2,
+      "no_data": 0,
       "outranked": 0
      },
      "verdict_counts_by_family": {
-      "highs": {
-       "clean": 0,
-       "fired": 2,
-       "near_miss": 0,
-       "no_data": 2,
-       "outranked": 0
-      },
       "meals": {
        "clean": 1,
        "fired": 1,
@@ -7664,12 +7520,6 @@
      "annotation": null,
      "appearances": [
       {
-       "family": "highs",
-       "m": 4,
-       "n": 2,
-       "noun": "highs"
-      },
-      {
        "family": "meals",
        "m": 3,
        "n": 1,
@@ -7684,13 +7534,6 @@
      "claimed_by": "pattern:highs_after_meals",
      "count_sentences": [
       {
-       "count": 2,
-       "denominator": 4,
-       "noun": "highs",
-       "outcome": "followed an undercounted meal",
-       "sentence": "2 of 4 highs followed an undercounted meal"
-      },
-      {
        "count": 1,
        "denominator": 3,
        "noun": "meals",
@@ -7700,7 +7543,7 @@
      ],
      "current": null,
      "direction": null,
-     "episodes": 2,
+     "episodes": 1,
      "estimate": null,
      "event_chart": {
       "lever": "carb_undercount",
@@ -7712,38 +7555,6 @@
       }
      },
      "evidence": [
-      {
-       "date": "2026-08-13",
-       "ep_id": "2026-08-13-ep0",
-       "family": "highs",
-       "kind": "high",
-       "t": "2026-08-13 14:35:00",
-       "verdict": "no_data"
-      },
-      {
-       "date": "2026-08-17",
-       "ep_id": "ep2",
-       "family": "highs",
-       "kind": "high",
-       "t": "2026-08-17 09:05:00",
-       "verdict": "fired"
-      },
-      {
-       "date": "2026-08-17",
-       "ep_id": "ep6",
-       "family": "highs",
-       "kind": "high",
-       "t": "2026-08-17 21:40:00",
-       "verdict": "no_data"
-      },
-      {
-       "date": "2026-08-17",
-       "ep_id": "ep11",
-       "family": "highs",
-       "kind": "high",
-       "t": "2026-08-17 10:15:00",
-       "verdict": "fired"
-      },
       {
        "date": "2026-08-17",
        "ep_id": "ep2",
@@ -7777,17 +7588,9 @@
        "outcome": "ran high",
        "scope": "pattern",
        "sentence": "1 of 3 meals ran high"
-      },
-      {
-       "count": 2,
-       "denominator": 4,
-       "noun": "highs",
-       "outcome": "followed an undercounted meal",
-       "scope": "outside",
-       "sentence": "2 of 4 highs followed an undercounted meal"
       }
      ],
-     "headline": "Ranks among this window's findings. Showed up in 2 of 4 highs in this window.",
+     "headline": "Ranks among this window's findings. Showed up in 1 of 3 meals in this window.",
      "id": "finding:carb_undercount",
      "kind": "habit",
      "label": null,
@@ -7807,19 +7610,12 @@
      "title": "Carb undercount",
      "verdict_counts": {
       "clean": 1,
-      "fired": 3,
+      "fired": 1,
       "near_miss": 1,
-      "no_data": 2,
+      "no_data": 0,
       "outranked": 0
      },
      "verdict_counts_by_family": {
-      "highs": {
-       "clean": 0,
-       "fired": 2,
-       "near_miss": 0,
-       "no_data": 2,
-       "outranked": 0
-      },
       "meals": {
        "clean": 1,
        "fired": 1,

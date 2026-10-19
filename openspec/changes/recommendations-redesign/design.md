@@ -1757,3 +1757,40 @@ in its first hours (`wearer-ic-first-hours`), which the stories draw beside the
 existing maturing one; "Readings" joins the interface words. No synthetic store
 yet serves a judged row while a Trial matures, so the untoned Δ is asserted on
 the maturing stores and the contract case, not on a judged row.
+
+## ADR 559 — The Meal size card spans the Overview's second row at the estimates' height, in their colours
+
+**Context.** Built in #551, the card stood three times the ISF and basal cards'
+height on desktop, alone in its row, in a neutral grey band and white tick. Connor:
+"meal size card is way too big and doesn't match the others color or dimensionally",
+and that it "doesn't really match the mockup".
+
+**Decision.** Frontend only; the served answer is unchanged.
+
+1. *Its row.* On desktop the card spans the row beneath the two estimates, and the
+   grid makes every row one height (`grid-auto-rows: 1fr`), so the card is exactly
+   the estimates' height. Two other shapes were open. A third column would have
+   narrowed the locked estimates. Leaving the card at half width would have left
+   the row half empty. The Overview's desktop story asserts the three heights equal,
+   and that the card's own content fits inside the height the estimates set.
+2. *Two layouts by the card's own width.* From 520 px each size is one row aligned
+   like a table: its label and count, its strip, then its medians. Below that (the
+   phone) the strips stand together and the rows follow beneath, as the mock.
+3. *The mock's strip.* Each size is a thin strip. Its dots are half-transparent and
+   spread at most one level either side by the shared beeswarm (`swarm(xs, 1)`),
+   overlapping past that. Its Range is a thick line, and its median a short ink
+   tick.
+4. *The setting cards' colours.* The sizes are a sequential ramp of the estimate
+   blue mixed with ink, the smallest lightest. No size takes the warn tone, which
+   asks the person to look again: the engine judges no size. Dots inside the Range
+   draw brighter, as on the ISF card.
+5. *Signed values.* A new `signed` format prints "+24", "−6" (a true minus) and "0".
+   Climb and At 3 h use it, and the axis prints its ticks the same way.
+6. *Words.* "To peak" becomes "Peak at". Range's meaning widens to a size's middle
+   half, so the legend reads Meal · Median · Range, as the setting cards' Current ·
+   Estimate · Range. The count stays "N meals", the app's own count wording; "n" is
+   no word the app prints.
+
+**Consequences.** ChartLegend's grey `spread` swatch and its `scale` flag go, and a
+`range` swatch replaces them. The lock's §2.5 gains the amendment and §4.2 entry 27
+is revised. The glossary and allowlist are regenerated.

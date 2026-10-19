@@ -17968,6 +17968,11 @@
       "term": "Peak / Nadir"
     },
     {
+      "kind": "metric",
+      "meaning": "Minutes from a meal's bolus to the reading its Climb is read from.",
+      "term": "Peak at"
+    },
+    {
       "kind": "verb",
       "meaning": "Start a Focus on a Pattern's habit, or on a Habit.",
       "term": "Pin"
@@ -17984,7 +17989,7 @@
     },
     {
       "kind": "noun",
-      "meaning": "The engine's interval for a Setting's estimate.",
+      "meaning": "The engine's interval for a Setting's estimate, or the middle half (25–75%) of a meal size's Climbs.",
       "term": "Range"
     },
     {
@@ -18026,11 +18031,6 @@
       "kind": "noun",
       "meaning": "The vendor account the data syncs from.",
       "term": "Tandem Source"
-    },
-    {
-      "kind": "metric",
-      "meaning": "Minutes from a meal's bolus to the reading its Climb is read from.",
-      "term": "To peak"
     },
     {
       "kind": "noun",

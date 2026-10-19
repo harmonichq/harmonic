@@ -13,7 +13,7 @@ import { resolveSource } from './provenance.js';
 
 export type Answers = typeof data;
 export type Format =
-  | 'round' | 'fixed1' | 'fixed2' | 'pct1' | 'share' | 'clock' | 'day' | 'date' | 'time' | 'until';
+  | 'round' | 'signed' | 'fixed1' | 'fixed2' | 'pct1' | 'share' | 'clock' | 'day' | 'date' | 'time' | 'until';
 export type Sourced<T> = { readonly value: T; readonly source: string; readonly format?: Format };
 
 /** The answers the models read now. Read on every render, never held. */

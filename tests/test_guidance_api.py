@@ -260,7 +260,7 @@ class GuidanceApiTest(unittest.TestCase):
                                json={"generation": current["analysis_generation"]})
             self.assertEqual(saved.status_code, 200, saved.text)
             # Kept in memory, not merely reloadable from the derived results.
-            self.assertTrue(app.state.result_cache.contains(("meal-size",)))
+            self.assertTrue(app.state.result_cache.contains(("meal-size", 30)))
             read_all()
             # Nothing is computed again: the default analysis is keyed by the
             # recorded-data revision, which the snooze did not advance.

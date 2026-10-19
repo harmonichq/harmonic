@@ -182,8 +182,9 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
   const fetchExploreTimeOfDay = (days) =>
     api('/api/explore/time-of-day' + (days ? '?days=' + encodeURIComponent(days) : ''));
 
-  /** GET /api/explore/meal-size — the Meal size card: the climb after each counted meal of the last 90 days, by size (#501). */
-  const fetchMealSize = () => api('/api/explore/meal-size');
+  /** GET /api/explore/meal-size — the Meal size card: the climb after each counted meal of the last `days` (14, 30
+   *  or 90) days, by size (#501, #565). */
+  const fetchMealSize = (days) => api('/api/explore/meal-size?days=' + encodeURIComponent(days));
 
   /**
    * GET /api/day-navigator[?month=YYYY-MM] — each day of the month (the latest

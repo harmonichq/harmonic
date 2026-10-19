@@ -39,7 +39,7 @@
 .ui-chart__dot--in { fill: var(--wk-ink); fill-opacity: 1; }
 /* A dot row's Range as a thick line in the estimate blue (a Meal size strip
    takes its size's shade of it), and its median a short ink tick (#501, #559). */
-.ui-chart__range { stroke: var(--ui-estimate); stroke-width: 3; stroke-linecap: round; }
+.ui-chart__range { stroke: var(--ui-estimate); stroke-width: 4; stroke-linecap: round; }
 .ui-chart__median { stroke: var(--wk-ink); stroke-width: 2; }
 
 /* A series' tone: Typical grey; a Pattern in its glucose colour. */

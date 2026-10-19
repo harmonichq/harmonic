@@ -25,7 +25,7 @@ function Swatch({ swatch, tone }: Omit<LegendKey, 'label'>) {
       )}
       {swatch === 'estimate' && <line x1="1" x2="17" y1="5" y2="5" className="ui-chart__estimate" />}
       {swatch === 'dashed' && <line x1="0" x2="18" y1="5" y2="5" className="ui-chart__current" />}
-      {swatch === 'dot' && <circle cx="9" cy="5" r="3" className="ui-chart__dot ui-chart__dot--in" />}
+      {swatch === 'dot' && <circle cx="9" cy="5" r="2.5" className="ui-chart__dot" />}
       {swatch === 'tick' && <line x1="9" x2="9" y1="0" y2="10" className="ui-chart__median" />}
       {swatch === 'range' && <line x1="2" x2="16" y1="5" y2="5" className="ui-chart__range" />}
     </svg>

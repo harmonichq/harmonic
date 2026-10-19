@@ -576,26 +576,28 @@ test('Pin on a standalone habit pins its lever under the habit\'s own subject, w
     input_revision: 7, analysis_generation: 'g1' });
 });
 
-test('the Overview reads the Meal size once, whatever its window, kept to what the card draws (#501)', async () => {
+test('the Overview reads each window\'s Meal size once, when it is shown, kept to what the card draws (#501, #565)', async () => {
   const fake = fakeClient();
   const meal = { t: '2024-05-01 12:00:00', carbs: 30, climb: 62, to_peak: 75, at_3h: 4 };
   const size = (from, to, meals) => ({ carbs_from: from, carbs_to: to, meals,
     climb: { median: 62, p25: 62, p75: 62 }, to_peak: { median: 75 }, at_3h: { count: 1, median: 4 } });
   fake.client.fetchMealSize = (...args) => {
     fake.calls.push({ name: 'meal-size', args });
-    return Promise.resolve({ window: { start: '2024-02-01 00:00:00', end: '2024-05-01 00:00:00', data_days: 90 },
+    return Promise.resolve({ window: { start: '2024-02-01 00:00:00', end: '2024-05-01 00:00:00', data_days: args[0] },
       horizon_hours: 3, sizes: [size(null, 25, []), size(25, 40, [meal]), size(40, 60, []), size(60, null, [])] });
   };
   const live = createLive({ client: fake.client, glossary: [] });
   await live.readTab('overview');
-  for (const window of ['30', '90', '14']) await live.readWindow(window);
+  assert.deepEqual(fake.calls.filter((c) => c.name === 'meal-size').map((c) => c.args[0]), [14], 'the first window only');
+  for (const window of ['30', '90', '14', '30']) await live.readWindow(window);
   await live.readTab('overview');
-  assert.equal(fake.count('meal-size'), 1, 'one read, whatever window is shown');
-  assert.deepEqual(live.answers.overview.wearer.meal_size, {
+  assert.deepEqual(fake.calls.filter((c) => c.name === 'meal-size').map((c) => c.args[0]), [14, 30, 90],
+    'each window once, when it is shown');
+  assert.deepEqual(live.answers.overview.wearer.meal_size['90'], {
     window: { data_days: 90 },
     horizon_hours: 3,
     sizes: [size(null, 25, []), size(25, 40, [{ climb: 62 }]), size(40, 60, []), size(60, null, [])],
   }, 'each meal kept as the dot it draws, its time and carbs left behind');
   await live.retryTab('overview');
-  assert.equal(fake.count('meal-size'), 2, 'the Overview\'s Retry reads it again');
+  assert.equal(fake.count('meal-size'), 4, 'the Overview\'s Retry reads its window again');
 });

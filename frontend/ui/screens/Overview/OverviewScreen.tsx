@@ -23,7 +23,7 @@
 //
 // The profile and the estimates are read per window: choosing a window
 // reports it (`onWindow`), and until its answers land each shows its skeleton.
-// The Meal size card reads its one 90-day window whatever window is chosen.
+// The Meal size card follows the window as the estimates do (#565).
 import { useEffect, useState } from 'react';
 import { answers, sourced } from '../../answers';
 import {
@@ -167,7 +167,7 @@ export function OverviewScreen({
     <div className="ui-overview__estimates">
       <IsfCard data={store === 'wearer' ? isfEstimate('wearer', window) : 'none'} />
       <BasalCard data={store === 'wearer' ? basalEstimate('wearer', window) : 'none'} />
-      <MealSizeCard data={mealSize(store)} />
+      <MealSizeCard data={mealSize(store, window)} />
     </div>
   );
 

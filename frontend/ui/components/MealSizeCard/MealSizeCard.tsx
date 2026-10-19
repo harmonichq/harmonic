@@ -1,16 +1,18 @@
-// MealSizeCard (§4.2, §2.5 2026-10-19, ADR 501, #559): how far glucose
+// MealSizeCard (§4.2, §2.5 2026-10-19, ADR 501, #559, #565): how far glucose
 // climbs after meals of each size, on the Overview with the ISF and basal
-// estimates, their height on desktop. It always reads the engine's one 90-day
-// window, whatever window the Overview shows, and its title says so: "Meal
-// size" in strong ink with "90 d" in meta ink, as "ISF estimate".
+// estimates, their height on desktop. It reads the window the Overview's switch
+// shows, as they do, and like them never repeats it: the title is "Meal size"
+// in their strong title style.
 //
 // Each size (under 25 g, 25–39, 40–59, 60 g+) is a thin strip on one shared
 // Climb axis: a small, half-transparent dot per counted meal, spread at most a
 // dot either side of the strip by the chart family's one beeswarm and left to
-// overlap past that; the size's 25–75% (Range) a thin line in its colour; its
-// median a short tick. The sizes take a sequential ramp of the estimate blue,
-// the smallest lightest, and each size's label carries its swatch. Dots inside
-// the Range draw brighter; the rest recede. Values print signed ("+24", "−6").
+// overlap past that, muted grey and small; above them the size's 25–75%
+// (Range) a thick line in its colour and its median a short ink tick, each on
+// a halo of the card's surface so no dot runs into it (#565). The sizes take a
+// sequential ramp of the estimate blue, the smallest lightest, and each size's
+// label carries its swatch. Dots inside the Range draw a little brighter; the
+// rest recede. Values print signed ("+24", "−6").
 //
 // Wide (the desktop card spans the Overview's second row), each size is one
 // row aligned like a table: its swatch and label over its meal count, its
@@ -59,8 +61,9 @@ const Count = ({ value }: { value: MealSizeRow['meals'] }) => (
 /** A served median, or "–" for a size with no meal. */
 const Median = ({ value }: { value: MealSizeRow['median'] }) => (value ? <Num value={value} /> : <>–</>);
 
-/** One size's strip: its dots, its Range line and its median tick, over the
- *  axis's grid lines. */
+/** One size's strip, over the axis's grid lines: its dots muted and small,
+ *  then above them its Range line in the size's colour and its median tick,
+ *  each on a halo of the card's surface so no dot runs into it (#565). */
 function Strip({ row, scale, index }: { row: MealSizeRow; scale: Scale; index: number }) {
   const [box, width] = useWidth<HTMLDivElement>();
   const x = (value: number) => DOT_R + (width - 2 * DOT_R) * ((value - scale.first) / (scale.last - scale.first));
@@ -77,15 +80,21 @@ function Strip({ row, scale, index }: { row: MealSizeRow; scale: Scale; index: n
           ))}
           <g aria-hidden="true">
             {row.climbs.map((climb, k) => (
-              <circle key={k} cx={x(climb)} cy={mid + levels[k] * DOT_PITCH} r={DOT_R}
+              <circle key={k} cx={x(climb)} cy={mid + levels[k] * DOT_PITCH} r={DOT_R - 0.75}
                 className={inRange(climb) ? 'ui-meal-size__dot ui-meal-size__dot--in' : 'ui-meal-size__dot'} />
             ))}
           </g>
           {row.p25 !== null && row.p75 !== null && row.p75 > row.p25 && (
-            <line x1={x(row.p25)} x2={x(row.p75)} y1={mid} y2={mid} className="ui-meal-size__range" />
+            <g data-range="">
+              <line x1={x(row.p25)} x2={x(row.p75)} y1={mid} y2={mid} className="ui-meal-size__halo" />
+              <line x1={x(row.p25)} x2={x(row.p75)} y1={mid} y2={mid} className="ui-meal-size__range" />
+            </g>
           )}
           {row.median && (
-            <line x1={x(row.median.value)} x2={x(row.median.value)} y1={2} y2={STRIP - 2} className="ui-chart__median" />
+            <g data-median="">
+              <line x1={x(row.median.value)} x2={x(row.median.value)} y1={1} y2={STRIP - 1} className="ui-meal-size__halo ui-meal-size__halo--tick" />
+              <line x1={x(row.median.value)} x2={x(row.median.value)} y1={1} y2={STRIP - 1} className="ui-chart__median" />
+            </g>
           )}
         </svg>
       )}
@@ -212,7 +221,7 @@ function MealSizeBody({ data }: { data: MealSizeData }) {
 export function MealSizeCard({ data }: { data: MealSizeData | 'none' | null }) {
   const title = (
     <h2 className="ui-scard__title ui-isf__title">
-      Meal size{data && data !== 'none' && <> <span className="ui-scard__slot"><Num value={data.days} /> d</span></>}
+      Meal size
     </h2>
   );
   if (data === null) {

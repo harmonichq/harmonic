@@ -1826,3 +1826,90 @@ and that it "doesn't really match the mockup".
 **Consequences.** ChartLegend's grey `spread` swatch and its `scale` flag go, and a
 `range` swatch replaces them. The lock's §2.5 gains the amendment and §4.2 entry 27
 is revised. The glossary and allowlist are regenerated.
+
+## ADR 566 — After a write the Overview answers from its labelled predecessor, every window is kept, and the profiles are one pass
+
+**Context.** Connor, 2026-10-19: "The stats and charts for 14/30/90 need to be
+cached and pre-warmed so the user can instantly tab between them. Basically the
+entirety of the overview tab needs to load instantly." On the home server's log,
+right after a write the three glucose profiles each missed and took 34–47 s,
+computed at once beside each other and beside the warm pass on two cores. Read in
+process on a snapshot of his own store (timings and cache outcomes only), and on
+the showcase:
+
+- A fixed read served its labelled predecessor only to a *second* concurrent
+  reader. The first read after a write owned the key and computed inline, so each
+  Overview read after a sync waited for its own compute, several at a time.
+- Outcomes and the 14- and 90-day analyses lived only in memory: a restart
+  recomputed them, and after a write there was no predecessor to serve.
+- Each window's profile re-read the whole reading and bolus history and resolved
+  its false-low spans and its meals again — the same work three times — and its
+  pooled envelope scanned every reading once per 15-minute bin.
+- The warm pass reached the Overview after the Queue's heaviest shapes.
+- The app ignored `input_data_age`, and read a 30- or 90-day window only when it
+  was first switched to.
+
+**Decision.**
+
+1. *Answer from the predecessor, compute once, next.* While the warm worker runs, a
+   fixed read whose current result is not computed answers at once from the newest
+   result of its key and shape before the write, labelled with `input_data_age`,
+   and queues its key for the worker, which computes queued keys before its next
+   shape, in the order they were asked for. A key is computed by one thread at a
+   time (the fixed registry and the cache's flight). A warm shape always computes;
+   with no worker running (an ASGI server without its lifespan, a test client) the
+   first read computes as before.
+2. *Every Overview window is a fixed result.* Outcomes and the live analysis at 14,
+   30 and 90 days join the profiles and Meal size in the derived-results file,
+   keyed by the recorded-data revision (ADR 538; both builders read only recorded
+   data and anchor on the data's own last instant). A restart answers them without
+   computing, and every write leaves a predecessor. Other windows stay in memory.
+3. *One pass for the three profiles.* The three windows end at the same instant, so
+   one fixed result reads the history, its false-low spans and its meals once and
+   slices each window from them; a read serves its own window. The pooled envelope
+   buckets readings by minute of the day once and gathers each bin's 90 minutes.
+   The answer is byte-identical to the per-window build on the real snapshot and
+   on the showcase.
+4. *The warm pass runs the lightest screen first*: the profiles, Meal size and the
+   three outcomes, then the Queue's and Changes' shapes, then the 14- and 90-day
+   analyses, then Day.
+5. *The app never shows an earlier answer as current.* An answer carrying
+   `input_data_age` marks its tab `stale` — the title row's Unavailable and Retry,
+   the state a failed refresh already shows (ADR 522) — and the adapter reads only
+   those answers again after pauses of 1, 2, 4, 8, 15 and 30 s, clearing the mark
+   once each is current. The Overview reads its other two windows behind the
+   first, so a switch draws at once.
+
+**Measured** in process on the Mac, the ten Overview reads (outcomes, profile and
+analysis at each window, and Meal size), main and this change back to back. Both
+runs were taken while the Mac was loaded by other work: the scaling loop read
+0.54–0.56 s here against 0.58 s on the home server, so these figures read roughly
+as the host's (an estimate; on a quiet Mac the host is about 3–4.5× slower).
+
+| Real snapshot | Before | After |
+|---|---|---|
+| All ten reads right after a write | 78.6 s, each computing | 1.1 s, each its labelled predecessor |
+| A profile current again after a write | 6.2 s (14 d) | 1.2 s |
+| Everything current again after a write | 78.7 s | 66 s, in the background |
+| All ten reads after a restart | 42.8 s | 0.2 s |
+| All ten reads, warm | 33 ms | 66 ms |
+| The three profiles' compute (quiet Mac) | 2.63 s | 0.50 s |
+
+| Showcase | Before | After |
+|---|---|---|
+| All ten reads right after a write | 20.3 s | 0.2 s |
+| All ten reads after a restart | 13.8 s | 0.2 s |
+| The three profiles' compute (quiet Mac) | 1.15 s | 0.12 s |
+
+**Rejected.** A second refresh thread beside the warm worker: on two cores the
+contention it adds is what made the profiles take 34–47 s. Serving a predecessor
+computed by an older build after a deploy: the marker carries the source
+fingerprint so a new build never reads an old one's bytes, and that stays; a
+deploy is cold. Making outcomes cheaper: it is itself an analysis (the effective
+correction factor's bootstrap and the scenario tally) and is not changed here.
+
+**Consequences.** A screen read that is a fixed result is instant after every
+write and marked until current; one that is not (the findings snapshot, the Trial
+roster) still computes on its first read after a write. A new fixed result needs
+no change to be served this way. The derived-results file holds three more shapes
+per window and one profile row instead of three.

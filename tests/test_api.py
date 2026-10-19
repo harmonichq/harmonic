@@ -682,12 +682,12 @@ class DurableArtifactApiTest(unittest.TestCase):
             store.upsert_cgm([{"EventDateTime": "2026-07-16 00:00:00", "Readings (CGM / BGM)": 110}])
         app.state.result_cache.bump()
         entered, release = threading.Event(), threading.Event()
-        real = api_mod.build_time_of_day
+        real = api_mod.build_time_of_day_windows
         def blocked(store, **kwargs):
             entered.set()
             self.assertTrue(release.wait(3))
             return real(store, **kwargs)
-        with patch.object(api_mod, "build_time_of_day", side_effect=blocked):
+        with patch.object(api_mod, "build_time_of_day_windows", side_effect=blocked):
             with ThreadPoolExecutor(max_workers=1) as pool:
                 future = pool.submit(client.get, "/api/explore/time-of-day")
                 self.assertTrue(entered.wait(3))
@@ -710,7 +710,7 @@ class DurableArtifactApiTest(unittest.TestCase):
         app = create_app(db_path=self.tmp.name, token=None, enable_fetch_loop=False)
         client = TestClient(app)
         real_get = app.state.result_cache.get_or_compute
-        real_build = api_mod.build_time_of_day
+        real_build = api_mod.build_time_of_day_windows
         builds = []
         crossed = False
 
@@ -733,7 +733,7 @@ class DurableArtifactApiTest(unittest.TestCase):
                 return result
             return real_get(key, cross_after_revision_check, **kwargs)
 
-        with patch.object(api_mod, "build_time_of_day", side_effect=counting_build), \
+        with patch.object(api_mod, "build_time_of_day_windows", side_effect=counting_build), \
              patch.object(app.state.result_cache, "get_or_compute", side_effect=crossed_get):
             response = client.get("/api/explore/time-of-day")
 
@@ -815,14 +815,14 @@ class DurableArtifactApiTest(unittest.TestCase):
                 "UPDATE recorded_data_revision SET revision = revision + 1 WHERE id = 1")
         app.state.result_cache.bump()
         entered, release = threading.Event(), threading.Event()
-        real = api_mod.build_time_of_day
+        real = api_mod.build_time_of_day_windows
 
         def blocked(store, **kwargs):
             entered.set()
             self.assertTrue(release.wait(3))
             return real(store, **kwargs)
 
-        with patch.object(api_mod, "build_time_of_day", side_effect=blocked):
+        with patch.object(api_mod, "build_time_of_day_windows", side_effect=blocked):
             with ThreadPoolExecutor(max_workers=1) as pool:
                 future = pool.submit(client.get, "/api/explore/time-of-day")
                 self.assertTrue(entered.wait(3))
@@ -875,6 +875,114 @@ class DurableArtifactApiTest(unittest.TestCase):
                 self.assertNotIn("input_data_age", observed.json())
                 release.set()
                 self.assertEqual(future.result(timeout=3).json(), current.json())
+
+
+@unittest.skipUnless(_HAS_FASTAPI, "api extra not installed")
+class OverviewInstantTest(unittest.TestCase):
+    """The Overview answers at once at every window, a write and a restart included (#566)."""
+
+    _DAYS = (14, 30, 90)
+    _OVERVIEW = tuple(
+        [("/api/outcomes", {"window": days}) for days in _DAYS]
+        + [("/api/explore/time-of-day", {"days": days}) for days in _DAYS]
+        + [("/api/analyze", {"window": days}) for days in _DAYS]
+        + [("/api/explore/meal-size", {})])
+
+    def setUp(self):
+        self.tmp = tempfile.NamedTemporaryFile(suffix=".db")
+        _seed(self.tmp.name)
+
+    def tearDown(self):
+        for suffix in ("", "-wal", "-shm"):
+            try:
+                os.unlink(sidecar_path(self.tmp.name) + suffix)
+            except FileNotFoundError:
+                pass
+        self.tmp.close()
+
+    def _app(self):
+        from ciq_autotune.api import create_app
+        return create_app(db_path=self.tmp.name, token=None, enable_fetch_loop=False)
+
+    def test_after_a_write_every_window_answers_at_once_from_its_predecessor(self):
+        """Each window's profile is served, labeled, while the new one is computed once."""
+        import ciq_autotune.api as api_mod
+        app = self._app()
+        # No warm roster: only the reads ask for the profile to be computed again.
+        app.state.recompute_roster = lambda: ()
+        real = api_mod.build_time_of_day_windows
+        builds = []
+        entered, release = threading.Event(), threading.Event()
+
+        def blocked(store, **kwargs):
+            builds.append(1)
+            if len(builds) > 1:
+                entered.set()
+                self.assertTrue(release.wait(5))
+            return real(store, **kwargs)
+
+        def profile(client, days):
+            return client.get("/api/explore/time-of-day", params={"days": days})
+
+        with patch.object(api_mod, "build_time_of_day_windows", side_effect=blocked):
+            with TestClient(app) as client:
+                before = {days: profile(client, days).json() for days in self._DAYS}
+                for body in before.values():
+                    self.assertNotIn("input_data_age", body)
+                self.assertEqual(client.post("/api/carbs", json={
+                    "t": "2026-06-05 06:00:00", "grams": 20, "certainty": "exact"}).status_code, 200)
+                with ThreadPoolExecutor(max_workers=3) as pool:
+                    futures = {days: pool.submit(profile, client, days) for days in self._DAYS}
+                    try:
+                        served = {days: future.result(timeout=3) for days, future in futures.items()}
+                    finally:
+                        release.set()
+                for days, response in served.items():
+                    self.assertEqual(response.status_code, 200)
+                    body = response.json()
+                    self.assertIn("input_data_age", body, days)
+                    self.assertEqual({k: v for k, v in body.items() if k != "input_data_age"},
+                                     before[days])
+                self.assertTrue(entered.wait(3), "the warm worker computes the new profile")
+                deadline = time.monotonic() + 5
+                while "input_data_age" in profile(client, 14).json():
+                    self.assertLess(time.monotonic(), deadline, "the new profile never landed")
+                    time.sleep(0.02)
+                for days in self._DAYS:
+                    self.assertNotIn("input_data_age", profile(client, days).json())
+        self.assertEqual(len(builds), 2, "one compute before the write, one after it")
+
+    def test_a_restart_answers_every_window_without_computing(self):
+        """Outcomes, profiles, analyses and Meal size at every window survive a restart."""
+        first = TestClient(self._app())
+        served = {}
+        for path, params in self._OVERVIEW:
+            response = first.get(path, params=params)
+            self.assertEqual(response.status_code, 200, path)
+            served[(path, tuple(params.items()))] = response.json()
+        import ciq_autotune.api as api_mod
+        import ciq_autotune.outcomes as outcomes_mod
+        builds = []
+        def counting(real):
+            return lambda *args, **kwargs: builds.append(real) or real(*args, **kwargs)
+        with patch.object(api_mod, "analyze", counting(api_mod.analyze)), \
+             patch.object(outcomes_mod, "summarize_outcomes", counting(outcomes_mod.summarize_outcomes)), \
+             patch.object(api_mod, "build_time_of_day_windows",
+                          counting(api_mod.build_time_of_day_windows)), \
+             patch.object(api_mod, "build_meal_size", counting(api_mod.build_meal_size)):
+            restarted = TestClient(self._app())
+            for path, params in self._OVERVIEW:
+                response = restarted.get(path, params=params)
+                self.assertEqual(response.status_code, 200, path)
+                self.assertEqual(response.json(), served[(path, tuple(params.items()))], path)
+        self.assertEqual(builds, [])
+
+    def test_the_warm_pass_starts_with_the_overviews_lighter_reads(self):
+        labels = [label for label, _ in self._app().state.recompute_roster()]
+        self.assertEqual(labels[:5], ["explore-time-of-day", "meal-size",
+                                      "outcomes-14", "outcomes-30", "outcomes-90"])
+        for days in self._DAYS:
+            self.assertIn("analyze" if days == 30 else f"analyze-{days}", labels)
 
 
 @unittest.skipUnless(_HAS_FASTAPI, "api extra not installed")
@@ -1607,7 +1715,7 @@ class CachePreWarmTest(unittest.TestCase):
         ("outcomes-trend", "ciq_autotune.outcomes_trend", "trend_watched_change"),
         ("scenarios", "ciq_autotune.analyzers.scenario", "build_scenarios"),
         ("exposures", "ciq_autotune.api", "build_exposures"),
-        ("explore-time-of-day", "ciq_autotune.api", "build_time_of_day"),
+        ("explore-time-of-day", "ciq_autotune.api", "build_time_of_day_windows"),
         ("meal-size", "ciq_autotune.api", "build_meal_size"),
         ("outcomes", "ciq_autotune.outcomes", "summarize_outcomes"),
         ("finding-case-file", "ciq_autotune.api", "prepare_finding_cases"),
@@ -1887,7 +1995,7 @@ class CachePreWarmTest(unittest.TestCase):
                 store.upsert_cgm([{"EventDateTime": "2026-06-06 00:00:00",
                                    "Readings (CGM / BGM)": 115}])
             label, warm = next(item for item in self.app.state.recompute_roster()
-                               if item[0] == "explore-time-of-day-30")
+                               if item[0] == "explore-time-of-day")
 
             def worker_shape():
                 try:
@@ -1896,14 +2004,14 @@ class CachePreWarmTest(unittest.TestCase):
                     completed.set()
 
             self.app.state.recompute_roster = lambda: ((label, worker_shape),)
-            real = api_mod.build_time_of_day
+            real = api_mod.build_time_of_day_windows
 
             def blocked(*args, **kwargs):
                 entered.set()
                 self.assertTrue(release.wait(3))
                 return real(*args, **kwargs)
 
-            with patch.object(api_mod, "build_time_of_day", side_effect=blocked):
+            with patch.object(api_mod, "build_time_of_day_windows", side_effect=blocked):
                 self.app.state.signal_recompute()
                 self.assertTrue(entered.wait(3))
                 stale = client.get("/api/explore/time-of-day")
@@ -2018,7 +2126,8 @@ class CachePreWarmTest(unittest.TestCase):
             self.assertEqual(after_warm, {"analyze": 4,
                                           "outcomes-trend": 0, "scenarios": 1,
                                           "exposures": 1,
-                                          "explore-time-of-day": 3, "meal-size": 1,
+                                          # One pass for all three windows (#566).
+                                          "explore-time-of-day": 1, "meal-size": 1,
                                           "outcomes": 3,
                                           "finding-case-file": 1, "trials": 1,
                                           "day-navigator": 1, "model-view": 2,
@@ -2027,8 +2136,7 @@ class CachePreWarmTest(unittest.TestCase):
                 ("analyze", 30, False, False), ("analyze", 30, False, True),
                 ("analyze", 14, False, False), ("analyze", 90, False, False),
                 ("findings-history-snapshot", 30),
-                ("explore-time-of-day", 14),
-                ("explore-time-of-day", 30), ("explore-time-of-day", 90),
+                ("explore-time-of-day",),
                 ("outcomes", 14), ("outcomes", 30), ("outcomes", 90),
                 ("meal-size",),
                 ("scenarios", 30), ("exposures",),

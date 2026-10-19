@@ -32,11 +32,19 @@
 // them: `remembered(tab)` says a tab can draw at once, while its first read
 // fetches it again behind what it shows. Saving a token `reset`s everything.
 //
+// AN EARLIER ANSWER IS NEVER SHOWN AS CURRENT (#566). Right after a sync the
+// engine answers at once with its previous answer, labelled with how far that
+// answer's data reaches (`input_data_age`), while it computes the new one.
+// `behind(tab)` says a tab drew such an answer, and `catchUp(tab)` reads those
+// answers again, a few times with a growing pause, until each is current.
+//
 // Plain JS, with its client injected, so node --test drives it with a fake.
 
 /** The account rows never print the address (lock, Settings: "never show a real email"). */
 const MASK = '••••••••';
 const WINDOWS = ['14', '30', '90'];
+/** The pauses before each read again of an answer the engine served from before its last sync (#566). */
+const CATCH_UP_MS = [1000, 2000, 4000, 8000, 15000, 30000];
 /** The Overview's first window, and the analysis window the engine answers by default. */
 const FIRST_WINDOW = '14';
 const DEFAULT_ANALYSIS = '30';
@@ -108,11 +116,14 @@ export function promptMarks({ detector, anchor_t, key_t, key_bg, cgm, answer }) 
 }
 
 /**
- * @param {{ client: object, glossary: object[], memory?: { load: Function, save: Function } }} deps —
+ * @param {{ client: object, glossary: object[], memory?: { load: Function, save: Function },
+ *   pause?: (ms: number) => Promise<void> }} deps —
  *   the client namespace (frontend/data.js makeDeps), §1.5's rows for the
- *   Glossary page, and where the answers are remembered (memory.js), if anywhere.
+ *   Glossary page, where the answers are remembered (memory.js), if anywhere,
+ *   and how `catchUp` waits between its reads.
  */
-export function createLive({ client, glossary, memory = null }) {
+export function createLive({ client, glossary, memory = null,
+  pause = (ms) => new Promise((resolve) => { setTimeout(resolve, ms); }) }) {
   const empty = () => ({
     status: { ok: NO_STATUS },
     prompts: [],
@@ -142,15 +153,27 @@ export function createLive({ client, glossary, memory = null }) {
   };
 
   // One promise per answer: in flight or landed, shared by every reader. A
-  // failed read is forgotten, so the next asks again.
+  // failed read is forgotten, so the next asks again. Each answer's read is kept
+  // beside it, so an answer that landed behind the engine can be read again.
   const reads = new Map();
+  const runs = new Map();
   const once = (key, run) => {
+    runs.set(key, run);
     if (!reads.has(key)) {
       reads.set(key, run().catch((error) => { reads.delete(key); throw error; }));
     }
     return reads.get(key);
   };
   const forget = (...keys) => keys.forEach((key) => reads.delete(key));
+
+  // The reads whose answer the engine served from before its last sync (#566).
+  const behindReads = new Set();
+  /** Note whether `answer`, read under `key`, is the engine's previous answer; return it. */
+  const served = (key, answer) => {
+    if (answer?.input_data_age) behindReads.add(key);
+    else behindReads.delete(key);
+    return answer;
+  };
 
   // --- The answers, each read once ------------------------------------------
 
@@ -171,7 +194,7 @@ export function createLive({ client, glossary, memory = null }) {
   });
   const findings = () => once('findings', () => client.fetchDiagnoseFindings());
   /** The analysis at the engine's default window, 30 days: the Queue's, and the Overview's 30 d ISF. */
-  const analyze = () => once('analyze', () => client.fetchAnalysis());
+  const analyze = () => once('analyze', async () => served('analyze', await client.fetchAnalysis()));
   const trials = () => once('trials', () => client.fetchVerifyTrials());
   const focus = () => once('focus', () => client.fetchFocuses());
   const status = () => once('status', async () => { answers.status.ok = await client.fetchStatus(); });
@@ -191,23 +214,26 @@ export function createLive({ client, glossary, memory = null }) {
   });
   /** The glucose profile over one window, read when the Overview first shows it. */
   const timeOfDay = (window) => once(`time-of-day ${window}`, async () => {
-    answers.overview.wearer.time_of_day[window] = await client.fetchExploreTimeOfDay(Number(window));
+    answers.overview.wearer.time_of_day[window] = served(`time-of-day ${window}`,
+      await client.fetchExploreTimeOfDay(Number(window)));
   });
   /** gen_ui_fixtures._windows: one window's first ISF segment and its 48 basal slots, for the Overview's ISF
    *  and basal estimates. The 30 d analysis is the Queue's own read, shared. */
   const isf = (window) => once(`isf ${window}`, async () => {
-    const answer = window === DEFAULT_ANALYSIS ? await analyze() : await client.fetchAnalysis(Number(window));
+    const answer = served(`isf ${window}`,
+      window === DEFAULT_ANALYSIS ? await analyze() : await client.fetchAnalysis(Number(window)));
     answers.overview.wearer.analyze[window] = { isf: answer.isf.slice(0, 1), basal: basalSlots(answer.basal) };
   });
   /** The Meal size card, over its one 90-day window whatever window the Overview shows (#501). */
   const mealSize = () => once('meal-size', async () => {
-    answers.overview.wearer.meal_size = mealSizes(await client.fetchMealSize());
+    answers.overview.wearer.meal_size = mealSizes(served('meal-size', await client.fetchMealSize()));
   });
   /** What the Overview reads for a window it shows: its profile and its ISF and basal estimates. */
   const overviewWindow = (window) => Promise.all([timeOfDay(window), isf(window)]);
   const outcomes = () => once('outcomes', async () => {
-    const served = await Promise.all(WINDOWS.map((w) => client.fetchOutcomes(Number(w))));
-    answers.outcomes = Object.fromEntries(WINDOWS.map((w, i) => [w, served[i]]));
+    const windows = await Promise.all(WINDOWS.map((w) => client.fetchOutcomes(Number(w))));
+    served('outcomes', windows.find((answer) => answer?.input_data_age));
+    answers.outcomes = Object.fromEntries(WINDOWS.map((w, i) => [w, windows[i]]));
   });
 
   /** gen_ui_fixtures._cases: each subject's case file, by its key (a Pattern's, or a habit's lever): a
@@ -335,8 +361,14 @@ export function createLive({ client, glossary, memory = null }) {
   const TABS = {
     queue: { read: queue, keys: ['queue', 'findings', 'guidance', 'analyze', 'trials', 'focus'] },
     changes: { read: changes, keys: ['changes', 'trials'] },
-    overview: { read: () => Promise.all([outcomes(), mealSize(), overviewWindow(FIRST_WINDOW)]),
-      keys: ['outcomes', 'meal-size', ...WINDOWS.flatMap((w) => [`time-of-day ${w}`, `isf ${w}`])] },
+    // The first window, then the other two read behind it (#566), so a switch draws at once.
+    overview: { read: () => Promise.all([outcomes(), mealSize(), overviewWindow(FIRST_WINDOW)]).then(() => {
+      WINDOWS.filter((w) => w !== FIRST_WINDOW)
+        .reduce((before, w) => before.then(() => overviewWindow(w)), Promise.resolve())
+        .then(() => remember(), () => undefined);
+    }),
+      // The 30 d ISF is the Queue's analysis, so the Overview reads it again with its own.
+      keys: ['outcomes', 'meal-size', 'analyze', ...WINDOWS.flatMap((w) => [`time-of-day ${w}`, `isf ${w}`])] },
     // Day reads the engine's one target range, which every window's profile serves; the Overview's first.
     day: { read: () => Promise.all([navigator(), timeOfDay(FIRST_WINDOW)]),
       keys: ['navigator', `time-of-day ${FIRST_WINDOW}`] },
@@ -350,6 +382,29 @@ export function createLive({ client, glossary, memory = null }) {
   const retryTab = (tab) => {
     forget(...TABS[tab].keys, ...BADGES);
     return readTab(tab);
+  };
+
+  /** Whether `tab` draws an answer the engine served from before its last sync (#566). */
+  const behind = (tab) => TABS[tab].keys.some((key) => behindReads.has(key));
+
+  /** Read again what `tab` drew from before the engine's last sync, and only that, after a
+   *  pause that grows, until it is all current or the reads run out; one catch-up per tab. */
+  const catchingUp = new Map();
+  const catchUp = (tab) => {
+    if (!catchingUp.has(tab)) {
+      catchingUp.set(tab, (async () => {
+        for (const ms of CATCH_UP_MS) {
+          if (!behind(tab)) return;
+          await pause(ms);
+          const keys = TABS[tab].keys.filter((key) => behindReads.has(key));
+          // A tab's own composed read (the Queue's, Changes') is composed again from them.
+          forget(...keys, tab);
+          await Promise.all([TABS[tab].read(), ...keys.map((key) => once(key, runs.get(key)))])
+            .then(() => remember(tab), () => undefined);
+        }
+      })().finally(() => catchingUp.delete(tab)));
+    }
+    return catchingUp.get(tab);
   };
 
   /** Settings is read in parts, so each draws as it lands rather than the screen waiting on the slowest:
@@ -509,9 +564,12 @@ export function createLive({ client, glossary, memory = null }) {
     readWindow: remembering(overviewWindow),
     /** Whether `tab` (or `settings <part>`) draws from an earlier visit's answers, not yet read again. */
     remembered: (tab) => fromMemory.has(tab),
+    behind,
+    catchUp,
     /** Forget every answer, landed or remembered: a new token reads the app afresh. */
     reset: () => {
       reads.clear();
+      behindReads.clear();
       landed.clear();
       fromMemory.clear();
       Object.assign(answers, empty());

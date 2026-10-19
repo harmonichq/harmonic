@@ -286,34 +286,39 @@ class ExploreTimeOfDayTest(unittest.TestCase):
             response = self.client.get("/api/explore/time-of-day", params={"days": days})
             self.assertEqual(response.status_code, 400, days)
 
-    def test_each_window_is_cached_on_its_own(self):
+    def test_one_build_serves_every_window_then_is_cached(self):
+        """The three windows are one pass over the history they share (#566)."""
         self._seed(cgm=[_cgm(datetime(2026, 6, 30, 12, 0), 120)])
         import ciq_autotune.api as api
-        real_build = api.build_time_of_day
-        calls = []
-
-        def counting_build(*args, **kwargs):
-            calls.append(kwargs.get("days", 30))
-            return real_build(*args, **kwargs)
-
-        with patch.object(api, "build_time_of_day", counting_build):
-            for _ in range(2):
-                for days in (14, 30, 90):
-                    self.assertEqual(self.client.get(
-                        "/api/explore/time-of-day", params={"days": days}).status_code, 200)
-            self.assertEqual(sorted(calls), [14, 30, 90], "one build per window, then cached")
-
-    def test_carb_write_recomputes(self):
-        self._seed(cgm=[_cgm(datetime(2026, 6, 30, 12, 0), 120)])
-        import ciq_autotune.api as api
-        real_build = api.build_time_of_day
+        real_build = api.build_time_of_day_windows
         calls = []
 
         def counting_build(*args, **kwargs):
             calls.append(1)
             return real_build(*args, **kwargs)
 
-        with patch.object(api, "build_time_of_day", counting_build):
+        with patch.object(api, "build_time_of_day_windows", counting_build):
+            served = {}
+            for _ in range(2):
+                for days in (14, 30, 90):
+                    response = self.client.get("/api/explore/time-of-day", params={"days": days})
+                    self.assertEqual(response.status_code, 200)
+                    served[days] = response.json()
+            self.assertEqual(len(calls), 1, "one build for all three windows, then cached")
+        for days, body in served.items():
+            self.assertEqual(body["window"]["data_days"], days)
+
+    def test_carb_write_recomputes(self):
+        self._seed(cgm=[_cgm(datetime(2026, 6, 30, 12, 0), 120)])
+        import ciq_autotune.api as api
+        real_build = api.build_time_of_day_windows
+        calls = []
+
+        def counting_build(*args, **kwargs):
+            calls.append(1)
+            return real_build(*args, **kwargs)
+
+        with patch.object(api, "build_time_of_day_windows", counting_build):
             self._body()
             self._body()
             self.assertEqual(len(calls), 1)

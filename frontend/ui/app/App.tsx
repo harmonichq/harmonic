@@ -16,6 +16,8 @@
 // refresh, a tab read before draws its last answers at once and reads them
 // again behind them. A screen whose answers cannot be read again keeps them,
 // with Unavailable and Retry in its title row (`stale`), never a blank screen.
+// So does a screen drawn from an answer the engine served from before its last
+// sync (#566), until the adapter's catch-up reads every such answer current.
 //
 // Saving a token in Settings reads the app again under it: Settings' parts and
 // badges at once, and every other tab when it next opens.
@@ -79,13 +81,21 @@ export function App() {
   const [, setVersion] = useState(0);
   const redraw = useCallback(() => setVersion((n) => n + 1), []);
 
-  const read = useCallback((which: Tab, retry = false) => {
+  // A tab drawn from an answer the engine served from before its last sync is
+  // marked stale, never shown as current, and read again until it is (#566).
+  const settle = useCallback((which: Exclude<Tab, 'settings'>) => {
+    const mark = () => setReads((now) => ({ ...now, [which]: live.behind(which) ? 'stale' : 'ready' }));
+    mark();
+    if (live.behind(which)) live.catchUp(which).then(mark).finally(redraw);
+  }, [redraw]);
+
+  const read = useCallback((which: Exclude<Tab, 'settings'>, retry = false) => {
     setReads((now) => (shown(now[which]) ? now : { ...now, [which]: 'loading' }));
     (retry ? live.retryTab(which) : live.readTab(which)).then(
-      () => setReads((now) => ({ ...now, [which]: 'ready' })),
+      () => settle(which),
       () => setReads((now) => ({ ...now, [which]: shown(now[which]) ? 'stale' : 'unavailable' })),
     ).finally(redraw);
-  }, [redraw]);
+  }, [redraw, settle]);
 
   // Settings' parts, each read on its own so the screen draws what has landed.
   const [parts, setParts] = useState<Partial<Record<Part, Read>>>(() => remembered(PARTS, (p) => `settings ${p}`));
@@ -134,7 +144,7 @@ export function App() {
         writes={{ end: drawn(changesWrites.end) }} />;
     case 'overview':
       return <OverviewScreen key={tab} layout={layout} store="wearer" state={state} nav={nav} onRetry={retry}
-        onWindow={(window) => { live.readWindow(window).then(redraw, redraw); }} />;
+        onWindow={(window) => { live.readWindow(window).then(() => settle('overview'), redraw); }} />;
     case 'day':
       return <DayScreen key={tab} layout={layout} store="wearer" state={state} nav={nav} onRetry={retry}
         onDay={(iso) => { live.readDay(iso).then(redraw, redraw); }}

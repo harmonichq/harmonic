@@ -22,12 +22,14 @@ extra on a core-only install.
 
 from __future__ import annotations
 
+import contextvars
 import json
 import logging
 import re
 import sqlite3
 import threading
 import time
+from collections import OrderedDict
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional
@@ -39,7 +41,7 @@ from .config import resolve_runtime_configuration
 from .explore_exposures import build_exposures
 from .explore_time_of_day import DATA_DAYS as TIME_OF_DAY_DAYS
 from .explore_time_of_day import DEFAULT_DATA_DAYS as TIME_OF_DAY_DEFAULT_DAYS
-from .explore_time_of_day import build_time_of_day
+from .explore_time_of_day import build_time_of_day_windows
 from .meal_size import build_meal_size
 from .events import CarbEntry, parse_t
 from . import findings_projection as findings_projection_module
@@ -76,6 +78,16 @@ DEFAULT_DB = "tconnect-data/ciq.db"
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8765
 RECOMPUTE_PACE_SECONDS = 0.1
+
+# True inside a warm-worker shape: a warm shape computes its fixed result, never
+# answers from a predecessor (#566).
+_WARMING: "contextvars.ContextVar[bool]" = contextvars.ContextVar("warming", default=False)
+
+
+def _warming_call(warm):
+    """Run one warm shape as the warm worker: its fixed reads compute (#566)."""
+    _WARMING.set(True)
+    return warm()
 
 _FRONTEND_BUILD_COMMAND = "npm ci && npm run build"
 
@@ -251,6 +263,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         app.state.recompute_loop = loop
         app.state.recompute_task = asyncio.create_task(recompute_worker(event))
         if warm_on_start:
+            warm_due.set()
             event.set()
         fetch_task = None
         if enable_fetch_loop:
@@ -282,15 +295,33 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     # keeps two-DB tests isolated. See ADR 0035.
     app.state.result_cache = cache
 
+    # The warm worker owes a full roster pass: every write and the start set it.
+    warm_due = threading.Event()
+    # The fixed results a read answered from their predecessor, each computed by the
+    # warm worker before its next shape, in the order they were asked for (#566).
+    refreshes: "OrderedDict[tuple, object]" = OrderedDict()
+    refreshes_lock = threading.Lock()
+
     def invalidate(keep=None) -> None:
         """Bump the cache after a write, then start the warm pass in the background.
 
         Without a running lifespan (an ASGI server started with it off) there is no
         warm worker, and the next read computes as it always did."""
         cache.bump(keep=keep)
+        warm_due.set()
         loop = getattr(app.state, "recompute_loop", None)
         if loop is not None:
             loop.call_soon_threadsafe(app.state.recompute_event.set)
+
+    def worker_running() -> bool:
+        task = getattr(app.state, "recompute_task", None)
+        return task is not None and not task.done()
+
+    def request_refresh(key, run) -> None:
+        """Ask the warm worker to compute ``key`` before its next shape (#566)."""
+        with refreshes_lock:
+            refreshes.setdefault(key, run)
+        app.state.recompute_loop.call_soon_threadsafe(app.state.recompute_event.set)
 
     def follow_up_written() -> None:
         """Invalidate after a write to follow-up state alone (#522, ADR 538).
@@ -323,21 +354,34 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
 
         A result is keyed by the recorded-data revision unless ``reads_follow_up``
         says its compute reads follow-up state, which keys it by the input
-        revision instead (ADR 538)."""
+        revision instead (ADR 538).
+
+        After a write, a read whose result is not yet computed answers at once from
+        its predecessor, labeled with how far that predecessor's data reaches
+        (``input_data_age``), and the warm worker computes the current result next,
+        once (#566). A second read while one computes is answered the same way. With
+        no warm worker running, the first read computes, and a warm shape always
+        computes."""
         with fixed_flights_lock:
             owner = key not in fixed_flights
             if owner:
                 fixed_flights[key] = None
-        if serve_stale and not owner and not cache.contains(key):
-            prior = load_latest_prior(db_path, key, shape_marker=marker, rebuild=rebuild,
-                                      reads_follow_up=reads_follow_up)
-            if prior is not None:
-                return prior
         def build():
             return load_or_compute(db_path, key, compute, shape_marker=marker,
                                    dump=dump, rebuild=rebuild, with_age=True,
                                    reads_follow_up=reads_follow_up)
         try:
+            deferred = owner and worker_running()
+            if (serve_stale and not _WARMING.get() and (deferred or not owner)
+                    and not cache.contains(key)):
+                prior = load_latest_prior(db_path, key, shape_marker=marker, rebuild=rebuild,
+                                          reads_follow_up=reads_follow_up)
+                if prior is not None:
+                    if deferred:
+                        request_refresh(key, lambda: fixed(
+                            key, marker, compute, dump=dump, rebuild=rebuild,
+                            serve_stale=serve_stale, reads_follow_up=reads_follow_up))
+                    return prior
             return cache.get_or_compute(key, build, validate=lambda result: current_fixed_result(
                 result, reads_follow_up=reads_follow_up))
         finally:
@@ -609,12 +653,14 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                     prompt_responses=store.prompt_responses()))
 
         key = ("analyze", window, ignore_changes, pool)
-        if window == 30 and not ignore_changes:
-            if pool:
-                return fixed_response(
-                    canonical_pooled_analysis(window),
-                    lambda value: {**value, "basal_support_floor": _MIN_SUPPORTED_NIGHTS},
-                )
+        if window == 30 and not ignore_changes and pool:
+            return fixed_response(
+                canonical_pooled_analysis(window),
+                lambda value: {**value, "basal_support_floor": _MIN_SUPPORTED_NIGHTS},
+            )
+        # Every window the Overview switches between is a fixed result (#566), so a
+        # restart keeps it and a write leaves its predecessor to serve.
+        if window in TIME_OF_DAY_DAYS and not ignore_changes and not pool:
             return fixed_response(fixed(key, "analyze-v1", lambda store: _analysis_payload(analyze(
                 store, window_days=window, ignore_setting_changes=ignore_changes,
                 pool_agreeing_basal_regimes=pool, carb_entries=store.carb_entries(),
@@ -695,6 +741,11 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             with Store.open(db_path) as store:
                 return summarize_outcomes(store, window_days=window).to_dict()
 
+        # Each window the Overview switches between is a fixed result (#566).
+        if window in TIME_OF_DAY_DAYS:
+            return fixed_response(fixed(
+                ("outcomes", window), "outcomes-v1",
+                lambda store: summarize_outcomes(store, window_days=window).to_dict()))
         return cache.get_or_compute(("outcomes", window), compute)
 
     @app.get("/api/outcomes/trend")
@@ -760,13 +811,15 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     @app.get("/api/explore/time-of-day")
     def explore_time_of_day_endpoint(days: int = TIME_OF_DAY_DEFAULT_DAYS,
                                      _: None = Depends(require_token)) -> dict:
-        """The time-of-day evidence feed (#578) over the last 14, 30 or 90 days;
-        each window is its own fixed result."""
+        """The time-of-day evidence feed (#578) over the last 14, 30 or 90 days.
+        All three windows are one fixed result, computed in one pass over the
+        history they share (#566), and each read serves its own window."""
         if days not in TIME_OF_DAY_DAYS:
             raise HTTPException(status_code=400,
                                 detail=f"days must be one of {list(TIME_OF_DAY_DAYS)}")
-        return fixed_response(fixed(("explore-time-of-day", days), "time-of-day-v1",
-                                    lambda store: build_time_of_day(store, days=days)))
+        return fixed_response(fixed(("explore-time-of-day",), "time-of-day-v2",
+                                    build_time_of_day_windows),
+                              lambda windows: windows[str(days)])
 
     @app.get("/api/explore/meal-size")
     def explore_meal_size_endpoint(_: None = Depends(require_token)) -> dict:
@@ -1652,13 +1705,17 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         await asyncio.sleep(RECOMPUTE_PACE_SECONDS)
 
     def warm_roster():
-        """What the app's five tabs read, in the order a visit needs it (#522).
+        """What the app's five tabs read, lightest screen first (#522, #566).
 
-        The Queue and Changes first — the findings and guidance snapshot under them
-        all, the analysis, the case files, the Trial roster — then each Overview
-        window, then the Day screen's navigator and its latest two days. Nothing
-        the app does not read is warmed: on the home server, a warm shape it never
-        reads is CPU taken from the visitor."""
+        The Overview's profiles, Meal size and outcomes first — a few seconds for
+        every window it switches between — then the Queue and Changes — the
+        findings and guidance snapshot under them all, the analysis, the case
+        files, the Trial roster — then the Overview's other two analyses, the
+        heaviest shapes, then the Day screen's navigator and its latest two days.
+        After a write each of them answers from its predecessor until it is warm,
+        and one a read is waiting on is computed next. Nothing the app does not
+        read is warmed: on the home server, a warm shape it never reads is CPU
+        taken from the visitor."""
         def latest_days():
             with Store.open_queryonly(db_path) as store:
                 last = store.cgm_day_bounds()[1]
@@ -1677,71 +1734,88 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             return warm
 
         return (
+            # The Overview's lighter reads, at every window it switches between: its
+            # glucose profiles (one shape for all three), its Meal size card (one
+            # fixed 90 days) and its outcomes.
+            ("explore-time-of-day", lambda: explore_time_of_day_endpoint(days=TIME_OF_DAY_DEFAULT_DAYS)),
+            ("meal-size", lambda: explore_meal_size_endpoint()),
+            *((f"outcomes-{days}", lambda days=days: outcomes_endpoint(window=days))
+              for days in TIME_OF_DAY_DAYS),
             # The snapshot's first input, warmed as its own shape.
             ("analyze-pooled", lambda: analyze_endpoint(window=30, ignore_changes=False, pool=True)),
             ("findings-history", lambda: findings_snapshot(
                 findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS)),
+            # The Queue's analysis, and the Overview's at 30 days.
             ("analyze", lambda: analyze_endpoint(window=30, ignore_changes=False, pool=False)),
             ("finding-case-file", lambda: finding_case_file_preparation(
                 Request({"type": "http", "query_string": b""}))),
             ("verify-trials", lambda: verify_trials_endpoint()),
-            # Every window the Overview switches between: its outcomes, its glucose
-            # profile, and the analysis its correction-factor estimate reads.
-            *((f"outcomes-{days}", lambda days=days: outcomes_endpoint(window=days))
-              for days in TIME_OF_DAY_DAYS),
-            *((f"explore-time-of-day-{days}", lambda days=days: explore_time_of_day_endpoint(days=days))
-              for days in TIME_OF_DAY_DAYS),
+            # The analysis behind the Overview's ISF and basal cards at its other windows.
             *((f"analyze-{days}", lambda days=days: analyze_endpoint(
                 window=days, ignore_changes=False, pool=False))
               for days in TIME_OF_DAY_DAYS if days != 30),
-            # The Overview's Meal size card, which reads one fixed 90 days.
-            ("meal-size", lambda: explore_meal_size_endpoint()),
             ("day-navigator", lambda: day_navigator_endpoint()),
             ("day-latest", warm_day(0)),
             ("day-before-latest", warm_day(1)),
         )
+
+    async def run_shape(label, warm) -> None:
+        """Run one warm shape in a worker thread, containing its failure."""
+        shape_task = asyncio.create_task(asyncio.to_thread(_warming_call, warm))
+        app.state.recompute_shape_task = shape_task
+        try:
+            await asyncio.shield(shape_task)
+        except asyncio.CancelledError:
+            try:
+                await shape_task
+            except Exception:
+                logger.warning("Cache pre-warm failed for %s", label,
+                               exc_info=True)
+            raise
+        except Exception:
+            logger.warning("Cache pre-warm failed for %s", label, exc_info=True)
+        finally:
+            app.state.recompute_shape_task = None
+
+    async def run_refreshes() -> None:
+        """Compute every fixed result a read answered from its predecessor (#566)."""
+        while True:
+            with refreshes_lock:
+                if not refreshes:
+                    return
+                key, run = refreshes.popitem(last=False)
+            await run_shape(f"refresh {key[0]}", run)
 
     async def recompute_worker(event) -> None:
         """Run one complete warm shape at a time until shutdown.
 
         A newer cache version abandons the old set at its next shape boundary;
         the still-set event then causes one fresh complete roster, not a backlog.
+        A result a read is waiting on is computed before the next shape (#566).
         """
         while True:
             await event.wait()
             while True:
                 event.clear()
+                await run_refreshes()
+                if not warm_due.is_set():
+                    if event.is_set():
+                        continue
+                    break
+                warm_due.clear()
                 revision = cache.version
-                superseded = False
                 roster = app.state.recompute_roster()
                 for index, (label, warm) in enumerate(roster):
+                    await run_refreshes()
                     if cache.version != revision:
-                        superseded = True
+                        warm_due.set()  # superseded: one fresh complete roster
                         break
-                    shape_task = asyncio.create_task(asyncio.to_thread(warm))
-                    app.state.recompute_shape_task = shape_task
-                    try:
-                        await asyncio.shield(shape_task)
-                    except asyncio.CancelledError:
-                        try:
-                            await shape_task
-                        except Exception:
-                            logger.warning("Cache pre-warm failed for %s", label,
-                                           exc_info=True)
-                        raise
-                    except Exception:
-                        logger.warning("Cache pre-warm failed for %s", label, exc_info=True)
-                    finally:
-                        app.state.recompute_shape_task = None
+                    await run_shape(label, warm)
                     if cache.version != revision:
-                        superseded = True
+                        warm_due.set()
                         break
                     if index + 1 < len(roster):
                         await app.state.recompute_pace()
-                if superseded:
-                    continue
-                if not event.is_set():
-                    break
 
     # These are deliberately app-local seams: production keeps one explicit
     # pace, while lifecycle tests replace the roster and awaitable pace.

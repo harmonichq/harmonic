@@ -633,7 +633,7 @@ _Avoid_: rise (a **Rise** is the unbolused high Day asks about), spike, net-new 
 **Meal size**:
 A meal's carbs, the grams its completed boluses entered (ADR 470), in four sizes:
 under 25 g, 25–39, 40–59, 60 and over. The Overview's Meal size card counts the
-last 90 days' meals that began at or under 180 mg/dL and that the Late bolus
+selected window's meals that began at or under 180 mg/dL and that the Late bolus
 classifier found flat before the bolus (its `no_trigger` verdict), and serves each
 size's meals and medians (ADR 501). A report: never a Queue item, a Focus or a
 setting move.

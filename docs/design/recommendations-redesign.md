@@ -74,7 +74,7 @@ consolidated brief from the first exploration (2026-10-12) as decision history.
 |---|---|---|
 | **Queue** | The ranked recommendations, from Patterns, Habits and Settings, and the Snoozed list. | No logging, no status, no counters. |
 | **Changes** | The current watched change (one Trial or one Focus) with what a Trial did to glucose in its block, and Previous: every earlier change (§2.5, 2026-10-14). | Nothing to act on but End. |
-| **Overview** | Standard metrics over 14, 30 or 90 days against the period of the same length before, the selected window's time-in-ranges bar and glucose profile, the ISF and basal estimates, and Meal size over the last 90 days (§2.5, 2026-10-19). | No Queue items and nothing to act on: the ISF estimate shows the engine's supported change as the Queue's card does, but changes nothing. |
+| **Overview** | Standard metrics over 14, 30 or 90 days against the period of the same length before, the selected window's time-in-ranges bar and glucose profile, the ISF and basal estimates, and Meal size (§2.5, 2026-10-19). | No Queue items and nothing to act on: the ISF estimate shows the engine's supported change as the Queue's card does, but changes nothing. |
 | **Day** | One day's glucose, insulin and carbs, the day navigator, carb logging and Prompts: Lows and Rises. | No aggregates beyond that day. |
 | **Settings** | Tandem Source (sync and account), Pump profile and the Glossary. | No preferences the engine doesn't have. |
 
@@ -174,7 +174,7 @@ the system's own edge-swipe back is left to the platform, never overridden.
 | **Glucose profile** | noun | Glucose by time of day over the selected window (14, 30 or 90 days): the median and the 10th–90th percentile spread. |
 | **Fasting** | state | No food and no recent bolus: the nights an ISF estimate is read from. |
 | **Median** | noun | The middle value: of the profile at that time of day, or of a meal size's meals. |
-| **Meal size** | noun | A meal's carbs in grams: under 25, 25–39, 40–59 or 60 and over. Meal size counts the last 90 days' meals that began at or under 180 mg/dL with glucose flat before the bolus. |
+| **Meal size** | noun | A meal's carbs in grams: under 25, 25–39, 40–59 or 60 and over. Meal size counts the selected window's meals that began at or under 180 mg/dL with glucose flat before the bolus. |
 | **Climb** | metric | How far glucose rose after a meal: its highest reading in the 3 hours after the bolus, before any next meal, less the reading at the bolus, in mg/dL. |
 | **Peak at** | metric | Minutes from a meal's bolus to the reading its Climb is read from. |
 | **At 3 h** | metric | Glucose 3 hours after a meal's bolus less the reading at the bolus, in mg/dL, for a meal no later meal began within those 3 hours. |
@@ -1111,6 +1111,27 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   - **The title** is unchanged: "Meal size" in the setting cards' strong title
     style with "90 d" in their meta slot, as "ISF estimate".
 
+- **2026-10-19 — the Meal size Range stands out, and the card follows the
+  window (#565).** On his phone, of the fitted card: "The range is
+  impossible to see." Its 25–75% line ran through dots of its own light blue,
+  so a dense row read as one blob. Two treatments were rendered on the
+  densest synthetic rows and a sparse store: the Range on a halo above the
+  dots, and the Range on its own track beneath them. The halo is kept: it
+  reads as clearly, and the track adds a tenth of a row to every size,
+  which would push the desktop card past the estimates' height.
+  - **The dots step back.** Smaller (2.25 px), neutral grey, half as opaque;
+    those inside the Range a little brighter.
+  - **The Range and the median stand in front.** Above the dots, the Range is
+    a 5 px line in its size's shade of the estimate blue, and the median a
+    short ink tick across the strip. Each rides on a halo of the card's
+    surface, so no dot runs into it. The legend's Meal and Range keys match.
+  - **The window.** The operator: "don't repeat the days, the user already
+    picked days in the picker above this". The card now reads the window the
+    Overview's 14 / 30 / 90 d switch shows, as the ISF and basal estimates
+    do, and the title is "Meal size" alone, as they print no window. This
+    reverses the 2026-10-19 amendment's one fixed 90 days: a short window
+    holds few meals, and each size already shows how many.
+
 ### 2.6 Deferred (not cut)
 Not built in the current screens. The engine still serves what each needs, and
 nothing is removed from the engine or the fixtures for them.
@@ -1398,23 +1419,23 @@ unless noted. Loading is a skeleton of the component's own shape.
     - Desktop: half the Overview's body, beside the IsfCard.
 
 27. **MealSizeCard** (§2.5, 2026-10-19): how far glucose climbs after meals of
-    each size, over the last 90 days whatever window is selected, below the ISF
-    and basal estimates, their height (§2.5, 2026-10-19 #559). Titled "Meal
-    size" with the window's days ("90 d") in meta ink. One thin strip per size,
-    <25 g, 25–39 g, 40–59 g and 60 g+, each in its shade of the estimate blue,
-    on one shared Climb axis: a half-transparent dot per counted meal, the
-    size's Range a thick line, its median a short ink tick; grid lines at the
-    ticks; "Climb · mg/dL" and the legend Meal, Median, Range beneath the axis.
+    each size, over the selected window as the estimates are (§2.5, 2026-10-19
+    #565), below the ISF and basal estimates, their height (§2.5, 2026-10-19
+    #559). Titled "Meal size". One thin strip per size, <25 g, 25–39 g, 40–59 g
+    and 60 g+, on one shared Climb axis: a small, muted grey dot per counted
+    meal; above them the size's Range a thick line in its shade of the estimate
+    blue and its median a short ink tick, each on a halo of the card's surface;
+    grid lines at the ticks; "Climb · mg/dL" and the legend Meal, Median, Range beneath the axis.
     Each size's swatch and bounds over its meal count, then the signed medians
     Climb, Peak at (min) and At 3 h, At 3 h over its own meal count, aligned
     like a table: on the strip's row when wide, beneath the strips when narrow.
     Nothing to act on.
     - States: populated; a size of one meal (one dot, no Range line); a size of
       no meal (its row, "–"); no data ("No data"); not yet read (its skeleton).
-    - Fields: `meal_size.window.data_days`; `meal_size.sizes[].carbs_from,
+    - Fields: `meal_size.window`; `meal_size.sizes[].carbs_from,
       carbs_to, meals[].climb` and its length, `climb.median, p25, p75`,
       `to_peak.median`, `at_3h.median, count`, read from
-      `/api/explore/meal-size`.
+      `/api/explore/meal-size?days=N`.
     - Desktop: the Overview's full width, the row after the IsfCard and the
       BasalCard, at their height (every row of the cards one height).
 

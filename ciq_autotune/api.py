@@ -769,11 +769,17 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                                     lambda store: build_time_of_day(store, days=days)))
 
     @app.get("/api/explore/meal-size")
-    def explore_meal_size_endpoint(_: None = Depends(require_token)) -> dict:
+    def explore_meal_size_endpoint(days: int = TIME_OF_DAY_DEFAULT_DAYS,
+                                   _: None = Depends(require_token)) -> dict:
         """The Overview's Meal size card (#501, ADR 501): the climb after each
-        counted meal of the last 90 days, by size, and each size's medians. It
-        reads only recorded data, so it is one fixed result."""
-        return fixed_response(fixed(("meal-size",), "meal-size-v1", build_meal_size))
+        counted meal of the last 14, 30 or 90 days (#565), by size, and each
+        size's medians. It reads only recorded data, so each window is its own
+        fixed result."""
+        if days not in TIME_OF_DAY_DAYS:
+            raise HTTPException(status_code=400,
+                                detail=f"days must be one of {list(TIME_OF_DAY_DAYS)}")
+        return fixed_response(fixed(("meal-size", days), "meal-size-v1",
+                                    lambda store: build_meal_size(store, days=days)))
 
     @app.get("/api/explore/exposures")
     def explore_exposures_endpoint(_: None = Depends(require_token)) -> dict:
@@ -1709,8 +1715,9 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             *((f"analyze-{days}", lambda days=days: analyze_endpoint(
                 window=days, ignore_changes=False, pool=False))
               for days in TIME_OF_DAY_DAYS if days != 30),
-            # The Overview's Meal size card, which reads one fixed 90 days.
-            ("meal-size", lambda: explore_meal_size_endpoint()),
+            # The Overview's Meal size card, at each window (#565).
+            *((f"meal-size-{days}", lambda days=days: explore_meal_size_endpoint(days=days))
+              for days in TIME_OF_DAY_DAYS),
             ("day-navigator", lambda: day_navigator_endpoint()),
             ("day-latest", warm_day(0)),
             ("day-before-latest", warm_day(1)),

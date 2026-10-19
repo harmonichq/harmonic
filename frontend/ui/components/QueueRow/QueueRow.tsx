@@ -8,7 +8,8 @@
 //
 // A Pattern with an impact ends both lines with a trailing value: Peak (highs)
 // or Nadir (lows) as a caption on the title line, and beneath it the shared
-// Delta of its own value against Typical, in mg/dL, in neutral ink. The two
+// Delta of its own value against Typical, in mg/dL, green or red by the way
+// it moved (a lower Peak and a higher Nadir are the good ways). The two
 // lines are the row's own, so a row is the same height with or without it,
 // and the chevron stays on the title line.
 //

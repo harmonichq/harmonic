@@ -1,14 +1,19 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect } from 'storybook/test';
 import { change, type TrialData } from '../../changes-model';
-import { ChangeMetrics } from './ChangeMetrics';
+import { expectDirections, type Tone } from '../../direction-check';
+import { ChangeMetrics, type ChangeMetricsProps } from './ChangeMetrics';
 
-// §4.2 ChangeMetrics, one story per module, each the simulated wearer's
-// matured basal Trial as its comparison serves it: In range / Below 70 / Above
-// 180, with Below 70 its target metric and the engine's verdict on it toned;
-// Mean / GMI / CV, which the engine does not judge; and how active Control-IQ
-// was against the Pump profile. A last story stacks the three, as the screen
-// does, to show their columns align.
+// §4.2 ChangeMetrics, one story per module at phone (390) and desktop (720,
+// the Changes pane), each the simulated wearer's matured basal Trial as its
+// comparison serves it: In range / Below 70 / Above 180, with Below 70 its
+// target metric, every row moving the good way (green); Mean / GMI / CV, Mean
+// and GMI up the bad way (red) and CV down the good way; and how active
+// Control-IQ was against the Pump profile, where neither way is better
+// (neutral). The same Trial six days in colours its modules by direction as a
+// matured one does (§2.5, 2026-10-19). A last story stacks the three, as the
+// screen does, to show their columns align. Every play checks each Δ's colour
+// against its direction.
 const meta = {
   title: 'ChangeMetrics',
   component: ChangeMetrics,
@@ -18,13 +23,30 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
+const DESKTOP = { frame: { width: 720 } };
 const basal = () => change('wearer') as TrialData;
+const maturing = () => change('wearer-trial-maturing') as TrialData;
+const controlIq = <>Basal <span className="ui-metrics__meta">vs Pump profile</span></>;
 
-export const Ranges: Story = { args: { rows: basal().ranges } };
-export const Glucose: Story = { args: { rows: basal().glucose } };
-export const ControlIq: Story = {
-  args: { rows: basal().basal, title: <>Basal <span className="ui-metrics__meta">vs Pump profile</span></> },
+const directions = (expected: Tone[]): Story['play'] => async ({ canvasElement }) => {
+  await expect(await expectDirections(canvasElement, '.ui-metrics__row', '.ui-metrics__label')).toEqual(expected);
 };
+const story = (args: ChangeMetricsProps, expected: Tone[], desktop = false): Story => ({
+  args, play: directions(expected), ...(desktop ? { parameters: DESKTOP } : {}),
+});
+
+const RANGES: Tone[] = ['favorable', 'favorable', 'favorable'];
+const GLUCOSE: Tone[] = ['adverse', 'adverse', 'favorable'];
+const NEUTRAL: Tone[] = [null, null, null];
+
+export const Ranges = story({ rows: basal().ranges }, RANGES);
+export const RangesDesktop = story({ rows: basal().ranges }, RANGES, true);
+export const Glucose = story({ rows: basal().glucose }, GLUCOSE);
+export const GlucoseDesktop = story({ rows: basal().glucose }, GLUCOSE, true);
+export const ControlIq = story({ rows: basal().basal, title: controlIq }, NEUTRAL);
+export const ControlIqDesktop = story({ rows: basal().basal, title: controlIq }, NEUTRAL, true);
+export const MaturingGlucose = story({ rows: maturing().glucose, count: maturing().readings }, GLUCOSE);
+export const MaturingGlucoseDesktop = story({ rows: maturing().glucose, count: maturing().readings }, GLUCOSE, true);
 
 // Every module's values in the same columns: the arrows sit at one x.
 export const Aligned: Story = {
@@ -33,7 +55,7 @@ export const Aligned: Story = {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       <ChangeMetrics rows={basal().ranges} />
       <ChangeMetrics rows={basal().glucose} />
-      <ChangeMetrics rows={basal().basal} title={<>Basal <span className="ui-metrics__meta">vs Pump profile</span></>} />
+      <ChangeMetrics rows={basal().basal} title={controlIq} />
     </div>
   ),
   play: async ({ canvasElement }) => {

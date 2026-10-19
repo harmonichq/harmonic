@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
 import { change } from '../../changes-model';
+import { expectDirections, expectToned } from '../../direction-check';
 import { ChangeCard } from './ChangeCard';
 
 // One story per state (§4.2 ChangeCard), each a store of the simulated
@@ -50,7 +51,17 @@ export const ProfileSwitch: Story = {
 };
 export const FocusNoDataYet: Story = { args: { data: change('wearer-pinned') } };
 export const FocusMaturing: Story = { args: { data: change('wearer-focus-maturing') } };
-export const FocusMatured: Story = { args: { data: change('wearer-focus') } };
+// Four weeks in: the habit's share and each outcome green or red by the way it
+// moved (the habit less often, Peak lower, Nadir higher, §2.5 2026-10-19),
+// whatever the engine's verdict in the pill.
+export const FocusMatured: Story = {
+  args: { data: change('wearer-focus') },
+  play: async ({ canvasElement }) => {
+    const share = canvasElement.querySelector('.ui-change__figure .ui-delta')!;
+    await expectToned('Habit', share);
+    await expect((await expectDirections(canvasElement, '.ui-change__row', 'th')).length).toBe(5);
+  },
+};
 // A Focus pinned on a standalone habit (ADR 528): no Pattern, so its title line
 // is the habit and its date alone.
 export const FocusOnHabit: Story = {

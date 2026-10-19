@@ -1758,6 +1758,65 @@ existing maturing one; "Readings" joins the interface words. No synthetic store
 yet serves a judged row while a Trial matures, so the untoned Δ is asserted on
 the maturing stores and the contract case, not on a judged row.
 
+## ADR 557 — An unreconciled admission names the change it admitted, and no write leaves a current frontier behind
+
+**Context.** Two snapshots of the operator's store showed the follow-up frontier
+one input revision behind, and in that state the admission named no active
+change: Changes drew "No active change" over a live Trial, listed it under
+Previous and dropped End. A fresh snapshot taken 30 minutes after a fetch was
+current. Nothing but the fetch had written to the store, and the container log
+since its last restart shows no API write. The lag is inside the fetch itself.
+It commits window by window and reconciles once after the pull, then records its
+status and reconciles again. On the operator's host a fetch wrote for about two
+and a half minutes. The frontier is exactly one revision behind twice in that
+span: after the settings capture, while the first window downloads, and after
+the status write, until the fetch loop's own reconcile (0.75 s on a Mac, measured
+on an in-memory copy of a read-only snapshot). A read in that span got the false
+answer, and the browser keeps answers it read (#522). Three writes also advance
+the input revision and never reconcile, so each left the frontier behind until
+the next fetch: a credentials save, a pattern sign-off, and a late conclusion,
+whose lifecycle skips reconciliation by design.
+
+**Decision.**
+
+1. *An unreconciled admission names the change the frontier admitted.* The
+   verdict stays unavailable for reconciliation and grants nothing, with no End
+   and no Focus pin. Its kind, identity, maturity and ending are the frontier's
+   committed change, read as `follow_up_admission` reads it when current. The
+   app reads only those fields and `can_finish_trial`, so Changes draws the last
+   admitted Trial without End and needs no change. Its lock's stale state
+   (Unavailable and Retry over the last answers) stays the one for a failed read.
+   The watched change behind the outcomes trend and the guidance reads the same
+   verdict, so it keeps the Trial too. This is the AGENTS.md rule that stale
+   beats falsely current, applied in the owner rather than in a reader.
+2. *A credentials save and a pattern sign-off reconcile after they commit*,
+   through the same completion as carb, prompt and preference writes. ADR 538
+   settled that every committed write advances the input revision, so these
+   two stay writes that advance it. They now finish the way the other local
+   writes do.
+3. *A late conclusion carries a frontier that was current forward.* It still
+   never reconciles: a conclusion can change which record of a legacy per-slot
+   basal block is served (#510), and reconciling then could record another
+   watch. Nothing a reconcile reads changes, so a frontier current when the
+   conclusion's transaction began stays current. One already behind is left
+   for the next reconcile.
+
+**Rejected.** Making the fetch atomic, or reconciling after every window: either
+holds the one writer for the whole pull, and the reconcile's own note records
+a held write lock timing out every concurrent open. Stopping the
+fetch status, credentials and sign-offs from advancing the input revision would
+re-open ADR 538's decision for a smaller gain, since a fetch's own windows still
+leave the frontier behind. A visible stale mark on Changes for this state would
+change a locked screen, which needs the lock's own revision.
+
+**Dosing.** No analyzer, staging predicate, cap, floor or served suggestion
+changes. The admission grants nothing it did not grant before. Guidance still
+reads unavailable while the frontier is behind.
+
+**Consequences.** Four API tests: the unreconciled admission naming its Trial,
+and the credentials save, the sign-off and the late conclusion each leaving the
+admission available. All four failed first with the operator's symptom.
+
 ## ADR 558 — A change is coloured by its direction, never by the verdict
 
 Amends ADR 554. Connor, 2026-10-19, of a maturing Trial whose every Δ was grey

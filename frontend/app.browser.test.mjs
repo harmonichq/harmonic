@@ -53,9 +53,11 @@ test('each of the five tabs draws its screen', async (t) => {
   for (const { tab, path, primary } of TABS) {
     await t.test(tab, async () => {
       await page.goto(`${BASE}${path}`);
-      // A loading screen draws skeletons of its own rows, so the skeletons go first.
+      // Before the app's first draw there is no skeleton either, so the primary
+      // content is waited for first (#557); a loading screen's skeletons go after.
+      await page.locator(primary).first().waitFor({ state: 'visible', timeout: 30_000 })
+        .catch(() => assert.fail(`${tab} draws no ${primary}`));
       await page.waitForFunction(() => !document.querySelector('.ui-skeleton'), null, { timeout: 30_000 });
-      assert.ok(await page.locator(primary).first().isVisible(), `${tab} draws no ${primary}`);
       assert.equal(await page.getByText('Unavailable', { exact: true }).count(), 0, `${tab} is Unavailable`);
     });
   }

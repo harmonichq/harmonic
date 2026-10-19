@@ -118,6 +118,10 @@ class ExploreExposuresTest(unittest.TestCase):
                     })
 
     def test_fired_drivers_keep_their_episode_cause_and_narrative(self):
+        """A claim sits on the one opportunity its episode is counted on (#550). The
+        over-treated low here is claimed from its rebound's synthesized High, which
+        never reaches 250 and so is no high: the claim sits on the crash low, beside
+        the low's own cause, and its episode's narrative stays the low's."""
         from ciq_autotune.explore_exposures import build_exposures
         from tests.test_scenario_engine import ISF, cgm_flat, cgm_ramp, corr, meal
 
@@ -135,12 +139,15 @@ class ExploreExposuresTest(unittest.TestCase):
                 with patch("ciq_autotune.explore_exposures._effective_isf", return_value=ISF):
                     payload = build_exposures(store)
 
-        high = payload["exposures"]["highs"]["occurrences"][0]
+        self.assertEqual(payload["exposures"]["highs"]["occurrences"], [])
+        [low] = payload["exposures"]["lows"]["occurrences"]
         self.assertEqual(
-            (high["kind"], high["state"], high["cause_lever"], high["cause_title"]),
-            ("high", "fired", "over_treated_low", "Over-treated low"),
+            (low["kind"], low["state"], low["cause_lever"], low["cause_title"],
+             low["attributed_levers"]),
+            ("low", "fired", "correction_on_iob", "Correction on active insulin",
+             ["correction_on_iob", "over_treated_low"]),
         )
-        self.assertTrue(high["text"])
+        self.assertTrue(low["text"])
         for family in payload["exposures"].values():
             self.assertEqual(family["attributed"], sum(
                 occurrence["state"] == "fired" for occurrence in family["occurrences"]
@@ -152,13 +159,20 @@ class ExploreExposuresTest(unittest.TestCase):
         from tests.test_scenario_engine import ISF, cgm_flat, cgm_ramp, corr, meal
 
         cgm = (
-            cgm_flat(19, 18, 40, 120, 20)
+            # An unbolused rise past 250 in the afternoon: a high.
+            cgm_flat(19, 14, 20, 150, 20)
+            + cgm_ramp(19, 14, 40, 150, 3.0, 40)
+            + cgm_ramp(19, 15, 20, 270, -3.0, 40)
+            + cgm_flat(19, 16, 0, 150, 20)
+            + cgm_flat(19, 18, 40, 120, 20)
             + cgm_ramp(19, 19, 0, 120, 1.75, 40)
             + cgm_ramp(19, 19, 40, 190, -1.4, 100)
             + cgm_ramp(19, 21, 20, 50, 4.0, 40)
             + cgm_ramp(19, 22, 0, 210, -1.2, 80)
         )
-        bolus = [meal(19, 19, 0, carbs=40, dose=6), corr(19, 20, 0, units=4)]
+        # Two corrections are one correction pair, anchored at the second.
+        bolus = [corr(19, 13, 0, units=1), meal(19, 19, 0, carbs=40, dose=6),
+                 corr(19, 20, 0, units=4)]
         with tempfile.NamedTemporaryFile(suffix=".db") as db:
             with Store.open(db.name) as store:
                 self._seed_scenario_events(store, bolus, cgm)
@@ -170,7 +184,8 @@ class ExploreExposuresTest(unittest.TestCase):
         self.assertEqual((served_meal["t"], served_meal["bg"], served_meal.get("insulin"),
                           served_meal.get("carbs")), ("2026-06-19 19:00:00", None, 6, 40))
         [correction] = families["correction_clusters"]["occurrences"]
-        self.assertEqual((correction.get("insulin"), correction.get("carbs")), (4, None))
+        self.assertEqual((correction["t"], correction.get("insulin"), correction.get("carbs")),
+                         ("2026-06-19 20:00:00", 4, None))
         lows, highs = families["lows"]["occurrences"], families["highs"]["occurrences"]
         self.assertTrue(lows and highs)
         for occurrence in lows + highs:

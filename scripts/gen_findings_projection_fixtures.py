@@ -539,22 +539,17 @@ def exposures():
         ],
         "highs": [
             over_treated["rebound"],
-            _occurrence("ep2", "high", "09:05", lever=Lever.CARB_UNDERCOUNT,
-                        bg=243.0, worst_bg=243.0,
-                        text="Bolused 45 g at 07:10 and glucose still ran to 243."),
-            _occurrence("ep6", "high", "21:40", bg=201.0, worst_bg=201.0),
-            _occurrence("ep11", "high", "10:15", lever=Lever.CARB_UNDERCOUNT,
-                        bg=210.0, worst_bg=245.0,
-                        text="A late meal bolus at 10:15 still ran high.",
-                        verdicts=[
-                            _verdict("carb_undercount", matched=True,
-                                     detail="A late meal bolus at 10:15 still ran high."),
-                        ]),
+            # A habit claims only in its own family (#550): Carb undercount claims
+            # ep2's meal, so the high that meal ran to is a non-driver high of a
+            # caused episode, and ep11's high is one no episode claims.
+            _occurrence("ep2", "high", "09:05", bg=263.0, worst_bg=263.0),
+            _occurrence("ep6", "high", "21:40", bg=251.0, worst_bg=251.0),
+            _occurrence("ep11", "high", "10:15", bg=258.0, worst_bg=258.0),
         ],
         "meals": [
             _occurrence("ep2", "meal", "07:10", lever=Lever.CARB_UNDERCOUNT,
-                        insulin=4.5, carbs=45.0, worst_bg=243.0,
-                        text="Bolused 45 g at 07:10 and glucose still ran to 243."),
+                        insulin=4.5, carbs=45.0, worst_bg=263.0,
+                        text="Bolused 45 g at 07:10 and glucose still ran to 263."),
             # Finding 2 follow-up: `carb_undercount`'s own classifier always
             # emits an explicit verdict (matched or not, `_meal_verdicts`), so
             # unlike `over_treated_low` its row CAN read a genuine `clean` —
@@ -615,8 +610,8 @@ def _rollup(occurrences, driven):
 
     ``driven`` is every episode id that drew a lever anywhere in the window; an
     occurrence outside it is one the engine found no cause for at all. On this
-    fixture ep6 is the single such high, so the highs rollup carries
-    ``uncaused: 1`` — a non-zero value, because a rollup frozen at zero would let
+    fixture ep6 and ep11 are the two such highs, so the highs rollup carries
+    ``uncaused: 2`` — a non-zero value, because a rollup frozen at zero would let
     the whole count regress to nothing without failing anything. A High an
     over-treated low's rebound owns is never uncaused (ADR 422); the fixture's one
     owned High, the rebound High, shares its low's lever-bearing Episode, so it is

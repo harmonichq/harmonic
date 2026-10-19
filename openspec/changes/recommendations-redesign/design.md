@@ -1513,3 +1513,91 @@ Overview's own story. The UI fixtures serve it for the wearer, its first days, t
 unsynced store and the QA showcase, and the generator fails if any of those stops
 serving its state. The showcase's contract leg asserts its literals. The lock's
 §2.6 heading, dropped by #529's amendment, is restored.
+
+## ADR 550 — A habit is counted over its recurrence population, from one source
+
+**Context.** A standalone habit's findings row and its case file counted one claim
+set over two populations. On the synthetic `wearer-habit` store (the wearer
+skipping the weekday lunch bolus) the missed-meal row said 12 of 26 highs and
+added 1 of 52 correction clusters; its case file and the engine's confidence said
+12 of 24 highs. ADR 528 had the Queue card read the case file to route around it.
+The row is projected from the exposure feed, which emitted one Occurrence for every
+anchor the episode walk visited, and marked a claim on every anchor at the
+attribution's trigger time. The case file counts the engine's opportunity
+populations (`opportunities.build_opportunities`, the recurrence population each
+lever's policy names, ADR 202) and puts each claim on the one opportunity its
+attribution is associated with. The feed was wider in three ways, each measured on
+synthetic stores:
+
+- *Near-lows.* Episodes anchor lows at the 75 mg/dL near-low line; the lows
+  population is sub-70 runs (`gate_low_mgdl`, whose comment says a 71–75 dip "must
+  not widen the LOWS denominator"). `wearer-habit`: 65 feed lows against 41.
+  `pattern-near-tie`: Over-treated low 1 of 9 lows in the row, 1 of 7 in the case file.
+- *Rebound Highs.* The #155 split synthesizes a High at an over-treated low's
+  rebound peak, below 250 mg/dL. `wearer-habit`: two (199 and 228 mg/dL), so 26
+  highs against 24.
+- *The first correction.* Correction clusters are adjacent correction pairs,
+  anchored at the second dose; the feed listed every correction, one more than the
+  pairs. `behavioral-correction-stacking`: 2 of 8 against 2 of 7.
+
+The claim placement split it further: one episode could claim in two families
+(the missed meal's correction cluster, whose bolus sat at the rise's trigger
+time), and an over-treated low claimed from its rebound High was counted in highs
+("2 of 26 highs" beside "10 of 65 lows") though the engine counts it on the crash
+low. Patterns read the same feed for both their row and their case file, so they
+agreed with each other but counted over the widened population: Highs after
+treating lows over 65 lows while its habit is priced over 41.
+
+**Decision.**
+
+- *The population is the recurrence population.* It is what the engine prices a
+  habit on (scenario confidence `n`), what its case file counts and draws, and what
+  ADR 202's policy names; the classifiers' own exposure gate is its low line. The
+  exposure feed lists, per family, exactly that population: an episode anchor is an
+  Occurrence only when it is one of its family's opportunities
+  (`explore_exposures._opportunity_identities`), a correction being the pair it
+  closes.
+- *One association.* Each attributed episode's claim lands on the opportunity the
+  engine's evaluation associates it with (`Evaluation.attributed`, its recurrence
+  anchor), never on every anchor at the trigger time. The case file reads the same
+  association; its own copy (`finding_case_file._association`) goes. An opportunity
+  two claims share (a crash low with its own cause and an over-treatment claimed
+  from its rebound) carries both in `attributed_levers`, the first as its cause; a
+  later claim keeps the minute its consequence landed at
+  (`lever_outcome_minutes`), so a clock window judges each lever where its own
+  consequence landed, as the case file does (`window_membership.claim_minute`).
+- *One row family.* A habit's row counts it once, in its own recurrence family,
+  over every claim in `attributed_levers` there. Its count, appearance and band
+  are that family's. The cause-outcome table narrows to the pairs that can now be
+  printed: each lever with its own family, and each Pattern rate lever with its
+  Pattern's family (Correction stacking's share of Lows after correcting highs).
+  The event-chart family map goes: every lever's map family was its recurrence
+  family, so every habit row carries its coordinate.
+- *A claimed Occurrence is fired for its claimant* in the row's band, as its case
+  file reads it, wherever the claim came from.
+- *Patterns follow.* A Pattern's `n` is its family's feed count, so it is now the
+  same population its rate habits are counted over. No Pattern's admission route,
+  collapse, action or price changes on any QA case; their `n`, rate, interval and
+  readiness count shrink where the feed held near-lows.
+
+**Not changed.** The engine's scenario confidence and its compatibility clamp
+(ADR 202): an over-treated low or a correction on active insulin claimed on a
+near-low is still priced by the engine, which clamps `n` to at least `k`, but it
+sits on no opportunity, so no row, case file or Pattern counts it, and its case
+file is withheld as before. On `wearer-habit` the Over-treated low row says 10 of
+41 lows where the engine prices 12 of 41; on a store whose every over-treatment
+bottoms at a near-low, the habit's Pattern counts 0 of 0 lows and the Queue, which
+leaves out a Pattern it has no row for, draws no card for it. ADR 528's card still
+reads its count from the case file; the row now prints the same count. No analyzer,
+cap, floor, staging predicate, priority or served suggestion changes.
+
+**Consequences.** Every QA case with user corrections loses its first,
+unpaired correction from its behavioral rows, `isf-range-hold` and
+`pattern-near-tie` lose their near-lows, and four verdict tallies and two Pattern
+rosters are re-recorded as literals. Two unreferenced row constants in the QA
+catalog go. The findings-projection fixture's hand-built feed drops Carb
+undercount's two claims on highs, which the producer can no longer emit, and its
+highs reach 250. The UI fixtures regenerate; no Queue row prints a correction-cluster
+sentence, so "clusters" leaves the UI allow-list. The two-family Cause scenario of
+the count-sentence requirement now serves one sentence, and a new requirement
+states the one population.

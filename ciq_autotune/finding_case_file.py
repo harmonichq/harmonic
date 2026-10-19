@@ -10,7 +10,6 @@ import uuid
 
 from .analyzers.classifiers import classify_correction_stacking
 from .analyzers.meals import group_meals
-from .analyzers.scenario.anchors import Anchor, AnchorKind
 from .analyzers.scenario.engine import _effective_isf, low_prompt_answers
 from .analyzers.scenario.levers import Exposure, Lever, exposure, outcome_kind, title
 from .analyzers.scenario.outcome_patterns import credited_claims, outcome_window_population
@@ -522,6 +521,9 @@ def _population(
     recorded = {family: {} for family in Exposure}
     drivers = {family: {} for family in Exposure}
     claim_texts = {lever: {} for lever in Lever}
+    # The one opportunity each attributed episode's claim is associated with, as the
+    # engine counts it and the exposure feed serves it (#550).
+    claims = {row.episode_id: row for row in evaluated.attributed}
     for index, evaluated_episode in enumerate(evaluated.episodes):
         episode = evaluated_episode.anchors
         attr = evaluated_episode.attribution
@@ -546,12 +548,15 @@ def _population(
             continue
         # An attribution that names a lever always leads with its driver's step.
         claim_text = view["steps"][0]["text"]
-        association = _association(attr, episode, by_family)
-        if association is None:
+        claim = claims[evaluated_episode.id]
+        if claim.anchor_t is None:
             withheld.add(attr.lever)
             continue
-        family, key, outcome_t = association
+        family, key = claim.driver_family, claim.driver_source_key
         item = by_family[family][key]
+        landing_kind = outcome_kind(attr.lever)
+        landings = [anchor.t for anchor in episode.anchors if anchor.kind.value == landing_kind]
+        outcome_t = max(landings) if landings else item.anchor_t
         opportunity_id = _opaque("o_", family.value, *item.source_key)
         associations[attr.lever].add(opportunity_id)
         claim_texts[attr.lever].setdefault(opportunity_id, claim_text)
@@ -593,32 +598,6 @@ def _population(
                                for key, item in by_family[family].items())
     return (members, {lever: frozenset(ids) for lever, ids in associations.items()},
             {lever: tuple(rows) for lever, rows in provenance.items()}, frozenset(withheld))
-
-
-def _association(attr, episode, by_family):
-    family = exposure(attr.lever)
-    driver = attr.driver_anchor
-    if family is Exposure.CORRECTION_CLUSTERS:
-        key = attr.correction_pair
-    elif (attr.lever is Lever.OVER_TREATED_LOW and driver is not None
-          and driver.kind is AnchorKind.HIGH and driver.rebound_nadir_t is not None):
-        matches = [key for key, item in by_family[Exposure.LOWS].items()
-                   if item.anchor_t == driver.rebound_nadir_t]
-        if len(matches) != 1:
-            return None
-        family, key = Exposure.LOWS, matches[0]
-    else:
-        driver_family, key = (
-            opportunities.canonical_anchor_key(driver)
-            if driver is not None else (None, None)
-        )
-        if driver_family is not family:
-            return None
-    if key not in by_family.get(family, {}):
-        return None
-    landing_kind = outcome_kind(attr.lever)
-    landings = [anchor.t for anchor in episode.anchors if anchor.kind.value == landing_kind]
-    return family, key, max(landings) if landings else by_family[family][key].anchor_t
 
 
 def wrap(prepared):

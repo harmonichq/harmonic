@@ -422,7 +422,8 @@ def _case_test(case):
                     case.expectation,
                     verdict_tallies={
                         **case.expectation.verdict_tallies,
-                        target_key: replace(target_tally, denominator=7),
+                        # Every correction bolus rather than every pair (#550).
+                        target_key: replace(target_tally, denominator=8),
                     },
                 ),
                 replace(

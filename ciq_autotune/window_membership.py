@@ -102,6 +102,16 @@ def outcome_minute(occurrence: dict, exposures_payload: dict) -> Optional[int]:
     return _minute_of(timestamp) if timestamp is not None else None
 
 
+def claim_minute(occurrence: dict, lever: str, exposures_payload: dict) -> Optional[int]:
+    """Return the clock minute an occurrence is judged at for one lever (#550).
+
+    A lever that claims the occurrence after its cause reads where its own claim's
+    consequence landed; every other lever reads the occurrence's outcome minute.
+    """
+    later = (occurrence.get("lever_outcome_minutes") or {}).get(lever)
+    return later if later is not None else outcome_minute(occurrence, exposures_payload)
+
+
 def outcome_window_exposures(exposures: dict, query: WindowQuery) -> dict:
     """Copy exposure evidence with each family limited by its outcome landing."""
     scoped = deepcopy(exposures)

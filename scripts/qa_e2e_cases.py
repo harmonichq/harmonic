@@ -3411,6 +3411,60 @@ def _materialize_c3_trial(store, *, finished=False, preempted=False):
         reconcile_ingested_follow_up(store)
 
 
+# The knobs a release before #503 and #553 had that the configuration has since
+# retired, at their last defaults: #503's seven meal-bolus-short knobs and #553's
+# 75 mg/dL near-low anchor line. Every Trial and Focus such a release retained
+# carries them in its saved scenario configuration (#554).
+_EARLIER_KNOBS = {
+    'meal_bolus_short_rise_slope_mgdl_min': 1.0, 'meal_bolus_short_slope_lookback_min': 20,
+    'meal_bolus_short_digestion_lookback_min': 150, 'meal_bolus_short_min_carbs': 10.0,
+    'meal_bolus_short_correction_horizon_min': 180.0, 'meal_bolus_short_correction_floor_u': 1.0,
+    'meal_bolus_short_dose_split_grace_min': 30.0, 'anchor_near_low_mgdl': 75.0,
+}
+# The knob #553 added since: such a release's configuration has none.
+_LATER_KNOBS = ('preempted_printed_low_mgdl',)
+
+
+def _materialize_c3_ic_trial(store):
+    """A carb ratio Trial six days in (#554): a lunch every day of the month, the
+    11:00–14:00 carb ratio strengthened on 25 May, and the Trial retained by a
+    release before #503 and #553, its saved configuration that release's: the
+    knobs it had, and none it lacked."""
+    from dataclasses import replace
+    from unittest.mock import patch
+    import ciq_autotune.follow_up_comparison as comparison
+    from ciq_autotune.watched_change import reconcile_follow_up, reconcile_ingested_follow_up
+    first = _materialize_behavioral_background(store, span_days=30)
+    store.upsert_bolus([{
+        'seq_num': 395_000 + day,
+        'request_time': str(datetime.combine(first, datetime.min.time()) + timedelta(days=day, hours=12)),
+        'description': 'Synthetic meal bolus', 'completion': 'Completed',
+        'insulin': 8.0, 'requested_insulin': 8.0, 'carbs': 40.0,
+        'carb_ratio': 5.0, 'isf': 40.0, 'target_bg': 110.0,
+    } for day in range(30)])
+    # The lane answers its insulin before the reconcile, as c3-trial's does, so
+    # the frontier is current when the case is read.
+    _respond_fasting_lane(store)
+    settings = store.settings_snapshots()[-1].settings
+    profile = settings.active()
+    segments = tuple(replace(profile.segments[0], start_min=start, **({'carb_ratio': 4.4} if start == 660 else {}))
+                     for start in (0, 660, 840))
+    store.upsert_settings_snapshot('2024-05-25 00:00:00', replace(settings, profiles=(
+        replace(profile, segments=segments),)))
+    current = comparison._execution
+
+    def earlier_release():
+        execution = current()
+        knobs = {name: value for name, value in execution['configuration'].items() if name not in _LATER_KNOBS}
+        return {**execution, 'configuration': {**knobs, **_EARLIER_KNOBS}}
+
+    # A retained context is written once, so the Trial is retained as that
+    # release retained it.
+    with patch.object(comparison, '_execution', earlier_release), store.follow_up_transaction():
+        reconcile_follow_up(store, now=datetime(2024, 5, 25), recorded_at=datetime(2024, 5, 25))
+    reconcile_ingested_follow_up(store)
+
+
 def _materialize_c3_pin(store):
     _materialize_behavioral_background(store, span_days=30)
     # Twelve independent manufactured lows with rebound, one per date. The
@@ -4208,6 +4262,113 @@ QA_CASES += (
                                                                                                   'near_miss': 0,
                                                                                                   'no_data': 0,
                                                                                                   'clean': 0})},
+                      uncaused_highs=0), 30),
+    # #554: the maturing carb ratio Trial a release before #503 and #553 retained. Its
+    # flat lane queues nothing; Changes reads its comparison.
+    QaCase('c3-ic-trial', _materialize_c3_ic_trial,
+        QaExpectation(analyzer_rows={},
+                      support={},
+                      queue_rows={},
+                      queue_absences=frozenset(),
+                      rest_windows=_BEHAVIORAL_30_DAY_REST_WINDOWS,
+                      behavioral_rows=frozenset(("meals", f"2024-05-{day:02d} 12:00:00", "no_data")
+                                                for day in range(1, 31)),
+                      finding_titles=frozenset({'Highs after meals', 'Highs after treating lows',
+                                                'Lows after correcting highs', 'Lows after meals',
+                                                'meals-start-high'}),
+                      outcome_patterns=({'key': 'highs_after_meals',
+                                         'title': 'Highs after meals',
+                                         'subject': 'pattern:highs_after_meals',
+                                         'members': [{'subject': 'setting:carb_ratio',
+                                                      'kind': 'setting',
+                                                      'k': 0,
+                                                      'price': 0,
+                                                      'admitted': False,
+                                                      'producer': 'tuning_levers',
+                                                      'lo': None,
+                                                      'hi': None,
+                                                      'seriousness': None,
+                                                      'seriousness_segments': [],
+                                                      'action': None}],
+                                         'rate_levers': ['habit:carb_undercount', 'habit:late_bolus'],
+                                         'n': 30,
+                                         'k': 0,
+                                         'rate': 0.0,
+                                         'wilson': {'lo': 0.0, 'hi': 0.0519},
+                                         'wide': False,
+                                         'rate_producer': 'exposures',
+                                         'readiness': {'count': 30, 'gate': 12, 'verdict': 'ready'},
+                                         'settled_price': 0,
+                                         'admission_route': 'none',
+                                         'collapse': 'remain_pattern',
+                                         'action': None,
+                                         'seriousness': None,
+                                         'member_set_fingerprint': '13141e472c40a768'},
+                                        {'key': 'lows_after_meals',
+                                         'title': 'Lows after meals',
+                                         'subject': 'pattern:lows_after_meals',
+                                         'members': [{'subject': 'setting:carb_ratio',
+                                                      'kind': 'setting',
+                                                      'k': 0,
+                                                      'price': 0,
+                                                      'admitted': False,
+                                                      'producer': 'tuning_levers',
+                                                      'lo': None,
+                                                      'hi': None,
+                                                      'seriousness': None,
+                                                      'seriousness_segments': [],
+                                                      'action': None}],
+                                         'rate_levers': ['habit:meal_over_delivery'],
+                                         'n': 30,
+                                         'k': 0,
+                                         'rate': 0.0,
+                                         'wilson': {'lo': 0.0, 'hi': 0.0519},
+                                         'wide': False,
+                                         'rate_producer': 'exposures',
+                                         'readiness': {'count': 30, 'gate': 12, 'verdict': 'ready'},
+                                         'settled_price': 0,
+                                         'admission_route': 'none',
+                                         'collapse': 'remain_pattern',
+                                         'action': None,
+                                         'seriousness': None,
+                                         'member_set_fingerprint': '13141e472c40a768'},
+                                        {'key': 'highs_after_treating_lows',
+                                         'title': 'Highs after treating lows',
+                                         'subject': 'pattern:highs_after_treating_lows',
+                                         'members': [],
+                                         'rate_levers': ['habit:over_treated_low'],
+                                         'n': 0,
+                                         'k': 0,
+                                         'rate': None,
+                                         'wilson': None,
+                                         'wide': True,
+                                         'rate_producer': 'exposures',
+                                         'readiness': {'count': 0, 'gate': 12, 'verdict': 'withheld'},
+                                         'settled_price': 0,
+                                         'admission_route': 'none',
+                                         'collapse': 'remain_pattern',
+                                         'action': None,
+                                         'seriousness': None,
+                                         'member_set_fingerprint': 'e3b0c44298fc1c14'},
+                                        {'key': 'lows_after_correcting_highs',
+                                         'title': 'Lows after correcting highs',
+                                         'subject': 'pattern:lows_after_correcting_highs',
+                                         'members': [],
+                                         'rate_levers': ['habit:correction_stacking', 'habit:correction_on_iob'],
+                                         'n': 0,
+                                         'k': 0,
+                                         'rate': None,
+                                         'wilson': None,
+                                         'wide': True,
+                                         'rate_producer': 'exposures',
+                                         'readiness': {'count': 0, 'gate': 12, 'verdict': 'withheld'},
+                                         'settled_price': 0,
+                                         'admission_route': 'none',
+                                         'collapse': 'remain_pattern',
+                                         'action': None,
+                                         'seriousness': None,
+                                         'member_set_fingerprint': 'e3b0c44298fc1c14'}),
+                      verdict_tallies={},
                       uncaused_highs=0), 30),
 )
 

@@ -54,6 +54,9 @@ Status: **exploring** (#481).
 - **Meal size on the Overview, 2026-10-19** (#501, §2.5): the operator's
   approved card, built on the locked Overview screen; Storybook `MealSizeCard`
   (Populated, Sparse, Empty sizes, No data, Loading) and `Screens/Overview`.
+- **A maturing Trial's data as it forms, 2026-10-19** (#554, §2.5): the
+  operator's decision, built on the locked Changes screen; Storybook
+  `Screens/Changes` (Carb Ratio Maturing, Carb Ratio First Hours).
 
 This document is the durable record of the redesign. Sections 1–3 are what the
 build will be checked against once they are approved. The appendix keeps the
@@ -99,7 +102,7 @@ Each row lists a screen's states. Labels only; no state uses prose.
 | Queue | Ranked cards, top card expanded | "0 patterns" label | Card skeletons | Unavailable + Retry | A card expanded; mid-swipe; just snoozed (bar "Snoozed · Until <date>" + Undo); just Done (bar "Waiting for pump" + Undo, §2.5); a Setting Not on pump (§2.5); a Habit open, and pinned (§2.5, 2026-10-19); Snoozed footer when N > 0 |
 | Queue · Snoozed | Each snoozed item as its Queue row, plus "Until <date>" + Restore | Not reachable (the footer is hidden at 0) | — | Unavailable + Retry | Restored (row leaves) |
 | Queue · setting detail | current → estimate, range, n, chart | — | Chart skeleton | Unavailable | A queued ISF: the Overview's ISF card in the Queue's frame (§2.5, 2026-10-14) |
-| Changes | The current Trial (head, trace, ranges, Mean/GMI/CV, Basal vs Pump profile) or Focus, then the Previous row with its count | "No active change" label; no Previous row at 0 | Skeleton | Unavailable + Retry | Maturing; Matured (result pill); a carb ratio Trial (Meals before / after; its trace meal by meal under three meals); a whole-profile switch (each setting it moved); **End** (Focus: anytime; Trial: once matured) → confirm sheet → ended; Waiting for pump rows after a Done, between the current change and Previous (§2.5) |
+| Changes | The current Trial (head, trace, ranges, Mean/GMI/CV, Basal vs Pump profile) or Focus, then the Previous row with its count | "No active change" label; no Previous row at 0 | Skeleton | Unavailable + Retry | Maturing, every module as its data forms, each glucose module with its Readings, no Δ toned; first hours (an empty after: Meals after 0, each after blank) (§2.5, 2026-10-19); Matured (result pill); a carb ratio Trial (Meals before / after; its trace meal by meal under three meals); a whole-profile switch (each setting it moved); **End** (Focus: anytime; Trial: once matured) → confirm sheet → ended; Waiting for pump rows after a Done, between the current change and Previous (§2.5) |
 | Changes · Previous | Every previous change, newest first, no cutoff: setting and block, date, before → after per setting, the result where one was saved | Not reachable (the row is hidden at 0) | — | Unavailable + Retry | — |
 | Overview | 14 d selected; one scrolling page, the summary (window switch, date span, In range, metrics, glucose profile) its first screenful, the ISF and basal estimates below, then Meal size (§2.5, 2026-10-19) | "No data" label per window, in the ISF or basal estimate when none is served, and in Meal size when no meal is counted | Skeleton; a window not yet read shows its profile's and estimates' skeletons; Meal size its skeleton until read | Unavailable + Retry | 30 d / 90 d selected; a previous period without data (the span alone, no changes); the ISF estimate with a supported change (current → recommended), held, Uncertain, with nights beyond its axis; Meal size with a size of one meal, or of none ("–") |
 | Day | Latest day with data | "No data" for a day without readings | Chart skeleton | Unavailable + Retry | Month dropped down from the header's day; desktop: the selected week as a ribbon; the Lows row when its count > 0, and under it the Rises row when its count > 0 (§2.5, 2026-10-14 Rises) |
@@ -998,6 +1001,31 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   - **Words.** Meal size, Climb, To peak and At 3 h join §1.5, and Median's
     meaning widens to a size's meals. "min" is a unit, as "d" is. "Rise" is
     already the unbolused high's term, so the card never uses it.
+- **2026-10-19 — a maturing Trial shows its data as it forms (#554).** On his
+  own carb ratio Trial, five days in, the operator's Changes screen showed only
+  the head card and the Previous row: "Can we work on the PR to get this page
+  useful?" The approved mock (his data, two days in) had shown every module.
+  Confirming the intent, he said: "I want to be able to see the data as it's
+  forming." The engine had withheld the comparison for a
+  reason of its own (ADR 554); this amendment settles what the screen does
+  with a comparison still forming. Built on the locked Changes screen (ADR
+  554); §1.3 and §4.2 follow.
+  - **Every module, live.** A maturing Trial draws Meals before and after,
+    the trace and every metric module over what its after period has read so
+    far, as a matured one does.
+  - **Each module's n.** Each glucose module (In range / Below 70 / Above 180;
+    Mean / GMI / CV) closes with a quiet "Readings" row, before → after in the
+    shared columns, with no unit and no Δ: the readings its rows are read
+    from. Days "n of N", the meals and the trace legend's episodes already
+    carry theirs.
+  - **Only the verdict waits.** The pill stays Maturing, no result is shown,
+    and no Δ is toned until the Trial has matured, whatever the engine has
+    already judged; the arrow and the amount stay, in neutral ink.
+  - **An after with nothing read yet is empty, not missing.** In the hours
+    after a change the screen shows the before values beside a blank after,
+    with no Δ, Meals after 0 and the trace legend's "After 0"; the trace
+    draws the before period alone.
+  - **Words.** "Readings" joins the plain interface words (§2.5, 2026-10-13).
 
 ### 2.6 Deferred (not cut)
 Not built in the current screens. The engine still serves what each needs, and
@@ -1328,7 +1356,9 @@ unless noted. Loading is a skeleton of the component's own shape.
       "Meals"), then "Before 55" and "After 2" in the engine's counts.
     - States: by clock across a block (basal; ISF); across the whole day (a
       whole-profile switch); at each in-block meal bolus, −30 to 240 minutes,
-      with "Minutes" (carb ratio); an arm drawn episode by episode.
+      with "Minutes" (carb ratio); an arm drawn episode by episode; an after
+      with nothing read yet, the before drawn alone and "After 0" (§2.5,
+      2026-10-19).
     - Fields: the comparison's `views.before|after.trace` (`alignment`,
       `start_min`, `start`, `end`, `episodes`, `bins[].t, median, p25, p75`,
       `traces`) (ADR 524).
@@ -1337,11 +1367,15 @@ unless noted. Loading is a skeleton of the component's own shape.
     the shared Delta, in fixed columns shared by every module (§2.5,
     2026-10-14).
     - States: In range / Below 70 / Above 180 (the target metric strong, its
-      Δ toned by the engine's verdict); Mean / GMI / CV (never toned); Basal
-      vs Pump profile: Delivered (U/h), Above and Below (% of the time).
+      Δ toned by the engine's verdict once the Trial has matured); Mean / GMI /
+      CV (never toned); Basal vs Pump profile: Delivered (U/h), Above and
+      Below (% of the time); a glucose module closed by its "Readings" row,
+      before → after; a maturing Trial's module (no Δ toned); an after with
+      nothing read yet (each after blank, no Δ) (§2.5, 2026-10-19).
     - Fields: the comparison's `outcomes[key=tir|tbr|tar|mean|gmi|cv].before,
-      after, assessment.state`; `views.before|after.basal.delivered, above,
-      below` (ADR 524).
+      after, assessment.state`; `outcomes[key=tir].denominators.before, after`
+      (Readings); `views.before|after.basal.delivered, above, below` (ADR 524,
+      ADR 554).
     - Desktop: the same, the pane's width.
 
 **Day**

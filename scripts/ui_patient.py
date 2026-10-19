@@ -556,7 +556,8 @@ def materialize(store, *, trial: bool, days: int = DAYS, trial_basal: float = TR
     """Ingest the simulated history into ``store`` as a Tandem Source pull would:
     the profile read at the start (and again after each change the pull reaches),
     then CGM, basal, bolus and pump events. ``days`` stops the pull at the end of
-    that day, as a sync made early in the wearer's history would. A change to
+    that day, as a sync made early in the wearer's history would; a fraction
+    stops it part-way through the next (#554). A change to
     another idp is a switch: every read holds each profile the person keeps, as
     it stands that day, and names the running one."""
     changes = _changes(trial, trial_basal, profile, changes)

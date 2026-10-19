@@ -54,6 +54,7 @@ uv run python scripts/smoke_app.py         # the server serves the built app and
 uv run python scripts/smoke_app.py --then node --test frontend/ui/app/live.contract.test.mjs frontend/app.browser.test.mjs
 uv run python scripts/smoke_app.py --case isf-strengthen --then node --test frontend/ui/app/live.contract.test.mjs
 uv run python scripts/smoke_app.py --case c3-trial --then node --test frontend/ui/app/live.contract.test.mjs
+uv run python scripts/smoke_app.py --case c3-ic-trial --then node --test frontend/ui/app/live.contract.test.mjs
 npx --yes @fission-ai/openspec@1.14.0 validate --all --strict # OpenSpec requirements and changes
 python3 scripts/check_adr_numbers.py       # decision-record naming guard
 python3 scripts/check_owned_identifiers.py # product-name guard
@@ -87,7 +88,8 @@ generator emits instead of the showcase.
   through the app's one client and the live adapter, in Node with no browser,
   and asserts each of the five tabs' screen models against literal values per
   store. The showcase covers every tab; `isf-strengthen` adds a queued
-  correction factor, `c3-trial` an active Trial, `basal-and-carb-ratio-lower` a
+  correction factor, `c3-trial` an active Trial, `c3-ic-trial` a maturing carb
+  ratio Trial an earlier release retained (#554), `basal-and-carb-ratio-lower` a
   queued carb ratio, `pattern-correction-collapse` a Pattern served as its
   one habit, with its case file, and `behavioral-missed-meal` a standalone
   habit's card, pinned into a Focus on the habit itself and ended (ADR 528). A

@@ -1689,3 +1689,71 @@ added), so a Focus retained under the earlier configuration reads
 `unsupported_retained_execution`, ADR 462's existing rule for a changed
 computation. Unit fixtures whose boluses carried no `seq_num` gain one, as every
 stored bolus has (`bolus_events.seq_num` is `NOT NULL`).
+
+## ADR 554 — A maturing Trial shows its data as it forms, and a Trial's identity is not a configuration it never runs
+
+Amends ADR 524. Connor, live on 2026-10-19, on a carb ratio Trial five days in
+whose Changes screen showed only its head card and the Previous row: "Can we
+work on the PR to get this page useful?", then "I want to be able to see the
+data as it's forming."
+
+**What was wrong.** ADR 524 had the live adapter read the active Trial's
+comparison whether or not it had matured, and it did. The comparison it read was
+unavailable, `unsupported_retained_execution`, for every Trial and Focus on
+Connor's store: each retained context saved its scenario configuration with the
+seven `meal_bolus_short_*` knobs #503 retired, and the identity check compared
+the whole saved configuration to today's for equality. Its policy stamp, its
+version and every knob the running code reads all matched. Maturity was never
+the gate. The screen draws its modules only from an available comparison, so it
+drew the head card alone, and an End would have saved the same unavailable
+comparison.
+
+**Decision.**
+
+- **A Trial's identity is its context version and policy stamp.** ADR 462 named
+  the scenario configuration "a Focus executes" as part of a retained
+  computation's identity. A Trial's comparison runs none of it: the only reads
+  of the retained configuration are a Focus's anchors and its habit's
+  observations. Comparing a Trial's saved configuration refused it for a change
+  it could not feel. #553 (ADR 553) showed the cost a second time on the day it
+  merged: it retired the 75 mg/dL near-low anchor line and added
+  `preempted_printed_low_mgdl`, so every record saved before it lacked a
+  current knob and would have read unsupported again, Connor's Trial included.
+  A Trial is now refused only for its version or its policy stamp.
+- **A Focus executes its saved configuration, so the configuration stays its
+  identity, by the knobs the running code reads.** Every current knob must hold
+  its saved value, so a knob changed, added since, or moved refuses it. A saved
+  knob the configuration no longer has, as #503 retired seven, can change no
+  current computation and is ignored. No rename mapping is kept: #553 split the
+  75 line in two, and the half a Focus anchors on moved to the 70 line, a
+  change in what a pre-#553 Focus computes, so refusing it is the honest answer
+  and a mapping that let the renamed half through would hide it.
+- **An after period with no readings yet is served empty, not withheld.** In the
+  hours after a change the after period has read nothing; the comparison is
+  available with the before period in full and an empty after (no meals, a trace
+  of no episodes, each row's after null with `no_readable_outcome`). Only a
+  comparison with no readings in either period is unavailable.
+- **A maturing Trial shows every module as its data forms.** Meals before and
+  after, the trace, In range / Below 70 / Above 180, Mean / GMI / CV and, for a
+  basal Trial, Control-IQ against the Pump profile, each over what the after
+  period has read so far; an after with nothing read is drawn empty, with no Δ.
+  Each glucose module closes with the readings it is read from, before → after
+  (`outcomes[key=tir].denominators`), so its current n is on the screen beside
+  Days, the meals and the trace legend's episodes.
+- **Only the verdict waits for maturity.** The pill stays Maturing and the
+  result stays hidden, as before; no Δ is toned while the Trial matures. The
+  model reads the served Trial `state` for both, the same field the result
+  already read. The engine's own directional states stay as served: a carb
+  ratio Trial can meet its eight effective meal runs before fourteen meal days,
+  so a judged row while maturing is reachable, and the screen does not claim it
+  early.
+
+**Consequences.** A new QA case, `c3-ic-trial`, retains a carb ratio Trial
+through a configuration from before #503 and #553 (a retained context is written
+once, so the case captures it that way); it backs an API test and a new contract leg
+in CI's app job, and fails with Connor's symptom without the fix. The UI
+fixtures gain each comparison row's readings and a store for a carb ratio Trial
+in its first hours (`wearer-ic-first-hours`), which the stories draw beside the
+existing maturing one; "Readings" joins the interface words. No synthetic store
+yet serves a judged row while a Trial matures, so the untoned Δ is asserted on
+the maturing stores and the contract case, not on a judged row.

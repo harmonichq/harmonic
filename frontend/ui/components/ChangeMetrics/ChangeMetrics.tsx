@@ -15,8 +15,13 @@
 // for a basal Trial, how active Control-IQ was against the Pump profile: the
 // delivered rate and the share of the time above and below it. An optional
 // title names a module that needs one ("Basal vs Pump profile").
+//
+// While a Trial matures every module shows its data as it forms (§2.5,
+// 2026-10-19): a row's after value is what the after arm has read so far, and
+// empty, with no Δ, before it has read any; an optional count closes the module
+// with the readings its rows are read from, before → after, in the same columns.
 import type { ReactNode } from 'react';
-import type { OutcomeRow } from '../../changes-model';
+import type { Count, MetricRow, OutcomeRow } from '../../changes-model';
 import { Delta } from '../../Delta';
 import { Num } from '../../Num';
 import '../../shared.css';
@@ -37,14 +42,14 @@ export const METRIC_LABELS: Record<OutcomeRow['key'], { words: string; threshold
   below: { words: 'Below' },
 };
 
-export function MetricLabel({ row }: { row: OutcomeRow }) {
+export function MetricLabel({ row }: { row: Pick<OutcomeRow, 'key'> }) {
   const label = METRIC_LABELS[row.key];
   return <>{label.words}{label.threshold && <> <span data-axis="">{label.threshold}</span></>}</>;
 }
 
-export type ChangeMetricsProps = { rows: OutcomeRow[]; title?: ReactNode };
+export type ChangeMetricsProps = { rows: MetricRow[]; title?: ReactNode; count?: Count | null };
 
-export function ChangeMetrics({ rows, title }: ChangeMetricsProps) {
+export function ChangeMetrics({ rows, title, count }: ChangeMetricsProps) {
   if (rows.length === 0) return null;
   return (
     <section className="ui-metrics">
@@ -55,11 +60,21 @@ export function ChangeMetrics({ rows, title }: ChangeMetricsProps) {
             <dt className="ui-caption ui-metrics__label"><MetricLabel row={row} /></dt>
             <dd className="ui-metrics__before"><Num value={row.before} /></dd>
             <dd className="ui-metrics__arrow" aria-hidden="true">→</dd>
-            <dd className="ui-metrics__after"><Num value={row.after} /></dd>
+            <dd className="ui-metrics__after">{row.after && <Num value={row.after} />}</dd>
             <dd className="ui-metrics__unit">{row.unit}</dd>
-            <dd className="ui-metrics__delta"><Delta change={row.delta} /></dd>
+            <dd className="ui-metrics__delta">{row.delta && <Delta change={row.delta} />}</dd>
           </div>
         ))}
+        {count && (
+          <div className="ui-metrics__row ui-metrics__row--count">
+            <dt className="ui-caption ui-metrics__label">Readings</dt>
+            <dd className="ui-metrics__before"><Num value={count.before} /></dd>
+            <dd className="ui-metrics__arrow" aria-hidden="true">→</dd>
+            <dd className="ui-metrics__after"><Num value={count.after} /></dd>
+            <dd className="ui-metrics__unit" />
+            <dd className="ui-metrics__delta" />
+          </div>
+        )}
       </dl>
     </section>
   );

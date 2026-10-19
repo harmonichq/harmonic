@@ -15,7 +15,11 @@ import { ChangesScreen, type ChangesScreenProps } from './ChangesScreen';
 //   time across the 02:00–05:00 block, its ranges, Mean / GMI / CV, and
 //   Control-IQ against the Pump profile.
 // - A carb ratio Trial a few days in: Meals before and after, its trace at
-//   each in-block meal bolus, the after arm meal by meal.
+//   each in-block meal bolus, the after arm meal by meal, and every module as
+//   its data forms, each glucose module closed by its Readings, no Δ toned
+//   while it matures (§2.5, 2026-10-19).
+// - The same Trial in its first hours: the before arm in full, and an empty
+//   after arm (no meals, no line, each after empty and without a Δ).
 // - A whole-profile switch: each setting it moved, the trace across the day.
 // - Focus maturing (a day after its pin) and matured (four weeks after).
 // - Ended: the matured Trial once the person ends it: no active change, the
@@ -55,6 +59,7 @@ const MATURING = { store: 'wearer-trial-maturing' } as const;
 const MATURED = { store: 'wearer', end: { after: 'wearer-ended' } } as const;
 const WORSE = { store: 'wearer-worse' } as const;
 const CARB_RATIO = { store: 'wearer-ic-maturing' } as const;
+const FIRST_HOURS = { store: 'wearer-ic-first-hours' } as const;
 const PROFILE = { store: 'wearer-profile' } as const;
 const PREVIOUS = { store: 'wearer-previous' } as const;
 const FOCUS_MATURING = { store: 'wearer-focus-maturing' } as const;
@@ -73,8 +78,51 @@ export const TrialMaturedPhone = story('phone', MATURED);
 export const TrialMaturedDesktop = story('desktop', MATURED);
 export const TrialWorsePhone = story('phone', WORSE);
 export const TrialWorseDesktop = story('desktop', WORSE);
-export const CarbRatioMaturingPhone = story('phone', CARB_RATIO);
-export const CarbRatioMaturingDesktop = story('desktop', CARB_RATIO);
+// A maturing Trial shows its data as it forms (§2.5, 2026-10-19): the meals,
+// the trace and every metric module over what the after arm has read so far,
+// each glucose module with its Readings; the pill stays Maturing, no Δ is
+// toned and End is not offered.
+const metricsOf = (canvasElement: HTMLElement) => [...canvasElement.querySelectorAll('.ui-metrics')] as HTMLElement[];
+const formingPlay: Story['play'] = async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  await expect(canvas.getByText('Maturing')).toBeInTheDocument();
+  await expect(canvas.queryByRole('button', { name: 'End' })).toBeNull();
+  await expect(canvas.getByText('Meals after')).toBeInTheDocument();
+  await expect(canvasElement.querySelector('[data-source$=".views.after.trace.episodes"]')).not.toBeNull();
+  const modules = metricsOf(canvasElement);
+  await expect(modules.length).toBe(2);
+  for (const module of modules) {
+    await expect(within(module).getByText('Readings')).toBeInTheDocument();
+    for (const after of module.querySelectorAll('.ui-metrics__after')) await expect(after.textContent).not.toBe('');
+  }
+  await expect(canvasElement.querySelector('.ui-delta--favorable, .ui-delta--adverse')).toBeNull();
+};
+export const CarbRatioMaturingPhone: Story = { ...story('phone', CARB_RATIO), play: formingPlay };
+export const CarbRatioMaturingDesktop: Story = { ...story('desktop', CARB_RATIO), play: formingPlay };
+
+// Hours after the change, before its block has a reading: the before arm, and
+// the after arm empty rather than the modules missing.
+const firstHoursPlay: Story['play'] = async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  await expect(canvas.getByText('Maturing')).toBeInTheDocument();
+  await expect(canvasElement.querySelector('[data-source$=".denominators.after.contributing_meals"]')?.textContent)
+    .toBe('0');
+  await expect(canvasElement.querySelector('[data-source$=".views.after.trace.episodes"]')?.textContent).toBe('0');
+  const modules = metricsOf(canvasElement);
+  await expect(modules.length).toBe(2);
+  for (const module of modules) {
+    const rows = [...module.querySelectorAll('.ui-metrics__row:not(.ui-metrics__row--count)')];
+    await expect(rows.length).toBeGreaterThan(0);
+    for (const row of rows) {
+      await expect(row.querySelector('.ui-metrics__before')?.textContent).not.toBe('');
+      await expect(row.querySelector('.ui-metrics__after')?.textContent).toBe('');
+      await expect(row.querySelector('.ui-delta')).toBeNull();
+    }
+    await expect(module.querySelector('[data-source$=".denominators.after"]')?.textContent).toBe('0');
+  }
+};
+export const CarbRatioFirstHoursPhone: Story = { ...story('phone', FIRST_HOURS), play: firstHoursPlay };
+export const CarbRatioFirstHoursDesktop: Story = { ...story('desktop', FIRST_HOURS), play: firstHoursPlay };
 export const ProfileTrialPhone = story('phone', PROFILE);
 export const ProfileTrialDesktop = story('desktop', PROFILE);
 export const PreviousRowPhone = story('phone', PREVIOUS);

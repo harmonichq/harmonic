@@ -363,6 +363,46 @@ class DurableApiTest(unittest.TestCase):
                             if kind == "focus":
                                 self.assertEqual(detail["title"], "Highs after meals")
 
+    def test_a_maturing_trial_retained_before_a_knob_was_retired_serves_its_comparison(self):
+        """#554: the c3-ic-trial store's carb ratio Trial, six days in and retained
+        by a release before #503 and #553, serves the comparison Changes draws while it
+        matures: each arm's meals, its meal-aligned trace and every metric over
+        its own readings, with no direction claimed before maturity."""
+        import subprocess
+        import sys
+        from pathlib import Path
+        root = Path(__file__).resolve().parents[1]
+        path = Path(self.directory.name) / "c3-ic-trial.sqlite"
+        generated = subprocess.run(
+            [sys.executable, str(root / "scripts/gen_qa_e2e_db.py"), "--case", "c3-ic-trial", "--out", str(path)],
+            cwd=root, capture_output=True, text=True, check=False)
+        self.assertEqual(generated.returncode, 0, generated.stderr)
+        client = TestClient(create_app(db_path=str(path), token="", enable_fetch_loop=False))
+        roster = client.get("/api/verify/trials").json()
+        admission = roster["admission"]
+        self.assertEqual((admission["active_kind"], admission["can_finish_trial"]), ("trial", False))
+        trial = next(row for row in roster["trials"] if row["id"] == admission["active_id"])
+        self.assertEqual((trial["parameter"], trial["block"], trial["before"], trial["after"], trial["state"]),
+                         ("carb_ratio", [660, 840], 5.0, 4.4, "maturing"))
+        self.assertEqual((trial["maturing"]["days_elapsed"], trial["maturing"]["days_required"]), (6, 14))
+        response = client.get("/api/verify/trials", params={"selected": trial["id"], "assessment": "retained"})
+        self.assertEqual(response.status_code, 200, response.text)
+        comparison = response.json()["selected"]["reassessment"]["comparison"]
+        self.assertEqual(comparison["availability"], {"state": "available", "reason": None})
+        self.assertEqual({arm: d["contributing_meals"] for arm, d in comparison["denominators"].items()},
+                         {"before": 24, "after": 6})
+        traces = {arm: view["trace"] for arm, view in comparison["views"].items()}
+        self.assertEqual({arm: (t["alignment"], t["episodes"], t["left_off"], len(t["bins"]), t["traces"])
+                          for arm, t in traces.items()},
+                         {"before": ("meal", 24, 0, 55, None), "after": ("meal", 6, 0, 55, None)})
+        rows = {row["key"]: row for row in comparison["outcomes"]}
+        for key in ("tir", "tbr", "tar", "mean", "gmi", "cv"):
+            with self.subTest(key=key):
+                self.assertEqual(rows[key]["denominators"], {"before": 1440, "after": 360})
+                self.assertIsNotNone(rows[key]["before"])
+                self.assertIsNotNone(rows[key]["after"])
+        self.assertEqual({row["assessment"]["state"] for row in comparison["outcomes"]}, {"unclear", "context"})
+
     def seed_trial(self):
         from datetime import datetime, timedelta
         from tests.test_trial_evidence import _seed_block_ic_switch
@@ -727,7 +767,9 @@ class DurableApiTest(unittest.TestCase):
             self.assertEqual(read({"selected": identity}), results["original"])
 
             # Change executable configuration, not clinical verdicts or stored data.
-            # Current context changes; retained execution becomes explicitly unavailable.
+            # Current context changes and is read anew; a Trial's retained comparison
+            # executes no configuration, so it still reads as it did (ADR 554; a
+            # Focus's refusal is test_follow_up_comparison's).
             def configured(**kwargs):
                 return ScenarioConfig(**{"anchor_meal_min_carbs": 11.0, **kwargs})
             with patch("ciq_autotune.follow_up_comparison.ScenarioConfig", new=configured):
@@ -742,8 +784,8 @@ class DurableApiTest(unittest.TestCase):
                         self.assertNotEqual(reassessment["comparison_context"]["id"],
                             results[mode]["selected"]["reassessment"]["comparison_context"]["id"])
                     else:
-                        self.assertEqual(reassessment["comparison"]["availability"]["reason"],
-                                         "unsupported_retained_execution")
+                        self.assertEqual(reassessment["comparison"]["availability"],
+                                         results[mode]["selected"]["reassessment"]["comparison"]["availability"])
             with Store.open_queryonly(self.path) as store:
                 self.assertEqual(store.input_data_revision(), revision)
                 self.assertEqual(store.follow_up_frontier(), frontier)

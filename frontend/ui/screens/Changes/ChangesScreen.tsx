@@ -7,7 +7,9 @@
 // (ChangeTrace), In range / Below 70 / Above 180, Mean / GMI / CV, and for a
 // basal Trial how active Control-IQ was against the Pump profile
 // (ChangeMetrics, every module's numbers in the same columns). Every value is
-// the engine's served comparison; the screen computes nothing.
+// the engine's served comparison; the screen computes nothing. A maturing
+// Trial draws every module as its data forms, each glucose module closed by
+// the readings it is read from (§2.5, 2026-10-19).
 //
 // Then "Previous" with how many there are, which drills down (§2.2, as Day's
 // Lows and Settings' rows do) to the list of every previous change, newest
@@ -102,8 +104,8 @@ function Modules({ data }: { data: TrialData }) {
   return (
     <>
       {data.trace && <ChangeTrace data={data.trace} block={data.block} />}
-      <ChangeMetrics rows={data.ranges} />
-      <ChangeMetrics rows={data.glucose} />
+      <ChangeMetrics rows={data.ranges} count={data.readings} />
+      <ChangeMetrics rows={data.glucose} count={data.readings} />
       <ChangeMetrics rows={data.basal}
         title={<>Basal <span className="ui-metrics__meta">vs Pump profile</span></>} />
     </>

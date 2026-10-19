@@ -245,9 +245,10 @@ MONTHS = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", 
 # "Not saved" with "Retry", "Cancel" beneath End's confirmation (§1.3a), and
 # "Previous" and "Next", the names of the Day navigator's ‹ › (§1.4), and
 # Changes' Previous list (§2.5, 2026-10-14). The Changes screen's basal
-# module's "Delivered" rate and its meal trace's "Minutes" axis (#524).
+# module's "Delivered" rate and its meal trace's "Minutes" axis (#524). The
+# "Readings" each glucose module is read from (§2.5, 2026-10-19).
 CHANGE_DAY_LABELS = ("Before", "After", "Days", "Next", "Time", "Now", "Save", "Not saved", "Retry", "Cancel",
-                     "Previous", "Delivered", "Minutes")
+                     "Previous", "Delivered", "Minutes", "Readings")
 # The wearer's first days: fewer than the glucose profile's eight supported days.
 FIRST_DAYS = 5
 # A Trial still maturing: the wearer's history cut this many days after the
@@ -256,6 +257,9 @@ MATURING_DAYS = 6
 # A carb ratio Trial still maturing: the wearer's history cut this many days
 # after a change to the 11:00 carb ratio, which two of its lunches fall in.
 IC_MATURING_DAYS = 5
+# The same change read a quarter of a day after it (#554): before its first
+# lunch, so the after arm has read nothing yet.
+IC_FIRST_HOURS_DAYS = 0.25
 # The Previous list's wearer (#524): the 02:00 basal lowered four weeks before
 # the Trial day, the 11:00 carb ratio two weeks before it, and the 02:00 basal
 # again on it, each change ending the one before.
@@ -470,6 +474,12 @@ def fixtures() -> dict:
                                  changes=((ui_patient.TRIAL_DAY, 1, ui_patient.lunch_profile()),))
         changes["wearer-ic-maturing"] = _changes_store(ic_maturing)
         _require_few_meals(changes["wearer-ic-maturing"])
+        # The same change in its first hours: the before arm, and an empty after (#554).
+        _, ic_first_hours = _wearer(scratch, "wearer-ic-first-hours", trial=True,
+                                    days=ui_patient.TRIAL_DAY + IC_FIRST_HOURS_DAYS,
+                                    changes=((ui_patient.TRIAL_DAY, 1, ui_patient.lunch_profile()),))
+        changes["wearer-ic-first-hours"] = _changes_store(ic_first_hours)
+        _require_empty_after(changes["wearer-ic-first-hours"])
         # A switch to a second profile, which moves the basal and the carb ratio at once.
         _, switched = _wearer(scratch, "wearer-profile", trial=True,
                               changes=((ui_patient.TRIAL_DAY, 2, ui_patient.switch_profile()),))
@@ -786,7 +796,9 @@ def _comparison(answer: dict) -> dict:
     comparison = answer["selected"]["reassessment"]["comparison"]
     return {
         "availability": {"state": comparison["availability"]["state"]},
-        "outcomes": _outcome_rows(comparison["outcomes"]),
+        # Each row with the readings it is read from (#554).
+        "outcomes": [{**row, "denominators": served["denominators"]}
+                     for row, served in zip(_outcome_rows(comparison["outcomes"]), comparison["outcomes"])],
         "denominators": {arm: {"contributing_meals": served["contributing_meals"]}
                          for arm, served in comparison.get("denominators", {}).items()},
         "views": {arm: {key: view[key] for key in ("trace", "basal") if key in view}
@@ -932,6 +944,18 @@ def _require_few_meals(store: dict) -> None:
     after = trial["reassessment"]["views"]["after"]["trace"]
     if (trial["parameter"], trial["state"]) != ("carb_ratio", "maturing") or not after["traces"]:
         raise SystemExit(f"the simulated carb ratio Trial no longer matures on a few meals: {trial['id']}")
+
+
+def _require_empty_after(store: dict) -> None:
+    """Fail unless the store's active Trial is a maturing carb ratio Trial whose
+    comparison serves its before arm and an after arm with nothing read yet."""
+    trial = _active_trial(store)
+    comparison = trial["reassessment"]
+    if ((trial["parameter"], trial["state"], comparison["availability"]["state"])
+            != ("carb_ratio", "maturing", "available")
+            or comparison["denominators"]["after"]["contributing_meals"]
+            or any(row["after"] is not None for row in comparison["outcomes"])):
+        raise SystemExit(f"the simulated carb ratio Trial's first hours no longer read nothing after: {trial['id']}")
 
 
 def _require_parameter(store: dict, parameter: str) -> None:

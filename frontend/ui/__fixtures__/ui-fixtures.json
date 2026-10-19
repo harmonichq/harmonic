@@ -81,6 +81,10 @@
                   "state": "favorable"
                 },
                 "before": 91.6,
+                "denominators": {
+                  "after": 942,
+                  "before": 1925
+                },
                 "key": "tir",
                 "unit": "%"
               },
@@ -90,6 +94,10 @@
                   "state": "favorable"
                 },
                 "before": 5.8,
+                "denominators": {
+                  "after": 942,
+                  "before": 1925
+                },
                 "key": "tbr",
                 "unit": "%"
               },
@@ -99,6 +107,10 @@
                   "state": "unclear"
                 },
                 "before": 2.6,
+                "denominators": {
+                  "after": 942,
+                  "before": 1925
+                },
                 "key": "tar",
                 "unit": "%"
               },
@@ -108,6 +120,10 @@
                   "state": "context"
                 },
                 "before": 114.6,
+                "denominators": {
+                  "after": 942,
+                  "before": 1925
+                },
                 "key": "mean",
                 "unit": "mg/dL"
               },
@@ -117,6 +133,10 @@
                   "state": "context"
                 },
                 "before": 6.1,
+                "denominators": {
+                  "after": 942,
+                  "before": 1925
+                },
                 "key": "gmi",
                 "unit": "%"
               },
@@ -126,6 +146,10 @@
                   "state": "context"
                 },
                 "before": 27.2,
+                "denominators": {
+                  "after": 942,
+                  "before": 1925
+                },
                 "key": "cv",
                 "unit": "%"
               },
@@ -135,6 +159,10 @@
                   "state": "favorable"
                 },
                 "before": 27.272727272727273,
+                "denominators": {
+                  "after": 27,
+                  "before": 55
+                },
                 "key": "nights_with_low",
                 "unit": "%"
               }
@@ -936,6 +964,591 @@
       "trials": [],
       "waiting": []
     },
+    "wearer-ic-first-hours": {
+      "admission": {
+        "active_id": "carb_ratio-11-00-20250428000000-840",
+        "active_kind": "trial",
+        "can_finish_trial": false,
+        "maturity": {
+          "days_elapsed": 0,
+          "days_required": 14,
+          "is_maturing": true
+        },
+        "state": "available"
+      },
+      "focuses": [],
+      "trials": [
+        {
+          "after": 6.8,
+          "before": 8.5,
+          "block": [
+            660,
+            840
+          ],
+          "changed_at": "2025-04-28 00:00:00",
+          "ending": {
+            "state": "unavailable"
+          },
+          "id": "carb_ratio-11-00-20250428000000-840",
+          "maturing": {
+            "days_elapsed": 0,
+            "days_required": 14,
+            "gap_count": 1
+          },
+          "parameter": "carb_ratio",
+          "reassessment": {
+            "availability": {
+              "state": "available"
+            },
+            "denominators": {
+              "after": {
+                "contributing_meals": 0
+              },
+              "before": {
+                "contributing_meals": 53
+              }
+            },
+            "outcomes": [
+              {
+                "after": null,
+                "assessment": {
+                  "state": "unclear"
+                },
+                "before": 56.3,
+                "denominators": {
+                  "after": 0,
+                  "before": 3058
+                },
+                "key": "tir",
+                "unit": "%"
+              },
+              {
+                "after": null,
+                "assessment": {
+                  "state": "unclear"
+                },
+                "before": 1.1,
+                "denominators": {
+                  "after": 0,
+                  "before": 3058
+                },
+                "key": "tbr",
+                "unit": "%"
+              },
+              {
+                "after": null,
+                "assessment": {
+                  "state": "unclear"
+                },
+                "before": 42.6,
+                "denominators": {
+                  "after": 0,
+                  "before": 3058
+                },
+                "key": "tar",
+                "unit": "%"
+              },
+              {
+                "after": null,
+                "assessment": {
+                  "state": "context"
+                },
+                "before": 171.9,
+                "denominators": {
+                  "after": 0,
+                  "before": 3058
+                },
+                "key": "mean",
+                "unit": "mg/dL"
+              },
+              {
+                "after": null,
+                "assessment": {
+                  "state": "context"
+                },
+                "before": 7.4,
+                "denominators": {
+                  "after": 0,
+                  "before": 3058
+                },
+                "key": "gmi",
+                "unit": "%"
+              },
+              {
+                "after": null,
+                "assessment": {
+                  "state": "context"
+                },
+                "before": 27.8,
+                "denominators": {
+                  "after": 0,
+                  "before": 3058
+                },
+                "key": "cv",
+                "unit": "%"
+              },
+              {
+                "after": null,
+                "assessment": {
+                  "state": "context"
+                },
+                "before": 218.0,
+                "denominators": {
+                  "after": 0,
+                  "before": 53
+                },
+                "key": "peak",
+                "unit": "mg/dL"
+              },
+              {
+                "after": null,
+                "assessment": {
+                  "state": "context"
+                },
+                "before": 150.5,
+                "denominators": {
+                  "after": 0,
+                  "before": 26
+                },
+                "key": "nadir",
+                "unit": "mg/dL"
+              },
+              {
+                "after": null,
+                "assessment": {
+                  "state": "context"
+                },
+                "before": 136.0,
+                "denominators": {
+                  "after": 0,
+                  "before": 53
+                },
+                "key": "bg0",
+                "unit": "mg/dL"
+              }
+            ],
+            "views": {
+              "after": {
+                "trace": {
+                  "alignment": "meal",
+                  "bin_minutes": 5,
+                  "bins": [],
+                  "end": 240,
+                  "episodes": 0,
+                  "left_off": 0,
+                  "start": -30,
+                  "traces": []
+                }
+              },
+              "before": {
+                "trace": {
+                  "alignment": "meal",
+                  "bin_minutes": 5,
+                  "bins": [
+                    {
+                      "median": 138.5,
+                      "n": 50,
+                      "p25": 107.2,
+                      "p75": 160.0,
+                      "t": -30
+                    },
+                    {
+                      "median": 140.0,
+                      "n": 48,
+                      "p25": 111.8,
+                      "p75": 159.5,
+                      "t": -25
+                    },
+                    {
+                      "median": 135.5,
+                      "n": 52,
+                      "p25": 108.5,
+                      "p75": 159.2,
+                      "t": -20
+                    },
+                    {
+                      "median": 139.0,
+                      "n": 51,
+                      "p25": 112.5,
+                      "p75": 161.0,
+                      "t": -15
+                    },
+                    {
+                      "median": 136.0,
+                      "n": 52,
+                      "p25": 114.5,
+                      "p75": 159.0,
+                      "t": -10
+                    },
+                    {
+                      "median": 135.0,
+                      "n": 52,
+                      "p25": 115.8,
+                      "p75": 158.5,
+                      "t": -5
+                    },
+                    {
+                      "median": 135.5,
+                      "n": 52,
+                      "p25": 117.2,
+                      "p75": 156.0,
+                      "t": 0
+                    },
+                    {
+                      "median": 137.0,
+                      "n": 49,
+                      "p25": 114.0,
+                      "p75": 157.0,
+                      "t": 5
+                    },
+                    {
+                      "median": 138.0,
+                      "n": 50,
+                      "p25": 113.5,
+                      "p75": 158.8,
+                      "t": 10
+                    },
+                    {
+                      "median": 134.0,
+                      "n": 51,
+                      "p25": 115.0,
+                      "p75": 161.0,
+                      "t": 15
+                    },
+                    {
+                      "median": 133.0,
+                      "n": 53,
+                      "p25": 114.0,
+                      "p75": 160.0,
+                      "t": 20
+                    },
+                    {
+                      "median": 134.0,
+                      "n": 53,
+                      "p25": 114.0,
+                      "p75": 158.0,
+                      "t": 25
+                    },
+                    {
+                      "median": 135.0,
+                      "n": 52,
+                      "p25": 114.8,
+                      "p75": 160.2,
+                      "t": 30
+                    },
+                    {
+                      "median": 135.0,
+                      "n": 51,
+                      "p25": 118.0,
+                      "p75": 160.0,
+                      "t": 35
+                    },
+                    {
+                      "median": 139.0,
+                      "n": 52,
+                      "p25": 122.5,
+                      "p75": 168.0,
+                      "t": 40
+                    },
+                    {
+                      "median": 146.5,
+                      "n": 52,
+                      "p25": 125.0,
+                      "p75": 175.0,
+                      "t": 45
+                    },
+                    {
+                      "median": 157.5,
+                      "n": 50,
+                      "p25": 129.8,
+                      "p75": 182.5,
+                      "t": 50
+                    },
+                    {
+                      "median": 164.0,
+                      "n": 50,
+                      "p25": 131.2,
+                      "p75": 192.2,
+                      "t": 55
+                    },
+                    {
+                      "median": 176.0,
+                      "n": 50,
+                      "p25": 140.2,
+                      "p75": 201.8,
+                      "t": 60
+                    },
+                    {
+                      "median": 181.0,
+                      "n": 51,
+                      "p25": 149.0,
+                      "p75": 206.0,
+                      "t": 65
+                    },
+                    {
+                      "median": 183.5,
+                      "n": 50,
+                      "p25": 149.0,
+                      "p75": 210.8,
+                      "t": 70
+                    },
+                    {
+                      "median": 192.0,
+                      "n": 51,
+                      "p25": 161.0,
+                      "p75": 224.0,
+                      "t": 75
+                    },
+                    {
+                      "median": 196.0,
+                      "n": 53,
+                      "p25": 167.0,
+                      "p75": 229.0,
+                      "t": 80
+                    },
+                    {
+                      "median": 202.5,
+                      "n": 50,
+                      "p25": 176.2,
+                      "p75": 232.5,
+                      "t": 85
+                    },
+                    {
+                      "median": 203.5,
+                      "n": 50,
+                      "p25": 169.8,
+                      "p75": 233.0,
+                      "t": 90
+                    },
+                    {
+                      "median": 206.0,
+                      "n": 51,
+                      "p25": 174.5,
+                      "p75": 239.0,
+                      "t": 95
+                    },
+                    {
+                      "median": 208.0,
+                      "n": 49,
+                      "p25": 174.0,
+                      "p75": 237.0,
+                      "t": 100
+                    },
+                    {
+                      "median": 213.0,
+                      "n": 50,
+                      "p25": 182.8,
+                      "p75": 238.5,
+                      "t": 105
+                    },
+                    {
+                      "median": 212.0,
+                      "n": 50,
+                      "p25": 187.2,
+                      "p75": 238.5,
+                      "t": 110
+                    },
+                    {
+                      "median": 212.0,
+                      "n": 51,
+                      "p25": 183.5,
+                      "p75": 235.5,
+                      "t": 115
+                    },
+                    {
+                      "median": 210.0,
+                      "n": 51,
+                      "p25": 186.5,
+                      "p75": 237.5,
+                      "t": 120
+                    },
+                    {
+                      "median": 208.0,
+                      "n": 51,
+                      "p25": 188.0,
+                      "p75": 234.0,
+                      "t": 125
+                    },
+                    {
+                      "median": 210.0,
+                      "n": 51,
+                      "p25": 185.5,
+                      "p75": 239.0,
+                      "t": 130
+                    },
+                    {
+                      "median": 208.5,
+                      "n": 48,
+                      "p25": 180.8,
+                      "p75": 239.0,
+                      "t": 135
+                    },
+                    {
+                      "median": 205.0,
+                      "n": 51,
+                      "p25": 182.5,
+                      "p75": 233.5,
+                      "t": 140
+                    },
+                    {
+                      "median": 199.0,
+                      "n": 52,
+                      "p25": 181.8,
+                      "p75": 226.0,
+                      "t": 145
+                    },
+                    {
+                      "median": 197.0,
+                      "n": 52,
+                      "p25": 178.5,
+                      "p75": 219.0,
+                      "t": 150
+                    },
+                    {
+                      "median": 196.0,
+                      "n": 50,
+                      "p25": 176.0,
+                      "p75": 220.0,
+                      "t": 155
+                    },
+                    {
+                      "median": 194.0,
+                      "n": 53,
+                      "p25": 170.0,
+                      "p75": 215.0,
+                      "t": 160
+                    },
+                    {
+                      "median": 195.5,
+                      "n": 52,
+                      "p25": 164.8,
+                      "p75": 211.2,
+                      "t": 165
+                    },
+                    {
+                      "median": 193.5,
+                      "n": 52,
+                      "p25": 166.8,
+                      "p75": 210.8,
+                      "t": 170
+                    },
+                    {
+                      "median": 186.0,
+                      "n": 51,
+                      "p25": 157.5,
+                      "p75": 205.5,
+                      "t": 175
+                    },
+                    {
+                      "median": 179.5,
+                      "n": 50,
+                      "p25": 155.2,
+                      "p75": 204.8,
+                      "t": 180
+                    },
+                    {
+                      "median": 181.0,
+                      "n": 51,
+                      "p25": 152.0,
+                      "p75": 204.0,
+                      "t": 185
+                    },
+                    {
+                      "median": 175.5,
+                      "n": 52,
+                      "p25": 149.5,
+                      "p75": 200.2,
+                      "t": 190
+                    },
+                    {
+                      "median": 169.0,
+                      "n": 51,
+                      "p25": 146.0,
+                      "p75": 199.0,
+                      "t": 195
+                    },
+                    {
+                      "median": 163.0,
+                      "n": 51,
+                      "p25": 139.5,
+                      "p75": 193.0,
+                      "t": 200
+                    },
+                    {
+                      "median": 162.0,
+                      "n": 51,
+                      "p25": 139.5,
+                      "p75": 199.0,
+                      "t": 205
+                    },
+                    {
+                      "median": 162.0,
+                      "n": 53,
+                      "p25": 139.0,
+                      "p75": 195.0,
+                      "t": 210
+                    },
+                    {
+                      "median": 164.0,
+                      "n": 51,
+                      "p25": 134.0,
+                      "p75": 195.5,
+                      "t": 215
+                    },
+                    {
+                      "median": 163.0,
+                      "n": 51,
+                      "p25": 130.0,
+                      "p75": 192.0,
+                      "t": 220
+                    },
+                    {
+                      "median": 156.0,
+                      "n": 49,
+                      "p25": 128.0,
+                      "p75": 178.0,
+                      "t": 225
+                    },
+                    {
+                      "median": 156.0,
+                      "n": 52,
+                      "p25": 134.8,
+                      "p75": 184.8,
+                      "t": 230
+                    },
+                    {
+                      "median": 157.5,
+                      "n": 52,
+                      "p25": 133.8,
+                      "p75": 182.0,
+                      "t": 235
+                    },
+                    {
+                      "median": 157.0,
+                      "n": 52,
+                      "p25": 130.0,
+                      "p75": 179.8,
+                      "t": 240
+                    }
+                  ],
+                  "end": 240,
+                  "episodes": 53,
+                  "left_off": 0,
+                  "start": -30,
+                  "traces": null
+                }
+              }
+            }
+          },
+          "slot": "11:00",
+          "state": "maturing",
+          "target_metrics": [
+            "arc"
+          ]
+        }
+      ],
+      "waiting": []
+    },
     "wearer-ic-maturing": {
       "admission": {
         "active_id": "carb_ratio-11-00-20250428000000-840",
@@ -987,6 +1600,10 @@
                   "state": "unclear"
                 },
                 "before": 56.3,
+                "denominators": {
+                  "after": 58,
+                  "before": 3058
+                },
                 "key": "tir",
                 "unit": "%"
               },
@@ -996,6 +1613,10 @@
                   "state": "unclear"
                 },
                 "before": 1.1,
+                "denominators": {
+                  "after": 58,
+                  "before": 3058
+                },
                 "key": "tbr",
                 "unit": "%"
               },
@@ -1005,6 +1626,10 @@
                   "state": "unclear"
                 },
                 "before": 42.6,
+                "denominators": {
+                  "after": 58,
+                  "before": 3058
+                },
                 "key": "tar",
                 "unit": "%"
               },
@@ -1014,6 +1639,10 @@
                   "state": "context"
                 },
                 "before": 171.9,
+                "denominators": {
+                  "after": 58,
+                  "before": 3058
+                },
                 "key": "mean",
                 "unit": "mg/dL"
               },
@@ -1023,6 +1652,10 @@
                   "state": "context"
                 },
                 "before": 7.4,
+                "denominators": {
+                  "after": 58,
+                  "before": 3058
+                },
                 "key": "gmi",
                 "unit": "%"
               },
@@ -1032,6 +1665,10 @@
                   "state": "context"
                 },
                 "before": 27.8,
+                "denominators": {
+                  "after": 58,
+                  "before": 3058
+                },
                 "key": "cv",
                 "unit": "%"
               },
@@ -1041,6 +1678,10 @@
                   "state": "context"
                 },
                 "before": 218.0,
+                "denominators": {
+                  "after": 1,
+                  "before": 53
+                },
                 "key": "peak",
                 "unit": "mg/dL"
               },
@@ -1050,6 +1691,10 @@
                   "state": "context"
                 },
                 "before": 150.5,
+                "denominators": {
+                  "after": 1,
+                  "before": 26
+                },
                 "key": "nadir",
                 "unit": "mg/dL"
               },
@@ -1059,6 +1704,10 @@
                   "state": "context"
                 },
                 "before": 136.0,
+                "denominators": {
+                  "after": 1,
+                  "before": 53
+                },
                 "key": "bg0",
                 "unit": "mg/dL"
               }
@@ -2052,6 +2701,10 @@
                   "state": "unclear"
                 },
                 "before": 73.1,
+                "denominators": {
+                  "after": 7704,
+                  "before": 15457
+                },
                 "key": "tir",
                 "unit": "%"
               },
@@ -2061,6 +2714,10 @@
                   "state": "unclear"
                 },
                 "before": 3.8,
+                "denominators": {
+                  "after": 7704,
+                  "before": 15457
+                },
                 "key": "tbr",
                 "unit": "%"
               },
@@ -2070,6 +2727,10 @@
                   "state": "unclear"
                 },
                 "before": 23.1,
+                "denominators": {
+                  "after": 7704,
+                  "before": 15457
+                },
                 "key": "tar",
                 "unit": "%"
               },
@@ -2079,6 +2740,10 @@
                   "state": "context"
                 },
                 "before": 145.7,
+                "denominators": {
+                  "after": 7704,
+                  "before": 15457
+                },
                 "key": "mean",
                 "unit": "mg/dL"
               },
@@ -2088,6 +2753,10 @@
                   "state": "context"
                 },
                 "before": 6.8,
+                "denominators": {
+                  "after": 7704,
+                  "before": 15457
+                },
                 "key": "gmi",
                 "unit": "%"
               },
@@ -2097,6 +2766,10 @@
                   "state": "context"
                 },
                 "before": 32.9,
+                "denominators": {
+                  "after": 7704,
+                  "before": 15457
+                },
                 "key": "cv",
                 "unit": "%"
               }
@@ -4223,6 +4896,10 @@
                   "state": "unclear"
                 },
                 "before": 91.6,
+                "denominators": {
+                  "after": 173,
+                  "before": 1925
+                },
                 "key": "tir",
                 "unit": "%"
               },
@@ -4232,6 +4909,10 @@
                   "state": "unclear"
                 },
                 "before": 5.8,
+                "denominators": {
+                  "after": 173,
+                  "before": 1925
+                },
                 "key": "tbr",
                 "unit": "%"
               },
@@ -4241,6 +4922,10 @@
                   "state": "unclear"
                 },
                 "before": 2.6,
+                "denominators": {
+                  "after": 173,
+                  "before": 1925
+                },
                 "key": "tar",
                 "unit": "%"
               },
@@ -4250,6 +4935,10 @@
                   "state": "context"
                 },
                 "before": 114.6,
+                "denominators": {
+                  "after": 173,
+                  "before": 1925
+                },
                 "key": "mean",
                 "unit": "mg/dL"
               },
@@ -4259,6 +4948,10 @@
                   "state": "context"
                 },
                 "before": 6.1,
+                "denominators": {
+                  "after": 173,
+                  "before": 1925
+                },
                 "key": "gmi",
                 "unit": "%"
               },
@@ -4268,6 +4961,10 @@
                   "state": "context"
                 },
                 "before": 27.2,
+                "denominators": {
+                  "after": 173,
+                  "before": 1925
+                },
                 "key": "cv",
                 "unit": "%"
               },
@@ -4277,6 +4974,10 @@
                   "state": "unclear"
                 },
                 "before": 27.272727272727273,
+                "denominators": {
+                  "after": 5,
+                  "before": 55
+                },
                 "key": "nights_with_low",
                 "unit": "%"
               }
@@ -4652,6 +5353,10 @@
                   "state": "unclear"
                 },
                 "before": 94.4,
+                "denominators": {
+                  "after": 943,
+                  "before": 1922
+                },
                 "key": "tir",
                 "unit": "%"
               },
@@ -4661,6 +5366,10 @@
                   "state": "concerning"
                 },
                 "before": 0.7,
+                "denominators": {
+                  "after": 943,
+                  "before": 1922
+                },
                 "key": "tbr",
                 "unit": "%"
               },
@@ -4670,6 +5379,10 @@
                   "state": "unclear"
                 },
                 "before": 4.8,
+                "denominators": {
+                  "after": 943,
+                  "before": 1922
+                },
                 "key": "tar",
                 "unit": "%"
               },
@@ -4679,6 +5392,10 @@
                   "state": "context"
                 },
                 "before": 125.7,
+                "denominators": {
+                  "after": 943,
+                  "before": 1922
+                },
                 "key": "mean",
                 "unit": "mg/dL"
               },
@@ -4688,6 +5405,10 @@
                   "state": "context"
                 },
                 "before": 6.3,
+                "denominators": {
+                  "after": 943,
+                  "before": 1922
+                },
                 "key": "gmi",
                 "unit": "%"
               },
@@ -4697,6 +5418,10 @@
                   "state": "context"
                 },
                 "before": 23.5,
+                "denominators": {
+                  "after": 943,
+                  "before": 1922
+                },
                 "key": "cv",
                 "unit": "%"
               },
@@ -4706,6 +5431,10 @@
                   "state": "concerning"
                 },
                 "before": 5.454545454545454,
+                "denominators": {
+                  "after": 27,
+                  "before": 55
+                },
                 "key": "nights_with_low",
                 "unit": "%"
               }

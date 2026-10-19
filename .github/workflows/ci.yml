@@ -249,12 +249,14 @@ jobs:
           node --test frontend/ui/app/live.contract.test.mjs frontend/app.browser.test.mjs
       # Named case stores for what the showcase does not hold: a queued
       # correction factor, an active basal Trial in Changes, Day findings of
-      # five kinds, a queued carb ratio, and a Pattern served as its habit
-      # whose count its habit's own count would understate.
-      - name: Contract-test the live adapter on a queued ISF, an active Trial, Day findings, a queued I:C and a collapsed Pattern
+      # five kinds, a queued carb ratio, a Pattern served as its habit whose
+      # count its habit's own count would understate, and a maturing carb ratio
+      # Trial retained by an earlier release (#554).
+      - name: Contract-test the live adapter on a queued ISF, active Trials, Day findings, a queued I:C and a collapsed Pattern
         run: |
           uv run python scripts/smoke_app.py --case isf-strengthen --then node --test frontend/ui/app/live.contract.test.mjs
           uv run python scripts/smoke_app.py --case c3-trial --then node --test frontend/ui/app/live.contract.test.mjs
+          uv run python scripts/smoke_app.py --case c3-ic-trial --then node --test frontend/ui/app/live.contract.test.mjs
           uv run python scripts/smoke_app.py --case pattern-correction-fold --then node --test frontend/ui/app/live.contract.test.mjs
           uv run python scripts/smoke_app.py --case basal-and-carb-ratio-lower --then node --test frontend/ui/app/live.contract.test.mjs
           uv run python scripts/smoke_app.py --case pattern-correction-collapse --then node --test frontend/ui/app/live.contract.test.mjs

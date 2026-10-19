@@ -8,6 +8,7 @@
 //   uv run python scripts/smoke_app.py --then node --test frontend/ui/app/live.contract.test.mjs
 //   uv run python scripts/smoke_app.py --case isf-strengthen --then node --test frontend/ui/app/live.contract.test.mjs
 //   uv run python scripts/smoke_app.py --case c3-trial --then node --test frontend/ui/app/live.contract.test.mjs
+//   uv run python scripts/smoke_app.py --case c3-ic-trial --then node --test frontend/ui/app/live.contract.test.mjs
 //   uv run python scripts/smoke_app.py --case pattern-correction-fold --then node --test frontend/ui/app/live.contract.test.mjs
 //   uv run python scripts/smoke_app.py --case basal-and-carb-ratio-lower --then node --test frontend/ui/app/live.contract.test.mjs
 //   uv run python scripts/smoke_app.py --case pattern-correction-collapse --then node --test frontend/ui/app/live.contract.test.mjs
@@ -194,7 +195,22 @@ const EXPECTED = {
     trial: { block: [180, 210], moves: [['03:00', 0.6, 0.54, 'U/h']], meals: null,
       trace: { alignment: 'clock', episodes: [13, 15] },
       modules: { ranges: ['tir', 'tbr', 'tar'], glucose: ['mean', 'gmi', 'cv'], basal: ['delivered', 'above', 'below'] },
-      delivered: [0.48, 0.48] },
+      delivered: [0.48, 0.48], readings: [78, 90] },
+    previous: [],
+  },
+  // #554: a carb ratio Trial six days in, retained by a release before #503.
+  // Maturing, it shows its data as it forms: each arm's meals, the trace at
+  // each meal bolus, every glucose module over the readings read so far, no
+  // result and no Δ toned.
+  'c3-ic-trial': {
+    queue: [],
+    isf: null,
+    change: { kind: 'trial', title: 'I:C', maturing: true, result: null, canEnd: false },
+    done: null,
+    trial: { block: [660, 840], moves: [['11:00', 5, 4.4, 'g/U']], meals: { before: 24, after: 6 },
+      trace: { alignment: 'meal', episodes: [24, 6] },
+      modules: { ranges: ['tir', 'tbr', 'tar'], glucose: ['mean', 'gmi', 'cv'], basal: [] },
+      delivered: null, readings: [1440, 360] },
     previous: [],
   },
 };
@@ -296,8 +312,18 @@ test(`the live adapter serves each tab's model from the ${CASE} store`, async (t
       for (const [module, keys] of Object.entries(trial.modules)) {
         assert.deepEqual(active[module].map((row) => row.key), keys, module);
       }
-      const delivered = active.basal.find((row) => row.key === 'delivered');
-      assert.deepEqual([delivered.before, delivered.after], trial.delivered);
+      if (trial.delivered) {
+        const delivered = active.basal.find((row) => row.key === 'delivered');
+        assert.deepEqual([delivered.before, delivered.after], trial.delivered);
+      }
+      // Each glucose module's readings, before and after (#554).
+      assert.deepEqual([active.readings.before, active.readings.after], trial.readings);
+      // A maturing Trial claims nothing yet: no result and no Δ toned (#554).
+      if (active.maturing) {
+        for (const row of [...active.ranges, ...active.glucose, ...active.basal]) {
+          assert.equal(row.delta?.tone ?? null, null, `${row.key} untoned while maturing`);
+        }
+      }
     }
     if (expected.previous) {
       const previous = values(changes.previousChanges('wearer'));

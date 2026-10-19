@@ -100,6 +100,42 @@ class FollowUpComparisonTest(unittest.TestCase):
                 result = self.compare(store, {**record, "comparison_context": retained}, datetime(2026, 6, 12))
                 self.assertEqual(result["availability"], {"state": "available", "reason": None})
 
+    def test_a_context_saved_before_a_knob_was_retired_is_read(self):
+        """#554: a knob the scenario configuration has since retired (#503 took
+        seven) is one no current computation reads, so a context that still
+        carries it executes as saved. A knob the current code reads still
+        refuses it, changed or absent."""
+        retired = {"meal_bolus_short_min_carbs": 10.0, "meal_bolus_short_correction_floor_u": 0.5}
+
+        def configured(context, **changes):
+            configuration = {**context["configuration"], **changes}
+            return {**context, "configuration": {k: v for k, v in configuration.items() if v is not None}}
+
+        store = self.store(cgm_ramp(10, 15, 40, 180, 1.4, 140) + cgm_ramp(11, 15, 40, 180, 1.4, 140))
+        focus = self.focus(store, datetime(2026, 6, 11))
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "synthetic.sqlite"
+            _seed_block_ic_switch(path)
+            with Store.open_readonly(path) as setting_store:
+                trial = {"kind": "trial", "id": "synthetic", "parameter": "carb_ratio", "slot": "12:00",
+                         "block": [720, 900], "members": [720], "detected_at": str(SWITCH), "before": 5.0,
+                         "after": 4.4, "comparison_context": capture_comparison_context(
+                             setting_store, at=SWITCH, input_revision=1)}
+                for label, owner, record, cutoff in (("focus", store, focus, datetime(2026, 6, 12)),
+                                                     ("carb ratio trial", setting_store, trial, NOW)):
+                    context = record["comparison_context"]
+                    for changes, state in ((retired, "available"),
+                                           ({**retired, "anchor_meal_min_carbs": 11.0}, "unavailable"),
+                                           ({"anchor_meal_min_carbs": None}, "unavailable")):
+                        with self.subTest(label, changes=sorted(changes)):
+                            result = self.compare(owner, {**record, "comparison_context": configured(context, **changes)},
+                                                  cutoff)
+                            self.assertEqual(result["availability"]["state"], state)
+                            if state == "unavailable":
+                                self.assertEqual(result["availability"]["reason"], "unsupported_retained_execution")
+                            else:
+                                self.assertEqual(result, self.compare(owner, record, cutoff))
+
     def test_retained_context_survives_profile_change_and_record_is_unchanged(self):
         from ciq_autotune.settings import ProfileSegment, ProfileSettings, PumpSettings, Snapshot
         store = self.store(cgm_ramp(10, 15, 40, 180, 1.4, 140) + cgm_ramp(11, 15, 40, 180, 1.4, 140))
@@ -136,6 +172,33 @@ class FollowUpComparisonTest(unittest.TestCase):
                     with store.follow_up_transaction():
                         pass
             self.assertEqual(path.read_bytes(), before_bytes)
+
+    def test_an_after_arm_with_no_readings_yet_is_served_empty(self):
+        """#554: read the hours after a change, before its block has a reading,
+        the comparison still serves the before arm in full and an empty after
+        arm: no meals, a trace of no episodes, and each row's after unread."""
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "synthetic.sqlite"
+            _seed_block_ic_switch(path)
+            with Store.open_readonly(path) as store:
+                record = {"kind": "trial", "id": "synthetic", "parameter": "carb_ratio", "slot": "12:00",
+                          "block": [720, 900], "members": [720], "detected_at": str(SWITCH), "before": 5.0,
+                          "after": 4.4, "comparison_context": capture_comparison_context(
+                              store, at=SWITCH, input_revision=1)}
+                result = self.compare(store, record, SWITCH + timedelta(hours=2))
+        self.assertEqual(result["availability"], {"state": "available", "reason": None})
+        self.assertEqual(result["denominators"]["after"]["readings"], 0)
+        self.assertEqual(result["denominators"]["after"]["contributing_meals"], 0)
+        self.assertGreater(result["denominators"]["before"]["contributing_meals"], 0)
+        after = result["views"]["after"]["trace"]
+        self.assertEqual((after["episodes"], after["bins"], after["traces"]), (0, [], []))
+        self.assertGreater(result["views"]["before"]["trace"]["episodes"], 0)
+        for row in result["outcomes"]:
+            with self.subTest(key=row["key"]):
+                self.assertIsNotNone(row["before"])
+                self.assertIsNone(row["after"])
+                self.assertEqual(row["availability"]["reason"], "no_readable_outcome")
+                self.assertIn(row["assessment"]["state"], ("unclear", "context"))
 
     def test_persisted_ic_members_constrain_real_analyzer_population(self):
         from ciq_autotune.watched_change import reconcile_ingested_follow_up

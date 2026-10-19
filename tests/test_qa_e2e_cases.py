@@ -62,7 +62,7 @@ EXPECTED_CASE_NAMES = (
     "behavioral-preempted-detector",
     "pattern-near-tie", "pattern-collapse", "pattern-correction-fold",
     "pattern-correction-collapse",
-    "c3-focus", "c3-trial", "c3-history", "c3-preempted", "c3-pin",
+    "c3-focus", "c3-trial", "c3-history", "c3-preempted", "c3-pin", "c3-ic-trial",
     "c4-ic", "c4-isf", "c4-profile", "c4-missing", "c4-history",
     "edit-chain",
     "basal-and-carb-ratio-lower",

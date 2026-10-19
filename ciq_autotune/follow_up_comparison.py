@@ -53,6 +53,23 @@ def _execution():
     return {"policy": "340:1/386:1/387:1", "configuration": asdict(ScenarioConfig())}
 
 
+def _retained_configuration(context):
+    """The scenario configuration a retained context executes, or None when the
+    current code cannot execute it as saved (ADR 462, ADR 554).
+
+    Every knob the current configuration reads must hold its saved value; a knob
+    it does not read, because a later release retired it (#503 took seven), can
+    change no current computation and is not part of the identity."""
+    current = _execution()
+    if context.get("policy") != current["policy"]:
+        return None
+    saved = context.get("configuration") or {}
+    knobs = current["configuration"]
+    if any(name not in saved or saved[name] != value for name, value in knobs.items()):
+        return None
+    return ScenarioConfig(**{name: saved[name] for name in knobs})
+
+
 def capture_comparison_context(store, *, at, input_revision):
     """Capture the existing active-profile median ISF as of the supplied instant."""
     at = _time(at)
@@ -274,7 +291,8 @@ def compare_follow_up(store, *, record, data_cutoff, input_revision, context_mod
     source = (context.get("source_snapshot") or {}).get("captured_at")
     if source is None or _time(source) > cutoff:
         return unavailable("context_after_ending")
-    if context.get("version") != _VERSION or any(context.get(key) != value for key, value in _execution().items()):
+    configuration = _retained_configuration(context) if context.get("version") == _VERSION else None
+    if configuration is None:
         return unavailable("unsupported_retained_execution")
     programmed = context.get("programmed_isf")
     if not programmed or programmed.get("value") is None or programmed.get("unit") != "mg/dL/U":
@@ -397,7 +415,7 @@ def compare_follow_up(store, *, record, data_cutoff, input_revision, context_mod
         # not build_opportunities' stricter gate-low population. Preserve full
         # context through the read cutoff, then assign anchors to exact arms.
         anchors = (collect_anchors(bolus, cgm, basal,
-                   scenario_config=ScenarioConfig(**context["configuration"]))
+                   scenario_config=configuration)
                    if pattern_key else ())
         for name, lo, hi in (("before", start, changed), ("after", changed, end)):
             cohort = scoped_cohorts.get(name)
@@ -407,7 +425,7 @@ def compare_follow_up(store, *, record, data_cutoff, input_revision, context_mod
                          if cohort is not None else bolus)
             observed = behavior_observations(
                 arm_bolus, arm_cgm, basal, lever=record["lever"], start=lo, end=hi,
-                isf=programmed["value"], scenario_config=ScenarioConfig(**context["configuration"]),
+                isf=programmed["value"], scenario_config=configuration,
                 low_answers=[a for a in low_prompt_answers(store, earliest, cutoff)
                              if a.answer == "false-low" or (a.answered_at or a.anchor_t) <= hi],
             )
@@ -553,7 +571,9 @@ def compare_follow_up(store, *, record, data_cutoff, input_revision, context_mod
         comparison["adherence"] = adherence
         if any(adherence[name]["availability"]["state"] == "unavailable" for name in ("before", "after")):
             comparison["availability"] = _availability("unavailable_adherence")
-    elif any(not p["readings"] for p in populations):
+    elif not any(p["readings"] for p in populations):
+        # An arm with no readings yet, as the hours after a change are, is served
+        # as an empty arm beside the other: each row says it has none (#554).
         comparison["availability"] = _availability("no_readable_period_evidence")
     if kind == "focus":
         mapped_keys = {"peak", "nadir"} if target == "arc" else {target}

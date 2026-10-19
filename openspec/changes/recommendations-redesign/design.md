@@ -1601,3 +1601,60 @@ highs reach 250. The UI fixtures regenerate; no Queue row prints a correction-cl
 sentence, so "clusters" leaves the UI allow-list. The two-family Cause scenario of
 the count-sentence requirement now serves one sentence, and a new requirement
 states the one population.
+
+## ADR 554 — A maturing Trial shows its data as it forms, and a retired knob no longer voids a retained comparison
+
+Amends ADR 524. Connor, live on 2026-10-19, on a carb ratio Trial five days in
+whose Changes screen showed only its head card and the Previous row: "Can we
+work on the PR to get this page useful?", then "I want to be able to see the
+data as it's forming."
+
+**What was wrong.** ADR 524 had the live adapter read the active Trial's
+comparison whether or not it had matured, and it did. The comparison it read was
+unavailable, `unsupported_retained_execution`, for every Trial and Focus on
+Connor's store: each retained context saved its scenario configuration with the
+seven `meal_bolus_short_*` knobs #503 retired, and the identity check compared
+the whole saved configuration to today's for equality. Its policy stamp, its
+version and every knob the running code reads all matched. Maturity was never
+the gate. The screen draws its modules only from an available comparison, so it
+drew the head card alone, and an End would have saved the same unavailable
+comparison.
+
+**Decision.**
+
+- **A retained context executes when every knob the running configuration reads
+  holds its saved value.** A saved knob the configuration no longer has can
+  change no computation the running code makes, so it is not part of the
+  identity, and the comparison runs the saved values of the knobs it reads. A
+  knob changed, or one the running code reads that the context lacks, still
+  refuses it (ADR 462): a new knob's default is not known to be what the earlier
+  release did.
+- **An after period with no readings yet is served empty, not withheld.** In the
+  hours after a change the after period has read nothing; the comparison is
+  available with the before period in full and an empty after (no meals, a trace
+  of no episodes, each row's after null with `no_readable_outcome`). Only a
+  comparison with no readings in either period is unavailable.
+- **A maturing Trial shows every module as its data forms.** Meals before and
+  after, the trace, In range / Below 70 / Above 180, Mean / GMI / CV and, for a
+  basal Trial, Control-IQ against the Pump profile, each over what the after
+  period has read so far; an after with nothing read is drawn empty, with no Δ.
+  Each glucose module closes with the readings it is read from, before → after
+  (`outcomes[key=tir].denominators`), so its current n is on the screen beside
+  Days, the meals and the trace legend's episodes.
+- **Only the verdict waits for maturity.** The pill stays Maturing and the
+  result stays hidden, as before; no Δ is toned while the Trial matures. The
+  model reads the served Trial `state` for both, the same field the result
+  already read. The engine's own directional states stay as served: a carb
+  ratio Trial can meet its eight effective meal runs before fourteen meal days,
+  so a judged row while maturing is reachable, and the screen does not claim it
+  early.
+
+**Consequences.** A new QA case, `c3-ic-trial`, retains a carb ratio Trial
+through the earlier release's configuration (a retained context is written once,
+so the case captures it that way); it backs an API test and a new contract leg
+in CI's app job, and fails with Connor's symptom without the fix. The UI
+fixtures gain each comparison row's readings and a store for a carb ratio Trial
+in its first hours (`wearer-ic-first-hours`), which the stories draw beside the
+existing maturing one; "Readings" joins the interface words. No synthetic store
+yet serves a judged row while a Trial matures, so the untoned Δ is asserted on
+the maturing stores and the contract case, not on a judged row.

@@ -36,5 +36,7 @@
 .ui-metrics__arrow { color: var(--wk-ink-meta); font-size: var(--ui-type-label); text-align: center; }
 .ui-metrics__unit { padding-left: 6px; color: var(--wk-ink-meta); font-size: var(--ui-type-label); }
 .ui-metrics__delta { text-align: right; }
+/* The module's readings (§2.5, 2026-10-19): a count, receded like a before. */
+.ui-metrics__row--count .ui-metrics__after { color: var(--wk-ink-meta); font-weight: var(--ui-weight-regular); }
 /* The Trial's own target metric: the row its result reads. */
 .ui-metrics__row--target .ui-metrics__label { color: var(--wk-ink); }

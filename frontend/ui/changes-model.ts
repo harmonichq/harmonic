@@ -28,6 +28,13 @@ export type OutcomeRow = {
   delta: Change;
 };
 
+/** One of a Trial's metric rows (#554): its after is null while the after arm
+ *  has no reading yet, and its Δ with it. */
+export type MetricRow = Omit<OutcomeRow, 'after' | 'delta'> & { after: Sourced<number> | null; delta: Change | null };
+
+/** How many readings a module's rows are read from, before and after. */
+export type Count = { before: Sourced<number>; after: Sourced<number> };
+
 /** A time block, its start and end in minutes since midnight. */
 export type Block = { start: Sourced<number>; end: Sourced<number> };
 
@@ -85,11 +92,14 @@ export type TrialData = {
   /** The before-vs-after glucose trace; null without a served comparison. */
   trace: Trace | null;
   /** In range, Below 70, Above 180. */
-  ranges: OutcomeRow[];
+  ranges: MetricRow[];
   /** Mean, GMI, CV. */
-  glucose: OutcomeRow[];
+  glucose: MetricRow[];
+  /** The readings those rows are read from, before and after; null without a
+   *  served comparison. */
+  readings: Count | null;
   /** A basal Trial: Control-IQ's delivery against the programmed rate. */
-  basal: OutcomeRow[];
+  basal: MetricRow[];
   /** The engine accepts End: a matured active Trial. */
   canEnd: boolean;
 };
@@ -213,17 +223,35 @@ function outcomeRows(path: string, rows: readonly Outcome[], targets: readonly s
   });
 }
 
+/** A Trial's metric rows, each read as its comparison is collected (#554):
+ *  every row with a before, its after as far as the after arm has one, and
+ *  its Δ toned by the engine's verdict only once the Trial has matured. */
+function metricRows(path: string, rows: readonly Outcome[], targets: readonly string[],
+  keys: readonly OutcomeRow['key'][], maturing: boolean): MetricRow[] {
+  return keys.flatMap((key) => {
+    const row = rows.find((r) => r.key === key);
+    if (!row || row.before === null) return [];
+    const format = row.unit === 'mg/dL' ? 'round' : 'fixed1';
+    const before = sourced<number>(`${path}[key=${key}].0.before`, format);
+    const after = row.after === null ? null : sourced<number>(`${path}[key=${key}].0.after`, format);
+    return [{ key, before, after, unit: row.unit, target: targets.includes(key),
+      delta: after && delta(before, after, maturing ? undefined : row.assessment?.state) }];
+  });
+}
+
 /** A basal Trial's Control-IQ rows: the delivered rate, and the share of the
  *  time above and below the programmed rate. The engine judges none of them. */
-function basalRows(path: string, views: Comparison['views']): OutcomeRow[] {
-  if (!views.before?.basal || !views.after?.basal) return [];
+function basalRows(path: string, views: Comparison['views']): MetricRow[] {
+  if (!views.before?.basal) return [];
+  // An after arm with no delivery read yet serves none (#554): its column stays empty.
+  const read = Boolean(views.after?.basal);
   return (['delivered', 'above', 'below'] as const).map((key) => {
     // The delivered rate as the pump profile prints basal; the shares to one decimal.
     const format = key === 'delivered' ? 'fixed2' : 'fixed1';
     const before = sourced<number>(`${path}.views.before.basal.${key}`, format);
-    const after = sourced<number>(`${path}.views.after.basal.${key}`, format);
+    const after = read ? sourced<number>(`${path}.views.after.basal.${key}`, format) : null;
     return { key, before, after, unit: key === 'delivered' ? 'U/h' : '%', target: false,
-      delta: delta(before, after, undefined) };
+      delta: after && delta(before, after, undefined) };
   });
 }
 
@@ -306,8 +334,13 @@ function trialData(name: ChangesStore, trial: TrialRow): TrialData {
     maturing,
     result: !maturing && target ? RESULTS[target.assessment?.state ?? ''] ?? null : null,
     trace: comparison ? trace(compared, trial.parameter, comparison.views) : null,
-    ranges: comparison ? outcomeRows(`${compared}.outcomes`, comparison.outcomes, trial.target_metrics, RANGES) : [],
-    glucose: comparison ? outcomeRows(`${compared}.outcomes`, comparison.outcomes, [], GLUCOSE) : [],
+    ranges: comparison
+      ? metricRows(`${compared}.outcomes`, comparison.outcomes, trial.target_metrics, RANGES, maturing) : [],
+    glucose: comparison ? metricRows(`${compared}.outcomes`, comparison.outcomes, [], GLUCOSE, maturing) : [],
+    readings: comparison ? {
+      before: sourced(`${compared}.outcomes[key=tir].0.denominators.before`),
+      after: sourced(`${compared}.outcomes[key=tir].0.denominators.after`),
+    } : null,
     basal: comparison ? basalRows(compared, comparison.views) : [],
     canEnd: admission.active_id === trial.id && admission.can_finish_trial,
   };

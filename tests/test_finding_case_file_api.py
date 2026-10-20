@@ -223,6 +223,7 @@ class FindingCaseFileRouteTest(unittest.TestCase):
                     "window": query.to_dict(),
                     "findings_window": {"days": 30, "start": None, "end": None},
                     "rows": [{"id": "basal:0-30", "register": "assert"}],
+                    "outcome_patterns": [],
                 }
 
         projection = Projection()

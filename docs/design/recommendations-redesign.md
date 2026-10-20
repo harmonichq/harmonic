@@ -111,7 +111,7 @@ Each row lists a screen's states. Labels only; no state uses prose.
 | Queue · setting detail | current → estimate, range, n, chart | — | Chart skeleton | Unavailable | A queued ISF: the Overview's ISF card in the Queue's frame (§2.5, 2026-10-14) |
 | Changes | The current Trial (head, trace, ranges, Mean/GMI/CV, Basal vs Pump profile) or Focus, then the Previous row with its count | "No active change" label; no Previous row at 0 | Skeleton | Unavailable + Retry | Maturing, every module as its data forms, each glucose module with its Readings, each Δ green or red by its direction (§2.5, 2026-10-19, colour shows direction); first hours (an empty after: Meals after 0, each after blank) (§2.5, 2026-10-19); Matured (result pill); a carb ratio Trial (Meals before / after; its trace meal by meal under three meals); a whole-profile switch (each setting it moved); **End** (Focus: anytime; Trial: once matured) → confirm sheet → ended; Waiting for pump rows after a Done, between the current change and Previous (§2.5) |
 | Changes · Previous | Every previous change, newest first, no cutoff: setting and block, date, before → after per setting, the result where one was saved | Not reachable (the row is hidden at 0) | — | Unavailable + Retry | — |
-| Overview | 14 d selected; one scrolling page, the summary (window switch, date span, In range, metrics, glucose profile) its first screenful, the ISF and basal estimates below, then Meal size (§2.5, 2026-10-19) | "No data" label per window, in the ISF or basal estimate when none is served, and in Meal size when no meal is counted | Skeleton; a window not yet read shows its profile's and estimates' skeletons; Meal size its skeleton until read | Unavailable + Retry | 30 d / 90 d selected; a previous period without data (the span alone, no changes); the ISF estimate with a supported change (current → recommended), held, Uncertain, with nights beyond its axis; Meal size with a size of one meal, or of none ("–") |
+| Overview | 14 d selected; one scrolling page, the summary (window switch, date span, In range, metrics, glucose profile) its first screenful, the ISF and basal estimates below, then Meal size (§2.5, 2026-10-19) | "No data" label per window, in the ISF or basal estimate when none is served, and in Meal size when no meal is counted | Skeleton; a window not yet read shows its profile's and estimates' skeletons; Meal size its skeleton until read | Unavailable + Retry | 30 d / 90 d selected; a previous period without data (the span alone, no changes); the ISF estimate with a supported change (current → recommended), held, Uncertain, with nights beyond its axis; Meal size with a size of one meal, or of none ("–"), or with no At 3 h ("–"), and an At 3 h read from fewer than its size's meals ("n of N") (§2.5, 2026-10-20 #602) |
 | Day | Latest day with data | "No data" for a day without readings | Chart skeleton | Unavailable + Retry | Month dropped down from the header's day; desktop: the selected week as a ribbon; the Lows row when its count > 0, and under it the Rises row when its count > 0 (§2.5, 2026-10-14 Rises) |
 | Day · Prompts | One prompt of the row's kind, a Low or a Rise, "n / N" among that kind, titled Lows or Rises | Not reachable (the row is hidden at 0) | — | Not saved + Retry | Yes → grams field and keyboard; mid-swipe Not sure; a Rise: Yes · No and Not sure, no False low |
 | Day · Log carbs | Grams field focused, Time = now | — | Saving | Not saved + Retry | Time edited |
@@ -170,7 +170,7 @@ the system's own edge-swipe back is left to the platform, never overridden.
 | **Done** | verb | Mark a Setting's change as programmed into the pump. The next sync checks it. |
 | **Waiting for pump** | state | Done, and no sync has shown the pump since. |
 | **Not on pump** | state | The sync after a Done found the Setting unchanged on the pump. |
-| **Range** | noun | The engine's interval for a Setting's estimate, or the middle half (25–75%) of a meal size's Climbs. |
+| **Range** | noun | The engine's interval for a Setting's estimate (§2.5, 2026-10-20 #602). |
 | **Uncertain** | state | Not yet clear enough to act on: the evidence behind it is thin. |
 | **Peak / Nadir** | noun | The highest or lowest glucose after an event such as a meal, as the median across the events counted, in mg/dL. |
 | **Typical** | noun | The same for the comparison events: similar events that did not end in the Pattern's or the Habit's outcome. |
@@ -1267,6 +1267,66 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   pump. Built with the drill-down (#532, #591); §1.3, §1.4, §1.5, §4.2
   PatternCard, HabitCard and TransientBar follow.
 
+- **2026-10-20 — Meal size is a dot and a whisker per line (#602).** Of the
+  shipped card, the operator: "it's a lot of information that doesn't tell a
+  story." Two spreads stood side by side, Range and 10–90%, with nothing
+  saying which was which or why; At 3 h carried a second meal count with no
+  word for its population; each size's swatch only repeated its label.
+  "Range" also misnamed the 25th–75th percentile: in statistics a range is
+  lowest to highest. Of four mocks drawn from his own data (small multiples,
+  two bars, a heat strip, every meal as a dot), his choice: "B is probably the
+  best, in my opinion, on a phone screen." Then, one question at a time, he
+  chose one spread labelled "25–75%", minutes to peak dropped ("Yeah, drop
+  it."), and At 3 h's population printed beside its value. Shown the bars
+  with the band behind Climb, he asked "Why is the range outside of the bar?
+  ... Why doesn't the three hours thing have a bar? Like a range?": a bar is
+  a length from 0 and a band is a position, so the 75th percentile always ran
+  past the median's bar, and At 3 h had no spread at all. His answer: "it
+  should be a whisker, shouldn't it?" Shown the dot-and-whisker card at both
+  frames, he locked it: "Yeah, that looks great." Built on the locked
+  Overview screen; §1.3, §1.5 and §4.2 follow.
+  - **Each size, two lines** on one shared mg/dL axis with a stronger line at
+    0, the size's bounds over its meal count at the row's start: **Climb**,
+    then beneath it **At 3 h**. Each line is its median as a dot on a thin
+    whisker, capped at both ends, from that line's 25th to its 75th
+    percentile, Climb's in neutral ink and At 3 h's in the estimate blue.
+    Every mark is a position on the axis; nothing is drawn as a length.
+  - **The values** stand in one right-aligned column after the plot, each
+    on its line, the signed median, "+24" and "−6" with a true minus.
+  - **"25–75%"** names both whiskers, the AGP report's name for the middle
+    half. It is a fixed scale name, as the glucose profile's "10–90%" is, and
+    needs no §1.5 entry.
+  - **At 3 h's population.** At 3 h is read only from the meals no later meal
+    followed within three hours, its median and its whisker alike. Where that
+    leaves any meal out, its value is followed, at caption size, by "n of N
+    meals", "of N meals" in meta ink, N the size's meals (the style of §2.5
+    2026-10-19 #575). Where it reads every meal, the value stands alone: the
+    size's count already names its population.
+  - **Gone:** the 10–90% whisker, the Range band, the median tick, Peak at,
+    the size swatches and their colour ramp (§2.5 2026-10-19 #559), the
+    column captions, and any subtitle (§2.3 ban 1). The legend is three keys,
+    glyph and word each: a grey dot, Climb; a blue dot, At 3 h; a capped
+    whisker, 25–75%; beside "mg/dL" beneath the axis. The two dots differ by
+    their line's place in the row as well as by colour (§2.3 ban 4).
+  - **States.** A line read from one meal: its dot, no whisker. A size of no
+    meal: its row, "–" for each value. A size whose every meal had a later
+    meal within three hours: its Climb line, "–" for At 3 h. No data, loading
+    and stale are unchanged (§2.5, 2026-10-19 #501).
+  - **Where and how big** is unchanged: the row after the ISF and basal
+    estimates on desktop at their height, the next card on the phone.
+  - **Served.** The engine adds each size's At 3 h 25th and 75th percentiles,
+    from the same meals its median reads, and stops serving the Climb's 10th
+    and 90th percentiles and the median minutes to peak, which only this card
+    read.
+  - **Words.** Range goes back to meaning only a Setting estimate's interval.
+    Peak at leaves §1.5 with the build, as Pin does, since the shipped card
+    prints it until then.
+  - **Later, with the drill-down (#532), not in this change:** a size opened
+    on its own as the median glucose curve from bolus to three hours with its
+    25–75% band (the operator: "I could definitely see each individual chart
+    for A becoming like a full-size thing that we get when we drill in"). The
+    engine serves no such curve yet.
+
 ### 2.6 Deferred (not cut)
 Not built in the current screens. The engine still serves what each needs, and
 nothing is removed from the engine or the fixtures for them.
@@ -1566,22 +1626,22 @@ unless noted. Loading is a skeleton of the component's own shape.
 27. **MealSizeCard** (§2.5, 2026-10-19): how far glucose climbs after meals of
     each size, over the selected window as the estimates are (§2.5, 2026-10-19
     #565), below the ISF and basal estimates, their height (§2.5, 2026-10-19
-    #559). Titled "Meal size". One thin strip per size, <25 g, 25–39 g, 40–59 g
-    and 60 g+, on one shared Climb axis, drawn from the size's percentiles
-    alone (§2.5, 2026-10-19 #570): its 10–90% a thin capped whisker in its shade
-    of the estimate blue, its Range a thick line over it, its median a short ink
-    tick on top; grid lines at the ticks; "Climb · mg/dL" and the legend Median,
-    Range, 10–90% beneath the axis.
-    Each size's swatch and bounds over its meal count, then the signed medians
-    Climb, Peak at (min) and At 3 h, At 3 h over its own meal count, aligned
-    like a table: on the strip's row when wide, beneath the strips when narrow.
-    Nothing to act on.
-    - States: populated; a size of one meal (its tick alone); a size of
-      no meal (its row, "–"); no data ("No data"); not yet read (its skeleton).
+    #559). Titled "Meal size". One row per size, <25 g, 25–39 g, 40–59 g
+    and 60 g+, each two lines on one shared mg/dL axis (§2.5, 2026-10-20 #602):
+    Climb, then At 3 h, each its median as a dot on a capped 25–75% whisker,
+    Climb's in neutral ink and At 3 h's in the estimate blue; the signed
+    medians in one column after the plot, At 3 h's followed by "n of N meals"
+    where it read fewer than the size's meals. Each size's bounds over its
+    meal count start the row. Grid lines at the ticks, a stronger one at 0;
+    the legend Climb, At 3 h, 25–75% beside "mg/dL" beneath the axis. Nothing
+    to act on.
+    - States: populated; a line of one meal (its dot, no whisker); a size of
+      no meal (its row, "–"); a size with no At 3 h (its Climb line, "–"); no
+      data ("No data"); not yet read (its skeleton).
     - Fields: `meal_size.window`; `meal_size.sizes[].carbs_from,
-      carbs_to, count`, `climb.median, p10, p25, p75, p90`,
-      `to_peak.median`, `at_3h.median, count`, read from
-      `/api/explore/meal-size?days=N`.
+      carbs_to, count`, `climb.median, p25, p75`, `at_3h.median, p25, p75,
+      count`,
+      read from `/api/explore/meal-size?days=N`.
     - Desktop: the Overview's full width, the row after the IsfCard and the
       BasalCard, at their height (every row of the cards one height).
 

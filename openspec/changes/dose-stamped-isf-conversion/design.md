@@ -96,19 +96,22 @@ state, so `_RECORDED_DATA_RESULTS` and the recorded-data revision keys stand.
 Every committed synthetic store programs a flat ISF. The UI wearer
 (`scripts/ui_patient.py`, 411 of 411 meal boluses stamped, none before its first
 snapshot) and the admission truth sets stamp their boluses, so there the
-dose-stamped value equals the programmed median. The QA cases (the showcase's 32
-meal boluses all unstamped) and the chart-builder, findings-projection and
-missed-meal generators write unstamped boluses, so their meals take rule 2, and
-any meal before its store's first snapshot takes rule 3. Several QA cases capture
-their snapshot mid-history, and the chart-builder store captures its one a day
-after it starts. The build re-measures all of them, the QA catalog and showcase
-included. Measured with a median-only stand-in on the base commit, which cannot
-see rule 3: two generated fixtures move. `frontend/__fixtures__/analysis.json`'s meals gain their glucose outcome
+dose-stamped value equals the programmed median. The QA showcase's 32 meal
+boluses are unstamped and none precedes its first snapshot, so they take rule 2,
+the flat programmed 40. Every QA case store (all 75 emitted) programs a flat 40
+and stamps its meals, with two exceptions: `behavioral-precedence` has two
+unstamped meals, both after its first snapshot (rule 2), and
+`behavioral-carb-undercount` stamps 32 against a programmed 40, so it moves under
+rule 1. No QA store has an unstamped meal before its first snapshot. The
+chart-builder, findings-projection and missed-meal generators write unstamped
+boluses, and the chart-builder store captures its one snapshot a day after it
+starts, so its first day's meals take rule 3. The build re-measures all of them,
+the QA catalog and showcase included. Measured with a median-only stand-in on the
+base commit: two generated fixtures move. `frontend/__fixtures__/analysis.json`'s meals gain their glucose outcome
 (the zero-estimate defect). In `frontend/ui/__fixtures__/ui-fixtures.json` the
 synthetic wearer's habit attribution moves and two Day findings lists shrink.
 Neither moves an `asserts_move`. Under that stand-in the QA catalog, the QA database, the other two generated
-fixtures and every live contract case are unchanged; with rule 3 a QA case with
-meals before its first snapshot can move. Three Day story
+fixtures and every live contract case are unchanged. Three Day story
 plays assume the day with the most logged carbs names three habits; it now
 names two, and other logged-carb days in the same history name three or four, so
 the generator picks the `with_carbs` day by the habits its findings name.

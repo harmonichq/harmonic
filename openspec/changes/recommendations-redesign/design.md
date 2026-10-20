@@ -2239,7 +2239,7 @@ step would draw as not landed.
 keeps no predecessor, so with none held a crossed preparation still fails, and a
 Queue that ranks a Pattern draws Unavailable until Retry. After a deploy the
 derived results are cold (the source fingerprint), so during the first sync after
-one a read with no predecessor still fails.
+one a read with no predecessor still fails. ADR 581 decides both.
 
 **Dosing.** No analyzer, staging predicate, cap, floor or served value changes.
 What changes is which earlier answer a read serves, labelled, while a sync lands,
@@ -2256,3 +2256,91 @@ the first read during the landing sync answered 500, and the warm pass logged
 fixed key, `("verify-trials", kind, identity, assessment, execution)`, and an
 invalidation alone, with the store's revision unchanged, answers the roster from
 the derived-results file rather than computing it again.
+
+## ADR 581 — The Queue's case files are a fixed result, and the start fetch waits for the start warm pass
+
+**Context.** ADR 579 left two reads that could still fail while a sync landed.
+
+- *The case files.* The Queue reads the case-file preparation, then the
+  event-aligned case file of each Pattern and habit it ranks. The preparation was
+  held only in memory under leases (ADR 79): a restart or the invalidation at a
+  sync's end dropped it, so the next Queue read built it inline. While a sync
+  landed that build was crossed and answered `preparation_changed`, so a Queue
+  that ranked a Pattern drew Unavailable until Retry. It also had a falsely
+  current answer: mid-sync the held preparation, prepared before the sync's first
+  commit, was served unlabelled.
+- *The first sync after a deploy.* Every derived result's marker carries the
+  package's source fingerprint, so a deploy starts with none. `serve` starts the
+  warm pass and the start fetch together. On the host the cold warm pass takes
+  minutes, the start fetch's first window commits within seconds, and every read
+  the warm pass had not yet reached had no predecessor and failed.
+
+**Decision.**
+
+1. *What the Queue reads of the case files is one fixed result*
+   (`finding-case-files`, keyed by the recorded-data revision). It holds the
+   preparation's answer and the event-aligned case file of each finding, or `null`
+   for one with no inspectable member (`queue_answers`). Its compute retains the
+   preparation in memory as before, so every other coordinate is still projected
+   from it. A preparation records the revision it was prepared from, and one
+   prepared before the current revision is no longer retained. So after a restart
+   the preparation and the Queue's case files answer from the derived-results
+   file without preparing, and while a sync lands they answer their labelled
+   predecessor, as every fixed read does (ADR 566, ADR 579). A case-file read
+   naming a preparation that is no longer retained is served from that answer
+   when it names the Queue's coordinate (event alignment, no occurrence, no lever)
+   and the answer a read gets now carries that `projection_id`. Any other
+   coordinate of it is `stale_projection`, as before. The app marks a Queue drawn
+   from an earlier case file `stale` and reads it again until current.
+2. *The start fetch waits for the start warm pass.* `serve`'s fetch loop starts
+   once the warm worker first goes idle, its start pass done, or waiting for a
+   write that crossed it. So when the start fetch first commits, every read the
+   app makes has an earlier answer to serve, and no read is left without one. With
+   no warm pass at start (`warm_on_start=False`) the fetch starts at once, as before.
+   The wait is bounded, because a start fetch that never starts is a store that
+   silently stops growing. The fetch starts at whichever comes first: the worker
+   goes idle, the worker's task ends for any reason, or a ceiling of ten minutes
+   (`START_FETCH_CEILING_SECONDS`). Reads that keep asking for refreshes can keep
+   the worker from ever going idle. ADR 566 measured the Overview's cold reads at
+   43–52 s on the Mac and every result current again after a write at 41 s; the
+   whole roster at the home host's 3× is a few minutes. Ten minutes leaves a cold
+   pass room, and delays the hourly loop's first fetch by at most that. The fetch
+   logs which of the three released it: an idle worker at info, a stopped worker
+   (with its exception) or the ceiling as a warning. A worker that died no longer
+   fails shutdown.
+
+**Rejected.** Serving the pre-deploy answer, labelled, when its shape is unchanged.
+ADR 566 rejected serving an older build's bytes. The fingerprint is of the whole
+package because any analyzer change can move any served number, and no narrower
+per-shape version would prove a shape unchanged. An older build's answer is not a
+coherent answer of this build, and labelling its age does not label its code.
+Persisting the whole preparation (its readings, deliveries, boluses and
+opportunity rows) to rebuild it after a restart: megabytes per revision to serve
+what the Queue reads, which is a few case files. Starting the fetch after a fixed
+delay: a deploy's cold pass can outlast any delay picked, and a warm restart would
+wait for nothing.
+
+**Not decided here.** After a deploy the Overview and Queue still compute their
+first reads while the start warm pass runs, cold, as ADR 566 accepted. The start
+fetch now lands once that pass ends, minutes later on the host after a deploy and
+seconds after a restart that finds its derived results. Drill-down coordinates of
+a preparation only the derived-results file holds answer `stale_projection`; the
+app reads none.
+
+**Dosing.** No analyzer, staging predicate, cap, floor or served value changes. A
+case file is the same projection of the same preparation, read back from where it
+was kept.
+
+**Consequences.** `tests/test_read_beside_a_sync.py` covers both decisions. After
+a restart the preparation and every case file answer without preparing. After a
+restart, while a sync lands, each answers 200 with its earlier body and
+`input_data_age`. A start warm pass holds back the start fetch until it ends. A
+warm worker that dies, or one that never goes idle past an injected ceiling, still
+lets the start fetch run. Both of those failed first: the fetch never ran.
+Each failed first on d9cb53fd: the restart prepared again, the preparation
+answered 503 `preparation_changed`, and the fetch ran beside the warm pass. The
+answer keeps every finding's case file and every Pattern's, a collapsed one under
+its own subject too, as the Queue reads it. The generated `wearer-not-on-pump`
+Queue changes in one Pattern's case-file trace. That store is read after a sync
+the app was not told of, and the held preparation from before that sync was
+served as current; it is now the sync's own. No other generated answer changes.

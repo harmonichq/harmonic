@@ -151,16 +151,26 @@ class ResultCache:
         self._preparations[key] = value
         return value, None
 
+    def _held_preparation(self, key, validate):
+        """The preparation retained for ``key``, under ``_lock``; one ``validate``
+        refuses is no longer retained."""
+        current = self._preparations.get(key)
+        if current is not None and validate is not None and not validate(current):
+            self._preparations.pop(key)
+            return None
+        return current
+
     def get_or_build_preparation(self, key, build, *, cap=PREPARATION_CAP, attempts=2,
-                                 before_commit=None):
+                                 before_commit=None, validate=None):
         """Return one retained preparation for ``key`` or its ADR 79 failure code.
 
         ``build(version)`` runs outside the synchronization boundary. Identical
         coordinates share a per-key flight; the final version check, lease/capacity
         decision, and registration happen under the same lock as :meth:`bump`.
+        With ``validate``, a retained preparation it refuses is built again.
         """
         with self._lock:
-            current = self._preparations.get(key)
+            current = self._held_preparation(key, validate)
             if current is not None:
                 current.lease_until = time.monotonic() + PREPARATION_LEASE_SECONDS
                 self._preparations.move_to_end(key)
@@ -173,7 +183,7 @@ class ResultCache:
             try:
                 for _ in range(attempts):
                     with self._lock:
-                        current = self._preparations.get(key)
+                        current = self._held_preparation(key, validate)
                         if current is not None:
                             current.lease_until = (
                                 time.monotonic() + PREPARATION_LEASE_SECONDS

@@ -261,6 +261,24 @@ test('an answer the engine served from before its last sync marks its tab, and o
   assert.equal(live.answers.overview.wearer.time_of_day['14'].input_data_age, undefined);
 });
 
+test('a Queue drawn from an earlier case file is marked until its case files are current (#581)', async () => {
+  const fake = fakeClient();
+  const age = { revision: 6, covers_to: '2026-01-01 00:00:00' };
+  let earlier = 1;
+  const { fetchDiagnoseFindingCase } = fake.client;
+  fake.client.fetchDiagnoseFindingCase = async (opts) => {
+    const answer = await fetchDiagnoseFindingCase(opts);
+    return earlier-- > 0 ? { ...answer, input_data_age: age } : answer;
+  };
+  const live = createLive({ client: fake.client, glossary: [], pause: () => Promise.resolve() });
+  await live.readTab('queue');
+  assert.equal(live.behind('queue'), true, 'a case file the Queue drew is an earlier answer');
+  const preparations = fake.count('case-preparation');
+  await live.catchUp('queue');
+  assert.equal(live.behind('queue'), false, 'read again until current');
+  assert.equal(fake.count('case-preparation'), preparations + 1, 'its preparation read again with it');
+});
+
 test('a Queue or Changes drawn from an answer served while a sync landed is marked until current (#579)', async () => {
   const fake = fakeClient(history({ activeKind: 'trial' }));
   const age = { revision: 6, covers_to: '2026-01-01 00:00:00' };

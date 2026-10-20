@@ -2118,7 +2118,8 @@ class CachePreWarmTest(unittest.TestCase):
             with TestClient(self.app) as client:
                 self.app.state.signal_recompute()
                 self.assertTrue(entered.wait(3))
-                self.assertEqual(self.app.state.fixed_in_flight_keys(), ())
+                # The Queue's case files are one fixed result (#581).
+                self.assertEqual(self.app.state.fixed_in_flight_keys(), (("finding-case-files",),))
                 with ThreadPoolExecutor(max_workers=1) as pool:
                     request = pool.submit(client.get,
                                           "/api/diagnose/finding-case-file-preparation")

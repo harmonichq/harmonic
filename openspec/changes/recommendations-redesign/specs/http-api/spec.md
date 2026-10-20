@@ -495,6 +495,53 @@ roster against a store still moving, and SHALL compute what it owes then (#579).
 - **AND** once the sync ends and invalidates, the pass computes the shape and the
   rest of its roster
 
+### Requirement: The Queue's case files are a fixed result
+
+What the Queue reads of the case files — the preparation's answer and each
+finding's event-aligned case file — SHALL be one fixed result in the
+derived-results file, keyed by the recorded-data revision, whose compute retains
+the preparation every other coordinate is projected from. A preparation prepared
+before the current revision SHALL NOT be retained or served as current. A
+case-file read naming a preparation no longer retained SHALL be answered from that
+result, labelled when it is a predecessor, when it names the Queue's coordinate and
+that result carries its `projection_id`; any other coordinate of it SHALL answer
+`stale_projection` (#581).
+
+#### Scenario: After a restart the Queue's case files answer without preparing
+
+- **GIVEN** the preparation and each finding's event case file read once
+- **WHEN** the app restarts over the same store and they are read again
+- **THEN** each answers the same body, and no preparation is built
+
+#### Scenario: While a sync lands after a restart, the case files answer labelled
+
+- **GIVEN** the preparation and each event case file read once, then a restart and
+  one sync window committed
+- **WHEN** a sync window commits during every snapshot each read takes
+- **THEN** each answers 200 with its earlier body and `input_data_age`
+
+### Requirement: The start fetch waits for the start warm pass
+
+When `serve` warms at start, its fetch loop SHALL start once the warm worker
+first goes idle, so the start fetch never commits while every read is still
+without an earlier answer, as after a deploy. It SHALL NOT wait past the warm
+worker's task ending for any reason, or past a ten-minute ceiling, and SHALL log
+which released it. Derived results SHALL stay keyed by
+the package's source fingerprint, and an older build's answer SHALL NOT be served
+(#581).
+
+#### Scenario: The start fetch runs after the start warm pass
+
+- **GIVEN** an app that warms at start and runs its fetch loop
+- **WHEN** the start warm pass is still computing
+- **THEN** no fetch has run, and the start fetch runs once the pass ends
+
+#### Scenario: A warm worker that dies or never idles does not hold back the start fetch
+
+- **GIVEN** an app that warms at start and runs its fetch loop
+- **WHEN** the warm worker dies outside a shape, or its pass outlasts the ceiling
+- **THEN** the start fetch runs, and a warning names which released it
+
 ## MODIFIED Requirements
 
 ### Requirement: The heavy read endpoints answer from one per-process result cache
@@ -505,7 +552,8 @@ model view, the day navigator, the day timeline, the pattern sweep, the
 time-of-day evidence feed, and the lever catalog — answer through a cache keyed by
 endpoint name plus the parameters that change the
 answer. Finding case-file preparation is cached once per data version and projects
-each request's coordinates from that prepared source. Caching is opt-in per
+each request's coordinates from that prepared source; what the Queue reads of it is
+a fixed result (#581). Caching is opt-in per
 endpoint: the cheap store reads (status, pump settings, carb entries, prompts,
 the Plan history, Focus) read the store directly on every request and are never
 cached. A read that needs only the latest data instant SHALL find it with one
@@ -560,8 +608,9 @@ pass's next shape. Nothing the app does not read is warmed. Any
 other date, month, or window stays lazy, so a warm cannot grow without bound;
 selected case-file projections likewise stay lazy behind their warmed prepared
 source. Every write the app makes runs the same pass after it invalidates, and
-`serve` runs it once at start, so a restart is warm before its first fetch lands
-or when that fetch commits nothing. Warming runs in a worker thread rather than
+`serve` runs it once at start and starts its fetch loop only once that pass is
+done, so a restart is warm before its first fetch lands (#581) or when that fetch
+commits nothing. Warming runs in a worker thread rather than
 the event loop, a newer invalidation abandons an older pass at its next shape, and
 one shape failing to warm is logged and skipped rather than aborting the pass or
 the loop. A shape a write crossed at every snapshot is no failure: the pass waits

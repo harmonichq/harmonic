@@ -8,7 +8,6 @@
 // answers in from the live API.
 import { answers, sourced, type Sourced } from './answers';
 import { delta, type Change } from './direction';
-import { isfData, type IsfAnswer, type IsfData } from './overview-model';
 import { PARAMETER_FORMATS, PARAMETER_NAMES } from './settings-model';
 
 export type QueueStore = keyof typeof answers.queue;
@@ -367,20 +366,6 @@ export function carbRatioSetting(name: QueueStore): SettingData | null {
   };
 }
 
-/** A queued ISF is the Overview's ISF card (§2.5, 2026-10-14) with the change
- *  the engine stages: its row prints current → recommended. */
-export type IsfSettingData = IsfData & { title: string; recommended: Sourced<number>; notOnPump: boolean };
-
-/** The queued ISF, from the store's analysis (the Overview's ISF card, over the
- *  engine's default window). Null when the analysis serves no estimate, or no
- *  recommendation: the engine stamps one only with its ISF staging verdict. */
-export function isfSetting(name: QueueStore): IsfSettingData | null {
-  const data = isfData(`queue.${name}.analyze.isf`, store(name).analyze.isf as IsfAnswer[]);
-  if (data === 'none' || !data.recommended) return null;
-  const candidate = store(name).guidance.candidates.find((c) => c.subject === 'setting:isf');
-  return { ...data, title: PARAMETER_NAMES.isf, recommended: data.recommended, notOnPump: notOnPump(candidate) };
-}
-
 /** The story states the generator found in the served answers, by name. */
 const states = () => answers.states;
 type PatternState = 'traces_episodes' | 'traces_band' | 'traces_gap' | 'pinned' | 'uncertain'
@@ -414,11 +399,11 @@ export function settingState(name: SettingState): SettingData {
 
 export type QueueItem =
   | { subject: string; kind: 'pattern' | 'habit'; data: PatternData }
-  | { subject: string; kind: 'setting'; data: SettingData }
-  | { subject: string; kind: 'isf'; data: IsfSettingData };
+  | { subject: string; kind: 'setting'; data: SettingData };
 
 /** A candidate as its Queue component draws it, or null for one no Queue
- *  component draws (a kind the app does not know), or one whose served
+ *  component draws (a kind the app does not know, or a correction factor,
+ *  which Harmonic no longer advises: §2.5, 2026-10-20), or one whose served
  *  findings or analysis lack what its component reads. The candidates are served data: one
  *  the Queue cannot draw is left out, never fatal to the screen. */
 function item(name: QueueStore, candidate: Candidate): QueueItem | null {
@@ -440,10 +425,6 @@ function item(name: QueueStore, candidate: Candidate): QueueItem | null {
     return s.analyze.basal.some((b) => b.slot === start / 30)
       ? { subject: candidate.subject, kind: 'setting', data: basalSetting(name, start) } : null;
   }
-  if (candidate.subject === 'setting:isf') {
-    const data = isfSetting(name);
-    return data ? { subject: candidate.subject, kind: 'isf', data } : null;
-  }
   if (candidate.subject === 'setting:carb_ratio') {
     const data = carbRatioSetting(name);
     return data ? { subject: candidate.subject, kind: 'setting', data } : null;
@@ -463,9 +444,13 @@ export function ranking(name: QueueStore): QueueItem[] {
     .map((c) => item(name, c)).filter(drawn);
 }
 
-/** How many the Queue holds, and how many are snoozed, as served counts. */
-export const queuedCount = (name: QueueStore) => sourced<number>(`queue.${name}.guidance.candidates[queued=true].length`);
-export const snoozedCount = (name: QueueStore) => sourced<number>(`queue.${name}.guidance.candidates[set_aside=true].length`);
+/** How many the Queue holds, and how many are snoozed, as served counts that
+ *  leave out the correction factor: it is no Queue row (§2.5, 2026-10-20), so
+ *  one the engine still queues, or one set aside before #564, is not counted. */
+export const queuedCount = (name: QueueStore) => sourced<number>(
+  `queue.${name}.guidance.candidates[queued=true].length − queue.${name}.guidance.candidates[queued=true][subject=setting:isf].length`);
+export const snoozedCount = (name: QueueStore) => sourced<number>(
+  `queue.${name}.guidance.candidates[set_aside=true].length − queue.${name}.guidance.candidates[set_aside=true][subject=setting:isf].length`);
 
 export type SnoozedItem = QueueItem & { until: Sourced<string> };
 

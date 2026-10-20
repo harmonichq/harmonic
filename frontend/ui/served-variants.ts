@@ -6,8 +6,9 @@
 // at one fixed key and `withNavigator` swaps only for one story's render.
 //
 // - A Trial whose parameter the app has no name for, as a newer engine might serve.
-// - A Queue whose ranking holds candidates the Queue cannot draw: an ISF and an
-//   I:C Setting the findings serve no admitted row for, a Pattern the findings
+// - A Queue whose ranking holds candidates the Queue cannot draw: a correction
+//   factor, which no Queue row draws, an I:C Setting the findings serve no
+//   admitted row for, a Pattern the findings
 //   hold no row for, a standalone habit the case files serve nothing for, and a
 //   candidate of a kind the app does not know.
 // - A Pattern whose trace chart is served with nothing to draw (ADR 523).

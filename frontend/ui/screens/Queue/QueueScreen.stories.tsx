@@ -5,7 +5,7 @@ import { fixtures, sourced } from '../../fixtures';
 import { swipe } from '../../gesture';
 import { expectTabBarEnds } from '../../tabbar-check';
 import { expectAtPaneTop, expectHeaderEmpty, expectTitlePrinted } from '../../title-check';
-import { focusable, patternStore, ranking, type QueueStore } from '../../queue-model';
+import { focusable, patternStore, ranking, snoozed, type QueueStore } from '../../queue-model';
 import { failsOnce } from '../../flaky';
 import { QUEUE_UNDRAWABLE, ServedAfter } from '../../served-variants';
 import { QueueScreen, type QueueScreenProps } from './QueueScreen';
@@ -19,6 +19,9 @@ import { QueueScreen, type QueueScreenProps } from './QueueScreen';
 //   the Queue the engine served after it, the bar's Until, and the Snoozed row.
 // - Snoozed list: the first days with everything snoozed, each with Restore.
 // - Empty: the same store's Queue, "0 patterns", with its Snoozed row.
+//   The store also serves a correction factor set aside before #564, which no
+//   Queue row draws: the list leaves it out and the row's count leaves it
+//   uncounted (§2.5, 2026-10-20).
 // - Loading, and Unavailable (the unsynced store serves guidance unavailable);
 //   Stale, the last answers under Unavailable.
 // - Phone mid-swipe: a row held over its Snooze reveal, the QueueRow's own
@@ -155,10 +158,31 @@ const justSnoozedPlay: Story['play'] = async ({ canvasElement }) => {
 };
 export const JustSnoozedPhone: Story = { ...story('phone', JUST_SNOOZED), play: justSnoozedPlay };
 export const JustSnoozedDesktop: Story = { ...story('desktop', JUST_SNOOZED), play: justSnoozedPlay };
-export const SnoozedListPhone = story('phone', SNOOZED_LIST);
-export const SnoozedListDesktop = story('desktop', SNOOZED_LIST);
-export const EmptyPhone = story('phone', EMPTY);
-export const EmptyDesktop = story('desktop', EMPTY);
+// The first days' Snoozed list and its count, without the correction factor.
+// A correction factor set aside before #564 is served set aside and drawn by
+// no Queue row (§2.5, 2026-10-20), so it is neither listed nor counted.
+const FIRST_DAYS_SNOOZED = 'wearer-first-days-snoozed' as const;
+const drawnSnoozed = async () => {
+  const served = fixtures.queue[FIRST_DAYS_SNOOZED].guidance.candidates;
+  await expect(served.some((c) => c.subject === 'setting:isf' && c.set_aside)).toBe(true);
+  const drawn = snoozed(FIRST_DAYS_SNOOZED);
+  await expect(drawn.some((s) => s.subject === 'setting:isf')).toBe(false);
+  await expect(drawn.length).toBeGreaterThan(0);
+  return drawn.length;
+};
+const snoozedListPlay: Story['play'] = async ({ canvasElement }) => {
+  const drawn = await drawnSnoozed();
+  await expect(within(canvasElement).getAllByRole('button', { name: 'Restore' })).toHaveLength(drawn);
+};
+const emptyPlay: Story['play'] = async ({ canvasElement }) => {
+  const drawn = await drawnSnoozed();
+  const footer = within(canvasElement).getByRole('button', { name: /Snoozed/ });
+  await expect(footer.textContent!.replace(/\D/g, '')).toBe(String(drawn));
+};
+export const SnoozedListPhone: Story = { ...story('phone', SNOOZED_LIST), play: snoozedListPlay };
+export const SnoozedListDesktop: Story = { ...story('desktop', SNOOZED_LIST), play: snoozedListPlay };
+export const EmptyPhone: Story = { ...story('phone', EMPTY), play: emptyPlay };
+export const EmptyDesktop: Story = { ...story('desktop', EMPTY), play: emptyPlay };
 export const LoadingPhone = story('phone', LOADING);
 export const LoadingDesktop = story('desktop', LOADING);
 export const UnavailablePhone = story('phone', UNAVAILABLE);
@@ -354,9 +378,10 @@ const LIVE_DONE = { store: 'wearer-before-done', open: 'setting:basal_rate' } as
 export const LiveDoneNotSavedPhone: Story = { ...story('phone', { ...LIVE_DONE, writes: liveWrites() }), play: liveDonePlay };
 export const LiveDoneNotSavedDesktop: Story = { ...story('desktop', { ...LIVE_DONE, writes: liveWrites() }), play: liveDonePlay };
 
-// A ranking holding candidates the Queue cannot draw (an ISF and an I:C
-// Setting with no admitted row, a Pattern the findings serve no row for, and a
-// kind the app does not know): they are left out, and the Queue draws the rest.
+// A ranking holding candidates the Queue cannot draw (a correction factor,
+// which no Queue row draws, an I:C Setting with no admitted row, a Pattern the
+// findings serve no row for, and a kind the app does not know): they are left
+// out, and the Queue draws the rest.
 const undrawablePlay: Story['play'] = async ({ canvasElement }) => {
   const canvas = within(canvasElement);
   await expect(canvas.getByRole('heading', { level: 1, name: 'Queue' })).toBeInTheDocument();
@@ -367,27 +392,6 @@ const undrawablePlay: Story['play'] = async ({ canvasElement }) => {
 export const UndrawablePhone: Story = { ...story('phone', { store: QUEUE_UNDRAWABLE }), play: undrawablePlay };
 export const UndrawableDesktop: Story = { ...story('desktop', { store: QUEUE_UNDRAWABLE }), play: undrawablePlay };
 
-// A queued ISF (§2.5, 2026-10-14): the store whose ISF the engine supports a
-// change for. Its row prints current → recommended with no time block; open,
-// it is the Overview's ISF card in the Queue's frame: titled "ISF" alone,
-// current → recommended above the fasting nights' chart (one dot per night),
-// Estimate, Range and Fasting nights beneath, and Snooze at its foot.
-const ISF_STORE = 'isf-supported' as const;
-const isfPlay: Story['play'] = async ({ canvasElement }) => {
-  const canvas = within(canvasElement);
-  const isf = ranking(ISF_STORE).find((i) => i.subject === 'setting:isf')!;
-  if (isf.kind !== 'isf') throw new Error('the queued ISF is not drawn as the ISF card');
-  await expect(canvas.getByRole('heading', { level: 2, name: 'ISF' })).toBeInTheDocument();
-  await expect(canvasElement.querySelector('.ui-isf [data-source$=".analyze.isf.0.recommended"]')).not.toBeNull();
-  // Every fasting night is a dot, or counted at the end of the axis it lies beyond.
-  const beyond = [...canvasElement.querySelectorAll('.ui-isf [data-edge]')]
-    .reduce((sum, edge) => sum + Number(edge.textContent!.replace(/\D/g, '')), 0);
-  await expect(canvasElement.querySelectorAll('.ui-isf .ui-chart__dot').length + beyond).toBe(isf.data.fits.length);
-  const captions = [...canvasElement.querySelectorAll('.ui-isf .ui-scard__facts dt')].map((dt) => dt.textContent);
-  await expect(captions).toEqual(['Estimate', 'Range', 'Fasting nights']);
-  await expect(within(canvasElement.querySelector('.ui-isf') as HTMLElement).getByRole('button', { name: 'Snooze' }))
-    .toBeInTheDocument();
-};
 // A standalone habit (ADR 528), open: its row is a Pattern's with the Habit
 // glyph, and its card the PatternCard, the chart's episodes named Habit, with
 // Focus and Snooze beneath. Pinned, the Focus pill takes Focus's place, and the
@@ -504,9 +508,6 @@ const multiCausePinnedPlay: Story['play'] = async ({ canvasElement }) => {
 const MULTI_PINNED_OPEN = { store: MULTI_PINNED.store, open: `pattern:${MULTI_PINNED.pattern}` } as QueueScreenProps;
 export const MultiCausePinnedPhone: Story = { ...story('phone', MULTI_PINNED_OPEN), play: multiCausePinnedPlay };
 export const MultiCausePinnedDesktop: Story = { ...story('desktop', MULTI_PINNED_OPEN), play: multiCausePinnedPlay };
-
-export const IsfSettingPhone: Story = { ...story('phone', { store: ISF_STORE, open: 'setting:isf' }), play: isfPlay };
-export const IsfSettingDesktop: Story = { ...story('desktop', { store: ISF_STORE, open: 'setting:isf' }), play: isfPlay };
 
 // An admitted I:C Setting: the SettingCard with its block, current →
 // suggested, printed as the pump profile prints it, its counted meal runs as

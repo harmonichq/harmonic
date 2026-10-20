@@ -42,7 +42,7 @@ function fakeClient(served = history()) {
     fetchPrompts: answer('prompts', () => []),
     fetchGuidance: answer('guidance', () => ({ analysis_generation: 'g1', candidates: served.candidates })),
     fetchDiagnoseFindings: answer('findings', () => ({ outcome_patterns: [], rows: [] })),
-    fetchAnalysis: answer('analyze', () => ({ basal: [], isf: [], ic_blocks: [] })),
+    fetchAnalysis: answer('analyze', () => ({ basal: [], ic_blocks: [] })),
     fetchFocuses: answer('focus', () => ({ focuses: served.focuses, input_revision: 7 })),
     fetchVerifyTrials: answer('trials', (opts = {}) => (opts.selected
       ? { selected: { title: 'Pattern', lever_title: 'Habit', reassessment: { comparison: { ...comparison, outcomes: [] } } } }
@@ -118,13 +118,18 @@ test('the Queue reads a case file only for each Pattern it ranks', async () => {
   assert.equal(fake.count('case-preparation'), 1);
 });
 
-test('the Queue keeps the analysis\'s first ISF segment, which its ISF card draws', async () => {
+test('the Queue and the Overview keep none of the ISF segments the analysis still serves (#564)', async () => {
   const fake = fakeClient();
   const segments = [{ start_min: 0, current: 40, recommended: 36.2, asserts_move: true }, { start_min: 720 }];
   fake.client.fetchAnalysis = () => Promise.resolve({ basal: [], isf: segments, ic_blocks: [] });
   const live = createLive({ client: fake.client, glossary: [] });
   await live.readTab('queue');
-  assert.deepEqual(live.answers.queue.wearer.analyze.isf, segments.slice(0, 1));
+  await live.readTab('overview');
+  await new Promise((resolve) => { setImmediate(resolve); });
+  assert.deepEqual(Object.keys(live.answers.queue.wearer.analyze).sort(), ['basal', 'ic_blocks']);
+  for (const window of ['14', '30', '90']) {
+    assert.deepEqual(Object.keys(live.answers.overview.wearer.analyze[window]), ['basal'], `${window} d`);
+  }
 });
 
 test('switching tabs back and forth reads nothing again', async () => {
@@ -209,7 +214,7 @@ test('Done records the card\'s subject from the read it was made on, and a waiti
   assert.deepEqual(live.answers.changes.wearer.waiting, []);
 });
 
-test('the Overview reads each window\'s profile and ISF once, the first window first and the others behind it, shared with the Queue and Day', async () => {
+test('the Overview reads each window\'s profile and basal estimate once, the first window first and the others behind it, shared with the Queue and Day', async () => {
   const fake = fakeClient();
   const live = createLive({ client: fake.client, glossary: [] });
   const windows = (name) => fake.calls.filter((c) => c.name === name).map((c) => c.args[0] ?? 'default');
@@ -226,7 +231,7 @@ test('the Overview reads each window\'s profile and ISF once, the first window f
   await live.readWindow('90');
   await live.readWindow('14');
   assert.deepEqual(windows('time-of-day'), [14, 30, 90], 'every window, each read once');
-  assert.deepEqual(windows('analyze'), [14, 'default', 90], 'the 30 d ISF is the Queue\'s analysis');
+  assert.deepEqual(windows('analyze'), [14, 'default', 90], 'the 30 d basal estimate is the Queue\'s analysis');
   await live.readTab('queue');
   assert.deepEqual(windows('analyze'), [14, 'default', 90], 'which the Queue shares');
   assert.deepEqual(Object.keys(live.answers.overview.wearer.analyze).sort(), ['14', '30', '90']);
@@ -587,7 +592,7 @@ test('the Queue and Overview keep only what their charts draw, so the remembered
   });
   const run = { t: '2024-05-01T08:00:00', true_ic: 8 };
   fake.client.fetchAnalysis = () => Promise.resolve({
-    basal: [slot(0, true), slot(1, false)], isf: [],
+    basal: [slot(0, true), slot(1, false)],
     ic_blocks: [{ block_id: 0, start_min: 0, end_min: 1440, current_values: [10], recommended: 9, asserts_move: true,
       estimate: { value: 8, lo: 7, hi: 9, n: 8 }, harm: {}, evidence: { runs: [run], ledger: {}, counted_runs: [run] } }],
   });

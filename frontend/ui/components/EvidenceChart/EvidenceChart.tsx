@@ -1,7 +1,6 @@
 // EvidenceChart (§4.2): a setting's evidence as one row of dots — a basal
-// slot's nights by delivered rate, an I:C block's counted meal runs by their
-// ratio, or the ISF's fasting nights by their fitted ISF — the evidence the
-// engine's own rules count, no more (ADR 523).
+// slot's nights by delivered rate, or an I:C block's counted meal runs by their
+// ratio — the evidence the engine's own rules count, no more (ADR 523).
 //
 // The axis spans the band that matters: the current value, the estimate and
 // the engine's range, padded generously and snapped to round ticks; it goes
@@ -37,7 +36,7 @@ export type EvidenceChartProps = {
   lo: Sourced<number>;
   hi: Sourced<number>;
   units: string;
-  /** What the axis measures: the setting's name ("Basal", "I:C", "ISF"). */
+  /** What the axis measures: the setting's name ("Basal", "I:C"). */
   axis: string;
 };
 

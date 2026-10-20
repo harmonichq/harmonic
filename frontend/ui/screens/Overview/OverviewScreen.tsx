@@ -1,7 +1,7 @@
 // The Overview screen (§1.1, §1.3), composed only from the library's
 // components: standard metrics over the selected window against the period of
-// the same length before it, its time-in-ranges bar, its glucose profile, and
-// the ISF and basal estimates, and the Meal size card (#501). Nothing to act on.
+// the same length before it, its time-in-ranges bar, its glucose profile, the
+// basal estimate, and the Meal size card (#501). Nothing to act on.
 //
 // The window control picks 14, 30 or 90 d (a window the served coverage falls
 // short of is disabled). The line under it is the window's date span and,
@@ -14,12 +14,12 @@
 //
 // One scrolling page (§2.2 Scrolling, §2.5 2026-10-14): the summary — the
 // window switch and its date line, In range, the metrics and the profile — is
-// the first screenful, and the ISF and basal estimates follow it, two cards of
-// one size (ADR 523), then the Meal size card, the same size (ADR 501). Phone:
-// one column under the fixed header, above the tab bar, with a shorter profile
-// plot so the summary fits, each card under the one before. Desktop: the rail
-// and one pane, the metrics beside the profile, the cards two to a row beneath
-// both.
+// the first screenful, and the basal estimate follows it, then the Meal size
+// card (ADR 501), each card one height (§2.5, 2026-10-20 #564). Phone: one
+// column under the fixed header, above the tab bar, with a shorter profile plot
+// so the summary fits, each card under the one before. Desktop: the rail and
+// one pane, the metrics beside the profile, and beneath both each card across
+// a row of its own.
 //
 // The profile and the estimates are read per window: choosing a window
 // reports it (`onWindow`), and until its answers land each shows its skeleton.
@@ -27,11 +27,10 @@
 import { useEffect, useState } from 'react';
 import { answers, sourced } from '../../answers';
 import {
-  basalEstimate, isfEstimate, mealSize, metric, period, profile, tirBands, type MetricKey, type Window,
+  basalEstimate, mealSize, metric, period, profile, tirBands, type MetricKey, type Window,
 } from '../../overview-model';
 import { BasalCard } from '../../components/BasalCard/BasalCard';
 import { GlucoseProfile } from '../../components/GlucoseProfile/GlucoseProfile';
-import { IsfCard } from '../../components/IsfCard/IsfCard';
 import { MealSizeCard } from '../../components/MealSizeCard/MealSizeCard';
 import { MetricFigure } from '../../components/MetricFigure/MetricFigure';
 import { NavBar, type NavHooks } from '../../components/NavBar/NavBar';
@@ -53,7 +52,7 @@ export type OverviewScreenProps = {
   /** The window selected first. */
   window?: Window;
   /** The selected window, each time it is chosen (and the first), so its
-   *  profile and ISF estimate can be read. */
+   *  profile and basal estimate can be read. */
   onWindow?: (window: Window) => void;
   nav?: NavHooks;
   /** Unavailable's Retry. */
@@ -165,7 +164,6 @@ export function OverviewScreen({
 
   const estimates = (
     <div className="ui-overview__estimates">
-      <IsfCard data={store === 'wearer' ? isfEstimate('wearer', window) : 'none'} />
       <BasalCard data={store === 'wearer' ? basalEstimate('wearer', window) : 'none'} />
       <MealSizeCard data={mealSize(store, window)} />
     </div>

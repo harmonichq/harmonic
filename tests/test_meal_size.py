@@ -71,6 +71,8 @@ _MEALS = (
     # A 20 g breakfast and a 35 g meal two hours later, glucose flat between.
     _meal((4, 14), 20, (0, 0), (30, 40), (90, 0), at=(8, 0)),
     _meal((4, 14), 35, *_arc(50, 60, 0), at=(10, 0)),
+    # A week before the history ends: inside every window the Overview offers.
+    _meal((6, 1), 30, *_arc(70, 60, 10)),
 )
 # The readings gap: nothing from 11:30 to 12:30 on 12 Apr.
 _GAP = (datetime(2026, 4, 12, 11, 30), datetime(2026, 4, 12, 12, 30))
@@ -137,17 +139,20 @@ class MealSizeReadTest(unittest.TestCase):
     def tearDown(self):
         self.tmp.close()
 
-    def _body(self):
-        response = self.client.get("/api/explore/meal-size")
+    def _body(self, **params):
+        response = self.client.get("/api/explore/meal-size", params=params)
         self.assertEqual(response.status_code, 200, response.text)
         return response.json()
 
-    def test_each_size_serves_its_meals_climbs_and_medians(self):
+    def _seed(self):
         with Store.open(self.tmp.name) as store:
             store.upsert_cgm(_cgm_rows())
             store.upsert_bolus(_bolus_rows())
 
-        body = self._body()
+    def test_each_size_serves_its_meals_climbs_and_medians(self):
+        self._seed()
+
+        body = self._body(days=90)
         self.assertEqual(body["window"], {"start": _at((3, 11), 0), "end": _at((6, 9), 0),
                                           "data_days": 90})
         self.assertEqual(body["horizon_hours"], 3)
@@ -161,7 +166,8 @@ class MealSizeReadTest(unittest.TestCase):
                 (_at((4, 4), 12), 25.0, 60.0, 60.0, 20.0),
                 (_at((4, 5), 12), 39.0, 70.0, 75.0, 10.0),
                 (_at((4, 14), 10), 35.0, 50.0, 60.0, 0.0),
-            ], (60.0, 55.0, 65.0), 60.0, (3, 10.0)),
+                (_at((6, 1), 12), 30.0, 70.0, 60.0, 10.0),
+            ], (65.0, 57.5, 70.0), 60.0, (4, 10.0)),
             _row(40, 60, [
                 (_at((4, 6), 12), 50.0, 90.0, 90.0, 30.0),
                 (_at((4, 7), 12), 40.0, 100.0, 90.0, 40.0),
@@ -172,6 +178,22 @@ class MealSizeReadTest(unittest.TestCase):
                 (_at((4, 9), 12), 90.0, 128.0, 120.0, None),
             ], (134.0, 131.0, 137.0), 120.0, (1, 60.0)),
         ])
+
+    def test_the_window_follows_the_overviews_switch(self):
+        """#565: the card reads the window the Overview shows, 14, 30 or 90 days."""
+        self._seed()
+
+        body = self._body(days=14)
+        self.assertEqual(body["window"], {"start": _at((5, 26), 0), "end": _at((6, 9), 0),
+                                          "data_days": 14})
+        self.assertEqual(body["sizes"], [
+            _row(None, 25, [], (None, None, None), None, (0, None)),
+            _row(25, 40, [(_at((6, 1), 12), 30.0, 70.0, 60.0, 10.0)], (70.0, 70.0, 70.0), 60.0, (1, 10.0)),
+            _row(40, 60, [], (None, None, None), None, (0, None)),
+            _row(60, None, [], (None, None, None), None, (0, None)),
+        ])
+        refused = self.client.get("/api/explore/meal-size", params={"days": 7})
+        self.assertEqual(refused.status_code, 400)
 
     def test_a_store_with_no_readings_serves_four_empty_sizes(self):
         body = self._body()

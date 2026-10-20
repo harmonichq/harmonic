@@ -27,3 +27,4 @@
 - [x] 6.9 The Overview's Meal size card reads one 90-day window of the engine's own meals (#501, ADR 501)
 - [x] 6.10 One low line, 70 mg/dL everywhere: a habit's price, row and case file count one population (#553, ADR 553)
 - [x] 6.11 The Meal size card spans the Overview's second row at the estimates' height, in their colours (#559, ADR 559)
+- [x] 6.12 The Meal size card follows the window, and its Range stands in front of its dots (#565, ADR 565)

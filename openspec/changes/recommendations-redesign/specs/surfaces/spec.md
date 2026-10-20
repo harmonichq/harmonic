@@ -260,12 +260,12 @@ recommended only when the analyzer's ISF staging verdict supports the change,
 and beside it, the same size, the basal estimate: the day's 48 half-hour slots,
 the programmed rate stepped, each slot's estimate over its range, and a mark on
 each slot whose staging verdict asserts a move, in its served direction (ADR 523).
-Below them, their height, it SHALL show Meal size over the last 90 days whatever
-window is selected: one strip per size on one Climb axis, a dot per counted meal
-with the size's served Range (25–75%) and median, and, aligned like a table, each
+Below them, their height, it SHALL show Meal size over the selected window: one
+strip per size on one Climb axis, a muted dot per counted meal with the size's
+served Range (25–75%) and median drawn above the dots, and, aligned like a table, each
 size's meal count and signed median Climb, Peak at and At 3 h, At 3 h over its own
-count. It SHALL compute none of these and print no explanatory text (ADR 501, ADR
-559). Overview
+count. It SHALL compute none of these, print no explanatory text, and not repeat
+the window in its title (ADR 501, ADR 559, ADR 565). Overview
 SHALL carry nothing to act on.
 
 #### Scenario: A held ISF shows its estimate without a recommendation
@@ -281,12 +281,12 @@ SHALL carry nothing to act on.
 - **WHEN** Overview renders the 14-day window
 - **THEN** the basal estimate draws all 48 slots and marks those two ▼
 
-#### Scenario: Meal size keeps its window when another is chosen
+#### Scenario: Meal size follows the window
 
 - **GIVEN** the showcase, whose meals are all 40 g or more
-- **WHEN** Overview renders, at any window
-- **THEN** Meal size reads 90 d, draws 31 meals at 40–59 g and one at 60 g+, and
-  shows "–" and 0 meals for the two smaller sizes
+- **WHEN** Overview renders the 14-day window, then the 90-day window
+- **THEN** Meal size draws 15 meals at 40–59 g, then 31, and one at 60 g+ in
+  both, and shows "–" and 0 meals for the two smaller sizes
 
 ### Requirement: Day shows one day with its insulin, carb logging and Prompts
 

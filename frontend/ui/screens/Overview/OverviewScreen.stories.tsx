@@ -80,7 +80,7 @@ export const UnavailableDesktop = story('desktop', { store: 'wearer', state: 'un
 // and Retry, when reading them again failed.
 // The Meal size card keeps drawing its last answer, as every card does.
 const stale: Story['play'] = async ({ canvasElement }) => {
-  await expect(canvasElement.querySelector('[data-source="overview.wearer.meal_size.window.data_days"]')).not.toBeNull();
+  await expect(canvasElement.querySelector('[data-source^="overview.wearer.meal_size.14."]')).not.toBeNull();
   await expect(canvasElement.querySelectorAll('.ui-meal-size .ui-chart__dot').length).toBeGreaterThan(0);
 };
 export const StalePhone: Story = { ...story('phone', { store: 'wearer', state: 'stale' }), play: stale };
@@ -135,6 +135,7 @@ const choose30: Story['play'] = async ({ canvasElement }) => {
   const at = (path: string) => canvasElement.querySelector(`[data-source^="${path}"]`);
   await expect(at('overview.wearer.time_of_day.14.')).not.toBeNull();
   await expect(at('overview.wearer.analyze.14.')).not.toBeNull();
+  await expect(at('overview.wearer.meal_size.14.')).not.toBeNull();
   await userEvent.click(canvas.getByRole('button', { name: '30 d' }));
   await expect(canvas.getByRole('button', { name: '30 d' })).toHaveAttribute('aria-pressed', 'true');
   await expect(canvasElement.querySelector('[data-source="outcomes.30.metrics.tir"]')).not.toBeNull();
@@ -142,8 +143,9 @@ const choose30: Story['play'] = async ({ canvasElement }) => {
   await expect(at('overview.wearer.time_of_day.14.')).toBeNull();
   await expect(at('overview.wearer.analyze.30.')).not.toBeNull();
   await expect(at('overview.wearer.analyze.14.')).toBeNull();
-  // The Meal size card reads its one window, whichever is chosen.
-  await expect(at('overview.wearer.meal_size.window.data_days')).not.toBeNull();
+  // The Meal size card follows the window, as the estimates do (#565).
+  await expect(at('overview.wearer.meal_size.30.')).not.toBeNull();
+  await expect(at('overview.wearer.meal_size.14.')).toBeNull();
 };
 
 export const ChooseWindowPhone: Story = { ...story('phone', { store: 'wearer' }), play: choose30 };

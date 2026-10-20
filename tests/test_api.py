@@ -1666,8 +1666,10 @@ class CachePreWarmTest(unittest.TestCase):
             ("/api/explore/time-of-day", {"days": 90}),
             ("/api/analyze", {"window": 14}),
             ("/api/analyze", {"window": 90}),
-            # The Overview's Meal size card, over its one 90-day window.
-            ("/api/explore/meal-size", {}),
+            # The Overview's Meal size card, at each window.
+            ("/api/explore/meal-size", {"days": 14}),
+            ("/api/explore/meal-size", {"days": 30}),
+            ("/api/explore/meal-size", {"days": 90}),
             # The Day screen: its navigator, then the latest day and the one before.
             ("/api/day-navigator", {}),
             ("/api/timeline", {"start": "2026-06-05T00:00:00", "end": "2026-06-06T00:00:00"}),
@@ -2018,7 +2020,7 @@ class CachePreWarmTest(unittest.TestCase):
             self.assertEqual(after_warm, {"analyze": 4,
                                           "outcomes-trend": 0, "scenarios": 1,
                                           "exposures": 1,
-                                          "explore-time-of-day": 3, "meal-size": 1,
+                                          "explore-time-of-day": 3, "meal-size": 3,
                                           "outcomes": 3,
                                           "finding-case-file": 1, "trials": 1,
                                           "day-navigator": 1, "model-view": 2,
@@ -2030,7 +2032,7 @@ class CachePreWarmTest(unittest.TestCase):
                 ("explore-time-of-day", 14),
                 ("explore-time-of-day", 30), ("explore-time-of-day", 90),
                 ("outcomes", 14), ("outcomes", 30), ("outcomes", 90),
-                ("meal-size",),
+                ("meal-size", 14), ("meal-size", 30), ("meal-size", 90),
                 ("scenarios", 30), ("exposures",),
                 ("finding-case-file",),
                 ("day-navigator", None),

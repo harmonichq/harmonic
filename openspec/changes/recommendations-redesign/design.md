@@ -1886,6 +1886,38 @@ and that it "doesn't really match the mockup".
 `range` swatch replaces them. The lock's §2.5 gains the amendment and §4.2 entry 27
 is revised. The glossary and allowlist are regenerated.
 
+## ADR 565 — The Meal size card follows the window, and its Range stands in front of its dots
+
+**Context.** Connor, on the card #562 fitted: "The range is impossible to see." The
+25–75% line ran through dots of its own light blue, so a dense row read as one blob.
+And: "don't repeat the days, the user already picked days in the picker above this".
+
+**Decision.**
+
+1. *The window follows the switch.* This supersedes ADR 501 decision 1.
+   `/api/explore/meal-size` takes `days`, one of the profile's 14, 30 or 90, and
+   refuses any other. Each window is its own fixed result, `("meal-size", days)`,
+   keyed by the recorded-data revision, and the warm roster warms all three. The
+   live adapter reads a window when the Overview first shows it, as it reads the
+   profile, and keeps it under `meal_size.<window>`. The title is "Meal size"
+   alone, since the estimates print no window either. A short window holds few
+   meals, and each size already serves and prints its count.
+2. *The Range in front.* The dots draw first: smaller, neutral grey, mostly
+   transparent, a little brighter inside the Range. Then the Range draws as a 5 px
+   line in its size's shade of the estimate blue, then the median as an ink tick.
+   Each of the two rides on a halo of the card's surface. The stories assert that
+   each paints after the dots, carries its halo, and that the Range is at least
+   4 px wide with 3:1 contrast against the card.
+3. *Halo, not a track.* The alternative, the Range on its own track beneath each
+   strip with the median spanning both, was rendered beside it on the densest
+   synthetic rows and a sparse store. Both read clearly. The track adds 10 px to
+   every size, 40 in all, which would take the desktop card past the estimates'
+   height (ADR 559). The halo adds nothing.
+
+**Consequences.** The UI fixtures serve each store's Meal size per window. The
+showcase's contract test reads the 14-day and 90-day windows. An install's
+derived-results file keeps the old `("meal-size",)` row, never read again.
+
 ## ADR 567 — The phone tab bar takes no device inset on Gecko
 
 **Context.** After #521 the bar is 64 px plus `env(safe-area-inset-bottom)`.

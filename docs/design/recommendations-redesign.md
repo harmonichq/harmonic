@@ -158,6 +158,7 @@ the system's own edge-swipe back is left to the platform, never overridden.
 | **Queue** | noun | The ranked list of recommendations. |
 | **Pattern** | noun | A recurring glucose outcome the engine detected, such as highs after meals. |
 | **Habit** | noun | Something you do that the engine counts toward a glucose outcome, queued on its own when no Pattern holds it, such as a meal with no bolus. |
+| **Pin** | verb | Start a Focus on a Pattern's habit, or on a Habit. |
 | **Focus** | noun | A habit you pinned, watched for adherence and outcome. |
 | **Trial** | noun | A pump setting change the app detected, watched against its before period. |
 | **Change** | noun | A Trial or a Focus. One is active at a time. |
@@ -1260,10 +1261,11 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   Pin's place and size on every Pattern and habit card; tapping it shows the
   transient bar "Focus started" with the text action "Changes", which opens
   that tab, the same bar Snooze and Done use with an action where theirs
-  have Undo. "Pin" leaves §1.5 and the control's name; "Focus" is already
-  there. Done is unchanged: a Trial starts through the pump. Built with the
-  drill-down (#532); §1.3, §1.4, §1.5, §4.2 PatternCard, HabitCard and
-  TransientBar follow.
+  have Undo. "Pin" leaves §1.5 and the control's name with the build, since
+  the shipped app prints it until then and the Glossary page prints §1.5;
+  "Focus" is already there. Done is unchanged: a Trial starts through the
+  pump. Built with the drill-down (#532, #591); §1.3, §1.4, §1.5, §4.2
+  PatternCard, HabitCard and TransientBar follow.
 
 ### 2.6 Deferred (not cut)
 Not built in the current screens. The engine still serves what each needs, and

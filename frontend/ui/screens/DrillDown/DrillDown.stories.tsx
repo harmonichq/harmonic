@@ -13,7 +13,8 @@ import '../Queue/QueueScreen.css';
 // cause, every card open, the page scrolling as one above the tab bar. Each
 // card is the Pattern card drawn as a habit's: the cause's served title, its
 // claimed episodes over the Pattern's own count ("9 of 45 meals"), the trace
-// chart, and Pin as an outlined secondary in the head beside the title, so it
+// chart, and Focus (the button every Pin becomes, #591) as an outlined
+// secondary in the head beside the title, so it
 // is in view without scrolling and the screen has no primary.
 // - Open: the two causes, in the engine's served order.
 // - Pinned: the pinned cause's Focus pill in its Pin's place, and no Pin on
@@ -108,7 +109,7 @@ export const Pinned: Story = {
   play: async (context) => {
     await drawn(context);
     const { canvasElement, args } = context;
-    await expect(within(canvasElement).queryByRole('button', { name: 'Pin' })).toBeNull();
+    await expect(within(canvasElement).queryByRole('button', { name: 'Focus' })).toBeNull();
     const pills = [...canvasElement.querySelectorAll('.ui-pcard')]
       .map((card) => card.querySelector('.ui-pcard__head [data-state="focus"]') !== null);
     await expect(pills).toEqual(causes(args).map((c) => c.pinned));

@@ -82,7 +82,7 @@ const twoCauses = clone(fixtures.queue.wearer) as typeof fixtures.queue.wearer;
   row.served_as = {
     subject: 'pattern:highs_after_meals',
     count_sentences: clone(row.count_sentences!),
-    cause_counts: [cause('late_bolus', 9), cause('carb_undercount', 31)],
+    cause_counts: [cause('carb_undercount', 31), cause('late_bolus', 9)],
   };
 }
 add('queue', 'wearer-two-causes', twoCauses);

@@ -21,20 +21,24 @@ Anything under `Open` is undecided; nothing there is a requirement.
 
 ## Screens
 - Queue (open card, a multi-cause Pattern) — owns: the Pattern's summary as
-  locked (count, impact line, TraceChart, Snooze) and no Pin. Tapping its
-  TraceChart opens the drill-down, where each cause has its own Pin; the
+  locked (count, impact line, TraceChart, Snooze) and no Focus button.
+  Tapping its TraceChart opens the drill-down, where each cause has its own; the
   chart carries a trailing "›", the same mark as every other drill-down row,
   and no other label (decided 2026-10-20).
-- Queue (open card, any other item) — unchanged: Pin pins as today.
+- Queue (open card, any other item) — unchanged: the Focus button (Pin today) starts a Focus as today.
 - Drill-down — reached only from a Pattern with more than one served cause.
   Owns: one card per cause, every card open, in a list: the cause's name, its
   count in the Pattern card's form, the cause's claimed episodes over the
   Pattern's own total ("9 of 45 meals", so the episodes no cause claims show
   as the gap), its episodes' glucose trace against Typical, and that cause's
   Focus button (the control every Pattern card calls Pin today; renamed by
-  Q14 below) as an outlined secondary in the card's head beside the title, so
-  every cause's control is in view without scrolling and the screen has no
-  primary; pinned, the Focus pill sits there instead. The cards come in the
+  Q14 below) as an outlined secondary in the card's head beside the title,
+  at the card's top rather than under its chart, so a cause's control is
+  seen with its name and not after its chart's height, with a 44 px hit area
+  around the 32 px control (the cold critique's reach finding); the screen
+  has no primary. The head keeps the button's height in every state, so a card does
+  not shift when the button becomes the pill. Pinned, the Focus pill sits
+  there instead. The cards come in the
   engine's served order, which the build changes to summed severity: each
   cause's claimed episodes' mg/dL·min outside range, the engine's existing
   per-episode score, largest first. The app never sorts. Not here: Snooze,
@@ -44,13 +48,14 @@ Anything under `Open` is undecided; nothing there is a requirement.
 ## States
 - Drill-down: loading — a card skeleton per cause; error — Unavailable + Retry
   in the pane; a cause of 8 or fewer episodes — thin traces, as the TraceChart
-  draws them; a cause pinned — the Focus pill in its Pin's place; Pin failed —
-  Not saved + Retry, as the Queue's Pin. (Copied from the Queue's locked
-  states; say so if any should differ.)
+  draws them; a cause pinned — the Focus pill in the button's place; just
+  focused — the "Focus started" bar with its "Changes" action; Focus failed —
+  Not saved + Retry, as the Queue's. (Copied from the Queue's locked states.)
 
 ## Focus, the write Pin makes (decided 2026-10-20, Q14)
 - The button reads "Focus", on every Pattern and habit card and on the cause
-  cards, in Pin's place and size; "Pin" leaves §1.5 and the control's name.
+  cards, in Pin's place and size; "Pin" leaves §1.5 and the control's name
+  with the build (#591), since the shipped app prints it until then.
 - Tapping it shows the Queue's transient bar, "Focus started", with the text
   action "Changes", which opens that tab; the bar is the same bar Snooze and
   Done use, with an action where theirs have Undo. The engine's refusal shows
@@ -60,21 +65,21 @@ Anything under `Open` is undecided; nothing there is a requirement.
 - This amends the locked Queue (recommendations-redesign.md §1.4, §1.5, §4.2
   PatternCard, HabitCard, TransientBar); the amendment there carries the words.
 
-## Pin while a change is watched (decided 2026-10-20)
-- Pin renders only while the served admission allows it
+## The Focus button while a change is watched (decided 2026-10-20)
+- The button renders only while the served admission allows it
   (`GET /api/focus` `admission.focus_pin.available`). While a Trial or Focus
-  is active, no card and no cause card shows Pin; the watched item shows its
+  is active, no card and no cause card shows it; the watched item shows its
   Focus pill as today, and every other card shows its chart and Snooze.
-  Nothing on the Queue explains the absence.
-- A multi-cause Pattern with a pinned cause shows, in Pin's place, the lock's
-  caption-and-value pair: "Focus" as the caption, the cause's served title as
-  the value beneath it (§2.2 Caption + value pair). On the drill-down, that
-  cause's card shows the Focus pill in its Pin's place.
+  Nothing on the Queue, and nothing on the drill-down, explains the absence.
+- A multi-cause Pattern with a pinned cause shows, in the button's place, the
+  lock's caption-and-value pair: "Focus" as the caption, the cause's served
+  title as the value beneath it (§2.2 Caption + value pair). On the
+  drill-down, that cause's card shows the Focus pill in its button's place.
 
 ## Interaction map
 - Tap the open card's TraceChart — desktop: click it, or Enter with it focused.
 - Tap "‹ Queue" or edge-swipe — desktop: "‹ Queue" in the pane header, Escape.
-- Tap Pin on a cause card — desktop: the same Pin.
+- Tap Focus on a cause card — desktop: the same button.
 - No swipe on a cause card: a horizontal swipe means Snooze on the Queue, and
   there is no Snooze here.
 
@@ -88,8 +93,8 @@ Anything under `Open` is undecided; nothing there is a requirement.
 - Cause traces — not served: the case file pools every cause into `traces.pattern` (engine gap)
 - Cause order — `cause_counts` is in `rate_levers` roster order today; the build serves it by summed episode severity (`analyzers/scenario/severity.py`), largest first (engine gap)
 - Episode cause — `finding-case-file` `occurrences[].member` (served, not yet traced)
-- Pin target — `POST /api/focus` `lever`; the server overrides it with the first pinnable member (engine gap)
-- Pin shown — `GET /api/focus` `admission.focus_pin.available`
+- Focus target — `POST /api/focus` `lever`; the server overrides it with the first pinnable member (engine gap)
+- Focus button shown — `GET /api/focus` `admission.focus_pin.available`
 
 ## Allowed strings
 - (none yet)
@@ -98,8 +103,8 @@ Anything under `Open` is undecided; nothing there is a requirement.
 - A Queue card opens in place, and Snooze stays on it — Queue, a card expanded.
 - A row swipe snoozes — Queue, mid-swipe.
 - Back returns with the same item open — every drill-down.
-- Pin on a single-cause Pattern or a habit pins as today — Queue, Habit pinned.
-- One primary per screen — every screen.
+- The Focus button on a single-cause Pattern or a habit starts a Focus as today — Queue, Habit pinned.
+- At most one primary per screen — every screen (§2.3 ban 5); the drill-down has none.
 
 ## Desk lessons this page holds to
 - One gesture opens one drill-down; no second panel family (#294, #298).
@@ -115,7 +120,14 @@ Anything under `Open` is undecided; nothing there is a requirement.
   the Late bolus classifier's own verdict. Not part of this lock.
 
 ## Approved screens
-- Drill-down at 390x844 — Storybook `Screens/DrillDown`, Open and Pinned — locked 2026-10-20 — build ticket #591
+- Drill-down at 390x844 — Storybook `Screens/DrillDown`, Open and Pinned — locked 2026-10-20 — build ticket #591.
+  Both shots draw the Pattern's pooled trace on every cause card, a stand-in
+  until the engine serves per-cause traces; the build re-approves the screen
+  against the served ones. Not rendered, approved by this page's text: the
+  Queue card with no button and the "›" on its chart; its "Focus" over the
+  cause's name once pinned; the "Focus started" bar; loading and Not saved on
+  a cause card (the Queue's own states). The build (#591) renders each as a
+  story and the operator approves them there.
 
 ## Amendments
 - 2026-10-20 Connor: the phone drill-down is a pushed sub-screen scrolling as
@@ -167,3 +179,13 @@ Anything under `Open` is undecided; nothing there is a requirement.
   this lock: "keep it as an engine-recommended card that Connor never asked
   for but that an agent thought might be a good idea, keep it exploratory."
 - 2026-10-20 Connor: "locked".
+- 2026-10-20, after the cold critique (thirteen findings, carried to the
+  operator in full). Connor on the button's place, head over foot: "I'm
+  feeling like A might be the better fit, but I do hear it on B. I just think
+  B looks kinda ugly." On the four surfaces the lock names without a render:
+  "I should see things in the build ticket, I think." On the Focus pill's
+  blue where the button was: "Your call" — it stands, the locked StatePill
+  the Queue already shows. The wording fixes (findings 4, 6, 7, 10, 11, the
+  bar in States), the mock's cause order (3) and its "Focus" label (1) are
+  applied; the pooled trace (2) stays a stand-in the build replaces; 12 and
+  13 are out of scope.

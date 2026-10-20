@@ -19,9 +19,10 @@
 //
 // The drill-down's cause card is the same card again (drill-down.md): a
 // Pattern's cause drawn as a habit with no Snooze, its Pin an outlined
-// secondary in the head beside the title, in view without scrolling to the
-// card's foot (one per cause card, so none is the screen's primary), or none
-// while a change is watched; pinned, the Focus pill sits there instead.
+// secondary in the head beside the title, labelled Focus as every Pin will
+// be once #591 renames it (one per cause card, so none is the screen's
+// primary), or none while a change is watched; pinned, the Focus pill sits
+// there instead.
 import { Icon } from '../../icons';
 import { Num } from '../../Num';
 import type { PatternData } from '../../queue-model';
@@ -66,7 +67,7 @@ export function PatternCard(props: PatternCardProps) {
         {collapsible && <span className="ui-pcard__chevron"><Icon name="collapse" /></span>}
         {pin !== 'primary' && (data.pinned
           ? <StatePill state="focus" />
-          : pin === 'secondary' && <Button kind="secondary" label="Pin" onClick={onPin} />)}
+          : pin === 'secondary' && <Button kind="secondary" label="Focus" onClick={onPin} />)}
       </div>
       {magnitude && (
         <>

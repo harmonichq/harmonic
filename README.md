@@ -3,7 +3,7 @@
 Local, **advisory** tuning from your own pump data. No Tidepool, no Nightscout,
 no central service — a self-hostable pipeline that pulls your pump history into a
 local SQLite file, tunes **basal and I:C**, and surfaces **behavioral
-coaching** from it. It never advises the correction factor (ISF).
+coaching** from it. It never queues, stages or ranks a correction-factor change.
 
 **Current compatibility:** Harmonic imports data from Tandem Source™ for Tandem
 pumps using Control-IQ® technology. Harmonic may support other pump systems in

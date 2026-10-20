@@ -29,7 +29,7 @@
 
 ### 5. Fail first
 
-- [ ] 5.1 Extend `tests/test_dose_stamped_isf_conversion.py`: over slice 1's pair of stores, the scenario engine serves identical carb-undercount attribution. Run it before this slice's change and record that it fails for the right reason
+- [ ] 5.1 Extend `tests/test_dose_stamped_isf_conversion.py`: over slice 1's pair of stores, the scenario engine serves identical carb-undercount attribution, asserted on the served exposures' per-meal carb-undercount verdicts (evidence tier, silence reason, match). On the base those verdicts differ (the zero estimate reads as no ISF, so every meal is unjudged) while the scenarios payload, the findings and the outcome patterns are already identical, so only the exposures can fail first. Run it before this slice's change and record that it fails for the right reason
 
 ### 6. One source through the engine
 
@@ -45,5 +45,5 @@
 
 - [ ] 7.1 Add a `QaCase` whose carb-undercount verdict depends on its segment's stamped ISF (two-segment schedule), with literal expectations; re-measure the five budgets as in 3.3
 - [ ] 7.2 Regenerate `frontend/ui/__fixtures__/ui-fixtures.json` and any other stale fixture through its generator. In `scripts/gen_ui_fixtures.py`, pick the `with_carbs` Day state by rule among days with logged carbs, preferring the day whose served findings name the most distinct habits (then most logged carbs, then latest), so `Screens/Day / Findings Phone|Desktop` and `DayChart / With Logged Carbs` pass with no assertion weakened. Change a story literal only if the picked day names a different set of habits, and never lower a count
-- [ ] 7.3 At slice 2's triage, its order's Expected diff is a closed list of paths (no "their tests"), and its Expectation allows re-copying existing `test_case_*` expectations that move (`behavioral-carb-undercount`'s classifier verdict is expected to), with their count recorded in ADR 563
+- [x] 7.3 At slice 2's triage, its order's Expected diff is a closed list of paths (no "their tests"), and its Expectation allows re-copying existing `test_case_*` expectations that move, with their count recorded in ADR 563. Measured at triage with a stand-in: none moves. `behavioral-carb-undercount`'s six meal verdicts hold at its stamp of 32 as at the fasting estimate its base classifier read
 - [ ] 7.4 Spec deltas: the behavioral-layer carb-undercount requirement and the durable-follow-up retained-comparison requirement

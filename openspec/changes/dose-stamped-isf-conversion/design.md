@@ -140,5 +140,7 @@ The UI fixtures, the findings-projection and missed-meal fixtures and the QA
 database are unchanged. **0 existing QA cases were re-copied**: every
 `test_case_*` expectation, `behavioral-carb-undercount`'s included, holds
 unchanged. That case's ledger now converts with its stamp of 32 (rule 1), but
-no field its expectation pins moves; its classifier verdict moves in slice 2.
+no field its expectation pins moves. Slice 2's triage measured its classifier
+with a stand-in for rule 1: its six meal verdicts hold at the stamp of 32 as at
+the fasting estimate the base read, so no existing QA case is expected to move.
 One new QA case, `ic-dose-stamped-isf`, holds the per-meal states.

@@ -454,6 +454,7 @@ class ChipProjectionTest(unittest.TestCase):
                 "t": f"2026-08-17 {index:02d}:00:00", "date": "2026-08-17",
                 "kind": family, "cause_lever": lever.value,
                 "attributed_levers": [lever.value],
+                "claim_severity": {lever.value: 600.0},
                 "cause_title": lever.value, "ep_id": lever.value,
                 "verdicts": [],
             })
@@ -593,6 +594,7 @@ class EventChartProjectionTest(unittest.TestCase):
                 "kind": family,
                 "cause_lever": lever.value,
                 "attributed_levers": [lever.value],
+                "claim_severity": {lever.value: 600.0},
                 "cause_title": lever.value,
                 "ep_id": lever.value,
                 "verdicts": [],
@@ -839,7 +841,8 @@ class PatternProjectionTest(unittest.TestCase):
         meals = exposures["exposures"]["meals"]
         meal = next(row for row in meals["occurrences"] if not row["attributed"])
         text = "Synthetic over-delivery narrative: the meal bolus carried glucose low."
-        meal.update(attributed=True, attributed_levers=[lever.value], cause_lever=lever.value,
+        meal.update(attributed=True, attributed_levers=[lever.value],
+                    claim_severity={lever.value: 600.0}, cause_lever=lever.value,
                     cause_title=title(lever), state="fired", text=text)
         for verdict in meal["verdicts"]:
             own = verdict["classifier"] == lever.value

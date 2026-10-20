@@ -104,10 +104,12 @@ class PatternServedAsItsHabitTest(unittest.TestCase):
         self.assertEqual(
             [(s["count"], s["denominator"], s["noun"]) for s in served["count_sentences"]],
             [(3, 6, "lows")])
+        # Largest harm first (ADR 593): two lows at 3377.5 before one at 720.0.
         self.assertEqual(served["cause_counts"], [
-            {"subject": "habit:correction_stacking", "title": "Correction stacking", "count": 1},
             {"subject": "habit:correction_on_iob", "title": "Correction on active insulin",
-             "count": 2},
+             "count": 2, "pinnable": True},
+            {"subject": "habit:correction_stacking", "title": "Correction stacking", "count": 1,
+             "pinnable": False},
         ])
         case = self._case("pattern:lows_after_correcting_highs").json()
         self.assertEqual(case["summary"], {"claimed": 3, "denominator": 6, "noun": "lows"})

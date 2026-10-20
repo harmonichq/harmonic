@@ -256,6 +256,70 @@ class DurableApiTest(unittest.TestCase):
         self.assertEqual(history.json()['selected']['original']['context']['outcome_window'],
                          body['outcome_window'])
 
+    def _pattern_pin(self, case, pattern_key, request_id, lever=None):
+        source = self.seed_case(case) if case else self.client.get(
+            '/api/guidance', headers=self.headers).json()
+        body = {'request_id': request_id, 'input_revision': source['input_revision'],
+                'subject': f'pattern:{pattern_key}',
+                'analysis_generation': source['analysis_generation'],
+                'pattern_key': pattern_key,
+                'outcome_window': {'start_min': 0, 'end_min': 1440}}
+        if lever is not None:
+            body['lever'] = lever
+        return body, self.client.post('/api/focus', headers=self.headers, json=body)
+
+    def _served_pinnable(self, row_id, field):
+        row = next(row for row in self.client.get(
+            '/api/diagnose/findings', headers=self.headers).json()['rows']
+            if row['id'] == row_id)
+        causes = row[field] if field == 'cause_counts' else row['served_as']['cause_counts']
+        return {cause['subject'].removeprefix('habit:'): cause['pinnable'] for cause in causes}
+
+    def _focus_levers(self):
+        return [(record['lever'], record['subject']) for record in self.client.get(
+            '/api/focus', headers=self.headers).json()['focuses']]
+
+    def test_a_pattern_focus_watches_the_member_it_was_started_on(self):
+        # ADR 593: the sent lever is kept when it is one of the Pattern's pinnable
+        # habit members, and refused otherwise.
+        _body, outside = self._pattern_pin('pattern-meal-two-causes', 'highs_after_meals',
+                                           'outside', lever='meal_over_delivery')
+        self.assertEqual(outside.status_code, 400, outside.text)
+        self.assertEqual(self._focus_levers(), [])
+        body, response = self._pattern_pin(None, 'highs_after_meals', 'second-cause',
+                                           lever='late_bolus')
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual((response.json()['record']['lever'], response.json()['record']['subject']),
+                         ('late_bolus', 'pattern:highs_after_meals'))
+        retried = self.client.post('/api/focus', headers=self.headers,
+                                   json={**body, 'lever': 'carb_undercount'})
+        self.assertEqual(retried.status_code, 409, retried.text)
+        self.assertEqual(retried.json()['detail']['code'], 'request_identity_mismatch')
+        self.assertEqual(self._focus_levers(), [('late_bolus', 'pattern:highs_after_meals')])
+        # The served causes say the same: both members can be focused.
+        self.assertEqual(self._served_pinnable('pattern:highs_after_meals', 'cause_counts'),
+                         {'late_bolus': True, 'carb_undercount': True})
+
+    def test_a_pattern_focus_with_no_lever_watches_its_first_member(self):
+        _body, response = self._pattern_pin('pattern-meal-two-causes', 'highs_after_meals',
+                                            'first-member')
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual((response.json()['record']['lever'], response.json()['record']['subject']),
+                         ('carb_undercount', 'pattern:highs_after_meals'))
+
+    def test_a_cause_served_as_not_pinnable_is_refused(self):
+        _body, refused = self._pattern_pin('pattern-correction-collapse',
+                                           'lows_after_correcting_highs', 'stacking',
+                                           lever='correction_stacking')
+        self.assertEqual(refused.status_code, 400, refused.text)
+        self.assertEqual(self._focus_levers(), [])
+        # A served cause's ``pinnable`` is a member fact only: this store's Pattern
+        # is withheld (6 lows, gate 12), which stays the Focus list's own gate.
+        self.assertEqual(self._served_pinnable('finding:correction_on_iob', 'served_as'),
+                         {'correction_on_iob': True, 'correction_stacking': False})
+        self.assertEqual(self.client.get('/api/focus', headers=self.headers)
+                         .json()['pinnable_patterns'], [])
+
     def test_pattern_follow_up_reads_serve_the_roster_title_separately_from_context(self):
         with Store.open(self.path) as store:
             with store.follow_up_transaction():

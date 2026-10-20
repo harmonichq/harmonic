@@ -282,6 +282,33 @@ class ExploreExposuresTest(unittest.TestCase):
             (False, None, []),
         )
 
+    def test_every_claim_carries_its_episodes_severity(self):
+        # ADR 593: the severity the scenario engine scores for the claiming episode,
+        # beside every attributed lever, including the low a stacked pair reached.
+        from ciq_autotune.explore_exposures import build_exposures
+        from scripts.qa_e2e_cases import QA_CASES, materialize_case
+
+        case = next(case for case in QA_CASES if case.name == "pattern-correction-collapse")
+        with tempfile.NamedTemporaryFile(suffix=".db") as db:
+            with Store.open(db.name) as store:
+                materialize_case(store, case)
+            with Store.open_readonly(db.name) as store:
+                feed = build_exposures(store, window_days=30)["exposures"]
+        for family, rows in feed.items():
+            for occurrence in rows["occurrences"]:
+                self.assertEqual(sorted(occurrence.get("claim_severity", {})),
+                                 sorted(set(occurrence["attributed_levers"])),
+                                 (family, occurrence["t"]))
+        lows = {occurrence["t"]: occurrence["claim_severity"]
+                for occurrence in feed["lows"]["occurrences"]
+                if occurrence["attributed_levers"]}
+        self.assertEqual(lows, {
+            "2024-05-14 16:05:00": {"correction_stacking": 720.0},
+            "2024-05-24 22:00:00": {"correction_on_iob": 3377.5},
+            "2024-05-25 22:00:00": {"correction_on_iob": 3377.5},
+            "2024-05-26 13:55:00": {"over_treated_low": 1450.0},
+        })
+
 
 @unittest.skipUnless(_HAS_FASTAPI, "api extra not installed")
 class ExploreExposuresRouteTest(unittest.TestCase):

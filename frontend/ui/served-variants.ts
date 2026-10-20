@@ -78,7 +78,7 @@ const twoCauses = clone(fixtures.queue.wearer) as typeof fixtures.queue.wearer;
   const rows = twoCauses.findings.rows;
   const row = rows.find((r) => r.id === 'pattern:highs_after_meals')!;
   const cause = (lever: string, count: number) =>
-    ({ subject: `habit:${lever}`, title: rows.find((r) => r.id === `finding:${lever}`)!.title, count });
+    ({ subject: `habit:${lever}`, title: rows.find((r) => r.id === `finding:${lever}`)!.title, count, pinnable: true });
   row.served_as = {
     subject: 'pattern:highs_after_meals',
     count_sentences: clone(row.count_sentences!),

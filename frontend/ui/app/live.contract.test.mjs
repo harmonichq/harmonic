@@ -13,6 +13,7 @@
 //   uv run python scripts/smoke_app.py --case basal-and-carb-ratio-lower --then node --test frontend/ui/app/live.contract.test.mjs
 //   uv run python scripts/smoke_app.py --case pattern-correction-collapse --then node --test frontend/ui/app/live.contract.test.mjs
 //   uv run python scripts/smoke_app.py --case behavioral-missed-meal --then node --test frontend/ui/app/live.contract.test.mjs
+//   uv run python scripts/smoke_app.py --case pattern-meal-two-causes --then node --test frontend/ui/app/live.contract.test.mjs
 //
 // smoke_app names the serve in HARMONIC_URL and the store in HARMONIC_CASE.
 // Every expected value is a literal read once from that store's served answers,
@@ -172,6 +173,30 @@ const EXPECTED = {
       magnitude: { count: 3, denominator: 6, noun: 'lows' },
       traces: { anchor: 'correction', window: [0, 240], episodes: 3, patternBins: 49, typicalBins: 0, typical: 1 },
       caseFile: { summary: { claimed: 3, denominator: 6, noun: 'lows' }, outcome: 'nadir', impact: null } },
+    // Its causes, largest harm first (ADR 593): the habit's two lows before the
+    // stacked pair's one, which no member of the Pattern answers, so it cannot be
+    // focused. Each is drawn from the doses its own lows followed.
+    causes: { row: 'finding:correction_on_iob', key: 'lows_after_correcting_highs',
+      counts: [['habit:correction_on_iob', 'Correction on active insulin', 2, true],
+        ['habit:correction_stacking', 'Correction stacking', 1, false]],
+      traces: [['habit:correction_on_iob', 2], ['habit:correction_stacking', 1]] },
+    isf: null,
+    change: { kind: 'none' },
+    done: null,
+  },
+  // Highs after meals keeps its row with two causes (ADR 593): Carb undercount,
+  // first in the roster, claims four milder rises; Late bolus three longer highs,
+  // so it leads. Both can be focused, and each is drawn from its own meals.
+  'pattern-meal-two-causes': {
+    queue: ['pattern:highs_after_meals'],
+    pattern: { key: 'highs_after_meals', title: 'Highs after meals',
+      magnitude: { count: 7, denominator: 21, noun: 'meals' },
+      traces: { anchor: 'bolus', window: [-30, 240], episodes: 7, patternBins: 55, typicalBins: 55, typical: 14 },
+      caseFile: { summary: { claimed: 7, denominator: 21, noun: 'meals' }, outcome: 'peak',
+        impact: { kind: 'peak', own: 360, typical: 120 } } },
+    causes: { row: 'pattern:highs_after_meals', key: 'highs_after_meals',
+      counts: [['habit:late_bolus', 'Late bolus', 3, true], ['habit:carb_undercount', 'Carb undercount', 4, true]],
+      traces: [['habit:late_bolus', 3], ['habit:carb_undercount', 4]] },
     isf: null,
     change: { kind: 'none' },
     done: null,
@@ -289,6 +314,18 @@ test(`the live adapter serves each tab's model from the ${CASE} store`, async (t
         assert.ok(served.occurrences.length > 0);
         for (const occurrence of served.occurrences) assert.equal(occurrence.outcome?.kind, caseFile.outcome, occurrence.anchor.t);
       }
+    }
+    if (expected.causes) {
+      // A Pattern's causes as the live adapter carries them (ADR 593): the served
+      // shares in the engine's order, each with whether it can be focused, and
+      // each cause's own trace in the same order.
+      const { row: id, key, counts, traces } = expected.causes;
+      const carried = live.answers.queue.wearer;
+      const row = carried.findings.rows.find((r) => r.id === id);
+      const shares = row.kind === 'pattern' ? row.cause_counts : row.served_as.cause_counts;
+      assert.deepEqual(shares.map((c) => [c.subject, c.title, c.count, c.pinnable]), counts);
+      assert.deepEqual(carried.cases[key].traces.causes.map((c) => [c.subject, c.pattern.episodes?.length ?? null]),
+        traces);
     }
     if (expected.habit) {
       // The habit's card, as served: its count, its chart, unpinned; and its row

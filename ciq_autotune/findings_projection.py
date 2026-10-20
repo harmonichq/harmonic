@@ -59,7 +59,7 @@ from .analyzers.scenario.evidence_population import policy_for
 # `_chips_for` (#61) asks each lever what kind of anchor its consequence lands on.
 from .analyzers.scenario.levers import Exposure, Lever, outcome_kind, title
 from .analyzers.scenario.outcome_patterns import (
-    _ROSTER, build_outcome_patterns, credited_claims, outcome_window_population,
+    _ROSTER, build_outcome_patterns, cause_order, credited_claims, outcome_window_population,
     setting_move_fits,
 )
 from .window_membership import DAY_MINUTES, WindowQuery, claim_minute
@@ -175,6 +175,8 @@ class FindingsProjection:
         for row in rows:
             row["headline"] = _headline_for(row)
             row["count_sentences"] = _count_sentences_for(row)
+            if row["kind"] == "pattern" and row["count_sentences"] is not None:
+                row["cause_counts"] = _cause_counts(row["pattern"], pattern_exposures)
         for row in rows:
             if row.get("claimed_by"):
                 row["fold_sentences"] = _fold_sentences(
@@ -735,10 +737,24 @@ def _pattern_count_sentences(row: dict) -> Optional[List[dict]]:
     return [_count_sentence(pattern["k"], pattern["n"], noun, _PATTERN_OUTCOME[key])]
 
 
+def _cause_counts(pattern: dict, exposures: dict) -> List[dict]:
+    """A Pattern's causes, largest harm first (ADR 593): each rate lever with a
+    credit, its credited share of the Pattern's count, and whether a Focus started
+    from the Pattern may watch it."""
+    from .watched_change import pinnable_members
+
+    pinnable = pinnable_members(pattern["key"], pattern["members"])
+    return [{"subject": f"habit:{lever}", "title": title(Lever(lever)), "count": count,
+             "pinnable": lever in pinnable}
+            for lever, count in cause_order(
+                exposures, pattern_rate_family(pattern).value,
+                [subject.removeprefix("habit:") for subject in pattern["rate_levers"]])]
+
+
 def _served_as(pattern: dict, exposures: dict) -> dict:
     """The Pattern a habit row is served as (ADR 520): its subject, its own count
-    sentence, and each rate lever with a credit, its credited share of that count,
-    in roster order.
+    sentence, and its causes (:func:`_cause_counts`), the same shares a Pattern row
+    serves (ADR 593).
 
     Both read ``credited_claims`` over ``exposures``, the population the Pattern's
     ``k`` and its case file are built from, so a Pattern served as its one habit is
@@ -747,17 +763,9 @@ def _served_as(pattern: dict, exposures: dict) -> dict:
     no count serves no shares.
     """
     sentences = _pattern_count_sentences({"pattern": pattern})
-    shares = None
-    if sentences is not None:
-        levers = [subject.removeprefix("habit:") for subject in pattern["rate_levers"]]
-        credits = list(credited_claims(
-            exposures, pattern_rate_family(pattern).value, levers,
-        ).values())
-        shares = [{"subject": f"habit:{lever}", "title": title(Lever(lever)),
-                   "count": credits.count(lever)}
-                  for lever in levers if lever in credits]
     return {"subject": pattern["subject"], "count_sentences": sentences,
-            "cause_counts": shares}
+            "cause_counts": (None if sentences is None
+                             else _cause_counts(pattern, exposures))}
 
 
 def _cause_count_sentences(row: dict) -> Optional[List[dict]]:
@@ -865,7 +873,7 @@ def _row(**fields) -> dict:
         "chips": None, "window_scope": None, "count_sentences": None, "fold_sentences": None,
         "event_chart": None,
         "pattern": None, "pattern_chart": None, "claimed_by": None,
-        "anchored_by": None, "rank_note": None, "served_as": None,
+        "anchored_by": None, "rank_note": None, "served_as": None, "cause_counts": None,
     }
     row.update(fields)
     row["chips"] = _chips_for(row)

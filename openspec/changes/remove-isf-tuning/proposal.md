@@ -42,9 +42,12 @@ not be given and a card that shows a number nobody should act on.
   correction-factor Trial. A pump edit to the correction factor is still a
   Trial. Harmonic shows its outcomes before and after, as it does for a target
   edit, and advises nothing about the correction factor (ADR 564 rule 4).
-- The QA ISF cases go. The 42 cases' rest-window expectations are re-sourced
-  from the rest-window detector, with their literal values unchanged. The
-  contract test's `isf-strengthen` case and its CI run go.
+- The QA ISF cases go: the four `isf-*` cases and
+  `behavioral-carb-log-fasting-exclusion`, whose only proof was the ISF row's
+  step count. Every remaining case's rest-window expectation (74 cases, 38 of
+  them a non-empty set) is re-sourced from the rest-window detector, with its
+  literal value unchanged. The contract test's `isf-strengthen` case and its CI
+  run went in B1.
 - Specs, `AGENTS.md`, `README.md`, `CONTEXT.md`, `PRODUCT.md` and `DESIGN.md`
   stop describing ISF estimation or ISF advice.
 
@@ -74,9 +77,16 @@ B1 merges after A, and B2 after both.
 - **Must recover:** nothing automatic. Results recompute from recorded data. No
   stored row is migrated or deleted.
 - **Accepted failure:**
-  - A set-aside correction-factor preference becomes an absent row in the
-    Snoozed list, which the wearer can restore. The Overview and Queue built
-    before slice A keep their cached answers until the next read.
+  - A correction factor set aside before #564 stays set aside. Guidance serves
+    it as an absent row titled "Correction factor", but the Queue's Snoozed list
+    leaves it out and counts only the rows it lists (lock §2.5, 2026-10-20 #564),
+    so no screen offers to restore it. It acts on nothing, because no
+    correction-factor concern is served. The Overview and Queue built before
+    slice A keep their cached answers until the next read.
+  - A correction-factor Trial retained before B2 reads its comparison over the
+    whole of each period on its next read, as a target Trial does, so its
+    outcome numbers can differ from the ones shown before B2. The stored record
+    is not rewritten.
   - Between merges, main can show a state the next slice removes: after A, an
     engine that still stages an ISF row that no surface draws; after B1, an
     estimate that nothing reads.

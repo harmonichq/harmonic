@@ -12,7 +12,9 @@ recommendation, direction or advice to keep, revert or change the correction
 factor, and no Queue card or guidance concern SHALL follow from its result:
 the wearer decides what to do with it. It SHALL read no fasting-step population
 and no fasting-window readiness, because Harmonic serves no correction-factor
-estimate. A Trial record retained before ADR 564 SHALL read without error on
+estimate. Its comparison SHALL read the whole of each period, as a target
+edit's does, and SHALL NOT be cut to Rest windows or serve the basal Trial's
+Rest windows with a low. A Trial record retained before ADR 564 SHALL read without error on
 every surface that lists Trials.
 
 #### Scenario: An ISF-only edit on the pump
@@ -21,7 +23,8 @@ every surface that lists Trials.
 - **WHEN** watched changes are detected
 - **THEN** a correction-factor Trial is opened with In range as its target
   metric, and its readiness counts coverage-qualified informative dates
-- **AND** its comparison serves no fasting steps
+- **AND** its comparison serves no fasting steps, reads every hour of each
+  period, and serves the same outcomes a target Trial serves
 - **AND** once it matures, its result is the target metric's assessment state
   and nothing about the correction factor is recommended
 

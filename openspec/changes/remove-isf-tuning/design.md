@@ -79,15 +79,21 @@ conversion reads the meal's dose-stamped ISF.
    `outcomes_trend.py` finds no such string. No ISF Trial may add one, and
    no Queue card or guidance concern may follow from a Trial's result. An ISF
    Trial serves no fasting-step population and no fasting-window readiness.
-   A whole-profile edit stays a profile Trial.
+   Its comparison reads the whole of each period, as a target Trial's does
+   (trial_evidence.py's generic population), not basal's Rest windows, and it
+   serves a target Trial's outcomes, without basal's "Rest windows with a low"
+   (follow_up_comparison.py:515). The Rest-window cut existed only because the
+   estimate read fasting nights. A whole-profile edit stays a profile Trial.
 5. **Correction attribution stays.** A printed low or a pre-empted low that
    follows a correction keeps its correction attribution: `HarmArm.ISF`, and the
    pre-empted `"isf"` bucket and its count. That attribution keeps the low out
    of the carb-ratio arm. It is a fact about which dose ran the drop, not
    advice. The labels are internal identifiers and are not renamed.
 6. **Durable state reads unchanged.** Stored rows are not migrated. A set-aside
-   `setting:isf` preference becomes an absent row, still titled "Correction
-   factor" by the closed setting-label table, and the wearer can restore it. A
+   `setting:isf` preference becomes an absent row in guidance, still titled
+   "Correction factor" by the closed setting-label table. The Queue's Snoozed
+   list leaves it out (rule 8), so no screen offers to restore it, and it acts
+   on nothing, because no correction-factor concern is served. A
    recorded ISF Plan keeps its subject name in Plan history. A retained
    `isf-all-*` Trial reads through the same parameter tables
    (`_TARGET_METRIC`, `_PLAN_PARAMETER`, the precision and unit maps), which
@@ -97,8 +103,10 @@ conversion reads the meal's dose-stamped ISF.
    (`rest_window.detect_rest_windows`) stays: basal Trial evidence, the outcomes
    trend and the timeline read it. The QA expectation's `rest_windows` are
    re-sourced from it over the analysis window, with every literal value
-   unchanged (triage spike: every case's pinned windows are a subset of the
-   detector's output over its store, equal where the case spans the window).
+   unchanged. The B2 triage spike (#601) ran the detector over each case's
+   store-derived 30-day window, on the CGM the analysis reads with false-low
+   spans dropped and on the raw CGM: both equal the pinned set for all 79
+   catalog cases, 43 of them non-empty.
 8. **The Overview's estimates grid.** Removing the ISF card would leave the
    basal estimate alone in a two-column row. The operator chose (2026-10-20,
    "5. A") that the basal estimate spans the cards' first row and Meal size the
@@ -114,7 +122,16 @@ conversion reads the meal's dose-stamped ISF.
    those predicates from the base specs. To let the two changes archive in
    either order, the same pull request deletes the redesign's two MODIFIED
    blocks and edits the ISF out of its ADDED requirement text. The operator
-   approved this on 2026-10-20 ("yes").
+   approved this on 2026-10-20 ("yes"). B2's triage (#601) found the redesign
+   restating ISF in three more places, edited the same way in B2: its MODIFIED
+   QA requirements "The shared expectation contract proves basal states
+   exactly" (the `isf` family, ISF support and the Fasting ISF row's rest
+   windows) and "Behavioral eras prove occurrence states and verdict
+   denominators exactly" (the Carb log reducing the Fasting ISF `n_steps`), and
+   its ADDED surfaces requirement "Setting findings are titled by their user
+   labels" (a "Correction factor · strengthen" row on `isf-strengthen`). This
+   change does not MODIFY those QA requirements itself: two changes modifying
+   one requirement let the later archive overwrite the earlier.
 
 **Consequences.**
 
@@ -129,7 +146,18 @@ conversion reads the meal's dose-stamped ISF.
 - `IsfConfig`'s constants that other code borrowed become local to their
   readers: the QA lane's peak and duration, and `carbs.py`'s flat lookback.
 - `uncertainty.estimate_slope_clustered`, which only the analyzer called, goes
-  with it.
+  with it, and so does `consolidate_profile`'s `isf` argument, which #180
+  already left unused: the deliverable's ISF column was always the programmed
+  schedule carried forward.
+- The QA catalog goes from 79 cases to 74: the four `isf-*` cases and
+  `behavioral-carb-log-fasting-exclusion`, whose two-day store holds no basal
+  row and whose only proof was the ISF row's step count. `pattern-near-tie`
+  keeps its overnight correction nights as plain synthetic data, so its store
+  and every literal in its expectation stay as they are. No remaining case's
+  expectation is re-copied.
+- A correction-factor Trial retained before B2 reads its comparison over the
+  whole period on its next read (rule 4), so its outcome numbers can differ
+  from those shown before. Its stored record is not rewritten.
 - The parameter-analysis spec's Purpose still names ISF estimation. A delta
   cannot edit a Purpose, so the archive that folds this change in rewrites that
   paragraph by hand.

@@ -386,11 +386,13 @@ The system SHALL satisfy the following:
 
 `GET /api/diagnose/findings` is a projection of one cached findings snapshot. Its
 schema carries an opaque `analysis_generation`, formed from a collision-resistant
-per-app incarnation plus the cache's monotonic data version. The stable read
-returns the token and prepared value only when no cache bump crossed the
-computation; it retries a bounded number of times and fails with a structured 409
-rather than attaching a new token to crossed bytes. A restarted app always has a
-different incarnation even when it opens unchanged database bytes.
+per-app incarnation plus the cache's monotonic data version. The read returns
+the token and prepared value only when no cache bump crossed the computation; it
+retries a bounded number of times and fails with a structured 409 rather than
+attaching a new token to crossed bytes. A restarted app always has a different
+incarnation even when it opens unchanged database bytes. An answer served from
+the snapshot's labelled predecessor carries a token naming that earlier answer,
+which no write admits (#579).
 
 The findings endpoint answers for the whole day only: it takes no clock window and
 no history selection, and serves no past-setting row, selection disposition,
@@ -448,6 +450,50 @@ serving its own window (#566).
 - **WHEN** the app restarts over the same store and the reads are made again
 - **THEN** each answers the same body, and no analysis, outcomes, profile or
   meal-size builder runs
+
+### Requirement: A read a landing sync crosses answers its labelled predecessor
+
+A sync commits window by window and invalidates only when it ends, so while it
+lands a write can commit during every snapshot a heavy read takes. A read whose
+every snapshot a write crossed SHALL answer the newest result of its own key and
+shape before the current revision, labelled with `input_data_age` as a read
+answered while its result is computed is, and SHALL ask the warm worker for the
+current result; only with no such result SHALL it fail, with the error it gave
+before. A result the cache holds for an earlier revision SHALL NOT count as
+current. This covers every heavy read the warm pass names: the Overview's
+profiles, meal-size reads, outcomes and analyses, the pooled analysis, the
+Queue's findings, guidance and Focus list, and the Trial roster with each
+change's detail. The findings snapshot and the Trial roster SHALL be fixed results
+in the derived-results file, the roster keyed by the input revision. A read the
+person's own write usually precedes — the Trial roster — SHALL wait for its
+current result after a write and answer its predecessor only on a crossed read.
+Guidance or findings answered from a predecessor SHALL carry a generation no write
+admits, and every write SHALL read the current findings itself. A warm shape or a
+queued refresh a write crossed SHALL NOT be logged as a failure: the warm pass
+SHALL wait for the next invalidation or read rather than compute the rest of its
+roster against a store still moving, and SHALL compute what it owes then (#579).
+
+#### Scenario: While a sync lands, every first-load read answers at once, labelled
+
+- **GIVEN** every first-load read made once, and one sync window committed since
+- **WHEN** a sync window commits during every snapshot each read takes
+- **THEN** each answers 200 with its earlier body and `input_data_age`
+- **AND** a snooze against the guidance it answered is refused with 409
+
+#### Scenario: With no earlier answer, a crossed read fails as before
+
+- **GIVEN** a store no read has been made against
+- **WHEN** a sync window commits during every snapshot each read takes
+- **THEN** outcomes answer 500, the Trial roster and guidance 503, and the findings
+  409 `analysis_generation_mismatch`
+
+#### Scenario: The warm pass waits for a landing sync, then computes what it owes
+
+- **GIVEN** a warm pass whose shape a sync window crosses at every snapshot
+- **WHEN** the shape loses
+- **THEN** no failure is logged and no later shape runs while the sync lands
+- **AND** once the sync ends and invalidates, the pass computes the shape and the
+  rest of its roster
 
 ## MODIFIED Requirements
 
@@ -518,7 +564,8 @@ source. Every write the app makes runs the same pass after it invalidates, and
 or when that fetch commits nothing. Warming runs in a worker thread rather than
 the event loop, a newer invalidation abandons an older pass at its next shape, and
 one shape failing to warm is logged and skipped rather than aborting the pass or
-the loop.
+the loop. A shape a write crossed at every snapshot is no failure: the pass waits
+for the landing sync and computes it then (#579).
 
 #### Scenario: A fetch that fails at startup is retried within minutes
 

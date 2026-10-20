@@ -276,6 +276,21 @@ a fixed result (outcomes, the live analysis, and the profiles and Meal size, eac
 one result for all three windows), so a restart answers it from the
 derived-results file. A deploy changes the source fingerprint, so after one everything is cold.
 
+**A read a landing sync crosses answers its predecessor too (ADR 579).** A sync
+commits window by window and invalidates only at its end, so a write can cross
+every snapshot a read takes. A fixed read that loses every attempt answers its
+labelled predecessor and queues its key; it fails, with its old error, only when
+it has none. A result the cache holds for an earlier revision is not current
+(`contains(key, validate=…)`). The findings snapshot (the Queue's findings,
+guidance and Focus list) and the Trial roster are fixed results; a predecessor's
+findings carry a generation no write admits, and every write reads the current
+findings itself (`serve_stale=False`). The roster, whose preceding write is
+usually the reader's own, waits for its current result after a write
+(`while_computing=False`) and answers its predecessor only on a crossed read. A
+warm shape or refresh a write crossed is no failure: the worker waits for the next
+invalidation or read, then computes what it owes. Never add a per-endpoint retry
+or fallback; route a new heavy read through `fixed()`.
+
 **The store keeps two revisions, and derived results key on the one their
 builder reads (ADR 538).** The input revision advances on every write and is the
 follow-up writes' concurrency token (durable requests, preferences, the

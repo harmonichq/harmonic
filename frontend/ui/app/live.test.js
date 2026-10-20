@@ -261,6 +261,30 @@ test('an answer the engine served from before its last sync marks its tab, and o
   assert.equal(live.answers.overview.wearer.time_of_day['14'].input_data_age, undefined);
 });
 
+test('a Queue or Changes drawn from an answer served while a sync landed is marked until current (#579)', async () => {
+  const fake = fakeClient(history({ activeKind: 'trial' }));
+  const age = { revision: 6, covers_to: '2026-01-01 00:00:00' };
+  const earlier = { guidance: 1, findings: 1, focus: 1, roster: 1, detail: 1 };
+  const once = (name, answer) => (earlier[name]-- > 0 ? { ...answer, input_data_age: age } : answer);
+  const { fetchGuidance, fetchDiagnoseFindings, fetchFocuses, fetchVerifyTrials } = fake.client;
+  fake.client.fetchGuidance = async () => once('guidance', await fetchGuidance());
+  fake.client.fetchDiagnoseFindings = async () => once('findings', await fetchDiagnoseFindings());
+  fake.client.fetchFocuses = async () => once('focus', await fetchFocuses());
+  fake.client.fetchVerifyTrials = async (opts) => once(opts?.selected ? 'detail' : 'roster', await fetchVerifyTrials(opts));
+  const live = createLive({ client: fake.client, glossary: [], pause: () => Promise.resolve() });
+  await Promise.all([live.readTab('queue'), live.readTab('changes')]);
+  assert.equal(live.behind('queue'), true, 'the Queue drew earlier answers');
+  assert.equal(live.behind('changes'), true, 'and so did Changes');
+  assert.equal(live.behind('overview'), false);
+  await Promise.all([live.catchUp('queue'), live.catchUp('changes')]);
+  assert.equal(live.behind('queue'), false, 'read again until current');
+  assert.equal(live.behind('changes'), false);
+  assert.equal(fake.count('guidance'), 2);
+  assert.equal(fake.count('findings'), 2);
+  assert.equal(fake.count('focus'), 2);
+  assert.equal(fake.count('trials', detail), 2, 'the active Trial\'s detail, once again');
+});
+
 test('an answer that stays behind is read again a bounded number of times', async () => {
   const fake = fakeClient();
   fake.client.fetchMealSize = (...args) => {

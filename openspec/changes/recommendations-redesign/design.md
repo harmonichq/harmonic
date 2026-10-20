@@ -2144,7 +2144,7 @@ crossed read and marking the frontier current: it would be falsely current.
 first-load reads answered 503 or 500 (`InputRevisionChanged`, "history inputs
 changed during every snapshot"). Their derived snapshots were crossed by fetch
 commits three times running. That is not a lock, and it is left for its own
-decision.
+decision: ADR 579 decides it.
 
 **Dosing.** No analyzer, staging predicate, cap, floor or served value changes.
 The reconcile records the same Trials, receipts, endings and frontier from the
@@ -2155,3 +2155,104 @@ while a Prompt answer's reconcile reads the history. The fetch has to commit
 before that read ends, both writes answer without `database is locked`, and the
 frontier is current after both. It failed first: the fetch stayed blocked for the
 whole read.
+
+## ADR 579 — A read a landing sync crosses answers its labelled predecessor, and the warm pass waits for the sync
+
+**Context.** ADR 576 left one finding open: while the start fetch landed, first-load
+reads answered 500 or 503 (`InputRevisionChanged`, "history inputs changed during
+every snapshot"). On 5eaf2313 against a real snapshot that was the 14-day analysis,
+the 14-day outcomes, the glucose profiles and the Trial roster, and in the live log
+the warm pass's pooled analysis. A sync commits window by window and invalidates
+the result cache only when it ends (`on_write`). Every heavy read takes one SQLite
+snapshot and keeps its result only if no commit crossed it, a bounded number of
+times; a window commits every few seconds and a heavy read takes seconds to tens of
+seconds on the host, so every attempt crossed and the read gave up. In the code:
+
+- A fixed read asked whether the cache *held* its key before answering its
+  predecessor (#566), not whether it held the *current* result. Mid-sync the cache
+  held the result from before the sync's first commit, so the read skipped its
+  predecessor, computed inline, was crossed on every attempt, and failed.
+- A read that lost every attempt raised. Its predecessor in the derived-results
+  file, the very answer #566 serves, was never consulted.
+- The findings snapshot (under the Queue's findings, guidance and Focus list) and
+  the Trial roster were not fixed results, so they had no predecessor at all
+  (ADR 566, Consequences).
+- The warm pass logged a crossed shape as a failure and went on through the rest
+  of its roster against a store still moving, each shape crossed in turn.
+
+**Decision.**
+
+1. *A read a write crossed at every snapshot answers its predecessor.* A fixed read
+   that loses every attempt answers the newest result of its key and shape before
+   the current revision, labelled with `input_data_age` exactly as #566 labels a
+   result still computing, and asks the warm worker for the current one. With no
+   predecessor it fails as before: 500 for an Overview read, 503 for the Trial
+   roster and guidance, 409 `analysis_generation_mismatch` for the findings. A
+   write's own read (`serve_stale=False`) never answers a predecessor.
+2. *A result held for an earlier revision is not current.* Before computing, a
+   read asks the cache for a result that passes the same revision check that
+   admits one (`ResultCache.contains(key, validate=…)`), so mid-sync it answers its
+   predecessor at once instead of computing against a moving store.
+3. *The findings snapshot is a fixed result, and the Queue's reads may answer its
+   predecessor.* It goes through `fixed()` under its existing key and marker, so an
+   install's last row is its predecessor. The findings, guidance and Focus list
+   reads answer it after a write or a crossed read, labelled, under a generation
+   that names the earlier answer (`…:before:<revision>`), so no snooze, Done, Focus
+   or Trial step is admitted against it; every write still reads the current
+   findings itself. Guidance composes it with the follow-up state, now read in one
+   snapshot at the current revision. This supersedes ADR 566's consequence that
+   the findings snapshot computes on its first read after a write. A Queue write
+   is a follow-up write, which keeps the findings (ADR 538), so a person's own step
+   never draws the Queue stale.
+4. *The Trial roster is a fixed result keyed by the input revision* (ADR 538),
+   each change's detail too. The input revision determines the comparison context
+   the old in-memory key carried, all but the configuration a reassessment
+   executes, which stays in the key (ADR 554). The write before a roster read is usually the
+   reader's own Trial, Focus or Done step, so after a write the roster read waits
+   for the current roster (`while_computing=False`) and answers its predecessor
+   only when a write crosses every snapshot.
+5. *The warm pass waits for a landing sync.* A warm shape or queued refresh a
+   write crossed at every snapshot is not a failure. The refresh stays queued, and
+   the pass stops until the next event: the sync's end, which invalidates and runs
+   the whole roster, or a read asking for a result. A newer cache version still
+   restarts the pass at once. The case-file preparation's warm shape runs the
+   preparation itself, so a crossed one is seen as crossed; its read answers a
+   crossed preparation as `preparation_changed` (503), not the 500
+   `inconsistent_projection` it answered.
+6. *The app marks the Queue and Changes as it marks the Overview.* The adapter
+   notes `input_data_age` on the guidance, findings, Focus list, Trial roster and
+   the active change's detail, so a Queue or Changes drawn from one is `stale` and
+   is read again until current (ADR 566, decision 5).
+
+**Rejected.** More attempts, or a pause between them: during a sync a commit lands
+every few seconds and a heavy read outlasts it on the host, so retries lose again
+and add CPU to a two-core host (ADR 576 rejected the same for the reconcile).
+Persisting a crossed computation at its own snapshot's revision, so a cold store
+has a predecessor too: only a builder that reads through the pinned snapshot alone
+can do that, and the findings snapshot's builder reads fixed results with their own
+snapshots, so a crossed row could join two revisions under one label. A try/except
+per endpoint: a second copy of #566's mechanism. Answering the Trial roster's
+predecessor after every write, as the Overview does: the person's own Trial or Done
+step would draw as not landed.
+
+**Not decided here.** A case-file preparation is held in memory under leases and
+keeps no predecessor, so with none held a crossed preparation still fails, and a
+Queue that ranks a Pattern draws Unavailable until Retry. After a deploy the
+derived results are cold (the source fingerprint), so during the first sync after
+one a read with no predecessor still fails.
+
+**Dosing.** No analyzer, staging predicate, cap, floor or served value changes.
+What changes is which earlier answer a read serves, labelled, while a sync lands,
+and no write is admitted against one.
+
+**Consequences.** `tests/test_read_beside_a_sync.py` commits a sync window during
+every snapshot each first-load read takes, with and without the warm worker: every
+read answers 200 with its earlier body and `input_data_age`, a snooze against the
+guidance it answered is refused, and with no earlier answer each read fails with
+its old error. The warm pass logs no failure, runs no later shape while the sync
+lands, and computes the crossed shape once the sync ends. It failed first: on main
+the first read during the landing sync answered 500, and the warm pass logged
+`Cache pre-warm failed for analyze-pooled`. The Trial roster's cache key is now its
+fixed key, `("verify-trials", kind, identity, assessment, execution)`, and an
+invalidation alone, with the store's revision unchanged, answers the roster from
+the derived-results file rather than computing it again.

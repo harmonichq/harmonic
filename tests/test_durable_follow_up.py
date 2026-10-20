@@ -861,6 +861,11 @@ class DurableApiTest(unittest.TestCase):
         cache = self.client.app.state.result_cache
         for invalidate in ("store_revision", "cache_generation"):
             with self.subTest(invalidate=invalidate):
+                # The roster is kept in the derived-results file (#579), so each
+                # case starts at a revision no roster was computed for.
+                with Store.open(self.path) as writer:
+                    writer.upsert_cgm([{"EventDateTime": "2026-06-20 11:55:00",
+                        "Readings (CGM / BGM)": 120, "Description": "Synthetic EGV"}])
                 cache.bump()
                 calls = []
 
@@ -885,8 +890,11 @@ class DurableApiTest(unittest.TestCase):
                     self.assertEqual(response.status_code, 200, response.text)
                     with Store.open_queryonly(self.path) as store:
                         self.assertEqual(response.json()["input_revision"], store.input_data_revision())
-                    self.assertEqual(len(calls), 2)
+                    # A crossed write computes again. A crossed invalidation alone
+                    # leaves the store's revision, whose derived result is exact.
+                    computes = 2 if invalidate == "store_revision" else 1
+                    self.assertEqual(len(calls), computes)
                     repeated = self.client.get("/api/verify/trials", headers=self.headers,
                                                params={"selected": identity})
                     self.assertEqual(repeated.json(), response.json())
-                    self.assertEqual(len(calls), 2)
+                    self.assertEqual(len(calls), computes)

@@ -7,14 +7,14 @@
 
 ### 2. Frontend
 
-- [ ] 2.1 Delete `frontend/ui/components/IsfCard/` after moving its shared classes (`ui-isf`, `__title`, `__none`, `__skeleton`) to a module BasalCard and MealSizeCard both import, renamed for what they are
+- [ ] 2.1 Move IsfCard.css's shared rules into `frontend/ui/components/SettingCard/SettingCard.css`, which BasalCard and MealSizeCard already import: `.ui-isf__title` becomes `.ui-scard__heading`, `.ui-isf__none` becomes `.ui-scard__none`, `.ui-isf__skeleton` becomes `.ui-scard__skeleton`. The bare `ui-isf` class carries no rule and leaves `BasalCard.tsx` and `MealSizeCard.tsx`. Drop their `../IsfCard/IsfCard.css` imports (BasalCard.tsx:18, MealSizeCard.tsx:31) and update `OverviewScreen.stories.tsx`'s `.ui-isf__none` query. Then delete `frontend/ui/components/IsfCard/`
 - [ ] 2.2 `overview-model.ts`, `queue-model.ts`, `QueueScreen.tsx`, `OverviewScreen.tsx` and `OverviewScreen.css`: remove the ISF estimate and the `setting:isf` card. The Overview grid follows the locked layout: the basal estimate and Meal size each span a row, every row one height. A `setting:isf` candidate, if one is still served before B1, is the Queue's existing undrawable case
-- [ ] 2.2a The Snoozed footer counts the rows the Snoozed list draws, so a set-aside subject no Queue component draws (a correction factor snoozed before #564) is neither listed nor counted. A story pins it with a fixture holding an absent `setting:isf` preference
+- [ ] 2.2a The Snoozed footer counts the rows the Snoozed list draws, so a correction factor set aside before #564 is neither listed nor counted. `snoozedCount` (queue-model.ts:390) keeps a served formula for precheck (e): `queue.<store>.guidance.candidates[set_aside=true].length − queue.<store>.guidance.candidates[set_aside=true][subject=setting:isf].length` (chained filters and " − " per provenance.js). A Queue story pins it with a fixture store holding a set-aside `setting:isf` subject
 - [ ] 2.3 `ui/app/live.js` and `live.test.js`: drop the `isf` reads (the shared analyze fetch stays for basal; rename its served key for what it now carries)
 - [ ] 2.3a §1.5 drops "Fasting" (the lock's amendment), and `ui-fixtures.json`'s glossary is regenerated with it
 - [ ] 2.4 Stories: delete the IsfCard stories and the Queue's ISF stories. Rewrite the Overview's `oneHeight`, `inProportion` and `noData` plays for the locked grid. Fix the comments that size cards against the ISF card (BasalCard, MealSizeCard, SettingCard, EvidenceChart, QueueRow)
 - [ ] 2.5 `scripts/gen_ui_fixtures.py`: drop the `isf-supported` stores, `states.isf`, `_isf` and the Queue's `isf`, then regenerate `ui-fixtures.json` and `ui-allowlist.json` through it
-- [ ] 2.6 `frontend/ui/app/live.contract.test.mjs`: drop the `isf` expectations and the `overview.isfEstimate` and `queue.isfSetting` assertions. The `isf-strengthen` case's `queue` and `done` expectations stay until B1
+- [ ] 2.6 `frontend/ui/app/live.contract.test.mjs`: drop the `isf` expectations and the `overview.isfEstimate` and `queue.isfSetting` assertions. The `isf-strengthen` case stays, with `queue: []` and `done: null`: the engine still serves `setting:isf` until B1, but no Queue component draws it, so `ranking()` (queue-model.ts:381-386) leaves it out. B1 deletes the case, its `ci.yml` run and its `AGENTS.md` lines
 - [ ] 2.7 Revise in the running app under the safe start (the QA no-fetch serve) per `/ui-craft revise`: before and after renders from the same store of the Overview at 1440×900 and 390×844 and of the Queue, each must-survive line of the amendment shown, and `precheck.py` output
 
 ### 3. Specs
@@ -34,7 +34,13 @@
 - [ ] 5.3 `analyze.py`: drop the ISF settling gate, the ISF epoch entry and the rescue-coverage quality notes
 - [ ] 5.4 Record in ADR 564 the count of basal and carb-ratio Priority ranks that move across the QA catalog, with no values
 - [ ] 5.5 QA catalog: the `isf-*` cases' `queue_rows` become `queue_absences`, and their finding titles drop. `live.contract.test.mjs` drops its `isf-strengthen` case, and `.github/workflows/ci.yml` and `AGENTS.md` drop its `--case` run
-- [ ] 5.6 Update the tests that assert ISF advice (`test_guidance.py`, `test_guidance_api.py`, `test_guidance_preferences.py`, `test_findings_projection.py`, `test_tuning_priority.py`, `test_engine_cuts.py`, `test_setting_done.py`, `test_settling.py`, `test_annotation_register.py`), keeping the tests that read retained ISF records. Regenerate `findings-projection.json` through its generator after the generator drops the ISF rows
+- [ ] 5.6 Update the tests that assert ISF advice, keeping the tests that read retained ISF records:
+  - `test_guidance.py`, `test_guidance_api.py`, `test_guidance_preferences.py`, `test_findings_projection.py`, `test_tuning_priority.py`, `test_engine_cuts.py`, `test_setting_done.py`, `test_settling.py`, `test_annotation_register.py`;
+  - `test_analyzer_isf.py`: drop the `isf_lever` tests (:496, :542); the file goes in B2;
+  - `test_rescue_evidence.py`: drop the rescue-coverage note assertions (:389-412) that 5.3 removes;
+  - `test_analyzer_coverage.py`: drop `SettlingIsfTest` (:557) and the `_settling(... isf_rows=...)` calls;
+  - `test_durable_follow_up.py`'s `test_plan_history_names_each_recorded_subject_at_read_time` (:675-692): seed a recorded `setting:isf` Plan straight into the store instead of applying one (now refused). It stays the proof that a recorded ISF Plan reads and is named "Correction factor".
+- [ ] 5.7 Regenerate `findings-projection.json` through its generator once the generator drops the ISF rows, and `ui-fixtures.json` and `ui-allowlist.json` through `scripts/gen_ui_fixtures.py`, whose `/api/guidance` reads no longer serve `setting:isf`
 
 ### 6. Specs and docs
 

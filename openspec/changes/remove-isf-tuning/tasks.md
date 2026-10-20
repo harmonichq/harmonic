@@ -3,7 +3,7 @@
 ### 1. Lock revision (operator approval before any build)
 
 - [x] 1.1 Draft the lock-doc revision in `docs/design/recommendations-redesign.md`, proposed and not locked: the header line, §1.1, §1.3, §2.5's 2026-10-20 #564 amendment with its must-survive list, and §4.2 QueueRow, SettingCard, EvidenceChart, IsfCard (retired), BasalCard and MealSizeCard (done at triage)
-- [ ] 1.2 The operator says "locked" on that amendment; the header line becomes "**No ISF estimate, 2026-10-20** … locked <date>" in his words, before any build step below
+- [x] 1.2 The operator says "locked" on that amendment; the header line becomes "**No ISF estimate, locked 2026-10-20**" in the operator's words, before any build step below (locked 2026-10-20: "Go for it. Locked")
 
 ### 2. Frontend
 

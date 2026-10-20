@@ -64,10 +64,11 @@ Status: **exploring** (#481).
 - **No tab name over its own tab, 2026-10-20** (#583, §2.5): the operator's
   decision, built on all five locked screens through ScreenHeader; Storybook
   `ScreenHeader` and each screen's Default and drill-down stories.
-- **No ISF estimate, proposed 2026-10-20** (#564, §2.5): the Overview without
+- **No ISF estimate, locked 2026-10-20** (#564, §2.5): the Overview without
   its ISF card, the basal estimate across the first row of cards and Meal size
-  across the second; the Queue without a queued ISF. Proposed on the locked
-  Overview and Queue screens; **not locked** until the operator says "locked".
+  across the second; the Queue without a queued ISF. Revised on the locked
+  Overview and Queue screens. The operator: "Go for it. Locked"
+  (2026-10-20).
 
 This document is the durable record of the redesign. Sections 1–3 are what the
 build will be checked against once they are approved. The appendix keeps the
@@ -1272,7 +1273,7 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   PatternCard, HabitCard and TransientBar follow.
 
 - **2026-10-20 — no ISF estimate, on the Overview or in the Queue (#564).**
-  *Proposed; not locked.* Harmonic stops estimating ISF and stops advising a
+  *Locked 2026-10-20; the operator: "Go for it. Locked".* Harmonic stops estimating ISF and stops advising a
   correction-factor move: no passive method identifies ISF under Control-IQ
   (ADR 564). The operator, on the Overview's grid without the ISF card,
   choosing among the options put to them: "5. A", the basal estimate across

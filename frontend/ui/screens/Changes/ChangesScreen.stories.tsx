@@ -5,6 +5,7 @@ import { expectDirections } from '../../direction-check';
 import { expectMetricsAligned } from '../../metrics-check';
 import { failsOnce } from '../../flaky';
 import { expectTabBarEnds } from '../../tabbar-check';
+import { expectHeaderEmpty, expectTitlePrinted } from '../../title-check';
 import { CHANGES_UNNAMED } from '../../served-variants';
 import { ChangesScreen, type ChangesScreenProps } from './ChangesScreen';
 
@@ -79,7 +80,15 @@ const LOADING = { store: 'wearer', state: 'loading' } as const;
 const UNAVAILABLE = { store: 'wearer', state: unavailable ? 'unavailable' : 'ready' } as const;
 
 // The tab bar ends the screen: 64 px above the device's inset (§2.5, 2026-10-19).
-export const DefaultPhone: Story = { ...story('phone', DEFAULT), play: async ({ canvasElement }) => expectTabBarEnds(canvasElement) };
+// The tab bar's selected Changes names the screen, so its header draws nothing
+// (§2.5, 2026-10-20).
+export const DefaultPhone: Story = {
+  ...story('phone', DEFAULT),
+  play: async ({ canvasElement }) => {
+    await expectTabBarEnds(canvasElement);
+    await expectHeaderEmpty(canvasElement, 'Changes');
+  },
+};
 export const DefaultDesktop = story('desktop', DEFAULT);
 // Six days in, the basal Trial's every Δ is green or red by the way it moved
 // (In range up, Mean up, Control-IQ's rows neutral), while the pill stays
@@ -231,13 +240,13 @@ export const WaitingForPumpDesktop: Story = { ...story('desktop', WAITING), play
 const previousPlay: Story['play'] = async ({ canvasElement }) => {
   const canvas = within(canvasElement);
   await userEvent.click(canvas.getByRole('button', { name: /Previous\s*4/ }));
-  await expect(canvas.getByRole('heading', { level: 1, name: 'Previous' })).toBeInTheDocument();
+  await expectTitlePrinted(canvasElement, 'Previous');
   await expect(canvas.getAllByText('Basal').length).toBeGreaterThan(0);
   await expect(canvas.getByText('Unclear')).toBeInTheDocument();
   // The drill-down's own "‹ Changes" (the tab bar has a Changes too).
   const header = canvas.getByRole('heading', { level: 1, name: 'Previous' }).closest('header') as HTMLElement;
   await userEvent.click(within(header).getByRole('button', { name: 'Changes' }));
-  await expect(canvas.getByRole('heading', { level: 1, name: 'Changes' })).toBeInTheDocument();
+  await expectHeaderEmpty(canvasElement, 'Changes');
   await expect(canvas.getByText('No active change')).toBeInTheDocument();
 };
 export const OpenPreviousPhone: Story = { ...story('phone', PREVIOUS), play: previousPlay };

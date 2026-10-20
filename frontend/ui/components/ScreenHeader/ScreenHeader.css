@@ -43,8 +43,10 @@
   font-weight: var(--ui-weight-strong);
   line-height: 28px;
 }
-/* The title and the day it shows, on one baseline. */
+/* The title and the day it shows, on one baseline. A tab screen draws no
+   title, so the day leads the line, its words in line with the content below. */
 .ui-header__titles { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
+.ui-header--tab .ui-header__day { margin-left: -6px; }
 /* The day as a text action that drops the month down. */
 .ui-header__day {
   display: inline-flex;

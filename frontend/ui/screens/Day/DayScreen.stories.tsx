@@ -6,6 +6,7 @@ import { dayDate, loggedGrams } from '../../day-model';
 import { swipe } from '../../gesture';
 import { failsOnce } from '../../flaky';
 import { expectTabBarEnds } from '../../tabbar-check';
+import { expectTitlePrinted, expectTitleUnprinted } from '../../title-check';
 import { WithoutReadings, monthReader } from '../../served-variants';
 import { DayScreen, type DayScreenProps } from './DayScreen';
 
@@ -77,8 +78,23 @@ const RISE_PROMPTS = { store: 'rises-pending', view: 'prompts', kind: 'rise' } a
 const NO_RISES = { store: 'rises-answered' } as const;
 
 // The tab bar ends the screen: 64 px above the device's inset (§2.5, 2026-10-19).
-export const DefaultPhone: Story = { ...story('phone', DEFAULT), play: async ({ canvasElement }) => expectTabBarEnds(canvasElement) };
-export const DefaultDesktop = story('desktop', DEFAULT);
+// The nav's selected Day names the screen, so the header's line is the day it
+// shows and "+ Log carbs" (§2.5, 2026-10-20).
+const dayLeads: Story['play'] = async ({ canvasElement }) => {
+  const header = await expectTitleUnprinted(canvasElement, 'Day');
+  const day = within(header).getByRole('button', { name: named(latest) });
+  const words = document.createRange();
+  words.selectNodeContents(day.firstChild!);
+  await expect(Math.round(words.getBoundingClientRect().left)).toBe(Math.round(header.getBoundingClientRect().left));
+};
+export const DefaultPhone: Story = {
+  ...story('phone', DEFAULT),
+  play: async (context) => {
+    await expectTabBarEnds(context.canvasElement);
+    await dayLeads(context);
+  },
+};
+export const DefaultDesktop: Story = { ...story('desktop', DEFAULT), play: dayLeads };
 export const LoggedCarbsPhone = story('phone', LOGGED_CARBS);
 export const LoggedCarbsDesktop = story('desktop', LOGGED_CARBS);
 export const NoPromptsPhone = story('phone', NO_PROMPTS);
@@ -313,6 +329,7 @@ const promptsPlay: Story['play'] = async ({ canvasElement }) => {
   await userEvent.type(canvas.getByRole('textbox', { name: 'Carbs' }), typed);
   await userEvent.click(within(canvasElement.querySelector<HTMLElement>('.ui-prompt')!).getByRole('button', { name: 'Next' }));
   await expect(place(canvas)).toHaveTextContent('2 / 2');
+  await expectTitlePrinted(canvasElement, 'Lows');
   await expect(canvas.getByRole('button', { name: /Yes/ })).toHaveAttribute('aria-pressed', 'false');
   await userEvent.click(within(canvas.getByRole('heading', { level: 1, name: 'Lows' }).closest('header') as HTMLElement)
     .getByRole('button', { name: 'Day' }));

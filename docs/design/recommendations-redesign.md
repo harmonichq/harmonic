@@ -61,6 +61,9 @@ Status: **exploring** (#481).
 - **A maturing Trial's data as it forms, 2026-10-19** (#554, §2.5): the
   operator's decision, built on the locked Changes screen; Storybook
   `Screens/Changes` (Carb Ratio Maturing, Carb Ratio First Hours).
+- **No tab name over its own tab, 2026-10-20** (#583, §2.5): the operator's
+  decision, built on all five locked screens through ScreenHeader; Storybook
+  `ScreenHeader` and each screen's Default and drill-down stories.
 
 This document is the durable record of the redesign. Sections 1–3 are what the
 build will be checked against once they are approved. The appendix keeps the
@@ -1207,6 +1210,29 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
     columns and fails if a column's x differs between modules or rows, or if
     any label, value, unit or Δ in a row overlaps another.
 
+- **2026-10-20 — a tab screen does not print its own name (#583).** The
+  operator: "the app doesn't need to repeat the section your on. I don't need
+  to see "Queue" at the top of the queue when I also have queue selected on
+  the bottom." and "we should fix that right now". Built on all five locked
+  screens, in ScreenHeader alone; §4.2 follows.
+  - **The rule.** A screen's title is not drawn where the nav already shows
+    that section selected: the phone's tab bar and the desktop rail both name
+    Queue, Changes, Overview, Day and Settings, so those five screens draw no
+    title. The name stays each screen's h1, read by a screen reader and drawn
+    as nothing.
+  - **What stays.** The header keeps what it carries besides the name, on its
+    one line. Day's line leads with its day ("Sun 25 May ⌄"), the words where
+    the content starts, with "+ Log carbs" at its end (desktop: the Log carbs
+    control). "Unavailable" and Retry keep their place at the line's end. A
+    header with nothing else takes no height, and the content moves up: on a
+    phone, the page starts 16 px under the top, the side margin.
+  - **Sub-screens are unchanged.** The nav does not name a drill-down, so
+    Snoozed, Previous, Tandem Source, Pump profile, Glossary, and Day's Lows
+    and Rises keep "‹ Parent" and their title below it (§2.2 Drill-down).
+  - **Checked at 390, 360 and 1440 px.** The stories assert each tab screen's
+    h1 draws nothing, an empty header takes no height, Day's day starts its
+    line, and each sub-screen's title draws at title size.
+
 ### 2.6 Deferred (not cut)
 Not built in the current screens. The engine still serves what each needs, and
 nothing is removed from the engine or the fixtures for them.
@@ -1267,10 +1293,16 @@ unless noted. Loading is a skeleton of the component's own shape.
    - Glyphs: Queue, Changes, Overview, Day, and a gear for Settings. The
      sliders glyph belongs to the Setting kind.
 2. **ScreenHeader**: the screen title plus one trailing slot (a control, or a
-   labelled action).
-   - States: default; with action ("+ Log carbs"); drill-down
-     ("‹ Parent" back control above the title, §2.2). The Overview's date
-     moved under its window switch (§2.5, 2026-10-14).
+   labelled action). A tab screen's title is not drawn: the nav already shows
+   it selected, so it is the h1 a screen reader reads, and the header draws
+   only its slot, at the line's end, or, with nothing else, takes no height
+   (§2.5, 2026-10-20). A drill-down sub-screen, which the nav does not name,
+   draws its title.
+   - States: default (a tab screen: nothing drawn); with action ("+ Log
+     carbs"); with Day's day leading the line ("Sun 25 May ⌄"); unavailable
+     ("Unavailable" + Retry); drill-down ("‹ Parent" back control above the
+     drawn title, §2.2), with a count ("1 / 2"). The Overview's date moved
+     under its window switch (§2.5, 2026-10-14).
    - Fields: none of its own.
    - Desktop: the same, at the top of each pane; a drill-down's back control
      sits in the header of the pane that owns it.

@@ -8,7 +8,6 @@ and mocks the credential read so no host can reach one.
 """
 
 import asyncio
-import contextlib
 import os
 import tempfile
 import unittest
@@ -233,27 +232,43 @@ class FetchRefusesUnusableZoneTest(unittest.TestCase):
                 self.assertIsNone(status["last_success_at"])
 
 
+class _Stop(Exception):
+    """Raised by a stand-in sleep to end the loop after a set number of waits."""
+
+
+def _waits(limit):
+    """A stand-in for the loop's sleep: records each wait it is asked for, and
+    ends the loop on the ``limit``-th, so a test sees exactly which fetches ran
+    and how long the loop meant to wait after each — with no real time passing."""
+    waits = []
+
+    async def sleep(seconds):
+        waits.append(seconds)
+        if len(waits) >= limit:
+            raise _Stop
+    return sleep, waits
+
+
 class RunFetchLoopTest(unittest.IsolatedAsyncioTestCase):
+    async def _one_pass(self, **kwargs):
+        """Run the loop through its first fetch and up to its first wait."""
+        sleep, waits = _waits(1)
+        with self.assertRaises(_Stop):
+            await run_fetch_loop(":memory:", interval_seconds=100, sleep=sleep, **kwargs)
+        return waits
+
     @patch("ciq_autotune.fetch_loop.run_fetch_once")
     async def test_fetches_immediately_then_waits(self, mock_once):
-        task = asyncio.create_task(run_fetch_loop(":memory:", interval_seconds=100))
-        await asyncio.sleep(0.05)
-        task.cancel()
-        with contextlib.suppress(asyncio.CancelledError):
-            await task
+        waits = await self._one_pass()
         mock_once.assert_called_once()
+        self.assertEqual(waits, [100])
 
     @patch("ciq_autotune.fetch_loop.run_fetch_once")
     async def test_on_write_fires_when_fetch_wrote(self, mock_once):
         # #267: a fetch that wrote (truthy return) invalidates the cache.
         mock_once.return_value = {"cgm_readings": 5}
         fired = []
-        task = asyncio.create_task(run_fetch_loop(
-            ":memory:", interval_seconds=100, on_write=lambda: fired.append(1)))
-        await asyncio.sleep(0.05)
-        task.cancel()
-        with contextlib.suppress(asyncio.CancelledError):
-            await task
+        await self._one_pass(on_write=lambda: fired.append(1))
         self.assertEqual(fired, [1])
 
     @patch("ciq_autotune.fetch_loop.run_fetch_once")
@@ -265,13 +280,7 @@ class RunFetchLoopTest(unittest.IsolatedAsyncioTestCase):
         mock_once.return_value = {"cgm_readings": 5}
         loop_thread = threading.current_thread()
         ran_on = []
-        task = asyncio.create_task(run_fetch_loop(
-            ":memory:", interval_seconds=100,
-            on_write=lambda: ran_on.append(threading.current_thread())))
-        await asyncio.sleep(0.05)
-        task.cancel()
-        with contextlib.suppress(asyncio.CancelledError):
-            await task
+        await self._one_pass(on_write=lambda: ran_on.append(threading.current_thread()))
         self.assertEqual(len(ran_on), 1)
         self.assertIsNot(ran_on[0], loop_thread)
 
@@ -281,12 +290,7 @@ class RunFetchLoopTest(unittest.IsolatedAsyncioTestCase):
         # unknown. It is falsy, and it must still invalidate.
         mock_once.return_value = {}
         fired = []
-        task = asyncio.create_task(run_fetch_loop(
-            ":memory:", interval_seconds=100, on_write=lambda: fired.append(1)))
-        await asyncio.sleep(0.05)
-        task.cancel()
-        with contextlib.suppress(asyncio.CancelledError):
-            await task
+        await self._one_pass(on_write=lambda: fired.append(1))
         self.assertEqual(fired, [1])
 
     @patch("ciq_autotune.fetch_loop.run_fetch_once")
@@ -294,12 +298,7 @@ class RunFetchLoopTest(unittest.IsolatedAsyncioTestCase):
         # A fetch that committed nothing returns None → no invalidation.
         mock_once.return_value = None
         fired = []
-        task = asyncio.create_task(run_fetch_loop(
-            ":memory:", interval_seconds=100, on_write=lambda: fired.append(1)))
-        await asyncio.sleep(0.05)
-        task.cancel()
-        with contextlib.suppress(asyncio.CancelledError):
-            await task
+        await self._one_pass(on_write=lambda: fired.append(1))
         self.assertEqual(fired, [])
 
     @patch("ciq_autotune.fetch_loop.run_fetch_once")
@@ -433,30 +432,33 @@ class FetchLoopRetryTest(unittest.IsolatedAsyncioTestCase):
         self.addCleanup(os.unlink, tmp.name)
         self.db = tmp.name
 
-    async def _run(self, fetch, seconds=0.3):
+    async def _run(self, fetch, waits):
+        """Run the loop until it has waited ``waits`` times; returns the waits."""
+        sleep, seen = _waits(waits)
         with patch("ciq_autotune.fetch_loop.run_fetch_once", side_effect=fetch):
-            task = asyncio.create_task(run_fetch_loop(
-                self.db, interval_seconds=100, retry_seconds=0.01))
-            await asyncio.sleep(seconds)
-            task.cancel()
-            with contextlib.suppress(asyncio.CancelledError):
-                await task
+            with self.assertRaises(_Stop):
+                await run_fetch_loop(self.db, interval_seconds=100, retry_seconds=1, sleep=sleep)
+        return seen
 
     async def test_a_failed_fetch_is_retried_early_until_it_succeeds(self):
         fetch, calls = _fails(self.db, times=2)
-        await self._run(fetch)
-        # Two failures, then the success; the next is the hourly one.
+        waits = await self._run(fetch, waits=3)
+        # Two failures each retried early, then the success waits the hour.
+        self.assertEqual(waits, [1, 1, 100])
         self.assertEqual(len(calls), 3)
 
     async def test_early_retries_are_bounded(self):
         fetch, calls = _fails(self.db, times=100)
-        await self._run(fetch)
-        # The first attempt and three early retries, then hourly.
-        self.assertEqual(len(calls), 4)
+        waits = await self._run(fetch, waits=5)
+        # The first attempt and three early retries, then hourly — and it stays
+        # hourly while the fetch keeps failing.
+        self.assertEqual(waits, [1, 1, 1, 100, 100])
+        self.assertEqual(len(calls), 5)
 
     async def test_a_success_waits_the_hour(self):
         fetch, calls = _fails(self.db, times=0)
-        await self._run(fetch)
+        waits = await self._run(fetch, waits=1)
+        self.assertEqual(waits, [100])
         self.assertEqual(len(calls), 1)
 
 

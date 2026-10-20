@@ -78,6 +78,11 @@ DEFAULT_DB = "tconnect-data/ciq.db"
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8765
 RECOMPUTE_PACE_SECONDS = 0.1
+# The longest the start fetch waits for the start warm pass (#581). ADR 566 measured
+# the Overview's reads cold at 43-52 s on the Mac and every result current again
+# after a write at 41 s; the whole roster, at the home host's 3x, is a few minutes.
+# Ten leaves a cold pass room and delays an hourly loop's first fetch at most that.
+START_FETCH_CEILING_SECONDS = 600
 
 # True inside a warm-worker shape: a warm shape computes its fixed result, never
 # answers from a predecessor (#566).
@@ -291,7 +296,23 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 # A sync that commits while the start warm pass computes crosses it,
                 # and after a deploy no read has an earlier answer yet: the start
                 # fetch waits until the warm pass has left one for every read (#581).
-                await idle.wait()
+                # It never waits past the warm worker's life or its ceiling: a fetch
+                # that never starts is a store that silently stops growing.
+                ceiling = app.state.start_fetch_ceiling
+                warmed = asyncio.ensure_future(idle.wait())
+                worker = app.state.recompute_task
+                done, _ = await asyncio.wait({warmed, worker}, timeout=ceiling,
+                                             return_when=asyncio.FIRST_COMPLETED)
+                warmed.cancel()
+                if warmed in done:
+                    logger.info("Start fetch: the start warm pass went idle")
+                elif worker in done:
+                    logger.warning("Start fetch: the warm worker stopped before the start "
+                                   "warm pass went idle", exc_info=not worker.cancelled()
+                                   and worker.exception())
+                else:
+                    logger.warning("Start fetch: the start warm pass passed its %s s ceiling",
+                                   ceiling)
                 await run_fetch_loop(db_path, key_path=key_path, on_write=signal_recompute)
 
             fetch_task = asyncio.create_task(fetch_after_the_start_warm_pass())
@@ -303,8 +324,13 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 with contextlib.suppress(asyncio.CancelledError):
                     await fetch_task
             app.state.recompute_task.cancel()
-            with contextlib.suppress(asyncio.CancelledError):
+            try:
                 await app.state.recompute_task
+            except asyncio.CancelledError:
+                pass
+            except Exception:
+                # A worker that died is already reported; shutdown still completes.
+                logger.exception("The warm worker had stopped")
 
     app = FastAPI(title="Harmonic", version="0.1.0",
                   summary="Local, advisory tuning for Tandem pumps using Control-IQ® technology.",
@@ -1978,6 +2004,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     # pace, while lifecycle tests replace the roster and awaitable pace.
     app.state.recompute_roster = warm_roster
     app.state.recompute_pace = default_recompute_pace
+    app.state.start_fetch_ceiling = START_FETCH_CEILING_SECONDS
     app.state.recompute_shape_task = None
     app.state.signal_recompute = signal_recompute
 

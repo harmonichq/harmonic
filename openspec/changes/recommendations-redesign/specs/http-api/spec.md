@@ -522,9 +522,11 @@ that result carries its `projection_id`; any other coordinate of it SHALL answer
 
 ### Requirement: The start fetch waits for the start warm pass
 
-When `serve` warms at start, its fetch loop SHALL start only once the warm worker
+When `serve` warms at start, its fetch loop SHALL start once the warm worker
 first goes idle, so the start fetch never commits while every read is still
-without an earlier answer, as after a deploy. Derived results SHALL stay keyed by
+without an earlier answer, as after a deploy. It SHALL NOT wait past the warm
+worker's task ending for any reason, or past a ten-minute ceiling, and SHALL log
+which released it. Derived results SHALL stay keyed by
 the package's source fingerprint, and an older build's answer SHALL NOT be served
 (#581).
 
@@ -533,6 +535,12 @@ the package's source fingerprint, and an older build's answer SHALL NOT be serve
 - **GIVEN** an app that warms at start and runs its fetch loop
 - **WHEN** the start warm pass is still computing
 - **THEN** no fetch has run, and the start fetch runs once the pass ends
+
+#### Scenario: A warm worker that dies or never idles does not hold back the start fetch
+
+- **GIVEN** an app that warms at start and runs its fetch loop
+- **WHEN** the warm worker dies outside a shape, or its pass outlasts the ceiling
+- **THEN** the start fetch runs, and a warning names which released it
 
 ## MODIFIED Requirements
 

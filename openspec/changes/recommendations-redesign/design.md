@@ -2297,6 +2297,17 @@ the derived-results file rather than computing it again.
    write that crossed it. So when the start fetch first commits, every read the
    app makes has an earlier answer to serve, and no read is left without one. With
    no warm pass at start (`warm_on_start=False`) the fetch starts at once, as before.
+   The wait is bounded, because a start fetch that never starts is a store that
+   silently stops growing. The fetch starts at whichever comes first: the worker
+   goes idle, the worker's task ends for any reason, or a ceiling of ten minutes
+   (`START_FETCH_CEILING_SECONDS`). Reads that keep asking for refreshes can keep
+   the worker from ever going idle. ADR 566 measured the Overview's cold reads at
+   43–52 s on the Mac and every result current again after a write at 41 s; the
+   whole roster at the home host's 3× is a few minutes. Ten minutes leaves a cold
+   pass room, and delays the hourly loop's first fetch by at most that. The fetch
+   logs which of the three released it: an idle worker at info, a stopped worker
+   (with its exception) or the ceiling as a warning. A worker that died no longer
+   fails shutdown.
 
 **Rejected.** Serving the pre-deploy answer, labelled, when its shape is unchanged.
 ADR 566 rejected serving an older build's bytes. The fingerprint is of the whole
@@ -2323,7 +2334,9 @@ was kept.
 **Consequences.** `tests/test_read_beside_a_sync.py` covers both decisions. After
 a restart the preparation and every case file answer without preparing. After a
 restart, while a sync lands, each answers 200 with its earlier body and
-`input_data_age`. A start warm pass holds back the start fetch until it ends.
+`input_data_age`. A start warm pass holds back the start fetch until it ends. A
+warm worker that dies, or one that never goes idle past an injected ceiling, still
+lets the start fetch run. Both of those failed first: the fetch never ran.
 Each failed first on d9cb53fd: the restart prepared again, the preparation
 answered 503 `preparation_changed`, and the fetch ran beside the warm pass. The
 answer keeps every finding's case file and every Pattern's, a collapsed one under

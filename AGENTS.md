@@ -298,7 +298,9 @@ other coordinate projects from, and a preparation of an earlier revision is not
 retained. A case-file read naming a preparation that is no longer held is answered
 from that fixed result when it is the Queue's coordinate. `serve` starts its fetch
 loop once the start warm pass has gone idle, so the start fetch never commits
-before every read has an earlier answer. Do not serve an older build's derived
+before every read has an earlier answer. That wait is bounded by the worker's task
+ending and a ten-minute ceiling (`START_FETCH_CEILING_SECONDS`): a fetch that never
+starts is a store that silently stops growing. Do not serve an older build's derived
 results: the source fingerprint stays in every marker.
 
 **The store keeps two revisions, and derived results key on the one their

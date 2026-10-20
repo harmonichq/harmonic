@@ -262,16 +262,20 @@ class CollapsedPatternCaseFilesBesideASyncTest(CaseFilesBesideASyncTest):
 
 
 class StartFetchTest(unittest.TestCase):
-    """The start fetch waits for the start warm pass (#581)."""
+    """The start fetch waits for the start warm pass, and for no longer than its
+    ceiling or the warm worker's life (#581)."""
 
-    def test_the_start_fetch_commits_only_after_the_start_warm_pass(self):
-        import ciq_autotune.fetch_loop as fetch_loop
+    def _app(self):
         database = tempfile.NamedTemporaryFile(suffix=".sqlite")
         self.addCleanup(database.close)
         with Store.open(database.name):
             pass
-        app = create_app(db_path=database.name, token=None, enable_fetch_loop=True,
-                         warm_on_start=True)
+        return create_app(db_path=database.name, token=None, enable_fetch_loop=True,
+                          warm_on_start=True)
+
+    def test_the_start_fetch_commits_only_after_the_start_warm_pass(self):
+        import ciq_autotune.fetch_loop as fetch_loop
+        app = self._app()
         warming, release, fetched = threading.Event(), threading.Event(), threading.Event()
 
         def shape():
@@ -286,6 +290,38 @@ class StartFetchTest(unittest.TestCase):
                 self.assertFalse(fetched.wait(1), "the start fetch ran beside the warm pass")
                 release.set()
                 self.assertTrue(fetched.wait(5), "the start fetch never ran")
+
+    def test_a_warm_worker_that_dies_still_lets_the_start_fetch_run(self):
+        import ciq_autotune.fetch_loop as fetch_loop
+        app = self._app()
+        fetched = threading.Event()
+
+        def broken_roster():
+            raise RuntimeError("the warm worker died outside a shape")
+
+        app.state.recompute_roster = broken_roster
+        with patch.object(fetch_loop, "run_fetch_once",
+                          side_effect=lambda *args, **kwargs: fetched.set()):
+            with self.assertLogs("ciq_autotune.api", "WARNING") as logged:
+                with TestClient(app):
+                    self.assertTrue(fetched.wait(5), "a dead warm worker held back the fetch")
+        self.assertTrue(any("warm worker stopped" in line for line in logged.output), logged.output)
+
+    def test_a_warm_pass_that_never_idles_releases_the_start_fetch_at_its_ceiling(self):
+        import ciq_autotune.fetch_loop as fetch_loop
+        app = self._app()
+        app.state.start_fetch_ceiling = 0.2
+        release, fetched = threading.Event(), threading.Event()
+        app.state.recompute_roster = lambda: (("endless", lambda: release.wait(10)),)
+        with patch.object(fetch_loop, "run_fetch_once",
+                          side_effect=lambda *args, **kwargs: fetched.set()):
+            with self.assertLogs("ciq_autotune.api", "WARNING") as logged:
+                with TestClient(app):
+                    try:
+                        self.assertTrue(fetched.wait(5), "the ceiling never released the fetch")
+                    finally:
+                        release.set()
+        self.assertTrue(any("ceiling" in line for line in logged.output), logged.output)
 
 
 if __name__ == "__main__":

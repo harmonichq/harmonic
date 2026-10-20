@@ -49,7 +49,6 @@ def _set(name: str, seed: int, segments: List[tuple[int, float]], events: List[B
         "events": historical_events + events,
         "segments": segments,
         "cgm_readings": cgm_readings,
-        "isf_effective": EFFECTIVE_ISF,
         "observed_days": BLOCK_WINDOW_DAYS,
         "true_ratio_by_block": true_ratio_by_block,
         "analysis_start": end - timedelta(days=BLOCK_WINDOW_DAYS),

@@ -11,7 +11,7 @@ from ciq_autotune.analyzers.ic import analyze_ic_blocks
 from ciq_autotune.analyzers.ic_regression import analyze_ic_blocks_fuzzy
 from ciq_autotune.events import BolusEvent, CarbEntry, CgmReading
 from ciq_autotune.harm import HarmArm, PrintedLow
-from ciq_autotune.settings import Snapshot
+from ciq_autotune.settings import IsfSource, Snapshot
 from ciq_autotune.store import Store
 from scripts.gen_estimator_truth import (
     chained_run_sets,
@@ -35,7 +35,7 @@ class IncumbentEligibilityEvidenceTest(unittest.TestCase):
         blocks, _ = analyze_ic_blocks(
             truth["events"], truth["segments"],
             cgm_readings=truth["cgm_readings"],
-            isf_effective=truth["isf_effective"],
+            isf=IsfSource.from_snapshots(truth["snapshots"]),
             observed_days=truth["observed_days"],
             analysis_start=truth["analysis_start"],
             analysis_end=truth["analysis_end"],
@@ -53,7 +53,7 @@ class FuzzyAdmissionTest(unittest.TestCase):
     def _blocks(self, estimator, truth, **overrides):
         kwargs = {
             "cgm_readings": truth["cgm_readings"],
-            "isf_effective": truth["isf_effective"],
+            "isf": IsfSource.from_snapshots(truth["snapshots"]),
             "observed_days": truth["observed_days"],
             "analysis_start": truth["analysis_start"],
             "analysis_end": truth["analysis_end"],
@@ -294,7 +294,7 @@ class PublishedPoolReasonTest(unittest.TestCase):
         gap = _meal(8, 9)
         blocks, _ = analyze_ic_blocks_fuzzy(
             read + [gap], [(0, 5.0)], observed_days=90,
-            cgm_readings=_outcome_cgm(read), isf_effective=50.0,
+            cgm_readings=_outcome_cgm(read), isf=IsfSource.fixed(50.0),
         )
         runs = {row["run_id"]: row for row in blocks[0].evidence["runs"]}
 
@@ -311,7 +311,7 @@ class PublishedPoolReasonTest(unittest.TestCase):
                   for item in (_meal(day, 11), _meal(day, 13))]
         fitted, _ = analyze_ic_blocks_fuzzy(
             events, [(0, 5.0), (720, 6.0)], observed_days=90,
-            cgm_readings=_outcome_cgm(events), isf_effective=50.0,
+            cgm_readings=_outcome_cgm(events), isf=IsfSource.fixed(50.0),
         )
         blocks = {block.block_id: block for block in fitted}
         run_id = _meal(0, 11).t.isoformat()
@@ -328,7 +328,7 @@ class PublishedPoolReasonTest(unittest.TestCase):
                   for item in (_meal(day, 11), _meal(day, 13))]
         fitted, _ = analyze_ic_blocks_fuzzy(
             events, [(0, 5.0), (720, 6.0)], observed_days=90,
-            cgm_readings=_outcome_cgm(events), isf_effective=50.0,
+            cgm_readings=_outcome_cgm(events), isf=IsfSource.fixed(50.0),
         )
         blocks = {block.block_id: block for block in fitted}
         run_id = _meal(0, 11).t.isoformat()
@@ -347,7 +347,7 @@ class PublishedPoolReasonTest(unittest.TestCase):
                   for item in (_meal(day, 11), _meal(day, 13))]
         fitted, _ = analyze_ic_blocks_fuzzy(
             events, [(0, 5.0), (720, 6.0)], observed_days=90,
-            cgm_readings=_outcome_cgm(events), isf_effective=50.0,
+            cgm_readings=_outcome_cgm(events), isf=IsfSource.fixed(50.0),
         )
         block = next(row for row in fitted if row.block_id == 0)
 

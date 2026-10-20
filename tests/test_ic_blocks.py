@@ -19,6 +19,7 @@ from ciq_autotune.analyzers.tuning_priority import ic_headline_block, price_ic_b
 from ciq_autotune.events import BolusEvent, CarbEntry, CgmReading
 from ciq_autotune.harm import HarmArm, HarmConfig, PrintedLow
 from ciq_autotune.safety import _MIN_SUPPORTED_BLOCK_RUNS
+from ciq_autotune.settings import IsfSource
 
 
 BASE = datetime(2026, 3, 1)
@@ -392,7 +393,7 @@ class BlockLedgerTest(unittest.TestCase):
         readings = [CgmReading(event.t + timedelta(minutes=minute), 40, "synthetic")
                     for minute in (290, 295, 300, 305, 310)]
         block = by_id(blocks_for(self.SEGMENTS, [event], cgm_readings=readings,
-                                 isf_effective=50.0)[0])[0]
+                                 isf=IsfSource.fixed(50.0))[0])[0]
 
         self.assertEqual(0, block.n_runs)
         self.assertEqual(["directional-only"],

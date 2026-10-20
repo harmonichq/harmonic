@@ -1782,6 +1782,98 @@ def _materialize_ic_block_evidence(store) -> None:
     )
 
 
+# Dose-stamped ISF conversion (ADR 563): a two-segment ISF schedule beside two
+# carb-ratio blocks of the same hours. The first capture lands ten days in; the
+# second, forty days later, strengthens the morning ISF from 30 to 40.
+DOSE_ISF_FIRST = date(2024, 3, 1)
+DOSE_ISF_LAST = DOSE_ISF_FIRST + timedelta(days=IC_SOURCE_SPAN_DAYS - 1)
+DOSE_ISF_FIRST_CAPTURE_DAY = 10
+DOSE_ISF_SECOND_CAPTURE_DAY = 50
+DOSE_ISF_EARLIER = ((0, 30), (720, 60))
+DOSE_ISF_LATER = ((0, 40), (720, 60))
+DOSE_ISF_CARB_RATIOS = ((0, 5.0), (720, 6.0))
+# Every meal starts at 120 and is read at full DIA at 180: 60 mg/dL of travel.
+DOSE_ISF_TRAVEL = 60.0
+
+
+def _dose_isf_settings(isf_schedule: tuple[tuple[int, int], ...]) -> PumpSettings:
+    return PumpSettings(active_idp=1, profiles=(ProfileSettings(
+        idp=1, name="QA dose-stamped ISF profile", dia_min=300,
+        carb_entry=True, max_bolus=15.0,
+        segments=tuple(
+            ProfileSegment(start, 0.8, isf, ratio, 110)
+            for (start, isf), (_, ratio) in zip(isf_schedule, DOSE_ISF_CARB_RATIOS)
+        ),
+    ),))
+
+
+def _dose_isf_ran_high(minute: int) -> float:
+    if minute <= 0:
+        return 120.0
+    if minute <= 60:
+        return 120.0 + 2.0 * minute
+    if minute <= 180:
+        return 240.0 - 0.5 * (minute - 60)
+    return 120.0 + DOSE_ISF_TRAVEL
+
+
+# (day, hour, stamped ISF or None). Morning meals sit in the 00:00 ISF segment and
+# carb-ratio block, evening meals in the 12:00 ones.
+DOSE_ISF_MEALS = (
+    # Unstamped, before the first capture: no ISF, so not converted.
+    *((day, 9, None) for day in (3, 5, 7)),
+    # Under the first capture: stamped with its segment, and unstamped after it.
+    *((day, 9, 30) for day in (12, 14, 16, 18, 20, 22)),
+    *((day, 9, None) for day in (24, 26, 28)),
+    *((day, 18, 60) for day in (12, 14, 16, 18, 20, 22)),
+    *((day, 18, None) for day in (24, 26, 28)),
+    # Under the second capture: the morning stamp follows the strengthened ISF.
+    *((day, 9, 40) for day in (52, 54, 56, 58, 60, 62)),
+    *((day, 9, None) for day in (64, 66, 68)),
+    *((day, 18, 60) for day in (52, 54, 56, 58, 60)),
+)
+
+
+def _materialize_ic_dose_stamped_isf(store) -> None:
+    """Each meal run converts its glucose travel with its own ISF (ADR 563).
+
+    Stamped meals in each ISF segment; an ISF changed mid-window by a second
+    capture, with stamps that change with it; unstamped meals after a capture,
+    which take the segment in force at their time in the latest capture at or
+    before them; and unstamped meals before the first capture, left unconverted.
+    """
+    def at(day: int, hour: int) -> datetime:
+        return (datetime.combine(DOSE_ISF_FIRST, datetime.min.time())
+                + timedelta(days=day, hours=hour))
+
+    cgm = [
+        {"EventDateTime": f"{DOSE_ISF_FIRST.isoformat()} 00:00:00",
+         "Readings (CGM / BGM)": 120.0, "Description": "Synthetic EGV"},
+        {"EventDateTime": f"{DOSE_ISF_LAST.isoformat()} 23:59:00",
+         "Readings (CGM / BGM)": 120.0, "Description": "Synthetic EGV"},
+    ]
+    bolus = []
+    for index, (day, hour, isf) in enumerate(DOSE_ISF_MEALS):
+        ratio = dict(DOSE_ISF_CARB_RATIOS)[0 if hour < 12 else 720]
+        bolus.append({
+            "seq_num": 910_000 + index, "request_time": str(at(day, hour)),
+            "description": "Synthetic meal", "completion": "Completed",
+            "insulin": round(60.0 / ratio, 4), "requested_insulin": round(60.0 / ratio, 4),
+            "carbs": 60.0, "carb_ratio": ratio, "isf": isf, "target_bg": 110.0,
+        })
+        cgm.extend(_ic_block_evidence_trace(at(day, hour), _dose_isf_ran_high))
+    store.upsert_cgm(cgm)
+    store.upsert_bolus(bolus)
+    store.upsert_settings_snapshot(
+        f"{(DOSE_ISF_FIRST + timedelta(days=DOSE_ISF_FIRST_CAPTURE_DAY)).isoformat()} 00:00:00",
+        _dose_isf_settings(DOSE_ISF_EARLIER),
+    )
+    store.upsert_settings_snapshot(
+        f"{(DOSE_ISF_FIRST + timedelta(days=DOSE_ISF_SECOND_CAPTURE_DAY)).isoformat()} 00:00:00",
+        _dose_isf_settings(DOSE_ISF_LATER),
+    )
+
+
 _SHOWCASE_REST_WINDOWS = frozenset(
     (
         current.isoformat(),
@@ -6931,5 +7023,39 @@ QA_CASES += (
         next(case for case in QA_CASES
              if case.name == "behavioral-over-treated-low").expectation,
         30,
+    ),
+)
+
+# #588 (ADR 563): each carb-ratio meal run converts its glucose travel with its own
+# ISF: its stamp, else its segment in the capture as of it, else none.
+QA_CASES += (
+    QaCase(
+        "ic-dose-stamped-isf",
+        _materialize_ic_dose_stamped_isf,
+        QaExpectation(
+            _explicit_rows({
+                ("ic", "Morning"): ExpectedIcRow(
+                    state="numeric", direction="lower", asserts_move=True,
+                    days_observed=90, omitted=frozenset({"days_needed"}),
+                ),
+                ("ic", "Evening"): ExpectedIcRow(
+                    state="numeric", direction="lower", asserts_move=True,
+                    days_observed=90, omitted=frozenset({"days_needed"}),
+                ),
+            }),
+            {
+                ("ic", "Morning"): ExpectedSupport(n_runs=18, effective_run_count=18.0),
+                ("ic", "Evening"): ExpectedSupport(n_runs=14, effective_run_count=14.0),
+            },
+            {
+                ("whole_day", ("ic", "Morning")): ExpectedQueueRow("assert", "lower", None, 'Post-meal corrections imply meals are under-covered, so a tighter (smaller) carb ratio would dose more per carb. Measured 4.4 g/U across 18 meal runs against 5 programmed.'),
+                ("whole_day", ("ic", "Evening")): ExpectedQueueRow("assert", "lower", None, 'Post-meal corrections imply meals are under-covered, so a tighter (smaller) carb ratio would dose more per carb. Measured 5.5 g/U across 14 meal runs against 6 programmed.'),
+            },
+            frozenset(), frozenset(),
+            frozenset({('meals', '2024-05-02 09:00:00', 'near_miss'), ('meals', '2024-05-04 09:00:00', 'near_miss'), ('meals', '2024-05-06 09:00:00', 'near_miss'), ('meals', '2024-05-08 09:00:00', 'near_miss')}),
+            frozenset({'Carb ratio 00:00 to 12:00 · lower', 'Carb ratio 12:00 to 24:00 · lower', 'Highs after meals', 'Highs after treating lows', 'Lows after correcting highs', 'Lows after meals', 'meals-start-high'}),
+            outcome_patterns=({'key': 'highs_after_meals', 'title': 'Highs after meals', 'subject': 'pattern:highs_after_meals', 'members': [{'subject': 'setting:carb_ratio', 'kind': 'setting', 'k': 18, 'price': 49, 'admitted': True, 'producer': 'tuning_levers', 'lo': None, 'hi': None, 'seriousness': None, 'seriousness_segments': [], 'action': 'carb_ratio'}], 'rate_levers': ['habit:carb_undercount', 'habit:late_bolus'], 'n': 4, 'k': 0, 'rate': 0.0, 'wilson': {'lo': 0.0, 'hi': 0.2911}, 'wide': False, 'rate_producer': 'exposures', 'readiness': {'count': 4, 'gate': 12, 'verdict': 'withheld'}, 'settled_price': 49, 'admission_route': 'setting_staging', 'collapse': 'remain_pattern', 'action': 'carb_ratio', 'seriousness': None, 'member_set_fingerprint': '13141e472c40a768'}, {'key': 'lows_after_meals', 'title': 'Lows after meals', 'subject': 'pattern:lows_after_meals', 'members': [{'subject': 'setting:carb_ratio', 'kind': 'setting', 'k': 18, 'price': 49, 'admitted': False, 'producer': 'tuning_levers', 'lo': None, 'hi': None, 'seriousness': None, 'seriousness_segments': [], 'action': None}], 'rate_levers': ['habit:meal_over_delivery'], 'n': 4, 'k': 0, 'rate': 0.0, 'wilson': {'lo': 0.0, 'hi': 0.2911}, 'wide': False, 'rate_producer': 'exposures', 'readiness': {'count': 4, 'gate': 12, 'verdict': 'withheld'}, 'settled_price': 0, 'admission_route': 'none', 'collapse': 'remain_pattern', 'action': None, 'seriousness': None, 'member_set_fingerprint': '13141e472c40a768'}, {'key': 'highs_after_treating_lows', 'title': 'Highs after treating lows', 'subject': 'pattern:highs_after_treating_lows', 'members': [], 'rate_levers': ['habit:over_treated_low'], 'n': 0, 'k': 0, 'rate': None, 'wilson': None, 'wide': True, 'rate_producer': 'exposures', 'readiness': {'count': 0, 'gate': 12, 'verdict': 'withheld'}, 'settled_price': 0, 'admission_route': 'none', 'collapse': 'remain_pattern', 'action': None, 'seriousness': None, 'member_set_fingerprint': 'e3b0c44298fc1c14'}, {'key': 'lows_after_correcting_highs', 'title': 'Lows after correcting highs', 'subject': 'pattern:lows_after_correcting_highs', 'members': [], 'rate_levers': ['habit:correction_stacking', 'habit:correction_on_iob'], 'n': 0, 'k': 0, 'rate': None, 'wilson': None, 'wide': True, 'rate_producer': 'exposures', 'readiness': {'count': 0, 'gate': 12, 'verdict': 'withheld'}, 'settled_price': 0, 'admission_route': 'none', 'collapse': 'remain_pattern', 'action': None, 'seriousness': None, 'member_set_fingerprint': 'e3b0c44298fc1c14'}),
+        ),
+        IC_SOURCE_SPAN_DAYS,
     ),
 )

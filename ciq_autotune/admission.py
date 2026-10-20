@@ -6,6 +6,7 @@ from typing import List, Protocol, Tuple
 
 from .analyzers.ic import IcConfig
 from .result import IcBlock
+from .settings import IsfSource
 
 
 class IcBlockEstimator(Protocol):
@@ -13,7 +14,7 @@ class IcBlockEstimator(Protocol):
 
     def __call__(
         self, bolus_events, ic_segments, *, config=IcConfig(), cgm_readings=None,
-        isf_effective=None, carb_entries=None, basal_events=None, harm_config=None,
+        isf=None, carb_entries=None, basal_events=None, harm_config=None,
         harm_lows=None, analysis_start=None, prior_action_observed_from=None,
         observed_days=None, snapshots=None, analysis_end=None, history_catalog=None,
         history_harm_lows=None,
@@ -42,7 +43,7 @@ def _blocks(estimator: IcBlockEstimator, truth_set: dict) -> Tuple[List[IcBlock]
     return call_ic_block_estimator(
         estimator, truth_set["events"], truth_set["segments"], config=IcConfig(),
         cgm_readings=truth_set["cgm_readings"],
-        isf_effective=truth_set["isf_effective"], carb_entries=[], basal_events=[],
+        isf=IsfSource.from_snapshots(truth_set["snapshots"]), carb_entries=[], basal_events=[],
         harm_config=None, harm_lows=None,
         analysis_start=truth_set["analysis_start"],
         prior_action_observed_from=truth_set["prior_action_observed_from"],

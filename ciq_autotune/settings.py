@@ -29,6 +29,7 @@ scale, so the ÷1000 conversion is applied unconditionally.
 
 from __future__ import annotations
 
+import bisect
 import statistics
 from dataclasses import dataclass
 from datetime import datetime
@@ -342,6 +343,7 @@ def diff_profiles(old: ProfileSettings, new: ProfileSettings) -> List[ParameterD
 # "Which single ISF / I:C is in force over this window?" One place, called by
 # both orchestrators (analyze.py, scenario/engine.py). Pure and store-free: it
 # reads the latest snapshot's active schedule and the ISF analyzer's rows.
+# Converting one meal's glucose miss reads ``IsfSource`` instead (ADR 563).
 
 
 def active_schedule(
@@ -355,6 +357,55 @@ def active_schedule(
     if not snaps:
         return []
     return [(s, float(v)) for s, v in snaps[-1].settings.active_schedule(parameter)]
+
+
+class IsfSource:
+    """Which ISF converts one meal's glucose miss into insulin units (ADR 563).
+
+    :meth:`at` answers for a meal bolus, by the first rule that gives a positive
+    value: the ISF the pump stamped on that bolus; else the programmed ISF segment
+    in force at its time of day in the latest snapshot captured at or before it;
+    else ``None``, and the meal is not converted. A stamp or segment that is not
+    positive reads as none: both are durable recorded data.
+
+    :meth:`from_snapshots` builds that rule; :meth:`fixed` answers one captured
+    value for every bolus, for a retained comparison that converted with it.
+    """
+
+    def __init__(self, snaps: Sequence[Snapshot] = (), value: Optional[float] = None):
+        self._snaps = sorted(snaps, key=lambda s: s.captured_at)
+        self._captured = [s.captured_at for s in self._snaps]
+        self._value = value
+
+    @classmethod
+    def from_snapshots(cls, snaps: Sequence[Snapshot]) -> "IsfSource":
+        return cls(snaps)
+
+    @classmethod
+    def fixed(cls, value: float) -> "IsfSource":
+        return cls(value=float(value))
+
+    def at(self, bolus) -> Optional[float]:
+        """The ISF (mg/dL per U) that converts ``bolus``'s meal, or ``None``."""
+        if self._value is not None:
+            return _positive(self._value)
+        stamped = _positive(bolus.isf)
+        if stamped is not None:
+            return stamped
+        i = bisect.bisect_right(self._captured, bolus.t)
+        if i == 0:
+            return None
+        schedule = sorted(self._snaps[i - 1].settings.active_schedule("isf"))
+        if not schedule:
+            return None
+        tod = bolus.t.hour * 60 + bolus.t.minute
+        starts = [start for start, _ in schedule]
+        # A schedule wraps, so a time before the first segment takes the last one.
+        return _positive(schedule[bisect.bisect_right(starts, tod) - 1][1])
+
+
+def _positive(value) -> Optional[float]:
+    return float(value) if value is not None and value > 0 else None
 
 
 def effective_isf(isf_rows: Sequence, snaps: List[Snapshot]) -> Optional[float]:

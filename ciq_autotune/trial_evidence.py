@@ -329,6 +329,8 @@ def comparison_evidence(*, parameter, slot, block, changed_at, before, after,
     Inputs retain detection context; every returned reading and plotted point is
     clipped to the half-open period. Meal windows form a union, never a weighted
     concatenation. Rest evidence keeps its detected-window/fasting-step identity.
+    ``isf`` is the :class:`~ciq_autotune.settings.IsfSource` a carb-ratio
+    comparison converts its meal runs with.
     """
     from .analyzers.isf import IsfConfig, fasting_steps
     from .event_comparison import project_cohort
@@ -585,7 +587,7 @@ def _comparison_readiness(parameter, slot, block, start, end, cgm, bolus, basal,
         schedule = active_schedule(snaps, "carb_ratio") if snaps else []
         blocks, _ = analyze_ic_blocks_fuzzy(
             list(bolus), schedule, cgm_readings=list(cgm), basal_events=list(basal),
-            carb_entries=list(carbs), isf_effective=isf, snapshots=snapshots or None,
+            carb_entries=list(carbs), isf=isf, snapshots=snapshots or None,
             analysis_start=start, analysis_end=end-timedelta(microseconds=1),
         ) if schedule else ([], 0)
         matches = [b for b in blocks if block is not None and b.start_min == block[0]

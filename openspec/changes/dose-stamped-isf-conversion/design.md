@@ -125,3 +125,19 @@ verdict moves. Slice 1 runs the analysis before and after its change on the
 operator's read-only snapshot and adds here only the count of carb-ratio blocks
 and segments whose staging verdict or direction changed, by direction, with no
 values.
+
+Slice 1, measured (#588). On the operator's read-only snapshot, the analysis
+before and after the change serves 10 carb-ratio segments and 2 blocks. **0
+segments and 0 blocks changed staging verdict or direction**, in either
+direction: all 12 are unstaged with no direction both before and after. The
+estimate itself moved on every row that serves one (4 segments and both
+blocks).
+
+On the synthetic stores, slice 1 moves one generated fixture,
+`frontend/__fixtures__/analysis.json`, whose carb-ratio segment meals gain their
+glucose outcome (the zero-estimate defect); none of its staging verdicts moves.
+The UI fixtures, the findings-projection and missed-meal fixtures and the QA
+database are unchanged. **0 existing QA cases were re-copied**: every
+`test_case_*` expectation, `behavioral-carb-undercount`'s included, holds
+unchanged, since its stamp of 32 reaches only carb undercount, which slice 2
+moves. One new QA case, `ic-dose-stamped-isf`, holds the per-meal states.

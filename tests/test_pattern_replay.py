@@ -90,6 +90,7 @@ EXPECTED_ACTIVE_KINDS = {
     "delivery-basal-across-midnight": "trial",
     "delivery-basal-whole-day": "trial",
     "behavioral-over-treated-near-low": None,
+    "ic-dose-stamped-isf": None,
 }
 
 

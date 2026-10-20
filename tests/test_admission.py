@@ -7,6 +7,7 @@ from ciq_autotune.admission import run_synthetic_bar
 from ciq_autotune.analyze import analyze
 from ciq_autotune.analyzers.ic import analyze_ic_blocks
 from ciq_autotune.store import Store
+from ciq_autotune.settings import IsfSource
 from scripts.gen_estimator_truth import known_ratio_sets, placebo_sets, write_set_to_store
 
 
@@ -138,7 +139,7 @@ class AdmissionBarTest(unittest.TestCase):
         direct, _ = analyze_ic_blocks(
             truth_set["events"], truth_set["segments"],
             cgm_readings=truth_set["cgm_readings"],
-            isf_effective=truth_set["isf_effective"], observed_days=truth_set["observed_days"],
+            isf=IsfSource.from_snapshots(truth_set["snapshots"]), observed_days=truth_set["observed_days"],
             analysis_start=truth_set["analysis_start"], analysis_end=truth_set["analysis_end"],
             prior_action_observed_from=truth_set["prior_action_observed_from"],
             snapshots=truth_set["snapshots"], history_catalog=[],

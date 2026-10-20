@@ -8,9 +8,11 @@ diffing successive append-only snapshots per IDP.
 """
 
 import unittest
-from datetime import datetime
+from datetime import datetime, timedelta
 
+from ciq_autotune.events import BolusEvent
 from ciq_autotune.settings import (
+    IsfSource,
     PumpSettings,
     Snapshot,
     active_schedule,
@@ -222,6 +224,68 @@ class EffectiveSettingsTest(unittest.TestCase):
 
     def test_programmed_ic_range_none_without_snapshot(self):
         self.assertIsNone(programmed_ic_range([]))
+
+
+class IsfSourceTest(unittest.TestCase):
+    """Which ISF converts a meal's glucose miss into insulin units (ADR 563)."""
+
+    @staticmethod
+    def _snap(day, isf_by_segment):
+        # Segments at 00:00, 05:00, 09:00 and 12:00, each with its own ISF.
+        raw = _raw()
+        segments = raw["profiles"]["profile"][0]["tDependentSegs"]
+        for segment, isf in zip(segments, isf_by_segment):
+            segment["isf"] = isf
+        return Snapshot(captured_at=datetime(2026, 6, day, 9, 0, 0),
+                        settings=parse_pump_settings(raw))
+
+    @staticmethod
+    def _bolus(day, hour, minute=0, isf=None):
+        return BolusEvent(t=datetime(2026, 6, day, hour, minute), insulin=4.0,
+                          carbs=40.0, isf=isf)
+
+    def test_a_stamp_wins_over_the_programmed_segment(self):
+        source = IsfSource.from_snapshots([self._snap(1, (30, 35, 40, 45))])
+        self.assertEqual(source.at(self._bolus(2, 10, isf=52.0)), 52.0)
+
+    def test_a_non_positive_stamp_reads_as_no_stamp(self):
+        source = IsfSource.from_snapshots([self._snap(1, (30, 35, 40, 45))])
+        self.assertEqual(source.at(self._bolus(2, 10, isf=0.0)), 40.0)
+        self.assertEqual(source.at(self._bolus(2, 10, isf=-5.0)), 40.0)
+
+    def test_an_unstamped_bolus_takes_the_segment_in_force_at_its_time_of_day(self):
+        source = IsfSource.from_snapshots([self._snap(1, (30, 35, 40, 45))])
+        self.assertEqual(source.at(self._bolus(2, 8, 59)), 35.0)
+        self.assertEqual(source.at(self._bolus(2, 9, 0)), 40.0)
+        self.assertEqual(source.at(self._bolus(2, 11, 59)), 40.0)
+        self.assertEqual(source.at(self._bolus(2, 12, 0)), 45.0)
+        self.assertEqual(source.at(self._bolus(2, 0, 0)), 30.0)
+
+    def test_an_unstamped_bolus_reads_the_latest_snapshot_at_or_before_it(self):
+        source = IsfSource.from_snapshots([
+            self._snap(3, (60, 60, 60, 60)),
+            self._snap(1, (30, 35, 40, 45)),
+        ])
+        # Before the day-3 capture, the day-1 schedule holds; a later one is ignored.
+        self.assertEqual(source.at(self._bolus(2, 10)), 40.0)
+        self.assertEqual(source.at(self._bolus(3, 8, 59)), 35.0)
+        # The day-3 capture holds from its own instant on.
+        before = BolusEvent(t=datetime(2026, 6, 3, 9, 0) - timedelta(seconds=1),
+                            insulin=4.0, carbs=40.0)
+        self.assertEqual(source.at(before), 35.0)
+        self.assertEqual(source.at(self._bolus(3, 9, 0)), 60.0)
+
+    def test_no_stamp_and_no_snapshot_as_of_the_bolus_gives_none(self):
+        source = IsfSource.from_snapshots([self._snap(2, (30, 35, 40, 45))])
+        self.assertIsNone(source.at(self._bolus(1, 10)))
+        self.assertIsNone(IsfSource.from_snapshots([]).at(self._bolus(1, 10)))
+        # A stamp still converts before the first capture.
+        self.assertEqual(source.at(self._bolus(1, 10, isf=38.0)), 38.0)
+
+    def test_fixed_returns_its_value_for_every_bolus(self):
+        source = IsfSource.fixed(42.0)
+        self.assertEqual(source.at(self._bolus(1, 10)), 42.0)
+        self.assertEqual(source.at(self._bolus(1, 10, isf=55.0)), 42.0)
 
 
 if __name__ == "__main__":

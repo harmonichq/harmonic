@@ -42,7 +42,7 @@
 ## 7. The lock docs and the record
 
 - [x] 7.1 `docs/design/recommendations-redesign.md`: the sections its 2026-10-20 amendments say follow: §1.3 (the Queue's just-focused bar), §1.4 (Snooze beneath Focus), §1.5 (no Pin row; Focus reworded per ADR 594), §4.2 PatternCard, HabitCard and TransientBar. No other section
-- [ ] 7.2 `docs/design/drill-down.md`: Served vocabulary names the served fields #593 added in place of the engine gaps; after Connor approves the stories on the pull request, a dated `Amendments` line quoting him and the `Approved screens` line updated for the re-approved Open and Pinned and the newly approved stories. Nothing else
+- [x] 7.2 `docs/design/drill-down.md`: Served vocabulary names the served fields #593 added in place of the engine gaps; after Connor approves the stories on the pull request, a dated `Amendments` line quoting him and the `Approved screens` line updated for the re-approved Open and Pinned and the newly approved stories. Nothing else
 - [x] 7.3 `openspec/changes/recommendations-redesign/specs/surfaces/spec.md`: the Queue requirement's Pin wording becomes Focus, nothing else
 - [x] 7.4 `README.md`'s Pin sentence and AGENTS.md's contract-test paragraph (what `pattern-meal-two-causes` adds)
 - [x] 7.5 Search the whole tree for `\bPin\b` once more and confirm every remaining hit is history or an internal identifier (ADR 594)
@@ -50,4 +50,4 @@
 ## 8. Verify and evidence
 
 - [x] 8.1 Run each complete suite of the pull-request gate once, on the commit that will be pushed
-- [ ] 8.2 Attach to the pull request, per ui-craft `revise` §4: before/after pairs from the same QA stores for every story in 5.1–5.3 and the live QA serve's Queue at 390x844 and 1440x900; the must-survive lines of both locks each with its render or live check; the precheck output; the base SHA, the quoted safe-start command and its data source; every Amendments line
+- [x] 8.2 Attach to the pull request, per ui-craft `revise` §4: before/after pairs from the same QA stores for every story in 5.1–5.3 and the live QA serve's Queue at 390x844 and 1440x900; the must-survive lines of both locks each with its render or live check; the precheck output; the base SHA, the quoted safe-start command and its data source; every Amendments line

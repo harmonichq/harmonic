@@ -121,13 +121,13 @@ Anything under `Open` is undecided; nothing there is a requirement.
 
 ## Approved screens
 - Drill-down at 390x844 — Storybook `Screens/DrillDown`, Open and Pinned — locked 2026-10-20 — build ticket #591.
-  Both shots draw the Pattern's pooled trace on every cause card, a stand-in
-  until the engine serves per-cause traces; the build re-approves the screen
-  against the served ones. Not rendered, approved by this page's text: the
-  Queue card with no button and the "›" on its chart; its "Focus" over the
-  cause's name once pinned; the "Focus started" bar; loading and Not saved on
-  a cause card (the Queue's own states). The build (#591) renders each as a
-  story and the operator approves them there.
+  Re-approved 2026-10-20 against the engine's served per-cause traces (#593),
+  on PR #605 (#594), with the stories that render what this page first
+  approved by text: the Queue card with no button and the "›" on its chart;
+  its "Focus" over the cause's name once pinned; the "Focus started" bar on a
+  cause card and on a habit card; a cause card loading and Not saved; a cause
+  that cannot be focused; the snooze bar; no Focus while a Trial is watched;
+  and the drill-down in the desktop pane at 1440x900.
 
 ## Amendments
 - 2026-10-20 Connor: the phone drill-down is a pushed sub-screen scrolling as
@@ -189,3 +189,7 @@ Anything under `Open` is undecided; nothing there is a requirement.
   bar in States), the mock's cause order (3) and its "Focus" label (1) are
   applied; the pooled trace (2) stays a stand-in the build replaces; 12 and
   13 are out of scope.
+- 2026-10-20 Connor, on the build's stories (PR #605), after asking why some
+  cause cards draw single traces rather than the band (a cause of eight or
+  fewer episodes draws each one, as the TraceChart does): "yeah looks good
+  then!"

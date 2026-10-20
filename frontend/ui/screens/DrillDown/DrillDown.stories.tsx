@@ -17,7 +17,7 @@ import { QueueScreen, type QueueScreenProps } from '../Queue/QueueScreen';
 //   Focus on any card while it is watched.
 // - Desktop: the detail pane, its cards in a grid, the list beside it.
 // - Loading: a card skeleton per cause it opened with.
-// - Not saved: a cause's Focus the engine does not save, then Retry.
+// - Not saved: a cause's Focus the engine does not save; then Retry saves it.
 // - Focus started: the bar, whose Changes opens that tab.
 // - Unpinnable: a cause the engine will not focus has no button, and nothing
 //   says why; its head keeps the button's height.
@@ -129,17 +129,23 @@ export const Loading: Story = {
 };
 
 /** A cause's Focus shows its pill at once; not saved, the card is back with
- *  Focus, and the bar reads Not saved with Retry, which saves it. */
-export const NotSaved: Story = {
-  ...opened('drill_down', 'phone', { writes: {
-    snooze: failsOnce(undefined), restore: failsOnce(undefined), pin: failsOnce(undefined),
-    done: failsOnce(undefined), undoDone: failsOnce(undefined) } }),
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    const first = cards(canvasElement)[0];
-    await userEvent.click(within(first).getByRole('button', { name: 'Focus' }));
-    await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent('Not saved'));
-    await expect(within(first).getByRole('button', { name: 'Focus' })).toBeInTheDocument();
+ *  Focus, and the bar reads Not saved with Retry. Retry then saves it. */
+const failOnce = () => opened('drill_down', 'phone', { writes: {
+  snooze: failsOnce(undefined), restore: failsOnce(undefined), pin: failsOnce(undefined),
+  done: failsOnce(undefined), undoDone: failsOnce(undefined) } });
+const notSaved: Story['play'] = async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  const first = cards(canvasElement)[0];
+  await userEvent.click(within(first).getByRole('button', { name: 'Focus' }));
+  await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent('Not saved'));
+  await expect(within(first).getByRole('button', { name: 'Focus' })).toBeInTheDocument();
+};
+export const NotSaved: Story = { ...failOnce(), play: notSaved };
+export const NotSavedRetry: Story = {
+  ...failOnce(),
+  play: async (context) => {
+    await notSaved(context);
+    const canvas = within(context.canvasElement);
     await userEvent.click(canvas.getByRole('button', { name: 'Retry' }));
     await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent('Focus started'));
   },

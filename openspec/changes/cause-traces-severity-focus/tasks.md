@@ -2,7 +2,7 @@
 
 - [x] 1.1 Per AGENTS.md "Maintaining QA coverage eras", add `QaCase('pattern-meal-two-causes', …)` to `scripts/qa_e2e_cases.py` with a recipe built from the existing materializers' idiom (manufactured CGM and boluses only, dates before 2025-07-01, no verdict, attribution or state written): at least twelve plain meals so Highs after meals is `ready`; three meals whose late bolus is followed by a long high under Carb undercount's 200 runaway bar (Late bolus claims them); four runaway meals Carb undercount claims, each less severe than a late-bolus meal, so roster order (Carb undercount, Late bolus), count order (4, 3) and severity order (Late bolus first) differ. Both habits must be admitted members of Highs after meals, Carb undercount first in its `members`. The triage spike reached that shape on a 30-day behavioral background with fourteen flat 07:40 meals (days 2–15), three late-bolus meals whose 11:40 trace climbs to 195 and holds 198 for two hours before falling (days 16–18), and four of the carb-undercount recipe's runaway traces at 30 g / 6 U (days 23–26): Late bolus 3 meals at 2285 each, Carb undercount 4 at 1200 each, both admitted members, the Pattern `ready` on 21 meals
 - [x] 1.2 Materialize it, run `execute_case`, and copy its complete dump into a literal `QaExpectation`; run the generated `test_case_pattern_meal_two_causes`
-- [ ] 1.3 Re-measure the five budgets without raising a limit: showcase size ≤25 MiB, showcase drift ≤30 s, focused QA suite ≤150 s, slowest generated case ≤30 s, full pytest ≤2.5× the recorded chunk-1 baseline. A breach stops the work without changing the committed showcase
+- [x] 1.3 Re-measure the five budgets without raising a limit: showcase size ≤25 MiB, showcase drift ≤30 s, focused QA suite ≤150 s, slowest generated case ≤30 s, full pytest ≤2.5× the recorded chunk-1 baseline. A breach stops the work without changing the committed showcase
 
 ## 2. Fail first
 
@@ -29,4 +29,4 @@
 
 ## 5. Verify
 
-- [ ] 5.1 Run each complete suite of the pull-request gate once, on the commit that will be pushed
+- [x] 5.1 Run each complete suite of the pull-request gate once, on the commit that will be pushed

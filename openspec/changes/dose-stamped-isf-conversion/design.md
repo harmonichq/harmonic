@@ -98,8 +98,8 @@ Every committed synthetic store programs a flat ISF. The UI wearer
 snapshot) and the admission truth sets stamp their boluses, so there the
 dose-stamped value equals the programmed median. The QA showcase's 32 meal
 boluses are unstamped and none precedes its first snapshot, so they take rule 2,
-the flat programmed 40. Every QA case store (all 75 emitted) programs a flat 40
-and stamps its meals, with two exceptions: `behavioral-precedence` has two
+the flat programmed 40. Every QA case store with meals programs a flat ISF (40,
+or 50 in `ic-block-evidence`) and stamps its meals with it, with two exceptions: `behavioral-precedence` has two
 unstamped meals, both after its first snapshot (rule 2), and
 `behavioral-carb-undercount` stamps 32 against a programmed 40, so it moves under
 rule 1. No QA store has an unstamped meal before its first snapshot. The

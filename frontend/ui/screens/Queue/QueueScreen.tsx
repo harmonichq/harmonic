@@ -107,8 +107,9 @@ export type QueueScreenProps = {
 
 type View = 'queue' | 'snoozed' | 'causes';
 
-/** Which drill-down is open: Snoozed, or a Pattern's causes. */
-export type DrillDown = { view: Exclude<View, 'queue'>; subject?: string };
+/** Which drill-down is open: Snoozed, or a Pattern's causes, with the title and
+ *  the count of causes it opened with, which it draws while its answers load. */
+export type DrillDown = { view: Exclude<View, 'queue'>; subject?: string; title?: string; causes?: number };
 
 /** The app's one router, for a drill-down (ADR 594): `open` pushes its history
  *  entry, marked with which drill-down it is, `close` goes Back through it, and
@@ -215,12 +216,16 @@ export function QueueScreen({
     return key ? { subject: subject!, title: ranked ? pattern(shown, key).title : '',
       causes: ranked ? causes(shown, key).length : 0 } : undefined;
   };
-  const [drill, setDrill] = useState(() => (initialView === 'causes' ? opening(returnTo?.subject ?? open) : undefined));
+  // A drill-down returned to from history opens as it was, before its answers land.
+  const [drill, setDrill] = useState(() => (initialView !== 'causes' ? undefined
+    : returnTo ? { subject: returnTo.subject!, title: returnTo.title ?? '', causes: returnTo.causes ?? 0 }
+      : opening(open)));
   const router = nav?.drillDown;
   const go = (to: View, subject?: string) => {
     setExpanded(undefined);
-    if (to === 'causes') setDrill(opening(subject));
-    if (to !== 'queue') router?.open(to === 'causes' ? { view: to, subject } : { view: to });
+    const opened = to === 'causes' ? opening(subject) : undefined;
+    if (opened) setDrill(opened);
+    if (to !== 'queue') router?.open(opened ? { view: 'causes', ...opened } : { view: to as 'snoozed' });
     setView(to);
   };
   /** Back to the Queue: through the router's history entry, whose Back closes the drill-down. */
@@ -337,6 +342,11 @@ export function QueueScreen({
   // The drill-down's Pattern, while the Queue still ranks it, and its causes.
   const drilled = view === 'causes' ? items.find((i) => i.subject === drill?.subject) : undefined;
   const causeView = view === 'causes' && (drilled !== undefined || !ready);
+  // A drill-down whose Pattern the Queue no longer ranks (returned to from
+  // history, or the answers moved under it) leaves through the router, so the
+  // screen and the history agree and the next Back is not a dead step.
+  const orphaned = view === 'causes' && ready && drilled === undefined;
+  useEffect(() => { if (orphaned) leave(); }, [orphaned]);
   const drillTitle = drilled?.data.title ?? drill?.title ?? '';
   const backTo = { label: 'Queue', onBack: leave };
   const queueHeader = state === 'unavailable' || (state === 'stale' && view !== 'snoozed')

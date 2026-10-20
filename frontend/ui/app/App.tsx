@@ -28,7 +28,7 @@
 // returns the Queue to its list. A Back from another tab onto that entry (after
 // "Focus started" → Changes) opens the Queue on that drill-down as it was.
 import { useCallback, useEffect, useState } from 'react';
-import { parseRoute, pushDrillDown, subscribeRoute, writeRoute } from '../../tab-routing.js';
+import { landRoute, parseRoute, pushDrillDown, subscribeRoute, writeRoute } from '../../tab-routing.js';
 import type { NavItem } from '../components/NavBar/NavBar';
 import { ChangesScreen } from '../screens/Changes/ChangesScreen';
 import { DayScreen } from '../screens/Day/DayScreen';
@@ -55,6 +55,9 @@ const memory = createMemory({ storage: browserStorage(), build: import.meta.url,
 const live = createLive({ client, glossary, memory });
 const { changesWrites, dayWrites, queueWrites, settingsWrites } = live;
 serve(live.answers as unknown as Answers);
+
+// A reload lands on its tab, never a drill-down: the entry the browser kept is the tab's own.
+landRoute();
 
 /** The router's drill-down entry, which the Queue opens and returns from. */
 const DRILL_DOWN = {

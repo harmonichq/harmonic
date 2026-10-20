@@ -32,6 +32,12 @@ export function writeRoute(tab, { location = window.location, history = window.h
   return address;
 }
 
+/** On load: a reload lands on its tab, never a drill-down, so a drill-down's entry the browser kept
+ *  becomes the tab's own, and a later drill-down's Back returns to it in one step. */
+export function landRoute({ location = window.location, history = window.history } = {}) {
+  if (history.state?.drillDown) history.replaceState(null, '', `${location.pathname}${location.search}${location.hash}`);
+}
+
 /** Open a drill-down: one history entry at the current address, marked with which drill-down
  *  it is (a plain value, such as its view and subject), so a Back onto it from another tab can
  *  return to it. */

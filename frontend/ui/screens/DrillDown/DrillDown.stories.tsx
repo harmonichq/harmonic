@@ -28,7 +28,9 @@ import { QueueScreen, type QueueScreenProps } from '../Queue/QueueScreen';
 //   says why; its head keeps the button's height.
 // - Back: "‹ Queue" and, on desktop, Escape return with the Pattern open.
 // - Returned to: a Back from another tab opens the drill-down as it was, and
-//   "‹ Queue" then leaves it through the router.
+//   "‹ Queue" then leaves it through the router; returned to while its answers
+//   load, its title and a skeleton per cause it opened with; returned to after
+//   its Pattern left the Queue, it leaves at once, so no Back is a dead step.
 const meta: Meta<typeof QueueScreen> = {
   title: 'Screens/DrillDown',
   component: QueueScreen,
@@ -258,19 +260,28 @@ const backPlay = (layout: 'phone' | 'desktop'): Story['play'] => async ({ canvas
 export const Back: Story = { ...opened('drill_down', 'phone'), play: backPlay('phone') };
 export const BackDesktop: Story = { ...opened('drill_down', 'desktop'), play: backPlay('desktop') };
 
+/** A router whose Back reports the return, as the app's does (tab-routing.js). */
+const router = () => {
+  const listeners: (() => void)[] = [];
+  return {
+    open: fn(),
+    close: fn(() => listeners.forEach((listener) => listener())),
+    onReturn: (listener: () => void) => {
+      listeners.push(listener);
+      return () => { listeners.splice(listeners.indexOf(listener), 1); };
+    },
+  };
+};
+const RETURN = patternStore('drill_down');
+
 /** Returned to: a Back from Changes onto the drill-down's history entry opens
  *  it as it was; "‹ Queue" then goes Back through the router, whose return
  *  shows the Queue with the Pattern open. */
-const listeners: (() => void)[] = [];
 export const ReturnedTo: Story = {
   args: {
-    layout: 'phone', store: patternStore('drill_down').store,
-    returnTo: { view: 'causes', subject: `pattern:${patternStore('drill_down').pattern}` },
-    nav: { drillDown: {
-      open: fn(),
-      close: fn(() => listeners.forEach((listener) => listener())),
-      onReturn: (listener) => { listeners.push(listener); return () => listeners.splice(listeners.indexOf(listener), 1); },
-    } },
+    layout: 'phone', store: RETURN.store,
+    returnTo: { view: 'causes', subject: `pattern:${RETURN.pattern}` },
+    nav: { drillDown: router() },
   },
   parameters: { frame: FRAMES.phone },
   play: async ({ canvasElement, args }) => {
@@ -282,5 +293,37 @@ export const ReturnedTo: Story = {
     await expect(args.nav!.drillDown!.open).not.toHaveBeenCalled();
     await waitFor(() => expect(cards(canvasElement)).toHaveLength(0));
     await expect(canvasElement.querySelector('.ui-pcard h2')!.textContent).toBe(title);
+  },
+};
+
+/** Returned to while its answers load: the title and a skeleton per cause it
+ *  opened with, which its history entry carries. */
+export const ReturnedToLoading: Story = {
+  args: {
+    layout: 'phone', store: RETURN.store, state: 'loading',
+    returnTo: { view: 'causes', subject: `pattern:${RETURN.pattern}`,
+      title: pattern(RETURN.store, RETURN.pattern).title, causes: causes(RETURN.store, RETURN.pattern).length },
+    nav: { drillDown: router() },
+  },
+  parameters: { frame: FRAMES.phone },
+  play: async ({ canvasElement, args }) => {
+    await expectTitlePrinted(canvasElement, args.returnTo!.title!);
+    await expect(canvasElement.querySelectorAll('.ui-queue__causes .ui-pcard--loading')).toHaveLength(args.returnTo!.causes!);
+  },
+};
+
+/** Returned to after its Pattern left the Queue: it leaves through the router at
+ *  once, and the Queue shows, so the next Back is not a dead step. */
+export const ReturnedToGone: Story = {
+  args: {
+    layout: 'phone', store: RETURN.store,
+    returnTo: { view: 'causes', subject: 'pattern:not_ranked', title: 'Gone', causes: 2 },
+    nav: { drillDown: router() },
+  },
+  parameters: { frame: FRAMES.phone },
+  play: async ({ canvasElement, args }) => {
+    await waitFor(() => expect(args.nav!.drillDown!.close).toHaveBeenCalledOnce());
+    await expect(cards(canvasElement)).toHaveLength(0);
+    await expect(canvasElement.querySelector('.ui-pcard h2')!.textContent).toBe(served({ ...args, open: `pattern:${RETURN.pattern}` }).title);
   },
 };

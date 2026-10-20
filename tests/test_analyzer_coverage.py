@@ -28,12 +28,11 @@ Coverage targets (at time of writing, 94 % → 100 % goal):
 
 ``ciq_autotune/analyze.py``
   * _settling: basal setting-epoch settling (line 259)
-  * _settling: ISF setting-epoch settling — no measurement yet (lines 266-268)
   * _settling: I:C setting-epoch settling — too few meals (lines 273-277)
   * _quality_notes: no settings snapshot note (line 304)
   * _quality_notes: pooling ON with pooled + diverged slots (lines 311-321)
   * _quality_notes: pooling ON, all pooled, none diverged (line 319 branch)
-  * _quality_notes: ISF/I:C setting changes do not emit basal measurement-cut notes (line 327)
+  * _quality_notes: I:C setting changes do not emit basal measurement-cut notes (line 327)
 """
 
 import unittest
@@ -511,7 +510,6 @@ class SettlingBasalTest(unittest.TestCase):
         cfg = ModelConfig()
         b_ep = Epoch("basal_rate", start=datetime(2026, 6, 2, 0, 0, 0),
                      unverified_before=None)
-        isf_ep = Epoch("isf", None, None)
         ic_ep = Epoch("carb_ratio", None, None)
         # One cut slot (slot 0) with 1 clean day.
         slot_cuts = {0: datetime(2026, 6, 2, 0, 0, 0)}
@@ -520,8 +518,8 @@ class SettlingBasalTest(unittest.TestCase):
                          estimate=Estimate(0.8, 0.7, 0.9, 1, 0.8, "bootstrap-median"),
                          recommended=None, annotation="", days=1)
         ]
-        settling = _settling(b_ep, isf_ep, ic_ep,
-                             basal_rows=basal_rows, isf_rows=[], ic_runs=0,
+        settling = _settling(b_ep, ic_ep,
+                             basal_rows=basal_rows, ic_runs=0,
                              slot_cuts=slot_cuts, config=cfg)
         # Should produce one basal settling entry.
         basal_settling = [s for s in settling if s.parameter == "basal_rate"]
@@ -535,7 +533,6 @@ class SettlingBasalTest(unittest.TestCase):
         cfg = ModelConfig()
         b_ep = Epoch("basal_rate", start=datetime(2026, 6, 1, 0, 0, 0),
                      unverified_before=None)
-        isf_ep = Epoch("isf", None, None)
         ic_ep = Epoch("carb_ratio", None, None)
         slot_cuts = {0: datetime(2026, 6, 1, 0, 0, 0)}
         basal_rows = [
@@ -543,51 +540,10 @@ class SettlingBasalTest(unittest.TestCase):
                          estimate=Estimate(0.8, 0.7, 0.9, 5, 0.8, "bootstrap-median"),
                          recommended=None, annotation="", days=5)
         ]
-        settling = _settling(b_ep, isf_ep, ic_ep,
-                             basal_rows=basal_rows, isf_rows=[], ic_runs=0,
+        settling = _settling(b_ep, ic_ep,
+                             basal_rows=basal_rows, ic_runs=0,
                              slot_cuts=slot_cuts, config=cfg)
         self.assertFalse([s for s in settling if s.parameter == "basal_rate"])
-
-
-class SettlingIsfTest(unittest.TestCase):
-    """_settling emits an ISF Settling when the ISF setting epoch is recent and no estimate yet (lines 266-268)."""
-
-    def test_isf_settling_when_no_estimate(self):
-        cfg = ModelConfig()
-        b_ep = Epoch("basal_rate", None, None)
-        isf_ep = Epoch("isf", start=datetime(2026, 6, 1, 0, 0, 0),
-                        unverified_before=None)
-        ic_ep = Epoch("carb_ratio", None, None)
-        # ISF rows with no estimate (value=None).
-        isf_rows = [SegmentEstimate(
-            start_min=0, label="Fasting", parameter="isf",
-            current=36.0,
-            estimate=Estimate(None, None, None, 0, 0.8, "none"),
-            recommended=None, annotation="not enough data",
-        )]
-        settling = _settling(b_ep, isf_ep, ic_ep,
-                             basal_rows=[], isf_rows=isf_rows, ic_runs=0,
-                             slot_cuts={}, config=cfg)
-        isf_settling = [s for s in settling if s.parameter == "isf"]
-        self.assertEqual(len(isf_settling), 1)
-        self.assertIsNone(isf_settling[0].have)
-
-    def test_isf_not_settling_when_estimate_exists(self):
-        cfg = ModelConfig()
-        b_ep = Epoch("basal_rate", None, None)
-        isf_ep = Epoch("isf", start=datetime(2026, 6, 1, 0, 0, 0),
-                        unverified_before=None)
-        ic_ep = Epoch("carb_ratio", None, None)
-        isf_rows = [SegmentEstimate(
-            start_min=0, label="Fasting", parameter="isf",
-            current=36.0,
-            estimate=Estimate(40.0, 35.0, 45.0, 200, 0.8, "bootstrap-ols-isf"),
-            recommended=None, annotation="confirms",
-        )]
-        settling = _settling(b_ep, isf_ep, ic_ep,
-                             basal_rows=[], isf_rows=isf_rows, ic_runs=0,
-                             slot_cuts={}, config=cfg)
-        self.assertFalse([s for s in settling if s.parameter == "isf"])
 
 
 class SettlingIcTest(unittest.TestCase):
@@ -596,12 +552,11 @@ class SettlingIcTest(unittest.TestCase):
     def test_too_few_runs_produces_ic_settling(self):
         cfg = ModelConfig()
         b_ep = Epoch("basal_rate", None, None)
-        isf_ep = Epoch("isf", None, None)
         ic_ep = Epoch("carb_ratio", start=datetime(2026, 6, 1, 0, 0, 0),
                       unverified_before=None)
         ic_runs = 1  # 1 closed run < min_runs(3)
-        settling = _settling(b_ep, isf_ep, ic_ep,
-                             basal_rows=[], isf_rows=[], ic_runs=ic_runs,
+        settling = _settling(b_ep, ic_ep,
+                             basal_rows=[], ic_runs=ic_runs,
                              slot_cuts={}, config=cfg)
         ic_settling = [s for s in settling if s.parameter == "carb_ratio"]
         self.assertEqual(len(ic_settling), 1)
@@ -610,12 +565,11 @@ class SettlingIcTest(unittest.TestCase):
     def test_enough_runs_no_ic_settling(self):
         cfg = ModelConfig()
         b_ep = Epoch("basal_rate", None, None)
-        isf_ep = Epoch("isf", None, None)
         ic_ep = Epoch("carb_ratio", start=datetime(2026, 6, 1, 0, 0, 0),
                       unverified_before=None)
         ic_runs = 5  # 5 >= min_runs(3)
-        settling = _settling(b_ep, isf_ep, ic_ep,
-                             basal_rows=[], isf_rows=[], ic_runs=ic_runs,
+        settling = _settling(b_ep, ic_ep,
+                             basal_rows=[], ic_runs=ic_runs,
                              slot_cuts={}, config=cfg)
         self.assertFalse([s for s in settling if s.parameter == "carb_ratio"])
 
@@ -689,12 +643,12 @@ class QualityNotesPoolingNoteTest(unittest.TestCase):
         # No "disagreed" mention when diverged == 0.
         self.assertIn("no edited slot's pre/post data disagreed", combined)
 
-    def test_isf_setting_epoch_with_start_emits_no_window_cut_note(self):
-        # ADR 0039: an ISF setting epoch with a detected start
+    def test_ic_setting_epoch_with_start_emits_no_window_cut_note(self):
+        # ADR 0039: an I:C setting epoch with a detected start
         # does NOT emit a "window cut" note — its measurement spans the full window
         # (setting-independent physiology); settling + the "verified only since"
         # caveat carry the recent-change signal instead. Only basal cuts.
-        epochs = [self._setting_epoch_info_with_start("isf")]
+        epochs = [self._setting_epoch_info_with_start("carb_ratio")]
         notes = _quality_notes(epochs, snaps=[])
         combined = " ".join(notes)
         self.assertNotIn("window cut to", combined)
@@ -724,12 +678,8 @@ class FacadeNoSnapshotTest(unittest.TestCase):
 
 
 class FacadeIsfNoWindowCutNoteTest(unittest.TestCase):
-    """ADR 0039: after an ISF settings change, analyze() detects the ISF setting epoch but
-    does NOT cut the ISF measurement window or emit a "window cut" note.
-
-    Two snapshots with a different ISF trigger ISF setting-epoch detection; its
-    start is populated (drives settling / caveat), yet the ISF measurement spans
-    the full requested window and no cut note is surfaced.
+    """ADR 0039 and ADR 564: an ISF settings change cuts no measurement window and
+    emits no "window cut" note, and the correction factor has no setting epoch.
     """
 
     def _seed_with_two_snapshots(self):
@@ -757,60 +707,14 @@ class FacadeIsfNoWindowCutNoteTest(unittest.TestCase):
                                        parse_pump_settings(_raw_settings(isf=35)))
         return store
 
-    def test_isf_change_detected_but_no_window_cut_note(self):
+    def test_isf_change_has_no_setting_epoch_and_no_window_cut_note(self):
         store = self._seed_with_two_snapshots()
         result = analyze(store, window_days=30,
                          now=datetime(2026, 6, 15, 0, 0, 0))
         store.close()
-        isf_ep = next(e for e in result.epochs if e.parameter == "isf")
-        self.assertIsNotNone(isf_ep.start)  # the ISF change is still detected
-        # …but the measurement is full-window and no cut note is emitted.
-        self.assertAlmostEqual(isf_ep.effective_days, 30, places=0)
+        self.assertNotIn("isf", {e.parameter for e in result.epochs})
         notes_text = " ".join(result.data_quality.notes)
         self.assertNotIn("window cut to", notes_text.lower())
-
-
-class FacadeSettlingEndToEndTest(unittest.TestCase):
-    """analyze() populates result.settling when a parameter is still collecting data.
-
-    After a very recent ISF change with no post-change fasting data, analyze()
-    should surface an ISF settling entry in result.settling.
-    """
-
-    def _seed_no_overnight(self):
-        # Day-only basal + CGM (12:00–18:00): no fasting steps, so ISF never measures.
-        store = Store.open(":memory:")
-        basal, cgm = [], []
-        for d in range(1, 8):
-            t0 = datetime(2026, 6, d, 12, 0, 0)  # noon start
-            for k in range(72):  # 6h daytime
-                tt = t0 + timedelta(minutes=5 * k)
-                basal.append({"seq_num": int(tt.strftime("%Y%m%d%H%M%S")), "time": tt.strftime("%Y-%m-%d %H:%M:%S"),
-                              "delivery_type": "algorithmDelivery",
-                              "duration_mins": 5,
-                              "basal_rate": 0.8,
-                              "profile_basal_rate": 0.6})
-                cgm.append({"EventDateTime": tt.strftime("%Y-%m-%dT%H:%M:%S"),
-                            "Readings (CGM / BGM)": 120,
-                            "Description": "EGV"})
-        store.upsert_basal(basal)
-        store.upsert_cgm(cgm)
-        # Two snapshots: ISF changed → ISF setting epoch detected.
-        store.upsert_settings_snapshot("2026-06-04 09:00:00",
-                                       parse_pump_settings(_raw_settings(isf=30)))
-        store.upsert_settings_snapshot("2026-06-07 09:00:00",
-                                       parse_pump_settings(_raw_settings(isf=35)))
-        return store
-
-    def test_isf_settling_appears_in_result(self):
-        store = self._seed_no_overnight()
-        result = analyze(store, window_days=30,
-                         now=datetime(2026, 6, 8, 0, 0, 0))
-        store.close()
-        isf_settling = [s for s in result.settling if s.parameter == "isf"]
-        self.assertTrue(len(isf_settling) >= 1,
-                        f"expected ISF settling, got {result.settling}")
-        self.assertIsNone(isf_settling[0].have)
 
 
 if __name__ == "__main__":

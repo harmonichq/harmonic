@@ -331,7 +331,7 @@ class AnalyzeBasalTest(unittest.TestCase):
         self.assertEqual(s.guidance["action"]["start_min"], s.slot * 30)
         self.assertEqual(s.guidance["action"]["end_min"], (s.slot + 1) * 30)
         lever = build_tuning_levers(
-            analyze_basal(basal, cgm, [], []), [], [], slot_minutes=30
+            analyze_basal(basal, cgm, [], []), [], slot_minutes=30
         )[0]
         self.assertGreater(lever.impact_u_day, 0.0)
 
@@ -416,7 +416,7 @@ class AnalyzeBasalTest(unittest.TestCase):
         self.assertIsNone(s.guidance["action"])
         self.assertIsNone(s.to_dict()["direction"])
         self.assertEqual(_deliverable_rate(s), s.current)
-        self.assertEqual(build_tuning_levers(slots, [], [], slot_minutes=30)[0]
+        self.assertEqual(build_tuning_levers(slots, [], slot_minutes=30)[0]
                          .impact_u_day, 0.0)
 
     def test_supported_raise_whose_range_excludes_current_stages(self):
@@ -432,7 +432,7 @@ class AnalyzeBasalTest(unittest.TestCase):
         self.assertEqual(s.status, Status.RAISE)
         self.assertEqual(s.guidance["action"]["direction"], "raise")
         self.assertEqual(_deliverable_rate(s), s.recommended)
-        self.assertGreater(build_tuning_levers(slots, [], [], slot_minutes=30)[0]
+        self.assertGreater(build_tuning_levers(slots, [], slot_minutes=30)[0]
                            .impact_u_day, 0.0)
 
     def test_range_bound_equal_to_current_is_inside(self):

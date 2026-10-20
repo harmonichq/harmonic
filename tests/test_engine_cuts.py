@@ -66,56 +66,21 @@ class EngineCutsTest(unittest.TestCase):
         _client, findings, _guidance = self._reads("showcase")
         self.assertEqual({p["key"] for p in findings["outcome_patterns"]}, _KEPT_PATTERNS)
 
-    @staticmethod
-    def _queued(guidance):
-        return [row["subject"] for row in guidance["candidates"]
-                if row["admitted"] and not row["preference"]["set_aside"]]
-
-    def test_correction_factor_is_queued_only_when_its_analyzer_asserts_the_move(self):
-        # ADR 504 amends ADR 499: an asserted ISF joins the Queue as its own Setting.
-        client, findings, guidance = self._reads("isf-strengthen")
-        analysis = client.get("/api/analyze").json()
-        self.assertTrue(analysis["isf"][0]["asserts_move"])
-        isf = next(row for row in guidance["candidates"] if row["subject"] == "setting:isf")
-        self.assertTrue(isf["action"])
-        self.assertTrue(isf["admitted"])
-        self.assertEqual([member["asserts_move"] for member in isf["members"]], [True])
-        for pattern in findings["outcome_patterns"]:
-            self.assertNotIn("setting:isf", {m["subject"] for m in pattern["members"]},
-                             pattern["key"])
-        queued = self._queued(guidance)
-        self.assertIn("setting:isf", queued)
-        self.assertNotIn("pattern:lows_after_correcting_highs", queued)
-        self.assertEqual(guidance["reasons"]["admission"],
-                         "The parameter owner staged 1 member verdict(s) with their own evidence.")
-
-    def test_correction_factor_the_analyzer_does_not_assert_stays_out_of_the_queue(self):
-        for name in ("isf-held", "isf-direction-only-weaken", "isf-range-hold"):
+    def test_correction_factor_is_never_a_candidate(self):
+        # ADR 564 rule 1: no correction-factor concern is served, whatever the
+        # fasting nights read, so none queues, leads, or rides on a Pattern.
+        for name in ("isf-strengthen", "isf-held", "isf-direction-only-weaken",
+                     "isf-range-hold"):
             with self.subTest(case=name):
-                client, _findings, guidance = self._reads(name)
-                self.assertFalse(client.get("/api/analyze").json()["isf"][0]["asserts_move"])
-                isf = next(row for row in guidance["candidates"]
-                           if row["subject"] == "setting:isf")
-                self.assertFalse(isf["admitted"])
-                self.assertNotIn("setting:isf", self._queued(guidance))
-                self.assertNotEqual((guidance["selected"] or {}).get("subject"), "setting:isf")
-
-    def test_correction_factor_with_no_programmed_value_stays_out_of_the_queue(self):
-        from ciq_autotune.api import create_app
-        tmp = tempfile.NamedTemporaryFile(suffix=".sqlite")
-        self.addCleanup(tmp.close)
-        with Store.open(tmp.name) as store:
-            materialize_case(store, next(case for case in QA_CASES if case.name == "isf-strengthen"))
-            # The same fasting nights, with no pump profile to read a programmed ISF from.
-            store.conn.execute("DELETE FROM profile_settings")
-            store.conn.commit()
-        client = TestClient(create_app(db_path=tmp.name, token="", enable_fetch_loop=False))
-        isf_row = client.get("/api/analyze").json()["isf"][0]
-        self.assertIsNone(isf_row["current"])
-        self.assertFalse(isf_row["asserts_move"])
-        guidance = client.get("/api/guidance").json()
-        self.assertNotIn("setting:isf", self._queued(guidance))
-        self.assertNotEqual((guidance["selected"] or {}).get("subject"), "setting:isf")
+                _client, findings, guidance = self._reads(name)
+                self.assertNotIn("setting:isf",
+                                 {row["subject"] for row in guidance["candidates"]})
+                self.assertNotEqual((guidance["selected"] or {}).get("subject"),
+                                    "setting:isf")
+                self.assertNotIn("isf", {row.get("parameter") for row in findings["rows"]})
+                for pattern in findings["outcome_patterns"]:
+                    self.assertNotIn("setting:isf",
+                                     {m["subject"] for m in pattern["members"]}, pattern["key"])
 
     def test_the_day_model_view_still_serves_after_the_sequence_detector_left(self):
         client, _findings, _guidance = self._reads("showcase")

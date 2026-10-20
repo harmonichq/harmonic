@@ -52,7 +52,6 @@ npm run test:ui                            # the component library's Storybook s
 uv run python scripts/smoke_app.py         # the server serves the built app and an API answer
 # the app job: the live adapter's contract tests and the one browser smoke test
 uv run python scripts/smoke_app.py --then node --test frontend/ui/app/live.contract.test.mjs frontend/app.browser.test.mjs
-uv run python scripts/smoke_app.py --case isf-strengthen --then node --test frontend/ui/app/live.contract.test.mjs
 uv run python scripts/smoke_app.py --case c3-trial --then node --test frontend/ui/app/live.contract.test.mjs
 uv run python scripts/smoke_app.py --case c3-ic-trial --then node --test frontend/ui/app/live.contract.test.mjs
 npx --yes @fission-ai/openspec@1.14.0 validate --all --strict # OpenSpec requirements and changes
@@ -87,10 +86,9 @@ generator emits instead of the showcase.
 - `frontend/ui/app/live.contract.test.mjs` reads the engine's real answers
   through the app's one client and the live adapter, in Node with no browser,
   and asserts each of the five tabs' screen models against literal values per
-  store. The showcase covers every tab; `isf-strengthen` adds a queued
-  correction factor, `c3-trial` an active Trial, `c3-ic-trial` a maturing carb
-  ratio Trial an earlier release retained (#554), `basal-and-carb-ratio-lower` a
-  queued carb ratio, `pattern-correction-collapse` a Pattern served as its
+  store. The showcase covers every tab; `c3-trial` adds an active Trial,
+  `c3-ic-trial` a maturing carb ratio Trial an earlier release retained (#554),
+  `basal-and-carb-ratio-lower` a queued carb ratio, `pattern-correction-collapse` a Pattern served as its
   one habit, with its case file, `behavioral-missed-meal` a standalone
   habit's card, pinned into a Focus on the habit itself and ended (ADR 528), and
   `pattern-meal-two-causes` a Pattern that keeps its row with two causes,
@@ -381,20 +379,14 @@ one flag. `ic.py` imports exactly one name from `safety.py`,
 `_MIN_SUPPORTED_BLOCK_RUNS` — the same floor of eight, applied to closed meal
 runs.
 
-**ISF has the same one-predicate staging invariant, but not basal's
-safety machinery.** `analyzers/isf.isf_asserts_move` is evaluated from the final
-post-harm values and stamped onto the analyzer's `SegmentEstimate`. It is true
-only when a current programmed value and a direction both exist, the
-recommendation differs from current, and the fasting range excludes current; a
-sized strengthen it refuses for its range is published as a hold, with no
-direction and no recommendation. A direction-only weakening, a missing
-programmed value, a hold, and a rounded no-op all remain visible but cannot
-stage; the findings projection queue withholds their rank. `isf.py` still
-imports nothing from `safety.py`: its caps are its own
-(`IsfConfig.max_step_frac`, `_half_gap`), and its rows are deliberately not fed
-into the consolidated pump-profile schedule. The shared invariant is one
-backend staging verdict, not one universal classifier, cap, evidence floor, or
-delivery path.
+**The correction factor is never advised (ADR 564).** Harmonic serves no
+correction-factor Queue card, Finding, Plan move, settling gate or Priority
+Lever, whatever the fasting nights read. A set-aside correction factor reads as
+an absent row named "Correction factor", a recorded correction-factor Plan
+keeps its name in Plan history, and a correction-factor edit on the pump is a
+Trial that shows its outcomes and advises nothing. Do not add a correction-factor
+staging path back; a proposal to revisit it starts from new identification
+evidence (ADR 564 rule 2).
 
 **Put any hold in the backend predicate, never in a frontend gate.** The
 frontend re-derives no floor, no threshold and no direction for any parameter;

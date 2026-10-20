@@ -123,8 +123,9 @@ conversion reads the meal's dose-stamped ISF.
 - Guidance no longer requires an `isf` key in the analysis.
 - Trial evidence no longer imports the ISF analyzer.
 - The ISF lever leaves the shared Priority ranking, so a basal or carb-ratio
-  rank can move. Its count, with no values, is recorded here when slice B1 is
-  built.
+  rank can move. Measured when slice B1 was built (#600), across all 79 QA
+  catalog cases and every window each case projects: 0 basal and 0 carb-ratio
+  findings-queue ranks moved, and no basal or carb-ratio Priority changed.
 - `IsfConfig`'s constants that other code borrowed become local to their
   readers: the QA lane's peak and duration, and `carbs.py`'s flat lookback.
 - `uncertainty.estimate_slope_clustered`, which only the analyzer called, goes

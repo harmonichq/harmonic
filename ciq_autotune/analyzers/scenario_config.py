@@ -261,7 +261,7 @@ class ScenarioConfig:
     #: stay exactly linear through ``priority_impact_linear_u_day``, then approach 1.0
     #: without reaching it. Thus 0.23 U/day still reads 0.23 (preserving the established
     #: low-end/action-line meaning) while 1.1 and 3.6 U/day remain ordered instead of both
-    #: pinning at 1.0. Identical U/day always maps to identical impact for basal/ISF/I:C.
+    #: pinning at 1.0. Identical U/day always maps to identical impact for basal and I:C.
     #: **These U/day numbers are calibrated at** ``priority_baseline_reference_u_day``
     #: **(#446):** the curve is fed a currency first *normalized to that reference dose
     #: scale* (``impact_u_day · reference / robust_daily_insulin_u``), so the knee is a
@@ -281,7 +281,7 @@ class ScenarioConfig:
     #: constants above a fixed scale to be calibrated against. It is NOT a free knob —
     #: changing it re-scales every priority and moves where ``priority_active_threshold``
     #: falls, so the currency constants must be re-derived in the same change. One shared
-    #: denominator for all three levers — never a per-lever one.
+    #: denominator for both levers — never a per-lever one.
     priority_baseline_reference_u_day: float = 50.0
     #: Minimum days with delivery before the trailing-median baseline is trusted; below it
     #: the reference above stands in, so a thin/new account degrades sanely (#446).
@@ -294,12 +294,6 @@ class ScenarioConfig:
     #: The clean-night denominator for the basal recurrence Wilson bound: k = clean
     #: nights the headline block ran on the suggested side, n = this window.
     priority_recurrence_window_days: int = 30
-    #: ISF priority is computed in the shared insulin currency (see
-    #: shared soft currency curve above) so it is comparable to basal. ISF's frequency +
-    #: correction-size factors are read **from the window** by the analyzer (#413); these
-    #: stay only as the fallback when the window carries no corrections.
-    priority_isf_delta_bg_mgdl: float = 50.0        # FALLBACK representative correction size
-    priority_isf_corrections_per_day: float = 3.0   # FALLBACK correction frequency
     #: The I:C currency is ``carbs/day · |1/current − 1/recommended|`` plus an arm-wide
     #: rescue surcharge (``rescue g/day ÷ measured``). Post-#518 every input is carried on
     #: the block itself — each block's own attributed carbs over its own 90-day span — so

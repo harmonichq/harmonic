@@ -4,7 +4,7 @@
 
 The system SHALL satisfy the following:
 
-A Plan may contain multiple segments only when they are all changes to the same tuning variable (basal rate, ISF, I:C, or target). A Plan that stages a basal change cannot simultaneously stage an ISF, I:C, or target change. Attempting to stage a different variable clears the Plan of the prior variable.
+A Plan may contain multiple segments only when they are all changes to the same tuning variable (basal rate, I:C, or target). A Plan that stages a basal change cannot simultaneously stage an I:C or target change. Attempting to stage a different variable clears the Plan of the prior variable. No new Plan stages the correction factor (ADR 564); a correction-factor Plan recorded before that still reads.
 
 #### Scenario: A Plan holds exactly one tuning variable at a time
 

@@ -376,18 +376,15 @@ class ReplayBoundaryThroughTheFacadeTest(unittest.TestCase):
             rescue_created_at=datetime(2026, 7, 18, 9, 0, 0))
         self.assertEqual(backfilled, [])
 
-    def test_the_result_reports_the_coverage_and_says_it_is_unknown(self):
+    def test_the_result_reports_the_coverage(self):
         # The log's only entry was recorded 2026-07-18 09:00, so it covers 1 whole day
-        # of the window's 30: the rest is unknown, and the result must say so.
+        # of the window's 30: the rest is unknown.
         _, _, _, result = self._rescue_days_per_endpoint(
             rescue_created_at=datetime(2026, 7, 18, 9, 0, 0))
         evidence = result.isf[0].evidence["rescue_evidence"]
         self.assertEqual(evidence["window_days"], 30)
         self.assertEqual(evidence["observed_days"], 1)
         self.assertFalse(evidence["fully_observed"])
-        notes = " ".join(result.data_quality.notes)
-        self.assertIn("rescue-carb log covers 1 of the last 30 day(s)", notes)
-        self.assertIn("unknown", notes)
 
     def test_a_log_older_than_the_window_reads_as_fully_observed(self):
         _, _, _, result = self._rescue_days_per_endpoint(
@@ -395,8 +392,6 @@ class ReplayBoundaryThroughTheFacadeTest(unittest.TestCase):
         evidence = result.isf[0].evidence["rescue_evidence"]
         self.assertTrue(evidence["fully_observed"])
         self.assertEqual(evidence["observed_days"], 30)
-        self.assertNotIn("rescue-carb log covers",
-                         " ".join(result.data_quality.notes))
 
     def test_no_rescue_log_at_all_reads_as_unknown_not_rescue_free(self):
         store = _facade_store(rescue_created_at=datetime(2026, 6, 16, 3, 5, 0))
@@ -408,8 +403,6 @@ class ReplayBoundaryThroughTheFacadeTest(unittest.TestCase):
         self.assertIsNone(evidence["observed_from"])
         self.assertEqual(evidence["observed_days"], 0)
         self.assertEqual(evidence["state"], NO_RECORDED_OBSERVATION)
-        self.assertIn("No rescue carbs have ever been logged",
-                      " ".join(result.data_quality.notes))
 
 
 class CurrentEndpointBoundaryTest(unittest.TestCase):

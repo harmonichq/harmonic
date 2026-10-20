@@ -6,7 +6,6 @@
 // Run it against a serve that scripts/smoke_app.py boots and warms:
 //
 //   uv run python scripts/smoke_app.py --then node --test frontend/ui/app/live.contract.test.mjs
-//   uv run python scripts/smoke_app.py --case isf-strengthen --then node --test frontend/ui/app/live.contract.test.mjs
 //   uv run python scripts/smoke_app.py --case c3-trial --then node --test frontend/ui/app/live.contract.test.mjs
 //   uv run python scripts/smoke_app.py --case c3-ic-trial --then node --test frontend/ui/app/live.contract.test.mjs
 //   uv run python scripts/smoke_app.py --case pattern-correction-fold --then node --test frontend/ui/app/live.contract.test.mjs
@@ -141,14 +140,6 @@ const EXPECTED = {
     // #529: the unannounced rise is Day's one Rise, asked at its 15:55 onset
     // and drawn at its served 385 mg/dL peak at 17:00, beside two lows.
     prompts: { lows: 2, rises: [{ anchorT: '2024-05-27 15:55:00', at: '2024-05-27 17:00:00', bg: 385 }] },
-  },
-  // The engine still serves a correction factor it supports a move for, until
-  // #564's engine slice; no Queue component draws one (§2.5, 2026-10-20), so the
-  // Queue is empty and there is nothing to mark Done.
-  'isf-strengthen': {
-    queue: [],
-    change: { kind: 'none' },
-    done: null,
   },
   // A queued carb ratio: its card draws the block, current → suggested and range.
   // Its move strengthens the ratio, so it answers highs after meals and never

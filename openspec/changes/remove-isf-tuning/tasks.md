@@ -25,27 +25,27 @@
 
 ### 4. Fail first
 
-- [ ] 4.1 Through `build_guidance` on the `isf-strengthen` case: no candidate has subject `setting:isf`, and the findings serve no row with parameter `isf`. A stored `setting:isf` preference is served as an absent row titled "Correction factor", and a recorded ISF Plan's history still names "Correction factor". Run it on the base and record that it fails for the right reason
+- [x] 4.1 Through `build_guidance` on the `isf-strengthen` case: no candidate has subject `setting:isf`, and the findings serve no row with parameter `isf`. A stored `setting:isf` preference is served as an absent row titled "Correction factor", and a recorded ISF Plan's history still names "Correction factor". Run it on the base and record that it fails for the right reason
 
 ### 5. Advice out
 
-- [ ] 5.1 `guidance.py`: drop the `setting:isf` candidate, its support fields, its asserted-only rule and its whole-day member case. Keep `_SETTING_TITLES`, `_SETTING_UNITS`, `_MEMBER_TITLES` and `_PLAN_FAMILY` for retained subjects (rule 6)
-- [ ] 5.2 `findings_projection.py`: drop `_isf_rows`, `_isf_headline` and the ISF chips and `whole_day` scope; `analyzers/tuning_priority.py`: drop `isf_lever`, `_isf_recurrence` and the ISF argument; `scenario_config.py`: drop `priority_isf_*`
-- [ ] 5.3 `analyze.py`: drop the ISF settling gate, the ISF epoch entry and the rescue-coverage quality notes
-- [ ] 5.4 Record in ADR 564 the count of basal and carb-ratio Priority ranks that move across the QA catalog, with no values
-- [ ] 5.5 QA catalog: the `isf-*` cases' `queue_rows` become `queue_absences`, and their finding titles drop. `live.contract.test.mjs` drops its `isf-strengthen` case, and `.github/workflows/ci.yml` and `AGENTS.md` drop its `--case` run
-- [ ] 5.6 Update the tests that assert ISF advice, keeping the tests that read retained ISF records:
+- [x] 5.1 `guidance.py`: drop the `setting:isf` candidate, its support fields, its asserted-only rule and its whole-day member case. Keep `_SETTING_TITLES`, `_SETTING_UNITS`, `_MEMBER_TITLES` and `_PLAN_FAMILY` for retained subjects (rule 6)
+- [x] 5.2 `findings_projection.py`: drop `_isf_rows`, `_isf_headline` and the ISF chips and `whole_day` scope; `analyzers/tuning_priority.py`: drop `isf_lever`, `_isf_recurrence` and the ISF argument; `scenario_config.py`: drop `priority_isf_*`
+- [x] 5.3 `analyze.py`: drop the ISF settling gate, the ISF epoch entry and the rescue-coverage quality notes
+- [x] 5.4 Record in ADR 564 the count of basal and carb-ratio Priority ranks that move across the QA catalog, with no values
+- [x] 5.5 QA catalog: the `isf-*` cases' `queue_rows` become `queue_absences`, and their finding titles drop. `live.contract.test.mjs` drops its `isf-strengthen` case, and `.github/workflows/ci.yml` and `AGENTS.md` drop its `--case` run
+- [x] 5.6 Update the tests that assert ISF advice, keeping the tests that read retained ISF records:
   - `test_guidance.py`, `test_guidance_api.py`, `test_guidance_preferences.py`, `test_findings_projection.py`, `test_tuning_priority.py`, `test_engine_cuts.py`, `test_setting_done.py`, `test_settling.py`, `test_annotation_register.py`;
   - `test_analyzer_isf.py`: drop the `isf_lever` tests (:496, :542); the file goes in B2;
   - `test_rescue_evidence.py`: drop the rescue-coverage note assertions (:389-412) that 5.3 removes;
   - `test_analyzer_coverage.py`: drop `SettlingIsfTest` (:557) and the `_settling(... isf_rows=...)` calls;
   - `test_durable_follow_up.py`'s `test_plan_history_names_each_recorded_subject_at_read_time` (:675-692): seed a recorded `setting:isf` Plan straight into the store instead of applying one (now refused). It stays the proof that a recorded ISF Plan reads and is named "Correction factor".
-- [ ] 5.7 Regenerate `findings-projection.json` through its generator once the generator drops the ISF rows, and `ui-fixtures.json` and `ui-allowlist.json` through `scripts/gen_ui_fixtures.py`, whose `/api/guidance` reads no longer serve `setting:isf`
+- [x] 5.7 Regenerate `findings-projection.json` through its generator once the generator drops the ISF rows, and `ui-fixtures.json` and `ui-allowlist.json` through `scripts/gen_ui_fixtures.py`, whose `/api/guidance` reads no longer serve `setting:isf`
 
 ### 6. Specs and docs
 
-- [ ] 6.1 Edit the ISF out of `recommendations-redesign`'s ADDED Plan requirement ("A Plan holds one tuning variable at a time") (rule 9). This change's plan, safety, behavioral-layer, surfaces and outcomes deltas already state B1's behavior
-- [ ] 6.2 `AGENTS.md`'s correction-factor staging paragraph, `CONTEXT.md`'s ISF recommendation and direction-only weaken terms, and `README.md`'s and `PRODUCT.md`'s tuning lines
+- [x] 6.1 Edit the ISF out of `recommendations-redesign`'s ADDED Plan requirement ("A Plan holds one tuning variable at a time") (rule 9). This change's plan, safety, behavioral-layer, surfaces and outcomes deltas already state B1's behavior
+- [x] 6.2 `AGENTS.md`'s correction-factor staging paragraph, `CONTEXT.md`'s ISF recommendation and direction-only weaken terms, and `README.md`'s and `PRODUCT.md`'s tuning lines
 
 ## Slice B2 — the engine stops computing the estimate
 

@@ -117,10 +117,10 @@ class Settling:
     ``gate`` is the analyzer config's :func:`describe_gate` descriptor — a
     structured, entirely code-driven account of what "enough data" means (criteria + unit + needed),
     interpolated from that config's own constants so it can never drift from the
-    gate. ``have`` is the live post-change progress toward ``gate.needed`` (both
-    ``None`` for a soft gate like ISF's, which shows no fabricated countdown)."""
+    gate. ``have`` is the live post-change progress toward ``gate.needed``. The
+    correction factor never settles: Harmonic does not tune it (ADR 564)."""
 
-    parameter: str            # "basal_rate" | "isf" | "carb_ratio"
+    parameter: str            # "basal_rate" | "carb_ratio"
     since: Optional[str]
     gate: Dict
     have: Optional[int]
@@ -580,11 +580,12 @@ class Finding:
 class TuningLever:
     """One tuning flavor's unified Lever **Priority** (0–100) on the /api/analyze payload (ADR 0032).
 
-    Basal, ISF and I:C each roll up into *one* Lever (all of a flavor's block/segment
+    Basal and I:C each roll up into *one* Lever (all of a flavor's block/segment
     changes stage into one Plan — the Diagnose decision #1), scored on the same axis the
     /api/scenarios behavioral Levers carry so the frontend interleaves them in one queue.
 
-    ``parameter`` is ``"basal_rate" | "isf" | "carb_ratio"``. ``impact`` and
+    ``parameter`` is ``"basal_rate" | "carb_ratio"``; the correction factor has no
+    Lever (ADR 564). ``impact`` and
     ``recurrence`` are the two ``[0, 1]`` factors behind ``priority`` (both surfaced so
     the resting-card bars and tier-2 derivation render from server data). ``impact_u_day``
     is the raw insulin-currency magnitude (U/day implicated by the recommendation, plus the
@@ -601,7 +602,7 @@ class TuningLever:
     # The `start_min` of the segment that earned this Lever's score, when a flavor rolls up
     # per-segment rows (I:C, #428). The frontend renders *this* row, never re-selecting one by
     # raw divergence — the eligibility policy lives only in `ic_lever`. `None` for flavors with
-    # no per-segment headline (basal/ISF today) and for legacy payloads.
+    # no per-segment headline (basal today) and for legacy payloads.
     headline_start_min: Optional[int] = None
     # The winning **recurrence channel** (#438): the k-of-n evidence stream the `recurrence`
     # factor was measured from, threaded so the frontend can transcribe a plain-count line

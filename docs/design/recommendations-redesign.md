@@ -170,7 +170,7 @@ the system's own edge-swipe back is left to the platform, never overridden.
 | **Done** | verb | Mark a Setting's change as programmed into the pump. The next sync checks it. |
 | **Waiting for pump** | state | Done, and no sync has shown the pump since. |
 | **Not on pump** | state | The sync after a Done found the Setting unchanged on the pump. |
-| **Range** | noun | The engine's interval for a Setting's estimate (§2.5, 2026-10-20 #602). |
+| **Range** | noun | The engine's interval for a Setting's estimate. |
 | **Uncertain** | state | Not yet clear enough to act on: the evidence behind it is thin. |
 | **Peak / Nadir** | noun | The highest or lowest glucose after an event such as a meal, as the median across the events counted, in mg/dL. |
 | **Typical** | noun | The same for the comparison events: similar events that did not end in the Pattern's or the Habit's outcome. |

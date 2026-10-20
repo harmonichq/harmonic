@@ -52,25 +52,32 @@ each have a snapshot as of their time.
    fallback, and carb undercount leaves the meal unjudged. Settings before the
    first snapshot are unknown, and an assumed value would be falsely current.
    A stamp is durable recorded data, so a non-positive stamp reads as no stamp.
+   Only the conversion depends on the ISF. The ledger builds its CGM view
+   whenever readings are given, so a meal's start glucose, its near-target check
+   and its rescue re-admission read exactly as they do today; a meal with no ISF
+   loses only its glucose travel in units.
 4. One module owns the choice: `settings.IsfSource`, with `at(bolus)` returning
    the ISF or none. Two adapters: `IsfSource.from_snapshots(snaps)` (rules 1–3)
    and `IsfSource.fixed(value)`, for a retained comparison. Every conversion
    takes a source; none takes a bare number. `effective_isf` and both private
    wrappers are deleted with their ISF analyzer runs.
 5. A retained comparison keeps executing with what it captured (ADR 462, ADR
-   554). A context of version `386:1` converts with `IsfSource.fixed` of its
-   captured median, so its result does not move and it does not read
-   `unsupported_retained_execution`. A context captured after slice 2 (version
-   `563:1`) records that it converts with the dose-stamped ISF and carries no
-   value; it converts with `IsfSource.from_snapshots` over the snapshots before
-   its cutoff, as its carb-ratio and settings reads already are.
+   554). A context that retains `programmed_isf` converts with `IsfSource.fixed`
+   of that median, so its result does not move and it does not read
+   `unsupported_retained_execution`. A context captured after slice 2 carries
+   `isf_source: "dose_stamped"` in place of `programmed_isf` and converts with
+   `IsfSource.from_snapshots` over the snapshots before its cutoff. The
+   follow-up envelope version (`386:1`, checked by the store for every follow-up
+   field) and the comparison's version and policy strings stay as they are, so no
+   retained context is refused; the ISF field is what tells the two apart.
 6. The ISF analyzer still runs for its own card, Queue row, staging and settling
    gate. Its output feeds no conversion. #564 removes it.
 7. The work lands in two slices: slice 1 the carb-ratio ledger and its callers,
    slice 2 the scenario engine and its readers. Slice 1 reaches retained Trial
    comparisons only through `IsfSource.fixed` of their captured value, so no
-   comparison moves in it. Between the slices, carb undercount still converts
-   with the estimate-first value.
+   comparison moves in it. Between the slices, `settings.effective_isf` and its
+   estimate-first read survive for carb undercount only, and slice 2 deletes
+   them.
 
 **Consequences.** A carb-ratio, carb-undercount or attribution result no longer
 moves with the fasting estimate, and a zero estimate no longer switches off the
@@ -86,18 +93,22 @@ The result cache needs no new rule. Stamps are bolus rows and snapshots are
 settings captures, both recorded data, and no builder newly reads follow-up
 state, so `_RECORDED_DATA_RESULTS` and the recorded-data revision keys stand.
 
-Every committed synthetic store programs a flat ISF. The QA cases and the UI
-wearer (`scripts/ui_patient.py`) stamp their boluses with it, so there the
-dose-stamped value equals the programmed median. The chart-builder,
-findings-projection and missed-meal generators write unstamped boluses, so their
-meals take rules 2 and 3; the chart-builder store's one snapshot is captured a
-day after it starts, so its first day's meals are not converted. The build
-re-measures those three. Measured with a median-only stand-in on the base
-commit: two generated fixtures move. `frontend/__fixtures__/analysis.json`'s meals gain their glucose outcome
+Every committed synthetic store programs a flat ISF. The UI wearer
+(`scripts/ui_patient.py`, 411 of 411 meal boluses stamped, none before its first
+snapshot) and the admission truth sets stamp their boluses, so there the
+dose-stamped value equals the programmed median. The QA cases (the showcase's 32
+meal boluses all unstamped) and the chart-builder, findings-projection and
+missed-meal generators write unstamped boluses, so their meals take rule 2, and
+any meal before its store's first snapshot takes rule 3. Several QA cases capture
+their snapshot mid-history, and the chart-builder store captures its one a day
+after it starts. The build re-measures all of them, the QA catalog and showcase
+included. Measured with a median-only stand-in on the base commit, which cannot
+see rule 3: two generated fixtures move. `frontend/__fixtures__/analysis.json`'s meals gain their glucose outcome
 (the zero-estimate defect). In `frontend/ui/__fixtures__/ui-fixtures.json` the
 synthetic wearer's habit attribution moves and two Day findings lists shrink.
-Neither moves an `asserts_move`. The QA catalog, the QA database, the other two
-generated fixtures and every live contract case are unchanged. Three Day story
+Neither moves an `asserts_move`. Under that stand-in the QA catalog, the QA database, the other two generated
+fixtures and every live contract case are unchanged; with rule 3 a QA case with
+meals before its first snapshot can move. Three Day story
 plays assume the day with the most logged carbs names three habits; it now
 names two, and other logged-carb days in the same history name three or four, so
 the generator picks the `with_carbs` day by the habits its findings name.

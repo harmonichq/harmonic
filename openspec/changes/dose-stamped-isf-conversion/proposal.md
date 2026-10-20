@@ -53,10 +53,10 @@ scenario engine. Between them, carb undercount still reads the old value.
 ## Risk contract
 
 - **Must prevent:** a meal converted with anything but its stamp, its as-of
-  programmed segment, or nothing; any conversion that reads the ISF analyzer's
-  estimate; a staging verdict changed by anything other than the conversion
-  value; a retained comparison whose result moves or which stops reading; a
-  second implementation of the ISF choice; silent incorrect success (a fixture or
+  programmed segment, or nothing; after slice 2, any conversion that reads the
+  ISF analyzer's estimate, and a second implementation of the ISF choice; a
+  staging verdict changed by anything other than the conversion value; a
+  retained comparison whose result moves or which stops reading; silent incorrect success (a fixture or
   QA expectation re-baselined without its generator, or derived from output at
   assertion time); any real value committed.
 - **Must recover:** nothing automatic. Results are recomputed from recorded data
@@ -65,8 +65,11 @@ scenario engine. Between them, carb undercount still reads the old value.
   converts with the segment the previous snapshot held, because snapshots are
   captured per fetch. An unstamped meal before the first snapshot is not
   converted: its run is unconfirmed and its carb undercount unjudged, which can
-  thin a long history's confirmed runs. Between slice 1 and slice 2, carb
-  undercount still converts with the estimate-first value.
+  thin a long history's confirmed runs. Between slice 1 and slice 2,
+  `settings.effective_isf` and its estimate-first read survive for carb
+  undercount only; slice 2 deletes them. A store with neither stamps nor any
+  snapshot now runs the ledger's start-glucose and rescue reads, which today
+  switch off with the ISF, while its runs stay unconverted.
 - **Unsupported:** inferring a setting before the first snapshot; correcting a
   stamp the pump recorded; any change to the ISF analyzer or its surfaces.
 - **Evidence owed:** a test through `analyze()` showing two stores that differ

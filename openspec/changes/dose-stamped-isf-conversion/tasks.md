@@ -7,7 +7,7 @@
 ### 2. One ISF source
 
 - [ ] 2.1 Add `settings.IsfSource` per ADR 563 rules 1–4: `from_snapshots(snaps)`, `fixed(value)`, `at(bolus)`. Test it in `tests/test_settings.py`: a stamp wins; a non-positive stamp reads as none; an unstamped bolus takes the segment in force at its time of day in the latest snapshot captured at or before it, ignoring a later snapshot, at both sides of a segment boundary; no as-of snapshot gives none; `fixed` returns its value
-- [ ] 2.2 `analyzers/ic.py`: `meal_burdens`, the meal-run builder, `analyze_ic`, the block estimators (`ic_estimator` and the fuzzy variant) take `isf: IsfSource` instead of `isf_effective`. Each meal or run converts with `isf.at(first member)`. A meal whose source gives none reads exactly as every meal reads today when the ledger has no ISF
+- [ ] 2.2 `analyzers/ic.py`: `meal_burdens`, the meal-run builder, `analyze_ic`, the block estimators (`ic_estimator` and the fuzzy variant) take `isf: IsfSource` instead of `isf_effective`. Each meal or run converts with `isf.at(first member)`. Build the CGM view whenever readings are given (today `ic.py` builds it only when an ISF exists, at the `meal_burdens` and meal-run sites), so start glucose, the near-target check and the rescue re-admission read as they do today; a meal whose source gives none gets only `bg_outcome_u = None`
 - [ ] 2.3 `analyzers/ic_regression.py`, the `IcBlockEstimator` interface in `admission.py` and `scripts/gen_estimator_truth.py` follow the new parameter; the truth sets convert through `IsfSource.from_snapshots` of their own snapshots
 - [ ] 2.4 `analyze.py`: both carb-ratio calls pass `IsfSource.from_snapshots(snaps)`; the ISF analyzer run and its settling gate stay
 - [ ] 2.5 `trial_evidence.py`'s carb-ratio path takes an `IsfSource`; `follow_up_comparison.py` passes `IsfSource.fixed` of the retained `programmed_isf` value, so no Trial comparison moves in this slice
@@ -16,11 +16,12 @@
 ### 3. QA coverage era
 
 - [ ] 3.1 Per AGENTS.md "Maintaining QA coverage eras", add `QaCase` recipes to `scripts/qa_e2e_cases.py` that hold: a two-segment ISF schedule with stamped meals in each segment; an ISF changed mid-window (a new snapshot, and stamps that change with it); unstamped meals after a snapshot (segment fallback) and before the first snapshot (unconfirmed). Compose them into as few cases as hold every state. Copy each case's complete `execute_case` dump into literal `QaExpectation` values, and run the catalog's generated `test_case_*` tests
-- [ ] 3.2 Re-measure the five budgets without raising a limit: showcase size ≤25 MiB, showcase drift ≤30 s, focused QA suite ≤150 s, slowest case ≤30 s, full pytest ≤2.5× the recorded chunk-1 baseline. A breach stops the work without changing the committed showcase
+- [ ] 3.2 Re-run the existing catalog: QA meals are unstamped and take rule 2, which on their flat schedules equals today's value; a case with meals before its first snapshot takes rule 3 and can move. Re-copy literal `QaExpectation` values only for the cases that move, from `execute_case`, and record their count in ADR 563
+- [ ] 3.3 Re-measure the five budgets without raising a limit: showcase size ≤25 MiB, showcase drift ≤30 s, focused QA suite ≤150 s, slowest case ≤30 s, full pytest ≤2.5× the recorded chunk-1 baseline. A breach stops the work without changing the committed showcase
 
 ### 4. Re-baseline and record
 
-- [ ] 4.1 Regenerate every drift-checked fixture that goes stale (`frontend/__fixtures__/analysis.json` is expected; check all five) through its generator; confirm no `asserts_move` moves on any synthetic store
+- [ ] 4.1 Regenerate every drift-checked fixture that goes stale (`frontend/__fixtures__/analysis.json` is expected; check all five, the QA database included) through its generator; confirm no `asserts_move` moves on any synthetic store
 - [ ] 4.2 Record the staging movement in ADR 563: run `analyze()` before and after this slice on the operator's local snapshot (its path is handed to the build session, never written into the repo), opened only with `Store.open_readonly`, and add only the count of carb-ratio blocks and segments whose `asserts_move` or direction changed, by direction, with no values
 - [ ] 4.3 Spec delta: the parameter-analysis measured-ISF requirement is replaced by the dose-stamped one
 
@@ -37,11 +38,11 @@
 - [ ] 6.3 Delete `settings.effective_isf`, `scenario/engine._effective_isf`, `outcomes._effective_isf` with its ISF analyzer run and its exception guard, and the engine wrapper's ISF analyzer run
 - [ ] 6.4 `scenario/model_view.py`: drop the second ISF read inside the source window and the `settings_window_days` parameter with the window it built (no caller passes it), and the payload's top-level `isf` header if an unfiltered whole-tree grep (including `frontend/index.html`) finds no reader
 - [ ] 6.5 `outcomes_trend._profile_settings` drops its ISF median once nothing converts with it; its CLI line names the dose-stamped ISF instead of a number
-- [ ] 6.6 Retained comparisons per ADR 563 rule 5: `follow_up_comparison.py` captures version `563:1` with `isf_source: "dose_stamped"` and no value; a `386:1` context executes its Trial and Focus paths with `IsfSource.fixed` of its value; `store.py`'s comparison-context check accepts both shapes. Test: a `386:1` Trial and Focus serve the same comparison before and after, and a new capture is accepted
+- [ ] 6.6 Retained comparisons per ADR 563 rule 5: `follow_up_comparison.py` captures `isf_source: "dose_stamped"` in place of `programmed_isf`; a context that retains `programmed_isf` executes its Trial and Focus paths with `IsfSource.fixed` of its value. Keep the follow-up envelope version `386:1` (`store._follow_up_availability` refuses any other) and the comparison's `_VERSION` and policy strings (matched in the comparison's retained-execution check), so no retained context reads `unsupported_retained_execution`; `store.py`'s comparison-context check and the comparison's own `missing_programmed_isf` refusal accept either ISF field. Test: a `386:1` Trial and Focus serve the same comparison before and after, and a new capture is accepted
 - [ ] 6.7 Update the tests that pass a scalar `isf=` to the scenario engine, its classifiers and its readers
 
 ### 7. QA and fixtures
 
-- [ ] 7.1 Add a `QaCase` whose carb-undercount verdict depends on its segment's stamped ISF (two-segment schedule), with literal expectations; re-measure the five budgets as in 3.2
+- [ ] 7.1 Add a `QaCase` whose carb-undercount verdict depends on its segment's stamped ISF (two-segment schedule), with literal expectations; re-measure the five budgets as in 3.3
 - [ ] 7.2 Regenerate `frontend/ui/__fixtures__/ui-fixtures.json` and any other stale fixture through its generator. In `scripts/gen_ui_fixtures.py`, pick the `with_carbs` Day state by rule among days with logged carbs, preferring the day whose served findings name the most distinct habits (then most logged carbs, then latest), so `Screens/Day / Findings Phone|Desktop` and `DayChart / With Logged Carbs` pass with no assertion weakened. Change a story literal only if the picked day names a different set of habits, and never lower a count
 - [ ] 7.3 Spec deltas: the behavioral-layer carb-undercount requirement and the durable-follow-up retained-comparison requirement

@@ -56,7 +56,7 @@ none raised; the whole-pytest ceiling is still 2.5× the chunk-1 baseline above.
 | Showcase drift check | 0.45 s wall | 30 s |
 | Focused QA suite (`tests/test_qa_e2e_cases.py tests/test_gen_qa_e2e_db.py`) | 77.89 s wall; 101 passed | 150 s |
 | Slowest generated case | `test_case_showcase`: 2.88 s | 30 s |
-| Whole pytest (`e9dce945`, before the register fixture fix below) | 413.78 s; 2668 passed, 1 failed, 1 skipped | 1,477.15 s |
+| Whole pytest (`9e691e74`, the pushed commit) | 420.12 s; 2669 passed, 1 skipped | 1,477.15 s |
 
 Adding the case outside the order's Expected diff: its name joins the catalog
 list in `tests/test_qa_e2e_cases.py` and `EXPECTED_ACTIVE_KINDS` in
@@ -68,4 +68,5 @@ from unstamped meals whose only settings capture came after them, so under ADR
 563 rule 3 they were no longer converted and one case
 (`band_includes_programmed_start_high`) stopped reaching its branch. The capture
 now lands before the meals, restoring the programmed ISF of 50 the cases were
-built around; that was the one failure in the whole-pytest run above.
+built around. It was the one failure in an earlier whole-pytest run on
+`e9dce945` (413.78 s; 2668 passed, 1 failed, 1 skipped), before this fix.

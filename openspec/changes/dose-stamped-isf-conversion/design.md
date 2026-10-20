@@ -139,5 +139,6 @@ glucose outcome (the zero-estimate defect); none of its staging verdicts moves.
 The UI fixtures, the findings-projection and missed-meal fixtures and the QA
 database are unchanged. **0 existing QA cases were re-copied**: every
 `test_case_*` expectation, `behavioral-carb-undercount`'s included, holds
-unchanged, since its stamp of 32 reaches only carb undercount, which slice 2
-moves. One new QA case, `ic-dose-stamped-isf`, holds the per-meal states.
+unchanged. That case's ledger now converts with its stamp of 32 (rule 1), but
+no field its expectation pins moves; its classifier verdict moves in slice 2.
+One new QA case, `ic-dose-stamped-isf`, holds the per-meal states.

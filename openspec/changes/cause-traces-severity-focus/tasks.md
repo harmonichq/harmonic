@@ -22,10 +22,10 @@
 
 ## 4. The adapter and fixtures
 
-- [ ] 4.1 `frontend/ui/app/live.js` `traceChart` passes `causes` through, each trimmed like `pattern` (`subject`, `episodes`, `points`); `scripts/gen_ui_fixtures.py` `_traces` trims the same, and its row field list keeps `cause_counts`
-- [ ] 4.2 `frontend/ui/app/live.contract.test.mjs`: a `pattern-meal-two-causes` entry asserting, as literals read once from the served answers, the Highs after meals row's `cause_counts` (subjects, titles, counts, `pinnable`, order) and its case file's per-cause traces (subject order, episode counts) as the live adapter carries them; extend `pattern-correction-collapse` with its served order, each cause's `pinnable` (Correction stacking false) and per-cause traces. No screen model changes
-- [ ] 4.3 Add `pattern-meal-two-causes` to the app job's contract-test list in `.github/workflows/ci.yml`, to the file's own header list, and to the AGENTS.md paragraph that names the contract-test cases
-- [ ] 4.4 Regenerate every drift-checked artifact that goes stale through its generator (`frontend/__fixtures__/findings-projection.json` and `frontend/ui/__fixtures__/ui-fixtures.json` are expected; the chart-builder, QA database and missed-meal comparison checks stayed current under the triage prototype)
+- [x] 4.1 `frontend/ui/app/live.js` `traceChart` passes `causes` through, each trimmed like `pattern` (`subject`, `episodes`, `points`); `scripts/gen_ui_fixtures.py` `_traces` trims the same, and its row field list keeps `cause_counts`
+- [x] 4.2 `frontend/ui/app/live.contract.test.mjs`: a `pattern-meal-two-causes` entry asserting, as literals read once from the served answers, the Highs after meals row's `cause_counts` (subjects, titles, counts, `pinnable`, order) and its case file's per-cause traces (subject order, episode counts) as the live adapter carries them; extend `pattern-correction-collapse` with its served order, each cause's `pinnable` (Correction stacking false) and per-cause traces. No screen model changes
+- [x] 4.3 Add `pattern-meal-two-causes` to the app job's contract-test list in `.github/workflows/ci.yml`, to the file's own header list, and to the AGENTS.md paragraph that names the contract-test cases
+- [x] 4.4 Regenerate every drift-checked artifact that goes stale through its generator (`frontend/__fixtures__/findings-projection.json` and `frontend/ui/__fixtures__/ui-fixtures.json` are expected; the chart-builder, QA database and missed-meal comparison checks stayed current under the triage prototype)
 
 ## 5. Verify
 

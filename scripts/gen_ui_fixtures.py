@@ -1138,7 +1138,8 @@ def _pin_habit(client: TestClient) -> None:
 
 
 ROW_FIELDS = ("id", "kind", "title", "chips", "claimed_by", "lever", "parameter",
-              "count_sentences", "fold_sentences", "span", "members", "served_as")
+              "count_sentences", "fold_sentences", "span", "members", "served_as",
+              "cause_counts")
 
 
 def _queue_store(client: TestClient) -> dict:
@@ -1220,8 +1221,12 @@ def _traces(served: dict) -> dict:
     """A case file's trace chart, trimmed to what the open Pattern card draws: the
     anchor and window, the Pattern's episodes and bins, and Typical's bins (ADR 523)."""
     return {"anchor": served["anchor"], "window_min": served["window_min"],
-            "pattern": {field: served["pattern"][field] for field in ("episodes", "points")},
+            "pattern": _cohort(served["pattern"]),
             "typical": {"points": served["typical"]["points"]}}
+
+
+def _cohort(drawn: dict) -> dict:
+    return {field: drawn[field] for field in ("episodes", "points")}
 
 
 def _case_file(subject: str, served: dict) -> dict:
@@ -1231,7 +1236,11 @@ def _case_file(subject: str, served: dict) -> dict:
     if subject.startswith("habit:"):
         return {"summary": {field: served["summary"][field] for field in ("claimed", "denominator", "noun")},
                 "traces": _traces(served["traces"])}
-    return {"traces": _traces(served["traces"])}
+    # A Pattern's case file also draws each cause, in the engine's order, against
+    # its one Typical (ADR 593).
+    return {"traces": _traces(served["traces"]) | {"causes": [
+        {"subject": cause["subject"], "pattern": _cohort(cause["pattern"])}
+        for cause in served["traces"]["causes"]]}}
 
 
 def _cases(client: TestClient, subjects: list[str]) -> dict:

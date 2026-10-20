@@ -17706,7 +17706,7 @@
     },
     {
       "kind": "noun",
-      "meaning": "A habit you pinned, watched for adherence and outcome.",
+      "meaning": "A Pattern's habit, or a Habit, you chose to watch for adherence and outcome.",
       "term": "Focus"
     },
     {
@@ -17783,11 +17783,6 @@
       "kind": "metric",
       "meaning": "Minutes from a meal's bolus to the reading its Climb is read from.",
       "term": "Peak at"
-    },
-    {
-      "kind": "verb",
-      "meaning": "Start a Focus on a Pattern's habit, or on a Habit.",
-      "term": "Pin"
     },
     {
       "kind": "noun",
@@ -148705,6 +148700,10 @@
     },
     "drill_down_unpinnable": {
       "pattern": "lows_after_correcting_highs",
+      "store": "correction-collapse"
+    },
+    "focusable": {
+      "pattern": "highs_after_treating_lows",
       "store": "correction-collapse"
     },
     "habit_band": {

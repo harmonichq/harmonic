@@ -6,7 +6,7 @@
 // one joined group, one question with its choices at equal widths on a sunken
 // track, as the segmented control draws a choice: Yes · No · False low (a Rise
 // has no False low), and on desktop a last, Not sure. On the phone Not sure is
-// a text action centred beneath the answers, as Snooze sits beneath Pin, and
+// a text action centred beneath the answers, as Snooze sits beneath Focus, and
 // the swipe is its shortcut. The engine's question and context sentences are
 // never shown.
 //

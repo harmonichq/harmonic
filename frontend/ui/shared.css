@@ -39,7 +39,7 @@
 }
 
 /* A Setting card's primary (Done, #518): full width at the card's foot, where
-   Pin sits on a Pattern card. */
+   Focus sits on a Pattern card. */
 .ui-card-done { display: flex; margin-top: 24px; }
 
 /* A card's lesser action (Snooze): a text action centred beneath the card's

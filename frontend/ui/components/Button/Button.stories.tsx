@@ -13,7 +13,7 @@ type Story = StoryObj<typeof meta>;
 type State = 'default' | 'pressed' | 'focused' | 'disabled' | 'busy';
 
 const ROLES = {
-  primary: { kind: 'primary', label: 'Pin' },
+  primary: { kind: 'primary', label: 'Focus' },
   secondary: { kind: 'secondary', label: 'End' },
   text: { kind: 'text', label: 'Undo' },
   icon: { kind: 'icon', label: 'Snooze', icon: 'snooze' },

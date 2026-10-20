@@ -106,7 +106,7 @@ Each row lists a screen's states. Labels only; no state uses prose.
 
 | Screen | Default | Empty | Loading | Error | Other states |
 |---|---|---|---|---|---|
-| Queue | Ranked cards, top card expanded | "0 patterns" label | Card skeletons | Unavailable + Retry | A card expanded; mid-swipe; just snoozed (bar "Snoozed until <date>" + Undo, §2.5 2026-10-20); just Done (bar "Waiting for pump" + Undo, §2.5); a Setting Not on pump (§2.5); a Habit open, and pinned (§2.5, 2026-10-19); Snoozed footer when N > 0 |
+| Queue | Ranked cards, top card expanded | "0 patterns" label | Card skeletons | Unavailable + Retry | A card expanded; mid-swipe; just snoozed (bar "Snoozed until <date>" + Undo, §2.5 2026-10-20); just focused (bar "Focus started" + Changes, §2.5 2026-10-20); just Done (bar "Waiting for pump" + Undo, §2.5); a Setting Not on pump (§2.5); a Habit open, and pinned (§2.5, 2026-10-19); Snoozed footer when N > 0 |
 | Queue · Snoozed | Each snoozed item as its Queue row, plus "Until <date>" + Restore | Not reachable (the footer is hidden at 0) | — | Unavailable + Retry | Restored (row leaves) |
 | Queue · setting detail | current → estimate, range, n, chart | — | Chart skeleton | Unavailable | A queued ISF: the Overview's ISF card in the Queue's frame (§2.5, 2026-10-14) |
 | Changes | The current Trial (head, trace, ranges, Mean/GMI/CV, Basal vs Pump profile) or Focus, then the Previous row with its count | "No active change" label; no Previous row at 0 | Skeleton | Unavailable + Retry | Maturing, every module as its data forms, each glucose module with its Readings, each Δ green or red by its direction (§2.5, 2026-10-19, colour shows direction); first hours (an empty after: Meals after 0, each after blank) (§2.5, 2026-10-19); Matured (result pill); a carb ratio Trial (Meals before / after; its trace meal by meal under three meals); a whole-profile switch (each setting it moved); **End** (Focus: anytime; Trial: once matured) → confirm sheet → ended; Waiting for pump rows after a Done, between the current change and Previous (§2.5) |
@@ -136,7 +136,7 @@ Each row lists a screen's states. Labels only; no state uses prose.
 | Touch (phone, tablet) | Desktop |
 |---|---|
 | Tap a Queue card to expand it in place | Click or ↑/↓ to select in the list; the detail shows in the right pane |
-| Swipe a Queue row: it follows the finger, and released past half its Snooze reveal it snoozes, as the Snooze text action beneath Pin does (a Setting card: at its foot), with the same bar and Undo; short of half it settles back | The same Snooze text action; shortcut S |
+| Swipe a Queue row: it follows the finger, and released past half its Snooze reveal it snoozes, as the Snooze text action beneath Focus does (a Setting card: at its foot), with the same bar and Undo; short of half it settles back | The same Snooze text action; shortcut S |
 | Swipe a Prompt: released past half its Not sure reveal it records Not sure and moves to the next, as the Not sure text action beneath its answers does; short of half it settles back | A last button, **Not sure** (a Low's fourth, a Rise's third) |
 | Tap the day in the Day header to drop the month down, its weeks as gapless ribbons | The same drop-down, a popover under the day; the selected week stays in view as a ribbon |
 | Pick a day in the month (it closes); the scrim closes it unchanged | Pick a day in the month or the week in view; Escape closes it unchanged |
@@ -158,8 +158,7 @@ the system's own edge-swipe back is left to the platform, never overridden.
 | **Queue** | noun | The ranked list of recommendations. |
 | **Pattern** | noun | A recurring glucose outcome the engine detected, such as highs after meals. |
 | **Habit** | noun | Something you do that the engine counts toward a glucose outcome, queued on its own when no Pattern holds it, such as a meal with no bolus. |
-| **Pin** | verb | Start a Focus on a Pattern's habit, or on a Habit. |
-| **Focus** | noun | A habit you pinned, watched for adherence and outcome. |
+| **Focus** | noun | A Pattern's habit, or a Habit, you chose to watch for adherence and outcome. |
 | **Trial** | noun | A pump setting change the app detected, watched against its before period. |
 | **Change** | noun | A Trial or a Focus. One is active at a time. |
 | **Maturing** | state | A change still collecting its 14 days of after data. |
@@ -1363,7 +1362,8 @@ unless noted. Loading is a skeleton of the component's own shape.
    - Fields: `findings.outcome_patterns[].wide` (Uncertain: the pattern's Queue admission does not hold at its low end, ADR 485); the trial and focus lifecycle and result.
    - Desktop: the same.
 6. **TransientBar**: a label plus one text action, shown above the tab bar.
-   - States: "Snoozed until <date>" + Undo (§2.5, 2026-10-20); "Waiting for pump" + Undo,
+   - States: "Snoozed until <date>" + Undo (§2.5, 2026-10-20); "Focus started" +
+     Changes, which opens that tab (§2.5, 2026-10-20); "Waiting for pump" + Undo,
      after a Done (§2.5, 2026-10-14 Done); "Not saved" + Retry.
    - Fields: the snooze-until date (now + 14 d).
    - Desktop: the same, at the bottom of the detail pane; Undo also on ⌘Z.
@@ -1415,15 +1415,20 @@ unless noted. Loading is a skeleton of the component's own shape.
    - Desktop: a list row that selects into the detail pane. Snooze is an icon
      the open card's Snooze text action (shortcut S); there's no swipe.
 8. **PatternCard**: the open pattern, showing the magnitude, a TraceChart
-   (§2.5, 2026-10-14), and Pin. No Range: only a Setting has one; Uncertain
-   carries a pattern's confidence (ADR 485). No cause is named.
+   (§2.5, 2026-10-14), and Focus (§2.5, 2026-10-20), drawn only while the
+   served admission allows a Focus (drill-down.md). No Range: only a Setting
+   has one; Uncertain carries a pattern's confidence (ADR 485). No cause is
+   named, except a multi-cause Pattern's watched one.
    - States: episodes drawn; median and band (more than eight); empty chart
      ("No data"); Uncertain
      (the tag at the end of the magnitude line); with or without the impact
      line (Peak or Nadir · Typical, mg/dL, beneath the magnitude);
-     pinned (Pin replaced by a "Focus" pill); loading.
+     pinned (Focus replaced by a "Focus" pill); no Focus while a change is
+     watched; multi-cause (no Focus, the chart a drill-down row with a
+     trailing "›", drill-down.md); multi-cause pinned ("Focus" over the
+     watched cause's served title, §2.2 Caption + value pair); loading.
    - Header row: the title and (phone) the collapse chevron. Snooze is a
-     text action centred beneath Pin (or the Focus pill), 16 px below it.
+     text action centred beneath Focus (or the Focus pill), 16 px below it.
    - Fields: `outcome_patterns[].k, n, wide`; the count sentence (count,
      denominator, noun); the case file's `traces` (the chart, and the impact
      line: each cohort's highest or lowest served median at or after minute 0).
@@ -1431,12 +1436,13 @@ unless noted. Loading is a skeleton of the component's own shape.
 26. **HabitCard** (§2.5, 2026-10-19): a standalone habit's open card, drawn by
     the PatternCard's component from the habit's served data: the count in
     figure type ("2 of 6 highs"), a TraceChart of the habit's episodes against
-    Typical with its episodes named Habit in the legend, and Pin. No
+    Typical with its episodes named Habit in the legend, and Focus (§2.5,
+    2026-10-20), drawn only while the served admission allows one. No
     Uncertain (the engine serves none for a habit) and no impact line. Pinned,
-    the Focus pill takes Pin's place; Snooze is the text action centred 16 px
+    the Focus pill takes Focus's place; Snooze is the text action centred 16 px
     beneath either.
     - States: episodes drawn (eight or fewer); median and band (more than
-      eight); pinned; loading.
+      eight); pinned; no Focus while a change is watched; loading.
     - Fields: `guidance.candidates[subject=habit:<lever>].title`; the habit's
       findings row's `chips` (the tone); its case file's (`finding:<lever>`)
       `summary.claimed, denominator, noun` and `traces` (ADR 528);

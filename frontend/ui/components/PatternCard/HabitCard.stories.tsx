@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
-import { habitState } from '../../queue-model';
+import { focusable, habitState } from '../../queue-model';
 import { PatternCard } from './PatternCard';
 
 // The HabitCard (§4.2, §2.5 2026-10-19, ADR 528): a standalone habit's open
@@ -10,8 +10,9 @@ import { PatternCard } from './PatternCard';
 //   bolused for are too few for a band of three readings, so no Typical.
 // - Band: the wearer skipping the lunch bolus every weekday of four weeks,
 //   more rises than the chart draws one by one, as the habit's median and band.
-// - Pinned: the QA case once its person pinned the habit, the Focus pill in
-//   Pin's place.
+// - Pinned: the QA case once its person started a Focus on the habit, the
+//   Focus pill in Focus's place; the engine then admits no other Focus.
+// Whether Focus is drawn is the store's served admission (ADR 594).
 // - Loading: the card's skeleton.
 // Every state at the phone's 390 and the desktop detail pane's 720.
 const meta = {
@@ -59,36 +60,38 @@ const drawn = (data: typeof episodes): Story['play'] => async ({ canvasElement }
   }
 };
 
-/** Unpinned, Pin is the card's one primary, and pressing it asks to pin. */
+/** Unpinned, Focus is the card's one primary, and pressing it asks for a Focus. */
 const pins: Story['play'] = async (context) => {
   await drawn(episodes)!(context);
   const { args, canvasElement } = context;
-  await userEvent.click(within(canvasElement).getByRole('button', { name: 'Pin' }));
+  await userEvent.click(within(canvasElement).getByRole('button', { name: 'Focus' }));
   await expect((args as unknown as { onPin: ReturnType<typeof fn> }).onPin).toHaveBeenCalledOnce();
 };
 
-/** Pinned, the Focus pill takes Pin's place and Snooze stays beneath it. */
+/** Pinned, the Focus pill takes Focus's place and Snooze stays beneath it. */
 const pinnedPlay: Story['play'] = async ({ canvasElement }) => {
   await habitCard(canvasElement, pinned);
   const canvas = within(canvasElement);
-  await expect(canvas.queryByRole('button', { name: 'Pin' })).toBeNull();
+  await expect(canvas.queryByRole('button', { name: 'Focus' })).toBeNull();
   const pill = canvasElement.querySelector('.ui-pcard__action [data-state="focus"]') as HTMLElement;
   await expect(pill.textContent).toBe('Focus');
   const snooze = canvas.getByRole('button', { name: 'Snooze' }).getBoundingClientRect();
   await expect(snooze.top).toBeGreaterThan(pill.getBoundingClientRect().bottom);
 };
 
-const unpinned = (data: typeof episodes) => ({ data, onPin: fn(), onSnooze: fn() });
+const admitted = (state: 'habit_episodes' | 'habit_band' | 'habit_pinned') => focusable(habitState(state).store);
+const unpinned = (data: typeof episodes, state: 'habit_episodes' | 'habit_band') =>
+  ({ data, focusable: admitted(state), onPin: fn(), onSnooze: fn() });
 
-export const Episodes: Story = { args: unpinned(episodes), play: pins };
+export const Episodes: Story = { args: unpinned(episodes, 'habit_episodes'), play: pins };
 export const EpisodesDesktop: Story = {
-  args: { ...unpinned(episodes), collapsible: false }, parameters: DESKTOP, play: pins,
+  args: { ...unpinned(episodes, 'habit_episodes'), collapsible: false }, parameters: DESKTOP, play: pins,
 };
-export const Band: Story = { args: unpinned(band), play: drawn(band) };
-export const BandDesktop: Story = { args: { ...unpinned(band), collapsible: false }, parameters: DESKTOP, play: drawn(band) };
-export const Pinned: Story = { args: { data: pinned, onSnooze: fn() }, play: pinnedPlay };
+export const Band: Story = { args: unpinned(band, 'habit_band'), play: drawn(band) };
+export const BandDesktop: Story = { args: { ...unpinned(band, 'habit_band'), collapsible: false }, parameters: DESKTOP, play: drawn(band) };
+export const Pinned: Story = { args: { data: pinned, focusable: admitted('habit_pinned'), onSnooze: fn() }, play: pinnedPlay };
 export const PinnedDesktop: Story = {
-  args: { data: pinned, onSnooze: fn(), collapsible: false }, parameters: DESKTOP, play: pinnedPlay,
+  args: { data: pinned, focusable: admitted('habit_pinned'), onSnooze: fn(), collapsible: false }, parameters: DESKTOP, play: pinnedPlay,
 };
 export const Loading: Story = { args: { loading: true } };
 export const LoadingDesktop: Story = { args: { loading: true }, parameters: DESKTOP };

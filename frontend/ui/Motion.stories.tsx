@@ -133,7 +133,7 @@ const MOTIONS = {
     frame: { width: 390, height: 240, padding: 16 },
     screen: () => (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16, alignItems: 'flex-start' }}>
-        <Button kind="primary" label="Pin" />
+        <Button kind="primary" label="Focus" />
         <Button kind="secondary" label="Restore" />
         <Button kind="text" label="Snooze" />
       </div>

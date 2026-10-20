@@ -1424,6 +1424,17 @@ def states(queue: dict) -> dict:
         found = [h for h in habits if rule(h)]
         return {"store": found[0]["store"], "subject": found[0]["subject"]} if found else None
 
+    def focusable():
+        """The first store that admits a Focus and queues a Pattern of one cause
+        or none with a trace chart: its card offers Focus (ADR 594)."""
+        for store in sorted(queue):
+            if not queue[store]["focus"]["admission"]["focus_pin"]["available"]:
+                continue
+            for p in _patterns(queue[store]):
+                if len(_counter(queue[store], p["key"]).get("cause_counts") or []) <= 1:
+                    return {"store": store, "pattern": p["key"]}
+        return None
+
     def drill_down(store, rule=lambda causes: True):
         """The store's first queued Pattern whose counter serves more than one cause."""
         for candidate in queue[store]["guidance"]["candidates"]:
@@ -1458,10 +1469,11 @@ def states(queue: dict) -> dict:
         "drill_down_pinned": drill_down("meal-two-causes-pinned"),
         "drill_down_unpinnable": drill_down("correction-collapse",
                                             lambda causes: not all(c["pinnable"] for c in causes)),
+        "focusable": focusable(),
     }
     required = ("traces_episodes", "traces_band", "pinned", "setting", "setting_trial",
                 "habit_episodes", "habit_band", "habit_pinned",
-                "drill_down", "drill_down_pinned", "drill_down_unpinnable")
+                "drill_down", "drill_down_pinned", "drill_down_unpinnable", "focusable")
     missing = [name for name in required if found[name] is None]
     if missing:
         raise SystemExit(f"the simulated wearer no longer serves: {', '.join(missing)}")

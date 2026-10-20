@@ -4,7 +4,7 @@
 // in strong ink; the EvidenceChart of the evidence the estimate counts (a basal
 // slot's nights, an I:C block's meal runs); then the stat row. A setting is
 // changed on the pump, not here: the card's one primary is Done (#518), which
-// says the person programmed it, where Pin sits on a Pattern card. Once the
+// says the person programmed it, where Focus sits on a Pattern card. Once the
 // slot's change has matured into a Trial, the card names it and links to
 // Changes. A card back from a Done the next sync did not show carries the Not
 // on pump pill on its title line. Snooze, when the screen offers it, is a

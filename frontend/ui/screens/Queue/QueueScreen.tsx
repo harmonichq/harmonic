@@ -3,14 +3,31 @@
 //
 // Phone: the header stays put while the page scrolls under it, above the tab
 // bar; the open item shows its card in the row's place (accordion; the others
-// stay rows), with Snooze as a text action centred beneath Pin, or at a
+// stay rows), with Snooze as a text action centred beneath Focus, or at a
 // Setting card's foot (the swipe is its shortcut). A queued ISF opens into the
 // Overview's ISF card in the Queue's frame (§2.5, 2026-10-14). A standalone habit
-// is a Pattern's row and card with its own glyph, its Pin a Focus on the habit
+// is a Pattern's row and card with its own glyph, its Focus one on the habit
 // itself (ADR 528). A quiet "Snoozed · N" row ends the list when anything is
 // snoozed, and drills down to the Snoozed list (§2.2 Drill-down: "‹ Queue",
 // each its Queue row with Until and Restore); back returns with the same
 // item open.
+//
+// A multi-cause Pattern's card has no Focus: its chart opens the drill-down
+// (drill-down.md, ADR 594), "‹ Queue" over the Pattern's title and one open
+// card per served cause in the served order, each with its count over the
+// Pattern's, its own trace against Typical and its own Focus in its head; the
+// screen has no primary and no Snooze. Phone: it replaces the Queue above the
+// tab bar and scrolls as one page. Desktop: it fills the detail pane, its cards
+// in a grid no narrower than the phone's card, the list beside it; selecting
+// another row closes it. Every drill-down (this and Snoozed) pushes the one
+// router's history entry, so "‹ Queue", the platform's Back and, on desktop,
+// Escape return to the Queue with the same item open; the address never
+// changes. While it waits for its answers it draws a skeleton per cause it
+// opened with.
+//
+// Every Focus button follows the served admission (`focusable`), and a cause
+// card's its cause's `pinnable`: nothing is drawn, and nothing says why, where
+// the engine would refuse one (ADR 594).
 // After a snooze the TransientBar sits above the tab bar with Undo. Desktop:
 // the rail, the ranked list on the left (the selected row marked; the Snoozed
 // list drills down inside this pane and the open item stays), and the open
@@ -27,27 +44,29 @@
 // fourteen days of a snooze). Undo shows the store as it was.
 //
 // Live (`writes`, #495): Snooze — the text action, S, or a row's full swipe on
-// the phone — and Restore take the item out of their list at once; Pin shows
-// the Focus pill at once. Each write resolves once the engine's answers are
-// read again, so what the screen then shows is what the engine served: the
-// snooze bar dates from the served decision time, and Undo restores the item.
+// the phone — and Restore take the item out of their list at once; Focus shows
+// the Focus pill at once on the card pressed (a cause's Focus names its lever),
+// then the bar "Focus started" with Changes, which opens that tab. Each write
+// resolves once the engine's answers are read again, so what the screen then
+// shows is what the engine served: the snooze bar dates from the served
+// decision time, and Undo restores the item.
 // A write that fails puts the item back as it was, with "Not saved" and Retry
 // in the bar.
 //
-// Done (#518) is a Setting card's primary, where Pin sits on a Pattern card:
+// Done (#518) is a Setting card's primary, where Focus sits on a Pattern card:
 // it takes the card out of the Queue at once and the bar reads "Waiting for
 // pump" with Undo (⌘Z on desktop), which puts it back. Snooze stays the text
 // action beneath it, and on the phone the row's swipe stays Snooze. A card the
 // engine serves back after a sync found the setting unchanged carries the Not
 // on pump pill, on its row and its card. In a story, Done shows the `done.after`
 // store, as Snooze shows `snooze.after`.
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Sourced } from '../../answers';
 import { sourced } from '../../answers';
 import { useMotionGate, usePresence } from '../../motion';
 import { Num } from '../../Num';
 import {
-  queuedCount, ranking, snoozed, snoozedCount, type QueueItem, type QueueStore,
+  causes, focusable, pattern, queuedCount, ranking, snoozed, snoozedCount, type QueueItem, type QueueStore,
 } from '../../queue-model';
 import { IsfCard } from '../../components/IsfCard/IsfCard';
 import { ListGroup, ListRow } from '../../components/ListRow/ListRow';
@@ -68,7 +87,8 @@ export type QueueScreenProps = {
   state?: 'ready' | 'loading' | 'unavailable' | 'stale';
   /** The item open first; the top of the ranking when unset. */
   open?: string;
-  view?: 'queue' | 'snoozed';
+  /** `causes`: the open multi-cause Pattern's drill-down. */
+  view?: View;
   /** Phone: the row held mid-swipe over its Snooze reveal. */
   swiping?: string;
   /** What snoozing `subject` serves: the store read after it, and the bar's date. */
@@ -79,16 +99,28 @@ export type QueueScreenProps = {
   done?: { subject: string; after: QueueStore };
   /** The live engine's writes; without them a snooze shows `snooze.after`. */
   writes?: QueueWrites;
-  nav?: NavHooks;
+  nav?: NavHooks & { drillDown?: DrillDownHooks };
   /** Unavailable's Retry. */
   onRetry?: () => void;
+};
+
+type View = 'queue' | 'snoozed' | 'causes';
+
+/** The app's one router, for a drill-down (ADR 594): `open` pushes its history
+ *  entry, `close` goes Back through it, and `onReturn` calls back on a Back that
+ *  left it, returning the unsubscribe. Without them a drill-down closes itself. */
+export type DrillDownHooks = {
+  open: () => void;
+  close: () => void;
+  onReturn: (listener: () => void) => () => void;
 };
 
 /** Each resolves once the engine's answers are read again, and rejects when the write was not saved. */
 export type QueueWrites = {
   snooze: (subject: string) => Promise<void>;
   restore: (subject: string) => Promise<void>;
-  pin: (subject: string) => Promise<void>;
+  /** A Focus on the item, or on its cause `lever` (ADR 594). */
+  pin: (subject: string, lever?: string) => Promise<void>;
   done: (subject: string) => Promise<void>;
   undoDone: (subject: string) => Promise<void>;
 };
@@ -118,12 +150,15 @@ function Row({ item, layout, selected, swiping, onSelect, onSnooze, until, onRes
     onSnooze={onSnooze} snoozed={snoozed} />;
 }
 
-/** The open item's card. `actions` are what the live app adds: Pin, the
- *  Focus pill while a Pin is in flight, and a matured Trial's link to Changes. */
+/** The open item's card. `focusable` is the served admission; `onOpen` opens a
+ *  multi-cause Pattern's drill-down. `actions` are what the live app adds:
+ *  Focus, the Focus pill while its write is in flight, and a matured Trial's
+ *  link to Changes. */
 type CardActions = { onPin?: () => void; pinned?: boolean; onChanges?: () => void };
 
-function Card({ item, layout, onSnooze, onDone, actions = {} }: {
-  item: QueueItem; layout: Layout; onSnooze: () => void; onDone: () => void; actions?: CardActions;
+function Card({ item, layout, focusable, onOpen, onSnooze, onDone, actions = {} }: {
+  item: QueueItem; layout: Layout; focusable: boolean; onOpen: () => void; onSnooze: () => void; onDone: () => void;
+  actions?: CardActions;
 }) {
   if (item.kind === 'isf') {
     return <IsfCard data={item.data} queue notOnPump={item.data.notOnPump} onDone={onDone} onSnooze={onSnooze} />;
@@ -131,15 +166,15 @@ function Card({ item, layout, onSnooze, onDone, actions = {} }: {
   return item.kind === 'setting'
     ? <SettingCard data={item.data} onDone={onDone} onSnooze={onSnooze} onChanges={actions.onChanges} />
     : <PatternCard data={actions.pinned ? { ...item.data, pinned: true } : item.data} onSnooze={onSnooze}
-        onPin={actions.onPin} collapsible={layout === 'phone'} />;
+        onPin={actions.onPin} focusable={focusable} onOpen={onOpen} collapsible={layout === 'phone'} />;
 }
 
 /** Phone: an item is its row, or its card in the row's place while open. A card
  *  the person opens grows out of its row, and a card that closes shrinks back
  *  into it before the row returns. */
-function PhoneItem({ item, open, grows, swiping, onSelect, onSnooze, onDone, actions }: {
-  item: QueueItem; open: boolean; grows: boolean; swiping: boolean; onSelect: () => void; onSnooze: () => void;
-  onDone: () => void; actions?: CardActions;
+function PhoneItem({ item, open, grows, swiping, focusable, onOpen, onSelect, onSnooze, onDone, actions }: {
+  item: QueueItem; open: boolean; grows: boolean; swiping: boolean; focusable: boolean; onOpen: () => void;
+  onSelect: () => void; onSnooze: () => void; onDone: () => void; actions?: CardActions;
 }) {
   const card = usePresence(open);
   if (!card.value) {
@@ -147,14 +182,16 @@ function PhoneItem({ item, open, grows, swiping, onSelect, onSnooze, onDone, act
   }
   return (
     <div className={grows || card.closing ? 'ui-queue__open ui-expand' : 'ui-queue__open'} {...card.exit}>
-      <Card item={item} layout="phone" onSnooze={onSnooze} onDone={onDone} actions={actions} />
+      <Card item={item} layout="phone" focusable={focusable} onOpen={onOpen} onSnooze={onSnooze} onDone={onDone}
+        actions={actions} />
     </div>
   );
 }
 
-/** The bar: the stories' simulated snooze or Done, a live snooze or Done with its subject, or a failed write. */
+/** The bar: the stories' simulated snooze or Done, a live snooze or Done with its subject, a started
+ *  Focus, or a failed write. */
 type Bar = { kind: 'story' } | { kind: 'story_done' } | { kind: 'snoozed'; subject: string }
-  | { kind: 'waiting'; subject: string } | { kind: 'not_saved'; retry: () => void };
+  | { kind: 'waiting'; subject: string } | { kind: 'focused' } | { kind: 'not_saved'; retry: () => void };
 const STORY_BAR: Bar = { kind: 'story' };
 const STORY_DONE_BAR: Bar = { kind: 'story_done' };
 
@@ -164,16 +201,33 @@ export function QueueScreen({
 }: QueueScreenProps) {
   const [snoozedNow, setSnoozedNow] = useState(justSnoozed);
   const [doneNow, setDoneNow] = useState(false);
-  const [view, setView] = useState(initialView);
+  const [view, setView] = useState<View>(initialView);
   // The row the person opened on the phone, which grows into its card.
   const [expanded, setExpanded] = useState<string>();
   const root = useMotionGate<HTMLDivElement>();
-  const go = (to: typeof view) => { setExpanded(undefined); setView(to); };
-  const push = view === 'snoozed' ? 'forward' : 'back';
   const shown = snoozedNow && snooze ? snooze.after : doneNow && done ? done.after : store;
+  // The Pattern a drill-down was opened on, with its title and how many causes
+  // it served then, which its skeleton draws while it waits.
+  const opening = (subject?: string) => {
+    const key = subject?.replace(/^pattern:/, '');
+    return key ? { subject: subject!, title: pattern(shown, key).title, causes: causes(shown, key).length } : undefined;
+  };
+  const [drill, setDrill] = useState(() => (initialView === 'causes' ? opening(open) : undefined));
+  const router = nav?.drillDown;
+  const go = (to: View, subject?: string) => {
+    setExpanded(undefined);
+    if (to === 'causes') setDrill(opening(subject));
+    if (to !== 'queue') router?.open();
+    setView(to);
+  };
+  /** Back to the Queue: through the router's history entry, whose Back closes the drill-down. */
+  const leave = () => (router ? router.close() : setView('queue'));
+  const returned = useRef(() => setView('queue'));
+  useEffect(() => router?.onReturn(() => returned.current()), [router]);
+  const push = view === 'queue' ? 'back' : 'forward';
   const ready = state === 'ready' || state === 'stale';
-  // Live: the items a snooze or restore in flight has taken out, the Pin in
-  // flight, and the live bar.
+  // Live: the items a snooze or restore in flight has taken out, the Focus in
+  // flight (its subject and any cause's lever), and the live bar.
   const [hidden, setHidden] = useState<ReadonlySet<string>>(new Set());
   const [pinning, setPinning] = useState<string>();
   const [liveBar, setLiveBar] = useState<Bar | null>(null);
@@ -184,6 +238,11 @@ export function QueueScreen({
   }
   const [selected, setSelected] = useState<string | undefined>(open ?? items[0]?.subject);
   const current = items.find((i) => i.subject === selected) ?? items[0];
+  /** Desktop: another row shows that item, and closes a drill-down. */
+  const select = (subject: string) => {
+    if (view === 'causes') leave();
+    setSelected(subject);
+  };
   const snoozedTotal = ready ? snoozedCount(shown) : null;
 
   const hide = (subject: string, out: boolean) => setHidden((now) => {
@@ -216,15 +275,18 @@ export function QueueScreen({
     writes!.undoDone(subject).then(() => { setLiveBar(null); setSelected(subject); },
       notSaved(() => liveUndoDone(subject)));
   };
-  const livePin = (subject: string) => {
-    setPinning(subject);
+  const pinKey = (subject: string, lever?: string) => (lever ? `${subject} ${lever}` : subject);
+  const livePin = (subject: string, lever?: string) => {
+    setPinning(pinKey(subject, lever));
     setLiveBar(null);
-    writes!.pin(subject).catch(notSaved(() => livePin(subject))).finally(() => setPinning(undefined));
+    writes!.pin(subject, lever).then(() => setLiveBar({ kind: 'focused' }), notSaved(() => livePin(subject, lever)))
+      .finally(() => setPinning(undefined));
   };
+  const changes = nav?.onSelect && (() => nav.onSelect!('changes'));
   const actions = (item: QueueItem): CardActions | undefined => writes && {
     onPin: () => livePin(item.subject),
     pinned: pinning === item.subject,
-    onChanges: nav?.onSelect && (() => nav.onSelect!('changes')),
+    onChanges: changes,
   };
 
   // What was open before a snooze, which Undo opens again.
@@ -255,25 +317,47 @@ export function QueueScreen({
   const barShown = usePresence(liveBar ?? (snoozedNow && snooze ? STORY_BAR : doneNow && done ? STORY_DONE_BAR : null));
 
   useEffect(() => {
-    if (layout !== 'desktop' || view !== 'queue') return undefined;
+    if (layout !== 'desktop' || view === 'snoozed') return undefined;
     const onKey = (event: KeyboardEvent) => {
       if (event.metaKey || event.ctrlKey || event.altKey) return;
-      if (event.key === 's' || event.key === 'S') doSnooze();
+      if (view === 'causes' && event.key === 'Escape') leave();
+      if (view === 'queue' && (event.key === 's' || event.key === 'S')) doSnooze();
       if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
         const at = items.findIndex((i) => i.subject === current?.subject);
         const next = items[Math.min(Math.max(at + (event.key === 'ArrowDown' ? 1 : -1), 0), items.length - 1)];
-        if (next) { event.preventDefault(); setSelected(next.subject); }
+        if (next) { event.preventDefault(); select(next.subject); }
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   });
 
-  const header = state === 'unavailable' || (state === 'stale' && view === 'queue')
-    ? <ScreenHeader key={view} title="Queue" trailing="unavailable" layout={layout} onRetry={onRetry} />
-    : view === 'snoozed'
-      ? <ScreenHeader key={view} title="Snoozed" layout={layout} back={{ label: 'Queue', onBack: () => go('queue') }} />
-      : <ScreenHeader key={view} title="Queue" layout={layout} />;
+  // The drill-down's Pattern, while the Queue still ranks it, and its causes.
+  const drilled = view === 'causes' ? items.find((i) => i.subject === drill?.subject) : undefined;
+  const causeView = view === 'causes' && (drilled !== undefined || !ready);
+  const drillTitle = drilled?.data.title ?? drill?.title ?? '';
+  const backTo = { label: 'Queue', onBack: leave };
+  const queueHeader = state === 'unavailable' || (state === 'stale' && view !== 'snoozed')
+    ? <ScreenHeader key="queue" title="Queue" trailing="unavailable" layout={layout} onRetry={onRetry} />
+    : <ScreenHeader key="queue" title="Queue" layout={layout} />;
+  const causeHeader = state === 'unavailable'
+    ? <ScreenHeader key="causes" title={drillTitle} trailing="unavailable" layout={layout} back={backTo} onRetry={onRetry} />
+    : <ScreenHeader key="causes" title={drillTitle} layout={layout} back={backTo} />;
+  const header = view === 'snoozed'
+    ? (state === 'unavailable' ? queueHeader
+      : <ScreenHeader key={view} title="Snoozed" layout={layout} back={backTo} />)
+    : causeView && layout === 'phone' ? causeHeader : queueHeader;
+
+  // The drill-down's cards: one per served cause, in the served order, or a
+  // skeleton per cause it opened with while it waits (ADR 594).
+  const causeCards = !causeView ? null : state === 'loading'
+    ? Array.from({ length: drill?.causes ?? 0 }, (_, i) => <PatternCard key={i} loading />)
+    : drilled && causes(shown, drilled.subject.replace(/^pattern:/, '')).map((cause) => (
+      <PatternCard key={cause.subject} collapsible={false} pin="secondary"
+        data={pinning === pinKey(drilled.subject, cause.lever) ? { ...cause, pinned: true } : cause}
+        focusable={focusable(shown) && cause.pinnable}
+        onPin={writes && (() => livePin(drilled.subject, cause.lever))} />
+    ));
 
   const footer = snoozedTotal && snoozedTotal.value > 0 && (
     <ListGroup>
@@ -291,17 +375,20 @@ export function QueueScreen({
         ? <p className="ui-queue__empty"><Num value={queuedCount(shown)} /> patterns</p>
         : items.map((item) => (layout === 'phone'
           ? <PhoneItem key={item.subject} item={item} open={item.subject === current?.subject}
-              grows={item.subject === expanded} swiping={item.subject === swiping}
+              grows={item.subject === expanded} swiping={item.subject === swiping} focusable={focusable(shown)}
+              onOpen={() => go('causes', item.subject)}
               onSelect={() => { setSelected(item.subject); setExpanded(item.subject); }}
               onSnooze={() => doSnooze(item.subject)} onDone={() => doDone(item.subject)} actions={actions(item)} />
           : <Row key={item.subject} item={item} layout={layout} selected={item.subject === current?.subject}
-              onSelect={() => setSelected(item.subject)} />));
+              onSelect={() => select(item.subject)} />));
 
   const shownBar = barShown.value;
   const liveUntil = shownBar?.kind === 'snoozed' && ready
     ? snoozed(shown).find((s) => s.subject === shownBar.subject)?.until : undefined;
   const barContent = shownBar?.kind === 'not_saved'
     ? <TransientBar kind="not_saved" onRetry={shownBar.retry} layout={layout} />
+    : shownBar?.kind === 'focused'
+      ? <TransientBar kind="focused" onChanges={changes} layout={layout} />
     : shownBar?.kind === 'snoozed'
       ? liveUntil && <TransientBar kind="snoozed" until={liveUntil} onUndo={() => liveUndo(shownBar.subject)} layout={layout} />
       : shownBar?.kind === 'waiting'
@@ -316,34 +403,50 @@ export function QueueScreen({
       <div ref={root} className="ui-queue ui-queue--phone">
         <div className="ui-queue__head" data-push={push}>{header}</div>
         <main className="ui-queue__main" data-scroll="page" data-push={push}>
-          <div key={`${view}-list`} className="ui-queue__list ui-push">
-            {state === 'loading' && <PatternCard loading />}
-            {list}
-            {view === 'queue' && ready && footer}
-          </div>
+          {causeView ? (
+            <div key="causes-list" className="ui-queue__list ui-queue__causes ui-push">{causeCards}</div>
+          ) : (
+            <div key={`${view}-list`} className="ui-queue__list ui-push">
+              {state === 'loading' && <PatternCard loading />}
+              {list}
+              {view === 'queue' && ready && footer}
+            </div>
+          )}
         </main>
         {bar}
-        <NavBar layout="tabbar" selected="queue" dayCount={dayCount()} {...nav} />
+        <NavBar layout="tabbar" selected="queue" dayCount={dayCount()} onSelect={nav?.onSelect}
+          syncFailed={nav?.syncFailed} />
       </div>
     );
   }
+  // Desktop: the list stays the Queue's while the detail pane drills down.
+  const listView = view === 'causes' ? 'queue' : view;
   return (
     <div ref={root} className="ui-queue ui-queue--desktop">
-      <NavBar layout="rail" selected="queue" dayCount={dayCount()} {...nav} />
-      <section className="ui-queue__pane ui-queue__pane--list" data-scroll="page" data-push={push}>
+      <NavBar layout="rail" selected="queue" dayCount={dayCount()} onSelect={nav?.onSelect} syncFailed={nav?.syncFailed} />
+      <section className="ui-queue__pane ui-queue__pane--list" data-scroll="page" data-push={view === 'snoozed' ? 'forward' : 'back'}>
         {header}
-        <div key={`${view}-list`} className="ui-queue__list ui-push">
+        <div key={`${listView}-list`} className="ui-queue__list ui-push">
           {list}
-          {view === 'queue' && ready && footer}
+          {listView === 'queue' && ready && footer}
         </div>
       </section>
-      <section className="ui-queue__pane ui-queue__pane--detail" data-scroll="page">
-        {state === 'loading' && <div className="ui-queue__detail"><PatternCard loading /></div>}
-        {ready && current && (
-          <div className="ui-queue__detail">
-            <Card item={current} layout={layout} onSnooze={() => doSnooze()} onDone={() => doDone(current.subject)}
-              actions={actions(current)} />
-          </div>
+      <section className="ui-queue__pane ui-queue__pane--detail" data-scroll="page" data-push={push}>
+        {causeView ? (
+          <>
+            {causeHeader}
+            <div key="causes-list" className="ui-queue__causes ui-push">{causeCards}</div>
+          </>
+        ) : (
+          <>
+            {state === 'loading' && <div className="ui-queue__detail"><PatternCard loading /></div>}
+            {ready && current && (
+              <div key="detail" className="ui-queue__detail ui-push">
+                <Card item={current} layout={layout} focusable={focusable(shown)} onOpen={() => go('causes', current.subject)}
+                  onSnooze={() => doSnooze()} onDone={() => doDone(current.subject)} actions={actions(current)} />
+              </div>
+            )}
+          </>
         )}
         {bar}
       </section>

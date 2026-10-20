@@ -267,13 +267,14 @@ not invalidate leaves a stale cache.
 While the warm worker runs, a fixed result not yet computed for the current
 revision is served at once from the newest one before the write, carrying
 `input_data_age`, and its key is queued for the worker, which computes queued keys
-before its next shape — one thread per key, never a second compute thread. A warm
+before its next shape, lightest kind first (`_LIGHTEST`) — one thread per key,
+never a second compute thread. A warm
 shape always computes, and with no worker running the first read computes. The app
 marks a screen drawn from such an answer `stale` and reads it again until it is
 current; never draw one as current. Every window the Overview switches between is
-a fixed result (outcomes, the live analysis, the profiles — one result for all
-three windows — and Meal size), so a restart answers it from the derived-results
-file. A deploy changes the source fingerprint, so after one everything is cold.
+a fixed result (outcomes, the live analysis, and the profiles and Meal size, each
+one result for all three windows), so a restart answers it from the
+derived-results file. A deploy changes the source fingerprint, so after one everything is cold.
 
 **The store keeps two revisions, and derived results key on the one their
 builder reads (ADR 538).** The input revision advances on every write and is the

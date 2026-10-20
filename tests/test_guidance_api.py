@@ -243,8 +243,8 @@ class GuidanceApiTest(unittest.TestCase):
              patch.object(scenario_mod, "build_model_view",
                           counting("model-view", scenario_mod.build_model_view)), \
              patch.object(api_mod, "analyze", counting("analyze", api_mod.analyze)), \
-             patch.object(api_mod, "build_meal_size",
-                          counting("meal-size", api_mod.build_meal_size)):
+             patch.object(api_mod, "build_meal_size_windows",
+                          counting("meal-size", api_mod.build_meal_size_windows)):
             def read_all():
                 for path, params in (("/api/outcomes", {"window": 14}),
                                      ("/api/model-view", {"date": day}),

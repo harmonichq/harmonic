@@ -86,8 +86,8 @@ const basalSlots = (basal) => basal.map((b) => ({
   estimate: b.estimate && { value: b.estimate.value, lo: b.estimate.lo, hi: b.estimate.hi },
 }));
 
-/** gen_ui_fixtures._meal_size: the Meal size card's answer, each meal kept as the dot it draws (its climb),
- *  and the window as the days its title prints (#501). */
+/** gen_ui_fixtures._meal_size: the Meal size card's answer for one window, each meal kept as the dot it draws
+ *  (its climb), the window (null for a store with no readings), and the hours At 3 h is read at (#501, #565). */
 const mealSizes = ({ window, horizon_hours, sizes }) => ({
   window: window && { data_days: window.data_days },
   horizon_hours,
@@ -129,7 +129,7 @@ export function createLive({ client, glossary, memory = null,
     prompts: [],
     outcomes: {},
     queue: { wearer: { guidance: { candidates: [] } } },
-    overview: { wearer: { time_of_day: {}, analyze: {} } },
+    overview: { wearer: { time_of_day: {}, analyze: {}, meal_size: {} } },
     changes: {},
     day: { states: {}, days: {}, prompts: {}, months: {} },
     settings: { credentials: {}, status: {}, pump_settings: {} },
@@ -224,12 +224,13 @@ export function createLive({ client, glossary, memory = null,
       window === DEFAULT_ANALYSIS ? await analyze() : await client.fetchAnalysis(Number(window)));
     answers.overview.wearer.analyze[window] = { isf: answer.isf.slice(0, 1), basal: basalSlots(answer.basal) };
   });
-  /** The Meal size card, over its one 90-day window whatever window the Overview shows (#501). */
-  const mealSize = () => once('meal-size', async () => {
-    answers.overview.wearer.meal_size = mealSizes(served('meal-size', await client.fetchMealSize()));
+  /** The Meal size card over one window, read when the Overview first shows it (#501, #565). */
+  const mealSize = (window) => once(`meal-size ${window}`, async () => {
+    answers.overview.wearer.meal_size[window] = mealSizes(served(`meal-size ${window}`,
+      await client.fetchMealSize(Number(window))));
   });
-  /** What the Overview reads for a window it shows: its profile and its ISF and basal estimates. */
-  const overviewWindow = (window) => Promise.all([timeOfDay(window), isf(window)]);
+  /** What the Overview reads for a window it shows: its profile, its ISF and basal estimates and its Meal size. */
+  const overviewWindow = (window) => Promise.all([timeOfDay(window), isf(window), mealSize(window)]);
   const outcomes = () => once('outcomes', async () => {
     const windows = await Promise.all(WINDOWS.map((w) => client.fetchOutcomes(Number(w))));
     served('outcomes', windows.find((answer) => answer?.input_data_age));
@@ -362,13 +363,13 @@ export function createLive({ client, glossary, memory = null,
     queue: { read: queue, keys: ['queue', 'findings', 'guidance', 'analyze', 'trials', 'focus'] },
     changes: { read: changes, keys: ['changes', 'trials'] },
     // The first window, then the other two read behind it (#566), so a switch draws at once.
-    overview: { read: () => Promise.all([outcomes(), mealSize(), overviewWindow(FIRST_WINDOW)]).then(() => {
+    overview: { read: () => Promise.all([outcomes(), overviewWindow(FIRST_WINDOW)]).then(() => {
       WINDOWS.filter((w) => w !== FIRST_WINDOW)
         .reduce((before, w) => before.then(() => overviewWindow(w)), Promise.resolve())
         .then(() => remember(), () => undefined);
     }),
       // The 30 d ISF is the Queue's analysis, so the Overview reads it again with its own.
-      keys: ['outcomes', 'meal-size', 'analyze', ...WINDOWS.flatMap((w) => [`time-of-day ${w}`, `isf ${w}`])] },
+      keys: ['outcomes', 'analyze', ...WINDOWS.flatMap((w) => [`time-of-day ${w}`, `isf ${w}`, `meal-size ${w}`])] },
     // Day reads the engine's one target range, which every window's profile serves; the Overview's first.
     day: { read: () => Promise.all([navigator(), timeOfDay(FIRST_WINDOW)]),
       keys: ['navigator', `time-of-day ${FIRST_WINDOW}`] },

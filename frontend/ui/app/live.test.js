@@ -137,10 +137,11 @@ test('switching tabs back and forth reads nothing again', async () => {
   await readSettings(live);
   assert.equal(fake.calls.length, first);
   // One read of each shared answer across every tab: the badges, the roster, the guidance.
-  for (const name of ['status', 'prompts', 'guidance', 'focus', 'navigator', 'meal-size']) {
+  for (const name of ['status', 'prompts', 'guidance', 'focus', 'navigator']) {
     assert.equal(fake.count(name), 1, name);
   }
   assert.equal(fake.count('time-of-day'), 3, 'one profile per Overview window, Day\'s among them');
+  assert.equal(fake.count('meal-size'), 3, 'one Meal size per Overview window');
   assert.equal(fake.count('trials', (c) => !detail(c)), 1);
 });
 
@@ -264,13 +265,14 @@ test('an answer that stays behind is read again a bounded number of times', asyn
   const fake = fakeClient();
   fake.client.fetchMealSize = (...args) => {
     fake.calls.push({ name: 'meal-size', args });
-    return Promise.resolve({ window: null, sizes: [], input_data_age: { revision: 1, covers_to: '2026-01-01 00:00:00' } });
+    return Promise.resolve({ window: null, sizes: [],
+      ...(args[0] === 14 ? { input_data_age: { revision: 1, covers_to: '2026-01-01 00:00:00' } } : {}) });
   };
   const live = createLive({ client: fake.client, glossary: [], pause: () => Promise.resolve() });
   await live.readTab('overview');
   await Promise.all([live.catchUp('overview'), live.catchUp('overview')]);
   assert.equal(live.behind('overview'), true, 'still marked, never shown as current');
-  assert.equal(fake.count('meal-size'), 7, 'six reads again, one catch-up at a time');
+  assert.equal(fake.count('meal-size', (c) => c.args[0] === 14), 7, 'six reads again, one catch-up at a time');
 });
 
 test('concurrent tabs share one request for an answer in flight', async () => {
@@ -623,26 +625,31 @@ test('Pin on a standalone habit pins its lever under the habit\'s own subject, w
     input_revision: 7, analysis_generation: 'g1' });
 });
 
-test('the Overview reads the Meal size once, whatever its window, kept to what the card draws (#501)', async () => {
+test('the Overview reads each window\'s Meal size once, the first window first, kept to what the card draws (#501, #565, #566)', async () => {
   const fake = fakeClient();
   const meal = { t: '2024-05-01 12:00:00', carbs: 30, climb: 62, to_peak: 75, at_3h: 4 };
   const size = (from, to, meals) => ({ carbs_from: from, carbs_to: to, meals,
     climb: { median: 62, p25: 62, p75: 62 }, to_peak: { median: 75 }, at_3h: { count: 1, median: 4 } });
   fake.client.fetchMealSize = (...args) => {
     fake.calls.push({ name: 'meal-size', args });
-    return Promise.resolve({ window: { start: '2024-02-01 00:00:00', end: '2024-05-01 00:00:00', data_days: 90 },
+    return Promise.resolve({ window: { start: '2024-02-01 00:00:00', end: '2024-05-01 00:00:00', data_days: args[0] },
       horizon_hours: 3, sizes: [size(null, 25, []), size(25, 40, [meal]), size(40, 60, []), size(60, null, [])] });
   };
   const live = createLive({ client: fake.client, glossary: [] });
   await live.readTab('overview');
-  for (const window of ['30', '90', '14']) await live.readWindow(window);
+  assert.equal(fake.calls.find((c) => c.name === 'meal-size').args[0], 14, 'the first window first');
+  for (const window of ['30', '90', '14', '30']) await live.readWindow(window);
   await live.readTab('overview');
-  assert.equal(fake.count('meal-size'), 1, 'one read, whatever window is shown');
-  assert.deepEqual(live.answers.overview.wearer.meal_size, {
+  assert.deepEqual(fake.calls.filter((c) => c.name === 'meal-size').map((c) => c.args[0]), [14, 30, 90],
+    'each window once');
+  assert.deepEqual(live.answers.overview.wearer.meal_size['90'], {
     window: { data_days: 90 },
     horizon_hours: 3,
     sizes: [size(null, 25, []), size(25, 40, [{ climb: 62 }]), size(40, 60, []), size(60, null, [])],
   }, 'each meal kept as the dot it draws, its time and carbs left behind');
   await live.retryTab('overview');
-  assert.equal(fake.count('meal-size'), 2, 'the Overview\'s Retry reads it again');
+  await new Promise((resolve) => { setImmediate(resolve); });
+  const again = fake.calls.filter((c) => c.name === 'meal-size').slice(3).map((c) => c.args[0]);
+  assert.equal(again[0], 14, 'the Overview\'s Retry reads its first window first');
+  assert.deepEqual(again.sort((a, b) => a - b), [14, 30, 90], 'and every window again, once');
 });

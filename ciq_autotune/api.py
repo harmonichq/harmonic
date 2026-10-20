@@ -42,7 +42,7 @@ from .explore_exposures import build_exposures
 from .explore_time_of_day import DATA_DAYS as TIME_OF_DAY_DAYS
 from .explore_time_of_day import DEFAULT_DATA_DAYS as TIME_OF_DAY_DEFAULT_DAYS
 from .explore_time_of_day import build_time_of_day_windows
-from .meal_size import build_meal_size
+from .meal_size import build_meal_size_windows
 from .events import CarbEntry, parse_t
 from . import findings_projection as findings_projection_module
 from .findings_projection import prepare_findings_projection
@@ -82,6 +82,11 @@ RECOMPUTE_PACE_SECONDS = 0.1
 # True inside a warm-worker shape: a warm shape computes its fixed result, never
 # answers from a predecessor (#566).
 _WARMING: "contextvars.ContextVar[bool]" = contextvars.ContextVar("warming", default=False)
+
+
+# The fixed results that cost seconds, not tens of seconds, lightest first: the warm
+# pass and the reads waiting on a predecessor's replacement both take them first.
+_LIGHTEST = ("explore-time-of-day", "meal-size", "outcomes")
 
 
 def _warming_call(warm):
@@ -822,11 +827,17 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                               lambda windows: windows[str(days)])
 
     @app.get("/api/explore/meal-size")
-    def explore_meal_size_endpoint(_: None = Depends(require_token)) -> dict:
+    def explore_meal_size_endpoint(days: int = TIME_OF_DAY_DEFAULT_DAYS,
+                                   _: None = Depends(require_token)) -> dict:
         """The Overview's Meal size card (#501, ADR 501): the climb after each
-        counted meal of the last 90 days, by size, and each size's medians. It
-        reads only recorded data, so it is one fixed result."""
-        return fixed_response(fixed(("meal-size",), "meal-size-v1", build_meal_size))
+        counted meal of the last 14, 30 or 90 days (#565), by size, and each
+        size's medians. It reads only recorded data, and its three windows are one
+        fixed result, measured in one pass (#566); each read serves its own window."""
+        if days not in TIME_OF_DAY_DAYS:
+            raise HTTPException(status_code=400,
+                                detail=f"days must be one of {list(TIME_OF_DAY_DAYS)}")
+        return fixed_response(fixed(("meal-size",), "meal-size-v2", build_meal_size_windows),
+                              lambda windows: windows[str(days)])
 
     @app.get("/api/explore/exposures")
     def explore_exposures_endpoint(_: None = Depends(require_token)) -> dict:
@@ -1750,10 +1761,10 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
 
         return (
             # The Overview's lighter reads, at every window it switches between: its
-            # glucose profiles (one shape for all three), its Meal size card (one
-            # fixed 90 days) and its outcomes.
+            # glucose profiles and its Meal size card (each one shape for all three
+            # windows) and its outcomes.
             ("explore-time-of-day", lambda: explore_time_of_day_endpoint(days=TIME_OF_DAY_DEFAULT_DAYS)),
-            ("meal-size", lambda: explore_meal_size_endpoint()),
+            ("meal-size", lambda: explore_meal_size_endpoint(days=TIME_OF_DAY_DEFAULT_DAYS)),
             *((f"outcomes-{days}", lambda days=days: outcomes_endpoint(window=days))
               for days in TIME_OF_DAY_DAYS),
             # The snapshot's first input, warmed as its own shape.
@@ -1793,12 +1804,17 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             app.state.recompute_shape_task = None
 
     async def run_refreshes() -> None:
-        """Compute every fixed result a read answered from its predecessor (#566)."""
+        """Compute every fixed result a read answered from its predecessor (#566),
+        the lightest kind first, as the roster runs them, and in the order asked
+        within a kind: a Meal size waits behind no analysis."""
+        def weight(key):
+            return _LIGHTEST.index(key[0]) if key[0] in _LIGHTEST else len(_LIGHTEST)
         while True:
             with refreshes_lock:
                 if not refreshes:
                     return
-                key, run = refreshes.popitem(last=False)
+                key = min(refreshes, key=weight)
+                run = refreshes.pop(key)
             await run_shape(f"refresh {key[0]}", run)
 
     async def recompute_worker(event) -> None:

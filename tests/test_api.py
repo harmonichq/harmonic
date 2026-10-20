@@ -886,7 +886,7 @@ class OverviewInstantTest(unittest.TestCase):
         [("/api/outcomes", {"window": days}) for days in _DAYS]
         + [("/api/explore/time-of-day", {"days": days}) for days in _DAYS]
         + [("/api/analyze", {"window": days}) for days in _DAYS]
-        + [("/api/explore/meal-size", {})])
+        + [("/api/explore/meal-size", {"days": days}) for days in _DAYS])
 
     def setUp(self):
         self.tmp = tempfile.NamedTemporaryFile(suffix=".db")
@@ -905,10 +905,10 @@ class OverviewInstantTest(unittest.TestCase):
         return create_app(db_path=self.tmp.name, token=None, enable_fetch_loop=False)
 
     def test_after_a_write_every_window_answers_at_once_from_its_predecessor(self):
-        """Each window's profile is served, labeled, while the new one is computed once."""
+        """Each window's profile and Meal size is served, labeled, while each is computed once."""
         import ciq_autotune.api as api_mod
         app = self._app()
-        # No warm roster: only the reads ask for the profile to be computed again.
+        # No warm roster: only the reads ask for their results to be computed again.
         app.state.recompute_roster = lambda: ()
         real = api_mod.build_time_of_day_windows
         builds = []
@@ -921,36 +921,101 @@ class OverviewInstantTest(unittest.TestCase):
                 self.assertTrue(release.wait(5))
             return real(store, **kwargs)
 
-        def profile(client, days):
-            return client.get("/api/explore/time-of-day", params={"days": days})
+        paths = ("/api/explore/time-of-day", "/api/explore/meal-size")
+
+        def read(client, path, days):
+            return client.get(path, params={"days": days})
 
         with patch.object(api_mod, "build_time_of_day_windows", side_effect=blocked):
             with TestClient(app) as client:
-                before = {days: profile(client, days).json() for days in self._DAYS}
+                before = {(path, days): read(client, path, days).json()
+                          for path in paths for days in self._DAYS}
                 for body in before.values():
                     self.assertNotIn("input_data_age", body)
                 self.assertEqual(client.post("/api/carbs", json={
                     "t": "2026-06-05 06:00:00", "grams": 20, "certainty": "exact"}).status_code, 200)
+                served = {}
                 with ThreadPoolExecutor(max_workers=3) as pool:
-                    futures = {days: pool.submit(profile, client, days) for days in self._DAYS}
                     try:
-                        served = {days: future.result(timeout=3) for days, future in futures.items()}
+                        for path in paths:
+                            futures = {days: pool.submit(read, client, path, days)
+                                       for days in self._DAYS}
+                            served.update({(path, days): future.result(timeout=3)
+                                           for days, future in futures.items()})
+                            # The worker is computing the profiles, so Meal size waits behind them.
+                            self.assertTrue(entered.wait(3), "the warm worker computes the new profile")
                     finally:
                         release.set()
-                for days, response in served.items():
+                for key, response in served.items():
                     self.assertEqual(response.status_code, 200)
                     body = response.json()
-                    self.assertIn("input_data_age", body, days)
+                    self.assertIn("input_data_age", body, key)
                     self.assertEqual({k: v for k, v in body.items() if k != "input_data_age"},
-                                     before[days])
-                self.assertTrue(entered.wait(3), "the warm worker computes the new profile")
+                                     before[key])
                 deadline = time.monotonic() + 5
-                while "input_data_age" in profile(client, 14).json():
-                    self.assertLess(time.monotonic(), deadline, "the new profile never landed")
+                while any("input_data_age" in read(client, path, 14).json() for path in paths):
+                    self.assertLess(time.monotonic(), deadline, "the new results never landed")
                     time.sleep(0.02)
-                for days in self._DAYS:
-                    self.assertNotIn("input_data_age", profile(client, days).json())
-        self.assertEqual(len(builds), 2, "one compute before the write, one after it")
+                for path in paths:
+                    for days in self._DAYS:
+                        self.assertNotIn("input_data_age", read(client, path, days).json())
+        self.assertEqual(len(builds), 2, "one profile compute before the write, one after it")
+
+    def test_the_worker_computes_the_lightest_waiting_result_first(self):
+        """A Meal size a read waits on is computed before an analysis asked for earlier."""
+        import ciq_autotune.api as api_mod
+        app = self._app()
+        app.state.recompute_roster = lambda: ()
+        order = []
+        entered, release = threading.Event(), threading.Event()
+        real_profile = api_mod.build_time_of_day_windows
+        real_analyze = api_mod.analyze
+        real_meal = api_mod.build_meal_size_windows
+
+        profiles = []
+
+        def profile(store, **kwargs):
+            order.append("profile")
+            profiles.append(1)
+            if len(profiles) > 1:
+                entered.set()
+                self.assertTrue(release.wait(5))
+            return real_profile(store, **kwargs)
+
+        def analysis(*args, **kwargs):
+            order.append("analyze")
+            return real_analyze(*args, **kwargs)
+
+        def meal(store, **kwargs):
+            order.append("meal-size")
+            return real_meal(store, **kwargs)
+
+        with patch.object(api_mod, "build_time_of_day_windows", side_effect=profile), \
+             patch.object(api_mod, "analyze", side_effect=analysis), \
+             patch.object(api_mod, "build_meal_size_windows", side_effect=meal):
+            with TestClient(app) as client:
+                reads = (("/api/explore/time-of-day", {"days": 14}),
+                         ("/api/analyze", {"window": 14}),
+                         ("/api/explore/meal-size", {"days": 14}))
+                for path, params in reads:
+                    self.assertEqual(client.get(path, params=params).status_code, 200)
+                order.clear()
+                self.assertEqual(client.post("/api/carbs", json={
+                    "t": "2026-06-05 06:00:00", "grams": 20, "certainty": "exact"}).status_code, 200)
+                try:
+                    # The worker takes the profile, and holds it while the others wait.
+                    self.assertIn("input_data_age", client.get(reads[0][0], params=reads[0][1]).json())
+                    self.assertTrue(entered.wait(3))
+                    for path, params in reads[1:]:
+                        self.assertIn("input_data_age", client.get(path, params=params).json(), path)
+                finally:
+                    release.set()
+                deadline = time.monotonic() + 10
+                while any("input_data_age" in client.get(path, params=params).json()
+                          for path, params in reads):
+                    self.assertLess(time.monotonic(), deadline, "the new results never landed")
+                    time.sleep(0.05)
+        self.assertEqual(order, ["profile", "meal-size", "analyze"])
 
     def test_a_restart_answers_every_window_without_computing(self):
         """Outcomes, profiles, analyses and Meal size at every window survive a restart."""
@@ -969,7 +1034,7 @@ class OverviewInstantTest(unittest.TestCase):
              patch.object(outcomes_mod, "summarize_outcomes", counting(outcomes_mod.summarize_outcomes)), \
              patch.object(api_mod, "build_time_of_day_windows",
                           counting(api_mod.build_time_of_day_windows)), \
-             patch.object(api_mod, "build_meal_size", counting(api_mod.build_meal_size)):
+             patch.object(api_mod, "build_meal_size_windows", counting(api_mod.build_meal_size_windows)):
             restarted = TestClient(self._app())
             for path, params in self._OVERVIEW:
                 response = restarted.get(path, params=params)
@@ -1716,7 +1781,7 @@ class CachePreWarmTest(unittest.TestCase):
         ("scenarios", "ciq_autotune.analyzers.scenario", "build_scenarios"),
         ("exposures", "ciq_autotune.api", "build_exposures"),
         ("explore-time-of-day", "ciq_autotune.api", "build_time_of_day_windows"),
-        ("meal-size", "ciq_autotune.api", "build_meal_size"),
+        ("meal-size", "ciq_autotune.api", "build_meal_size_windows"),
         ("outcomes", "ciq_autotune.outcomes", "summarize_outcomes"),
         ("finding-case-file", "ciq_autotune.api", "prepare_finding_cases"),
         ("trials", "ciq_autotune.watched_change", "review_trials"),
@@ -1774,8 +1839,10 @@ class CachePreWarmTest(unittest.TestCase):
             ("/api/explore/time-of-day", {"days": 90}),
             ("/api/analyze", {"window": 14}),
             ("/api/analyze", {"window": 90}),
-            # The Overview's Meal size card, over its one 90-day window.
-            ("/api/explore/meal-size", {}),
+            # The Overview's Meal size card, at each window.
+            ("/api/explore/meal-size", {"days": 14}),
+            ("/api/explore/meal-size", {"days": 30}),
+            ("/api/explore/meal-size", {"days": 90}),
             # The Day screen: its navigator, then the latest day and the one before.
             ("/api/day-navigator", {}),
             ("/api/timeline", {"start": "2026-06-05T00:00:00", "end": "2026-06-06T00:00:00"}),

@@ -1886,7 +1886,39 @@ and that it "doesn't really match the mockup".
 `range` swatch replaces them. The lock's §2.5 gains the amendment and §4.2 entry 27
 is revised. The glossary and allowlist are regenerated.
 
-## ADR 566 — After a write the Overview answers from its labelled predecessor, every window is kept, and the profiles are one pass
+## ADR 565 — The Meal size card follows the window, and its Range stands in front of its dots
+
+**Context.** Connor, on the card #562 fitted: "The range is impossible to see." The
+25–75% line ran through dots of its own light blue, so a dense row read as one blob.
+And: "don't repeat the days, the user already picked days in the picker above this".
+
+**Decision.**
+
+1. *The window follows the switch.* This supersedes ADR 501 decision 1.
+   `/api/explore/meal-size` takes `days`, one of the profile's 14, 30 or 90, and
+   refuses any other. Each window is its own fixed result, `("meal-size", days)`,
+   keyed by the recorded-data revision, and the warm roster warms all three. The
+   live adapter reads a window when the Overview first shows it, as it reads the
+   profile, and keeps it under `meal_size.<window>`. The title is "Meal size"
+   alone, since the estimates print no window either. A short window holds few
+   meals, and each size already serves and prints its count.
+2. *The Range in front.* The dots draw first: smaller, neutral grey, mostly
+   transparent, a little brighter inside the Range. Then the Range draws as a 5 px
+   line in its size's shade of the estimate blue, then the median as an ink tick.
+   Each of the two rides on a halo of the card's surface. The stories assert that
+   each paints after the dots, carries its halo, and that the Range is at least
+   4 px wide with 3:1 contrast against the card.
+3. *Halo, not a track.* The alternative, the Range on its own track beneath each
+   strip with the median spanning both, was rendered beside it on the densest
+   synthetic rows and a sparse store. Both read clearly. The track adds 10 px to
+   every size, 40 in all, which would take the desktop card past the estimates'
+   height (ADR 559). The halo adds nothing.
+
+**Consequences.** The UI fixtures serve each store's Meal size per window. The
+showcase's contract test reads the 14-day and 90-day windows. An install's
+derived-results file keeps the old `("meal-size",)` row, never read again.
+
+## ADR 566 — After a write the Overview answers from its labelled predecessor, every window is kept, and the profiles and Meal size are one pass each
 
 **Context.** Connor, 2026-10-19: "The stats and charts for 14/30/90 need to be
 cached and pre-warmed so the user can instantly tab between them. Basically the
@@ -1901,34 +1933,39 @@ the showcase:
   Overview read after a sync waited for its own compute, several at a time.
 - Outcomes and the 14- and 90-day analyses lived only in memory: a restart
   recomputed them, and after a write there was no predecessor to serve.
-- Each window's profile re-read the whole reading and bolus history and resolved
-  its false-low spans and its meals again — the same work three times — and its
-  pooled envelope scanned every reading once per 15-minute bin.
+- Each window's profile, and each window's Meal size (ADR 565), re-read the whole
+  reading and bolus history and resolved its false-low spans and its meals again —
+  the same work three times — and the profile's pooled envelope scanned every
+  reading once per 15-minute bin.
 - The warm pass reached the Overview after the Queue's heaviest shapes.
 - The app ignored `input_data_age`, and read a 30- or 90-day window only when it
   was first switched to.
 
 **Decision.**
 
-1. *Answer from the predecessor, compute once, next.* While the warm worker runs, a
-   fixed read whose current result is not computed answers at once from the newest
-   result of its key and shape before the write, labelled with `input_data_age`,
-   and queues its key for the worker, which computes queued keys before its next
-   shape, in the order they were asked for. A key is computed by one thread at a
-   time (the fixed registry and the cache's flight). A warm shape always computes;
-   with no worker running (an ASGI server without its lifespan, a test client) the
-   first read computes as before.
+1. *Answer from the predecessor, compute once, lightest first.* While the warm
+   worker runs, a fixed read whose current result is not computed answers at once
+   from the newest result of its key and shape before the write, labelled with
+   `input_data_age`, and queues its key for the worker. The worker computes queued
+   keys before its next shape: profiles, then Meal size, then outcomes, then
+   anything else, first come within a kind, so a Meal size never waits behind an
+   analysis. A key is computed by one thread at a time (the fixed registry and the
+   cache's flight). A warm shape always computes; with no worker running (an ASGI
+   server without its lifespan, a test client) the first read computes as before.
 2. *Every Overview window is a fixed result.* Outcomes and the live analysis at 14,
    30 and 90 days join the profiles and Meal size in the derived-results file,
    keyed by the recorded-data revision (ADR 538; both builders read only recorded
    data and anchor on the data's own last instant). A restart answers them without
    computing, and every write leaves a predecessor. Other windows stay in memory.
-3. *One pass for the three profiles.* The three windows end at the same instant, so
-   one fixed result reads the history, its false-low spans and its meals once and
-   slices each window from them; a read serves its own window. The pooled envelope
-   buckets readings by minute of the day once and gathers each bin's 90 minutes.
-   The answer is byte-identical to the per-window build on the real snapshot and
-   on the showcase.
+3. *One pass each for the three profiles and the three Meal sizes.* The three
+   windows end at the same instant, so one fixed result reads the history, its
+   false-low spans and its meals once and slices each window from them; a read
+   serves its own window. A meal's measurement reads only that meal, the next one
+   and the whole history, so the widest window's meals are measured once and each
+   window keeps those inside it. This supersedes ADR 565's one fixed result per
+   Meal size window. The profile's pooled envelope buckets readings by minute of
+   the day once and gathers each bin's 90 minutes. Both answers are byte-identical
+   to the per-window builds on the real snapshot and on the showcase.
 4. *The warm pass runs the lightest screen first*: the profiles, Meal size and the
    three outcomes, then the Queue's and Changes' shapes, then the 14- and 90-day
    analyses, then Day.
@@ -1939,26 +1976,30 @@ the showcase:
    once each is current. The Overview reads its other two windows behind the
    first, so a switch draws at once.
 
-**Measured** in process on the Mac, the ten Overview reads (outcomes, profile and
-analysis at each window, and Meal size), main and this change back to back. Both
-runs were taken while the Mac was loaded by other work: the scaling loop read
-0.54–0.56 s here against 0.58 s on the home server, so these figures read roughly
-as the host's (an estimate; on a quiet Mac the host is about 3–4.5× slower).
+**Measured** in process on the Mac, the thirteen Overview reads (outcomes, profile,
+analysis and Meal size at each window), main and this change back to back. The
+scaling loop read 0.17–0.28 s on the Mac and 0.58 s on the home server, so the host
+column multiplies by 3 (an estimate, not a host measurement).
 
-| Real snapshot | Before | After |
-|---|---|---|
-| All ten reads right after a write | 78.6 s, each computing | 1.1 s, each its labelled predecessor |
-| A profile current again after a write | 6.2 s (14 d) | 1.2 s |
-| Everything current again after a write | 78.7 s | 66 s, in the background |
-| All ten reads after a restart | 42.8 s | 0.2 s |
-| All ten reads, warm | 33 ms | 66 ms |
-| The three profiles' compute (quiet Mac) | 2.63 s | 0.50 s |
+| Real snapshot | Before | After | Host, before → after |
+|---|---|---|---|
+| All thirteen reads right after a write | 34.8 s, each computing | 0.7 s, each its labelled predecessor | ~104 s → ~2 s |
+| The profiles current again after a write | 4.1 s (14 d) | 0.7 s | ~12 s → ~2 s |
+| Meal size current again after a write | 2.2 s (14 d) | 2.3 s, in the background | |
+| Outcomes current again after a write | 1.3 s (14 d) | 4–12 s, in the background | |
+| Everything current again after a write | 34.8 s | 41 s, in the background | |
+| All thirteen reads after a restart | 17.8 s | 0.1 s | ~53 s → ~0.4 s |
+| All thirteen reads, warm | 21 ms | 41 ms | |
+| All thirteen reads cold, alternated twice | 43–52 s | 43–48 s | unchanged |
+| The three profiles' compute | 2.63 s | 0.50 s | |
+| The three Meal sizes' compute | 1.37 s | 0.43 s | |
 
 | Showcase | Before | After |
 |---|---|---|
-| All ten reads right after a write | 20.3 s | 0.2 s |
-| All ten reads after a restart | 13.8 s | 0.2 s |
-| The three profiles' compute (quiet Mac) | 1.15 s | 0.12 s |
+| All thirteen reads right after a write | 23.6 s | 0.35 s |
+| All thirteen reads after a restart | 12.8 s | 0.13 s |
+| The three profiles' compute | 1.15 s | 0.12 s |
+| The three Meal sizes' compute | 0.15 s | 0.05 s |
 
 **Rejected.** A second refresh thread beside the warm worker: on two cores the
 contention it adds is what made the profiles take 34–47 s. Serving a predecessor
@@ -1970,5 +2011,6 @@ correction factor's bootstrap and the scenario tally) and is not changed here.
 **Consequences.** A screen read that is a fixed result is instant after every
 write and marked until current; one that is not (the findings snapshot, the Trial
 roster) still computes on its first read after a write. A new fixed result needs
-no change to be served this way. The derived-results file holds three more shapes
-per window and one profile row instead of three.
+no change to be served this way. The derived-results file holds outcomes and the
+analysis for each window, and one row each for the profiles and Meal size; an
+install's older per-window Meal size and profile rows are never read again.

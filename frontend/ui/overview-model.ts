@@ -6,7 +6,7 @@
 // answers sit under `overview.<store>`. The glucose profile and the ISF
 // estimate are served per window, under `time_of_day.<window>` and
 // `analyze.<window>`; a window the live adapter has not read yet is absent.
-// The Meal size card reads one fixed window, under `meal_size`.
+// The Meal size card is served per window too, under `meal_size.<window>` (#565).
 import { answers, sourced, type Format, type Sourced } from './answers';
 import { delta, type Change, type Metric } from './direction';
 import { PARAMETER_FORMATS, PARAMETER_UNITS } from './settings-model';
@@ -293,7 +293,6 @@ export type MealSizeRow = {
   at3hMeals: Sourced<number>;
 };
 export type MealSizeData = {
-  days: Sourced<number>;
   /** The hours At 3 h is read at, the engine's own horizon. */
   hours: Sourced<number>;
   rows: MealSizeRow[];
@@ -310,17 +309,17 @@ type MealSizeAnswer = {
   }[];
 };
 
-/** The Meal size card, over its one window: null when it has not been read
- *  yet, 'none' when the engine counts no meal in it. */
-export function mealSize(store: OverviewStore): MealSizeData | 'none' | null {
-  const served = (answers.overview[store] as { meal_size?: MealSizeAnswer }).meal_size;
+/** The Meal size card over `window`: null when it has not been read yet,
+ *  'none' when the engine counts no meal in it. */
+export function mealSize(store: OverviewStore, window: Window): MealSizeData | 'none' | null {
+  const served = (answers.overview[store] as { meal_size?: Partial<Record<Window, MealSizeAnswer>> })
+    .meal_size?.[window];
   if (!served) return null;
   if (!served.window || served.sizes.every((size) => size.meals.length === 0)) return 'none';
-  const root = `overview.${store}.meal_size`;
+  const root = `overview.${store}.meal_size.${window}`;
   const median = (path: string, value: number | null, format: Format) =>
     (value === null ? null : sourced<number>(path, format));
   return {
-    days: sourced(`${root}.window.data_days`),
     hours: sourced(`${root}.horizon_hours`),
     rows: served.sizes.map((size, i) => {
       const at = `${root}.sizes.${i}`;

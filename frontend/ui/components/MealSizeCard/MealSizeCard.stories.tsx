@@ -5,8 +5,8 @@ import { MealSizeCard } from './MealSizeCard';
 
 // §4.2 MealSizeCard (ADR 501, #559), each state a store the generator serves
 // (gen_ui_fixtures._require_meal_sizes fails if one stops):
-// - Populated: the simulated wearer's 84 days, a meal in every size and a few
-//   at 60 g+; phone at 390 (the strips, then the rows beneath), desktop at the
+// - Populated: the simulated wearer's 84 days at 90 d, the densest rows the
+//   stories serve, a meal in every size and a few at 60 g+; phone at 390 (the strips, then the rows beneath), desktop at the
 //   Overview's full row (each size one row, its numbers beside its strip), and
 //   a 320 px phone.
 // - Sparse: the same wearer's first five days, one meal at 60 g+.
@@ -24,7 +24,7 @@ type Story = StoryObj<typeof meta>;
 const DESKTOP = { frame: { width: 1120 } };
 
 const served = (store: Parameters<typeof mealSize>[0]): MealSizeData => {
-  const data = mealSize(store);
+  const data = mealSize(store, '90');
   if (!data || data === 'none') throw new Error(`${store} serves no meal sizes`);
   return data;
 };
@@ -37,9 +37,51 @@ const LABEL_SPACE = 12;
 /** A served median: signed, with a true minus, or "0". */
 const SIGNED = /^([+−]\d+|0)$/;
 
+/** A computed colour (rgb, color(srgb …), oklab …) as 0–255 sRGB, read back
+ *  from a one-pixel canvas so every colour syntax resolves the same way. */
+function rgb(colour: string): number[] {
+  const context = document.createElement('canvas').getContext('2d', { willReadFrequently: true })!;
+  context.fillStyle = colour;
+  context.fillRect(0, 0, 1, 1);
+  return [...context.getImageData(0, 0, 1, 1).data.slice(0, 3)];
+}
+
+/** The WCAG contrast of two computed colours. */
+function contrast(a: string, b: string) {
+  const luminance = (colour: string) => {
+    const [r, g, b2] = rgb(colour).map((c) => {
+      const v = c / 255;
+      return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+    });
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b2;
+  };
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+/** #565: a strip's Range and median paint above its dots (later in the SVG),
+ *  each over a halo of the card's surface, and the Range line stands out from
+ *  the card by at least 3:1. */
+async function rangeOnTop(strip: Element, card: Element) {
+  const dots = strip.querySelector('g[aria-hidden]')!;
+  const range = strip.querySelector('[data-range]');
+  const median = strip.querySelector('[data-median]');
+  for (const mark of [range, median]) {
+    if (!mark) continue;
+    await expect(dots.compareDocumentPosition(mark) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    await expect(mark.querySelector('.ui-meal-size__halo')).not.toBeNull();
+  }
+  if (range) {
+    const surface = getComputedStyle(card).backgroundColor;
+    const line = getComputedStyle(range.querySelector('.ui-meal-size__range')!);
+    await expect(contrast(line.stroke, surface)).toBeGreaterThanOrEqual(3);
+    await expect(parseFloat(line.strokeWidth)).toBeGreaterThanOrEqual(4);
+  }
+}
+
 /** Each strip draws one dot per served meal, its median tick when it has a
- *  meal, and its Range line when that spans; no two axis labels touch; one
- *  table row per size, each median signed. */
+ *  meal, and its Range line when that spans, above its dots; no two axis
+ *  labels touch; one table row per size, each median signed. */
 const drawn = (data: MealSizeData, layout: 'wide' | 'narrow'): Story['play'] => async ({ canvasElement }) => {
   await expect(canvasElement.querySelector(`.ui-meal-size__body--${layout}`)).not.toBeNull();
   for (const [i, row] of data.rows.entries()) {
@@ -48,6 +90,7 @@ const drawn = (data: MealSizeData, layout: 'wide' | 'narrow'): Story['play'] => 
     await expect(strip.querySelectorAll('.ui-chart__median').length).toBe(row.median ? 1 : 0);
     await expect(strip.querySelectorAll('.ui-meal-size__range').length)
       .toBe(row.p25 !== null && row.p75 !== null && row.p75 > row.p25 ? 1 : 0);
+    await rangeOnTop(strip, canvasElement.querySelector('.ui-meal-size')!);
   }
   const labels = [...canvasElement.querySelectorAll<SVGTextElement>('.ui-chart__tick')]
     .map((label) => label.getBoundingClientRect());
@@ -94,5 +137,5 @@ export const EmptySizes: Story = {
     await expect(cells.map((cell) => cell.textContent!.charAt(0))).toEqual(['–', '–', '–']);
   },
 };
-export const NoData: Story = { args: { data: mealSize('wearer-unsynced') } };
+export const NoData: Story = { args: { data: mealSize('wearer-unsynced', '90') } };
 export const Loading: Story = { args: { data: null } };

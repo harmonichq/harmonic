@@ -35,7 +35,7 @@ Two committed outputs, one generator, one ``--check``:
   so one more store, ``isf-supported``, serves an ISF the engine supports a
   change for: ``scripts/qa_e2e_cases.py``'s manufactured fasting nights (a true
   ISF of 33 under 8 mg/dL of sensor noise), read through the same API.
-  ``/api/explore/meal-size`` (#501), trimmed to what the Meal size card draws,
+  ``/api/explore/meal-size`` (#501) for each window (#565), trimmed to what the Meal size card draws,
   is served for the wearer (a meal in every size), its first days (one meal at
   60 g+), the unsynced store (no window), and ``showcase``, the QA catalog's
   showcase case, whose meals are all 40 g or more.
@@ -196,7 +196,7 @@ UNBOLUSED_LUNCHES = (79, 81)
 # of the Low and the Rise they list.
 PROMPT_ROWS = ("Lows", "Rises")
 # §4.2 SegmentedControl: "14 / 30 / 90 d", and QueueRow's magnitude "9 of 71 lows".
-# The Meal size card's To peak is in minutes, "min" (§2.5, 2026-10-19).
+# The Meal size card's Peak at is in minutes, "min" (§2.5, 2026-10-19).
 UNITS = ("d", "min")
 CONNECTIVES = ("of",)
 # EvidenceChart labels its two marks with the served field each one plots:
@@ -408,7 +408,7 @@ def fixtures() -> dict:
         overview = {"wearer": {
             "time_of_day": _profiles(client),
             "analyze": _windows(client),
-            "meal_size": _meal_size(client),
+            "meal_size": _meal_sizes(client),
             "day_navigator": _day_navigator(client),
         }}
         day = _days(client, overview["wearer"]["day_navigator"])
@@ -442,7 +442,7 @@ def fixtures() -> dict:
 
         _, first_days = _wearer(scratch, "wearer-first-days", trial=False, days=FIRST_DAYS)
         overview["wearer-first-days"] = {"time_of_day": _profiles(first_days),
-                                         "meal_size": _meal_size(first_days)}
+                                         "meal_size": _meal_sizes(first_days)}
         changes["wearer-first-days"] = _changes_store(first_days)
         # Everything the first days admit, snoozed: an empty Queue whose
         # Snoozed list holds them all (§1.3 Queue empty, Queue · Snoozed).
@@ -540,14 +540,14 @@ def fixtures() -> dict:
         with Store.open(str(showcase)) as store:
             qa_e2e_cases.materialize_case(store, next(
                 case for case in qa_e2e_cases.QA_CASES if case.name == MEAL_SIZE_CASE))
-        overview[MEAL_SIZE_CASE] = {"meal_size": _meal_size(_serve(showcase))}
+        overview[MEAL_SIZE_CASE] = {"meal_size": _meal_sizes(_serve(showcase))}
 
         unsynced = scratch / "wearer-unsynced.sqlite"
         with Store.open(str(unsynced)):
             pass
         unsynced_client = _serve(unsynced)
         overview["wearer-unsynced"] = {"outcomes": _outcomes(unsynced_client),
-                                       "meal_size": _meal_size(unsynced_client),
+                                       "meal_size": _meal_sizes(unsynced_client),
                                        "guidance": {"disposition": _get(unsynced_client, "/api/guidance")["disposition"]}}
         _require_meal_sizes(overview)
         settings["pump_settings"]["wearer-unsynced"] = _pump_settings(unsynced_client)
@@ -740,11 +740,17 @@ def _windows(client: TestClient) -> dict:
     return out
 
 
-def _meal_size(client: TestClient) -> dict:
+def _meal_sizes(client: TestClient) -> dict:
+    """The Meal size card for each window the Overview switches between (#565)."""
+    return {str(w): _meal_size(client, w) for w in WINDOWS}
+
+
+def _meal_size(client: TestClient, days: int) -> dict:
     """``/api/explore/meal-size``, trimmed to what the Meal size card reads: each
     meal as the dot it draws (its climb), each size's medians and counts, the
-    window as the days its title prints, and the hours At 3 h is read at (#501)."""
-    answer = _get(client, "/api/explore/meal-size")
+    window (null for a store with no readings), and the hours At 3 h is read at
+    (#501)."""
+    answer = _get(client, "/api/explore/meal-size", days=days)
     return {
         "window": answer["window"] and {"data_days": answer["window"]["data_days"]},
         "horizon_hours": answer["horizon_hours"],
@@ -755,14 +761,15 @@ def _meal_size(client: TestClient) -> dict:
 
 
 def _require_meal_sizes(overview: dict) -> None:
-    """Fail unless each Meal size story's store still serves its state: the wearer
-    a meal in every size, its first days a single 60 g+ meal, the showcase a size
-    with no meal beside one with some, and the unsynced store no window."""
+    """Fail unless each Meal size story's store still serves its state at 90 days:
+    the wearer a meal in every size, its first days a single 60 g+ meal, the
+    showcase a size with no meal beside one with some, and the unsynced store no
+    window."""
     def counts(store):
-        return [len(size["meals"]) for size in overview[store]["meal_size"]["sizes"]]
+        return [len(size["meals"]) for size in overview[store]["meal_size"]["90"]["sizes"]]
     wearer, first, showcase = counts("wearer"), counts("wearer-first-days"), counts(MEAL_SIZE_CASE)
     if (min(wearer) == 0 or first[-1] != 1 or 0 not in showcase or not any(showcase)
-            or overview["wearer-unsynced"]["meal_size"]["window"] is not None):
+            or overview["wearer-unsynced"]["meal_size"]["90"]["window"] is not None):
         raise SystemExit(f"the Meal size stores no longer serve their states: {wearer} {first} {showcase}")
 
 

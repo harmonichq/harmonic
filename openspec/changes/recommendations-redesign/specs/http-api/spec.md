@@ -329,8 +329,8 @@ the readings.
 
 ### Requirement: The meal-size read serves the climb after meals of each size
 
-`GET /api/explore/meal-size` SHALL serve, over the last 90 pump-local calendar days
-ending after the newest CGM day, the engine's meals (`group_meals`, at least 10 g)
+`GET /api/explore/meal-size?days=N` SHALL serve, over the last 14, 30 or 90
+pump-local calendar days ending after the newest CGM day (`days`, refused otherwise), the engine's meals (`group_meals`, at least 10 g)
 that began at or under 180 mg/dL, read from the last reading at or up to 15 minutes
 before the first bolus, that the Late bolus classifier found flat before the bolus
 (its `no_trigger` verdict), and that have an Arc peak. For each it SHALL serve the
@@ -339,8 +339,15 @@ three hours, only when no later meal began by then. It SHALL group them into fou
 sizes, under 25 g, 25–39, 40–59, and 60 and over, each with its meals, the median
 and 25th and 75th percentiles of their climbs, the median minutes to peak, and the
 median change at three hours with how many meals it was read from. It SHALL serve
-the window's days and the three hours (`horizon_hours`). The read SHALL be one fixed
-result keyed by the recorded-data revision (ADR 501).
+the window's days and the three hours (`horizon_hours`). Each window SHALL be its own
+fixed result keyed by the recorded-data revision (ADR 501, ADR 565).
+
+#### Scenario: The read serves the window asked for
+
+- **GIVEN** meals in April and one on 1 June, in a history ending 8 June
+- **WHEN** the meal-size read is requested for 14 days
+- **THEN** it serves only the June meal, over 26 May to 9 June, and a request
+  for 7 days is refused
 
 #### Scenario: Each size serves its meals and medians
 
@@ -411,24 +418,28 @@ While the warm worker runs, a fixed read whose current result is not yet compute
 SHALL answer at once from the newest result of its own key and shape computed
 before the write, carrying `input_data_age` (that result's revision, how far its
 data reaches, and how far the store's data now reaches), and SHALL ask the warm
-worker to compute the current result before its next shape. One key SHALL be
+worker to compute the current result before its next shape. The worker SHALL take
+the results waiting on it lightest kind first — the profiles, then Meal size, then
+outcomes, then the rest — and in the order asked within a kind. One key SHALL be
 computed by one thread at a time. A warm shape SHALL compute, never answer from a
 predecessor; with no warm worker running, the first read computes. A read with no
 predecessor computes. Every window the Overview switches between — its outcomes,
-its glucose profile and the analysis behind its correction-factor and basal
-estimates — and its meal-size read SHALL be fixed results, persisted in the
-derived-results file, so a restart answers them without computing. The three
-glucose profiles SHALL be one fixed result, computed in one pass over the history
-they share, each read serving its own window (#566).
+its glucose profile, its meal-size read and the analysis behind its
+correction-factor and basal estimates — SHALL be a fixed result, persisted in the
+derived-results file, so a restart answers it without computing. The three
+glucose profiles SHALL be one fixed result, and the three meal-size windows
+another, each computed in one pass over the history its windows share, each read
+serving its own window (#566).
 
 #### Scenario: After a write, every Overview window answers at once, labelled, then current
 
-- **GIVEN** the Overview's glucose profiles read once at 14, 30 and 90 days
+- **GIVEN** the Overview's glucose profiles and Meal size read once at 14, 30 and
+  90 days
 - **WHEN** a carb entry is written and each window is read again before its new
   result is computed
 - **THEN** each answers at once with its earlier body and `input_data_age`
-- **AND** the warm worker computes the profiles once, after which every window's
-  read carries no `input_data_age`
+- **AND** the warm worker computes the profiles once and Meal size once, after
+  which every window's read carries no `input_data_age`
 
 #### Scenario: A restart answers every Overview window without computing
 

@@ -1,9 +1,9 @@
 """How far glucose climbs after meals of each size (#501, ADR 501).
 
-The Overview's Meal size card reads this. It always covers the last 90 pump-local
-calendar days ending after the newest CGM day, the glucose profile's window rule
-at the Overview's longest window: a shorter window would leave the largest meals a
-handful of points.
+The Overview's Meal size card reads this over the window the Overview shows: the
+last 14, 30 or 90 pump-local calendar days ending after the newest CGM day, the
+glucose profile's window rule (#565; ADR 501 first fixed it at 90 days). A short
+window holds few meals, and each size serves how many.
 
 **The meals.** The engine's own meals (:func:`~.analyzers.meals.group_meals`, ADR
 470: a first carb bolus of at least 10 g and its same-meal top-ups), formed over the
@@ -44,9 +44,9 @@ from .analyzers.classifiers.evidence import SilenceReason
 from .analyzers.meals import ARC_PEAK_HORIZON_MIN, group_meals, meal_peak
 from .analyzers.scenario_config import ScenarioConfig
 from .events import format_t
+from .explore_time_of_day import DATA_DAYS, DEFAULT_DATA_DAYS
 from .false_low import drop_readings, false_low_spans
 
-WINDOW_DAYS = 90
 #: Each size's carbs, ``carbs_from`` ≤ carbs < ``carbs_to``; ``None`` is open.
 SIZES = ((None, 25), (25, 40), (40, 60), (60, None))
 #: How long before an instant its reading may be: the start's, and the three hours'.
@@ -56,15 +56,26 @@ HORIZON_HOURS = int(ARC_PEAK_HORIZON_MIN // 60)
 _CONFIG = ScenarioConfig()
 
 
-def build_meal_size(store) -> dict:
-    """The climb after each counted meal of the last 90 days, by size."""
+def build_meal_size(store, *, days: int = DEFAULT_DATA_DAYS) -> dict:
+    """The climb after each counted meal of the last ``days`` days (one of the
+    profile's ``DATA_DAYS``), by size."""
+    return build_meal_size_windows(store, windows=(days,))[str(days)]
+
+
+def build_meal_size_windows(store, *, windows: tuple = DATA_DAYS) -> dict:
+    """Each window's Meal size, keyed by its days as text (#566).
+
+    Every window ends at the same instant, and a meal's measurement reads only the
+    meal, the one after it and the whole history, so the meals of the widest window
+    are measured once and each window keeps those that start inside it."""
     history = store.cgm_readings()
     if not history:
-        return {"window": None, "horizon_hours": HORIZON_HOURS,
-                "sizes": [_size(lo, hi, []) for lo, hi in SIZES]}
+        return {str(days): {"window": None, "horizon_hours": HORIZON_HOURS,
+                            "sizes": [_size(lo, hi, []) for lo, hi in SIZES]}
+                for days in windows}
     latest = max(reading.t for reading in history)
     end = datetime.combine(latest.date() + timedelta(days=1), time.min)
-    start = end - timedelta(days=WINDOW_DAYS)
+    start = end - timedelta(days=max(windows))
 
     spans = false_low_spans(history, store.prompt_responses())
     readings = sorted((r for r in drop_readings(history, spans) if r.bg is not None),
@@ -80,9 +91,17 @@ def build_meal_size(store) -> dict:
             following = meals[index + 1].t if index + 1 < len(meals) else None
             row = _measure(meal, following, context)
             if row is not None:
-                measured.append(row)
+                measured.append((meal.t, row))
+    return {str(days): _window([row for t, row in measured if t >= end - timedelta(days=days)],
+                               end, days)
+            for days in windows}
+
+
+def _window(measured: list, end: datetime, days: int) -> dict:
+    """One window's sizes, from the meals measured inside it."""
     return {
-        "window": {"start": format_t(start), "end": format_t(end), "data_days": WINDOW_DAYS},
+        "window": {"start": format_t(end - timedelta(days=days)), "end": format_t(end),
+                   "data_days": days},
         "horizon_hours": HORIZON_HOURS,
         "sizes": [_size(lo, hi, [row for row in measured
                                  if (lo is None or row["carbs"] >= lo)

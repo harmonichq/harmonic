@@ -2325,4 +2325,9 @@ a restart the preparation and every case file answer without preparing. After a
 restart, while a sync lands, each answers 200 with its earlier body and
 `input_data_age`. A start warm pass holds back the start fetch until it ends.
 Each failed first on d9cb53fd: the restart prepared again, the preparation
-answered 503 `preparation_changed`, and the fetch ran beside the warm pass.
+answered 503 `preparation_changed`, and the fetch ran beside the warm pass. The
+answer keeps every finding's case file and every Pattern's, a collapsed one under
+its own subject too, as the Queue reads it. The generated `wearer-not-on-pump`
+Queue changes in one Pattern's case-file trace. That store is read after a sync
+the app was not told of, and the held preparation from before that sync was
+served as current; it is now the sync's own. No other generated answer changes.

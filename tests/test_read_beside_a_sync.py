@@ -187,7 +187,10 @@ class ReadBesideASyncTest(unittest.TestCase):
 
 
 class CaseFilesBesideASyncTest(unittest.TestCase):
-    """The case files the Queue reads keep their last answer too (#581)."""
+    """The case files the Queue reads keep their last answer too (#581): a
+    standalone habit's here, a Pattern served as its one habit below."""
+
+    CASE = "behavioral-missed-meal"
 
     def setUp(self):
         database = tempfile.NamedTemporaryFile(suffix=".sqlite")
@@ -195,8 +198,7 @@ class CaseFilesBesideASyncTest(unittest.TestCase):
         self.addCleanup(ReadBesideASyncTest._remove_derived_results, database.name)
         self.path = database.name
         with Store.open(self.path) as store:
-            materialize_case(store, next(case for case in QA_CASES
-                                         if case.name == "behavioral-missed-meal"))
+            materialize_case(store, next(case for case in QA_CASES if case.name == self.CASE))
 
     def _app(self):
         app = create_app(db_path=self.path, token=None, enable_fetch_loop=False)
@@ -208,13 +210,18 @@ class CaseFilesBesideASyncTest(unittest.TestCase):
         preparation = client.get("/api/diagnose/finding-case-file-preparation")
         self.assertEqual(preparation.status_code, 200, preparation.text)
         body = preparation.json()
+        # Each habit's case file, and each Pattern's under its own subject (ADR 528).
+        patterns = client.get("/api/diagnose/findings").json()["outcome_patterns"]
+        subjects = [*body["behavioral_case_headers"],
+                    *(f"pattern:{pattern['key']}" for pattern in patterns)]
         cases = {}
-        for finding_id in body["behavioral_case_headers"]:
+        for finding_id in subjects:
             case = client.get("/api/diagnose/finding-case-file", params={
                 "projection_id": body["projection_id"], "finding_id": finding_id,
                 "alignment": "event"})
-            self.assertEqual(case.status_code, 200, (finding_id, case.text))
-            cases[finding_id] = case.json()
+            self.assertIn(case.status_code, (200, 404), (finding_id, case.text))
+            if case.status_code == 200:
+                cases[finding_id] = case.json()
         return body, cases
 
     @staticmethod
@@ -244,6 +251,14 @@ class CaseFilesBesideASyncTest(unittest.TestCase):
         for finding_id, case in served_cases.items():
             self.assertIn("input_data_age", case, finding_id)
             self.assertEqual(self._without_age(case), cases[finding_id])
+
+
+class CollapsedPatternCaseFilesBesideASyncTest(CaseFilesBesideASyncTest):
+    CASE = "pattern-correction-collapse"
+
+    def test_the_collapsed_pattern_has_its_own_case_file(self):
+        _, cases = self._read(TestClient(self._app()))
+        self.assertTrue(any(subject.startswith("pattern:") for subject in cases), sorted(cases))
 
 
 class StartFetchTest(unittest.TestCase):

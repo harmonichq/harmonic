@@ -656,17 +656,19 @@ def wrap(prepared):
 
 def queue_answers(prepared):
     """What the Queue reads from ``prepared``, as plain data a restart keeps (#581):
-    its preparation and each finding's event-aligned case file, the coordinate
-    the app reads, or ``None`` where it has no inspectable member. A finding whose
+    its preparation and each finding's and Pattern's event-aligned case file, the
+    coordinate the app reads, or ``None`` where it has no inspectable member. A finding whose
     retained producers disagree is named in ``inconsistent`` (ADR 488)."""
     cases, inconsistent = {}, []
-    for row in prepared.findings["rows"]:
-        if row.get("register") != "finding":
-            continue
+    # Every finding's row, and every Pattern, a collapsed one too: the Queue reads
+    # a Pattern's case file under its own subject (ADR 528).
+    subjects = [row["id"] for row in prepared.findings["rows"] if row.get("register") == "finding"]
+    subjects += [f"pattern:{pattern['key']}" for pattern in prepared.findings["outcome_patterns"]]
+    for subject in dict.fromkeys(subjects):
         try:
-            cases[row["id"]] = prepared.case(row["id"], "event", None)
+            cases[subject] = prepared.case(subject, "event", None)
         except InconsistentProjection:
-            inconsistent.append(row["id"])
+            inconsistent.append(subject)
     return {"preparation": wrap(prepared), "cases": cases, "inconsistent": inconsistent}
 
 

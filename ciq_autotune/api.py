@@ -1023,7 +1023,8 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         except Exception:
             return None
         answers = result.value
-        if answers["preparation"]["projection_id"] != projection_id:
+        if (answers["preparation"]["projection_id"] != projection_id
+                or (finding_id not in answers["cases"] and finding_id not in answers["inconsistent"])):
             return None
         if finding_id in answers["inconsistent"]:
             return _case_error(500, "inconsistent_projection", "Case population is inconsistent.")

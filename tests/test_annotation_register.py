@@ -150,12 +150,15 @@ def _ic_landing(programmed, measured, rec):
 
 
 def _ic_rows_from_store(boluses, *, cgm_from, cgm_bg=110):
-    """The whole analysis's carb-ratio rows, CGM covering each noon meal's read."""
+    """The whole analysis's carb-ratio rows, CGM covering each noon meal's read.
+
+    The meals are unstamped, so the capture lands before them: each converts its
+    glucose travel with the programmed ISF of 50 (ADR 563)."""
     cgm = [CgmReading(cgm_from, 110)]
     for day in (5, 6, 7):
         cgm.extend(cgm_run(day, 12, cgm_bg))
     snapshot = Snapshot(
-        datetime(2026, 6, 7, 18, 0),
+        datetime(2026, 6, 4),
         parse_pump_settings(_raw_settings(isf=50, cr_mu=6000)),
     )
     return analyze(

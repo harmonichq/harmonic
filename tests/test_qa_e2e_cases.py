@@ -71,6 +71,7 @@ EXPECTED_CASE_NAMES = (
     "delivery-basal-block", "delivery-basal-legacy", "delivery-basal-legacy-open",
     "delivery-basal-across-midnight", "delivery-basal-whole-day",
     "behavioral-over-treated-near-low",
+    "ic-dose-stamped-isf",
 )
 
 

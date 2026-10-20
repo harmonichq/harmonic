@@ -18,6 +18,7 @@ from ciq_autotune.analyzers.ic import (
     IcConfig, MealRun, meal_burdens, run_burdens)
 from ciq_autotune.events import BasalEvent, BolusEvent, CarbEntry, CgmReading
 from ciq_autotune.harm import HarmArm, PrintedLow
+from ciq_autotune.settings import IsfSource
 from ciq_autotune.uncertainty import (
     _WIDE_MIN_CLUSTERS, estimate_pooled_ratio, estimate_pooled_ratio_clustered)
 
@@ -132,8 +133,8 @@ class SingleMealRunReproducesMealBurdenTest(unittest.TestCase):
     def test_every_ledger_field_matches_meal_burdens(self):
         stream = self._stream()
         boluses = stream.pop("bolus_events")
-        burdens = meal_burdens(boluses, IcConfig(), isf_effective=ISF, **stream)
-        runs = run_burdens(boluses, IcConfig(), isf_effective=ISF, **stream)
+        burdens = meal_burdens(boluses, IcConfig(), isf=IsfSource.fixed(ISF), **stream)
+        runs = run_burdens(boluses, IcConfig(), isf=IsfSource.fixed(ISF), **stream)
 
         self.assertEqual(len(burdens), 5, "fixture should admit all five meals")
         self.assertEqual([r.t for r in runs], [b.t for b in burdens])
@@ -150,7 +151,7 @@ class SingleMealRunReproducesMealBurdenTest(unittest.TestCase):
         # have to stay reachable through the run.
         stream = self._stream()
         boluses = stream.pop("bolus_events")
-        runs = run_burdens(boluses, IcConfig(), isf_effective=ISF, **stream)
+        runs = run_burdens(boluses, IcConfig(), isf=IsfSource.fixed(ISF), **stream)
         by_day = {run.t.day: run for run in runs}
         self.assertEqual(by_day[2].meals[0].bg0, 120.0)
         self.assertEqual(by_day[2].meals[0].post_correction_user, 1.0)
@@ -165,7 +166,7 @@ class SingleMealRunReproducesMealBurdenTest(unittest.TestCase):
         # stays as over-coverage evidence but is flagged out of the numeric pool.
         stream = self._stream()
         boluses = stream.pop("bolus_events")
-        runs = run_burdens(boluses, IcConfig(), isf_effective=ISF, **stream)
+        runs = run_burdens(boluses, IcConfig(), isf=IsfSource.fixed(ISF), **stream)
         by_day = {run.t.day: run for run in runs}
         self.assertTrue(by_day[4].directional_only)
         self.assertFalse(by_day[1].directional_only)
@@ -178,7 +179,7 @@ class SingleMealRunReproducesMealBurdenTest(unittest.TestCase):
         from ciq_autotune.analyzers.ic import _run_pool
         stream = self._stream()
         boluses = stream.pop("bolus_events")
-        runs = run_burdens(boluses, IcConfig(), isf_effective=ISF, **stream)
+        runs = run_burdens(boluses, IcConfig(), isf=IsfSource.fixed(ISF), **stream)
         floored = next(r for r in runs if r.directional_only)
 
         pool = _run_pool(runs)
@@ -210,7 +211,7 @@ class RunFormationTest(unittest.TestCase):
     def test_meals_inside_the_gap_form_one_run_and_beyond_it_two(self):
         chained = [meal(1, 12, 60, 10.0, bg=110.0), meal(1, 15, 40, 7.0, bg=110.0)]
         runs = run_burdens(chained, IcConfig(), cgm_readings=cgm_run(1, 15, 110.0),
-                           isf_effective=ISF)
+                           isf=IsfSource.fixed(ISF))
         self.assertEqual([r.n_meals for r in runs], [2])
         self.assertEqual(runs[0].t, chained[0].t)
         self.assertEqual(runs[0].end_t, chained[1].t)
@@ -220,14 +221,14 @@ class RunFormationTest(unittest.TestCase):
         split = [meal(1, 8, 60, 10.0, bg=110.0), meal(1, 14, 40, 7.0, bg=110.0)]
         runs = run_burdens(split, IcConfig(),
                            cgm_readings=cgm_run(1, 8, 110.0) + cgm_run(1, 14, 110.0),
-                           isf_effective=ISF)
+                           isf=IsfSource.fixed(ISF))
         self.assertEqual([r.n_meals for r in runs], [1, 1])
 
     def test_the_outcome_is_read_after_the_last_meal_of_the_run(self):
         chained = [meal(1, 12, 60, 10.0, bg=110.0), meal(1, 15, 40, 7.0, bg=110.0)]
         # 150 only in the first meal's read window, 110 in the last meal's.
         cgm = cgm_run(1, 12, 150.0) + cgm_run(1, 15, 110.0)
-        runs = run_burdens(chained, IcConfig(), cgm_readings=cgm, isf_effective=ISF)
+        runs = run_burdens(chained, IcConfig(), cgm_readings=cgm, isf=IsfSource.fixed(ISF))
         self.assertEqual(runs[0].outcome_bg, 110.0)
         self.assertEqual(runs[0].bg0, 110.0)     # the FIRST meal's start
         self.assertEqual(runs[0].bg_outcome_u, 0.0)
@@ -237,11 +238,11 @@ class RunFormationTest(unittest.TestCase):
         cgm = cgm_run(1, 12, 110.0) + cgm_run(1, 15, 110.0)
         clean = [meal(1, 12, 60, 10.0, bg=110.0), meal(1, 15, 40, 7.0, bg=110.0)]
         self.assertEqual(
-            len(run_burdens(clean, IcConfig(), cgm_readings=cgm, isf_effective=ISF)), 1)
+            len(run_burdens(clean, IcConfig(), cgm_readings=cgm, isf=IsfSource.fixed(ISF))), 1)
 
         aborted = [meal(1, 12, 60, 10.0, bg=110.0),
                    meal(1, 15, 40, 7.0, bg=110.0, completion="User Aborted")]
-        runs = run_burdens(aborted, IcConfig(), cgm_readings=cgm, isf_effective=ISF)
+        runs = run_burdens(aborted, IcConfig(), cgm_readings=cgm, isf=IsfSource.fixed(ISF))
         self.assertEqual(runs, [], "the chain the aborted leg sits in is dropped whole")
 
     def test_a_truncated_reissue_breaks_the_run(self):
@@ -251,7 +252,7 @@ class RunFormationTest(unittest.TestCase):
                   meal(1, 15, 40, 2.0, completion="User Aborted"),
                   meal(1, 15, 40, 5.0, bg=110.0, mm=2)]
         runs = run_burdens(events, IcConfig(),
-                           cgm_readings=cgm_run(1, 15, 110.0), isf_effective=ISF)
+                           cgm_readings=cgm_run(1, 15, 110.0), isf=IsfSource.fixed(ISF))
         self.assertEqual(runs, [])
 
     def test_an_unattributable_carb_entry_evicts_the_run(self):
@@ -262,13 +263,13 @@ class RunFormationTest(unittest.TestCase):
         cgm = cgm_run(1, 15, 110.0)
         entries = [CarbEntry(t=datetime(2026, 6, 1, 16, 0, 0), grams=20.0,
                              certainty="estimate", source="rise-prompt")]
-        runs = run_burdens(chained, IcConfig(), cgm_readings=cgm, isf_effective=ISF,
+        runs = run_burdens(chained, IcConfig(), cgm_readings=cgm, isf=IsfSource.fixed(ISF),
                            carb_entries=entries)
         self.assertEqual(runs, [])
         # Without the entry the same chain closes — the eviction is the entry's doing.
         self.assertEqual(
             len(run_burdens(chained, IcConfig(), cgm_readings=cgm,
-                            isf_effective=ISF)), 1)
+                            isf=IsfSource.fixed(ISF))), 1)
 
     def test_an_attributed_rescue_is_admitted_with_its_grams_in_the_numerator(self):
         # ADR 0038 §5, meal-scoped inside the run: the 15:00 meal owns a printed
@@ -278,7 +279,7 @@ class RunFormationTest(unittest.TestCase):
         cgm = low_run(1, 17) + cgm_run(1, 15, 110.0)
         entries = [CarbEntry(t=datetime(2026, 6, 1, 17, 0, 0), grams=15.0,
                              certainty="estimate", source="manual")]
-        runs = run_burdens(chained, IcConfig(), cgm_readings=cgm, isf_effective=ISF,
+        runs = run_burdens(chained, IcConfig(), cgm_readings=cgm, isf=IsfSource.fixed(ISF),
                            carb_entries=entries,
                            harm_lows=[printed_low(1, 17, 0, 15, carbs=40.0)])
         self.assertEqual(len(runs), 1)
@@ -302,7 +303,7 @@ class RunRescueAttributionTest(unittest.TestCase):
         entries = [CarbEntry(t=datetime(2026, 6, 1, 16, 0, 0), grams=20.0,
                              certainty="estimate", source="manual")]
         runs = run_burdens(chained, IcConfig(), cgm_readings=cgm_run(1, 15, 110.0),
-                           isf_effective=ISF, carb_entries=entries)
+                           isf=IsfSource.fixed(ISF), carb_entries=entries)
         self.assertEqual(len(runs), 1)
         self.assertEqual(runs[0].n_meals, 2)
         self.assertEqual(runs[0].rescue_carbs, 20.0)
@@ -321,7 +322,7 @@ class RunRescueAttributionTest(unittest.TestCase):
         entries = [CarbEntry(t=datetime(2026, 6, 1, 15, 0, 0), grams=15.0,
                              certainty="estimate", source="manual")]
         runs = run_burdens(same_instant, IcConfig(),
-                           cgm_readings=cgm_run(1, 12, 110.0), isf_effective=ISF,
+                           cgm_readings=cgm_run(1, 12, 110.0), isf=IsfSource.fixed(ISF),
                            carb_entries=entries)
         self.assertEqual(len(runs), 1)
         self.assertEqual(runs[0].n_meals, 2, "same-instant legs are one run")
@@ -341,7 +342,7 @@ class RunRescueAttributionTest(unittest.TestCase):
                              certainty="estimate", source="manual")]
         lows = [printed_low(1, 16, 0, 12, carbs=60.0),
                 printed_low(1, 16, 0, 15, carbs=40.0)]
-        runs = run_burdens(chained, IcConfig(), cgm_readings=cgm, isf_effective=ISF,
+        runs = run_burdens(chained, IcConfig(), cgm_readings=cgm, isf=IsfSource.fixed(ISF),
                            carb_entries=entries, harm_lows=lows)
         self.assertEqual(len(runs), 1)
         self.assertEqual(runs[0].rescue_carbs, 15.0)
@@ -413,7 +414,7 @@ class RescueDirectionTest(unittest.TestCase):
                               certainty="estimate", source="manual")]
                    if grams_in else [])
         lows = [printed_low(1, 13, 0, 12)] if grams_in else []
-        return run_burdens(events, IcConfig(), cgm_readings=cgm, isf_effective=ISF,
+        return run_burdens(events, IcConfig(), cgm_readings=cgm, isf=IsfSource.fixed(ISF),
                            carb_entries=entries, harm_lows=lows)
 
     def test_grams_out_reads_tighter_than_grams_in(self):
@@ -435,7 +436,7 @@ class RescueDirectionTest(unittest.TestCase):
         cgm = low_run(1, 13) + cgm_run(1, 12, 110.0)
         entries = [CarbEntry(t=datetime(2026, 6, 1, 13, 0, 0), grams=None,
                              certainty="unknown", source="manual")]
-        runs = run_burdens(events, IcConfig(), cgm_readings=cgm, isf_effective=ISF,
+        runs = run_burdens(events, IcConfig(), cgm_readings=cgm, isf=IsfSource.fixed(ISF),
                            carb_entries=entries, harm_lows=[printed_low(1, 13, 0, 12)])
         self.assertEqual(runs, [])
 
@@ -443,7 +444,7 @@ class RescueDirectionTest(unittest.TestCase):
 class MealRunTypeTest(unittest.TestCase):
     def test_run_burdens_returns_meal_runs(self):
         runs = run_burdens([meal(1, 12, 60, 10.0, bg=110.0)], IcConfig(),
-                           cgm_readings=cgm_run(1, 12, 110.0), isf_effective=ISF)
+                           cgm_readings=cgm_run(1, 12, 110.0), isf=IsfSource.fixed(ISF))
         self.assertIsInstance(runs[0], MealRun)
 
 

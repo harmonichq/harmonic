@@ -20,7 +20,7 @@ from ..events import BasalEvent, BolusEvent, CarbEntry, CgmReading
 from ..harm import HarmConfig, PrintedLow
 from ..ic_history import HistoryIdentity, RunEvidence, RunIdentity, prove_runs
 from ..result import IcBlock, IcHistory
-from ..settings import Snapshot
+from ..settings import IsfSource, Snapshot
 from ..uncertainty import DEFAULT_CONFIDENCE, Estimate
 from .ic import (
     IcConfig,
@@ -315,7 +315,7 @@ def analyze_ic_blocks_fuzzy(
     *,
     config: IcConfig = IcConfig(),
     cgm_readings: Optional[List[CgmReading]] = None,
-    isf_effective: Optional[float] = None,
+    isf: Optional[IsfSource] = None,
     carb_entries: Optional[List[CarbEntry]] = None,
     basal_events: Optional[List[BasalEvent]] = None,
     harm_config: Optional[HarmConfig] = None,
@@ -334,7 +334,7 @@ def analyze_ic_blocks_fuzzy(
         ic_segments,
         config=config,
         cgm_readings=cgm_readings,
-        isf_effective=isf_effective,
+        isf=isf,
         carb_entries=carb_entries,
         basal_events=basal_events,
         harm_config=harm_config,

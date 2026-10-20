@@ -12,7 +12,7 @@ import unittest
 from datetime import datetime, timedelta
 
 from ciq_autotune.events import CarbEntry
-from ciq_autotune.settings import ProfileSegment, ProfileSettings, PumpSettings
+from ciq_autotune.settings import IsfSource, ProfileSegment, ProfileSettings, PumpSettings
 from ciq_autotune.store import Store
 from ciq_autotune.watched_change import review_trials
 
@@ -292,7 +292,7 @@ class CircularComparisonTest(unittest.TestCase):
 
 
 class PracticalReadinessTest(unittest.TestCase):
-    def evidence(self, parameter, start, end, *, cgm=(), bolus=(), basal=(), block=None, snapshots=(), isf=40):
+    def evidence(self, parameter, start, end, *, cgm=(), bolus=(), basal=(), block=None, snapshots=(), isf=IsfSource.fixed(40)):
         from ciq_autotune.trial_evidence import comparison_evidence
         return comparison_evidence(parameter=parameter, slot=None, block=block, changed_at=start,
             before=10, after=9, start=start, end=end, cgm=list(cgm), bolus=list(bolus),
@@ -318,13 +318,13 @@ class PracticalReadinessTest(unittest.TestCase):
         truth=chained_run_sets()[0]
         result=self.evidence('carb_ratio',truth['analysis_start'],truth['analysis_end'],
             cgm=truth['cgm_readings'],bolus=truth['events'],snapshots=truth['snapshots'],
-            block=(0,720),isf=truth['isf_effective'])
+            block=(0,720),isf=IsfSource.from_snapshots(truth['snapshots']))
         readiness=result['readiness']
         self.assertAlmostEqual(readiness['observed'],10)
         self.assertTrue(readiness['criterion_met'])
         self.assertTrue(any(0<r['ownership']<1 for r in readiness['runs']))
         empty=self.evidence('carb_ratio',truth['analysis_start'],truth['analysis_end'],
-            bolus=truth['events'],snapshots=truth['snapshots'],block=(0,720),isf=truth['isf_effective'])
+            bolus=truth['events'],snapshots=truth['snapshots'],block=(0,720),isf=IsfSource.from_snapshots(truth['snapshots']))
         self.assertEqual(empty['readiness']['observed'],0)
         self.assertFalse(empty['readiness']['criterion_met'])
         unmatched=self.evidence('carb_ratio',truth['analysis_start'],truth['analysis_end'],
@@ -350,7 +350,7 @@ class PracticalReadinessTest(unittest.TestCase):
         retained=[b for b in truth['events'] if b.t.date() not in excluded]
         result=self.evidence('carb_ratio',truth['analysis_start'],truth['analysis_end'],
             cgm=truth['cgm_readings'],bolus=retained,snapshots=truth['snapshots'],
-            block=(0,720),isf=truth['isf_effective'])
+            block=(0,720),isf=IsfSource.from_snapshots(truth['snapshots']))
         self.assertAlmostEqual(result['readiness']['observed'],8)
         self.assertEqual(len(result['readiness']['contributing_dates']),13)
         self.assertTrue(result['readiness']['criterion_met'])

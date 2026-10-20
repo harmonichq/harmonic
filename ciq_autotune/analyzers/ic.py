@@ -66,7 +66,7 @@ from ..result import (
     plan_value,
 )
 from ..safety import _MIN_SUPPORTED_BLOCK_RUNS
-from ..settings import Snapshot
+from ..settings import IsfSource, Snapshot
 from ..uncertainty import (
     Estimate,
     estimate_pooled_ratio,
@@ -639,7 +639,7 @@ def meal_burdens(bolus_events: List[BolusEvent],
                  config: IcConfig = IcConfig(),
                  *,
                  cgm_readings: Optional[List[CgmReading]] = None,
-                 isf_effective: Optional[float] = None,
+                 isf: Optional[IsfSource] = None,
                  carb_entries: Optional[List[CarbEntry]] = None,
                  basal_events: Optional[List[BasalEvent]] = None,
                  harm_lows: Optional[Sequence[PrintedLow]] = None,
@@ -647,10 +647,10 @@ def meal_burdens(bolus_events: List[BolusEvent],
                  ) -> List[MealBurden]:
     """Post-meal correction burden per *isolated* carb-tagged meal.
 
-    When ``cgm_readings`` and ``isf_effective`` are both given, each isolated meal
-    with a readable outcome gets the **insulin-acted balance sheet** (#181, ADR
-    0017): the insulin the carbs truly demanded is reconstructed over the
-    meal→outcome interval as
+    When ``cgm_readings`` and an ``isf`` source are both given, each isolated meal
+    with a readable outcome and an ISF of its own (``isf.at(meal)``, ADR 563) gets
+    the **insulin-acted balance sheet** (#181, ADR 0017): the insulin the carbs
+    truly demanded is reconstructed over the meal→outcome interval as
 
         carbs_covered = meal carbs + attributable rescue carbs
 
@@ -680,10 +680,11 @@ def meal_burdens(bolus_events: List[BolusEvent],
     be needed to credit it honestly, and that decimates the sample. See ADR 0017.
 
     Meals whose outcome can't be read (a CGM gap at the full-DIA read, or no
-    resolvable starting BG) keep the old correction-only ``true_ic`` (full
-    ``meal_dose + post_correction``, no curve weighting) and are flagged
-    (``bg_outcome_u=None``). Omitting either argument preserves the original
-    correction-only behaviour.
+    resolvable starting BG) or converted (the source gives no ISF) keep the old
+    correction-only ``true_ic`` (full ``meal_dose + post_correction``, no curve
+    weighting) and are flagged (``bg_outcome_u=None``). The CGM view is built
+    whenever ``cgm_readings`` is given, so start glucose and the rescue gates read
+    without an ISF; omitting either argument leaves every meal correction-only.
 
     ``carb_entries`` (#125/#127) remain the manual unbolused-carb log, not a food
     diary. A post-window entry still excludes the meal unless it passes the
@@ -739,7 +740,7 @@ def meal_burdens(bolus_events: List[BolusEvent],
     # series' max_stale only governs `nearest` — which is used solely to resolve
     # the pre-meal bg0, hence ±bg0_max_gap_min.
     cgm = (CgmSeries(cgm_readings, timedelta(minutes=cfg.bg0_max_gap_min))
-           if cgm_readings is not None and isf_effective else None)
+           if cgm_readings is not None else None)
 
     out: List[MealBurden] = []
     window = timedelta(minutes=cfg.post_meal_min)
@@ -804,8 +805,9 @@ def meal_burdens(bolus_events: List[BolusEvent],
             outcome = _outcome_bg(cgm, m.t, cfg)
             if outcome is not None:
                 outcome_bg, outcome_t = outcome
-            if outcome_bg is not None and bg0 is not None:
-                bg_outcome_u = round((outcome_bg - bg0) / isf_effective, 3)
+            meal_isf = isf.at(m) if isf is not None else None
+            if outcome_bg is not None and bg0 is not None and meal_isf is not None:
+                bg_outcome_u = round((outcome_bg - bg0) / meal_isf, 3)
 
         # ADR 0038 §5: re-admit a printed-and-rescued meal through three gates,
         # counting its rescue grams as carbs-covered instead of letting the rescue
@@ -1044,7 +1046,7 @@ def run_burdens(bolus_events: List[BolusEvent],
                 config: IcConfig = IcConfig(),
                 *,
                 cgm_readings: Optional[List[CgmReading]] = None,
-                isf_effective: Optional[float] = None,
+                isf: Optional[IsfSource] = None,
                 carb_entries: Optional[List[CarbEntry]] = None,
                 basal_events: Optional[List[BasalEvent]] = None,
                 harm_lows: Optional[Sequence[PrintedLow]] = None,
@@ -1123,7 +1125,7 @@ def run_burdens(bolus_events: List[BolusEvent],
                           for b in bolus_events if _is_correction(b)),
                          key=lambda r: r[0])
     cgm = (CgmSeries(cgm_readings, timedelta(minutes=cfg.bg0_max_gap_min))
-           if cgm_readings is not None and isf_effective else None)
+           if cgm_readings is not None else None)
 
     # Two meal boluses sharing a timestamp to the second (distinct seqNums, #194)
     # sit at a zero gap and therefore CHAIN — one run whose members are both legs of
@@ -1154,8 +1156,11 @@ def run_burdens(bolus_events: List[BolusEvent],
             outcome = _outcome_bg(cgm, last.t, cfg)
             if outcome is not None:
                 outcome_bg, outcome_t = outcome
-            if outcome_bg is not None and bg0 is not None:
-                bg_outcome_u = round((outcome_bg - bg0) / isf_effective, 3)
+            # The run converts with its first member's ISF: the bolus whose start
+            # glucose anchors the travel (ADR 563).
+            run_isf = isf.at(first) if isf is not None else None
+            if outcome_bg is not None and bg0 is not None and run_isf is not None:
+                bg_outcome_u = round((outcome_bg - bg0) / run_isf, 3)
 
         # Rescue attribution stays MEAL-scoped (the shipped ADR 0038 §5 gates read a
         # meal's own start BG and its own owned low); the run just unions what its
@@ -1577,7 +1582,7 @@ def analyze_ic(
     *,
     config: IcConfig = IcConfig(),
     cgm_readings: Optional[List[CgmReading]] = None,
-    isf_effective: Optional[float] = None,
+    isf: Optional[IsfSource] = None,
     carb_entries: Optional[List[CarbEntry]] = None,  # exclusion signal (#125/#127)
     basal_events: Optional[List[BasalEvent]] = None,
     harm_config: Optional[HarmConfig] = None,
@@ -1588,7 +1593,7 @@ def analyze_ic(
     """Per-segment I:C estimate plus any carb-counting Finding.
 
     ``ic_segments`` is the active profile's programmed I:C schedule
-    (``[(start_min, carb_ratio)]``). When ``cgm_readings`` and ``isf_effective`` are
+    (``[(start_min, carb_ratio)]``). When ``cgm_readings`` and an ``isf`` source are
     supplied, each meal's ``true_ic`` folds in a signed BG-outcome (ran high/low),
     not just correction boluses — see :func:`meal_burdens`.
     """
@@ -1608,7 +1613,7 @@ def analyze_ic(
         lows = (harm_lows if harm_lows is not None
                 else find_printed_lows(cgm_readings or [], bolus_events, harm_config))
     burdens = meal_burdens(bolus_events, cfg,
-                           cgm_readings=cgm_readings, isf_effective=isf_effective,
+                           cgm_readings=cgm_readings, isf=isf,
                            carb_entries=carb_entries, basal_events=basal_events,
                            harm_lows=lows,
                            prior_action_observed_from=prior_action_observed_from)
@@ -2517,7 +2522,7 @@ def _analyze_ic_blocks_shared(
     *,
     config: IcConfig = IcConfig(),
     cgm_readings: Optional[List[CgmReading]] = None,
-    isf_effective: Optional[float] = None,
+    isf: Optional[IsfSource] = None,
     carb_entries: Optional[List[CarbEntry]] = None,
     basal_events: Optional[List[BasalEvent]] = None,
     harm_config: Optional[HarmConfig] = None,
@@ -2577,7 +2582,7 @@ def _analyze_ic_blocks_shared(
         prior_action_observed_from = min(
             (bolus.t for bolus in bolus_events), default=None)
     all_runs = run_burdens(bolus_events, cfg,
-                       cgm_readings=cgm_readings, isf_effective=isf_effective,
+                       cgm_readings=cgm_readings, isf=isf,
                        carb_entries=carb_entries, basal_events=basal_events,
                        harm_lows=(history_harm_lows
                                   if history_harm_lows is not None else lows),
@@ -2994,7 +2999,7 @@ def analyze_ic_blocks(
     *,
     config: IcConfig = IcConfig(),
     cgm_readings: Optional[List[CgmReading]] = None,
-    isf_effective: Optional[float] = None,
+    isf: Optional[IsfSource] = None,
     carb_entries: Optional[List[CarbEntry]] = None,
     basal_events: Optional[List[BasalEvent]] = None,
     harm_config: Optional[HarmConfig] = None,
@@ -3018,7 +3023,7 @@ def analyze_ic_blocks(
         ic_segments,
         config=config,
         cgm_readings=cgm_readings,
-        isf_effective=isf_effective,
+        isf=isf,
         carb_entries=carb_entries,
         basal_events=basal_events,
         harm_config=harm_config,

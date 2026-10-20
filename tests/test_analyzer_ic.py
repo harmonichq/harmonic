@@ -22,7 +22,7 @@ from ciq_autotune.ic_history import (
     decode_history_id, decode_run_id, encode_history_id, encode_run_id,
     programmed_values_over_span, validate_history_id, validate_run_id,
 )
-from ciq_autotune.settings import Snapshot, parse_pump_settings
+from ciq_autotune.settings import IsfSource, Snapshot, parse_pump_settings
 
 IC_6 = [(0, 6.0)]  # programmed I:C: 6 g/U all day
 
@@ -363,7 +363,7 @@ class PriorMealIdentifiabilityFacadeTest(unittest.TestCase):
             boluses,
             IC_6,
             cgm_readings=cgm,
-            isf_effective=50.0,
+            isf=IsfSource.fixed(50.0),
             harm_config=HarmConfig(),
             harm_lows=lows,
             analysis_start=datetime(2026, 6, 5),
@@ -588,7 +588,7 @@ class SignedOutcomeTest(unittest.TestCase):
         events = [meal(1, 12, 60, 10.0, bg=TARGET_BG)]
         readings = cgm_run(1, 12, TARGET_BG + 50.0)
         b = meal_burdens(events, IcConfig(), cgm_readings=readings,
-                         isf_effective=50.0)[0]
+                         isf=IsfSource.fixed(50.0))[0]
         self.assertAlmostEqual(b.outcome_bg, 160.0, places=1)
         self.assertAlmostEqual(b.bg_outcome_u, 1.0, places=2)
         self.assertAlmostEqual(b.effective_insulin, 11.0, places=3)
@@ -601,7 +601,7 @@ class SignedOutcomeTest(unittest.TestCase):
         events = [meal(1, 12, 60, 10.0, bg=TARGET_BG)]
         readings = cgm_run(1, 12, TARGET_BG - 50.0)
         b = meal_burdens(events, IcConfig(), cgm_readings=readings,
-                         isf_effective=50.0)[0]
+                         isf=IsfSource.fixed(50.0))[0]
         self.assertAlmostEqual(b.outcome_bg, 60.0, places=1)
         self.assertAlmostEqual(b.bg_outcome_u, -1.0, places=2)
         self.assertAlmostEqual(b.effective_insulin, 9.0, places=3)
@@ -615,7 +615,7 @@ class SignedOutcomeTest(unittest.TestCase):
         events = [meal(1, 12, 60, 10.0, bg=TARGET_BG), corr(1, 14, 0, 2.0)]
         readings = cgm_run(1, 12, TARGET_BG + 50.0)
         b = meal_burdens(events, IcConfig(), cgm_readings=readings,
-                         isf_effective=50.0)[0]
+                         isf=IsfSource.fixed(50.0))[0]
         self.assertAlmostEqual(b.bg_outcome_u, 1.0, places=2)
         base = datetime(2026, 6, 1, 12, 0, 0)
         corr_acted = _acted([(base + timedelta(hours=2), 2.0)], base,
@@ -631,7 +631,7 @@ class SignedOutcomeTest(unittest.TestCase):
         readings = [CgmReading(t=base + timedelta(minutes=m), bg=160.0)
                     for m in (30, 45, 60, 90, 120, 150, 180)]
         b = meal_burdens([meal(1, 12, 60, 10.0)], IcConfig(),
-                         cgm_readings=readings, isf_effective=50.0)[0]
+                         cgm_readings=readings, isf=IsfSource.fixed(50.0))[0]
         self.assertIsNone(b.bg_outcome_u)
         self.assertIsNone(b.outcome_bg)
         self.assertAlmostEqual(b.true_ic, 6.0, places=2)  # falls back to 60/10
@@ -645,7 +645,7 @@ class SignedOutcomeTest(unittest.TestCase):
         readings = [CgmReading(t=base + timedelta(minutes=m), bg=150.0 + (m - 300))
                     for m in (290, 295, 300, 305, 310)]
         b = meal_burdens([meal(1, 12, 60, 10.0, bg=TARGET_BG)], IcConfig(),
-                         cgm_readings=readings, isf_effective=50.0)[0]
+                         cgm_readings=readings, isf=IsfSource.fixed(50.0))[0]
         self.assertAlmostEqual(b.outcome_bg, 150.0, places=1)
         self.assertAlmostEqual(b.bg_outcome_u, 0.8, places=2)  # (150-110)/50
 
@@ -657,7 +657,7 @@ class SignedOutcomeTest(unittest.TestCase):
         readings = [CgmReading(t=base + timedelta(minutes=m), bg=160.0)
                     for m in (150, 200, 250, 295, 300)]
         b = meal_burdens([meal(1, 12, 60, 10.0, bg=TARGET_BG)], IcConfig(),
-                         cgm_readings=readings, isf_effective=50.0)[0]
+                         cgm_readings=readings, isf=IsfSource.fixed(50.0))[0]
         self.assertIsNone(b.bg_outcome_u)
         self.assertIsNone(b.outcome_bg)
 
@@ -668,7 +668,7 @@ class SignedOutcomeTest(unittest.TestCase):
             events.append(meal(d, 12, 60, 10.0, bg=TARGET_BG))
             readings += cgm_run(d, 12, TARGET_BG + 50.0)
         ic_segs, _ = analyze_ic(events, IC_6, cgm_readings=readings,
-                                isf_effective=50.0)
+                                isf=IsfSource.fixed(50.0))
         points = ic_segs[0].evidence["points"]
         self.assertEqual(len(points), 3)
         for p in points:
@@ -683,7 +683,7 @@ class SignedOutcomeTest(unittest.TestCase):
         readings = [CgmReading(t=base + timedelta(minutes=m), bg=TARGET_BG + 50.0)
                     for m in (295, 300, 305)]  # exactly 3, centroid +300
         b = meal_burdens([meal(1, 12, 60, 10.0, bg=TARGET_BG)], IcConfig(),
-                         cgm_readings=readings, isf_effective=50.0)[0]
+                         cgm_readings=readings, isf=IsfSource.fixed(50.0))[0]
         self.assertIsNotNone(b.outcome_bg)
         self.assertAlmostEqual(b.outcome_bg, TARGET_BG + 50.0, places=1)
         self.assertAlmostEqual(b.bg_outcome_u, 1.0, places=2)
@@ -704,7 +704,7 @@ class SignedOutcomeTest(unittest.TestCase):
             [BolusEvent(t=base, insulin=1.0, carbs=60.0, bg=TARGET_BG)],
             IcConfig(),  # hypo_floor_frac=0.1
             cgm_readings=readings,
-            isf_effective=self.ISF,
+            isf=IsfSource.fixed(self.ISF),
         )[0]
         # Outcome is retained, not nulled.
         self.assertAlmostEqual(b.bg_outcome_u, -1.5, places=2)
@@ -718,7 +718,7 @@ class SignedOutcomeTest(unittest.TestCase):
     def test_excluded_meal_still_appears_with_null_outcome_in_points(self):
         # No CGM at all -> every meal excluded, but still present in the payload.
         events = [meal(d, 12, 60, 10.0) for d in (1, 2, 3)]
-        ic_segs, _ = analyze_ic(events, IC_6, cgm_readings=[], isf_effective=50.0)
+        ic_segs, _ = analyze_ic(events, IC_6, cgm_readings=[], isf=IsfSource.fixed(50.0))
         points = ic_segs[0].evidence["points"]
         self.assertEqual(len(points), 3)
         for p in points:
@@ -744,7 +744,7 @@ class PriorIobNotCreditedTest(unittest.TestCase):
         events = [prior, meal(1, 12, 60, 10.0, bg=TARGET_BG)]
         readings = cgm_run(1, 12, TARGET_BG + 50.0)  # reads +1.0U high at full DIA
         b = meal_burdens(events, IcConfig(), cgm_readings=readings,
-                         isf_effective=self.ISF)[0]
+                         isf=IsfSource.fixed(self.ISF))[0]
         self.assertAlmostEqual(b.effective_insulin, 11.0, places=3)
 
     def test_matches_no_prior_bolus_case(self):
@@ -752,7 +752,7 @@ class PriorIobNotCreditedTest(unittest.TestCase):
         events = [meal(1, 12, 60, 10.0, bg=TARGET_BG)]
         readings = cgm_run(1, 12, TARGET_BG + 50.0)
         b = meal_burdens(events, IcConfig(), cgm_readings=readings,
-                         isf_effective=self.ISF)[0]
+                         isf=IsfSource.fixed(self.ISF))[0]
         self.assertAlmostEqual(b.effective_insulin, 11.0, places=3)
 
 
@@ -770,7 +770,7 @@ class StartBgBaselineTest(unittest.TestCase):
         events = [meal(1, 12, 60, 10.0, bg=TARGET_BG)]
         readings = cgm_run(1, 12, TARGET_BG + 50.0)
         b = meal_burdens(events, IcConfig(), cgm_readings=readings,
-                         isf_effective=self.ISF)[0]
+                         isf=IsfSource.fixed(self.ISF))[0]
         self.assertAlmostEqual(b.bg0, TARGET_BG, places=1)
         self.assertAlmostEqual(b.bg_outcome_u, 1.0, places=2)
         self.assertAlmostEqual(b.true_ic, 60.0 / 11.0, places=2)
@@ -783,7 +783,7 @@ class StartBgBaselineTest(unittest.TestCase):
         events = [meal(1, 12, 60, 10.0, bg=160.0)]
         readings = cgm_run(1, 12, 160.0)
         b = meal_burdens(events, IcConfig(), cgm_readings=readings,
-                         isf_effective=self.ISF)[0]
+                         isf=IsfSource.fixed(self.ISF))[0]
         self.assertAlmostEqual(b.bg0, 160.0, places=1)
         self.assertAlmostEqual(b.bg_outcome_u, 0.0, places=2)
         self.assertAlmostEqual(b.true_ic, 6.0, places=2)
@@ -798,7 +798,7 @@ class StartBgBaselineTest(unittest.TestCase):
         events = [meal(1, 12, 60, 10.0, bg=70.0)]
         readings = cgm_run(1, 12, 160.0)
         b = meal_burdens(events, IcConfig(), cgm_readings=readings,
-                         isf_effective=self.ISF)[0]
+                         isf=IsfSource.fixed(self.ISF))[0]
         self.assertAlmostEqual(b.bg0, 70.0, places=1)
         self.assertAlmostEqual(b.bg_outcome_u, (160.0 - 70.0) / 50.0, places=2)
         self.assertAlmostEqual(b.true_ic, 60.0 / 11.8, places=2)
@@ -812,7 +812,7 @@ class StartBgBaselineTest(unittest.TestCase):
         pre = [CgmReading(t=base - timedelta(minutes=5), bg=150.0)]
         readings = pre + cgm_run(1, 12, 150.0)
         b = meal_burdens([meal(1, 12, 60, 10.0)], IcConfig(),
-                         cgm_readings=readings, isf_effective=self.ISF)[0]
+                         cgm_readings=readings, isf=IsfSource.fixed(self.ISF))[0]
         self.assertAlmostEqual(b.bg0, 150.0, places=1)
         self.assertAlmostEqual(b.bg_outcome_u, 0.0, places=2)
 
@@ -822,7 +822,7 @@ class StartBgBaselineTest(unittest.TestCase):
         pre = [CgmReading(t=base - timedelta(minutes=5), bg=200.0)]
         readings = pre + cgm_run(1, 12, 160.0)
         b = meal_burdens([meal(1, 12, 60, 10.0, bg=110.0)], IcConfig(),
-                         cgm_readings=readings, isf_effective=self.ISF)[0]
+                         cgm_readings=readings, isf=IsfSource.fixed(self.ISF))[0]
         self.assertAlmostEqual(b.bg0, 110.0, places=1)
         self.assertAlmostEqual(b.bg_outcome_u, 1.0, places=2)
 
@@ -836,7 +836,7 @@ class StartBgBaselineTest(unittest.TestCase):
         far = [CgmReading(t=base - timedelta(minutes=15), bg=150.0)]
         readings = far + cgm_run(1, 12, 160.0)
         b = meal_burdens([meal(1, 12, 60, 10.0)], IcConfig(),
-                         cgm_readings=readings, isf_effective=self.ISF)[0]
+                         cgm_readings=readings, isf=IsfSource.fixed(self.ISF))[0]
         self.assertIsNone(b.bg0)
         self.assertIsNone(b.bg_outcome_u)
         self.assertIsNotNone(b.outcome_bg)  # the read exists; only the baseline is missing
@@ -853,7 +853,7 @@ class StartBgBaselineTest(unittest.TestCase):
         readings = [CgmReading(t=base + timedelta(minutes=m), bg=60.0)
                     for m in (295, 300, 305)]
         b = meal_burdens([BolusEvent(t=base, insulin=1.0, carbs=60.0, bg=200.0)],
-                         IcConfig(), cgm_readings=readings, isf_effective=self.ISF)[0]
+                         IcConfig(), cgm_readings=readings, isf=IsfSource.fixed(self.ISF))[0]
         self.assertAlmostEqual(b.bg0, 200.0, places=1)
         self.assertAlmostEqual(b.bg_outcome_u, (60.0 - 200.0) / 50.0, places=2)
         self.assertAlmostEqual(b.effective_insulin, 0.1, places=4)  # floored
@@ -871,7 +871,7 @@ class StartBgBaselineTest(unittest.TestCase):
             events.append(meal(d, 12, 60, 10.0, bg=170.0))
             readings += cgm_run(d, 12, 170.0)
         ic_segs, _ = analyze_ic(events, IC_6, cgm_readings=readings,
-                                isf_effective=self.ISF)
+                                isf=IsfSource.fixed(self.ISF))
         self.assertAlmostEqual(ic_segs[0].estimate.value, 6.0, delta=1e-2)
         for p in ic_segs[0].evidence["points"]:
             self.assertAlmostEqual(p["start_bg"], 170.0, places=1)
@@ -892,7 +892,7 @@ class FullMealLedgerTest(unittest.TestCase):
         events = [meal(1, 12, 60, 10.0, bg=TARGET_BG)]
         basal = [basal_delta(1, 12, delivered=1.0, programmed=0.0, duration=60.0)]
         b = meal_burdens(events, IcConfig(), cgm_readings=cgm_run(1, 12, TARGET_BG),
-                         isf_effective=self.ISF, basal_events=basal)[0]
+                         isf=IsfSource.fixed(self.ISF), basal_events=basal)[0]
         self.assertAlmostEqual(b.ciq_basal_delta_u, 1.0, places=3)
         self.assertAlmostEqual(b.ciq_basal_delta_acted_u, 1.0, places=3)
         self.assertAlmostEqual(b.effective_insulin, 11.0, places=3)
@@ -902,7 +902,7 @@ class FullMealLedgerTest(unittest.TestCase):
         events = [meal(1, 12, 60, 10.0, bg=TARGET_BG)]
         basal = [basal_delta(1, 12, delivered=0.0, programmed=1.0, duration=60.0)]
         b = meal_burdens(events, IcConfig(), cgm_readings=cgm_run(1, 12, TARGET_BG),
-                         isf_effective=self.ISF, basal_events=basal)[0]
+                         isf=IsfSource.fixed(self.ISF), basal_events=basal)[0]
         self.assertAlmostEqual(b.ciq_basal_delta_u, -1.0, places=3)
         self.assertAlmostEqual(b.ciq_basal_delta_acted_u, -1.0, places=3)
         self.assertAlmostEqual(b.effective_insulin, 9.0, places=3)
@@ -913,7 +913,7 @@ class FullMealLedgerTest(unittest.TestCase):
         basal = [basal_delta(1, 12, delivered=0.0, programmed=1.0, duration=60.0,
                              delivery_type="algorithmDelivery (control-iq suspension)")]
         b = meal_burdens(events, IcConfig(), cgm_readings=cgm_run(1, 12, TARGET_BG),
-                         isf_effective=self.ISF, basal_events=basal)[0]
+                         isf=IsfSource.fixed(self.ISF), basal_events=basal)[0]
         self.assertAlmostEqual(b.ciq_basal_delta_u, -1.0, places=3)
         self.assertAlmostEqual(b.ciq_basal_delta_acted_u, -1.0, places=3)
         self.assertAlmostEqual(b.effective_insulin, 9.0, places=3)
@@ -923,7 +923,7 @@ class FullMealLedgerTest(unittest.TestCase):
         basal = [basal_delta(1, 12, delivered=0.0, programmed=1.0, duration=60.0,
                              delivery_type="tempDelivery")]
         b = meal_burdens(events, IcConfig(), cgm_readings=cgm_run(1, 12, TARGET_BG),
-                         isf_effective=self.ISF, basal_events=basal)[0]
+                         isf=IsfSource.fixed(self.ISF), basal_events=basal)[0]
         self.assertAlmostEqual(b.ciq_basal_delta_u, 0.0, places=3)
         self.assertAlmostEqual(b.ciq_basal_delta_acted_u, 0.0, places=3)
         self.assertAlmostEqual(b.effective_insulin, 10.0, places=3)
@@ -933,7 +933,7 @@ class FullMealLedgerTest(unittest.TestCase):
         events = [meal(1, 12, 60, 10.0, bg=TARGET_BG)]
         entries = [self._rescue(1, grams=10.0)]
         b = meal_burdens(events, IcConfig(), cgm_readings=cgm_run(1, 12, TARGET_BG),
-                         isf_effective=self.ISF, carb_entries=entries)[0]
+                         isf=IsfSource.fixed(self.ISF), carb_entries=entries)[0]
         self.assertAlmostEqual(b.meal_carbs, 60.0)
         self.assertAlmostEqual(b.rescue_carbs, 10.0)
         self.assertAlmostEqual(b.carbs, 70.0)
@@ -965,7 +965,7 @@ class FullMealLedgerTest(unittest.TestCase):
             readings += cgm_run(d, 12, TARGET_BG)
 
         rows, _ = analyze_ic(events, IC_6, cgm_readings=readings,
-                             isf_effective=self.ISF, carb_entries=entries)
+                             isf=IsfSource.fixed(self.ISF), carb_entries=entries)
         seg = rows[0]
         self.assertEqual(seg.estimate.n, 3)
         self.assertNotIn("preempted_low_gate", seg.evidence)
@@ -1008,7 +1008,7 @@ class PrintedRescueAdmissionTest(unittest.TestCase):
         events = [meal(1, 12, 60, 10.0, bg=110.0)]
         entries = [self._rescue(1, grams=15.0)]
         burdens = meal_burdens(events, IcConfig(), cgm_readings=self._cgm(1),
-                               isf_effective=self.ISF, carb_entries=entries,
+                               isf=IsfSource.fixed(self.ISF), carb_entries=entries,
                                harm_lows=[self._low(1)])
         self.assertEqual(len(burdens), 1)
         b = burdens[0]
@@ -1027,7 +1027,7 @@ class PrintedRescueAdmissionTest(unittest.TestCase):
         events = [meal(1, 12, 60, 10.0, bg=110.0)]
         entries = [self._rescue(1, grams=15.0)]
         burdens = meal_burdens(events, IcConfig(), cgm_readings=self._cgm(1),
-                               isf_effective=self.ISF, carb_entries=entries)
+                               isf=IsfSource.fixed(self.ISF), carb_entries=entries)
         self.assertEqual(burdens, [])
 
     def test_gate_a_high_start_is_guarded_out(self):
@@ -1036,7 +1036,7 @@ class PrintedRescueAdmissionTest(unittest.TestCase):
         events = [meal(1, 12, 60, 10.0, bg=233.0)]
         entries = [self._rescue(1, grams=15.0)]
         burdens = meal_burdens(events, IcConfig(), cgm_readings=self._cgm(1),
-                               isf_effective=self.ISF, carb_entries=entries,
+                               isf=IsfSource.fixed(self.ISF), carb_entries=entries,
                                harm_lows=[self._low(1)])
         self.assertEqual(burdens, [])
 
@@ -1048,7 +1048,7 @@ class PrintedRescueAdmissionTest(unittest.TestCase):
         cgm = self._cgm(1) + [
             CgmReading(t=datetime(2026, 6, 1, 14, 0, 0), bg=200.0)]
         burdens = meal_burdens(events, IcConfig(), cgm_readings=cgm,
-                               isf_effective=self.ISF, carb_entries=entries,
+                               isf=IsfSource.fixed(self.ISF), carb_entries=entries,
                                harm_lows=[self._low(1)])
         self.assertEqual(burdens, [])
 
@@ -1061,7 +1061,7 @@ class PrintedRescueAdmissionTest(unittest.TestCase):
                            dominant_bolus_t=datetime(2026, 6, 1, 9, 0, 0),
                            dominant_bolus_carbs=40.0)
         burdens = meal_burdens(events, IcConfig(), cgm_readings=self._cgm(1),
-                               isf_effective=self.ISF, carb_entries=entries,
+                               isf=IsfSource.fixed(self.ISF), carb_entries=entries,
                                harm_lows=[other])
         self.assertEqual(burdens, [])
 
@@ -1071,7 +1071,7 @@ class PrintedRescueAdmissionTest(unittest.TestCase):
         events = [meal(1, 12, 60, 10.0, bg=110.0)]
         entries = [self._rescue(1, grams=None, certainty="unknown")]
         burdens = meal_burdens(events, IcConfig(), cgm_readings=self._cgm(1),
-                               isf_effective=self.ISF, carb_entries=entries,
+                               isf=IsfSource.fixed(self.ISF), carb_entries=entries,
                                harm_lows=[self._low(1)])
         self.assertEqual(burdens, [])
 
@@ -1085,7 +1085,7 @@ class PrintedRescueAdmissionTest(unittest.TestCase):
         events = [meal(1, 12, 60, 10.0, bg=110.0)]
         cgm = low_run + cgm_run(1, 12, 110.0)
         entries = [self._rescue(1, grams=15.0)]
-        rows, _ = analyze_ic(events, IC_6, cgm_readings=cgm, isf_effective=self.ISF,
+        rows, _ = analyze_ic(events, IC_6, cgm_readings=cgm, isf=IsfSource.fixed(self.ISF),
                              carb_entries=entries, harm_config=HarmConfig())
         pts = [p for p in rows[0].evidence["points"] if p["rescue_carbs"]]
         self.assertEqual(len(pts), 1)
@@ -1214,9 +1214,9 @@ class AnalyzeIcTest(unittest.TestCase):
         # (60/20 = 3.0), a very different centre.
         events.append(meal(4, 12, 60, 20.0))
         ic_segs, _ = analyze_ic(events, IC_6, cgm_readings=readings,
-                                isf_effective=50.0)
+                                isf=IsfSource.fixed(50.0))
         burdens = meal_burdens(events, IcConfig(), cgm_readings=readings,
-                               isf_effective=50.0)
+                               isf=IsfSource.fixed(50.0))
         confirmed = [b for b in burdens if b.has_outcome]
         fallback = [b for b in burdens if not b.has_outcome]
         self.assertEqual(len(confirmed), 3)
@@ -1916,7 +1916,7 @@ class DoseStampedIcHistoryTest(unittest.TestCase):
 
         blocks, _runs = analyze_ic_blocks(
             [lead_in] + old + current, [(0, 5.0)], cgm_readings=cgm,
-            isf_effective=50.0, observed_days=BLOCK_WINDOW_DAYS,
+            isf=IsfSource.fixed(50.0), observed_days=BLOCK_WINDOW_DAYS,
             analysis_start=now - timedelta(days=BLOCK_WINDOW_DAYS),
             analysis_end=now, snapshots=snapshots, history_catalog=catalog,
         )

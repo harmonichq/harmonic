@@ -12,6 +12,7 @@ from ciq_autotune.analyzers.ic import _CIQ_SUSPEND_TYPE, IcConfig
 from ciq_autotune.analyzers.ic_regression import analyze_ic_blocks_fuzzy
 from ciq_autotune.events import BasalEvent, BolusEvent, CgmReading
 from ciq_autotune.harm import HarmArm, HarmConfig, PrintedLow
+from ciq_autotune.settings import IsfSource
 
 
 BASE = datetime(2026, 1, 1)
@@ -99,7 +100,7 @@ def _low(bolus, minutes, carbs=60.0):
 
 def _published(events, cgm, *, segments=((0, 5.0),), harm_lows=None, basal=()):
     """Each block's serialized analyzer row, by block id."""
-    blocks = _blocks(events, segments, cgm_readings=cgm, isf_effective=50.0,
+    blocks = _blocks(events, segments, cgm_readings=cgm, isf=IsfSource.fixed(50.0),
                      basal_events=list(basal),
                      harm_config=HarmConfig() if harm_lows is not None else None,
                      harm_lows=harm_lows)

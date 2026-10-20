@@ -24,12 +24,15 @@ from ciq_autotune.analyzers.classifiers.context_gate import CIQ_SUSPEND_TYPE
 from ciq_autotune.analyzers.meals import group_meals
 from ciq_autotune.analyzers.scenario_config import ScenarioConfig
 from ciq_autotune.events import BasalEvent, BolusEvent, CgmReading
+from ciq_autotune.settings import IsfSource
 
 # Invented daytime settings on the real schema: ISF mg/dL/U, daytime I:C g/U. The
 # classifier is handed these; it does not read settings itself. ``test_silence_reason``
 # deliberately mirrors this exact pair as ``CU_ISF`` / ``CU_IC`` — one suite's settings
 # seen from the silence-reason side — so the two must change together.
 ISF = 32.0
+# One ISF for every meal, as a retained comparison converts (ADR 563).
+SOURCE = IsfSource.fixed(ISF)
 IC = 5.0
 
 
@@ -69,7 +72,7 @@ def suspend_run(day, hh, mm, rows=6, cadence=5):
 
 
 def classify(m, cgm, basal=(), bolus=()):
-    return classify_carb_undercount(m, cgm, basal, bolus, isf=ISF)
+    return classify_carb_undercount(m, cgm, basal, bolus, isf=SOURCE)
 
 
 class RunawayVsCoveredTest(unittest.TestCase):
@@ -97,17 +100,41 @@ class RunawayVsCoveredTest(unittest.TestCase):
                     carb_ratio=stamped_ic,
                 )
                 verdict = classify_carb_undercount(
-                    m, cgm, isf=ISF,
+                    m, cgm, isf=SOURCE,
                 )
                 expected = (m.insulin + (360.0 - 145.0) / ISF) * stamped_ic
                 self.assertAlmostEqual(verdict.implied_carbs, round(expected, 1))
+
+    def test_converts_each_meal_with_the_isf_stamped_on_its_first_bolus(self):
+        # ADR 563: the stamp converts, here with no settings snapshot at all, and a
+        # top-up's own stamp never does.
+        cgm = cgm_arc(15, 12, 0, [145, 145, 170, 220, 280, 330, 360])
+        dose_stamped = IsfSource.from_snapshots([])
+        for stamp in (32.0, 64.0):
+            with self.subTest(stamp=stamp):
+                opener = replace(meal(15, 12, 5, carbs=30.0, dose=4.0), isf=stamp)
+                top_up = replace(meal(15, 12, 20, carbs=10.0, dose=2.0), isf=16.0)
+                [grouped] = group_meals([opener, top_up])
+                verdict = classify_carb_undercount(grouped, cgm, isf=dose_stamped)
+                expected = (6.0 + (360.0 - 145.0) / stamp) * IC
+                self.assertAlmostEqual(verdict.implied_carbs, round(expected, 1))
+
+    def test_a_meal_with_no_isf_in_force_is_left_unjudged(self):
+        # No stamp and no snapshot as of the meal: no ISF converts it (ADR 563).
+        cgm = cgm_arc(15, 12, 0, [145, 145, 170, 220, 280, 330, 360])
+        verdict = classify_carb_undercount(
+            meal(15, 12, 5, carbs=30.0, dose=6.0), cgm, isf=IsfSource.from_snapshots([]),
+        )
+        self.assertFalse(verdict.matched)
+        self.assertEqual(verdict.evidence_tier, EvidenceTier.NOT_IN_DATA)
+        self.assertEqual(verdict.silence_reason, SilenceReason.INSUFFICIENT_DATA)
 
     def test_missing_dose_stamped_ratio_is_not_in_data(self):
         cgm = cgm_arc(15, 12, 0, [145, 145, 170, 220, 280, 330, 360])
         verdict = classify_carb_undercount(
             meal(15, 12, 5, carbs=30.0, dose=6.0, carb_ratio=None),
             cgm,
-            isf=ISF,
+            isf=SOURCE,
         )
         self.assertEqual(verdict.evidence_tier, EvidenceTier.NOT_IN_DATA)
         self.assertFalse(verdict.matched)
@@ -180,7 +207,7 @@ class NotInDataTest(unittest.TestCase):
         cgm = cgm_arc(15, 12, 0, [145, 220, 320, 360])
         for verdict in (
             classify_carb_undercount(meal(15, 12, 5, carbs=30.0, dose=6.0), cgm, isf=None),
-            classify_carb_undercount(meal(15, 12, 5, carbs=30.0, dose=6.0, carb_ratio=None), cgm, isf=ISF),
+            classify_carb_undercount(meal(15, 12, 5, carbs=30.0, dose=6.0, carb_ratio=None), cgm, isf=SOURCE),
         ):
             with self.subTest(detail=verdict.detail):
                 self.assertEqual(verdict.evidence_tier, EvidenceTier.NOT_IN_DATA)
@@ -249,7 +276,7 @@ class OwnedExcursionWindowTest(unittest.TestCase):
         self.assertEqual(v.baseline_bg, 140.0)
         # The old 180-min horizon would have seen only ≤190 and stayed silent.
         narrow = replace(ScenarioConfig(), carb_undercount_peak_lookahead_min=180)
-        v180 = classify_carb_undercount(m, cgm, isf=ISF,
+        v180 = classify_carb_undercount(m, cgm, isf=SOURCE,
                                         scenario_config=narrow)
         self.assertFalse(v180.matched)
         self.assertLess(v180.peak_bg, 200.0)
@@ -331,8 +358,8 @@ class ConfiguredGateTest(unittest.TestCase):
         m = meal(14, 10, 40, carbs=30.0, dose=3.0, carb_ratio=10.0)
         for label, (cgm, config) in self.CASES.items():
             with self.subTest(label):
-                self.assertTrue(classify_carb_undercount(m, cgm, isf=40.0).matched)
-                v = classify_carb_undercount(m, cgm, isf=40.0, scenario_config=config)
+                self.assertTrue(classify_carb_undercount(m, cgm, isf=IsfSource.fixed(40.0)).matched)
+                v = classify_carb_undercount(m, cgm, isf=IsfSource.fixed(40.0), scenario_config=config)
                 self.assertFalse(v.matched)
                 self.assertEqual(v.silence_reason, SilenceReason.UPSTREAM_CAUSE)
 

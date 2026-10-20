@@ -30,7 +30,6 @@ scale, so the ÷1000 conversion is applied unconditionally.
 from __future__ import annotations
 
 import bisect
-import statistics
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Dict, List, Optional, Sequence, Tuple, Union
@@ -406,20 +405,6 @@ class IsfSource:
 
 def _positive(value) -> Optional[float]:
     return float(value) if value is not None and value > 0 else None
-
-
-def effective_isf(isf_rows: Sequence, snaps: List[Snapshot]) -> Optional[float]:
-    """A single representative ISF (mg/dL per U) in force over the window.
-
-    Prefer the *measured* fasting ISF the ISF analyzer produced (a single value
-    now — ADR 0001); fall back to the median programmed ISF; ``None`` when
-    nothing is known. Callers use it to turn a settled-BG error into insulin
-    units, so one day-representative value suffices.
-    """
-    if isf_rows and isf_rows[0].estimate.value is not None:
-        return float(isf_rows[0].estimate.value)
-    programmed = [v for _, v in active_schedule(snaps, "isf")]
-    return float(statistics.median(programmed)) if programmed else None
 
 
 def programmed_ic_range(snaps: List[Snapshot]) -> Optional[Tuple[float, float]]:

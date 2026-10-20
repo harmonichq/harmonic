@@ -24,7 +24,7 @@ Public entry points:
 * :func:`assemble` — the pure core: event lists in, ``ScenarioReport`` out. All the
   judgment lives here; it takes no store, so it is fully unit-testable.
 * :func:`build_scenarios` — the store-facing wrapper the API calls: reads the
-  window, sources ``isf`` from the ISF analyzer + settings, builds the episode
+  window, converts each meal with its dose-stamped ISF (ADR 563), builds the episode
   ``window`` payloads via :func:`~...timeline.timeline`,
   and delegates to :func:`assemble`.
 """
@@ -115,7 +115,7 @@ def tally_attributions(
     cgm_readings: Sequence[CgmReading],
     basal_events: Sequence[BasalEvent] = (),
     *,
-    isf: Optional[float] = None,
+    isf: Optional[settings.IsfSource] = None,
     scenario_config: ScenarioConfig = ScenarioConfig(),
     low_answers: Sequence[LowPromptAnswer] = (),
 ) -> Tuple[Dict[Exposure, int], Dict[Lever, int]]:
@@ -147,7 +147,7 @@ def _build_episode(
     bolus: Sequence[BolusEvent],
     basal: Sequence[BasalEvent],
     *,
-    isf: Optional[float],
+    isf: Optional[settings.IsfSource],
     window_builder,
     next_start: Optional[datetime] = None,
     next_lever_start: Optional[datetime] = None,
@@ -298,7 +298,7 @@ def assemble(
     cgm_readings: Sequence[CgmReading],
     basal_events: Sequence[BasalEvent] = (),
     *,
-    isf: Optional[float] = None,
+    isf: Optional[settings.IsfSource] = None,
     window: Optional[Dict] = None,
     window_builder=None,
     carb_entries: Sequence[CarbEntry] = (),  # Carb log (#125): the #172 pre-empted-low count (ADR 0012)
@@ -309,8 +309,9 @@ def assemble(
 ) -> ScenarioReport:
     """Assemble a ranked scenario payload from raw events (the pure engine core).
 
-    ``isf`` (mg/dL per U) feeds the carb-undercount classifier; each meal supplies
-    its own Dose-stamped I:C. ``window`` is an optional summary dict echoed into the
+    ``isf`` is the :class:`~ciq_autotune.settings.IsfSource` the carb-undercount
+    classifier converts each meal with (ADR 563); each meal supplies its own
+    Dose-stamped I:C. ``window`` is an optional summary dict echoed into the
     report; ``window_builder(start, end) -> dict`` builds each episode's step-through
     payload (defaults to an empty dict, e.g. in unit tests).
 
@@ -517,9 +518,9 @@ def build_scenarios(
 ) -> ScenarioReport:
     """Build the ranked scenario payload for ``store``'s recent window (API entry).
 
-    Reads bolus / CGM / basal over the last ``window_days``, sources the effective
-    ``isf`` from the ISF analyzer + latest settings snapshot (each meal carries its
-    historical Dose-stamped I:C), and
+    Reads bolus / CGM / basal over the last ``window_days``, converts each meal with
+    its dose-stamped ISF through :meth:`~ciq_autotune.settings.IsfSource.from_snapshots`
+    (each meal also carries its historical Dose-stamped I:C, ADR 563), and
     builds each episode's step-through ``window`` from the same
     :func:`~ciq_autotune.timeline.timeline` payload the ``/api/timeline`` endpoint
     serves.
@@ -569,7 +570,7 @@ def build_scenarios(
     # CGM via `fl_records` above.
     w_answers = low_prompt_answers(store, start, now)
 
-    isf = _effective_isf(bolus, basal, cgm, snaps, start, now)
+    isf = settings.IsfSource.from_snapshots(snaps)
 
     # Thread the window-invariant timeline inputs (the false-low records above and the
     # settings snapshots) into every episode's window build so timeline() stops
@@ -589,29 +590,6 @@ def build_scenarios(
         rescue_observation=rescue_observation,
         scenario_config=ScenarioConfig(),
     )
-
-
-def _effective_isf(
-    bolus, basal, cgm, snaps, start: datetime, now: datetime
-) -> Optional[float]:
-    """The effective ISF (mg/dL per U) in force in the window.
-
-    The representative-value read is shared with ``analyze()`` via
-    :func:`ciq_autotune.settings.effective_isf`. Only the ``analyze_isf`` call is
-    local: this orchestrator windows over a different span, so that regression
-    genuinely runs here.
-    """
-    from ..isf import analyze_isf
-
-    # This window differs from analyze()'s, so the ISF analyzer call genuinely
-    # runs here (not duplication). Only the representative-value pick is shared.
-    isf_rows = analyze_isf(
-        _slice(bolus, start, now),
-        _slice(basal, start, now),
-        _slice(cgm, start, now),
-        settings.active_schedule(snaps, "isf"),
-    )
-    return settings.effective_isf(isf_rows, snaps)
 
 
 def observation_span_readable(cgm, start, end, *, scenario_config=ScenarioConfig()):

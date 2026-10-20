@@ -1786,10 +1786,13 @@ class Store:
         if type(context.get('input_revision')) is not int:
             raise ValueError('available context requires its input revision')
         if field == 'comparison_context':
-            # The comparison producer retains executable inputs, not guidance.
+            # The comparison producer retains executable inputs, not guidance: the
+            # dose-stamped ISF rule, or the programmed ISF a context captured before
+            # it retains (ADR 563).
             isf = context.get('programmed_isf')
-            if (not isinstance(isf, dict) or type(isf.get('value')) not in (int, float)
-                    or not isinstance(isf.get('unit'), str) or not isf['unit']
+            retained = (isinstance(isf, dict) and type(isf.get('value')) in (int, float)
+                        and isinstance(isf.get('unit'), str) and bool(isf['unit']))
+            if (not (context.get('isf_source') == 'dose_stamped' or retained)
                     or not context.get('source_snapshot') or not context.get('configuration')):
                 raise ValueError('available comparison context requires ISF, units, snapshot and config identity')
             return

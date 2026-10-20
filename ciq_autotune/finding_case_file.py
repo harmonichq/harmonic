@@ -10,7 +10,7 @@ import uuid
 
 from .analyzers.classifiers import classify_correction_stacking
 from .analyzers.meals import group_meals
-from .analyzers.scenario.engine import _effective_isf, low_prompt_answers
+from .analyzers.scenario.engine import low_prompt_answers
 from .analyzers.scenario.levers import Exposure, Lever, exposure, outcome_kind, title
 from .analyzers.scenario.outcome_patterns import credited_claims, outcome_window_population
 from .analyzers.scenario.evidence_population import policy_for
@@ -21,6 +21,7 @@ from .analyzers.scenario_config import ScenarioConfig
 from . import event_comparison, findings_projection, outcomes_trend
 from .false_low import drop_readings, false_low_span_records, spans_from_records
 from .result_cache import PREPARATION_LEASE_SECONDS
+from .settings import IsfSource
 from .window_membership import WindowQuery
 
 PREPARATION_SCHEMA = "diagnose-finding-case-file-preparation-v1"
@@ -506,7 +507,7 @@ def _population(
     filtered_bolus = _slice(bolus, start, end)
     filtered_basal = _slice(basal, start, end)
     answers = low_prompt_answers(store, start, end)
-    isf = _effective_isf(bolus, basal, cgm, store.settings_snapshots(), start, end)
+    isf = IsfSource.from_snapshots(store.settings_snapshots())
     evaluated = evaluate(
         filtered_bolus, filtered_cgm, filtered_basal, isf=isf,
         scenario_config=config, low_answers=answers,

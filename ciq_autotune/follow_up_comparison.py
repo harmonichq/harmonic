@@ -23,12 +23,12 @@ from .analyzers.scenario_config import ScenarioConfig
 from .false_low import drop_readings, false_low_spans
 from .outcomes import CGM_CADENCE_MIN, CONSENSUS_MIN_COVERAGE, _pct, compute_metrics
 from .outcomes_trend import (
-    _profile_settings, behavior_observations, meal_measurements,
+    behavior_observations, meal_measurements,
     glycemic_rate_counts, day_rate_clears, newcombe_diff_interval,
     post_meal_rescue_context,
 )
 from .rescue_evidence import eligible_carb_entries, first_observation, observe
-from .settings import IsfSource
+from .settings import IsfSource, active_schedule
 from .trial_evidence import comparison_evidence, _in_block
 from .window_membership import WindowQuery
 
@@ -71,23 +71,39 @@ def _focus_configuration(context):
 
 
 def capture_comparison_context(store, *, at, input_revision):
-    """Capture the existing active-profile median ISF as of the supplied instant."""
+    """Capture the comparison's executable inputs as of the supplied instant.
+
+    Its conversions read each meal's dose-stamped ISF (ADR 563), so it retains which
+    rule converts and no ISF value; without a programmed ISF as of the instant it is
+    unavailable. A context retained before ADR 563 carries ``programmed_isf`` instead,
+    and keeps converting with that value (:func:`_isf_source`)."""
     at = _time(at)
     snaps = sorted((s for s in store.settings_snapshots() if s.captured_at <= at),
                    key=lambda s: s.captured_at)
-    isf, _ = _profile_settings(snaps)
-    context = {"version": _VERSION, **_availability(None if isf is not None else "missing_programmed_isf"),
+    programmed = bool(snaps) and bool(active_schedule(snaps, "isf"))
+    context = {"version": _VERSION, **_availability(None if programmed else "missing_programmed_isf"),
                "captured_at": at.strftime(_FMT), "input_revision": input_revision,
-               **_execution(), "programmed_isf": None, "source_snapshot": None}
-    if isf is not None:
+               **_execution(), "isf_source": None, "source_snapshot": None}
+    if programmed:
         snapshot = snaps[-1]
         context["source_snapshot"] = {"captured_at": snapshot.captured_at.strftime(_FMT),
                                       "active_idp": snapshot.settings.active_idp}
-        context["programmed_isf"] = {
-            "value": isf, "unit": "mg/dL/U",
-        }
+        context["isf_source"] = "dose_stamped"
     context["id"] = hashlib.sha256(json.dumps(context, sort_keys=True).encode()).hexdigest()
     return context
+
+
+def _isf_source(context, snapshots):
+    """The ISF a retained context converts with, or None when it names none.
+
+    A context captured with a programmed ISF keeps that value (ADR 563 rule 5); a
+    dose-stamped one reads each meal's stamp over the snapshots before its cutoff."""
+    if context.get("isf_source") == "dose_stamped":
+        return IsfSource.from_snapshots(snapshots)
+    programmed = context.get("programmed_isf")
+    if not programmed or programmed.get("value") is None or programmed.get("unit") != "mg/dL/U":
+        return None
+    return IsfSource.fixed(programmed["value"])
 
 
 def _block(store, record):
@@ -299,8 +315,7 @@ def compare_follow_up(store, *, record, data_cutoff, input_revision, context_mod
     configuration = _focus_configuration(context) if record["kind"] == "focus" else None
     if record["kind"] == "focus" and configuration is None:
         return unavailable("unsupported_retained_execution")
-    programmed = context.get("programmed_isf")
-    if not programmed or programmed.get("value") is None or programmed.get("unit") != "mg/dL/U":
+    if _isf_source(context, ()) is None:
         return unavailable("missing_programmed_isf")
     if context_mode == "current":
         comparison["limitations"].append("Current-policy reassessment is not a like-for-like improvement claim.")
@@ -315,6 +330,7 @@ def compare_follow_up(store, *, record, data_cutoff, input_revision, context_mod
     cgm = drop_readings(cgm, false_low_spans(cgm, responses))
     carbs = store.carb_entries()
     snapshots = [s for s in store.settings_snapshots() if s.captured_at <= cutoff]
+    isf = _isf_source(context, snapshots)
     kind = record["kind"]
     if kind == "focus":
         changed = _time(record["pinned_at"])
@@ -382,7 +398,7 @@ def compare_follow_up(store, *, record, data_cutoff, input_revision, context_mod
             before=record.get("before"), after=record.get("after"), start=lo, end=hi,
             cgm=arm_cgm, bolus=arm_bolus, basal=arm_basal, carbs=eligible_carbs, snapshots=snapshots,
             pump_events=[e for e in store.pump_events() if e.t < cutoff] if hasattr(store, "pump_events") else (),
-            isf=IsfSource.fixed(programmed["value"]), captured_members=record.get("members"),
+            isf=isf, captured_members=record.get("members"),
             focus=kind == "focus",
         )
         populations.append(population)
@@ -430,7 +446,7 @@ def compare_follow_up(store, *, record, data_cutoff, input_revision, context_mod
                          if cohort is not None else bolus)
             observed = behavior_observations(
                 arm_bolus, arm_cgm, basal, lever=record["lever"], start=lo, end=hi,
-                isf=programmed["value"], scenario_config=configuration,
+                isf=isf, scenario_config=configuration,
                 low_answers=[a for a in low_prompt_answers(store, earliest, cutoff)
                              if a.answer == "false-low" or (a.answered_at or a.anchor_t) <= hi],
             )

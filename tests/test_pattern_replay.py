@@ -91,6 +91,7 @@ EXPECTED_ACTIVE_KINDS = {
     "delivery-basal-whole-day": "trial",
     "behavioral-over-treated-near-low": None,
     "ic-dose-stamped-isf": None,
+    "behavioral-carb-undercount-segment": None,
 }
 
 

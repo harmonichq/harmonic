@@ -18,7 +18,6 @@ from .analyzers.classifiers import (
     classify_correction_stacking,
     classify_late_bolus,
 )
-from .analyzers.scenario.engine import _effective_isf
 from .analyzers.scenario.attribute import over_treated_rebound_judgment
 from .analyzers.scenario.meal_suspend import (
     MealSuspendOwnership,
@@ -27,6 +26,7 @@ from .analyzers.scenario.meal_suspend import (
 from .analyzers.scenario_config import ScenarioConfig
 from .analyzers.meals import group_meals
 from .insulin import ACCOUNTING_DIA_MIN
+from .settings import IsfSource
 from .window_membership import WindowQuery, outcome_timestamp
 
 FMT = "%Y-%m-%d %H:%M:%S"
@@ -459,16 +459,9 @@ def _build_catalog_capture(
         store.carb_entries(start=catalog_start, end=None), key=lambda item: item.t
     )
     ownership = MealSuspendOwnership(bolus, basal, scenario_config=CONFIG)
-    isf = _effective_isf(
-        bolus,
-        basal,
-        cgm,
-        # Settings are not a source-window event stream: the latest active
-        # programmed schedule remains the effective-ISF fallback.
-        store.settings_snapshots(),
-        source_start,
-        now,
-    )
+    # Each meal converts with its own dose-stamped ISF (ADR 563). Settings are not
+    # a source-window event stream, so every captured snapshot is read.
+    isf = IsfSource.from_snapshots(store.settings_snapshots())
 
     cgm_times = [item.t for item in cgm]
     bolus_times = [item.t for item in bolus]

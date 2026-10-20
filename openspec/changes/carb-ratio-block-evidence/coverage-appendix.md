@@ -70,3 +70,23 @@ from unstamped meals whose only settings capture came after them, so under ADR
 now lands before the meals, restoring the programmed ISF of 50 the cases were
 built around. It was the one failure in an earlier whole-pytest run on
 `e9dce945` (413.78 s; 2668 passed, 1 failed, 1 skipped), before this fix.
+
+## #589 — dose-stamped ISF conversion (ADR 563, slice 2)
+
+#589 adds one QA case, `behavioral-carb-undercount-segment`, and re-copies no
+existing expectation. The budgets are re-measured against AGENTS.md's current
+limits, none raised; the whole-pytest ceiling is still 2.5× the chunk-1 baseline
+above.
+
+| Budget | #589 measurement | Limit |
+| --- | ---: | ---: |
+| Committed showcase size | 1,486,848 bytes (unchanged; drift check current) | 25 MiB (26,214,400 bytes) |
+| Showcase drift check | 0.49 s wall | 30 s |
+| Focused QA suite (`tests/test_qa_e2e_cases.py tests/test_gen_qa_e2e_db.py`) | 55.56 s wall; 102 passed | 150 s |
+| Slowest generated case | `test_case_showcase`: 2.23 s | 30 s |
+| Whole pytest | in the pull request's verification output, run once on the pushed commit | 1,477.15 s |
+
+As in #588, the new case's name joins the catalog list in
+`tests/test_qa_e2e_cases.py` and `EXPECTED_ACTIVE_KINDS` in
+`tests/test_pattern_replay.py` (`None`: it holds no Focus or Trial), outside the
+order's Expected diff.

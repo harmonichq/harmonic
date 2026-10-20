@@ -16,7 +16,6 @@ from __future__ import annotations
 import json
 import unittest
 from datetime import datetime, timedelta
-from unittest import mock
 
 from ciq_autotune.analyzers.scenario.levers import Exposure, Lever
 from ciq_autotune.events import CgmReading
@@ -31,7 +30,7 @@ from ciq_autotune.outcomes import (
     markdown_outcomes,
     summarize_outcomes,
 )
-from tests.test_scenario_engine import ISF, dose_stamped_ic_fixture
+from tests.test_scenario_engine import dose_stamped_ic_fixture
 
 try:
     from fastapi.testclient import TestClient
@@ -206,11 +205,11 @@ class _FakeStore:
 class SummarizeAndJsonTest(unittest.TestCase):
     def test_unstamped_meal_reduces_carb_undercount_clean_rate_attribution(self):
         bolus, cgm = dose_stamped_ic_fixture()
-        with mock.patch("ciq_autotune.outcomes._effective_isf", return_value=ISF):
-            summary = summarize_outcomes(
-                _FakeStore(cgm, bolus), window_days=14,
-                now=datetime(2026, 6, 19),
-            )
+        # Each meal converts with the ISF stamped on it (ADR 563).
+        summary = summarize_outcomes(
+            _FakeStore(cgm, bolus), window_days=14,
+            now=datetime(2026, 6, 19),
+        )
 
         meals = next(r for r in summary.clean_rates
                      if r.exposure == Exposure.MEALS.value)

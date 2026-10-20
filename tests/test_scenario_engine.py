@@ -57,6 +57,7 @@ from ciq_autotune.analyzers.scenario.attribute import (
     over_treated_rebound_judgment,
 )
 from ciq_autotune.analyzers.scenario.evaluation import evaluate
+from ciq_autotune.settings import IsfSource
 from ciq_autotune.analyzers.scenario.payload import Step, event_ref, window_ref
 from ciq_autotune.analyzers.scenario.engine import (
     _build_episode,
@@ -96,10 +97,10 @@ def cgm_flat(day, h, m, bg, minutes, step=5):
     return cgm_ramp(day, h, m, bg, 0.0, minutes, step)
 
 
-def meal(day, h, m, carbs=45.0, dose=10.0, carb_ratio=10.0, seq_num=None):
+def meal(day, h, m, carbs=45.0, dose=10.0, carb_ratio=10.0, seq_num=None, isf=None):
     return BolusEvent(
         t=datetime(2026, 6, day, h, m, 0), insulin=dose, carbs=carbs,
-        carb_ratio=carb_ratio, completion="Completed", seq_num=seq_num,
+        carb_ratio=carb_ratio, completion="Completed", seq_num=seq_num, isf=isf,
     )
 
 
@@ -116,8 +117,9 @@ def suspend_run(day, h, m, rows=8, cadence=5, profile_rate=0.9):
     ]
 
 
-# Settings that let the carb-undercount classifier judge test meals.
-ISF = 40.0
+# The ISF source that lets the carb-undercount classifier judge test meals: one
+# value for every meal, as a retained comparison converts (ADR 563).
+ISF = IsfSource.fixed(40.0)
 
 
 class AttributedOccurrencesTest(unittest.TestCase):
@@ -125,8 +127,8 @@ class AttributedOccurrencesTest(unittest.TestCase):
         from ciq_autotune.analyzers.scenario import attributed_occurrences
         cgm = cgm_ramp(11, 15, 40, 180, 1.4, 140)
         prior = meal(11, 15, 13, carbs=35, dose=7)
-        self.assertEqual(attributed_occurrences([prior], cgm, isf=40), ())
-        rows = attributed_occurrences([], cgm, isf=40)
+        self.assertEqual(attributed_occurrences([prior], cgm, isf=ISF), ())
+        rows = attributed_occurrences([], cgm, isf=ISF)
         self.assertEqual(len(rows), 1)
         self.assertEqual(rows[0].lever, Lever.MISSED_MEAL)
         self.assertEqual(rows[0].anchor_t, datetime(2026, 6, 11, 18))
@@ -246,12 +248,12 @@ def dose_stamped_ic_fixture():
     """Four runaway meals: three stamped I:C values and one unstamped (~25%).
 
     Each bolus carries the pump sequence number every stored bolus has, so each claim
-    sits on its own meal (#553).
+    sits on its own meal (#553), and stamps ISF 40, the ISF it converts with (ADR 563).
     """
     bolus, cgm = [], []
     for day, carb_ratio in zip((15, 16, 17, 18), (5.1, 4.0, 5.4, None)):
         bolus.append(meal(day, 8, 0, carbs=30.0, dose=6.0, carb_ratio=carb_ratio,
-                          seq_num=day))
+                          seq_num=day, isf=40.0))
         cgm.extend(
             cgm_flat(day, 6, 0, 145, 30)
             + cgm_ramp(day, 8, 0, 145, 3.6, 60)
@@ -2015,7 +2017,7 @@ class OverTreatedCausedLowSplitTest(unittest.TestCase):
         # The meal-dose tail: 4.5 U at 00:45, ~3 h before the 03:50 nadir.
         bolus = [_arc_bolus(2, 20, 0, 45, 4.5, 22.0)]
         return assemble(bolus, cgm, [],
-                        isf=self.SPLIT_ISF)
+                        isf=IsfSource.fixed(self.SPLIT_ISF))
 
     def test_deep_low_surfaces_only_the_actionable_over_correction(self):
         # The meal-driven low is an outcome, not a Lever. Its rebound still carries
@@ -2234,7 +2236,7 @@ class AttributedOccurrenceOwnershipTest(unittest.TestCase):
             BolusEvent(t=datetime(2026, 6, 14, 19, 10), insulin=3.0, carbs=None, seq_num=102),
             BolusEvent(t=datetime(2026, 6, 14, 19, 50), insulin=3.0, carbs=None, seq_num=103),
         ]
-        rows = [r for r in attributed_occurrences(bolus, cgm, isf=45)
+        rows = [r for r in attributed_occurrences(bolus, cgm, isf=IsfSource.fixed(45))
                 if r.lever is Lever.CORRECTION_STACKING]
         self.assertEqual(len(rows), 1)
         self.assertEqual(rows[0].driver_source_key, (102, 103))
@@ -2247,8 +2249,8 @@ class AttributedOccurrenceOwnershipTest(unittest.TestCase):
         nadir = datetime(2026, 6, 17, 12, 10)
         for answers in ([], [LowPromptAnswer(anchor_t=nadir, answer="no")]):
             for config in (ScenarioConfig(), ScenarioConfig(engine_context_pad_min=180)):
-                rows = attributed_occurrences([], cgm, isf=40, low_answers=answers, scenario_config=config)
-                _, tally = tally_attributions([], cgm, isf=40, low_answers=answers, scenario_config=config)
+                rows = attributed_occurrences([], cgm, isf=ISF, low_answers=answers, scenario_config=config)
+                _, tally = tally_attributions([], cgm, isf=ISF, low_answers=answers, scenario_config=config)
                 actual = {}
                 for lever, recurrence in {(r.lever, r.recurrence_id) for r in rows}:
                     actual[lever] = actual.get(lever, 0) + 1
@@ -2265,7 +2267,7 @@ class AttributedOccurrenceOwnershipTest(unittest.TestCase):
         cgm = (cgm_flat(19,18,40,120,20) + cgm_ramp(19,19,0,120,1.75,40)
                + cgm_ramp(19,19,40,190,-1.4,100) + cgm_ramp(19,21,20,50,4,40)
                + cgm_ramp(19,22,0,210,-1.2,80))
-        rows = attributed_occurrences([meal(19,19,0,40,6),corr(19,20,0,4)],cgm,isf=40)
+        rows = attributed_occurrences([meal(19,19,0,40,6),corr(19,20,0,4)],cgm,isf=ISF)
         rebound = next(r for r in rows if r.lever is Lever.OVER_TREATED_LOW)
         self.assertEqual(rebound.anchor_t,datetime(2026,6,19,21,20))
         self.assertEqual(rebound.driver_family,Exposure.LOWS)
@@ -2285,9 +2287,9 @@ class FollowUpObservationTest(unittest.TestCase):
         # A late climb that runs above the range line after the bolus (ADR 461).
         cgm=[CgmReading(datetime(2026,6,15,12,15)+timedelta(minutes=5*i),value)
              for i,value in enumerate((100,110,120,130,140,150,165,180,195,190,175,160,140))]
-        rows=recurrence_observations([dose],cgm,lever='late_bolus',isf=40)
+        rows=recurrence_observations([dose],cgm,lever='late_bolus',isf=ISF)
         self.assertEqual(sum(r['k'] for r in rows),1)
-        self.assertEqual(sum(r['k'] for r in rows),tally_attributions([dose],cgm,isf=40)[1][Lever.LATE_BOLUS])
+        self.assertEqual(sum(r['k'] for r in rows),tally_attributions([dose],cgm,isf=ISF)[1][Lever.LATE_BOLUS])
         self.assertTrue(rows[0]['measured'])
 
 

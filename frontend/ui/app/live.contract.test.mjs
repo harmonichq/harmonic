@@ -181,9 +181,8 @@ const EXPECTED = {
         ['habit:correction_stacking', 'Correction stacking', 1, false]],
       traces: [['habit:correction_on_iob', 2], ['habit:correction_stacking', 1]] },
     // Served as its habit, it is multi-cause like any Pattern (ADR 594): its
-    // drill-down offers no Focus on Correction stacking. The case store is one no
-    // sync has reconciled, so the engine admits no Focus on it until a write.
-    drillDown: { key: 'lows_after_correcting_highs', focusable: false,
+    // drill-down offers no Focus on Correction stacking.
+    drillDown: { key: 'lows_after_correcting_highs', focusable: true,
       causes: [['habit:correction_on_iob', 'Correction on active insulin', 2, 3, 'lows', true, 2],
         ['habit:correction_stacking', 'Correction stacking', 1, 3, 'lows', false, 1]] },
     isf: null,
@@ -207,7 +206,7 @@ const EXPECTED = {
     // cause's count over the Pattern's 7 meals and its own trace (ADR 594). A
     // Focus on Late bolus, served first though Carb undercount is the Pattern's
     // first member, watches Late bolus.
-    drillDown: { key: 'highs_after_meals', focusable: false,
+    drillDown: { key: 'highs_after_meals', focusable: true,
       causes: [['habit:late_bolus', 'Late bolus', 3, 7, 'meals', true, 3],
         ['habit:carb_undercount', 'Carb undercount', 4, 7, 'meals', true, 4]],
       pin: { lever: 'late_bolus', focusedCause: 'Late bolus',

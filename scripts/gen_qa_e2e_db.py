@@ -6,9 +6,12 @@ from __future__ import annotations
 import argparse
 import sqlite3
 import tempfile
+from datetime import timedelta
 from pathlib import Path
+from unittest.mock import patch
 
 from ciq_autotune.store import Store
+from ciq_autotune.watched_change import reconcile_ingested_follow_up
 from qa_e2e_cases import QA_CASES, QaCase, materialize_case
 
 
@@ -24,6 +27,8 @@ def generate(output: Path, case: QaCase | None = None) -> None:
     selected = case or next(case for case in QA_CASES if case.name == "showcase")
     with Store.open(str(output)) as store:
         materialize_case(store, selected)
+        if case is not None:
+            _reconcile(store)
         with store.conn:
             store.conn.execute(
                 "CREATE TABLE synthetic_fixture_provenance (id INTEGER PRIMARY KEY "
@@ -40,6 +45,20 @@ def generate(output: Path, case: QaCase | None = None) -> None:
     with sqlite3.connect(output) as conn:
         conn.execute("PRAGMA journal_mode = DELETE")
         conn.execute("VACUUM")
+
+
+def _reconcile(store: Store) -> None:
+    """Reconcile an emitted case store as a sync leaves a store, so its serve
+    admits a Focus as a synced install's does (#594): the same reconcile a fetch
+    runs, its wall clock pinned an hour after the store's last reading so the
+    store is the same on every run. The committed showcase is left as it is."""
+    at = store.latest_data_instant() + timedelta(hours=1)
+
+    def clock(after=None):
+        return max(at, after + timedelta(seconds=1)) if after else at
+
+    with patch("ciq_autotune.watched_change.wall_clock_now", clock):
+        reconcile_ingested_follow_up(store)
 
 
 def _dump(path: Path) -> str:

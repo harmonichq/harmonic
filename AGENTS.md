@@ -202,7 +202,10 @@ When an analyzer state or Finding changes:
    slowest generated case ≤30 s, and full pytest ≤2.5× the recorded chunk-1
    baseline (recorded in the active QA change's coverage appendix). A breach stops the work without changing the committed showcase.
 
-To inspect one case through the production APIs, emit its uncommitted case store:
+To inspect one case through the production APIs, emit its uncommitted case store
+(the generator reconciles an emitted case store as a sync leaves one, so its serve
+admits a Focus as a synced install's does; the committed showcase is not
+reconciled, #594):
 
 ```sh
 uv run python scripts/gen_qa_e2e_db.py --case <name> --out <scratch path>

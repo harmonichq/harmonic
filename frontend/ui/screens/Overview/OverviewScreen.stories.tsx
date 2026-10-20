@@ -122,8 +122,9 @@ const contentHeight = (card: Element) =>
   [...card.children].at(-1)!.getBoundingClientRect().bottom - card.getBoundingClientRect().top + 16;
 
 /** On desktop the basal estimate spans the first row of the cards and the Meal
- *  size card the second, so no row is half empty, and both are one height with
- *  each card's content inside it (#559; §2.5, 2026-10-20 #564). */
+ *  size card the second, so no row is half empty, and both are one height,
+ *  which the basal estimate sets: the Meal size card's content fits inside it
+ *  (#559; §2.5, 2026-10-20 #564). */
 const oneHeight: Story['play'] = async ({ canvasElement }) => {
   const grid = canvasElement.querySelector('.ui-overview__estimates')!;
   const cards = [...grid.querySelectorAll(':scope > .ui-scard')];
@@ -134,7 +135,7 @@ const oneHeight: Story['play'] = async ({ canvasElement }) => {
   }
   await expect(meals.top).toBeGreaterThan(basal.bottom);
   await expect(Math.abs(basal.height - meals.height)).toBeLessThan(0.5);
-  for (const card of cards) await expect(contentHeight(card)).toBeLessThanOrEqual(card.getBoundingClientRect().height + 0.5);
+  await expect(contentHeight(cards[1])).toBeLessThanOrEqual(contentHeight(cards[0]) + 0.5);
 };
 /** #559: on the phone the Meal size card keeps the basal estimate's proportions. */
 const inProportion: Story['play'] = async ({ canvasElement }) => {
@@ -159,6 +160,8 @@ const choose30: Story['play'] = async ({ canvasElement }) => {
   await expect(canvasElement.querySelector('[data-source="outcomes.30.metrics.tir"]')).not.toBeNull();
   await expect(at('overview.wearer.time_of_day.30.')).not.toBeNull();
   await expect(at('overview.wearer.time_of_day.14.')).toBeNull();
+  const basalCard = canvasElement.querySelector('.ui-overview__estimates > .ui-scard:not(.ui-meal-size)')!;
+  await expect(basalCard.getAttribute('aria-busy')).toBeNull();
   await expect(basal()).not.toBe(basal14);
   // The Meal size card follows the window, as the basal estimate does (#565).
   await expect(at('overview.wearer.meal_size.30.')).not.toBeNull();

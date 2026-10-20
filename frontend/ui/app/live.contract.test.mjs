@@ -272,8 +272,9 @@ test(`the live adapter serves each tab's model from the ${CASE} store`, async (t
     await live.readTab('queue');
     const ranking = values(queue.ranking('wearer'));
     assert.deepEqual(ranking.map((item) => item.subject), expected.queue);
-    // The count the empty Queue prints is the items it draws (§1.3 "0 patterns").
-    assert.equal(values(queue.queuedCount('wearer')), expected.queue.length, 'the Queue counts what it draws');
+    // The count the empty Queue prints leaves out a queued correction factor,
+    // which no Queue row draws (§1.3 "0 patterns"; §2.5, 2026-10-20).
+    assert.equal(values(queue.queuedCount('wearer')), expected.queue.length, 'the Queue does not count a correction factor');
     if (expected.basal) {
       const basal = ranking.find((item) => item.subject === 'setting:basal_rate').data;
       for (const [key, value] of Object.entries(expected.basal)) assert.equal(basal[key], value, `basal ${key}`);

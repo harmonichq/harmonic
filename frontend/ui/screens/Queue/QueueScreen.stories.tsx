@@ -140,7 +140,7 @@ export const SettingTrialPhone: Story = { ...story('phone', SETTING_TRIAL), play
 export const SettingTrialDesktop: Story = { ...story('desktop', SETTING_TRIAL), play: trialPlay };
 export const JustSnoozedPhone = story('phone', JUST_SNOOZED);
 export const JustSnoozedDesktop = story('desktop', JUST_SNOOZED);
-// The first days' Snoozed list and its count: only the rows the list draws.
+// The first days' Snoozed list and its count, without the correction factor.
 // A correction factor set aside before #564 is served set aside and drawn by
 // no Queue row (§2.5, 2026-10-20), so it is neither listed nor counted.
 const FIRST_DAYS_SNOOZED = 'wearer-first-days-snoozed' as const;

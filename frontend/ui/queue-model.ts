@@ -366,9 +366,9 @@ export function ranking(name: QueueStore): QueueItem[] {
     .map((c) => item(name, c)).filter(drawn);
 }
 
-/** How many the Queue holds, and how many are snoozed, as served counts of
- *  the rows each draws: a correction factor is no Queue row (§2.5, 2026-10-20),
- *  so one the engine still queues, or one set aside before #564, is not counted. */
+/** How many the Queue holds, and how many are snoozed, as served counts that
+ *  leave out the correction factor: it is no Queue row (§2.5, 2026-10-20), so
+ *  one the engine still queues, or one set aside before #564, is not counted. */
 export const queuedCount = (name: QueueStore) => sourced<number>(
   `queue.${name}.guidance.candidates[queued=true].length − queue.${name}.guidance.candidates[queued=true][subject=setting:isf].length`);
 export const snoozedCount = (name: QueueStore) => sourced<number>(

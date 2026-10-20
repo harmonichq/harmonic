@@ -96,8 +96,8 @@ item SHALL offer Snooze, a text action beneath its primary, which sets it aside
 until fourteen days after the engine's served decision time, with an Undo; on the
 phone a row's swipe SHALL stay Snooze. The Snoozed list SHALL show each snoozed
 item it draws with its until date and a Restore, and SHALL be reachable only
-while at least one item is snoozed. Its count SHALL be the items the list draws:
-a correction factor set aside before ADR 564 is neither listed nor counted.
+while at least one item is snoozed. A correction factor set aside before ADR 564
+SHALL be neither listed nor counted in it.
 
 #### Scenario: Done takes a Setting card out of the Queue
 
@@ -162,17 +162,18 @@ a correction factor set aside before ADR 564 is neither listed nor counted.
 
 #### Scenario: A correction factor is not queued
 
-- **GIVEN** the QA case isf-strengthen
+- **GIVEN** a store whose guidance serves a correction-factor concern
 - **WHEN** the Queue renders
-- **THEN** no correction-factor row or card appears in the Queue
+- **THEN** no correction-factor row or card appears in the Queue, and the count
+  it prints leaves the correction factor out
 
 #### Scenario: A correction factor set aside before ADR 564 is not counted
 
 - **GIVEN** a store holding a `setting:isf` preference set aside before ADR 564
   beside other snoozed items
 - **WHEN** the Queue renders its Snoozed row and the Snoozed list
-- **THEN** the list leaves the correction factor out, and the row counts only
-  the items the list draws
+- **THEN** the list leaves the correction factor out, and the row's count
+  leaves it out
 
 #### Scenario: Snoozing an item moves it to the Snoozed list
 

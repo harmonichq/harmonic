@@ -291,6 +291,16 @@ warm shape or refresh a write crossed is no failure: the worker waits for the ne
 invalidation or read, then computes what it owes. Never add a per-endpoint retry
 or fallback; route a new heavy read through `fixed()`.
 
+**The Queue's case files are a fixed result, and the start fetch waits (ADR 581).**
+The preparation and each finding's event-aligned case file are one fixed result
+(`finding-case-files`). Its compute retains the in-memory preparation that every
+other coordinate projects from, and a preparation of an earlier revision is not
+retained. A case-file read naming a preparation that is no longer held is answered
+from that fixed result when it is the Queue's coordinate. `serve` starts its fetch
+loop once the start warm pass has gone idle, so the start fetch never commits
+before every read has an earlier answer. Do not serve an older build's derived
+results: the source fingerprint stays in every marker.
+
 **The store keeps two revisions, and derived results key on the one their
 builder reads (ADR 538).** The input revision advances on every write and is the
 follow-up writes' concurrency token (durable requests, preferences, the

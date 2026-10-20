@@ -186,5 +186,92 @@ class ReadBesideASyncTest(unittest.TestCase):
             self.assertNotIn("input_data_age", pooled_read.json())
 
 
+class CaseFilesBesideASyncTest(unittest.TestCase):
+    """The case files the Queue reads keep their last answer too (#581)."""
+
+    def setUp(self):
+        database = tempfile.NamedTemporaryFile(suffix=".sqlite")
+        self.addCleanup(database.close)
+        self.addCleanup(ReadBesideASyncTest._remove_derived_results, database.name)
+        self.path = database.name
+        with Store.open(self.path) as store:
+            materialize_case(store, next(case for case in QA_CASES
+                                         if case.name == "behavioral-missed-meal"))
+
+    def _app(self):
+        app = create_app(db_path=self.path, token=None, enable_fetch_loop=False)
+        app.state.recompute_roster = lambda: ()
+        return app
+
+    def _read(self, client):
+        """The Queue's case-file reads: the preparation, then each finding's event case."""
+        preparation = client.get("/api/diagnose/finding-case-file-preparation")
+        self.assertEqual(preparation.status_code, 200, preparation.text)
+        body = preparation.json()
+        cases = {}
+        for finding_id in body["behavioral_case_headers"]:
+            case = client.get("/api/diagnose/finding-case-file", params={
+                "projection_id": body["projection_id"], "finding_id": finding_id,
+                "alignment": "event"})
+            self.assertEqual(case.status_code, 200, (finding_id, case.text))
+            cases[finding_id] = case.json()
+        return body, cases
+
+    @staticmethod
+    def _without_age(body):
+        return {k: v for k, v in body.items() if k != "input_data_age"}
+
+    def test_after_a_restart_the_case_files_answer_without_preparing(self):
+        import ciq_autotune.api as api_mod
+        before = self._read(TestClient(self._app()))
+        self.assertTrue(before[1], "the case store ranks a finding with a case file")
+        builds = []
+        real = api_mod.prepare_finding_cases
+        with patch.object(api_mod, "prepare_finding_cases",
+                          side_effect=lambda *a, **k: builds.append(1) or real(*a, **k)):
+            after = self._read(TestClient(self._app()))
+        self.assertEqual(after, before)
+        self.assertEqual(builds, [])
+
+    def test_after_a_restart_while_a_sync_lands_the_case_files_answer_labelled(self):
+        preparation, cases = self._read(TestClient(self._app()))
+        client = TestClient(self._app(), raise_server_exceptions=False)
+        _sync_window(self.path)
+        with _a_sync_landing(self.path):
+            served, served_cases = self._read(client)
+        self.assertIn("input_data_age", served)
+        self.assertEqual(self._without_age(served), preparation)
+        for finding_id, case in served_cases.items():
+            self.assertIn("input_data_age", case, finding_id)
+            self.assertEqual(self._without_age(case), cases[finding_id])
+
+
+class StartFetchTest(unittest.TestCase):
+    """The start fetch waits for the start warm pass (#581)."""
+
+    def test_the_start_fetch_commits_only_after_the_start_warm_pass(self):
+        import ciq_autotune.fetch_loop as fetch_loop
+        database = tempfile.NamedTemporaryFile(suffix=".sqlite")
+        self.addCleanup(database.close)
+        with Store.open(database.name):
+            pass
+        app = create_app(db_path=database.name, token=None, enable_fetch_loop=True,
+                         warm_on_start=True)
+        warming, release, fetched = threading.Event(), threading.Event(), threading.Event()
+
+        def shape():
+            warming.set()
+            self.assertTrue(release.wait(10))
+
+        app.state.recompute_roster = lambda: (("start", shape),)
+        with patch.object(fetch_loop, "run_fetch_once",
+                          side_effect=lambda *args, **kwargs: fetched.set()):
+            with TestClient(app):
+                self.assertTrue(warming.wait(5), "the start warm pass never began")
+                self.assertFalse(fetched.wait(1), "the start fetch ran beside the warm pass")
+                release.set()
+                self.assertTrue(fetched.wait(5), "the start fetch never ran")
+
+
 if __name__ == "__main__":
     unittest.main()

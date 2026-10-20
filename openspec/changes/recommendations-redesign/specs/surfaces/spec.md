@@ -384,6 +384,14 @@ state and a transient bar SHALL show "Not saved" with Retry.
   as current
 - **AND** the app reads only those answers again until each is current (#579)
 
+#### Scenario: A Queue drawn from an earlier case file is marked until it is current
+
+- **GIVEN** the engine answers a case file the Queue ranks, or its preparation,
+  with its previous answer, labelled with `input_data_age`
+- **WHEN** the Queue draws it
+- **THEN** the Queue carries Unavailable and Retry in its title row
+- **AND** the app reads the preparation and its case files again until current (#581)
+
 ### Requirement: Each screen draws its last answers at once, and reads them again behind them
 
 A tab the person has opened SHALL keep its answers on screen when they leave it

@@ -400,6 +400,7 @@ def test_case_file_consumes_the_authoritative_diagnose_window(monkeypatch):
     class Store:
         conn = Connection()
         basal_events = cgm_readings = bolus_events = carb_entries = prompt_responses = lambda self: []
+        recorded_data_revision = lambda self: 0
 
     monkeypatch.setattr(findings_projection, "prepare_findings_projection", fake_projection)
     monkeypatch.setattr(finding_case_file, "_population", fake_population)

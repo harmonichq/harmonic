@@ -96,6 +96,8 @@ class PreparedCases:
     pattern_exposures: dict | None = None
     # The readings the analyzer judged: the window's CGM without false-low spans.
     judged_cgm: tuple = ()
+    # The recorded-data revision of the snapshot it was prepared from (#581).
+    revision: int | None = None
 
     def _roster(self, lever):
         return tuple(
@@ -450,6 +452,7 @@ def prepare(store, *, query, version, analysis, exposures, scenarios,
     """Materialize queue, opportunities, attribution, and traces in one read snapshot."""
     store.conn.execute("BEGIN")
     try:
+        revision = store.recorded_data_revision()
         basal = tuple(store.basal_events())
         cgm = tuple(store.cgm_readings())
         bolus = tuple(store.bolus_events())
@@ -480,7 +483,8 @@ def prepare(store, *, query, version, analysis, exposures, scenarios,
                          scenarios=deepcopy(scenarios),
                          pattern_exposures=deepcopy(pattern_exposures),
                          judged_cgm=tuple(drop_readings(cgm, spans_from_records(
-                             false_low_span_records(cgm, prompt_responses)))))
+                             false_low_span_records(cgm, prompt_responses)))),
+                         revision=revision)
 
 
 def _population(
@@ -648,6 +652,22 @@ def wrap(prepared):
                 "window": prepared.query.to_dict(),
             },
             "behavioral_case_headers": headers, "withheld_findings": withheld}
+
+
+def queue_answers(prepared):
+    """What the Queue reads from ``prepared``, as plain data a restart keeps (#581):
+    its preparation and each finding's event-aligned case file, the coordinate
+    the app reads, or ``None`` where it has no inspectable member. A finding whose
+    retained producers disagree is named in ``inconsistent`` (ADR 488)."""
+    cases, inconsistent = {}, []
+    for row in prepared.findings["rows"]:
+        if row.get("register") != "finding":
+            continue
+        try:
+            cases[row["id"]] = prepared.case(row["id"], "event", None)
+        except InconsistentProjection:
+            inconsistent.append(row["id"])
+    return {"preparation": wrap(prepared), "cases": cases, "inconsistent": inconsistent}
 
 
 def _noun(family):

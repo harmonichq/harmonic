@@ -244,6 +244,8 @@ export function createLive({ client, glossary, memory = null,
   async function cases(subjects) {
     if (subjects.length === 0) return {};
     const preparation = await client.fetchDiagnoseFindingCasePreparation();
+    // The case files, like the Queue's other reads, can be an earlier answer (#581).
+    const earlier = [preparation];
     const out = {};
     await Promise.all(subjects.map(async (subject) => {
       const [kind, key] = subject.split(':');
@@ -255,8 +257,10 @@ export function createLive({ client, glossary, memory = null,
         if (error?.status === 404) return; // no inspectable member: no chart, no impact line
         throw error;
       }
+      earlier.push(answer);
       out[key] = caseFile(subject, answer);
     }));
+    served('queue', earlier.find((answer) => answer?.input_data_age));
     return out;
   }
 

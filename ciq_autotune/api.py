@@ -48,7 +48,7 @@ from . import findings_projection as findings_projection_module
 from .findings_projection import prepare_findings_projection
 from .finding_case_file import (
     prepare as prepare_finding_cases,
-    wrap as wrap_finding_cases,
+    queue_answers,
 )
 from .window_membership import WindowQuery
 from .result import SCHEMA_VERSION
@@ -275,15 +275,26 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         event = asyncio.Event()
         app.state.recompute_event = event
         app.state.recompute_loop = loop
+        idle = asyncio.Event()
+        app.state.recompute_idle = idle
         app.state.recompute_task = asyncio.create_task(recompute_worker(event))
         if warm_on_start:
             warm_due.set()
             event.set()
+        else:
+            idle.set()
         fetch_task = None
         if enable_fetch_loop:
             from .fetch_loop import run_fetch_loop
-            fetch_task = asyncio.create_task(
-                run_fetch_loop(db_path, key_path=key_path, on_write=signal_recompute))
+
+            async def fetch_after_the_start_warm_pass():
+                # A sync that commits while the start warm pass computes crosses it,
+                # and after a deploy no read has an earlier answer yet: the start
+                # fetch waits until the warm pass has left one for every read (#581).
+                await idle.wait()
+                await run_fetch_loop(db_path, key_path=key_path, on_write=signal_recompute)
+
+            fetch_task = asyncio.create_task(fetch_after_the_start_warm_pass())
         try:
             yield
         finally:
@@ -608,9 +619,37 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             hook = app.state.finding_case_file_before_commit
             if hook is not None:
                 hook()
+        def current(prepared):
+            # A sync commits before it invalidates; a preparation of an earlier
+            # snapshot is not the current one (#581).
+            with Store.open_queryonly(db_path) as store:
+                return prepared.revision == store.recorded_data_revision()
         return cache.get_or_build_preparation(
-            key, build, before_commit=before_commit,
+            key, build, before_commit=before_commit, validate=current,
         )
+
+    class PreparationCapacity(RuntimeError):
+        """Every retained preparation is leased."""
+
+    def case_files(*, serve_stale=False):
+        """What the Queue reads of the case files: the preparation and each finding's
+        event-aligned case file, one fixed result (#581).
+
+        Its compute retains the preparation every other case-file coordinate is
+        projected from, so the answer's ``projection_id`` is addressable once
+        computed; a read answered from the derived-results file, a restart's or a
+        predecessor's, serves the Queue's coordinates from the answer itself."""
+        def compute(store):
+            prepared, reason = _prepared_cases()
+            if reason == "capacity":
+                raise PreparationCapacity("all preparations are leased")
+            if reason == "changed":
+                raise ResultCache.GenerationChanged("data changed during preparation")
+            if prepared.revision != store.recorded_data_revision():
+                raise InputRevisionChanged("the preparation crossed the snapshot")
+            return queue_answers(prepared)
+        return fixed(("finding-case-files",), "finding-case-files-v1", compute,
+                     serve_stale=serve_stale)
 
     def require_token(authorization: str = Header(default="")) -> None:
         if token and authorization != f"Bearer {token}":
@@ -964,19 +1003,33 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         if request.query_params:
             return _case_error(400, "invalid_request", "the preparation takes no parameters")
         try:
-            prepared, reason = _prepared_cases()
-            if reason == "capacity":
-                return _case_error(503, "preparation_capacity", "All preparations are leased.")
-            if reason == "changed":
-                return _case_error(503, "preparation_changed", "Data changed during preparation.")
-            return wrap_finding_cases(prepared)
+            return fixed_response(case_files(serve_stale=True),
+                                  lambda answers: answers["preparation"])
+        except PreparationCapacity:
+            return _case_error(503, "preparation_capacity", "All preparations are leased.")
         except (InputRevisionChanged, ResultCache.GenerationChanged):
-            # A sync crossed every snapshot its inputs took; a preparation keeps no
-            # predecessor to answer instead (#579).
+            # Crossed at every snapshot, with no earlier answer to serve (#579, #581).
             return _case_error(503, "preparation_changed", "Data changed during preparation.")
         except Exception:
             logger.exception("Finding case-file preparation was inconsistent")
             return _case_error(500, "inconsistent_projection", "Case population is inconsistent.")
+
+    def answered_case(projection_id, finding_id):
+        """The Queue's coordinate of a preparation no longer retained, from the
+        case-file answer that served it (#581), or None when that is not the
+        answer a read gets now."""
+        try:
+            result = case_files(serve_stale=True)
+        except Exception:
+            return None
+        answers = result.value
+        if answers["preparation"]["projection_id"] != projection_id:
+            return None
+        if finding_id in answers["inconsistent"]:
+            return _case_error(500, "inconsistent_projection", "Case population is inconsistent.")
+        if answers["cases"].get(finding_id) is None:
+            return _case_error(404, "finding_unavailable", "Finding has no inspectable member.")
+        return JSONResponse(fixed_response(result, lambda answers: answers["cases"][finding_id]))
 
     @app.get("/api/diagnose/finding-case-file")
     def finding_case_file(request: Request, _: None = Depends(require_token)):
@@ -986,7 +1039,9 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             return _case_error(400, "invalid_request", str(error))
         prepared = cache.acquire_preparation(projection_id)
         if prepared is None:
-            return _case_error(409, "stale_projection", "Preparation is unavailable.")
+            answered = (answered_case(projection_id, finding_id)
+                        if alignment == "event" and occ is None and lever is None else None)
+            return answered or _case_error(409, "stale_projection", "Preparation is unavailable.")
         try:
             result = prepared.case(finding_id, alignment, occ,
                                    lever=Lever(lever) if lever is not None else None)
@@ -1822,7 +1877,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS)),
             # The Queue's analysis, and the Overview's at 30 days.
             ("analyze", lambda: analyze_endpoint(window=30, ignore_changes=False, pool=False)),
-            ("finding-case-file", _prepared_cases),
+            ("finding-case-file", lambda: case_files()),
             ("verify-trials", lambda: verify_trials_endpoint()),
             # The analysis behind the Overview's ISF and basal cards at its other windows.
             *((f"analyze-{days}", lambda days=days: analyze_endpoint(
@@ -1885,9 +1940,12 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         A shape a write crossed, with no newer version yet, means a sync is still
         landing: the worker waits for its end, which invalidates, or for the next
         read to ask, rather than computing the rest against a store still moving
-        (#579); the owed roster and refreshes run then.
+        (#579); the owed roster and refreshes run then. Each time it waits it
+        marks itself idle, which the start fetch waits for (#581).
         """
         while True:
+            if not event.is_set():
+                app.state.recompute_idle.set()
             await event.wait()
             while True:
                 event.clear()

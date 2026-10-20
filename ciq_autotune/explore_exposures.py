@@ -6,12 +6,13 @@ from datetime import datetime, timedelta
 
 from .analyzers.scenario.anchors import AnchorKind
 from .analyzers.scenario.evaluation import evaluate
-from .analyzers.scenario.engine import _effective_isf, low_prompt_answers
+from .analyzers.scenario.engine import low_prompt_answers
 from .analyzers.scenario.levers import Exposure, Lever, outcome_kind, title
 from .analyzers.scenario.model_view import _build_episode_view, _fmt, stacking_reached_low
 from .analyzers.scenario.opportunities import canonical_anchor_key
 from .analyzers.scenario_config import ScenarioConfig
 from .false_low import drop_readings, false_low_span_records, spans_from_records
+from .settings import IsfSource
 
 
 _FAMILY_FOR_KIND = {
@@ -128,7 +129,7 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
     window_bolus = _slice(bolus, start, now)
     window_basal = _slice(basal, start, now)
     low_answers = low_prompt_answers(store, start, now)
-    isf = _effective_isf(bolus, basal, cgm, store.settings_snapshots(), start, now)
+    isf = IsfSource.from_snapshots(store.settings_snapshots())
     scenario_config = ScenarioConfig()
 
     evaluated = evaluate(window_bolus, window_cgm, window_basal, isf=isf,

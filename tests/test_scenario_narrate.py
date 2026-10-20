@@ -33,6 +33,7 @@ from ciq_autotune.analyzers.scenario.payload import Step
 from ciq_autotune.analyzers.scenario.narrate import _arc_bounds
 from ciq_autotune.analyzers.scenario.segment import EpisodeAnchors, segment
 from ciq_autotune.events import BasalEvent, BolusEvent, CgmReading
+from ciq_autotune.settings import IsfSource
 
 
 # --- builders (mirror tests/test_scenario_engine.py) -----------------------
@@ -74,7 +75,7 @@ def suspend_run(day, h, m, rows=8, cadence=5, profile_rate=0.9):
     ]
 
 
-ISF = 40.0
+ISF = IsfSource.fixed(40.0)
 IC = 10.0
 
 

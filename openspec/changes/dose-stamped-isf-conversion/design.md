@@ -145,3 +145,27 @@ no field its expectation pins moves. Slice 2's triage measured its classifier
 with a stand-in for rule 1: its six meal verdicts hold at the stamp of 32 as at
 the fasting estimate the base read, so no existing QA case is expected to move.
 One new QA case, `ic-dose-stamped-isf`, holds the per-meal states.
+
+Slice 2, measured (#589). Carb undercount and every reader of the scenario
+engine convert with `IsfSource.from_snapshots`, and `settings.effective_isf`,
+both private wrappers and their ISF analyzer runs are gone. The model view no
+longer serves a top-level `isf`, and the outcomes trend drops `profile_isf`
+(schema version 11). **0 existing QA cases were re-copied**: all 92 catalog
+expectations, `behavioral-carb-undercount`'s included, hold unchanged. One new
+case, `behavioral-carb-undercount-segment`, runs the same rise after a morning
+meal at its segment's stamp of 20 (a carb undercount) and an evening meal at 80
+(a near miss), with a third day unstamped taking each segment from its capture.
+Of the generated fixtures only `frontend/ui/__fixtures__/ui-fixtures.json`
+moves: the synthetic wearer's habit attribution shifts, none of its 307
+`asserts_move` values changes, and its logged-carbs Day moves from 2025-05-17
+to 2025-05-15, the logged-carbs day whose findings name the most habits (four).
+The QA database and the other three fixtures are unchanged.
+
+Rule 5 is proven on a synthetic store whose boluses stamp 80 against a
+programmed 40, so the two rules disagree. A carb-ratio Trial and a
+carb-undercount Focus whose contexts retain `programmed_isf` of 40 serve the
+same comparison as on the base commit, matched to digests copied from a
+base-commit run. The same records under a new `dose_stamped` capture serve a
+different one: each Trial run's glucose travel converts to half the units, and
+the Focus counts no carb undercount where the retained value counts four per
+arm.

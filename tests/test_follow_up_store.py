@@ -707,6 +707,23 @@ class DurableFollowUpTest(unittest.TestCase):
         self.assertEqual(self.store.follow_up_record('trial', record['id']), saved)
         self.assertEqual(saved['ending'], final)
 
+    def test_a_dose_stamped_comparison_context_carries_no_isf_value(self):
+        # ADR 563: a context captured after it names the dose-stamped rule in place of
+        # a retained programmed ISF; any other rule, or neither, is refused.
+        dose_stamped = {k: v for k, v in comparison_context().items() if k != 'programmed_isf'}
+        saved = self.save_trial({**trial(), 'comparison_context': {**dose_stamped,
+                                                                   'isf_source': 'dose_stamped'}})
+        self.reopen()
+        self.assertEqual(self.store.follow_up_record('trial', saved['id']), saved)
+        self.assertEqual(saved['comparison_context']['isf_source'], 'dose_stamped')
+        for source in ('median', None):
+            record = {**trial(f'basal:0:{source}'),
+                      'comparison_context': {**dose_stamped, 'isf_source': source}}
+            with self.subTest(isf_source=source):
+                with self.assertRaises(ValueError):
+                    self.save_trial(record)
+                self.assertIsNone(self.store.follow_up_record('trial', record['id']))
+
     def test_explicit_unavailable_contexts_and_assessment_remain_valid(self):
         unknown = {'version': '386:1', 'state': 'unavailable', 'reason': 'source_not_retained'}
         record = {**trial(), 'observed_context': unknown, 'comparison_context': unknown,

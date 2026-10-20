@@ -35,6 +35,7 @@ from typing import Dict, List, Optional, Sequence, Tuple
 
 from ...carbs import carb_log_exclusion_spans
 from ...events import BasalEvent, BolusEvent, CgmReading
+from ...settings import IsfSource
 from ..classifiers.evidence import SilenceReason
 from ..scenario_config import ScenarioConfig
 from .anchors import Anchor, AnchorKind
@@ -179,7 +180,7 @@ def _build_episode_view(
     bolus: Sequence[BolusEvent],
     basal: Sequence[BasalEvent],
     *,
-    isf: Optional[float],
+    isf: Optional[IsfSource],
     scenario_config: ScenarioConfig,
     low_answers: Sequence[LowPromptAnswer],
     evaluated=None,
@@ -248,7 +249,7 @@ def assemble_model_view(
     basal_events: Sequence[BasalEvent] = (),
     *,
     target: date_cls,
-    isf: Optional[float] = None,
+    isf: Optional[IsfSource] = None,
     scenario_config: ScenarioConfig = ScenarioConfig(),
     low_answers: Sequence[LowPromptAnswer] = (),
     evaluated=None,
@@ -310,17 +311,16 @@ def build_model_view(
     target: date_cls,
     *,
     context_days: int = 2,
-    settings_window_days: int = 30,
 ) -> dict:
     """Build the per-day model-view for ``store`` on ``target`` (the API entry).
 
     Reads events over a small window bracketing ``target`` (``±context_days`` so every
-    classifier look-back/ahead and any midnight-spanning episode is covered), sources the
-    effective ISF the same way :func:`~.engine.build_scenarios` does (each meal carries
-    its historical Dose-stamped I:C), and delegates to :func:`assemble_model_view`.
-    ``isf`` rides the top of the payload for the header; the rest is the single day.
+    classifier look-back/ahead and any midnight-spanning episode is covered), converts
+    each meal with its dose-stamped ISF the same way :func:`~.engine.build_scenarios`
+    does (each meal also carries its historical Dose-stamped I:C, ADR 563), and
+    delegates to :func:`assemble_model_view`. The payload is the single day.
     """
-    from .engine import _effective_isf, low_prompt_answers
+    from .engine import low_prompt_answers
     from ...false_low import drop_readings, false_low_span_records, spans_from_records
 
     day_start = datetime.combine(target, datetime.min.time())
@@ -339,16 +339,8 @@ def build_model_view(
     fl_spans = spans_from_records(fl_records)
     cgm = drop_readings(_slice(all_cgm, win_start, win_end), fl_spans)
     basal = _slice(store.basal_events(), win_start, win_end)
-    snaps = store.settings_snapshots()
+    isf = IsfSource.from_snapshots(store.settings_snapshots())
     low_answers = low_prompt_answers(store, win_start, win_end)
-
-    # Effective settings over a representative recent window ending at the target day.
-    settings_start = day_start - timedelta(days=settings_window_days)
-    settings_end = day_start + timedelta(days=1)
-    isf = _effective_isf(
-        store.bolus_events(), store.basal_events(), store.cgm_readings(),
-        snaps, settings_start, settings_end,
-    )
 
     # Attribution uses the fixed current Diagnose source window, even though this
     # consumer displays one day. A day outside that source window keeps its
@@ -360,7 +352,6 @@ def build_model_view(
     source_evaluation = None
     if source_start.date() <= target <= source_end.date():
         all_bolus = store.bolus_events()
-        isf = _effective_isf(all_bolus, all_basal, all_cgm, snaps, source_start, source_end)
         source_evaluation = evaluate(
             _slice(all_bolus, source_start, source_end),
             drop_readings(_slice(all_cgm, source_start, source_end), fl_spans),
@@ -394,4 +385,4 @@ def build_model_view(
         for rec in fl_records
         if rec["start"] < win_end and rec["end"] > win_start
     ]
-    return {"isf": isf, **day}
+    return day

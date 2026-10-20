@@ -43,7 +43,7 @@ export const WithLoggedCarbs: Story = {
     // A low the engine counted has no bolus to ride on: its own row, with its reading.
     await expect(list.some((row) => /Over-treated low\s*\d+ mg\/dL$/.test(row))).toBe(true);
     // Each finding's row has its Pattern glyph on the chart.
-    const named = list.filter((row) => /Carb undercount|Meal over-delivery|Over-treated low/.test(row));
+    const named = list.filter((row) => /Carb undercount|Late bolus|Meal over-delivery|Over-treated low/.test(row));
     await expect(canvasElement.querySelectorAll('.ui-daychart__chart .ui-daychart__mark--pattern')).toHaveLength(named.length);
   },
 };

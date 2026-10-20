@@ -157,11 +157,16 @@ class FollowUpComparisonTest(unittest.TestCase):
         record = self.focus(store, datetime(2026, 6, 11))
         original = copy.deepcopy(record)
         profile = ProfileSettings(2, "changed", 300, True, 15, (ProfileSegment(0, 1, 80, 10, 110),))
-        store._snaps.append(Snapshot(datetime(2026, 6, 11, 12), PumpSettings(2, (profile,))))
+        captured, changed = store._snaps[0], Snapshot(datetime(2026, 6, 11, 12), PumpSettings(2, (profile,)))
+        store._snaps.append(changed)
         retained = compare_follow_up(store, record=record, data_cutoff=datetime(2026, 6, 12), input_revision=2)
         current = compare_follow_up(store, record=record, data_cutoff=datetime(2026, 6, 12), input_revision=2, context_mode="current")
-        self.assertEqual(retained["comparison_context"]["programmed_isf"]["value"], 40)
-        self.assertEqual(current["comparison_context"]["programmed_isf"]["value"], 80)
+        for result, snapshot in ((retained, captured), (current, changed)):
+            self.assertEqual(result["comparison_context"]["source_snapshot"],
+                             {"captured_at": snapshot.captured_at.strftime("%Y-%m-%d %H:%M:%S"),
+                              "active_idp": snapshot.settings.active_idp})
+        for result in (retained, current):
+            self.assertEqual(result["comparison_context"]["isf_source"], "dose_stamped")
         self.assertEqual(record, original)
         self.assertEqual(store.dropped, [])
 
@@ -385,6 +390,10 @@ class SupportedComparisonTest(unittest.TestCase):
                 forty=ProfileSettings(1,"context-forty",300,True,15,(ProfileSegment(0,.9,40,10,110),))
                 store.upsert_settings_snapshot(str(pin),PumpSettings(1,(zero,)))
                 record=self.focus(store,pin,lever="correction_on_iob")
+                # A context retained before ADR 563 keeps the programmed ISF it
+                # captured, here the zero one, rather than the stamps.
+                legacy={k:v for k,v in record["comparison_context"].items() if k!="isf_source"}
+                record["comparison_context"]={**legacy,"programmed_isf":{"value":0.0,"unit":"mg/dL/U"}}
                 store.upsert_settings_snapshot(str(tail-timedelta(seconds=1)),PumpSettings(1,(forty,)))
                 retained=self.compare(store,record,tail)
                 current=self.compare(store,record,tail,context_mode="current")

@@ -116,7 +116,7 @@ export const SiteChangePhone: Story = { ...story('phone', { store: 'wearer', day
 export const SiteChangeDesktop: Story = { ...story('desktop', { store: 'wearer', day: siteDay }), play: siteChangePlay };
 
 // A day carrying several kinds of finding (§2.5, 2026-10-14 every finding
-// marked): the logged-carbs day, whose served findings name three habits.
+// marked): the logged-carbs day whose served findings name the most habits.
 // Every habit the engine served names an event row, and each named row has
 // its Pattern glyph on the chart.
 const findingsPlay: Story['play'] = async ({ canvasElement }) => {

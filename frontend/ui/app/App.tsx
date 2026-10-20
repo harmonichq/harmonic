@@ -83,8 +83,10 @@ export function App() {
 
   // A tab drawn from an answer the engine served from before its last sync is
   // marked stale, never shown as current, and read again until it is (#566).
-  const settle = useCallback((which: Exclude<Tab, 'settings'>) => {
-    const mark = () => setReads((now) => ({ ...now, [which]: live.behind(which) ? 'stale' : 'ready' }));
+  // Only the tab's own read (`landed`) draws it; a later read only re-marks it.
+  const settle = useCallback((which: Exclude<Tab, 'settings'>, landed = true) => {
+    const mark = () => setReads((now) => (landed || shown(now[which])
+      ? { ...now, [which]: live.behind(which) ? 'stale' : 'ready' } : now));
     mark();
     if (live.behind(which)) live.catchUp(which).then(mark).finally(redraw);
   }, [redraw]);
@@ -144,7 +146,7 @@ export function App() {
         writes={{ end: drawn(changesWrites.end) }} />;
     case 'overview':
       return <OverviewScreen key={tab} layout={layout} store="wearer" state={state} nav={nav} onRetry={retry}
-        onWindow={(window) => { live.readWindow(window).then(() => settle('overview'), redraw); }} />;
+        onWindow={(window) => { live.readWindow(window).then(() => settle('overview', false), redraw); }} />;
     case 'day':
       return <DayScreen key={tab} layout={layout} store="wearer" state={state} nav={nav} onRetry={retry}
         onDay={(iso) => { live.readDay(iso).then(redraw, redraw); }}

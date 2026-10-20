@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { TOKEN_KEY } from '../../../data.js';
 import { failsOnce } from '../../flaky';
+import { expectTabBarEnds } from '../../tabbar-check';
 import { SettingsScreen, type SettingsScreenProps } from './SettingsScreen';
 
 // The Settings screen in each state §1.3 lists, at phone (390) and desktop
@@ -43,7 +44,8 @@ const SYNCED = { sync: 'synced', account: 'set' } as const;
 const FAILED = { sync: 'failed', account: 'set' } as const;
 const NOT_SET = { sync: null, account: 'unset' } as const;
 
-export const RootSyncedPhone = story('phone', SYNCED);
+// The tab bar ends the screen: 64 px above the device's inset (§2.5, 2026-10-19).
+export const RootSyncedPhone: Story = { ...story('phone', SYNCED), play: async ({ canvasElement }) => expectTabBarEnds(canvasElement) };
 export const RootSyncedDesktop = story('desktop', SYNCED);
 export const RootFailedPhone = story('phone', FAILED);
 export const RootFailedDesktop = story('desktop', FAILED);

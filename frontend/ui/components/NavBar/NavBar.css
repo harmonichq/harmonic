@@ -9,8 +9,18 @@
    centred in it, then the device's own bottom inset, which is 0 on a phone
    without one. --ui-inset-bottom stands in for the inset in a story. */
 .ui-nav--tabbar {
-  padding: 9px 8px calc(10px + var(--ui-inset-bottom, env(safe-area-inset-bottom, 0px)));
+  --ui-device-inset-bottom: env(safe-area-inset-bottom, 0px);
+  padding: 9px 8px calc(10px + var(--ui-inset-bottom, var(--ui-device-inset-bottom)));
   border-top: 1px solid var(--wk-rule);
+}
+/* Firefox for Android draws no page under the system navigation bar
+   (Mozilla bug 1813454), yet since Firefox 150 it reports that bar's height as
+   the bottom inset while its address bar is at the top (bug 2057232, from bug
+   1994149). That space is already outside the page, so on Gecko the bar adds
+   no inset (§2.5, 2026-10-19). Only Gecko matches the query: iPhone browsers
+   are WebKit, and keep the home indicator's inset. */
+@supports selector(::-moz-range-thumb) {
+  .ui-nav--tabbar { --ui-device-inset-bottom: 0px; }
 }
 .ui-nav--tabbar .ui-nav__item { flex: 1; justify-content: center; gap: 4px; }
 .ui-nav--tabbar .ui-nav__icon { margin-top: 0; }

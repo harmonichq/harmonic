@@ -1918,6 +1918,37 @@ And: "don't repeat the days, the user already picked days in the picker above th
 showcase's contract test reads the 14-day and 90-day windows. An install's
 derived-results file keeps the old `("meal-size",)` row, never read again.
 
+## ADR 567 — The phone tab bar takes no device inset on Gecko
+
+**Context.** After #521 the bar is 64 px plus `env(safe-area-inset-bottom)`.
+Connor, on Firefox for Android with 3-button navigation: about 60 px of empty
+bar under the labels. Chrome on the same phone was right. Since Firefox 150
+(bug 1994149, which added the system bars to GeckoView's insets), Firefox for
+Android reports the navigation bar's height as the bottom inset while its
+address bar is at the top. Bug 2057232 (open, a patch unlanded) measured it at
+48.3 px with 3-button navigation and 24.15 px with gestures. Firefox for
+Android draws no page under that bar (bug 1813454, open; bug 2015636), so the
+space is already outside the page, and the bar reserved it twice: 10 + 48.3 =
+58.3 px under the items. The root was ruled out: it is `100dvh`, which equals
+`innerHeight` in Chromium, Firefox and WebKit. `viewport-fit=cover` was too:
+Gecko reads it only to tell the app the display-cutout mode
+(`onMetaViewportFitChange`), and `Gecko_GetSafeAreaInsets` returns the pres
+context's insets with no viewport-fit check. Dropping it would not have changed
+the value on Firefox.
+
+**Decision.** The bar's device inset is one custom property, `env()` by
+default and `0px` under `@supports selector(::-moz-range-thumb)`, a query only
+Gecko matches. Every iPhone browser is WebKit, so the home indicator's inset
+holds, and Chrome keeps its edge-to-edge inset. No subtraction of a guessed
+excess: an engine either draws the page under the bar or it does not.
+
+**Consequences.** If Firefox for Android starts drawing pages under the
+navigation bar (bug 1813454), the gate goes. If bug 2057232 is fixed first,
+the gate becomes a no-op, since Firefox would report 0 there anyway. No
+emulator reproduces Firefox for Android's inset. The stories assert the bar is
+64 px plus a simulated inset with nothing below it, in Chromium (the gate) and
+Firefox (`UI_BROWSER=firefox`).
+
 ## ADR 566 — After a write the Overview answers from its labelled predecessor, every window is kept, and the profiles and Meal size are one pass each
 
 **Context.** Connor, 2026-10-19: "The stats and charts for 14/30/90 need to be

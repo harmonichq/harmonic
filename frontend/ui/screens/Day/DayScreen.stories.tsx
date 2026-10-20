@@ -5,6 +5,7 @@ import { formatValue } from '../../provenance.js';
 import { dayDate, loggedGrams } from '../../day-model';
 import { swipe } from '../../gesture';
 import { failsOnce } from '../../flaky';
+import { expectTabBarEnds } from '../../tabbar-check';
 import { WithoutReadings, monthReader } from '../../served-variants';
 import { DayScreen, type DayScreenProps } from './DayScreen';
 
@@ -75,7 +76,8 @@ const RISES = { store: 'rises-pending' } as const;
 const RISE_PROMPTS = { store: 'rises-pending', view: 'prompts', kind: 'rise' } as const;
 const NO_RISES = { store: 'rises-answered' } as const;
 
-export const DefaultPhone = story('phone', DEFAULT);
+// The tab bar ends the screen: 64 px above the device's inset (§2.5, 2026-10-19).
+export const DefaultPhone: Story = { ...story('phone', DEFAULT), play: async ({ canvasElement }) => expectTabBarEnds(canvasElement) };
 export const DefaultDesktop = story('desktop', DEFAULT);
 export const LoggedCarbsPhone = story('phone', LOGGED_CARBS);
 export const LoggedCarbsDesktop = story('desktop', LOGGED_CARBS);

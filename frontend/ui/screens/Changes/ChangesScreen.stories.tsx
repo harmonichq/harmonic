@@ -3,6 +3,7 @@ import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { fixtures } from '../../fixtures';
 import { expectDirections } from '../../direction-check';
 import { failsOnce } from '../../flaky';
+import { expectTabBarEnds } from '../../tabbar-check';
 import { CHANGES_UNNAMED } from '../../served-variants';
 import { ChangesScreen, type ChangesScreenProps } from './ChangesScreen';
 
@@ -72,7 +73,8 @@ const CONFIRM = { store: 'wearer', end: { after: 'wearer-ended' }, confirming: t
 const LOADING = { store: 'wearer', state: 'loading' } as const;
 const UNAVAILABLE = { store: 'wearer', state: unavailable ? 'unavailable' : 'ready' } as const;
 
-export const DefaultPhone = story('phone', DEFAULT);
+// The tab bar ends the screen: 64 px above the device's inset (§2.5, 2026-10-19).
+export const DefaultPhone: Story = { ...story('phone', DEFAULT), play: async ({ canvasElement }) => expectTabBarEnds(canvasElement) };
 export const DefaultDesktop = story('desktop', DEFAULT);
 // Six days in, the basal Trial's every Δ is green or red by the way it moved
 // (In range up, Mean up, Control-IQ's rows neutral), while the pill stays

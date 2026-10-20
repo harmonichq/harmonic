@@ -39,8 +39,9 @@ not be given and a card that shows a number nobody should act on.
     a correction-driven low out of the carb-ratio arm.
 - Durable state that names ISF still reads: a set-aside correction-factor
   preference, a recorded ISF Plan, and a retained or newly detected
-  correction-factor Trial. A pump edit to the correction factor is still a Trial
-  the wearer made (ADR 564 rule 4).
+  correction-factor Trial. A pump edit to the correction factor is still a
+  Trial. Harmonic shows its outcomes before and after, as it does for a target
+  edit, and advises nothing about the correction factor (ADR 564 rule 4).
 - The QA ISF cases go. The 42 cases' rest-window expectations are re-sourced
   from the rest-window detector, with their literal values unchanged. The
   contract test's `isf-strengthen` case and its CI run go.

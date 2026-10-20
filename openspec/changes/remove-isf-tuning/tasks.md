@@ -2,27 +2,20 @@
 
 ### 1. Lock revision (operator approval before any build)
 
-- [ ] 1.1 Record the operator's Overview estimates-grid decision (ADR 564 rule 8) and the queued-ISF removal in `docs/design/recommendations-redesign.md`:
-  - a §2.5 entry;
-  - the header's Overview and Queue lines;
-  - §1.1's Overview row;
-  - §1.3's Queue setting-detail and Overview rows;
-  - component 22 (IsfCard) retired;
-  - components 25 (BasalCard) and 27 (MealSizeCard) re-sized against the new grid;
-  - the EvidenceChart and QueueRow entries' ISF cases;
-  - §1.5's "Fasting" entry, dropped if no surface prints it, and its "ISF" entry kept for the pump-profile column.
-
-  The Overview and Queue screen lines end in the operator's `locked <date>`.
+- [x] 1.1 Draft the lock-doc revision in `docs/design/recommendations-redesign.md`, proposed and not locked: the header line, §1.1, §1.3, §2.5's 2026-10-20 #564 amendment with its must-survive list, and §4.2 QueueRow, SettingCard, EvidenceChart, IsfCard (retired), BasalCard and MealSizeCard (done at triage)
+- [ ] 1.2 The operator says "locked" on that amendment; the header line becomes "**No ISF estimate, 2026-10-20** … locked <date>" in his words, before any build step below
 
 ### 2. Frontend
 
 - [ ] 2.1 Delete `frontend/ui/components/IsfCard/` after moving its shared classes (`ui-isf`, `__title`, `__none`, `__skeleton`) to a module BasalCard and MealSizeCard both import, renamed for what they are
-- [ ] 2.2 `overview-model.ts`, `queue-model.ts`, `QueueScreen.tsx`, `OverviewScreen.tsx` and `OverviewScreen.css`: remove the ISF estimate and the `setting:isf` card. The Overview grid follows the locked layout. A `setting:isf` candidate, if one is still served before B1, is the Queue's existing undrawable case
+- [ ] 2.2 `overview-model.ts`, `queue-model.ts`, `QueueScreen.tsx`, `OverviewScreen.tsx` and `OverviewScreen.css`: remove the ISF estimate and the `setting:isf` card. The Overview grid follows the locked layout: the basal estimate and Meal size each span a row, every row one height. A `setting:isf` candidate, if one is still served before B1, is the Queue's existing undrawable case
+- [ ] 2.2a The Snoozed footer counts the rows the Snoozed list draws, so a set-aside subject no Queue component draws (a correction factor snoozed before #564) is neither listed nor counted. A story pins it with a fixture holding an absent `setting:isf` preference
 - [ ] 2.3 `ui/app/live.js` and `live.test.js`: drop the `isf` reads (the shared analyze fetch stays for basal; rename its served key for what it now carries)
+- [ ] 2.3a §1.5 drops "Fasting" (the lock's amendment), and `ui-fixtures.json`'s glossary is regenerated with it
 - [ ] 2.4 Stories: delete the IsfCard stories and the Queue's ISF stories. Rewrite the Overview's `oneHeight`, `inProportion` and `noData` plays for the locked grid. Fix the comments that size cards against the ISF card (BasalCard, MealSizeCard, SettingCard, EvidenceChart, QueueRow)
 - [ ] 2.5 `scripts/gen_ui_fixtures.py`: drop the `isf-supported` stores, `states.isf`, `_isf` and the Queue's `isf`, then regenerate `ui-fixtures.json` and `ui-allowlist.json` through it
 - [ ] 2.6 `frontend/ui/app/live.contract.test.mjs`: drop the `isf` expectations and the `overview.isfEstimate` and `queue.isfSetting` assertions. The `isf-strengthen` case's `queue` and `done` expectations stay until B1
-- [ ] 2.7 Revise in the running app under the safe start (the QA no-fetch serve) and attach rendered evidence of the Overview at 1440×900 and 390×844 and of the Queue
+- [ ] 2.7 Revise in the running app under the safe start (the QA no-fetch serve) per `/ui-craft revise`: before and after renders from the same store of the Overview at 1440×900 and 390×844 and of the Queue, each must-survive line of the amendment shown, and `precheck.py` output
 
 ### 3. Specs
 
@@ -57,7 +50,7 @@
 ### 8. Estimate out
 
 - [ ] 8.1 Delete `analyzers/isf.py`, `tests/test_analyzer_isf.py` and `uncertainty.estimate_slope_clustered`. From `analyze.py`, drop the ISF window, the prior decision window, the rescue observation and `isf_fasting_evidence_sink`. Drop `AnalysisResult.isf` and bump `SCHEMA_VERSION`. Drop `report.py`'s and `render.py`'s ISF section and `cli.py`'s ISF help
-- [ ] 8.2 `trial_evidence.py` and `follow_up_comparison.py`: drop the fasting-step population and the ISF readiness branch. An ISF Trial reads through the generic branch (rule 4). The basal rest-window evidence is unchanged
+- [ ] 8.2 `trial_evidence.py` and `follow_up_comparison.py`: drop the fasting-step population and the ISF readiness branch. An ISF Trial reads through the generic branch (rule 4): In range target, 30 coverage-qualified informative dates, per-outcome assessment states, and no correction-factor advice. Test it through the comparison read on a `c4-isf` store, and that guidance serves no correction-factor candidate after it matures. The basal rest-window evidence is unchanged
 - [ ] 8.3 Move `IsfConfig` constants that other code borrows to their readers (the QA lane in `scripts/qa_e2e_cases.py`, `carbs.py`'s flat lookback). Fix the comments that point at the analyzer (`safety.py`, `model.py`, `timeline.py`, `rescue_evidence.py`, `pending_prompts.py`, `scenario/payload.py`'s `isf` count, which stays as attribution per rule 5)
 - [ ] 8.4 QA catalog, per AGENTS.md "Maintaining QA coverage eras":
   - delete the four `isf-*` cases, `_materialize_isf_coverage` and the ISF expectation scaffolding;
@@ -69,5 +62,5 @@
 
 ### 9. Specs and docs
 
-- [ ] 9.1 Delete `recommendations-redesign`'s two MODIFIED ISF staging-predicate blocks (parameter-analysis, safety) and edit the ISF out of its ADDED QA requirement (rule 9). Prove the order-independence: in a scratch copy, archive this change, then `recommendations-redesign`, and the reverse; both succeed and `validate --all --strict` passes
+- [ ] 9.1 Delete `recommendations-redesign`'s two MODIFIED ISF staging-predicate blocks (parameter-analysis, safety) and edit the ISF out of its ADDED QA requirement (rule 9). Prove the order-independence in a scratch copy: archive this change, then `recommendations-redesign`, and the reverse. Neither may fail on a requirement this change removes, and `validate --all --strict` passes. At triage the redesign's archive already aborted on clean main for an unrelated reason ("Validation errors in rebuilt spec for eating-sequences"); if it still does, show that its abort names no requirement this change touches
 - [ ] 9.2 `AGENTS.md`'s analyzers line and ISF range clause, `CONTEXT.md`'s ISF and fasting-window entries (the term stays for the pump value), `README.md`'s ISF bullet and aggressiveness example, `DESIGN.md`, and `docs/kb/`

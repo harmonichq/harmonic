@@ -51,16 +51,35 @@ conversion reads the meal's dose-stamped ISF.
    the Settings pump-profile column, the deliverable profile's ISF column (a
    Plan carries the current value forward), settings snapshots and dose stamps,
    and the Glossary's "ISF" term.
-4. **A correction-factor edit on the pump is still a Trial.** A change made on
-   the pump is a Trial whether or not Harmonic proposed it (pump-changes
-   ADR), and target already shows that Harmonic watches a setting it never
-   tunes. An ISF-only edit is therefore still detected as a Trial. It is judged
-   on its target metrics as a target edit is, through the generic readiness,
-   with no fasting-step population and no fasting-window readiness. A
-   whole-profile edit stays a profile Trial. *(Operator decision pending at
-   triage. If the operator chooses that an ISF-only edit opens no Trial, this
-   rule becomes "an ISF-only edit opens no Trial; a retained one still reads",
-   and the `c4-isf` cases are rebuilt on another setting.)*
+4. **A correction-factor edit on the pump is still a Trial, and Harmonic only
+   shows what followed it.** A change made on the pump is a Trial whether or not
+   Harmonic proposed it (pump-changes ADR), and target is already a setting
+   Harmonic watches but never tunes. An ISF-only edit is therefore still
+   detected as a Trial. Harmonic serves exactly what a target Trial serves, and
+   nothing that advises the correction factor. The operator, 2026-10-20: "I
+   don't think we can weigh in other than just showing whether numbers look
+   better or not … user has to decide what to do with that information."
+
+   Concretely, an ISF Trial's target metric is In range (`tir`), as a target
+   edit's is (`watched_change._TARGET_METRIC`, watched_change.py:47-52).
+   Without the ISF branch (trial_evidence.py:608-612), its readiness is the
+   generic branch: 30 coverage-qualified informative dates
+   (trial_evidence.py:613-617). Its comparison serves each outcome's before,
+   after, difference interval and assessment state (`favorable`,
+   `concerning` or `unclear`, follow_up_comparison.py:240-245). It also serves
+   the comparison summary, which is `concerning` or `unclear` with `mixed` and
+   the fixed reason "Read each outcome separately…" (follow_up_comparison.py:
+   603-611). Changes draws the target metric's state as the result pill:
+   Better, Worse or Unclear (frontend/ui/changes-model.ts:154, :334). Its only
+   action is End once matured (lock §1.1).
+
+   None of these is a recommendation. At triage no Trial readout served
+   keep, revert or change advice for any setting: a grep of
+   `follow_up_comparison.py`, `watched_change.py`, `trial_evidence.py` and
+   `outcomes_trend.py` finds no such string. No ISF Trial may add one, and
+   no Queue card or guidance concern may follow from a Trial's result. An ISF
+   Trial serves no fasting-step population and no fasting-window readiness.
+   A whole-profile edit stays a profile Trial.
 5. **Correction attribution stays.** A printed low or a pre-empted low that
    follows a correction keeps its correction attribution: `HarmArm.ISF`, and the
    pre-empted `"isf"` bucket and its count. That attribution keeps the low out
@@ -80,17 +99,22 @@ conversion reads the meal's dose-stamped ISF.
    re-sourced from it over the analysis window, with every literal value
    unchanged (triage spike: every case's pinned windows are a subset of the
    detector's output over its store, equal where the case spans the window).
-8. **The Overview's estimates grid.** Removing the ISF card leaves the basal
-   estimate alone in a two-column row. The new layout is the operator's call
-   under the redesign lock. *(Pending at triage. Recommended: Basal estimate
-   spans the first row and Meal size the second, every row one height.)*
+8. **The Overview's estimates grid.** Removing the ISF card would leave the
+   basal estimate alone in a two-column row. The operator chose (2026-10-20,
+   "5. A") that the basal estimate spans the cards' first row and Meal size the
+   second, with every row one height, and on the phone one column in proportion.
+   The proposed revision of `docs/design/recommendations-redesign.md` (§2.5
+   2026-10-20 #564) carries the layout and its must-survive list. Slice A builds
+   it once the operator says "locked". A correction factor snoozed before this
+   change is no Queue row, so the Snoozed footer counts only the rows its list
+   draws.
 9. **One record across the active changes.** `recommendations-redesign`
    restates the two ISF staging-predicate requirements (MODIFIED) and adds
    Queue, Overview, Plan and QA requirements that name ISF. This change removes
    those predicates from the base specs. To let the two changes archive in
    either order, the same pull request deletes the redesign's two MODIFIED
-   blocks and edits the ISF out of its ADDED requirement text. *(Operator
-   approval pending at triage: it edits another active change.)*
+   blocks and edits the ISF out of its ADDED requirement text. The operator
+   approved this on 2026-10-20 ("yes").
 
 **Consequences.**
 

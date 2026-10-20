@@ -1944,12 +1944,37 @@ def _end_open_records(store, trials, *, now, recorded_at):
             capture_ending(store, record, kind="expired_unreviewed", effective_at=expiry, recorded_at=recorded_at, data_cutoff=expiry)
 
 
-def reconcile_follow_up(store, *, now, recorded_at):
-    """Reconcile observed inputs atomically; the caller owns commit and cache."""
+@dataclass(frozen=True)
+class HistoryRead:
+    """The reconcile's read of the whole history, taken before its writer (#576).
+
+    Reading every delivery, bolus and reading is most of a reconcile's cost, and
+    held inside SQLite's one writer it outlasted another writer's busy timeout
+    whenever other threads were computing beside it. The read is kept only while
+    the input revision it was taken at is still the store's."""
+    revision: int
+    now: datetime
+    trials: list
+
+
+def read_follow_up_history(store) -> HistoryRead:
+    """Read what a reconcile reads of the history, outside any writer."""
+    revision = store.input_data_revision()
+    now = store.latest_data_instant() or datetime.now()
+    return HistoryRead(revision, now, _reviewable_trials(store, now, horizon_start=datetime.min))
+
+
+def reconcile_follow_up(store, *, now, recorded_at, history: Optional[HistoryRead] = None):
+    """Reconcile observed inputs atomically; the caller owns commit and cache.
+
+    ``history`` is the history read before the writer was reserved; it stands
+    only while nothing has been committed since, and is otherwise read again."""
     from .follow_up_comparison import capture_comparison_context
     # Advance even an empty frontier through Store's transaction-only interface.
     frontier = store.follow_up_frontier()
-    trials = _reviewable_trials(store, now, horizon_start=datetime.min)
+    trials = (history.trials if history is not None and history.now == now
+              and history.revision == store.input_data_revision()
+              else _reviewable_trials(store, now, horizon_start=datetime.min))
     trials.sort(key=lambda t: (-datetime.fromisoformat(t.view.changed_at).timestamp(), _review_id(t.view, t.block)))
     # Parsed once: this runs inside the one reserved writer, and the history
     # grows by a read every hourly fetch, so a parse per Trial held the write
@@ -2058,7 +2083,17 @@ def _reconcile_plan(store, record, recorded_at, snapshots):
 
 def reconcile_ingested_follow_up(store):
     """Completion adapter shared by standalone ingestion, the fetch loop and the
-    guidance preference writes, which advance the input revision the same way."""
-    now = store.latest_data_instant() or datetime.now()
+    guidance preference writes, which advance the input revision the same way.
+
+    The history is read before the writer is reserved (#576), so the writer is
+    held only for the follow-up rows. When another write commits during that
+    read, this reconcile is left to that write's: every write that advances the
+    input revision is reconciled by its own writer, in or after its transaction
+    (ADR 557), from a read that includes this one's. The late conclusion, which
+    is not, leaves a frontier already behind for the next reconcile, as before."""
+    history = read_follow_up_history(store)
     with store.follow_up_transaction():
-        return reconcile_follow_up(store, now=now, recorded_at=wall_clock_now(after=store.latest_server_stamp()))
+        if store.input_data_revision() != history.revision:
+            return None
+        return reconcile_follow_up(store, now=history.now, history=history,
+                                   recorded_at=wall_clock_now(after=store.latest_server_stamp()))

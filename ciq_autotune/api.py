@@ -1362,7 +1362,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                   reconcile=True):
         from .store import FollowUpConflict, FocusAlreadyActive
         if reconcile:
-            from .watched_change import reconcile_follow_up
+            from .watched_change import read_follow_up_history, reconcile_follow_up
 
         def retry(store):
             if not durable:
@@ -1413,6 +1413,9 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             source = guidance_or_unavailable() if creation and ended is None else None
             with Store.open(db_path) as store:
                 before = store.input_data_revision()
+                # The reconcile's history is read before the writer is reserved
+                # and stands if nothing commits first (#576).
+                history = read_follow_up_history(store) if reconcile and ended is None else None
                 with store.follow_up_transaction():
                     # A write that does not reconcile carries a frontier that was
                     # current forward, since it changes nothing a reconcile reads,
@@ -1433,7 +1436,8 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                             raise FollowUpConflict("stale_source", store.input_data_revision())
                         now = store.latest_data_instant() or datetime.now()
                         recorded_at = wall_clock_now(after=store.latest_server_stamp())
-                        admission = (reconcile_follow_up(store, now=now, recorded_at=recorded_at)
+                        admission = (reconcile_follow_up(store, now=now, recorded_at=recorded_at,
+                                                         history=history)
                                      if reconcile else None)
                         record = mutate(store, admission, source, now, recorded_at)
                     # Saving a new retry receipt is itself a durable write. Reserve

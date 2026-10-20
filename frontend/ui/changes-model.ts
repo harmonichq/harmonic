@@ -53,6 +53,11 @@ export type Move = {
  *  under three episodes, each episode on its own. Chart geometry, never printed. */
 export type TraceArm = {
   episodes: Sourced<number>;
+  /** The arm's meals, the population Meals before / after count, when the
+   *  engine left any of them off the trace for want of a reading before the
+   *  bolus (#575): the legend prints its episodes against them ("71 of 74").
+   *  Null when every meal is drawn, and for a clock trace. */
+  of: Sourced<number> | null;
   bins: { t: number; median: number; p25: number; p75: number }[];
   traces: { t: number; bg: number }[][] | null;
 };
@@ -150,7 +155,7 @@ const RESULTS: Record<string, Result> = { favorable: 'better', concerning: 'wors
 
 type Outcome = { key: string; unit: string; before: number | null; after: number | null; assessment?: { state: string } };
 type TraceServed = {
-  alignment: 'clock' | 'meal'; start_min?: number; start: number; end: number; episodes: number;
+  alignment: 'clock' | 'meal'; start_min?: number; start: number; end: number; episodes: number; left_off: number;
   bins: TraceArm['bins']; traces: TraceArm['traces'];
 };
 type Basal = { delivered: number; programmed: number; above: number; below: number };
@@ -241,8 +246,16 @@ function basalRows(path: string, views: Comparison['views']): MetricRow[] {
   });
 }
 
-function traceArm(path: string, served: TraceServed): TraceArm {
-  return { episodes: sourced(`${path}.trace.episodes`), bins: served.bins, traces: served.traces };
+/** One arm's trace. A meal the engine left off still counts among the arm's
+ *  meals (ADR 554), so an arm that left any off names that count beside its
+ *  episodes: one population, the head card's, on both (#575). */
+function traceArm(path: string, arm: Arm, served: TraceServed): TraceArm {
+  return {
+    episodes: sourced(`${path}.views.${arm}.trace.episodes`),
+    of: served.left_off > 0 ? sourced(`${path}.denominators.${arm}.contributing_meals`) : null,
+    bins: served.bins,
+    traces: served.traces,
+  };
 }
 
 function trace(path: string, parameter: string, views: Comparison['views']): Trace | null {
@@ -255,8 +268,8 @@ function trace(path: string, parameter: string, views: Comparison['views']): Tra
     start: before.start,
     end: before.end,
     episode: before.alignment === 'meal' ? 'meals' : parameter === 'profile' ? 'days' : 'nights',
-    before: traceArm(`${path}.views.before`, before),
-    after: traceArm(`${path}.views.after`, after),
+    before: traceArm(path, 'before', before),
+    after: traceArm(path, 'after', after),
   };
 }
 

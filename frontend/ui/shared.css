@@ -246,12 +246,16 @@
 
 /* Changes' value columns (§2.5, 2026-10-14): before → after, its unit and its
    Δ in the same fixed columns wherever Changes prints a pair, so the numbers
-   align like a table in every module and in the Previous list. */
+   align like a table in every module and in the Previous list. A metric's
+   label column is at least the longest label, "Above 180" or "Delivered",
+   and the unit and Δ columns as wide as "mg/dL" and "▲ 23.3" (#575), so a
+   row fits a 360 px phone. */
 :root {
   --ui-col-name: 48px;
   --ui-col-slot: 52px;
+  --ui-col-label: 76px;
   --ui-col-value: 52px;
   --ui-col-arrow: 22px;
-  --ui-col-unit: 58px;
-  --ui-col-delta: 64px;
+  --ui-col-unit: 46px;
+  --ui-col-delta: 48px;
 }

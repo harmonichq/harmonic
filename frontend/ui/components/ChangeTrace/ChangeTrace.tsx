@@ -12,7 +12,11 @@
 //
 // The 70 and 180 lines are the glossary's Below 70 and Above 180, dashed. The
 // legend names what an episode is once ("Nights", "Meals"), then each arm and
-// how many episodes drew it, in the engine's own count ("Before 55"). The chart measures its box (§2.2 Charts).
+// how many episodes drew it, in the engine's own count ("Before 55"). A meal
+// left off still counts among the Trial card's Meals before and after, so an
+// arm that left any off prints its episodes against those meals ("Before 71
+// of 74", §2.5 2026-10-19, #575): every meal count on the screen is one
+// population. The chart measures its box (§2.2 Charts).
 import type { Block, Trace, TraceArm } from '../../changes-model';
 import { Num } from '../../Num';
 import { formatValue } from '../../provenance.js';
@@ -124,6 +128,7 @@ export function ChangeTrace({ data, block }: ChangeTraceProps) {
           <span key={key} className={`ui-trace__key ui-trace__key--${key}`}>
             <svg aria-hidden="true" width="18" height="10"><line x1="0" x2="18" y1="5" y2="5" /></svg>
             {key === 'before' ? 'Before' : 'After'} <Num value={arm.episodes} />
+            {arm.of && <> <span className="ui-trace__of">of <Num value={arm.of} /></span></>}
           </span>
         ))}
       </div>

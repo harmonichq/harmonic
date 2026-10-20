@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { fixtures } from '../../fixtures';
 import { expectDirections } from '../../direction-check';
+import { expectMetricsAligned } from '../../metrics-check';
 import { failsOnce } from '../../flaky';
 import { expectTabBarEnds } from '../../tabbar-check';
 import { CHANGES_UNNAMED } from '../../served-variants';
@@ -20,7 +21,10 @@ import { ChangesScreen, type ChangesScreenProps } from './ChangesScreen';
 //   each in-block meal bolus, the after arm meal by meal, and every module as
 //   its data forms, each glucose module closed by its Readings (§2.5,
 //   2026-10-19), every Δ coloured by its direction while it matures (§2.5,
-//   2026-10-19, "Color shows direction").
+//   2026-10-19, "Color shows direction"). One lunch before the change was
+//   left off the trace, so its legend reads "Before n of N" against Meals
+//   before; it is also drawn on a 320 px phone, each metric's label above
+//   its values, every module's columns at one x (#575).
 // - The same Trial in its first hours: the before arm in full, and an empty
 //   after arm (no meals, no line, each after empty and without a Δ).
 // - A whole-profile switch: each setting it moved, the trace across the day.
@@ -47,6 +51,7 @@ type Story = StoryObj<typeof ChangesScreen>;
 
 const FRAMES = {
   phone: { width: 390, height: 844, padding: 0 },
+  narrow: { width: 320, height: 844, padding: 0 },
   desktop: { width: 1440, height: 900, padding: 0 },
 } as const;
 
@@ -112,9 +117,27 @@ const formingPlay: Story['play'] = async ({ canvasElement }) => {
     for (const after of module.querySelectorAll('.ui-metrics__after')) await expect(after.textContent).not.toBe('');
   }
   await expect(await directionsOf(canvasElement)).toEqual(Array(6).fill('favorable'));
+  // One meal population (#575): a lunch before the change had no reading
+  // before its bolus, so the trace left it off; its legend prints what it drew
+  // against the card's Meals before, and the after arm, every meal drawn, the
+  // card's Meals after.
+  const meals = (arm: string) =>
+    canvasElement.querySelector(`.ui-change [data-source$=".denominators.${arm}.contributing_meals"]`)!.textContent;
+  const drawn = (arm: string) =>
+    canvasElement.querySelector(`.ui-trace__key--${arm} [data-source$=".views.${arm}.trace.episodes"]`)!.textContent;
+  const legend = (arm: string) => canvasElement.querySelector(`.ui-trace__key--${arm}`)!.textContent;
+  await expect(Number(drawn('before'))).toBe(Number(meals('before')) - 1);
+  await expect(legend('before')).toBe(`Before ${drawn('before')} of ${meals('before')}`);
+  await expect(legend('after')).toBe(`After ${meals('after')}`);
+  await expectMetricsAligned(canvasElement);
 };
 export const CarbRatioMaturingPhone: Story = { ...story('phone', CARB_RATIO), play: formingPlay };
 export const CarbRatioMaturingDesktop: Story = { ...story('desktop', CARB_RATIO), play: formingPlay };
+// The narrowest phone the lock serves (#575): each metric's label on its own
+// line above its values, the columns still shared.
+export const CarbRatioMaturingPhone320: Story = {
+  ...story('phone', CARB_RATIO), parameters: { frame: FRAMES.narrow }, play: formingPlay,
+};
 
 // Hours after the change, before its block has a reading: the before arm, and
 // the after arm empty rather than the modules missing.

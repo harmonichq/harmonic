@@ -119,6 +119,7 @@ def _meal_pattern(claimed, calm):
             {"ep_id": f"ep-{index}", "t": t.strftime(FMT), "date": t.date().isoformat(),
              "kind": "meal", "bg": 120, "attributed": state == "claimed",
              "attributed_levers": ["carb_undercount"] if state == "claimed" else [],
+             **({"claim_severity": {"carb_undercount": 600.0}} if state == "claimed" else {}),
              "cause_lever": "carb_undercount" if state == "claimed" else None,
              "verdicts": [{"classifier": "carb_undercount",
                            "matched": state == "claimed",

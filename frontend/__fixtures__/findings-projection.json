@@ -190,6 +190,7 @@
      "annotation": "post-meal corrections imply meals are under-covered, so a tighter (smaller) carb ratio would dose more per carb",
      "appearances": null,
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "highs"
      ],
@@ -262,6 +263,7 @@
      "annotation": null,
      "appearances": null,
      "asserts_move": null,
+     "cause_counts": [],
      "chips": [
       "highs",
       "meals"
@@ -381,6 +383,7 @@
       }
      ],
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "highs"
      ],
@@ -443,6 +446,7 @@
       "cause_counts": [
        {
         "count": 1,
+        "pinnable": true,
         "subject": "habit:over_treated_low",
         "title": "Over-treated low"
        }
@@ -485,6 +489,7 @@
      "annotation": "fasting data agrees with the set factor, but recurring correction-linked lows call for weaker corrections",
      "appearances": null,
      "asserts_move": false,
+     "cause_counts": null,
      "chips": [
       "lows"
      ],
@@ -537,6 +542,7 @@
      "annotation": null,
      "appearances": null,
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "lows",
       "corrections"
@@ -613,6 +619,7 @@
       }
      ],
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "lows",
       "corrections"
@@ -701,6 +708,7 @@
      "annotation": null,
      "appearances": null,
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "lows",
       "meals"
@@ -975,6 +983,7 @@
      "annotation": "post-meal corrections imply meals are under-covered, so a tighter (smaller) carb ratio would dose more per carb",
      "appearances": null,
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "highs"
      ],
@@ -1047,6 +1056,14 @@
      "annotation": null,
      "appearances": null,
      "asserts_move": null,
+     "cause_counts": [
+      {
+       "count": 1,
+       "pinnable": true,
+       "subject": "habit:carb_undercount",
+       "title": "Carb undercount"
+      }
+     ],
      "chips": [
       "highs",
       "meals"
@@ -1166,6 +1183,7 @@
       }
      ],
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "highs",
       "meals"
@@ -1270,6 +1288,7 @@
      "annotation": "a step up, limited to 20% above the set rate",
      "appearances": null,
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "highs"
      ],
@@ -1348,6 +1367,7 @@
      "annotation": "a step up, limited to 20% above the set rate",
      "appearances": null,
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "highs"
      ],
@@ -1426,6 +1446,7 @@
       }
      ],
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "highs"
      ],
@@ -1512,6 +1533,7 @@
       "cause_counts": [
        {
         "count": 1,
+        "pinnable": true,
         "subject": "habit:over_treated_low",
         "title": "Over-treated low"
        }
@@ -1554,6 +1576,7 @@
      "annotation": "fasting data agrees with the set factor, but recurring correction-linked lows call for weaker corrections",
      "appearances": null,
      "asserts_move": false,
+     "cause_counts": null,
      "chips": [
       "lows"
      ],
@@ -1606,6 +1629,7 @@
      "annotation": null,
      "appearances": null,
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "lows",
       "corrections"
@@ -1682,6 +1706,7 @@
       }
      ],
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "lows"
      ],
@@ -1808,6 +1833,7 @@
       }
      ],
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "lows",
       "corrections"
@@ -1896,6 +1922,7 @@
      "annotation": null,
      "appearances": null,
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "lows",
       "meals"
@@ -2170,6 +2197,7 @@
      "annotation": "post-meal corrections imply meals are under-covered, so a tighter (smaller) carb ratio would dose more per carb",
      "appearances": null,
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "highs"
      ],
@@ -2242,6 +2270,7 @@
      "annotation": null,
      "appearances": null,
      "asserts_move": null,
+     "cause_counts": [],
      "chips": [
       "highs",
       "meals"
@@ -2354,6 +2383,7 @@
      "annotation": "fasting data agrees with the set factor, but recurring correction-linked lows call for weaker corrections",
      "appearances": null,
      "asserts_move": false,
+     "cause_counts": null,
      "chips": [
       "lows"
      ],
@@ -2406,6 +2436,7 @@
      "annotation": null,
      "appearances": null,
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "lows",
       "corrections"
@@ -2475,6 +2506,7 @@
      "annotation": null,
      "appearances": null,
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "lows",
       "meals"
@@ -2575,6 +2607,7 @@
      "annotation": "a step up, limited to 20% above the set rate",
      "appearances": null,
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "highs"
      ],
@@ -2646,6 +2679,7 @@
      "annotation": "fasting data agrees with the set factor, but recurring correction-linked lows call for weaker corrections",
      "appearances": null,
      "asserts_move": false,
+     "cause_counts": null,
      "chips": [
       "lows"
      ],
@@ -2790,6 +2824,7 @@
      "annotation": "post-meal corrections imply meals are under-covered, so a tighter (smaller) carb ratio would dose more per carb",
      "appearances": null,
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "highs"
      ],
@@ -2862,6 +2897,7 @@
      "annotation": "a step up, limited to 20% above the set rate",
      "appearances": null,
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "highs"
      ],
@@ -2940,6 +2976,7 @@
      "annotation": "fasting data agrees with the set factor, but recurring correction-linked lows call for weaker corrections",
      "appearances": null,
      "asserts_move": false,
+     "cause_counts": null,
      "chips": [
       "lows"
      ],
@@ -2992,6 +3029,7 @@
      "annotation": null,
      "appearances": null,
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "lows",
       "corrections"
@@ -3068,6 +3106,7 @@
       }
      ],
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "lows"
      ],
@@ -3173,6 +3212,7 @@
      "annotation": "fasting data agrees with the set factor, but recurring correction-linked lows call for weaker corrections",
      "appearances": null,
      "asserts_move": false,
+     "cause_counts": null,
      "chips": [
       "lows"
      ],
@@ -3317,6 +3357,7 @@
      "annotation": "post-meal corrections imply meals are under-covered, so a tighter (smaller) carb ratio would dose more per carb",
      "appearances": null,
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "highs"
      ],
@@ -3396,6 +3437,7 @@
       }
      ],
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "highs"
      ],
@@ -3450,6 +3492,7 @@
       "cause_counts": [
        {
         "count": 1,
+        "pinnable": true,
         "subject": "habit:over_treated_low",
         "title": "Over-treated low"
        }
@@ -3492,6 +3535,7 @@
      "annotation": "fasting data agrees with the set factor, but recurring correction-linked lows call for weaker corrections",
      "appearances": null,
      "asserts_move": false,
+     "cause_counts": null,
      "chips": [
       "lows"
      ],
@@ -3544,6 +3588,7 @@
      "annotation": null,
      "appearances": null,
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "lows",
       "corrections"
@@ -3620,6 +3665,7 @@
       }
      ],
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "lows",
       "corrections"
@@ -3736,6 +3782,9 @@
        "carbs": null,
        "cause_lever": "correction_stacking",
        "cause_title": "Correction stacking",
+       "claim_severity": {
+        "correction_stacking": 600.0
+       },
        "date": "2026-08-17",
        "ep_id": "ep3",
        "insulin": 2.0,
@@ -3870,6 +3919,9 @@
        "carbs": null,
        "cause_lever": "over_treated_low",
        "cause_title": "Over-treated low",
+       "claim_severity": {
+        "over_treated_low": 4332.5
+       },
        "date": "2026-08-13",
        "ep_id": "2026-08-13-ep0",
        "insulin": null,
@@ -4005,6 +4057,9 @@
        "carbs": null,
        "cause_lever": "correction_on_iob",
        "cause_title": "Correction on active insulin",
+       "claim_severity": {
+        "correction_on_iob": 1731.25
+       },
        "corrections": {
         "correction_on_iob": "2026-08-16 20:00:00"
        },
@@ -4057,6 +4112,9 @@
        "carbs": 45.0,
        "cause_lever": "carb_undercount",
        "cause_title": "Carb undercount",
+       "claim_severity": {
+        "carb_undercount": 600.0
+       },
        "date": "2026-08-17",
        "ep_id": "ep2",
        "insulin": 4.5,
@@ -4260,6 +4318,7 @@
      "annotation": null,
      "appearances": null,
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "highs",
       "meals"
@@ -4326,6 +4385,7 @@
      "annotation": null,
      "appearances": null,
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "highs"
      ],
@@ -4390,6 +4450,7 @@
      "annotation": null,
      "appearances": null,
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "lows",
       "corrections"
@@ -4456,6 +4517,7 @@
      "annotation": null,
      "appearances": null,
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "lows",
       "meals"
@@ -4732,6 +4794,7 @@
      "annotation": "meals look slightly over-covered relative to the programmed carb ratio",
      "appearances": null,
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "lows"
      ],
@@ -4804,6 +4867,7 @@
      "annotation": null,
      "appearances": null,
      "asserts_move": null,
+     "cause_counts": [],
      "chips": [
       "lows",
       "meals"
@@ -4894,6 +4958,7 @@
      "annotation": "post-meal corrections imply meals are under-covered, so a tighter (smaller) carb ratio would dose more per carb",
      "appearances": null,
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "highs"
      ],
@@ -4966,6 +5031,14 @@
      "annotation": null,
      "appearances": null,
      "asserts_move": null,
+     "cause_counts": [
+      {
+       "count": 1,
+       "pinnable": true,
+       "subject": "habit:carb_undercount",
+       "title": "Carb undercount"
+      }
+     ],
      "chips": [
       "highs",
       "meals"
@@ -5085,6 +5158,7 @@
       }
      ],
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "highs",
       "meals"
@@ -5189,6 +5263,7 @@
      "annotation": "a step up, limited to 20% above the set rate",
      "appearances": null,
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "highs"
      ],
@@ -5267,6 +5342,7 @@
      "annotation": "a step up, limited to 20% above the set rate",
      "appearances": null,
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "highs"
      ],
@@ -5345,6 +5421,7 @@
       }
      ],
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "highs"
      ],
@@ -5431,6 +5508,7 @@
       "cause_counts": [
        {
         "count": 1,
+        "pinnable": true,
         "subject": "habit:over_treated_low",
         "title": "Over-treated low"
        }
@@ -5473,6 +5551,7 @@
      "annotation": null,
      "appearances": null,
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "lows",
       "corrections"
@@ -5549,6 +5628,7 @@
       }
      ],
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "lows"
      ],
@@ -5675,6 +5755,7 @@
       }
      ],
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "lows",
       "corrections"
@@ -5957,6 +6038,7 @@
      "annotation": "post-meal corrections imply meals are under-covered, so a tighter (smaller) carb ratio would dose more per carb",
      "appearances": null,
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "highs"
      ],
@@ -6029,6 +6111,7 @@
      "annotation": null,
      "appearances": null,
      "asserts_move": null,
+     "cause_counts": [],
      "chips": [
       "highs",
       "meals"
@@ -6148,6 +6231,7 @@
       }
      ],
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "highs"
      ],
@@ -6210,6 +6294,7 @@
       "cause_counts": [
        {
         "count": 1,
+        "pinnable": true,
         "subject": "habit:over_treated_low",
         "title": "Over-treated low"
        }
@@ -6252,6 +6337,7 @@
      "annotation": null,
      "appearances": null,
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "lows",
       "corrections"
@@ -6328,6 +6414,7 @@
       }
      ],
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "lows",
       "corrections"
@@ -6416,6 +6503,7 @@
      "annotation": null,
      "appearances": null,
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "lows",
       "meals"
@@ -6690,6 +6778,7 @@
      "annotation": "post-meal corrections imply meals are under-covered, so a tighter (smaller) carb ratio would dose more per carb",
      "appearances": null,
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "highs"
      ],
@@ -6762,6 +6851,7 @@
      "annotation": null,
      "appearances": null,
      "asserts_move": null,
+     "cause_counts": [],
      "chips": [
       "highs",
       "meals"
@@ -6881,6 +6971,7 @@
       }
      ],
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "highs"
      ],
@@ -6951,6 +7042,7 @@
       "cause_counts": [
        {
         "count": 1,
+        "pinnable": true,
         "subject": "habit:over_treated_low",
         "title": "Over-treated low"
        }
@@ -6993,6 +7085,7 @@
      "annotation": null,
      "appearances": null,
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "lows",
       "corrections"
@@ -7062,6 +7155,7 @@
      "annotation": null,
      "appearances": null,
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "lows",
       "meals"
@@ -7336,6 +7430,7 @@
      "annotation": "post-meal corrections imply meals are under-covered, so a tighter (smaller) carb ratio would dose more per carb",
      "appearances": null,
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "highs"
      ],
@@ -7408,6 +7503,14 @@
      "annotation": null,
      "appearances": null,
      "asserts_move": null,
+     "cause_counts": [
+      {
+       "count": 1,
+       "pinnable": true,
+       "subject": "habit:carb_undercount",
+       "title": "Carb undercount"
+      }
+     ],
      "chips": [
       "highs",
       "meals"
@@ -7527,6 +7630,7 @@
       }
      ],
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "highs",
       "meals"
@@ -7631,6 +7735,7 @@
      "annotation": "a step up, limited to 20% above the set rate",
      "appearances": null,
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "highs"
      ],
@@ -7709,6 +7814,7 @@
      "annotation": "a step up, limited to 20% above the set rate",
      "appearances": null,
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "highs"
      ],
@@ -7787,6 +7893,7 @@
       }
      ],
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "highs"
      ],
@@ -7873,6 +7980,7 @@
       "cause_counts": [
        {
         "count": 1,
+        "pinnable": true,
         "subject": "habit:over_treated_low",
         "title": "Over-treated low"
        }
@@ -7915,6 +8023,7 @@
      "annotation": null,
      "appearances": null,
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "lows",
       "corrections"
@@ -7991,6 +8100,7 @@
       }
      ],
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "lows"
      ],
@@ -8117,6 +8227,7 @@
       }
      ],
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "lows",
       "corrections"
@@ -8205,6 +8316,7 @@
      "annotation": null,
      "appearances": null,
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "lows",
       "meals"
@@ -8479,6 +8591,7 @@
      "annotation": "post-meal corrections imply meals are under-covered, so a tighter (smaller) carb ratio would dose more per carb",
      "appearances": null,
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "highs"
      ],
@@ -8551,6 +8664,7 @@
      "annotation": null,
      "appearances": null,
      "asserts_move": null,
+     "cause_counts": [],
      "chips": [
       "highs",
       "meals"
@@ -8663,6 +8777,7 @@
      "annotation": null,
      "appearances": null,
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "lows",
       "corrections"
@@ -8732,6 +8847,7 @@
      "annotation": null,
      "appearances": null,
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "lows",
       "meals"
@@ -8832,6 +8948,7 @@
      "annotation": "a step up, limited to 20% above the set rate",
      "appearances": null,
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "highs"
      ],
@@ -8995,6 +9112,7 @@
      "annotation": "post-meal corrections imply meals are under-covered, so a tighter (smaller) carb ratio would dose more per carb",
      "appearances": null,
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "highs"
      ],
@@ -9067,6 +9185,7 @@
      "annotation": "a step up, limited to 20% above the set rate",
      "appearances": null,
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "highs"
      ],
@@ -9145,6 +9264,7 @@
      "annotation": null,
      "appearances": null,
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "lows",
       "corrections"
@@ -9221,6 +9341,7 @@
       }
      ],
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "lows"
      ],
@@ -9417,6 +9538,7 @@
      "annotation": "post-meal corrections imply meals are under-covered, so a tighter (smaller) carb ratio would dose more per carb",
      "appearances": null,
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "highs"
      ],
@@ -9496,6 +9618,7 @@
       }
      ],
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "highs"
      ],
@@ -9550,6 +9673,7 @@
       "cause_counts": [
        {
         "count": 1,
+        "pinnable": true,
         "subject": "habit:over_treated_low",
         "title": "Over-treated low"
        }
@@ -9592,6 +9716,7 @@
      "annotation": null,
      "appearances": null,
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "lows",
       "corrections"
@@ -9668,6 +9793,7 @@
       }
      ],
      "asserts_move": null,
+     "cause_counts": null,
      "chips": [
       "lows",
       "corrections"

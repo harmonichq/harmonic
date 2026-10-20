@@ -1505,6 +1505,10 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 actual = focus_subject(receipt["result"]["record"])
                 if actual != expected:
                     raise FollowUpConflict("request_identity_mismatch", store.input_data_revision())
+                # A retried pin names the lever it first pinned (ADR 593).
+                if (payload.get("lever") is not None
+                        and payload["lever"] != receipt["result"]["record"]["lever"]):
+                    raise FollowUpConflict("request_identity_mismatch", store.input_data_revision())
                 scope = (receipt["result"]["record"].get("decision_context") or {}).get("outcome_window")
                 if scope != payload.get("outcome_window"):
                     raise FollowUpConflict("request_identity_mismatch", store.input_data_revision())
@@ -1690,24 +1694,21 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 "reason": payload.get("reason")}})
         return lifecycle("withdraw", "plan", identity, payload, durable=True, mutate=withdraw)
 
-    def _pinnable_pattern_member(row):
-        from .watched_change import is_pinnable
+    def _pinnable_pattern_members(row):
+        """A ready Pattern's pinnable habit members (ADR 593); none when the Pattern
+        is not ready or has no action."""
+        from .watched_change import pinnable_members
         if (row.get("kind") != "pattern"
                 or row["readiness"]["verdict"] != "ready"
                 or row.get("action") is None):
-            return None
-        return next((
-            member for member in row["members"]
-            if member["kind"] == "habit"
-            and is_pinnable(member["subject"].split(":", 1)[1], row["pattern_key"])
-        ), None)
+            return []
+        return pinnable_members(row["pattern_key"], row["members"])
 
     @app.get("/api/focus")
     def list_focus_endpoint(_: None = Depends(require_token)) -> dict:
         from .watched_change import focus_subject, pinnable_levers
         guidance = guidance_or_unavailable(serve_stale=True)
-        patterns = [row for row in guidance["candidates"]
-                    if _pinnable_pattern_member(row) is not None]
+        patterns = [row for row in guidance["candidates"] if _pinnable_pattern_members(row)]
         # Pinnable Patterns read from the findings' predecessor carry its label (#579).
         age = {"input_data_age": guidance["input_data_age"]} if "input_data_age" in guidance else {}
         with Store.open_queryonly(db_path) as store:
@@ -1737,10 +1738,16 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                             if row.get("subject") == f"pattern:{pattern_key}"), None)
             if pattern is None:
                 raise HTTPException(status_code=400, detail="Pattern Focus is not ready")
-            member = _pinnable_pattern_member(pattern)
-            if member is None:
+            members = _pinnable_pattern_members(pattern)
+            if not members:
                 raise HTTPException(status_code=400, detail="Pattern Focus is not pinnable")
-            lever = member["subject"].split(":", 1)[1]
+            # A sent lever is watched only when it is one of the Pattern's pinnable
+            # members (ADR 593); with none sent, the first is.
+            if lever is None:
+                lever = members[0]
+            elif lever not in members:
+                raise HTTPException(status_code=400,
+                                    detail=f"{lever!r} is not a pinnable member of this Pattern")
         if not isinstance(lever, str):
             raise HTTPException(status_code=422, detail="lever required")
         if not is_pinnable(lever, pattern_key):

@@ -231,6 +231,32 @@ def credited_claims(exposures: dict, family: str,
     return credits
 
 
+def cause_order(exposures: dict, family: str,
+                rate_levers: Iterable[str]) -> list[tuple[str, int]]:
+    """A Pattern's causes, largest harm first (ADR 593): each rate lever with a
+    share of the Pattern's count, with that share.
+
+    Crediting is :func:`credited_claims`, unchanged. Each cause is ordered by the
+    summed ``claim_severity`` of its own claims on the Occurrences credited to it,
+    never another lever's claim on the same Occurrence; ties keep ``rate_levers``
+    order. The findings projection's shares and the Pattern case file's per-cause
+    traces both read this one order.
+    """
+    rate_levers = list(rate_levers)
+    credits = credited_claims(exposures, family, rate_levers)
+    source = (exposures.get("exposures") or {}).get(family) or {}
+    claims = {lever: {} for lever in rate_levers}
+    for item in source.get("occurrences") or ():
+        for lever in item.get("attributed_levers") or ():
+            if lever in claims:
+                claims[lever][item["t"]] = item["claim_severity"][lever]
+    causes = {lever: [identity for identity, claimant in credits.items() if claimant == lever]
+              for lever in rate_levers}
+    ordered = sorted((lever for lever in rate_levers if causes[lever]),
+                     key=lambda lever: -sum(claims[lever][t] for t in causes[lever]))
+    return [(lever, len(causes[lever])) for lever in ordered]
+
+
 def build_outcome_patterns(analysis: dict, exposures: dict, scenarios: dict, *,
                            scoped_population: bool = False) -> list[dict]:
     """Return the closed four-pattern roster from already-published source outputs.

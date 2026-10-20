@@ -3,6 +3,7 @@ import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { TOKEN_KEY } from '../../../data.js';
 import { failsOnce } from '../../flaky';
 import { expectTabBarEnds } from '../../tabbar-check';
+import { expectHeaderEmpty, expectTitlePrinted } from '../../title-check';
 import { SettingsScreen, type SettingsScreenProps } from './SettingsScreen';
 
 // The Settings screen in each state §1.3 lists, at phone (390) and desktop
@@ -45,7 +46,15 @@ const FAILED = { sync: 'failed', account: 'set' } as const;
 const NOT_SET = { sync: null, account: 'unset' } as const;
 
 // The tab bar ends the screen: 64 px above the device's inset (§2.5, 2026-10-19).
-export const RootSyncedPhone: Story = { ...story('phone', SYNCED), play: async ({ canvasElement }) => expectTabBarEnds(canvasElement) };
+// The tab bar's selected Settings names the screen, so its header draws nothing
+// (§2.5, 2026-10-20).
+export const RootSyncedPhone: Story = {
+  ...story('phone', SYNCED),
+  play: async ({ canvasElement }) => {
+    await expectTabBarEnds(canvasElement);
+    await expectHeaderEmpty(canvasElement, 'Settings');
+  },
+};
 export const RootSyncedDesktop = story('desktop', SYNCED);
 export const RootFailedPhone = story('phone', FAILED);
 export const RootFailedDesktop = story('desktop', FAILED);
@@ -95,7 +104,7 @@ const drillPlay: Story['play'] = async ({ canvasElement }) => {
   const canvas = within(canvasElement);
   for (const [row, title] of [['Tandem Source', 'Tandem Source'], ['Pump profile', 'Pump profile'], ['Glossary', 'Glossary']]) {
     await userEvent.click(canvas.getByRole('button', { name: new RegExp(`^${row}`) }));
-    await expect(canvas.getByRole('heading', { level: 1, name: title })).toBeInTheDocument();
+    await expectTitlePrinted(canvasElement, title);
     await userEvent.click(back(canvas, title));
     await expect(canvas.getByRole('heading', { level: 1, name: 'Settings' })).toBeInTheDocument();
   }

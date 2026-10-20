@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, within } from 'storybook/test';
 import { expectDirections } from '../../direction-check';
 import { expectTabBarEnds } from '../../tabbar-check';
+import { expectHeaderEmpty } from '../../title-check';
 import { OverviewScreen, type OverviewScreenProps } from './OverviewScreen';
 
 // The Overview screen in each state §1.3 lists, at phone (390) and desktop
@@ -49,14 +50,23 @@ const comparesWith = (window: '14' | '30' | '90', previous: boolean): Story['pla
 };
 
 // The tab bar ends the screen: 64 px above the device's inset (§2.5, 2026-10-19).
+// The nav's selected Overview names the screen, so its header draws nothing and
+// the window switch starts the page (§2.5, 2026-10-20).
 export const DefaultPhone: Story = {
   ...story('phone', { store: 'wearer' }),
   play: async (context) => {
     await comparesWith('14', true)!(context);
     await expectTabBarEnds(context.canvasElement);
+    await expectHeaderEmpty(context.canvasElement, 'Overview');
   },
 };
-export const DefaultDesktop: Story = { ...story('desktop', { store: 'wearer' }), play: comparesWith('14', true) };
+export const DefaultDesktop: Story = {
+  ...story('desktop', { store: 'wearer' }),
+  play: async (context) => {
+    await comparesWith('14', true)!(context);
+    await expectHeaderEmpty(context.canvasElement, 'Overview');
+  },
+};
 export const Window30Phone: Story = { ...story('phone', { store: 'wearer', window: '30' }), play: comparesWith('30', true) };
 export const Window30Desktop: Story = {
   ...story('desktop', { store: 'wearer', window: '30' }), play: comparesWith('30', true),

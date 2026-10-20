@@ -4,6 +4,7 @@ import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { fixtures, sourced } from '../../fixtures';
 import { swipe } from '../../gesture';
 import { expectTabBarEnds } from '../../tabbar-check';
+import { expectHeaderEmpty, expectTitlePrinted } from '../../title-check';
 import { ranking } from '../../queue-model';
 import { failsOnce } from '../../flaky';
 import { QUEUE_UNDRAWABLE } from '../../served-variants';
@@ -89,11 +90,14 @@ const rowsLevel: Story['play'] = async ({ canvasElement }) => {
 };
 
 // The tab bar ends the screen: 64 px above the device's inset (§2.5, 2026-10-19).
+// The tab bar's selected Queue names the screen, so its header draws nothing
+// and the ranking starts at the top (§2.5, 2026-10-20).
 export const DefaultPhone: Story = {
   ...story('phone', DEFAULT),
   play: async (context) => {
     await rowsLevel!(context);
     await expectTabBarEnds(context.canvasElement);
+    await expectHeaderEmpty(context.canvasElement, 'Queue');
   },
 };
 // An iPhone's 34 px home indicator: the bar grows by it, the page shrinks by it.
@@ -102,7 +106,13 @@ export const HomeIndicatorPhone: Story = {
   decorators: [(Story) => <div style={{ height: '100%', '--ui-inset-bottom': '34px' } as CSSProperties}><Story /></div>],
   play: async ({ canvasElement }) => expectTabBarEnds(canvasElement),
 };
-export const DefaultDesktop: Story = { ...story('desktop', DEFAULT), play: rowsLevel };
+export const DefaultDesktop: Story = {
+  ...story('desktop', DEFAULT),
+  play: async (context) => {
+    await rowsLevel!(context);
+    await expectHeaderEmpty(context.canvasElement, 'Queue');
+  },
+};
 export const PatternOpenPhone = story('phone', PATTERN_OPEN);
 export const PatternOpenDesktop = story('desktop', PATTERN_OPEN);
 export const SettingDetailPhone = story('phone', SETTING_DETAIL);
@@ -203,7 +213,9 @@ export const SwipeSnoozeUndoPhone: Story = {
 };
 
 // The drill-down (§2.2): the Snoozed row opens the Snoozed list under
-// "‹ Queue", and back returns to the Queue with the same item open.
+// "‹ Queue", its title drawn (the tab bar does not name it), and back returns
+// to the Queue with the same item open, its header drawing nothing again.
+// Desktop the same in its list pane.
 export const SnoozedDrillDownPhone: Story = {
   args: { layout: 'phone', store: 'wearer-pinned-snoozed', open: 'setting:basal_rate' },
   parameters: { frame: FRAMES.phone },
@@ -211,10 +223,10 @@ export const SnoozedDrillDownPhone: Story = {
     const canvas = within(canvasElement);
     const open = ranking('wearer-pinned-snoozed').find((i) => i.subject === 'setting:basal_rate')!;
     await userEvent.click(canvas.getByRole('button', { name: /Snoozed/ }));
-    await expect(canvas.getByRole('heading', { level: 1, name: 'Snoozed' })).toBeInTheDocument();
+    await expectTitlePrinted(canvasElement, 'Snoozed');
     await expect(canvas.getByRole('button', { name: 'Restore' })).toBeInTheDocument();
     await userEvent.click(within(back(canvas)).getByRole('button', { name: 'Queue' }));
-    await expect(canvas.getByRole('heading', { level: 1, name: 'Queue' })).toBeInTheDocument();
+    await expectHeaderEmpty(canvasElement, 'Queue');
     await expect(canvas.getByRole('heading', { level: 2, name: new RegExp(open.data.title) })).toBeInTheDocument();
   },
 };
@@ -228,10 +240,10 @@ export const SnoozedDrillDownDesktop: Story = {
     const canvas = within(canvasElement);
     const open = ranking('wearer-pinned-snoozed').find((i) => i.subject === 'setting:basal_rate')!;
     await userEvent.click(canvas.getByRole('button', { name: /Snoozed/ }));
-    await expect(canvas.getByRole('heading', { level: 1, name: 'Snoozed' })).toBeInTheDocument();
+    await expectTitlePrinted(canvasElement, 'Snoozed');
     await expect(canvas.getByRole('heading', { level: 2, name: new RegExp(open.data.title) })).toBeInTheDocument();
     await userEvent.click(within(back(canvas)).getByRole('button', { name: 'Queue' }));
-    await expect(canvas.getByRole('heading', { level: 1, name: 'Queue' })).toBeInTheDocument();
+    await expectHeaderEmpty(canvasElement, 'Queue');
     await expect(canvas.getByRole('heading', { level: 2, name: new RegExp(open.data.title) })).toBeInTheDocument();
   },
 };

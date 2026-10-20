@@ -10,9 +10,9 @@
 // on pump pill on its title line. Snooze, when the screen offers it, is a
 // centred text action beneath Done.
 //
-// The stat row (ADR 523) is the same on every setting card, the ISF card too,
-// in the same order and place: Estimate, Range, then the count of what the
-// estimate counts (Nights, Meal runs, Fasting nights), each a caption above its
+// The stat row (ADR 523) is the same on every setting card, in the same order
+// and place: Estimate, Range, then the count of what the estimate counts
+// (Nights, Meal runs), each a caption above its
 // served value. A range the engine serves as one value (lo = hi) shows that
 // value once.
 import type { Sourced } from '../../answers';

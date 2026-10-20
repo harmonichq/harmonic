@@ -1,6 +1,6 @@
 // BasalCard (§4.2, ADR 523): the basal estimate for the Overview's selected
-// window, beside the ISF estimate on desktop and under it on the phone, the
-// same card size. The title is "Basal" in strong ink with "estimate" in meta
+// window, the first card below its summary: across the first row of the cards
+// on desktop, above Meal size on the phone (§2.5, 2026-10-20 #564). The title is "Basal" in strong ink with "estimate" in meta
 // ink on its baseline. The chart is the day in the engine's 48 half-hour
 // slots: the programmed rate (Current) a dashed step; each slot's median clean
 // delivered rate (Estimate) a solid tick over its Range, a bar; a slot the
@@ -15,7 +15,6 @@ import { linePath, niceTicks } from '../Chart/scale';
 import '../../shared.css';
 import '../Chart/Chart.css';
 import '../SettingCard/SettingCard.css';
-import '../IsfCard/IsfCard.css';
 import './BasalCard.css';
 
 const LEFT = 30;   // the rate ticks' gutter
@@ -78,18 +77,18 @@ function BasalDayChart({ data }: { data: BasalDayData }) {
 }
 
 export function BasalCard({ data }: { data: BasalDayData | 'none' | null }) {
-  const title = <h2 className="ui-scard__title ui-isf__title">Basal <span className="ui-scard__slot">estimate</span></h2>;
+  const title = <h2 className="ui-scard__title ui-scard__heading">Basal <span className="ui-scard__slot">estimate</span></h2>;
   if (data === null) {
     return (
-      <section className="ui-scard ui-isf" aria-busy="true">
+      <section className="ui-scard" aria-busy="true">
         {title}
-        <span className="ui-skeleton ui-isf__skeleton" aria-hidden="true" />
+        <span className="ui-skeleton ui-scard__skeleton" aria-hidden="true" />
       </section>
     );
   }
-  if (data === 'none') return <section className="ui-scard ui-isf">{title}<p className="ui-isf__none">No data</p></section>;
+  if (data === 'none') return <section className="ui-scard">{title}<p className="ui-scard__none">No data</p></section>;
   return (
-    <section className="ui-scard ui-isf">
+    <section className="ui-scard">
       {title}
       <div className="ui-scard__chart"><BasalDayChart data={data} /></div>
       <div className="ui-basal__legend">

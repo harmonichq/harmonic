@@ -64,6 +64,11 @@ Status: **exploring** (#481).
 - **No tab name over its own tab, 2026-10-20** (#583, §2.5): the operator's
   decision, built on all five locked screens through ScreenHeader; Storybook
   `ScreenHeader` and each screen's Default and drill-down stories.
+- **No ISF estimate, locked 2026-10-20** (#564, §2.5): the Overview without
+  its ISF card, the basal estimate across the first row of cards and Meal size
+  across the second; the Queue without a queued ISF. Revised on the locked
+  Overview and Queue screens. The operator: "Go for it. Locked"
+  (2026-10-20).
 
 This document is the durable record of the redesign. Sections 1–3 are what the
 build will be checked against once they are approved. The appendix keeps the
@@ -77,7 +82,7 @@ consolidated brief from the first exploration (2026-10-12) as decision history.
 |---|---|---|
 | **Queue** | The ranked recommendations, from Patterns, Habits and Settings, and the Snoozed list. | No logging, no status, no counters. |
 | **Changes** | The current watched change (one Trial or one Focus) with what a Trial did to glucose in its block, and Previous: every earlier change (§2.5, 2026-10-14). | Nothing to act on but End. |
-| **Overview** | Standard metrics over 14, 30 or 90 days against the period of the same length before, the selected window's time-in-ranges bar and glucose profile, the ISF and basal estimates, and Meal size (§2.5, 2026-10-19). | No Queue items and nothing to act on: the ISF estimate shows the engine's supported change as the Queue's card does, but changes nothing. |
+| **Overview** | Standard metrics over 14, 30 or 90 days against the period of the same length before, the selected window's time-in-ranges bar and glucose profile, the basal estimate, and Meal size (§2.5, 2026-10-19; 2026-10-20 #564). | No Queue items and nothing to act on. |
 | **Day** | One day's glucose, insulin and carbs, the day navigator, carb logging and Prompts: Lows and Rises. | No aggregates beyond that day. |
 | **Settings** | Tandem Source (sync and account), Pump profile and the Glossary. | No preferences the engine doesn't have. |
 
@@ -108,10 +113,10 @@ Each row lists a screen's states. Labels only; no state uses prose.
 |---|---|---|---|---|---|
 | Queue | Ranked cards, top card expanded | "0 patterns" label | Card skeletons | Unavailable + Retry | A card expanded; mid-swipe; just snoozed (bar "Snoozed until <date>" + Undo, §2.5 2026-10-20); just Done (bar "Waiting for pump" + Undo, §2.5); a Setting Not on pump (§2.5); a Habit open, and pinned (§2.5, 2026-10-19); Snoozed footer when N > 0 |
 | Queue · Snoozed | Each snoozed item as its Queue row, plus "Until <date>" + Restore | Not reachable (the footer is hidden at 0) | — | Unavailable + Retry | Restored (row leaves) |
-| Queue · setting detail | current → estimate, range, n, chart | — | Chart skeleton | Unavailable | A queued ISF: the Overview's ISF card in the Queue's frame (§2.5, 2026-10-14) |
+| Queue · setting detail | current → estimate, range, n, chart | — | Chart skeleton | Unavailable | — (no queued ISF, §2.5 2026-10-20 #564) |
 | Changes | The current Trial (head, trace, ranges, Mean/GMI/CV, Basal vs Pump profile) or Focus, then the Previous row with its count | "No active change" label; no Previous row at 0 | Skeleton | Unavailable + Retry | Maturing, every module as its data forms, each glucose module with its Readings, each Δ green or red by its direction (§2.5, 2026-10-19, colour shows direction); first hours (an empty after: Meals after 0, each after blank) (§2.5, 2026-10-19); Matured (result pill); a carb ratio Trial (Meals before / after; its trace meal by meal under three meals); a whole-profile switch (each setting it moved); **End** (Focus: anytime; Trial: once matured) → confirm sheet → ended; Waiting for pump rows after a Done, between the current change and Previous (§2.5) |
 | Changes · Previous | Every previous change, newest first, no cutoff: setting and block, date, before → after per setting, the result where one was saved | Not reachable (the row is hidden at 0) | — | Unavailable + Retry | — |
-| Overview | 14 d selected; one scrolling page, the summary (window switch, date span, In range, metrics, glucose profile) its first screenful, the ISF and basal estimates below, then Meal size (§2.5, 2026-10-19) | "No data" label per window, in the ISF or basal estimate when none is served, and in Meal size when no meal is counted | Skeleton; a window not yet read shows its profile's and estimates' skeletons; Meal size its skeleton until read | Unavailable + Retry | 30 d / 90 d selected; a previous period without data (the span alone, no changes); the ISF estimate with a supported change (current → recommended), held, Uncertain, with nights beyond its axis; Meal size with a size of one meal, or of none ("–") |
+| Overview | 14 d selected; one scrolling page, the summary (window switch, date span, In range, metrics, glucose profile) its first screenful, the basal estimate below, then Meal size (§2.5, 2026-10-19; 2026-10-20 #564) | "No data" label per window, in the basal estimate when none is served, and in Meal size when no meal is counted | Skeleton; a window not yet read shows its profile's and the basal estimate's skeletons; Meal size its skeleton until read | Unavailable + Retry | 30 d / 90 d selected; a previous period without data (the span alone, no changes); Meal size with a size of one meal, or of none ("–") |
 | Day | Latest day with data | "No data" for a day without readings | Chart skeleton | Unavailable + Retry | Month dropped down from the header's day; desktop: the selected week as a ribbon; the Lows row when its count > 0, and under it the Rises row when its count > 0 (§2.5, 2026-10-14 Rises) |
 | Day · Prompts | One prompt of the row's kind, a Low or a Rise, "n / N" among that kind, titled Lows or Rises | Not reachable (the row is hidden at 0) | — | Not saved + Retry | Yes → grams field and keyboard; mid-swipe Not sure; a Rise: Yes · No and Not sure, no False low |
 | Day · Log carbs | Grams field focused, Time = now | — | Saving | Not saved + Retry | Time edited |
@@ -175,7 +180,6 @@ the system's own edge-swipe back is left to the platform, never overridden.
 | **Peak / Nadir** | noun | The highest or lowest glucose after an event such as a meal, as the median across the events counted, in mg/dL. |
 | **Typical** | noun | The same for the comparison events: similar events that did not end in the Pattern's or the Habit's outcome. |
 | **Glucose profile** | noun | Glucose by time of day over the selected window (14, 30 or 90 days): the median and the 10th–90th percentile spread. |
-| **Fasting** | state | No food and no recent bolus: the nights an ISF estimate is read from. |
 | **Median** | noun | The middle value: of the profile at that time of day, or of a meal size's meals. |
 | **Meal size** | noun | A meal's carbs in grams: under 25, 25–39, 40–59 or 60 and over. Meal size counts the selected window's meals that began at or under 180 mg/dL with glucose flat before the bolus. |
 | **Climb** | metric | How far glucose rose after a meal: its highest reading in the 3 hours after the bolus, before any next meal, less the reading at the bolus, in mg/dL. |
@@ -1267,6 +1271,48 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   pump. Built with the drill-down (#532, #591); §1.3, §1.4, §1.5, §4.2
   PatternCard, HabitCard and TransientBar follow.
 
+- **2026-10-20 — no ISF estimate, on the Overview or in the Queue (#564).**
+  *Locked 2026-10-20; the operator: "Go for it. Locked".* Harmonic stops estimating ISF and stops advising a
+  correction-factor move: no passive method identifies ISF under Control-IQ
+  (ADR 564). The operator, on the Overview's grid without the ISF card,
+  choosing among the options put to them: "5. A", the basal estimate across
+  the first row and Meal size across the second, each row one height.
+  - **Overview.** The ISF estimate card goes, with its states (supported
+    change, held, Uncertain, nights beyond the axis). Below the summary, the
+    basal estimate spans the cards' first row and Meal size the second, at
+    one height (`grid-auto-rows: 1fr` stands); the grid keeps no half-empty
+    row. Phone: one column, the basal estimate then Meal size, in proportion.
+  - **Queue.** No queued ISF: no ISF row and no ISF card in the detail pane.
+    A correction factor snoozed before this change is no Queue row, so the
+    Snoozed list leaves it out, and its footer counts only the rows it
+    lists.
+  - **Changes is unchanged.** A correction-factor edit on the pump is still a
+    Trial. Changes shows its before → after and its glucose modules, and the
+    result pill reads better, worse or unclear from its In range, as it does
+    for a target edit. Nothing about it advises keeping or changing the
+    correction factor: the wearer decides (ADR 564 rule 4).
+  - **The pump's ISF stays.** Settings · Pump profile keeps its ISF column,
+    and §1.5 keeps "ISF". "Fasting" leaves §1.5 with the build (#564's
+    slice A), since only the ISF card prints it ("Fasting nights") and the
+    Glossary page prints §1.5 until then.
+  - **Must survive** (each shown in a render or a story's play):
+    - the 14 / 30 / 90 d switch moves the basal estimate and Meal size
+      together (`Screens/Overview` choose 30);
+    - every row of the cards one height, and none half empty, on desktop
+      (`Screens/Overview` Estimates Desktop);
+    - the phone's one column in proportion (`Screens/Overview` Estimates
+      Phone);
+    - the basal estimate's "No data" and skeleton, and every Meal size state
+      (`BasalCard`, `MealSizeCard`, `Screens/Overview` No data);
+    - the Overview as one scrolling page, the summary its first screenful
+      (`Screens/Overview` Scrolled);
+    - the basal and carb ratio Setting cards with Done, Undo, Not on pump and
+      Snooze, and the Snoozed list's Restore (`Screens/Queue`);
+    - a correction-factor Trial on Changes, with its before → after and its
+      result pill (`Screens/Changes`).
+  §1.1, §1.3, §1.5 and §4.2 QueueRow, SettingCard, EvidenceChart, IsfCard,
+  BasalCard and MealSizeCard follow.
+
 ### 2.6 Deferred (not cut)
 Not built in the current screens. The engine still serves what each needs, and
 nothing is removed from the engine or the fixtures for them.
@@ -1401,8 +1447,7 @@ unless noted. Loading is a skeleton of the component's own shape.
      low (Nadir); without impact (no trailing value); habit (the Pattern
      row with the Habit glyph; its magnitude the habit's case file's count; no
      trailing value; §2.5 2026-10-19); setting (current →
-     suggested replaces the magnitude; a queued ISF's row has no time block,
-     §2.5 2026-10-14); setting Not on pump (the StatePill on the title line,
+     suggested replaces the magnitude); setting Not on pump (the StatePill on the title line,
      inside its 22 px, so the row keeps its height; §2.5 2026-10-14 Done);
      snoozed (read-only: no chevron, swipe
      or selection; a last line "Until <date>" + Restore); loading.
@@ -1473,12 +1518,11 @@ unless noted. Loading is a skeleton of the component's own shape.
     - Fields: `analyze.basal[slot].current, recommended, estimate.value,
       estimate.lo, hi, days, evidence.night_roster[].delivered_rate`;
       `analyze.ic_blocks[].current_values, recommended, estimate.value, lo, hi,
-      evidence.counted_runs[].true_ic` and its length (ADR 523). A queued ISF
-      opens into the IsfCard instead (§2.5, 2026-10-14).
+      evidence.counted_runs[].true_ic` and its length (ADR 523).
     - Desktop: fills the detail pane up to 720 px.
 11. **EvidenceChart**: a setting's evidence, one row of dots against current
-    and the estimate in its range: a basal night's delivered rate, an I:C
-    counted meal run's ratio, or an ISF fasting night's fit. Dots that would
+    and the estimate in its range: a basal night's delivered rate or an I:C
+    counted meal run's ratio. Dots that would
     touch spread either side of the row; beneath the ticks the axis names
     itself ("I:C · g/U") (§2.5, 2026-10-14).
     - States: default; zero variance (a compact strip); nights beyond the
@@ -1488,8 +1532,7 @@ unless noted. Loading is a skeleton of the component's own shape.
       does. Every tick keeps its mark, but a tick label that would touch its
       neighbour is left out; the last, which carries the unit, always shows.
     - Fields: `analyze.basal[slot].evidence.night_roster`;
-      `analyze.ic_blocks[].evidence.counted_runs[].true_ic`;
-      `analyze.isf[0].evidence.night_fits[].isf`.
+      `analyze.ic_blocks[].evidence.counted_runs[].true_ic`.
     - Desktop: wider, same marks.
 
 **Overview**
@@ -1530,29 +1573,12 @@ unless noted. Loading is a skeleton of the component's own shape.
       trace, and its weekday and date are `--primary`; no bar. (The standalone
       DayTile went with the Overview's recent-days strip, §2.5 2026-10-14.)
 
-22. **IsfCard**: the ISF estimate for the selected window, below the
-    Overview's summary. The title "ISF" with "estimate", and the Uncertain
-    pill when the estimate is wide; "current → recommended" in figure type
-    only when the engine supports the change; an EvidenceChart of the fasting
-    nights' fits; then the setting cards' stat row: Estimate, Range and Fasting
-    nights.
-    - States: supported change; held (no figure); Uncertain; nights beyond the
-      axis; no data ("No data"); not yet read (its skeleton).
-    - Fields: `analyze.isf[0].current, recommended, asserts_move,
-      estimate.value, lo, hi, wide, n_clusters,
-      evidence.night_fits[].isf`, read from `/api/analyze?window=N`.
-    - Desktop: the width of the Overview's body, below its summary.
-    - In the Queue (§2.5, 2026-10-14): the open card of a queued ISF, the
-      engine's default window (`/api/analyze`). The title is "ISF" alone;
-      the figure always stands (the engine queues ISF only with its staging
-      verdict); Done at its foot and Snooze a text action centred beneath it,
-      as on the SettingCard (§2.5, 2026-10-14 Done); no other action. Not on
-      pump: the StatePill on its title line. Phone: in its row's place.
-      Desktop: fills the detail pane up to 720 px.
+22. **IsfCard**: retired (§2.5, 2026-10-20 #564). Harmonic serves no ISF
+    estimate, so neither the Overview nor the Queue draws one.
 
-25. **BasalCard** (§2.5, 2026-10-14): the basal estimate for the selected
-    window, the ISF card's size, beside it on desktop and under it on the
-    phone. Titled "Basal" with "estimate". The day's 48 half-hour slots: the
+25. **BasalCard** (§2.5, 2026-10-14; 2026-10-20 #564): the basal estimate
+    for the selected window, the first card below the Overview's summary.
+    Titled "Basal" with "estimate". The day's 48 half-hour slots: the
     programmed rate a dashed step, each slot's estimate a solid tick over its
     range, ▲ or ▼ above a slot whose staging verdict asserts a move; the rate
     ticks with "U/h", the hours 00:00–24:00; legend Current, Estimate, Range.
@@ -1561,12 +1587,14 @@ unless noted. Loading is a skeleton of the component's own shape.
       (its skeleton).
     - Fields: `analyze.basal[].slot, current, estimate.value, lo, hi,
       asserts_move, direction`, read from `/api/analyze?window=N`.
-    - Desktop: half the Overview's body, beside the IsfCard.
+    - Desktop: the Overview's full width, the first row of its cards, at the
+      height every row of the cards shares.
+    - Phone: under the summary, in proportion with Meal size.
 
 27. **MealSizeCard** (§2.5, 2026-10-19): how far glucose climbs after meals of
     each size, over the selected window as the estimates are (§2.5, 2026-10-19
-    #565), below the ISF and basal estimates, their height (§2.5, 2026-10-19
-    #559). Titled "Meal size". One thin strip per size, <25 g, 25–39 g, 40–59 g
+    #565), below the basal estimate, its height (§2.5, 2026-10-19 #559;
+    2026-10-20 #564). Titled "Meal size". One thin strip per size, <25 g, 25–39 g, 40–59 g
     and 60 g+, on one shared Climb axis, drawn from the size's percentiles
     alone (§2.5, 2026-10-19 #570): its 10–90% a thin capped whisker in its shade
     of the estimate blue, its Range a thick line over it, its median a short ink
@@ -1582,8 +1610,8 @@ unless noted. Loading is a skeleton of the component's own shape.
       carbs_to, count`, `climb.median, p10, p25, p75, p90`,
       `to_peak.median`, `at_3h.median, count`, read from
       `/api/explore/meal-size?days=N`.
-    - Desktop: the Overview's full width, the row after the IsfCard and the
-      BasalCard, at their height (every row of the cards one height).
+    - Desktop: the Overview's full width, the row after the BasalCard, at its
+      height (every row of the cards one height).
 
 **Changes**
 

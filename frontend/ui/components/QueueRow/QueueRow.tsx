@@ -4,7 +4,7 @@
 // pill repeats it. A habit's row is a Pattern's, with its own glyph. Then the
 // title, then one quiet line: the magnitude alone ("9 of 71 lows"); the causes
 // are the open card's to name. A setting row's title is its kind word with its time block beside it in meta
-// ink (ISF, one fasting value, has none), and current → suggested takes the magnitude's place.
+// ink, and current → suggested takes the magnitude's place.
 //
 // A Pattern with an impact ends both lines with a trailing value: Peak (highs)
 // or Nadir (lows) as a caption on the title line, and beneath it the shared
@@ -60,9 +60,8 @@ export type QueueRowProps =
       | { kind: 'setting'; setting: SettingRow }
     );
 
-/** What a setting row prints. A setting with no time block (ISF, one fasting
- *  value) has no block beside its title; one back from a Done the next sync did
- *  not show carries the Not on pump pill on its title line (#518). */
+/** What a setting row prints. One back from a Done the next sync did not show
+ *  carries the Not on pump pill on its title line (#518). */
 export type SettingRow = Pick<SettingData, 'current' | 'suggested' | 'units'>
   & Partial<Pick<SettingData, 'start' | 'end' | 'notOnPump'>>;
 

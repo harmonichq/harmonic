@@ -136,7 +136,7 @@ function counterOf(name: QueueStore, key: string) {
 
 /** A Focus can start now: the served admission every Focus button follows (ADR 594). */
 export const focusable = (name: QueueStore): boolean =>
-  (store(name).focus as { admission?: { focus_pin?: { available?: boolean } } }).admission?.focus_pin?.available === true;
+  store(name).focus.admission.focus_pin.available;
 
 const activeFocus = (name: QueueStore, key: string) =>
   store(name).focus.focuses.find((f) => f.status === 'active' && f.pattern_key === key);

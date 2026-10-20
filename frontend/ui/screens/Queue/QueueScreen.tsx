@@ -89,6 +89,8 @@ export type QueueScreenProps = {
   open?: string;
   /** `causes`: the open multi-cause Pattern's drill-down. */
   view?: View;
+  /** The drill-down a Back from another tab returned to (ADR 594): it opens as it was. */
+  returnTo?: DrillDown;
   /** Phone: the row held mid-swipe over its Snooze reveal. */
   swiping?: string;
   /** What snoozing `subject` serves: the store read after it, and the bar's date. */
@@ -106,11 +108,15 @@ export type QueueScreenProps = {
 
 type View = 'queue' | 'snoozed' | 'causes';
 
+/** Which drill-down is open: Snoozed, or a Pattern's causes. */
+export type DrillDown = { view: Exclude<View, 'queue'>; subject?: string };
+
 /** The app's one router, for a drill-down (ADR 594): `open` pushes its history
- *  entry, `close` goes Back through it, and `onReturn` calls back on a Back that
- *  left it, returning the unsubscribe. Without them a drill-down closes itself. */
+ *  entry, marked with which drill-down it is, `close` goes Back through it, and
+ *  `onReturn` calls back on a Back that left it, returning the unsubscribe.
+ *  Without them a drill-down closes itself. */
 export type DrillDownHooks = {
-  open: () => void;
+  open: (drillDown: DrillDown) => void;
   close: () => void;
   onReturn: (listener: () => void) => () => void;
 };
@@ -196,28 +202,34 @@ const STORY_BAR: Bar = { kind: 'story' };
 const STORY_DONE_BAR: Bar = { kind: 'story_done' };
 
 export function QueueScreen({
-  layout, store, state = 'ready', open, view: initialView = 'queue', swiping, snooze, justSnoozed = false,
+  layout, store, state = 'ready', open, view: viewProp = 'queue', returnTo, swiping, snooze, justSnoozed = false,
   done, writes, nav, onRetry,
 }: QueueScreenProps) {
   const [snoozedNow, setSnoozedNow] = useState(justSnoozed);
   const [doneNow, setDoneNow] = useState(false);
+  const initialView = returnTo?.view ?? viewProp;
   const [view, setView] = useState<View>(initialView);
   // The row the person opened on the phone, which grows into its card.
   const [expanded, setExpanded] = useState<string>();
   const root = useMotionGate<HTMLDivElement>();
   const shown = snoozedNow && snooze ? snooze.after : doneNow && done ? done.after : store;
+  const ready = state === 'ready' || state === 'stale';
   // The Pattern a drill-down was opened on, with its title and how many causes
-  // it served then, which its skeleton draws while it waits.
+  // it served then, which its skeleton draws while it waits. One the Queue no
+  // longer ranks (a drill-down returned to from history, the answers moved under
+  // it) keeps only its subject, and the Queue shows instead.
   const opening = (subject?: string) => {
+    const ranked = ready && subject ? ranking(shown).some((i) => i.subject === subject) : false;
     const key = subject?.replace(/^pattern:/, '');
-    return key ? { subject: subject!, title: pattern(shown, key).title, causes: causes(shown, key).length } : undefined;
+    return key ? { subject: subject!, title: ranked ? pattern(shown, key).title : '',
+      causes: ranked ? causes(shown, key).length : 0 } : undefined;
   };
-  const [drill, setDrill] = useState(() => (initialView === 'causes' ? opening(open) : undefined));
+  const [drill, setDrill] = useState(() => (initialView === 'causes' ? opening(returnTo?.subject ?? open) : undefined));
   const router = nav?.drillDown;
   const go = (to: View, subject?: string) => {
     setExpanded(undefined);
     if (to === 'causes') setDrill(opening(subject));
-    if (to !== 'queue') router?.open();
+    if (to !== 'queue') router?.open(to === 'causes' ? { view: to, subject } : { view: to });
     setView(to);
   };
   /** Back to the Queue: through the router's history entry, whose Back closes the drill-down. */
@@ -225,7 +237,6 @@ export function QueueScreen({
   const returned = useRef(() => setView('queue'));
   useEffect(() => router?.onReturn(() => returned.current()), [router]);
   const push = view === 'queue' ? 'back' : 'forward';
-  const ready = state === 'ready' || state === 'stale';
   // Live: the items a snooze or restore in flight has taken out, the Focus in
   // flight (its subject and any cause's lever), and the live bar.
   const [hidden, setHidden] = useState<ReadonlySet<string>>(new Set());
@@ -236,7 +247,7 @@ export function QueueScreen({
   if (open && ready && !justSnoozed && !ranking(store).some((i) => i.subject === open)) {
     throw new Error(`${store} serves no ${open} in its Queue`);
   }
-  const [selected, setSelected] = useState<string | undefined>(open ?? items[0]?.subject);
+  const [selected, setSelected] = useState<string | undefined>(returnTo?.subject ?? open ?? items[0]?.subject);
   const current = items.find((i) => i.subject === selected) ?? items[0];
   /** Desktop: another row shows that item, and closes a drill-down. */
   const select = (subject: string) => {
@@ -340,7 +351,9 @@ export function QueueScreen({
   const queueHeader = state === 'unavailable' || (state === 'stale' && view !== 'snoozed')
     ? <ScreenHeader key="queue" title="Queue" trailing="unavailable" layout={layout} onRetry={onRetry} />
     : <ScreenHeader key="queue" title="Queue" layout={layout} />;
-  const causeHeader = state === 'unavailable'
+  // Stale beats falsely current: the drill-down's header carries the mark the
+  // Queue's does, on the phone where it is the only header.
+  const causeHeader = state === 'unavailable' || (state === 'stale' && layout === 'phone')
     ? <ScreenHeader key="causes" title={drillTitle} trailing="unavailable" layout={layout} back={backTo} onRetry={onRetry} />
     : <ScreenHeader key="causes" title={drillTitle} layout={layout} back={backTo} />;
   const header = view === 'snoozed'

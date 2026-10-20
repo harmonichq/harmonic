@@ -2,8 +2,9 @@
 // The app's one address (#389, #495). The current tab is the path: `/` is the
 // Queue, and each other tab is its own page path. Drill-downs stay inside
 // their tab and are not addressed: opening one pushes a history entry at the
-// same address, marked, so the platform's Back (a phone's edge-swipe) returns
-// from it, and a reload lands on the tab (ADR 594). Framework-free, so the
+// same address, marked with which drill-down it is, so the platform's Back (a
+// phone's edge-swipe) returns from it, a Back from another tab returns to it,
+// and a reload lands on the tab (ADR 594). Framework-free, so the
 // initial load and popstate share one parse and the fallback is covered without
 // a browser.
 //
@@ -31,15 +32,17 @@ export function writeRoute(tab, { location = window.location, history = window.h
   return address;
 }
 
-/** Open a drill-down: one history entry at the current address, marked as a drill-down. */
-export function pushDrillDown({ location = window.location, history = window.history } = {}) {
-  history.pushState({ drillDown: true }, '', `${location.pathname}${location.search}${location.hash}`);
+/** Open a drill-down: one history entry at the current address, marked with which drill-down
+ *  it is (a plain value, such as its view and subject), so a Back onto it from another tab can
+ *  return to it. */
+export function pushDrillDown(drillDown, { location = window.location, history = window.history } = {}) {
+  history.pushState({ drillDown }, '', `${location.pathname}${location.search}${location.hash}`);
 }
 
-/** Call `listener` with the tab each Back or Forward lands on, and whether that entry is a
- *  drill-down's; returns the unsubscribe. */
+/** Call `listener` with the tab each Back or Forward lands on, and the drill-down that entry
+ *  marks (null for none); returns the unsubscribe. */
 export function subscribeRoute(listener, browser = window) {
-  const notify = () => listener(parseRoute(browser.location), { drillDown: browser.history?.state?.drillDown === true });
+  const notify = () => listener(parseRoute(browser.location), { drillDown: browser.history?.state?.drillDown ?? null });
   browser.addEventListener('popstate', notify);
   return () => browser.removeEventListener('popstate', notify);
 }

@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { failsOnce } from '../../flaky';
 import { causes, focusable, pattern, patternStore } from '../../queue-model';
+import { ServedAfter } from '../../served-variants';
 import { expectTitlePrinted } from '../../title-check';
 import { QueueScreen, type QueueScreenProps } from '../Queue/QueueScreen';
 
@@ -17,11 +18,17 @@ import { QueueScreen, type QueueScreenProps } from '../Queue/QueueScreen';
 //   Focus on any card while it is watched.
 // - Desktop: the detail pane, its cards in a grid, the list beside it.
 // - Loading: a card skeleton per cause it opened with.
+// - Stale: its answers an earlier read's, the header's Unavailable and Retry,
+//   the causes still drawn (§2.5, 2026-10-14: stale beats falsely current).
+// - Unavailable: Unavailable and Retry in the pane, no cause drawn.
 // - Not saved: a cause's Focus the engine does not save; then Retry saves it.
-// - Focus started: the bar, whose Changes opens that tab.
+// - Focus started: the bar, whose Changes opens that tab, over what the engine
+//   serves after the write: the cause's Focus pill, and no Focus on any card.
 // - Unpinnable: a cause the engine will not focus has no button, and nothing
 //   says why; its head keeps the button's height.
 // - Back: "‹ Queue" and, on desktop, Escape return with the Pattern open.
+// - Returned to: a Back from another tab opens the drill-down as it was, and
+//   "‹ Queue" then leaves it through the router.
 const meta: Meta<typeof QueueScreen> = {
   title: 'Screens/DrillDown',
   component: QueueScreen,
@@ -119,14 +126,50 @@ export const Desktop: Story = {
   },
 };
 
-/** Loading: a card skeleton per cause it opened with. */
+/** Loading: opened, then waiting for its answers, a card skeleton per cause it
+ *  opened with under its title. */
 export const Loading: Story = {
-  ...opened('drill_down', 'phone', { state: 'loading' }),
+  ...opened('drill_down', 'phone'),
+  render: (args) => <ServedAfter {...args} then="loading" />,
   play: async ({ canvasElement, args }) => {
-    await expect(canvasElement.querySelectorAll('.ui-queue__causes .ui-pcard--loading'))
-      .toHaveLength(served(args).causes.length);
+    await waitFor(() => expect(canvasElement.querySelectorAll('.ui-queue__causes .ui-pcard--loading'))
+      .toHaveLength(served(args).causes.length));
+    await expectTitlePrinted(canvasElement, served(args).title);
   },
 };
+
+/** Stale: the last answers kept, under the header's Unavailable and Retry, as
+ *  the Queue marks them. */
+export const Stale: Story = {
+  ...opened('drill_down', 'phone', { state: 'stale', onRetry: fn() }),
+  play: async ({ canvasElement, args }) => {
+    const { title, causes: expected } = served(args);
+    const header = within(canvasElement).getByRole('heading', { level: 1, name: title }).closest('header') as HTMLElement;
+    await expect(header).toHaveTextContent('Unavailable');
+    await expect(within(header).getByRole('button', { name: 'Queue' })).toBeInTheDocument();
+    await expect(cards(canvasElement)).toHaveLength(expected.length);
+    await userEvent.click(within(header).getByRole('button', { name: 'Retry' }));
+    await expect(args.onRetry).toHaveBeenCalledOnce();
+  },
+};
+
+/** Unavailable: opened, then its answers cannot be read: Unavailable and Retry in
+ *  the pane under "‹ Queue" and the title, and no cause drawn. */
+const unavailable = (layout: 'phone' | 'desktop'): Story => ({
+  ...opened('drill_down', layout, { onRetry: fn() }),
+  render: (args) => <ServedAfter {...args} then="unavailable" />,
+  play: async ({ canvasElement, args }) => {
+    const { title } = served(args);
+    await waitFor(() => expect(cards(canvasElement)).toHaveLength(0));
+    const header = within(canvasElement).getByRole('heading', { level: 1, name: title }).closest('header') as HTMLElement;
+    await expect(header).toHaveTextContent('Unavailable');
+    await expect(within(header).getByRole('button', { name: 'Queue' })).toBeInTheDocument();
+    await userEvent.click(within(header).getByRole('button', { name: 'Retry' }));
+    await expect(args.onRetry).toHaveBeenCalledOnce();
+  },
+});
+export const Unavailable: Story = unavailable('phone');
+export const UnavailableDesktop: Story = unavailable('desktop');
 
 /** A cause's Focus shows its pill at once; not saved, the card is back with
  *  Focus, and the bar reads Not saved with Retry. Retry then saves it. */
@@ -152,7 +195,8 @@ export const NotSavedRetry: Story = {
 };
 
 /** A cause's Focus, saved: its pill at once, then the bar "Focus started", whose
- *  Changes opens that tab; only the pressed card shows the pill meanwhile. */
+ *  Changes opens that tab, over what the engine serves after the write (the
+ *  store with that Focus): the cause's pill, and no Focus on any card. */
 const started = (layout: 'phone' | 'desktop'): Story => ({
   ...opened('drill_down', layout, {
     writes: {
@@ -161,14 +205,18 @@ const started = (layout: 'phone' | 'desktop'): Story => ({
     },
     nav: { onSelect: fn() },
   }),
+  render: (args) => <ServedAfter {...args} focused={patternStore('drill_down_pinned').store} />,
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement);
     const { causes: expected } = served(args);
-    const [first, second] = cards(canvasElement);
-    await userEvent.click(within(first).getByRole('button', { name: 'Focus' }));
+    const pinned = causes(patternStore('drill_down_pinned').store, patternStore('drill_down_pinned').pattern);
+    await expect(pinned.find((c) => c.pinned)!.lever).toBe(expected[0].lever);
+    await userEvent.click(within(cards(canvasElement)[0]).getByRole('button', { name: 'Focus' }));
     await expect(args.writes!.pin).toHaveBeenCalledWith(args.open, expected[0].lever);
     await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent('Focus started'));
-    await expect(second.querySelector('[data-state="focus"]')).toBeNull();
+    const pills = cards(canvasElement).map((card) => card.querySelector('.ui-pcard__head [data-state="focus"]') !== null);
+    await expect(pills).toEqual(pinned.map((c) => c.pinned));
+    await expect(canvas.queryByRole('button', { name: 'Focus' })).toBeNull();
     await userEvent.click(within(canvas.getByRole('status')).getByRole('button', { name: 'Changes' }));
     await expect(args.nav!.onSelect).toHaveBeenCalledWith('changes');
   },
@@ -209,3 +257,30 @@ const backPlay = (layout: 'phone' | 'desktop'): Story['play'] => async ({ canvas
 };
 export const Back: Story = { ...opened('drill_down', 'phone'), play: backPlay('phone') };
 export const BackDesktop: Story = { ...opened('drill_down', 'desktop'), play: backPlay('desktop') };
+
+/** Returned to: a Back from Changes onto the drill-down's history entry opens
+ *  it as it was; "‹ Queue" then goes Back through the router, whose return
+ *  shows the Queue with the Pattern open. */
+const listeners: (() => void)[] = [];
+export const ReturnedTo: Story = {
+  args: {
+    layout: 'phone', store: patternStore('drill_down').store,
+    returnTo: { view: 'causes', subject: `pattern:${patternStore('drill_down').pattern}` },
+    nav: { drillDown: {
+      open: fn(),
+      close: fn(() => listeners.forEach((listener) => listener())),
+      onReturn: (listener) => { listeners.push(listener); return () => listeners.splice(listeners.indexOf(listener), 1); },
+    } },
+  },
+  parameters: { frame: FRAMES.phone },
+  play: async ({ canvasElement, args }) => {
+    const { title, causes: expected } = served({ ...args, open: args.returnTo!.subject });
+    await expect(cards(canvasElement)).toHaveLength(expected.length);
+    const header = within(canvasElement).getByRole('heading', { level: 1, name: title }).closest('header') as HTMLElement;
+    await userEvent.click(within(header).getByRole('button', { name: 'Queue' }));
+    await expect(args.nav!.drillDown!.close).toHaveBeenCalledOnce();
+    await expect(args.nav!.drillDown!.open).not.toHaveBeenCalled();
+    await waitFor(() => expect(cards(canvasElement)).toHaveLength(0));
+    await expect(canvasElement.querySelector('.ui-pcard h2')!.textContent).toBe(title);
+  },
+};

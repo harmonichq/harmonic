@@ -12,12 +12,17 @@
 //   candidate of a kind the app does not know.
 // - A Pattern whose trace chart is served with nothing to draw (ADR 523).
 // - A day navigator with no readings, as a store before its first sync serves it.
+// - A Queue screen as the engine serves it after a story's write or read: the
+//   store read after a saved Focus, or a read state that changes once the screen
+//   has opened (`ServedAfter`).
 // - A day with no Control-IQ boluses: the latest day's timeline with
 //   `insulin_totals.control_iq_bolus` served as 0 and its `total` the served
 //   sum of the other three, as the engine adds them (timeline.insulin_totals).
-import { useEffect, type ReactNode } from 'react';
+import { createElement, useEffect, useState, type ReactNode } from 'react';
 import { answers } from './answers';
 import { fixtures } from './fixtures';
+import type { QueueStore } from './queue-model';
+import { QueueScreen, type QueueScreenProps } from './screens/Queue/QueueScreen';
 
 type Json = Record<string, unknown>;
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value));
@@ -129,4 +134,25 @@ export function monthReader(failing: string[] = []): { readMonth: (month: string
     },
     cleanup: () => { delete day.months; },
   };
+}
+
+/** The Queue screen as the engine serves it after a story's write or read: once
+ *  a Focus write saves, the generated store read after it (`focused`), as the live
+ *  adapter reads the engine again before a write resolves; and, once the screen
+ *  has opened, the read state `then` (a drill-down opened, then its answers
+ *  loading, unavailable or stale). */
+export function ServedAfter({ focused, then, ...props }: QueueScreenProps & {
+  focused?: QueueStore; then?: QueueScreenProps['state'];
+}) {
+  const [store, setStore] = useState(props.store);
+  const [state, setState] = useState(props.state);
+  useEffect(() => { if (then) setState(then); }, [then]);
+  const writes = props.writes && focused ? {
+    ...props.writes,
+    pin: async (subject: string, lever?: string) => {
+      await props.writes!.pin(subject, lever);
+      setStore(focused);
+    },
+  } : props.writes;
+  return createElement(QueueScreen, { ...props, store, state, writes });
 }

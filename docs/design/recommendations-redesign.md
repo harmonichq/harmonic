@@ -1473,7 +1473,7 @@ unless noted. Loading is a skeleton of the component's own shape.
       matured into a Trial (Changes link): the block lies in a matured basal
       Trial's served block (#506), whether or not it starts where the Trial
       starts; Not on pump (the StatePill on the title line, after the block).
-    - Done: full width at the card's foot, where Pin sits on a PatternCard.
+    - Done: full width at the card's foot, where Focus sits on a PatternCard.
       Snooze: a text action centred 16 px beneath Done.
     - Fields: `guidance.candidates[].acknowledgment.state` (`not_on_pump`).
     - Fields: `analyze.basal[slot].current, recommended, estimate.value,
@@ -1686,7 +1686,7 @@ unless noted. Loading is a skeleton of the component's own shape.
     line with the nadir ringed, Yes · No · False low; a Rise shows
     "▲ Rise · <date time> · <mg/dL>", its peak's, over the 180 line with the
     peak ringed, Yes · No. On phone Not sure is a text action centred beneath
-    them, as Snooze sits beneath Pin (the swipe is its shortcut).
+    them, as Snooze sits beneath Focus (the swipe is its shortcut).
     - States: unanswered; Yes recorded (a checkmark on Yes, labelled "Recorded"
       for screen readers only, plus the optional grams field); mid-swipe (Not
       sure); each a Low or a Rise.

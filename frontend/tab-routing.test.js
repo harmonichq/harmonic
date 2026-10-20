@@ -72,12 +72,25 @@ test('a drill-down pushes one history entry at the same address, and Back report
   const { browser, entries } = browserAt('/');
   const seen = [];
   subscribeRoute((tab, { drillDown }) => seen.push([tab, drillDown]), browser);
-  pushDrillDown(browser);
+  pushDrillDown({ view: 'causes', subject: 'pattern:p0' }, browser);
   assert.deepEqual(entries.map((e) => e.address), ['/', '/'], 'the address never changes');
-  assert.equal(browser.history.state?.drillDown, true);
   browser.history.back();
-  assert.deepEqual(seen, [['queue', false]], 'Back lands on the Queue, out of the drill-down');
+  assert.deepEqual(seen, [['queue', null]], 'Back lands on the Queue, out of the drill-down');
   // A reload on a drill-down's entry parses to its tab: a drill-down is not addressed.
-  pushDrillDown(browser);
+  pushDrillDown({ view: 'causes', subject: 'pattern:p0' }, browser);
   assert.equal(parseRoute(browser.location), 'queue');
+});
+
+test('Back from another tab onto a drill-down reports which drill-down it was, then Back leaves it (ADR 594)', () => {
+  const { browser } = browserAt('/');
+  const seen = [];
+  subscribeRoute((tab, { drillDown }) => seen.push([tab, drillDown]), browser);
+  pushDrillDown({ view: 'causes', subject: 'pattern:p0' }, browser);
+  writeRoute('changes', browser);
+  browser.history.back();
+  browser.history.back();
+  assert.deepEqual(seen, [
+    ['queue', { view: 'causes', subject: 'pattern:p0' }],
+    ['queue', null],
+  ], 'the first Back returns to the drill-down, the second to the Queue');
 });

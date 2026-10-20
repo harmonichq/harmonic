@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, within } from 'storybook/test';
 import { expectDirections } from '../../direction-check';
 import { expectTabBarEnds } from '../../tabbar-check';
-import { expectHeaderEmpty } from '../../title-check';
+import { expectAtPaneTop, expectHeaderEmpty } from '../../title-check';
 import { OverviewScreen, type OverviewScreenProps } from './OverviewScreen';
 
 // The Overview screen in each state §1.3 lists, at phone (390) and desktop
@@ -65,6 +65,7 @@ export const DefaultDesktop: Story = {
   play: async (context) => {
     await comparesWith('14', true)!(context);
     await expectHeaderEmpty(context.canvasElement, 'Overview');
+    await expectAtPaneTop(context.canvasElement.querySelector<HTMLElement>('.ui-overview__body')!);
   },
 };
 export const Window30Phone: Story = { ...story('phone', { store: 'wearer', window: '30' }), play: comparesWith('30', true) };

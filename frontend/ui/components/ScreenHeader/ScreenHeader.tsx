@@ -7,7 +7,9 @@
 // shows that tab selected, on the phone's tab bar and the desktop rail alike.
 // The name stays the screen's h1, read by a screen reader and drawn as nothing.
 // What the header carries besides the name keeps its line, the slot at its
-// end; a header with nothing else takes no height, and the content moves up.
+// end; a header with nothing else takes no height, and leaves no gap under
+// it, so what follows it in its pane starts at the pane's top, level with a
+// pane beside it (the open item beside the Queue's ranking on desktop).
 // Day's line leads with the day it shows ("Sun 25 May ⌄"), the text-action
 // control that drops the month down (its chevron turns up while open), and
 // keeps its slot for "+ Log carbs".
@@ -66,7 +68,7 @@ export function ScreenHeader(props: ScreenHeaderProps) {
   const tab = !props.back;
   const title = <h1 className={tab ? 'ui-sr' : 'ui-header__title'}>{props.title}</h1>;
   const className = `ui-header ui-header--${props.layout ?? 'phone'}${tab ? ' ui-header--tab' : ' ui-header--child'}`;
-  if (tab && !props.day && !props.trailing) return <header className={className}>{title}</header>;
+  if (tab && !props.day && !props.trailing) return <header className={`${className} ui-header--bare`}>{title}</header>;
   return (
     <header className={className}>
       {props.back && (

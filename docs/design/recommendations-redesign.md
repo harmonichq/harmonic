@@ -1233,6 +1233,19 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
     h1 draws nothing, an empty header takes no height, Day's day starts its
     line, and each sub-screen's title draws at title size.
 
+- **2026-10-20 — on desktop, a pane with no title starts at its top (#585).**
+  After #583, the desktop Queue's ranking started 8 px below the open item
+  beside it: the list kept the gap a screen leaves under its header's drawn
+  line, though the line was gone. A header that draws nothing now leaves no
+  gap under it, in ScreenHeader, so on desktop what follows it starts at its
+  pane's top. The Queue's first row and the open item start level, and
+  Changes, Overview and Settings start 8 px higher, all on one line. A drawn
+  line (Day's day, Unavailable + Retry, a drill-down's title) keeps its gap.
+  The phone is unchanged: its header sits alone in its fixed band, and the
+  page still starts 16 px under the top. The desktop stories assert both
+  Queue panes start at their tops, level, and each tab's content starts at
+  its pane's top, at 1440 px.
+
 ### 2.6 Deferred (not cut)
 Not built in the current screens. The engine still serves what each needs, and
 nothing is removed from the engine or the fixtures for them.
@@ -1296,8 +1309,11 @@ unless noted. Loading is a skeleton of the component's own shape.
    labelled action). A tab screen's title is not drawn: the nav already shows
    it selected, so it is the h1 a screen reader reads, and the header draws
    only its slot, at the line's end, or, with nothing else, takes no height
-   (§2.5, 2026-10-20). A drill-down sub-screen, which the nav does not name,
-   draws its title.
+   and leaves no gap under it (§2.5, 2026-10-20 and #585). A drill-down
+   sub-screen, which the nav does not name, draws its title.
+   - Desktop: a pane whose header draws nothing starts its content at the
+     pane's top, so the Queue's ranking and the open item beside it start
+     level (§2.5, #585).
    - States: default (a tab screen: nothing drawn); with action ("+ Log
      carbs"); with Day's day leading the line ("Sun 25 May ⌄"); unavailable
      ("Unavailable" + Retry); drill-down ("‹ Parent" back control above the

@@ -4,7 +4,7 @@ import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { fixtures, sourced } from '../../fixtures';
 import { swipe } from '../../gesture';
 import { expectTabBarEnds } from '../../tabbar-check';
-import { expectHeaderEmpty, expectTitlePrinted } from '../../title-check';
+import { expectAtPaneTop, expectHeaderEmpty, expectTitlePrinted } from '../../title-check';
 import { ranking } from '../../queue-model';
 import { failsOnce } from '../../flaky';
 import { QUEUE_UNDRAWABLE } from '../../served-variants';
@@ -106,11 +106,18 @@ export const HomeIndicatorPhone: Story = {
   decorators: [(Story) => <div style={{ height: '100%', '--ui-inset-bottom': '34px' } as CSSProperties}><Story /></div>],
   play: async ({ canvasElement }) => expectTabBarEnds(canvasElement),
 };
+// Desktop: the ranking's first row and the open item start level, at the top
+// of their panes (§2.5, 2026-10-20).
 export const DefaultDesktop: Story = {
   ...story('desktop', DEFAULT),
   play: async (context) => {
     await rowsLevel!(context);
     await expectHeaderEmpty(context.canvasElement, 'Queue');
+    const row = context.canvasElement.querySelector<HTMLElement>('.ui-queue__list .ui-qrow')!;
+    const open = context.canvasElement.querySelector<HTMLElement>('.ui-queue__detail')!;
+    await expectAtPaneTop(row);
+    await expectAtPaneTop(open);
+    await expect(row.getBoundingClientRect().top).toBe(open.getBoundingClientRect().top);
   },
 };
 export const PatternOpenPhone = story('phone', PATTERN_OPEN);

@@ -23,6 +23,14 @@ export async function expectHeaderEmpty(canvasElement: HTMLElement, name: string
   await expect(header.getBoundingClientRect().height).toBe(0);
 }
 
+/** Desktop: what follows a header that draws nothing starts at its pane's top,
+ *  level with the pane beside it, with no gap left for the absent title. */
+export async function expectAtPaneTop(element: HTMLElement): Promise<void> {
+  const pane = element.closest<HTMLElement>('[data-scroll="page"]')!;
+  const top = pane.getBoundingClientRect().top + parseFloat(getComputedStyle(pane).paddingTop);
+  await expect(element.getBoundingClientRect().top).toBe(top);
+}
+
 /** A sub-screen's title: drawn, one 28 px line. */
 export async function expectTitlePrinted(canvasElement: HTMLElement, name: string): Promise<void> {
   await expect(heading(canvasElement, name).getBoundingClientRect().height).toBe(28);

@@ -5,6 +5,11 @@
   font-family: var(--ui-font);
   font-variant-numeric: tabular-nums;
 }
+/* A header that draws nothing leaves no gap under it: the gap a screen keeps
+   between its header and its content is for a drawn line. On desktop the
+   content follows the header in its pane, and so starts at the pane's top; on
+   the phone the header sits alone in its fixed band, and nothing follows it. */
+.ui-header.ui-header--bare + * { margin-top: 0; }
 .ui-header__bar {
   display: flex;
   align-items: center;

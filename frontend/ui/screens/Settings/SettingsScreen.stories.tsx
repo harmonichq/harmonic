@@ -3,7 +3,7 @@ import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { TOKEN_KEY } from '../../../data.js';
 import { failsOnce } from '../../flaky';
 import { expectTabBarEnds } from '../../tabbar-check';
-import { expectHeaderEmpty, expectTitlePrinted } from '../../title-check';
+import { expectAtPaneTop, expectHeaderEmpty, expectTitlePrinted } from '../../title-check';
 import { SettingsScreen, type SettingsScreenProps } from './SettingsScreen';
 
 // The Settings screen in each state §1.3 lists, at phone (390) and desktop
@@ -55,7 +55,13 @@ export const RootSyncedPhone: Story = {
     await expectHeaderEmpty(canvasElement, 'Settings');
   },
 };
-export const RootSyncedDesktop = story('desktop', SYNCED);
+export const RootSyncedDesktop: Story = {
+  ...story('desktop', SYNCED),
+  play: async ({ canvasElement }) => {
+    await expectHeaderEmpty(canvasElement, 'Settings');
+    await expectAtPaneTop(canvasElement.querySelector<HTMLElement>('.ui-settings__body')!);
+  },
+};
 export const RootFailedPhone = story('phone', FAILED);
 export const RootFailedDesktop = story('desktop', FAILED);
 export const TandemSourceSyncedPhone = story('phone', { ...SYNCED, view: 'tandem' });

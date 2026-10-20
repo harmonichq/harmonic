@@ -89,6 +89,15 @@ _WARMING: "contextvars.ContextVar[bool]" = contextvars.ContextVar("warming", def
 _LIGHTEST = ("explore-time-of-day", "meal-size", "outcomes")
 
 
+def _crossed_by_a_write(error) -> bool:
+    """Whether a write crossed every snapshot a read took, raised as ``error`` or its cause."""
+    while error is not None:
+        if isinstance(error, (InputRevisionChanged, ResultCache.GenerationChanged)):
+            return True
+        error = error.__cause__
+    return False
+
+
 def _warming_call(warm):
     """Run one warm shape as the warm worker: its fixed reads compute (#566)."""
     _WARMING.set(True)
@@ -354,8 +363,8 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                                        else current.recorded_data_revision())
 
     def fixed(key, marker, compute, *, dump=None, rebuild=None, serve_stale=True,
-              reads_follow_up=False):
-        """Return one exact fixed result, or a labeled exact predecessor in flight.
+              while_computing=True, reads_follow_up=False):
+        """Return one exact fixed result, or its labeled exact predecessor.
 
         A result is keyed by the recorded-data revision unless ``reads_follow_up``
         says its compute reads follow-up state, which keys it by the input
@@ -366,7 +375,12 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         (``input_data_age``), and the warm worker computes the current result next,
         once (#566). A second read while one computes is answered the same way. With
         no warm worker running, the first read computes, and a warm shape always
-        computes."""
+        computes. ``while_computing=False`` keeps a read waiting for the current
+        result instead, for one whose write is usually the reader's own.
+
+        A read whose every snapshot a write crossed — a sync landing window by
+        window — answers its predecessor the same way, and fails only when it has
+        none (#579). ``serve_stale=False`` never answers a predecessor."""
         with fixed_flights_lock:
             owner = key not in fixed_flights
             if owner:
@@ -375,20 +389,33 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             return load_or_compute(db_path, key, compute, shape_marker=marker,
                                    dump=dump, rebuild=rebuild, with_age=True,
                                    reads_follow_up=reads_follow_up)
+        def current(result):
+            return current_fixed_result(result, reads_follow_up=reads_follow_up)
+        def predecessor(refresh):
+            prior = load_latest_prior(db_path, key, shape_marker=marker, rebuild=rebuild,
+                                      reads_follow_up=reads_follow_up)
+            if prior is not None and refresh:
+                request_refresh(key, lambda: fixed(
+                    key, marker, compute, dump=dump, rebuild=rebuild, serve_stale=serve_stale,
+                    while_computing=while_computing, reads_follow_up=reads_follow_up))
+            return prior
+        stale = serve_stale and not _WARMING.get()
         try:
             deferred = owner and worker_running()
-            if (serve_stale and not _WARMING.get() and (deferred or not owner)
-                    and not cache.contains(key)):
-                prior = load_latest_prior(db_path, key, shape_marker=marker, rebuild=rebuild,
-                                          reads_follow_up=reads_follow_up)
+            # The cache holding a result for an earlier revision is not holding the
+            # current one: a sync commits several times before it invalidates.
+            if (stale and while_computing and (deferred or not owner)
+                    and not cache.contains(key, validate=current)):
+                prior = predecessor(refresh=deferred)
                 if prior is not None:
-                    if deferred:
-                        request_refresh(key, lambda: fixed(
-                            key, marker, compute, dump=dump, rebuild=rebuild,
-                            serve_stale=serve_stale, reads_follow_up=reads_follow_up))
                     return prior
-            return cache.get_or_compute(key, build, validate=lambda result: current_fixed_result(
-                result, reads_follow_up=reads_follow_up))
+            try:
+                return cache.get_or_compute(key, build, validate=current)
+            except (InputRevisionChanged, ResultCache.GenerationChanged):
+                prior = predecessor(refresh=worker_running()) if stale else None
+                if prior is None:
+                    raise
+                return prior
         finally:
             if owner:
                 with fixed_flights_lock:
@@ -455,16 +482,19 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             return (fixed_response(replacement, project)
                     if isinstance(replacement, FixedResult) else project(replacement))
 
-    def findings_snapshot(window: int):
-        """One coherent findings preparation per cache version.
+    def findings_snapshot(window: int, *, serve_stale=False):
+        """One coherent findings preparation per cache version, and its generation.
 
         The heavy read is the preparation (the analysis, the exposures feed and the
         scenario report for one findings window); projecting a clock window out of it
         is pure dict work, so the cache key covers the only parameter that changes
-        what is read. Like every other heavy read it answers from the cache until a
-        write bumps it. Its key and marker keep their ``history`` names (ADR 547):
-        the derived-results file deletes an older row only under the same key and
-        marker, so a renamed key would strand the last snapshot an install wrote.
+        what is read. It is a fixed result like the Overview's: a read that may
+        (``serve_stale``) answers from its labeled predecessor while the current one
+        is computed or a sync crosses it (#566, #579), under a generation no write
+        admits; a write's own read never does. Its key and marker keep their
+        ``history`` names (ADR 547): the derived-results file deletes an older row
+        only under the same key and marker, so a renamed key would strand the last
+        snapshot an install wrote.
         """
         key = ("findings-history-snapshot", window)
         def compute():
@@ -472,23 +502,33 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             return prepare_findings_projection(
                 analysis=analysis, exposures=exposures, scenarios=scenarios,
             )
-        def build_snapshot():
+        for _ in range(3):
+            version = cache.version
             try:
-                return load_or_compute(
-                    db_path, key, compute, shape_marker="findings-history-v1",
-                    dump=dump_findings, rebuild=rebuild_findings, with_age=True)
+                result = fixed(key, "findings-history-v1", compute, dump=dump_findings,
+                               rebuild=rebuild_findings, serve_stale=serve_stale)
             except InputRevisionChanged as error:
                 raise ResultCache.GenerationChanged(
                     "input data changed during findings snapshot") from error
-        generation, result = cache.stable_read(
-            key, build_snapshot, validate=current_fixed_result)
-        return generation, result.value
+            generation = cache.generation_for_version(version)
+            if result.input_data_age is not None:
+                return f"{generation}:before:{result.revision}", result
+            # The generation names a version no invalidation crossed.
+            if cache.version == version:
+                return generation, result
+        raise ResultCache.GenerationChanged("result cache changed during findings snapshot")
 
-    def guidance_payload():
-        """Compose source guidance and the read-only lifecycle verdict at one revision."""
+    def guidance_payload(*, serve_stale=False):
+        """Compose source guidance and the read-only lifecycle verdict at one revision.
+
+        A read that may (``serve_stale``) composes the findings' labeled
+        predecessor with the follow-up state at the current revision, labeled the
+        same way, under a generation no write admits."""
         from .watched_change import active_watched_change, follow_up_admission, setting_acknowledgments
         for _ in range(3):
             with Store.open_queryonly(db_path) as store:
+                # One snapshot of the follow-up state.
+                store.conn.execute("BEGIN")
                 revision = store.input_data_revision()
                 now = store.latest_data_instant() or datetime.now()
                 admission = follow_up_admission(store, now=now)
@@ -496,25 +536,29 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 acknowledgments = setting_acknowledgments(store)
                 preferences = store.guidance_preferences()
             try:
-                generation, findings = findings_snapshot(findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS)
+                generation, findings = findings_snapshot(
+                    findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS, serve_stale=serve_stale)
             except ResultCache.GenerationChanged:
                 continue
-            with Store.open_queryonly(db_path) as store:
-                if store.input_data_revision() != revision:
-                    continue
-            payload = findings.guidance(
-                active_watch=watch.to_dict() if watch is not None else None,
-                preferences=preferences, acknowledgments=acknowledgments,
-                analysis_generation=f"guidance:{generation}:r{revision}")
-            payload.update(input_revision=revision, admission=admission)
-            if admission["state"] == "unavailable":
-                payload.update(disposition="unavailable", selected=None, unavailable=admission["reason"])
-            return payload
+            if findings.input_data_age is None:
+                with Store.open_queryonly(db_path) as store:
+                    if store.input_data_revision() != revision:
+                        continue
+            def compose(source):
+                payload = source.guidance(
+                    active_watch=watch.to_dict() if watch is not None else None,
+                    preferences=preferences, acknowledgments=acknowledgments,
+                    analysis_generation=f"guidance:{generation}:r{revision}")
+                payload.update(input_revision=revision, admission=admission)
+                if admission["state"] == "unavailable":
+                    payload.update(disposition="unavailable", selected=None, unavailable=admission["reason"])
+                return payload
+            return fixed_response(findings, compose)
         raise ResultCache.GenerationChanged("guidance inputs changed during every snapshot")
 
-    def guidance_or_unavailable():
+    def guidance_or_unavailable(*, serve_stale=False):
         try:
-            return guidance_payload()
+            return guidance_payload(serve_stale=serve_stale)
         except Exception as error:
             logger.exception("guidance source unavailable")
             raise HTTPException(status_code=503, detail="guidance is unavailable") from error
@@ -776,6 +820,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     def verify_trials_endpoint(selected: Optional[str] = None, kind: str = "trial",
                                assessment: str = "original",
                                _: None = Depends(require_token)) -> dict:
+        from .follow_up_comparison import _execution as comparison_execution
         from .watched_change import review_trials
         if kind not in ("trial", "focus") or assessment not in ("original", "retained", "current"):
             raise HTTPException(status_code=422, detail="invalid history kind or assessment mode")
@@ -783,35 +828,29 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             raise HTTPException(status_code=422, detail="reassessment requires a selection")
         if kind == "focus" and selected is not None and not selected.isdecimal():
             raise HTTPException(status_code=404, detail="unknown follow-up identity")
-        from .follow_up_comparison import capture_comparison_context
         identity = int(selected) if kind == "focus" and selected is not None else selected
-        for _ in range(3):
-            with Store.open_queryonly(db_path) as store:
-                # Key and compute share one SQLite snapshot. A crossed write must
-                # retry with a new connection, not recompute inside the old snapshot.
-                store.conn.execute("BEGIN")
-                revision = store.input_data_revision()
-                now = store.latest_data_instant() or datetime.now()
-                record = store.follow_up_record(kind, identity) if identity is not None else None
-                retained = record.get("comparison_context") if record else None
-                current = (capture_comparison_context(store, at=now, input_revision=revision)
-                           if assessment != "original" else None)
-                context = json.dumps((retained, current), sort_keys=True)
-                key = ("verify-trials", kind, identity, assessment, revision, context)
 
-                def unchanged(result):
-                    with Store.open_queryonly(db_path) as latest:
-                        return result["input_revision"] == revision == latest.input_data_revision()
+        def review(store):
+            return review_trials(store, now=store.latest_data_instant() or datetime.now(),
+                                 selected=identity, kind=kind, assessment=assessment)
 
-                try:
-                    return cache.get_or_compute(key, lambda: review_trials(
-                        store, now=now, selected=identity, kind=kind, assessment=assessment),
-                        validate=unchanged, attempts=1)
-                except ResultCache.GenerationChanged:
-                    continue
-                except KeyError:
-                    raise HTTPException(status_code=404, detail="unknown follow-up identity")
-        raise HTTPException(status_code=503, detail="history inputs changed during every snapshot")
+        # The roster and its comparisons read follow-up state, so the result is keyed
+        # by the input revision (ADR 538), which fixes every comparison context but
+        # the configuration a reassessment executes (ADR 554). The write before a
+        # read is usually the reader's own Trial or Focus step, so a read waits for
+        # the current roster; only a sync crossing every snapshot answers the
+        # predecessor (#579).
+        execution = (json.dumps(comparison_execution(), sort_keys=True)
+                     if assessment != "original" else None)
+        try:
+            return fixed_response(fixed(("verify-trials", kind, identity, assessment, execution),
+                                        "verify-trials-v1", review, while_computing=False,
+                                        reads_follow_up=True))
+        except KeyError:
+            raise HTTPException(status_code=404, detail="unknown follow-up identity")
+        except (InputRevisionChanged, ResultCache.GenerationChanged) as error:
+            raise HTTPException(status_code=503,
+                                detail="history inputs changed during every snapshot") from error
 
     @app.get("/api/explore/time-of-day")
     def explore_time_of_day_endpoint(days: int = TIME_OF_DAY_DEFAULT_DAYS,
@@ -859,12 +898,12 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         denominators, order — is decided behind :meth:`FindingsProjection.project`.
         """
         try:
-            generation, snapshot = findings_snapshot(window)
+            generation, snapshot = findings_snapshot(window, serve_stale=True)
             return recover_sidecar_projection(
                 ("findings-history-snapshot", window), "findings-history-v1", snapshot,
                 lambda findings: findings.project(
                     WindowQuery.whole_day(), analysis_generation=generation),
-                lambda: findings_snapshot(window)[1])
+                lambda: findings_snapshot(window, serve_stale=True)[1])
         except ResultCache.GenerationChanged as error:
             raise HTTPException(status_code=409, detail={
                 "code": "analysis_generation_mismatch",
@@ -874,7 +913,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     @app.get("/api/guidance")
     def guidance_endpoint(_: None = Depends(require_token)) -> dict:
         """The fixed-window backend-owned next-priority guidance read."""
-        return guidance_or_unavailable()
+        return guidance_or_unavailable(serve_stale=True)
 
     @app.put("/api/guidance/preferences/{subject:path}")
     def set_guidance_preference_endpoint(subject: str, payload: dict = Body(...),
@@ -931,6 +970,10 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             if reason == "changed":
                 return _case_error(503, "preparation_changed", "Data changed during preparation.")
             return wrap_finding_cases(prepared)
+        except (InputRevisionChanged, ResultCache.GenerationChanged):
+            # A sync crossed every snapshot its inputs took; a preparation keeps no
+            # predecessor to answer instead (#579).
+            return _case_error(503, "preparation_changed", "Data changed during preparation.")
         except Exception:
             logger.exception("Finding case-file preparation was inconsistent")
             return _case_error(500, "inconsistent_projection", "Case population is inconsistent.")
@@ -1580,9 +1623,11 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     @app.get("/api/focus")
     def list_focus_endpoint(_: None = Depends(require_token)) -> dict:
         from .watched_change import focus_subject, pinnable_levers
-        guidance = guidance_or_unavailable()
+        guidance = guidance_or_unavailable(serve_stale=True)
         patterns = [row for row in guidance["candidates"]
                     if _pinnable_pattern_member(row) is not None]
+        # Pinnable Patterns read from the findings' predecessor carry its label (#579).
+        age = {"input_data_age": guidance["input_data_age"]} if "input_data_age" in guidance else {}
         with Store.open_queryonly(db_path) as store:
             store.conn.execute("BEGIN")
             # Each Focus is served under its own key (ADR 528), a record from before
@@ -1592,7 +1637,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                     "pinnable": sorted(pinnable_levers()),
                     "pinnable_patterns": [{"key": row["pattern_key"], "subject": row["subject"],
                                            "readiness": row["readiness"]} for row in patterns],
-                    **follow_up_read(store)}
+                    **follow_up_read(store), **age}
 
     @app.post("/api/focus")
     def pin_focus_endpoint(payload: dict = Body(...), _: None = Depends(require_token)) -> dict:
@@ -1634,7 +1679,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             try:
                 generation, findings = findings_snapshot(
                     findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS)
-                scoped = findings.project(
+                scoped = findings.value.project(
                     WindowQuery.clock(scope["start_min"], scope["end_min"]),
                     analysis_generation=generation,
                 )
@@ -1777,8 +1822,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS)),
             # The Queue's analysis, and the Overview's at 30 days.
             ("analyze", lambda: analyze_endpoint(window=30, ignore_changes=False, pool=False)),
-            ("finding-case-file", lambda: finding_case_file_preparation(
-                Request({"type": "http", "query_string": b""}))),
+            ("finding-case-file", _prepared_cases),
             ("verify-trials", lambda: verify_trials_endpoint()),
             # The analysis behind the Overview's ISF and basal cards at its other windows.
             *((f"analyze-{days}", lambda days=days: analyze_endpoint(
@@ -1789,8 +1833,11 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             ("day-before-latest", warm_day(1)),
         )
 
-    async def run_shape(label, warm) -> None:
-        """Run one warm shape in a worker thread, containing its failure."""
+    async def run_shape(label, warm) -> bool:
+        """Run one warm shape in a worker thread, containing its failure.
+
+        False when a write crossed every snapshot the shape took: a sync is landing,
+        and the shape is owed again once it has landed (#579)."""
         shape_task = asyncio.create_task(asyncio.to_thread(_warming_call, warm))
         app.state.recompute_shape_task = shape_task
         try:
@@ -1802,24 +1849,32 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 logger.warning("Cache pre-warm failed for %s", label,
                                exc_info=True)
             raise
-        except Exception:
+        except Exception as error:
+            if _crossed_by_a_write(error):
+                logger.info("Cache pre-warm of %s waits for a landing write", label)
+                return False
             logger.warning("Cache pre-warm failed for %s", label, exc_info=True)
         finally:
             app.state.recompute_shape_task = None
+        return True
 
-    async def run_refreshes() -> None:
+    async def run_refreshes() -> bool:
         """Compute every fixed result a read answered from its predecessor (#566),
         the lightest kind first, as the roster runs them, and in the order asked
-        within a kind: a Meal size waits behind no analysis."""
+        within a kind: a Meal size waits behind no analysis. False when a write
+        crossed one, which stays asked for (#579)."""
         def weight(key):
             return _LIGHTEST.index(key[0]) if key[0] in _LIGHTEST else len(_LIGHTEST)
         while True:
             with refreshes_lock:
                 if not refreshes:
-                    return
+                    return True
                 key = min(refreshes, key=weight)
                 run = refreshes.pop(key)
-            await run_shape(f"refresh {key[0]}", run)
+            if not await run_shape(f"refresh {key[0]}", run):
+                with refreshes_lock:
+                    refreshes.setdefault(key, run)
+                return False
 
     async def recompute_worker(event) -> None:
         """Run one complete warm shape at a time until shutdown.
@@ -1827,12 +1882,17 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         A newer cache version abandons the old set at its next shape boundary;
         the still-set event then causes one fresh complete roster, not a backlog.
         A result a read is waiting on is computed before the next shape (#566).
+        A shape a write crossed, with no newer version yet, means a sync is still
+        landing: the worker waits for its end, which invalidates, or for the next
+        read to ask, rather than computing the rest against a store still moving
+        (#579); the owed roster and refreshes run then.
         """
         while True:
             await event.wait()
             while True:
                 event.clear()
-                await run_refreshes()
+                if not await run_refreshes():
+                    break
                 if not warm_due.is_set():
                     if event.is_set():
                         continue
@@ -1840,17 +1900,20 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 warm_due.clear()
                 revision = cache.version
                 roster = app.state.recompute_roster()
+                landing = False
                 for index, (label, warm) in enumerate(roster):
-                    await run_refreshes()
-                    if cache.version != revision:
+                    landing = not await run_refreshes()
+                    if landing or cache.version != revision:
                         warm_due.set()  # superseded: one fresh complete roster
                         break
-                    await run_shape(label, warm)
-                    if cache.version != revision:
+                    landing = not await run_shape(label, warm)
+                    if landing or cache.version != revision:
                         warm_due.set()
                         break
                     if index + 1 < len(roster):
                         await app.state.recompute_pace()
+                if landing and cache.version == revision:
+                    break
 
     # These are deliberately app-local seams: production keeps one explicit
     # pace, while lifecycle tests replace the roster and awaitable pace.

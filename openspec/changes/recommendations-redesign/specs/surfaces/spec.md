@@ -374,6 +374,16 @@ state and a transient bar SHALL show "Not saved" with Retry.
 - **AND** the app reads only those answers again, after pauses of 1, 2, 4, 8, 15 and
   30 seconds, and clears the mark once every one is current (#566)
 
+#### Scenario: A Queue or Changes drawn while a sync lands is marked until it is current
+
+- **GIVEN** the engine answers the Queue's findings, guidance or Focus list, or the
+  Trial roster or the active change's detail, with its previous answer, labelled
+  with `input_data_age`, because a sync was landing
+- **WHEN** the Queue or Changes draws it
+- **THEN** the tab carries Unavailable and Retry in its title row, never drawing it
+  as current
+- **AND** the app reads only those answers again until each is current (#579)
+
 ### Requirement: Each screen draws its last answers at once, and reads them again behind them
 
 A tab the person has opened SHALL keep its answers on screen when they leave it

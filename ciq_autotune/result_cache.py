@@ -72,7 +72,7 @@ class ResultCache:
     """
 
     class GenerationChanged(RuntimeError):
-        """Every allowed stable-read attempt crossed an invalidation."""
+        """Every allowed validated publication attempt crossed an invalidation."""
 
     def __init__(self, cap: int = DEFAULT_CAP, *, incarnation: str | None = None) -> None:
         self._cap = cap
@@ -123,10 +123,13 @@ class ResultCache:
         with self._lock:
             self._map.pop(key, None)
 
-    def contains(self, key: Hashable) -> bool:
-        """Return whether the current version already holds this exact result."""
+    def contains(self, key: Hashable, *, validate: Callable[[object], bool] | None = None) -> bool:
+        """Return whether the current version already holds this exact result.
+
+        With ``validate``, a held result counts only when it passes, under the same
+        lock :meth:`get_or_compute` admits it with."""
         with self._lock:
-            return key in self._map
+            return key in self._map and (validate is None or validate(self._map[key]))
 
     def _commit_preparation(self, key, value, version, *, cap):
         """Commit under ``_lock``; version, capacity, and registration are one step."""
@@ -273,32 +276,3 @@ class ResultCache:
                 # inside ``compute``) can't leak an entry per distinct bad value.
                 with self._lock:
                     self._flights.pop(key, None)
-    def stable_read(
-        self, key: Hashable, compute: Callable[[], T], *, attempts: int = 3,
-        validate: Callable[[T], bool] | None = None,
-    ) -> tuple[str, T]:
-        """Return one generation and value only when no invalidation crossed it.
-
-        A write may land while a heavy read is outside the lock.  In that case
-        :meth:`get_or_compute` correctly declines to cache the stale value, and this
-        interface additionally declines to label those bytes with the newer
-        generation.  It retries from the cleared cache, then fails explicitly if a
-        busy writer crosses every bounded attempt.
-        """
-        if attempts < 1:
-            raise ValueError("attempts must be at least 1")
-        for _ in range(attempts):
-            with self._lock:
-                snapshot = self._version
-            try:
-                value = self.get_or_compute(
-                    key, compute, validate=validate,
-                    attempts=1 if validate is not None else attempts,
-                )
-            except self.GenerationChanged:
-                continue
-            with self._lock:
-                if (self._version == snapshot
-                        and (validate is None or validate(value))):
-                    return f"{self._incarnation}:{snapshot}", value
-        raise self.GenerationChanged("result cache changed during stable read")

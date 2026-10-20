@@ -34,8 +34,10 @@
 //
 // AN EARLIER ANSWER IS NEVER SHOWN AS CURRENT (#566). Right after a sync the
 // engine answers at once with its previous answer, labelled with how far that
-// answer's data reaches (`input_data_age`), while it computes the new one.
-// `behind(tab)` says a tab drew such an answer, and `catchUp(tab)` reads those
+// answer's data reaches (`input_data_age`), while it computes the new one, and
+// while a sync is landing it answers the same way (#579): the Queue's findings,
+// guidance and Focus list, and the Trial roster with the active change's detail,
+// as well as the Overview's. `behind(tab)` says a tab drew such an answer, and `catchUp(tab)` reads those
 // answers again, a few times with a growing pause, until each is current.
 //
 // Plain JS, with its client injected, so node --test drives it with a fake.
@@ -180,7 +182,7 @@ export function createLive({ client, glossary, memory = null,
   /** gen_ui_fixtures._queue_store's candidate: preference and decision flattened, and the Queue's order rule:
    *  admitted, not snoozed, and not waiting for the pump after a Done (#518). */
   const guidance = () => once('guidance', async () => {
-    const answer = await client.fetchGuidance();
+    const answer = served('guidance', await client.fetchGuidance());
     answers.queue.wearer.guidance = {
       candidates: answer.candidates.map((c) => ({
         ...c,
@@ -192,11 +194,11 @@ export function createLive({ client, glossary, memory = null,
     };
     return answer;
   });
-  const findings = () => once('findings', () => client.fetchDiagnoseFindings());
+  const findings = () => once('findings', async () => served('findings', await client.fetchDiagnoseFindings()));
   /** The analysis at the engine's default window, 30 days: the Queue's, and the Overview's 30 d ISF. */
   const analyze = () => once('analyze', async () => served('analyze', await client.fetchAnalysis()));
-  const trials = () => once('trials', () => client.fetchVerifyTrials());
-  const focus = () => once('focus', () => client.fetchFocuses());
+  const trials = () => once('trials', async () => served('trials', await client.fetchVerifyTrials()));
+  const focus = () => once('focus', async () => served('focus', await client.fetchFocuses()));
   const status = () => once('status', async () => { answers.status.ok = await client.fetchStatus(); });
   /** The Prompts the Day screen draws: its Lows and its Rises (#529), each trimmed to its card. */
   const prompts = () => once('prompts', async () => {
@@ -315,12 +317,15 @@ export function createLive({ client, glossary, memory = null,
     const { admission } = answer;
     const active = admission.active_kind === 'trial'
       ? answer.trials.find((t) => t.id === admission.active_id) : null;
-    const comparison = active && trimmed((await client.fetchVerifyTrials({
-      selected: active.id, assessment: 'retained' })).selected.reassessment.comparison);
+    const reassessed = active && await client.fetchVerifyTrials({ selected: active.id, assessment: 'retained' });
+    const comparison = reassessed && trimmed(reassessed.selected.reassessment.comparison);
     const pinned = admission.active_kind === 'focus'
       ? answer.focuses.find((f) => f.id === admission.active_id) : null;
-    const detail = pinned && (await client.fetchVerifyTrials({
-      kind: 'focus', selected: String(pinned.id), assessment: 'retained' })).selected;
+    const tracked = pinned && await client.fetchVerifyTrials({
+      kind: 'focus', selected: String(pinned.id), assessment: 'retained' });
+    const detail = tracked && tracked.selected;
+    // The active change's detail, read with the roster, can be an earlier answer too (#579).
+    served('changes', [reassessed, tracked].find((read) => read?.input_data_age));
     answers.changes.wearer = {
       admission,
       input_revision: answer.input_revision,

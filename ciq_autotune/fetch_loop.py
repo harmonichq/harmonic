@@ -14,7 +14,7 @@ import asyncio
 import logging
 import sys
 from datetime import timedelta
-from typing import Callable, Optional
+from typing import Awaitable, Callable, Optional
 
 from .credentials import DEFAULT_KEY_PATH
 from .store import Store, wall_clock_now
@@ -148,7 +148,8 @@ def _last_attempt_failed(db_path: str) -> bool:
 async def run_fetch_loop(db_path: str, *, key_path: str = DEFAULT_KEY_PATH,
                           interval_seconds: float = INTERVAL_SECONDS,
                           retry_seconds: float = RETRY_SECONDS,
-                          on_write: Optional[Callable[[], None]] = None) -> None:
+                          on_write: Optional[Callable[[], None]] = None,
+                          sleep: Callable[[float], Awaitable[None]] = asyncio.sleep) -> None:
     """Fetch on startup, then every ``interval_seconds``, until cancelled.
 
     A failed fetch is tried again after ``retry_seconds`` instead, up to
@@ -166,6 +167,9 @@ async def run_fetch_loop(db_path: str, *, key_path: str = DEFAULT_KEY_PATH,
     rows are durably in the store (#146). It runs in a worker thread like the
     fetch itself, because it now also pre-warms the cache (#424) and that is
     seconds of pure-Python compute the event loop must not stall on.
+
+    ``sleep`` is how the loop waits between fetches; the tests hand it a
+    stand-in so they can count the waits without racing real time.
     """
     retries = 0
     while True:
@@ -176,6 +180,6 @@ async def run_fetch_loop(db_path: str, *, key_path: str = DEFAULT_KEY_PATH,
             retries = 0
         elif retries < EARLY_RETRIES:
             retries += 1
-            await asyncio.sleep(retry_seconds)
+            await sleep(retry_seconds)
             continue
-        await asyncio.sleep(interval_seconds)
+        await sleep(interval_seconds)

@@ -1170,6 +1170,43 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   now serves each size's count and its 10th and 90th percentiles, and no
   longer serves its meals one by one.
 
+- **2026-10-19 — one meal count, and metrics that fit a phone (#575).** Two
+  defects on the operator's phone (Firefox for Android) on a maturing carb
+  ratio Trial. Built on the locked Changes screen; §1.3 and §4.2 follow.
+  - **"The meal numbers disagree??"** The Trial card printed Meals before 74
+    and after 5; the trace legend beneath it, Before 71 and After 4. The
+    card counts every in-block meal. The trace leaves off a meal with no
+    reading before its bolus, since it has no start to align (ADR 524, ADR
+    554). One fact was shown over two populations. The legend now names the
+    card's: an arm that left any meal off prints what it drew against the
+    arm's meals, "Before 71 of 74", in the Days "n of N" style, "of N" in meta
+    ink. An arm that drew every meal prints its count alone, which is
+    already the card's. Both numbers are served (`views.<arm>.trace.episodes`
+    and `denominators.<arm>.contributing_meals`, shown only where the served
+    `left_off` is above zero), so the screen computes nothing, and the served
+    shape is unchanged. Rejected: the card counting only the drawn meals,
+    since its meals are the ones the result reads; and a separate "Left off"
+    entry, a fourth count and a new phrase for the same fact.
+  - **The screen's other counts already agree.** Each glucose module's
+    Readings is the arm's one set of readings, which every row of both
+    modules is read from. The card's Days is the Trial's maturity, "n of
+    14", and is not a count of the trace's episodes; nights and days on the
+    trace are never left off.
+  - **"Jumbled rendering."** On a phone narrower than 390 px, the label
+    column took only what the fixed value columns left, so "Above 180" ran
+    into its before value and "Readings" into its count. The label column is
+    now never narrower than the longest label (76 px, "Above 180" and
+    "Delivered"), and the unit and Δ columns are as wide as "mg/dL" and
+    "▲ 23.3" (46 and 48 px). A row is then one line from 296 px of module
+    content, a 360 px phone. On a narrower module (a 320 px phone) each label
+    stands on its own line above its values. The values keep their columns
+    either way, and every module on the screen is one width, so before, →,
+    after, unit and Δ each sit at one x in every module, as the operator
+    asked on 2026-10-14 ("the data should align like a table").
+  - **Checked at 320, 360 and 390 px.** A play measures every module's
+    columns and fails if a column's x differs between modules or rows, or if
+    any label, value, unit or Δ in a row overlaps another.
+
 ### 2.6 Deferred (not cut)
 Not built in the current screens. The engine still serves what each needs, and
 nothing is removed from the engine or the fixtures for them.
@@ -1518,15 +1555,18 @@ unless noted. Loading is a skeleton of the component's own shape.
     - Before grey, After the accent: a median over its 25–75% band, or each
       episode as a thin line when an arm has fewer than three; 70 and 180
       dashed; "mg/dL" once; the legend names the episode once ("Nights",
-      "Meals"), then "Before 55" and "After 2" in the engine's counts.
+      "Meals"), then "Before 55" and "After 2" in the engine's counts; an arm
+      that left meals off prints its count against the card's meals, "Before
+      71 of 74" (§2.5, 2026-10-19, one meal count).
     - States: by clock across a block (basal; ISF); across the whole day (a
       whole-profile switch); at each in-block meal bolus, −30 to 240 minutes,
       with "Minutes" (carb ratio); an arm drawn episode by episode; an after
       with nothing read yet, the before drawn alone and "After 0" (§2.5,
       2026-10-19).
     - Fields: the comparison's `views.before|after.trace` (`alignment`,
-      `start_min`, `start`, `end`, `episodes`, `bins[].t, median, p25, p75`,
-      `traces`) (ADR 524).
+      `start_min`, `start`, `end`, `episodes`, `left_off`, `bins[].t, median,
+      p25, p75`, `traces`) and `denominators.before|after.contributing_meals`
+      (ADR 524).
     - Desktop: the pane's width.
 24. **ChangeMetrics**: one module of a Trial's metrics, before → after with
     the shared Delta, in fixed columns shared by every module (§2.5,
@@ -1544,6 +1584,10 @@ unless noted. Loading is a skeleton of the component's own shape.
       after`; `outcomes[key=tir].denominators.before, after`
       (Readings); `views.before|after.basal.delivered, above, below` (ADR 524,
       ADR 554).
+    - Phone: one line a row from a 360 px phone, the label column never
+      narrower than the longest label; narrower, each label on its own line
+      above its values, the columns unchanged (§2.5, 2026-10-19, one meal
+      count).
     - Desktop: the same, the pane's width.
 
 **Day**

@@ -1,4 +1,7 @@
 .ui-metrics {
+  /* Its rows read the module's own width (#575): every module on the screen
+     is one width, so all of them take the same layout and the same columns. */
+  container-type: inline-size;
   box-sizing: border-box;
   padding: 16px;
   border-radius: var(--wk-radius);
@@ -17,11 +20,14 @@
 .ui-metrics__meta { color: var(--wk-ink-meta); font-weight: var(--ui-weight-regular); }
 
 /* One grid for every row, its value columns fixed (shared.css), so the
-   numbers line up within the module and across the screen's modules. */
+   numbers line up within the module and across the screen's modules. The
+   label column takes the room left over, but never less than the longest
+   label (#575), so no label runs into its before value. */
 .ui-metrics__rows {
   display: grid;
   grid-template-columns:
-    minmax(0, 1fr) var(--ui-col-value) var(--ui-col-arrow) var(--ui-col-value) var(--ui-col-unit) var(--ui-col-delta);
+    minmax(var(--ui-col-label), 1fr) var(--ui-col-value) var(--ui-col-arrow) var(--ui-col-value)
+    var(--ui-col-unit) var(--ui-col-delta);
   align-items: baseline;
   row-gap: 12px;
   margin: 0;
@@ -29,6 +35,22 @@
 .ui-metrics__row { display: contents; }
 .ui-metrics__row dd { margin: 0; white-space: nowrap; }
 .ui-metrics__label { white-space: nowrap; }
+/* A module narrower than one row needs (its label column and the five value
+   columns: 76 + 52 + 22 + 52 + 46 + 48 = 296 px, shared.css), a 320 px phone:
+   each label stands on its own line above its values, which keep their
+   columns (§2.5, 2026-10-19, #575). */
+@container (width < 296px) {
+  .ui-metrics__rows {
+    grid-template-columns:
+      minmax(0, 1fr) var(--ui-col-value) var(--ui-col-arrow) var(--ui-col-value)
+      var(--ui-col-unit) var(--ui-col-delta);
+    row-gap: 6px;
+  }
+  .ui-metrics__label { grid-column: 1 / -1; }
+  /* The values below it, from the before column: the first is left spare. */
+  .ui-metrics__before { grid-column: 2; }
+  .ui-metrics__row + .ui-metrics__row .ui-metrics__label { margin-top: 8px; }
+}
 .ui-metrics__before,
 .ui-metrics__after { text-align: right; font-size: var(--ui-type-body); line-height: 22px; }
 .ui-metrics__before { color: var(--wk-ink-meta); }

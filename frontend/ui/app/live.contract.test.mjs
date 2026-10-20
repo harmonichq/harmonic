@@ -202,7 +202,8 @@ const EXPECTED = {
     // #524: its block, what moved, the trace by clock time across the block (its
     // nights before and after), every module, and Control-IQ's delivered rate.
     trial: { block: [180, 210], moves: [['03:00', 0.6, 0.54, 'U/h']], meals: null,
-      trace: { alignment: 'clock', episodes: [13, 15] },
+      // A night is never left off, so neither arm prints "of" (#575).
+      trace: { alignment: 'clock', episodes: [13, 15], of: [null, null] },
       modules: { ranges: ['tir', 'tbr', 'tar'], glucose: ['mean', 'gmi', 'cv'], basal: ['delivered', 'above', 'below'] },
       delivered: [0.48, 0.48], readings: [78, 90],
       // Every row but CV prints unchanged, so only CV, lower, is coloured: green.
@@ -220,7 +221,9 @@ const EXPECTED = {
     change: { kind: 'trial', title: 'I:C', maturing: true, result: null, canEnd: false },
     done: null,
     trial: { block: [660, 840], moves: [['11:00', 5, 4.4, 'g/U']], meals: { before: 24, after: 6 },
-      trace: { alignment: 'meal', episodes: [24, 6] },
+      // Every meal has a reading before its bolus, so the trace draws each of
+      // the card's meals and neither arm prints "of" (#575).
+      trace: { alignment: 'meal', episodes: [24, 6], of: [null, null] },
       modules: { ranges: ['tir', 'tbr', 'tar'], glucose: ['mean', 'gmi', 'cv'], basal: [] },
       delivered: null, readings: [1440, 360],
       // Its arms print the same on every row: no arrow, neutral.
@@ -323,6 +326,8 @@ test(`the live adapter serves each tab's model from the ${CASE} store`, async (t
       assert.deepEqual(active.meals, trial.meals);
       assert.equal(active.trace.alignment, trial.trace.alignment);
       assert.deepEqual([active.trace.before.episodes, active.trace.after.episodes], trial.trace.episodes);
+      // The legend's meals are the card's (#575): "of" only where the engine left one off.
+      assert.deepEqual([active.trace.before.of, active.trace.after.of], trial.trace.of);
       for (const [module, keys] of Object.entries(trial.modules)) {
         assert.deepEqual(active[module].map((row) => row.key), keys, module);
       }

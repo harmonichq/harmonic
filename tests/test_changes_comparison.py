@@ -204,6 +204,30 @@ class ChangesComparisonTest(unittest.TestCase):
         # A carb ratio Trial has no basal module.
         self.assertNotIn("basal", comparison["views"]["after"])
 
+    def test_every_count_changes_prints_names_one_population(self):
+        """#575, Connor on the phone, of Meals before 74 / after 5 above a trace
+        legend of Before 71 / After 4: "The meal numbers disagree??". A meal the
+        trace leaves off is still one of the arm's meals, so an arm's drawn and
+        left-off meals are exactly the meals the Trial card counts; and every
+        metric row is read from the arm's one set of readings, the Readings
+        both glucose modules print."""
+        gap_day = CHANGE.date() + timedelta(days=2)
+        gap = (datetime.combine(gap_day, datetime.min.time()) + timedelta(hours=11, minutes=30),
+               datetime.combine(gap_day, datetime.min.time()) + timedelta(hours=12))
+        self._store(_RATIO_BEFORE, _RATIO_AFTER, last=CHANGE + timedelta(days=5),
+                    glucose=lambda t: 140, meals=(12, 18), gap=gap)
+        _, comparison = self._comparison()
+        for arm, left_off in (("before", 0), ("after", 1)):
+            with self.subTest(arm=arm):
+                trace = comparison["views"][arm]["trace"]
+                denominators = comparison["denominators"][arm]
+                self.assertEqual(trace["left_off"], left_off)
+                self.assertEqual(trace["episodes"] + trace["left_off"], denominators["contributing_meals"])
+                printed = ("tir", "tbr", "tar", "mean", "gmi", "cv")
+                self.assertEqual({row["key"]: row["denominators"][arm] for row in comparison["outcomes"]
+                                  if row["key"] in printed},
+                                 dict.fromkeys(printed, denominators["readings"]))
+
 
 class PreviousChangesTest(unittest.TestCase):
     """The roster serves what each previous change's row prints without a

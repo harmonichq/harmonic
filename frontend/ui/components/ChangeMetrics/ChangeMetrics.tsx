@@ -11,7 +11,11 @@
 // need to make it look like a table, but the data should align like a
 // table"): every module shares one set of fixed columns in tabular numerals,
 // so a number, its arrow, its unit and its Δ sit in the same column in every
-// module on the screen, and in the Previous list beside them.
+// module on the screen, and in the Previous list beside them. The label
+// column is never narrower than the longest label, so on a phone no label
+// runs into its value (§2.5, 2026-10-19, #575): a row is one line from a
+// 360 px phone, and on a narrower module each label stands on its own line
+// above its values, which keep their columns.
 //
 // Three modules use it: In range / Below 70 / Above 180; Mean / GMI / CV; and,
 // for a basal Trial, how active Control-IQ was against the Pump profile: the

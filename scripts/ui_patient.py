@@ -162,6 +162,8 @@ def trial_profile(trial_basal: float = TRIAL_BASAL, profile=PROFILE):
 # A carb ratio change: the 11:00 block moved from 8.5 to this person's own
 # lunch response (#524), which the engine detects as a carb ratio Trial.
 LUNCH_RATIO = 6.8
+# The 11:00 block that change moves, in minutes since midnight.
+LUNCH_BLOCK = (660, 840)
 
 
 def lunch_profile(profile=PROFILE):
@@ -552,16 +554,25 @@ def simulate(*, trial: bool, trial_basal: float = TRIAL_BASAL, profile=PROFILE, 
 
 
 def materialize(store, *, trial: bool, days: int = DAYS, trial_basal: float = TRIAL_BASAL,
-                profile=PROFILE, changes=None, unbolused=()) -> History:
+                profile=PROFILE, changes=None, unbolused=(), dropouts=()) -> History:
     """Ingest the simulated history into ``store`` as a Tandem Source pull would:
     the profile read at the start (and again after each change the pull reaches),
     then CGM, basal, bolus and pump events. ``days`` stops the pull at the end of
     that day, as a sync made early in the wearer's history would; a fraction
     stops it part-way through the next (#554). A change to
     another idp is a switch: every read holds each profile the person keeps, as
-    it stands that day, and names the running one."""
+    it stands that day, and names the running one. On each day in ``dropouts``
+    the sensor reads nothing in the half hour before that day's first carb
+    bolus in the 11:00 block (#575), so a carb ratio Trial's trace has no start
+    to align that lunch at and leaves it off."""
     changes = _changes(trial, trial_basal, profile, changes)
     history = simulate(trial=trial, profile=profile, changes=changes, unbolused=unbolused)
+    for day in dropouts:
+        lunch = min(row["request_time"] for row in history.bolus if row["carbs"]
+                    and _stamp(START + timedelta(days=day, minutes=LUNCH_BLOCK[0])) <= row["request_time"]
+                    < _stamp(START + timedelta(days=day, minutes=LUNCH_BLOCK[1])))
+        gap = _stamp(datetime.strptime(lunch, "%Y-%m-%d %H:%M:%S") - timedelta(minutes=30))
+        history.cgm = [row for row in history.cgm if not gap <= row["EventDateTime"] < lunch]
     cut = _stamp(START + timedelta(days=days))
     history.cgm = [row for row in history.cgm if row["EventDateTime"] < cut]
     history.basal = [row for row in history.basal if row["time"] < cut]

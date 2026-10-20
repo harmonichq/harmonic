@@ -55,7 +55,8 @@ Two committed outputs, one generator, one ``--check``:
   with no active change; ``wearer-trial-maturing``,
   the wearer's history cut six days after the Trial day, so the Trial is still
   maturing; ``wearer-ic-maturing``, a change to the 11:00 carb ratio cut a
-  few days later, its after period too few meals for a band;
+  few days later, its after period too few meals for a band, and one lunch
+  before it with no reading before its bolus, left off the trace (#575);
   ``wearer-profile``, a switch to a second profile that moves the 02:00 basal
   and the 11:00 carb ratio at once, one whole-profile Trial;
   ``wearer-previous``, three changes in turn, each ending the one before and
@@ -260,6 +261,10 @@ IC_MATURING_DAYS = 5
 # The same change read a quarter of a day after it (#554): before its first
 # lunch, so the after arm has read nothing yet.
 IC_FIRST_HOURS_DAYS = 0.25
+# Before that change, one lunch whose sensor read nothing in the half hour
+# before its bolus (#575): the engine counts it in Meals before and leaves it
+# off the trace, so the trace legend prints its count against the meals.
+IC_DROPOUT_DAYS = (ui_patient.TRIAL_DAY - 5,)
 # The Previous list's wearer (#524): the 02:00 basal lowered four weeks before
 # the Trial day, the 11:00 carb ratio two weeks before it, and the 02:00 basal
 # again on it, each change ending the one before.
@@ -471,9 +476,11 @@ def fixtures() -> dict:
         # A carb ratio Trial a few days in, two lunches into its block (#524).
         _, ic_maturing = _wearer(scratch, "wearer-ic-maturing", trial=True,
                                  days=ui_patient.TRIAL_DAY + IC_MATURING_DAYS,
-                                 changes=((ui_patient.TRIAL_DAY, 1, ui_patient.lunch_profile()),))
+                                 changes=((ui_patient.TRIAL_DAY, 1, ui_patient.lunch_profile()),),
+                                 dropouts=IC_DROPOUT_DAYS)
         changes["wearer-ic-maturing"] = _changes_store(ic_maturing)
         _require_few_meals(changes["wearer-ic-maturing"])
+        _require_left_off(changes["wearer-ic-maturing"], before=len(IC_DROPOUT_DAYS), after=0)
         # The same change in its first hours: the before arm, and an empty after (#554).
         _, ic_first_hours = _wearer(scratch, "wearer-ic-first-hours", trial=True,
                                     days=ui_patient.TRIAL_DAY + IC_FIRST_HOURS_DAYS,
@@ -949,6 +956,18 @@ def _require_few_meals(store: dict) -> None:
     after = trial["reassessment"]["views"]["after"]["trace"]
     if (trial["parameter"], trial["state"]) != ("carb_ratio", "maturing") or not after["traces"]:
         raise SystemExit(f"the simulated carb ratio Trial no longer matures on a few meals: {trial['id']}")
+
+
+def _require_left_off(store: dict, *, before: int, after: int) -> None:
+    """Fail unless the active Trial's trace leaves off exactly these meals per
+    arm, each still counted among the arm's meals (#575)."""
+    comparison = _active_trial(store)["reassessment"]
+    for arm, expected in (("before", before), ("after", after)):
+        trace = comparison["views"][arm]["trace"]
+        meals = comparison["denominators"][arm]["contributing_meals"]
+        if (trace["left_off"], trace["episodes"] + trace["left_off"]) != (expected, meals):
+            raise SystemExit(f"the {arm} arm no longer leaves {expected} of its {meals} meals off the trace: "
+                             f"{trace['episodes']} drawn, {trace['left_off']} left off")
 
 
 def _require_empty_after(store: dict) -> None:

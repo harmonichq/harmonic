@@ -46,3 +46,6 @@
 .ui-trace__key svg { display: block; stroke-width: 3; }
 .ui-trace__key--before svg { stroke: var(--wk-ink-body); }
 .ui-trace__key--after svg { stroke: var(--primary); }
+/* An arm's meals, when the engine left any off the trace (#575): as the Trial
+   card's "of 14", in meta ink. */
+.ui-trace__of { color: var(--wk-ink-meta); }

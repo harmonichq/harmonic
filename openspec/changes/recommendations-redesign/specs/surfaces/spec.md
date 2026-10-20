@@ -261,11 +261,12 @@ and beside it, the same size, the basal estimate: the day's 48 half-hour slots,
 the programmed rate stepped, each slot's estimate over its range, and a mark on
 each slot whose staging verdict asserts a move, in its served direction (ADR 523).
 Below them, their height, it SHALL show Meal size over the selected window: one
-strip per size on one Climb axis, a muted dot per counted meal with the size's
-served Range (25–75%) and median drawn above the dots, and, aligned like a table, each
+strip per size on one Climb axis, drawing the size's served 10–90% as a whisker,
+its Range (25–75%) over it and its median on top, and no meal on its own; and,
+aligned like a table, each
 size's meal count and signed median Climb, Peak at and At 3 h, At 3 h over its own
 count. It SHALL compute none of these, print no explanatory text, and not repeat
-the window in its title (ADR 501, ADR 559, ADR 565). Overview
+the window in its title (ADR 501, ADR 559, ADR 565, ADR 570). Overview
 SHALL carry nothing to act on.
 
 #### Scenario: A held ISF shows its estimate without a recommendation

@@ -73,7 +73,7 @@ export const UnavailableDesktop = story('desktop', { store: 'wearer', state: 'un
 // The Meal size card keeps drawing its last answer, as every card does.
 const stale: Story['play'] = async ({ canvasElement }) => {
   await expect(canvasElement.querySelector('[data-source^="overview.wearer.meal_size.14."]')).not.toBeNull();
-  await expect(canvasElement.querySelectorAll('.ui-meal-size .ui-chart__dot').length).toBeGreaterThan(0);
+  await expect(canvasElement.querySelectorAll('.ui-meal-size [data-range]').length).toBeGreaterThan(0);
 };
 export const StalePhone: Story = { ...story('phone', { store: 'wearer', state: 'stale' }), play: stale };
 export const StaleDesktop: Story = { ...story('desktop', { store: 'wearer', state: 'stale' }), play: stale };

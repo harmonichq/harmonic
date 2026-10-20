@@ -747,16 +747,14 @@ def _meal_sizes(client: TestClient) -> dict:
 
 def _meal_size(client: TestClient, days: int) -> dict:
     """``/api/explore/meal-size``, trimmed to what the Meal size card reads: each
-    meal as the dot it draws (its climb), each size's medians and counts, the
-    window (null for a store with no readings), and the hours At 3 h is read at
+    size's count, percentiles and medians as served (#570), the window kept to its
+    days (null for a store with no readings), and the hours At 3 h is read at
     (#501)."""
     answer = _get(client, "/api/explore/meal-size", days=days)
     return {
         "window": answer["window"] and {"data_days": answer["window"]["data_days"]},
         "horizon_hours": answer["horizon_hours"],
-        "sizes": [{**{field: size[field] for field in ("carbs_from", "carbs_to", "climb", "to_peak", "at_3h")},
-                   "meals": [{"climb": meal["climb"]} for meal in size["meals"]]}
-                  for size in answer["sizes"]],
+        "sizes": answer["sizes"],
     }
 
 
@@ -766,7 +764,7 @@ def _require_meal_sizes(overview: dict) -> None:
     showcase a size with no meal beside one with some, and the unsynced store no
     window."""
     def counts(store):
-        return [len(size["meals"]) for size in overview[store]["meal_size"]["90"]["sizes"]]
+        return [size["count"] for size in overview[store]["meal_size"]["90"]["sizes"]]
     wearer, first, showcase = counts("wearer"), counts("wearer-first-days"), counts(MEAL_SIZE_CASE)
     if (min(wearer) == 0 or first[-1] != 1 or 0 not in showcase or not any(showcase)
             or overview["wearer-unsynced"]["meal_size"]["90"]["window"] is not None):

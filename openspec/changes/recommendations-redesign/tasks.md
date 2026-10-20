@@ -28,3 +28,4 @@
 - [x] 6.10 One low line, 70 mg/dL everywhere: a habit's price, row and case file count one population (#553, ADR 553)
 - [x] 6.11 The Meal size card spans the Overview's second row at the estimates' height, in their colours (#559, ADR 559)
 - [x] 6.12 The Meal size card follows the window, and its Range stands in front of its dots (#565, ADR 565)
+- [x] 6.13 The Meal size card draws each size from its percentiles, and no meal on its own (#570, ADR 570)

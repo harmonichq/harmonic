@@ -113,11 +113,18 @@ Two committed outputs, one generator, one ``--check``:
   ``missed-meal-pinned`` (Queue and Changes) the same once the person pins it
   through ``POST /api/focus``, its Focus under the habit's own key; and
   ``wearer-habit`` the wearer skipping the lunch bolus every weekday of the
-  last four weeks, more rises than the chart draws one by one; and the unsynced
+  last four weeks, more rises than the chart draws one by one; a multi-cause
+  Pattern's drill-down (ADR 594) is queued in three: ``meal-two-causes`` is the
+  ``pattern-meal-two-causes`` case, whose Highs after meals serves two causes
+  the person can focus, ``meal-two-causes-pinned`` the same once a Focus is
+  started on its Late bolus cause through ``POST /api/focus``, and
+  ``correction-collapse`` the ``pattern-correction-collapse`` case, whose
+  collapsed Pattern serves a cause the engine will not focus; and the unsynced
   store records its guidance disposition. Each Queue store's ``analyze`` holds
   its first ISF segment, trimmed as the Overview's is, for the Queue's ISF
   card, and each carb-ratio block the engine stages a move for, with the meal
-  runs its estimate counts, for the I:C Setting card (ADR 523). Each
+  runs its estimate counts, for the I:C Setting card (ADR 523), and its Focus
+  list with the served admission every Focus button follows (ADR 594). Each
   Queue store also holds ``cases``: every admitted Pattern's event-aligned case
   file from ``/api/diagnose/finding-case-file``, trimmed to its trace chart
   (ADR 523): the Pattern's episodes or its median and band, and Typical's, for
@@ -215,8 +222,8 @@ SETTING_CAPTIONS = ("Nights", "Meal runs")
 # The Pattern card's trace chart labels its time axis "Minutes" (§2.5,
 # 2026-10-14, ADR 523), a plain interface word.
 CHART_LABELS = ("Minutes",)
-# §1.3 Queue's empty-state label, "0 patterns".
-QUEUE_LABELS = ("patterns",)
+# §1.3 Queue's empty-state label, "0 patterns", and its just-focused bar, "Focus started".
+QUEUE_LABELS = ("patterns", "started")
 # §4.2 DayRibbon: "each day's weekday and date". The weekday abbreviations are
 # not yet in glossary §1.5.
 WEEKDAYS = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
@@ -232,6 +239,13 @@ CARB_RATIO_CASE = "basal-and-carb-ratio-lower"
 # days start on a Monday) of the last four weeks, more rises than the chart draws
 # one by one.
 MISSED_MEAL_CASE = "behavioral-missed-meal"
+# A multi-cause Pattern's drill-down (ADR 594): the QA case whose Highs after
+# meals serves two focusable causes, then pinned on the one served first, and the
+# case whose collapsed Pattern serves a cause the engine will not focus.
+TWO_CAUSES_CASE = "pattern-meal-two-causes"
+TWO_CAUSES_PATTERN = "highs_after_meals"
+TWO_CAUSES_PINNED_LEVER = "late_bolus"
+COLLAPSE_CASE = "pattern-correction-collapse"
 HABIT_UNBOLUSED = tuple(day for day in range(ui_patient.DAYS - 28, ui_patient.DAYS) if day % 7 < 5)
 # The Meal size card's sizes with no meal (#501): the QA showcase's meals are all 40 g or more.
 MEAL_SIZE_CASE = "showcase"
@@ -521,33 +535,32 @@ def fixtures() -> dict:
 
         # The wearer's I:C holds, so the carb-ratio Setting is queued from the QA
         # case whose meals support lowering it.
-        carb_ratio = scratch / "carb-ratio-supported.sqlite"
-        with Store.open(str(carb_ratio)) as store:
-            qa_e2e_cases.materialize_case(store, next(
-                case for case in qa_e2e_cases.QA_CASES if case.name == CARB_RATIO_CASE))
-        queue["carb-ratio-supported"] = _queue_store(_serve(carb_ratio))
+        queue["carb-ratio-supported"] = _queue_store(_serve(_case_store(scratch, CARB_RATIO_CASE)))
 
         # A standalone habit (ADR 528): its two rises, then pinned, and the
         # wearer's many.
-        missed_meal = scratch / "missed-meal.sqlite"
-        with Store.open(str(missed_meal)) as store:
-            qa_e2e_cases.materialize_case(store, next(
-                case for case in qa_e2e_cases.QA_CASES if case.name == MISSED_MEAL_CASE))
-        missed_meal_client = _serve(missed_meal)
+        missed_meal_client = _serve(_case_store(scratch, MISSED_MEAL_CASE))
         queue["missed-meal"] = _queue_store(missed_meal_client)
         _pin_habit(missed_meal_client)
         queue["missed-meal-pinned"] = _queue_store(missed_meal_client)
         changes["missed-meal-pinned"] = _changes_store(missed_meal_client)
         _, habitual = _wearer(scratch, "wearer-habit", trial=False, unbolused=HABIT_UNBOLUSED)
+
+        # A multi-cause Pattern's drill-down (ADR 594): its two causes, then a
+        # Focus on the cause served first, and a cause the engine will not focus.
+        two_causes_client = _serve(_case_store(scratch, TWO_CAUSES_CASE))
+        queue["meal-two-causes"] = _queue_store(two_causes_client)
+        _post(two_causes_client, "/api/focus", {
+            "pattern_key": TWO_CAUSES_PATTERN, "lever": TWO_CAUSES_PINNED_LEVER,
+            "outcome_window": {"start_min": 0, "end_min": 1440}})
+        queue["meal-two-causes-pinned"] = _queue_store(two_causes_client)
+        queue["correction-collapse"] = _queue_store(_serve(_case_store(scratch, COLLAPSE_CASE)))
+        _require_causes(queue)
         queue["wearer-habit"] = _queue_store(habitual)
 
         # The Meal size card with sizes no meal falls in: the QA showcase, whose
         # meals are all 40 g or more (#501).
-        showcase = scratch / "qa-showcase.sqlite"
-        with Store.open(str(showcase)) as store:
-            qa_e2e_cases.materialize_case(store, next(
-                case for case in qa_e2e_cases.QA_CASES if case.name == MEAL_SIZE_CASE))
-        overview[MEAL_SIZE_CASE] = {"meal_size": _meal_sizes(_serve(showcase))}
+        overview[MEAL_SIZE_CASE] = {"meal_size": _meal_sizes(_serve(_case_store(scratch, MEAL_SIZE_CASE)))}
 
         unsynced = scratch / "wearer-unsynced.sqlite"
         with Store.open(str(unsynced)):
@@ -1122,6 +1135,49 @@ def _require_prompts(stores: dict) -> dict:
     return {name: [prompt_marks(p) for p in served] for name, served in stores.items() if name != "wearer"}
 
 
+def _case_store(scratch: pathlib.Path, name: str) -> pathlib.Path:
+    """A scratch store holding the named QA case, materialized as its generator
+    does and reconciled as a sync leaves it, as the wearer's are: a store no sync
+    has reconciled admits no Focus (ADR 594)."""
+    path = scratch / f"{name}.sqlite"
+    with Store.open(str(path)) as store:
+        qa_e2e_cases.materialize_case(store, next(case for case in qa_e2e_cases.QA_CASES if case.name == name))
+        reconcile_ingested_follow_up(store)
+    return path
+
+
+def _counter(store: dict, key: str) -> dict:
+    """The row a Pattern's count and causes are served on: its own row, or, for a
+    Pattern served as its one habit, that habit row's ``served_as`` (ADR 594)."""
+    outcome = next(p for p in store["findings"]["outcome_patterns"] if p["key"] == key)
+    if outcome.get("collapse") == "collapse_to_member" and outcome.get("action"):
+        member = f"finding:{outcome['action'].split(':', 1)[1]}"
+        return next(r for r in store["findings"]["rows"] if r["id"] == member)["served_as"]
+    return next(r for r in store["findings"]["rows"] if r["id"] == f"pattern:{key}")
+
+
+def _require_causes(queue: dict) -> None:
+    """The drill-down's stores serve what their stories draw (ADR 594)."""
+    def causes(name: str, key: str) -> list[tuple[str, bool]]:
+        return [(c["subject"], c["pinnable"]) for c in _counter(queue[name], key).get("cause_counts") or []]
+
+    def available(name: str) -> bool:
+        return queue[name]["focus"]["admission"]["focus_pin"]["available"]
+
+    two = causes("meal-two-causes", TWO_CAUSES_PATTERN)
+    if len(two) != 2 or not all(pinnable for _, pinnable in two) or not available("meal-two-causes"):
+        raise SystemExit(f"meal-two-causes serves {two}, available {available('meal-two-causes')}, "
+                         "not two focusable causes")
+    focused = [(f["pattern_key"], f["lever"]) for f in queue["meal-two-causes-pinned"]["focus"]["focuses"]
+               if f["status"] == "active"]
+    if available("meal-two-causes-pinned") or focused != [(TWO_CAUSES_PATTERN, TWO_CAUSES_PINNED_LEVER)]:
+        raise SystemExit(f"meal-two-causes-pinned watches {focused}, not {TWO_CAUSES_PINNED_LEVER} alone")
+    collapse = [key for key in (p["key"] for p in queue["correction-collapse"]["findings"]["outcome_patterns"])
+                if ("habit:correction_stacking", False) in causes("correction-collapse", key)]
+    if not collapse:
+        raise SystemExit("correction-collapse serves no Pattern with Correction stacking unfocusable")
+
+
 def _pin(client: TestClient) -> None:
     """Pin a Focus on the first pattern whose habit the engine lets the person pin."""
     for candidate in _get(client, "/api/guidance")["candidates"]:
@@ -1217,6 +1273,9 @@ def _queue_store(client: TestClient) -> dict:
                 {field: f.get(field) for field in ("id", "lever", "subject", "pattern_key", "status")}
                 for f in focus["focuses"]
             ],
+            # Whether a Focus can start now, which every Focus button follows (ADR 594).
+            "admission": {"focus_pin": {field: focus["admission"]["focus_pin"][field]
+                                        for field in ("available", "reason")}},
         },
         "cases": _cases(client, [c["subject"] for c in guidance["candidates"]
                                  if c["kind"] == "pattern" and c["admitted"]] + habits),
@@ -1365,6 +1424,17 @@ def states(queue: dict) -> dict:
         found = [h for h in habits if rule(h)]
         return {"store": found[0]["store"], "subject": found[0]["subject"]} if found else None
 
+    def drill_down(store, rule=lambda causes: True):
+        """The store's first queued Pattern whose counter serves more than one cause."""
+        for candidate in queue[store]["guidance"]["candidates"]:
+            key = candidate["subject"].removeprefix("pattern:")
+            if candidate["kind"] != "pattern" or not candidate["queued"]:
+                continue
+            causes = _counter(queue[store], key).get("cause_counts") or []
+            if len(causes) > 1 and rule(causes):
+                return {"store": store, "pattern": key}
+        return None
+
     found = {
         # The trace chart's two forms (ADR 523): each episode, or the median and band.
         "traces_episodes": pattern(lambda p: p["episodes"]),
@@ -1382,9 +1452,16 @@ def states(queue: dict) -> dict:
         "habit_episodes": habit(lambda h: h["episodes"] and not h["pinned"]),
         "habit_band": habit(lambda h: h["episodes"] is None and not h["pinned"]),
         "habit_pinned": habit(lambda h: h["pinned"]),
+        # A multi-cause Pattern's drill-down (ADR 594): its causes, one of them the
+        # Focus, and one the engine will not focus.
+        "drill_down": drill_down("meal-two-causes"),
+        "drill_down_pinned": drill_down("meal-two-causes-pinned"),
+        "drill_down_unpinnable": drill_down("correction-collapse",
+                                            lambda causes: not all(c["pinnable"] for c in causes)),
     }
     required = ("traces_episodes", "traces_band", "pinned", "setting", "setting_trial",
-                "habit_episodes", "habit_band", "habit_pinned")
+                "habit_episodes", "habit_band", "habit_pinned",
+                "drill_down", "drill_down_pinned", "drill_down_unpinnable")
     missing = [name for name in required if found[name] is None]
     if missing:
         raise SystemExit(f"the simulated wearer no longer serves: {', '.join(missing)}")
@@ -1451,7 +1528,8 @@ def allowlist(data: dict) -> dict:
         "engine titles": [c["title"] for c in data["guidance"]["candidates"]]
         + [c["title"] for store in stores for c in store["guidance"]["candidates"]]
         + [r["title"] for r in rows if r["kind"] == "habit"]  # causes, and a collapsed pattern's member
-        + [c["title"] for p in served for c in p["cause_counts"] or []],  # a collapsed pattern's causes
+        + [c["title"] for p in served for c in p["cause_counts"] or []]  # a collapsed pattern's causes
+        + [c["title"] for r in rows for c in r.get("cause_counts") or []],  # a Pattern row's causes
         "engine nouns": [s["noun"] for s in sentences],
         "engine units": [c["units"] for store in stores for c in store["guidance"]["candidates"]
                          if c["units"]],

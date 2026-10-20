@@ -1,13 +1,13 @@
 ## 0. Base
 
-- [ ] 0.1 Start only once #593 (`cause-traces-severity-focus`) is on `origin/main`. Bring this branch up to date with `git merge --no-edit origin/main`, never a rebase, so the pinned change commit stays an ancestor of HEAD. Confirm `git grep -n "pattern-meal-two-causes" scripts/qa_e2e_cases.py` and `git grep -n '"causes"' frontend/ui/app/live.js` both hit; stop if either does not
-- [ ] 0.2 Per ui-craft `revise` §1, serve the base (`origin/main` after #593) from a second fresh worktree with AGENTS.md's QA no-fetch serve on another port, and render the before shots: Queue (Pattern open, Habit open, Habit pinned, just snoozed) at 390x844 and 1440x900, and `Screens/DrillDown` Open and Pinned from the base Storybook
+- [x] 0.1 Start only once #593 (`cause-traces-severity-focus`) is on `origin/main`. Bring this branch up to date with `git merge --no-edit origin/main`, never a rebase, so the pinned change commit stays an ancestor of HEAD. Confirm `git grep -n "pattern-meal-two-causes" scripts/qa_e2e_cases.py` and `git grep -n '"causes"' frontend/ui/app/live.js` both hit; stop if either does not
+- [x] 0.2 Per ui-craft `revise` §1, serve the base (`origin/main` after #593) from a second fresh worktree with AGENTS.md's QA no-fetch serve on another port, and render the before shots: Queue (Pattern open, Habit open, Habit pinned, just snoozed) at 390x844 and 1440x900, and `Screens/DrillDown` Open and Pinned from the base Storybook
 
 ## 1. Stores from the generated cases
 
-- [ ] 1.1 `scripts/gen_ui_fixtures.py` `_queue_store`: keep `focus.admission.focus_pin` (`available`, `reason`) beside `focuses` (ADR 594)
-- [ ] 1.2 Materialize `pattern-meal-two-causes` into Queue stores `meal-two-causes` and, after a cause Focus posted with `pattern_key: highs_after_meals` and `lever: late_bolus` over the whole day, `meal-two-causes-pinned`; materialize `pattern-correction-collapse` into `correction-collapse`, in the `missed-meal` stores' idiom. Assert in the generator, as `_require_*` does, that the first store serves two causes with `pinnable` true and `focus_pin.available` true, the pinned one serves `available` false with the Focus on `late_bolus`, and the collapse store serves Correction stacking `pinnable` false
-- [ ] 1.3 Add each new store's states to `states()` (`drill_down`, `drill_down_pinned`, `drill_down_unpinnable`) and include the Pattern rows' `cause_counts` titles in the allowlist's engine titles
+- [x] 1.1 `scripts/gen_ui_fixtures.py` `_queue_store`: keep `focus.admission.focus_pin` (`available`, `reason`) beside `focuses` (ADR 594)
+- [x] 1.2 Materialize `pattern-meal-two-causes` into Queue stores `meal-two-causes` and, after a cause Focus posted with `pattern_key: highs_after_meals` and `lever: late_bolus` over the whole day, `meal-two-causes-pinned`; materialize `pattern-correction-collapse` into `correction-collapse`, in the `missed-meal` stores' idiom. Assert in the generator, as `_require_*` does, that the first store serves two causes with `pinnable` true and `focus_pin.available` true, the pinned one serves `available` false with the Focus on `late_bolus`, and the collapse store serves Correction stacking `pinnable` false
+- [x] 1.3 Add each new store's states to `states()` (`drill_down`, `drill_down_pinned`, `drill_down_unpinnable`) and include the Pattern rows' `cause_counts` titles in the allowlist's engine titles
 - [ ] 1.4 Remove `wearer-two-causes` and `wearer-two-causes-pinned` from `frontend/ui/served-variants.ts`, with its header line
 - [ ] 1.5 Regenerate `frontend/ui/__fixtures__/ui-fixtures.json` and `ui-allowlist.json` through the generator; `--check` green
 

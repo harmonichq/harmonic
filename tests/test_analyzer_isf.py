@@ -490,10 +490,9 @@ class LowsOwnDirectionTest(unittest.TestCase):
         self.assertEqual(four.guidance["seriousness"], "recurring_low")
         self.assertIsNone(three.guidance["seriousness"])
 
-    def test_well_tuned_confirms_with_no_direction_and_zero_priority(self):
+    def test_well_tuned_confirms_with_no_direction(self):
         # Band covers programmed, ≤3 correction low-days, no rescue recurrence:
-        # no direction, and the tuning lever scores 0.
-        from ciq_autotune.analyzers.tuning_priority import isf_lever
+        # no direction.
         bolus, basal, cgm, windows = self._nights(36.0)
         rows = analyze_isf(bolus, basal, cgm, ISF_36, rest_windows=windows,
                            harm_config=HarmConfig(),
@@ -503,7 +502,6 @@ class LowsOwnDirectionTest(unittest.TestCase):
         self.assertIsNone(seg.evidence["direction"])
         self.assertIsNone(seg.recommended)
         self.assertIs(seg.asserts_move, False)
-        self.assertEqual(isf_lever(rows).priority, 0)
 
     def test_single_correction_low_blocks_a_strengthen_move(self):
         # Nights genuinely more sensitive (ISF 24), silent enough that the measurement
@@ -537,9 +535,7 @@ class LowsOwnDirectionTest(unittest.TestCase):
         # #489: the nights read more sensitive and the signal held twice, which
         # would size a 36 -> 35.6 strengthen, but the fasting range still
         # contains the set 36. The read holds like every other correction-factor
-        # hold: the measured number and range stay, no direction, nothing staged
-        # and nothing priced.
-        from ciq_autotune.analyzers.tuning_priority import isf_lever
+        # hold: the measured number and range stay, no direction and nothing staged.
         bolus, basal, cgm, windows = self._nights(34.5, rng_seed=3)
         rows = analyze_isf(
             bolus, basal, cgm, ISF_36, rest_windows=windows, window_days=30,
@@ -558,7 +554,6 @@ class LowsOwnDirectionTest(unittest.TestCase):
         self.assertIs(seg.asserts_move, False)
         self.assertIsNone(seg.guidance["action"])
         self.assertIn("measured range still includes it", seg.annotation)
-        self.assertEqual(isf_lever(rows).priority, 0)
 
     def test_rounded_strengthen_no_op_cannot_stage(self):
         bolus, basal, cgm, windows = self._nights(36.85)

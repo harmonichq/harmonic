@@ -22,33 +22,18 @@ _PRIORITY_FIELDS = (
 _SUPPORT_FIELDS = {
     "basal_rate": ("points", "night_roster", "roster_glucose_mean",
                    "excluded_night_count", "directional_support_count", "harm"),
-    "isf": ("direction", "fast_window", "intercept", "n_steps", "night_fits",
-            "night_median", "points", "programmed", "r_squared",
-            "recurrence_channels", "rescue_evidence", "rest_windows", "slope",
-            "strengthen_signal"),
     "carb_ratio": ("eligibility", "n_runs_excluded", "n_runs_touching", "points",
                    "preempted_low_gate", "recurrence_channels", "runs"),
 }
 _TREATMENT_FIELDS = {"recommended", "priced_target"}
+# The correction factor is served as no candidate (ADR 564); it stays a preference
+# subject so one set aside before that is still served, as an absent row (rule 6).
 _SETTING_SUBJECTS = frozenset({
     "setting:basal_rate", "setting:carb_ratio", "setting:isf",
 })
 _HABIT_SUBJECTS = frozenset(f"habit:{lever.value}" for lever in Lever)
 _PATTERN_SUBJECTS = frozenset(f"pattern:{key}" for key in _GATES)
 _PREFERENCE_SUBJECTS = _SETTING_SUBJECTS | _HABIT_SUBJECTS | _PATTERN_SUBJECTS
-# Always served as a candidate, so its Done state (ADR 518) and evidence stay readable, but
-# admitted to the Queue, and selected, only when its analyzer's one staging verdict
-# (`isf_asserts_move`, stamped as each member's `asserts_move`) supports the change.
-# A held, direction-only or unprogrammed estimate is shown on the Overview, never
-# queued (ADR 499, amended by ADR 504).
-_ASSERTED_ONLY_SUBJECTS = frozenset({"setting:isf"})
-
-
-def _admitted(row):
-    if row.get("action") is None:
-        return False
-    return (row["subject"] not in _ASSERTED_ONLY_SUBJECTS
-            or any(member["asserts_move"] is True for member in row["members"]))
 # The name served beside each Pattern member subject: a habit by its Lever's
 # title, a setting by its reader-facing name (ADR 426).
 _MEMBER_TITLES = {
@@ -113,9 +98,7 @@ def _member_interval(parameter, member):
     if parameter == "basal_rate":
         start = member["slot"] * 30
         return start, start + 30
-    if parameter == "carb_ratio":
-        return member["start_min"], member["end_min"]
-    return 0, 1440
+    return member["start_min"], member["end_min"]
 
 
 def _safe_member(parameter, member):
@@ -125,8 +108,7 @@ def _safe_member(parameter, member):
     support = _factual({key: evidence[key] for key in _SUPPORT_FIELDS[parameter]
                         if key in evidence})
     return {"chart_identity": (member.get("slot") if parameter == "basal_rate"
-                               else member.get("block_id") if parameter == "carb_ratio"
-                               else member.get("label")),
+                               else member.get("block_id")),
             "span": {"start_min": start, "end_min": end},
             "asserts_move": member.get("asserts_move"),
             "safety_status": member.get("safety_status"),
@@ -144,10 +126,6 @@ def _observed_support(parameter, member):
         return max(member.get("days") or 0,
                    (member.get("estimate") or {}).get("n") or 0,
                    len(evidence.get("points") or [])) > 0
-    if parameter == "isf":
-        return max(evidence.get("n_steps") or 0,
-                   len(evidence.get("night_fits") or []),
-                   len(evidence.get("points") or [])) > 0
     eligibility = evidence.get("eligibility") or {}
     return max(member.get("n_runs") or 0, eligibility.get("n_runs") or 0,
                eligibility.get("effective_run_count") or 0,
@@ -161,9 +139,7 @@ def _is_setting_concern(parameter, member):
         return False
     if parameter == "basal_rate":
         return member.get("safety_status") not in (None, "no data", "no change")
-    if parameter == "carb_ratio":
-        return member.get("state") != "numeric" or bool(member.get("held_reason"))
-    return bool(member.get("annotation") or (member.get("evidence") or {}).get("direction"))
+    return member.get("state") != "numeric" or bool(member.get("held_reason"))
 
 
 def _setting(subject, parameter, members, analysis):
@@ -219,8 +195,7 @@ def _source_candidates(analysis, exposures, scenarios):
     out = []
     for subject, parameter, rows in (
             ("setting:basal_rate", "basal_rate", analysis.get("basal") or []),
-            ("setting:carb_ratio", "carb_ratio", analysis.get("ic_blocks") or []),
-            ("setting:isf", "isf", analysis.get("isf") or [])):
+            ("setting:carb_ratio", "carb_ratio", analysis.get("ic_blocks") or [])):
         candidate = _setting(subject, parameter, rows, analysis)
         if candidate:
             out.append(candidate)
@@ -448,14 +423,14 @@ def _ordering_reason(candidate, disposition):
 
 def build_guidance(*, analysis, exposures, scenarios, preferences=(), acknowledgments=None, active_watch=None,
                    generation="standalone:0", window=None):
-    if analysis is None or any(name not in analysis for name in ("basal", "isf", "ic_blocks")):
+    if analysis is None or any(name not in analysis for name in ("basal", "ic_blocks")):
         return {"schema": SCHEMA, "analysis_generation": generation, "window": window, "active_watch": active_watch,
                 "selected": None, "disposition": "unavailable", "reasons": {"admission": None, "ordering": None, "return": None},
                 "unavailable": "Required analysis inputs are unavailable.", "candidates": [], "alternatives": []}
     all_candidates, stored = candidates(analysis, exposures, scenarios), {row["subject"]: row for row in preferences}
     for row in all_candidates:
         row["preference"] = preference_status(row, stored.get(row["subject"]))
-        row["admitted"] = _admitted(row)
+        row["admitted"] = row.get("action") is not None
         if row["kind"] == "setting":
             # Done's served state (ADR 518): a waiting setting leaves the Queue.
             row["acknowledgment"] = (acknowledgments or {}).get(row["subject"])
@@ -464,7 +439,7 @@ def build_guidance(*, analysis, exposures, scenarios, preferences=(), acknowledg
     known = {row["subject"] for row in all_candidates}
     absent = [{"subject": row["subject"], "kind": None,
                "title": subject_title(row["subject"]), "units": None,
-               "absent": True, "action": None, "members": [], "evidence": [],
+               "absent": True, "action": None, "admitted": False, "members": [], "evidence": [],
                "support": {}, "population": [], "occurrence_ids": [], "source_window": None,
                "priority": None, "priority_inputs": {}, "seriousness": None,
                "unavailable": False, "unknowns": [],
@@ -475,15 +450,11 @@ def build_guidance(*, analysis, exposures, scenarios, preferences=(), acknowledg
                "decision": {key: row[key] for key in ("decided_at", "reason", "comparison_version", "state")}}
               for row in preferences if row["subject"] not in known]
     # A setting a Pattern carries is selected through that Pattern; one no Pattern
-    # carries (basal, since ADR 499) is selected as itself. ISF is selected only when
-    # admitted (ADR 504), so its held evidence never leads an investigation.
+    # carries (basal, since ADR 499) is selected as itself.
     carried = {member["subject"] for row in all_candidates if row["kind"] == "pattern"
                for member in row["members"] if member["kind"] == "setting"}
     selection_rows = [row for row in all_candidates
-                      if (row["kind"] != "setting"
-                          or (row["subject"] not in carried
-                              and (row["subject"] not in _ASSERTED_ONLY_SUBJECTS
-                                   or row["admitted"])))
+                      if (row["kind"] != "setting" or row["subject"] not in carried)
                       and (row["kind"] != "pattern" or row.get("action") is not None
                            or row.get("unavailable") or row.get("has_concern"))]
     available = sorted((row for row in selection_rows

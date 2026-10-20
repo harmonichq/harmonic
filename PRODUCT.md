@@ -10,7 +10,7 @@ A single user: a Tandem Control-IQ pump wearer analyzing their own pump/CGM
 history, self-hosting this tool against their own local SQLite store. No
 multi-tenant, no accounts beyond one optional API token. They arrive with one
 job: find the one change most worth making, make it, and learn whether it
-helped. The change is either a pump setting (basal, correction factor, carb
+helped. The change is either a pump setting (basal or carb
 ratio) or a habit (bolus timing, carb counting, how a low is treated).
 **Diagnose** ranks those changes by health impact, **Changes** shows whether
 the committed change helped, and **Day** answers "what happened yesterday?"
@@ -21,7 +21,7 @@ not a casual analytics audience.
 ## Product Purpose
 
 Reads off what Control-IQ actually delivered during clean windows to suggest
-basal/ISF/I:C adjustments and surface behavioral coaching — strictly
+basal and I:C adjustments and surface behavioral coaching — strictly
 **advisory**, never writes to the pump. Success is a user trusting a specific
 number enough to bring it to their clinician, because the tool showed its
 uncertainty and evidence rather than asserting a verdict.

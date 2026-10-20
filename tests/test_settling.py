@@ -107,7 +107,7 @@ def _settling_store():
                             "Readings (CGM / BGM)": 120, "Description": "EGV"})
     store.upsert_basal(basal)
     store.upsert_cgm(cgm)
-    # Two settings snapshots differing in ISF and I:C → a recent ISF and I:C epoch.
+    # Two settings snapshots differing in ISF and I:C → a recent edit of each.
     store.upsert_settings_snapshot(
         "2026-06-05 09:00:00", parse_pump_settings(_raw_settings(isf=50, cr_mu=6000)))
     store.upsert_settings_snapshot(
@@ -147,12 +147,10 @@ class SettlingDetectionTest(unittest.TestCase):
         self.assertEqual(s.gate["needed"], IcConfig().min_runs)
         self.assertLess(s.have, s.gate["needed"])   # 1 run < 3
 
-    def test_isf_settling_is_soft_with_no_number(self):
-        s = self.by_param.get("isf")
-        self.assertIsNotNone(s, "ISF should be settling after a recent change")
-        self.assertTrue(s.gate["soft"])
-        self.assertIsNone(s.have)                    # no fabricated countdown
-        self.assertIsNone(s.gate["needed"])
+    def test_a_recent_correction_factor_change_never_settles(self):
+        # ADR 564: Harmonic does not tune the correction factor, so its fresh edit
+        # holds back no recommendation and has no gate to clear.
+        self.assertNotIn("isf", self.by_param)
 
     def test_settling_block_is_json_serializable(self):
         import json

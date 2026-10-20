@@ -17880,12 +17880,6 @@
         "title": "Carb ratio"
       },
       {
-        "kind": "setting",
-        "priority": 0,
-        "subject": "setting:isf",
-        "title": "Correction factor"
-      },
-      {
         "kind": "pattern",
         "priority": 38,
         "subject": "pattern:highs_after_meals",
@@ -36658,18 +36652,6 @@
             "acknowledgment": null,
             "admitted": false,
             "decided_at": null,
-            "kind": "setting",
-            "priority": 0,
-            "queued": false,
-            "set_aside": false,
-            "subject": "setting:isf",
-            "title": "Correction factor",
-            "units": "mg/dL/U"
-          },
-          {
-            "acknowledgment": null,
-            "admitted": false,
-            "decided_at": null,
             "kind": "pattern",
             "priority": 0,
             "queued": false,
@@ -41644,18 +41626,6 @@
             "subject": "setting:carb_ratio",
             "title": "Carb ratio",
             "units": "g/U"
-          },
-          {
-            "acknowledgment": null,
-            "admitted": false,
-            "decided_at": null,
-            "kind": "setting",
-            "priority": 0,
-            "queued": false,
-            "set_aside": false,
-            "subject": "setting:isf",
-            "title": "Correction factor",
-            "units": "mg/dL/U"
           },
           {
             "acknowledgment": null,
@@ -46646,18 +46616,6 @@
           },
           {
             "acknowledgment": null,
-            "admitted": false,
-            "decided_at": null,
-            "kind": "setting",
-            "priority": 0,
-            "queued": false,
-            "set_aside": false,
-            "subject": "setting:isf",
-            "title": "Correction factor",
-            "units": "mg/dL/U"
-          },
-          {
-            "acknowledgment": null,
             "admitted": true,
             "decided_at": null,
             "kind": "pattern",
@@ -47491,18 +47449,6 @@
             "subject": "setting:carb_ratio",
             "title": "Carb ratio",
             "units": "g/U"
-          },
-          {
-            "acknowledgment": null,
-            "admitted": false,
-            "decided_at": null,
-            "kind": "setting",
-            "priority": 0,
-            "queued": false,
-            "set_aside": false,
-            "subject": "setting:isf",
-            "title": "Correction factor",
-            "units": "mg/dL/U"
           },
           {
             "acknowledgment": null,
@@ -48359,18 +48305,6 @@
             "subject": "setting:carb_ratio",
             "title": "Carb ratio",
             "units": "g/U"
-          },
-          {
-            "acknowledgment": null,
-            "admitted": false,
-            "decided_at": null,
-            "kind": "setting",
-            "priority": 0,
-            "queued": false,
-            "set_aside": false,
-            "subject": "setting:isf",
-            "title": "Correction factor",
-            "units": "mg/dL/U"
           },
           {
             "acknowledgment": null,
@@ -59432,18 +59366,6 @@
             "subject": "setting:carb_ratio",
             "title": "Carb ratio",
             "units": "g/U"
-          },
-          {
-            "acknowledgment": null,
-            "admitted": false,
-            "decided_at": null,
-            "kind": "setting",
-            "priority": 0,
-            "queued": false,
-            "set_aside": false,
-            "subject": "setting:isf",
-            "title": "Correction factor",
-            "units": "mg/dL/U"
           },
           {
             "acknowledgment": null,
@@ -71191,18 +71113,6 @@
             "subject": "setting:carb_ratio",
             "title": "Carb ratio",
             "units": "g/U"
-          },
-          {
-            "acknowledgment": null,
-            "admitted": false,
-            "decided_at": null,
-            "kind": "setting",
-            "priority": 0,
-            "queued": false,
-            "set_aside": false,
-            "subject": "setting:isf",
-            "title": "Correction factor",
-            "units": "mg/dL/U"
           },
           {
             "acknowledgment": null,
@@ -82961,18 +82871,6 @@
           },
           {
             "acknowledgment": null,
-            "admitted": false,
-            "decided_at": null,
-            "kind": "setting",
-            "priority": 0,
-            "queued": false,
-            "set_aside": false,
-            "subject": "setting:isf",
-            "title": "Correction factor",
-            "units": "mg/dL/U"
-          },
-          {
-            "acknowledgment": null,
             "admitted": true,
             "decided_at": null,
             "kind": "pattern",
@@ -90033,18 +89931,6 @@
           },
           {
             "acknowledgment": null,
-            "admitted": false,
-            "decided_at": "2025-05-26 01:00:00",
-            "kind": "setting",
-            "priority": 0,
-            "queued": false,
-            "set_aside": true,
-            "subject": "setting:isf",
-            "title": "Correction factor",
-            "units": "mg/dL/U"
-          },
-          {
-            "acknowledgment": null,
             "admitted": true,
             "decided_at": "2025-05-26 01:00:00",
             "kind": "pattern",
@@ -90089,6 +89975,18 @@
             "set_aside": false,
             "subject": "pattern:lows_after_correcting_highs",
             "title": "Lows after correcting highs",
+            "units": null
+          },
+          {
+            "acknowledgment": null,
+            "admitted": false,
+            "decided_at": "2025-05-26 01:00:00",
+            "kind": null,
+            "priority": null,
+            "queued": false,
+            "set_aside": true,
+            "subject": "setting:isf",
+            "title": "Correction factor",
             "units": null
           }
         ]
@@ -99006,18 +98904,6 @@
             "subject": "setting:carb_ratio",
             "title": "Carb ratio",
             "units": "g/U"
-          },
-          {
-            "acknowledgment": null,
-            "admitted": false,
-            "decided_at": null,
-            "kind": "setting",
-            "priority": 35,
-            "queued": false,
-            "set_aside": false,
-            "subject": "setting:isf",
-            "title": "Correction factor",
-            "units": "mg/dL/U"
           },
           {
             "acknowledgment": null,
@@ -110750,18 +110636,6 @@
             "subject": "setting:carb_ratio",
             "title": "Carb ratio",
             "units": "g/U"
-          },
-          {
-            "acknowledgment": null,
-            "admitted": false,
-            "decided_at": null,
-            "kind": "setting",
-            "priority": 0,
-            "queued": false,
-            "set_aside": false,
-            "subject": "setting:isf",
-            "title": "Correction factor",
-            "units": "mg/dL/U"
           },
           {
             "acknowledgment": null,
@@ -122501,18 +122375,6 @@
           },
           {
             "acknowledgment": null,
-            "admitted": false,
-            "decided_at": null,
-            "kind": "setting",
-            "priority": 0,
-            "queued": false,
-            "set_aside": false,
-            "subject": "setting:isf",
-            "title": "Correction factor",
-            "units": "mg/dL/U"
-          },
-          {
-            "acknowledgment": null,
             "admitted": true,
             "decided_at": null,
             "kind": "pattern",
@@ -134249,18 +134111,6 @@
           },
           {
             "acknowledgment": null,
-            "admitted": false,
-            "decided_at": null,
-            "kind": "setting",
-            "priority": 0,
-            "queued": false,
-            "set_aside": false,
-            "subject": "setting:isf",
-            "title": "Correction factor",
-            "units": "mg/dL/U"
-          },
-          {
-            "acknowledgment": null,
             "admitted": true,
             "decided_at": null,
             "kind": "pattern",
@@ -143801,18 +143651,6 @@
             "subject": "setting:carb_ratio",
             "title": "Carb ratio",
             "units": "g/U"
-          },
-          {
-            "acknowledgment": null,
-            "admitted": false,
-            "decided_at": null,
-            "kind": "setting",
-            "priority": 0,
-            "queued": false,
-            "set_aside": false,
-            "subject": "setting:isf",
-            "title": "Correction factor",
-            "units": "mg/dL/U"
           },
           {
             "acknowledgment": null,

@@ -342,21 +342,20 @@ class QaE2ECasesTest(unittest.TestCase):
                 with self.assertRaises(AssertionError):
                     assert_expectation(replace(case, expectation=expectation), execution)
 
-    def test_direction_only_isf_never_stages_or_ranks(self):
+    def test_direction_only_isf_is_served_no_row(self):
+        # ADR 564: the analyzer still reads a weaken, but the findings serve no
+        # correction-factor row for it.
         case = next(
             case for case in QA_CASES
             if case.name == "isf-direction-only-weaken"
         )
         execution = _execution(case)
         analyzer_row = execution.analysis["isf"][0]
-        queue_row = next(
-            row for row in execution.findings["whole_day"]["rows"]
-            if row.get("parameter") == "isf"
-        )
         self.assertEqual(analyzer_row["evidence"]["direction"], "weaken")
         self.assertIsNone(analyzer_row["recommended"])
         self.assertIs(analyzer_row["asserts_move"], False)
-        self.assertNotIn("rank", queue_row)
+        self.assertNotIn("isf", {row.get("parameter")
+                                 for row in execution.findings["whole_day"]["rows"]})
 
     def test_capped_and_uncapped_ic_recommendations_are_distinct(self):
         expected = {

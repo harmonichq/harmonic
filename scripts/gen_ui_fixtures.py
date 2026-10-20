@@ -202,8 +202,11 @@ UNBOLUSED_LUNCHES = (79, 81)
 # of the Low and the Rise they list.
 PROMPT_ROWS = ("Lows", "Rises")
 # §4.2 SegmentedControl: "14 / 30 / 90 d", and QueueRow's magnitude "9 of 71 lows".
-# The Meal size card's Peak at is in minutes, "min" (§2.5, 2026-10-19).
-UNITS = ("d", "min")
+# The Meal size card's Peak at is in minutes, "min" (§2.5, 2026-10-19). Glucose
+# is in "mg/dL" on the one glucose axis every chart uses (§2.5 TraceChart); it
+# reached the allowlist only through the correction factor's unit until no
+# correction-factor candidate was served (ADR 564).
+UNITS = ("d", "min", "mg/dL")
 CONNECTIVES = ("of",)
 # EvidenceChart labels its two marks with the served field each one plots:
 # analyze.basal[].current and analyze.basal[].estimate (approved 2026-10-12;

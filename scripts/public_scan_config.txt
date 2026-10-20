@@ -134,8 +134,8 @@ prose-exempt scripts/public_scan_config.txt dose-ratio | the generated baseline 
 # which prints the full delta first. Never edit it by hand: the digest is
 # checked at parse time and a hand edit fails the config closed.
 # BEGIN dose-ratio baseline
-dose-ratio-baseline 212 23951750c1d0a6f539c6ce78dff8ce777e79c343819f2c8e8c49ec8b15f894d1
-dose-ratio-ack CONTEXT.md:546 | 0.2 U
+dose-ratio-baseline 198 c19094c461559ade3e097baba314bc7aaedfa37f21a9d8ea6fd00b0f80afc372
+dose-ratio-ack CONTEXT.md:554 | 0.2 U
 dose-ratio-ack CONTEXT.md:77 | 1 U : 36 mg/dL
 dose-ratio-ack CONTEXT.md:99 | 0.5 U
 dose-ratio-ack DESIGN.md:165 | 1 U : 36 mg/dL
@@ -147,48 +147,34 @@ dose-ratio-ack ciq_autotune/analyzers/ic.py:190 | 0.0 U
 dose-ratio-ack ciq_autotune/analyzers/ic.py:353 | 1U
 dose-ratio-ack ciq_autotune/analyzers/scenario/narrate.py:30 | 1 U
 dose-ratio-ack ciq_autotune/analyzers/scenario/payload.py:77 | 6U
-dose-ratio-ack ciq_autotune/analyzers/scenario_config.py:260 | 0.23 U
-dose-ratio-ack ciq_autotune/analyzers/scenario_config.py:261 | 3.6 U
-dose-ratio-ack ciq_autotune/analyzers/scenario_config.py:266 | 20 U
-dose-ratio-ack ciq_autotune/analyzers/scenario_config.py:269 | 0.7 U
+dose-ratio-ack ciq_autotune/analyzers/scenario_config.py:262 | 0.23 U
+dose-ratio-ack ciq_autotune/analyzers/scenario_config.py:263 | 3.6 U
+dose-ratio-ack ciq_autotune/analyzers/scenario_config.py:268 | 20 U
+dose-ratio-ack ciq_autotune/analyzers/scenario_config.py:271 | 0.7 U
 dose-ratio-ack ciq_autotune/analyzers/tuning_priority.py:16 | 3.6 U
-dose-ratio-ack ciq_autotune/analyzers/tuning_priority.py:201 | 100 U
+dose-ratio-ack ciq_autotune/analyzers/tuning_priority.py:194 | 100 U
 dose-ratio-ack ciq_autotune/harm.py:70 | 0.1 U
 dose-ratio-ack ciq_autotune/insulin.py:220 | 0.1 U
 dose-ratio-ack ciq_autotune/pattern_sweep.py:1042 | 1 U
 dose-ratio-ack ciq_autotune/tandemsource_map.py:207 | 65.535 U
 dose-ratio-ack docs/kb/start-here.md:12 | 4.5 U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:1431 | 1.00 U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:1638 | 1 U : 37.6 mg/dL
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:214 | 4.3 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:2254 | 4.3 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:2438 | 1 U : 37.6 mg/dL
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:2658 | 1.00 U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:2730 | 1 U : 37.6 mg/dL
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:2874 | 4.3 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:3024 | 1 U : 37.6 mg/dL
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:3257 | 1 U : 37.6 mg/dL
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:3401 | 4.3 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:3576 | 1 U : 37.6 mg/dL
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:3976 | 1 U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:4009 | 1 U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:4042 | 1 U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:4075 | 1 U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:4102 | 4.6 U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:4113 | 4.6 U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:4840 | 6 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:5002 | 4.3 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:509 | 1 U : 37.6 mg/dL
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:5434 | 1.00 U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:6125 | 4.3 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:6858 | 4.3 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:7504 | 4.3 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:7936 | 1.00 U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:8707 | 4.3 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:9059 | 1.00 U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:9223 | 4.3 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:9645 | 4.3 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:999 | 4.3 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:1061 | 6 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:1225 | 4.3 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:1608 | 1.00 U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:186 | 1 U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:219 | 1 U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:2305 | 4.3 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:252 | 1 U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:285 | 1 U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:3045 | 4.3 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:315 | 4.6 U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:326 | 4.6 U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:3697 | 4.3 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:4080 | 1.00 U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:4858 | 4.3 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:5214 | 1.00 U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:5379 | 4.3 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:5805 | 4.3 g/U
 dose-ratio-ack openspec/specs/behavioral-layer/spec.md:1125 | 4.5 U
 dose-ratio-ack openspec/specs/behavioral-layer/spec.md:1126 | 2 U
 dose-ratio-ack openspec/specs/behavioral-layer/spec.md:1129 | 6.5 U
@@ -220,7 +206,7 @@ dose-ratio-ack openspec/specs/surfaces/spec.md:3241 | 4.8 g/U
 dose-ratio-ack openspec/specs/surfaces/spec.md:3249 | 1 U
 dose-ratio-ack openspec/specs/surfaces/spec.md:3570 | 0.60 U
 dose-ratio-ack scripts/gen_chart_builder_fixtures.py:152 | 0.04 U
-dose-ratio-ack scripts/qa_e2e_cases.py:1656 | 0.5 U
+dose-ratio-ack scripts/qa_e2e_cases.py:1713 | 0.5 U
 dose-ratio-ack scripts/ui_patient.py:107 | 1.80 U
 dose-ratio-ack scripts/ui_patient.py:30 | 0.35 U
 dose-ratio-ack scripts/ui_patient.py:47 | 6 U
@@ -230,8 +216,8 @@ dose-ratio-ack tests/test_analyzer_basal.py:1114 | 0.30 U
 dose-ratio-ack tests/test_analyzer_basal.py:1115 | 0.80 U
 dose-ratio-ack tests/test_analyzer_basal.py:1118 | 0.30 U
 dose-ratio-ack tests/test_analyzer_basal.py:1177 | 2 U
-dose-ratio-ack tests/test_analyzer_coverage.py:437 | 0.6 U
-dose-ratio-ack tests/test_analyzer_coverage.py:752 | 6 g/U
+dose-ratio-ack tests/test_analyzer_coverage.py:436 | 0.6 U
+dose-ratio-ack tests/test_analyzer_coverage.py:702 | 6 g/U
 dose-ratio-ack tests/test_analyzer_ic.py:1019 | 10U
 dose-ratio-ack tests/test_analyzer_ic.py:1035 | 82 g/U
 dose-ratio-ack tests/test_analyzer_ic.py:1121 | 10U
@@ -278,20 +264,20 @@ dose-ratio-ack tests/test_classifier_correction_stacking.py:137 | 1U
 dose-ratio-ack tests/test_classifier_correction_stacking.py:150 | 0.1 U
 dose-ratio-ack tests/test_classifier_correction_stacking.py:158 | 0.1 U
 dose-ratio-ack tests/test_harm_basal_arm.py:101 | 0.01 U
-dose-ratio-ack tests/test_ic_block_published_facts.py:117 | 5.0 g/U
-dose-ratio-ack tests/test_ic_block_published_facts.py:153 | 4.0 g/U
-dose-ratio-ack tests/test_ic_block_published_facts.py:339 | 7.5 g/U
-dose-ratio-ack tests/test_ic_block_published_facts.py:354 | 5.0 g/U
-dose-ratio-ack tests/test_ic_block_published_facts.py:355 | 3.75 g/U
-dose-ratio-ack tests/test_ic_block_published_facts.py:356 | 9 U
-dose-ratio-ack tests/test_ic_block_published_facts.py:390 | 1.5 U
-dose-ratio-ack tests/test_ic_blocks.py:158 | 4.0 g/U
-dose-ratio-ack tests/test_ic_blocks.py:181 | 12 U
-dose-ratio-ack tests/test_ic_blocks.py:234 | 8.0 g/U
-dose-ratio-ack tests/test_ic_blocks.py:328 | 4.0 g/U
-dose-ratio-ack tests/test_ic_blocks.py:329 | 8.0 g/U
-dose-ratio-ack tests/test_ic_blocks.py:342 | 12 U
-dose-ratio-ack tests/test_ic_meal_runs.py:248 | 2 U
+dose-ratio-ack tests/test_ic_block_published_facts.py:118 | 5.0 g/U
+dose-ratio-ack tests/test_ic_block_published_facts.py:154 | 4.0 g/U
+dose-ratio-ack tests/test_ic_block_published_facts.py:340 | 7.5 g/U
+dose-ratio-ack tests/test_ic_block_published_facts.py:355 | 5.0 g/U
+dose-ratio-ack tests/test_ic_block_published_facts.py:356 | 3.75 g/U
+dose-ratio-ack tests/test_ic_block_published_facts.py:357 | 9 U
+dose-ratio-ack tests/test_ic_block_published_facts.py:391 | 1.5 U
+dose-ratio-ack tests/test_ic_blocks.py:159 | 4.0 g/U
+dose-ratio-ack tests/test_ic_blocks.py:182 | 12 U
+dose-ratio-ack tests/test_ic_blocks.py:235 | 8.0 g/U
+dose-ratio-ack tests/test_ic_blocks.py:329 | 4.0 g/U
+dose-ratio-ack tests/test_ic_blocks.py:330 | 8.0 g/U
+dose-ratio-ack tests/test_ic_blocks.py:343 | 12 U
+dose-ratio-ack tests/test_ic_meal_runs.py:249 | 2 U
 dose-ratio-ack tests/test_model.py:248 | 0.09U
 dose-ratio-ack tests/test_model.py:249 | 0.1U
 dose-ratio-ack tests/test_model.py:72 | 5U
@@ -304,38 +290,38 @@ dose-ratio-ack tests/test_safety_backtest.py:385 | 4U
 dose-ratio-ack tests/test_safety_backtest.py:387 | 2U
 dose-ratio-ack tests/test_safety_backtest.py:398 | 2U
 dose-ratio-ack tests/test_safety_backtest.py:406 | 5U
-dose-ratio-ack tests/test_scenario_engine.py:1066 | 6 U
-dose-ratio-ack tests/test_scenario_engine.py:1067 | 4 U
-dose-ratio-ack tests/test_scenario_engine.py:1130 | 8 U
-dose-ratio-ack tests/test_scenario_engine.py:1245 | 6 U
-dose-ratio-ack tests/test_scenario_engine.py:1255 | 0 U
-dose-ratio-ack tests/test_scenario_engine.py:1268 | 8 U
-dose-ratio-ack tests/test_scenario_engine.py:1367 | 8 U
-dose-ratio-ack tests/test_scenario_engine.py:1861 | 5.5 U
-dose-ratio-ack tests/test_scenario_engine.py:2044 | 4.5 U
-dose-ratio-ack tests/test_scenario_engine.py:2089 | 6 U
-dose-ratio-ack tests/test_scenario_engine.py:2448 | 0.9 U
-dose-ratio-ack tests/test_scenario_engine.py:2449 | 1.5 U
+dose-ratio-ack tests/test_scenario_engine.py:1073 | 6 U
+dose-ratio-ack tests/test_scenario_engine.py:1074 | 4 U
+dose-ratio-ack tests/test_scenario_engine.py:1137 | 8 U
+dose-ratio-ack tests/test_scenario_engine.py:1252 | 6 U
+dose-ratio-ack tests/test_scenario_engine.py:1262 | 0 U
+dose-ratio-ack tests/test_scenario_engine.py:1275 | 8 U
+dose-ratio-ack tests/test_scenario_engine.py:1374 | 8 U
+dose-ratio-ack tests/test_scenario_engine.py:1834 | 5.5 U
+dose-ratio-ack tests/test_scenario_engine.py:2017 | 4.5 U
+dose-ratio-ack tests/test_scenario_engine.py:2062 | 6 U
+dose-ratio-ack tests/test_scenario_engine.py:2417 | 0.9 U
+dose-ratio-ack tests/test_scenario_engine.py:2418 | 1.5 U
 dose-ratio-ack tests/test_scenario_model_view.py:221 | 2 U
 dose-ratio-ack tests/test_scenario_model_view.py:440 | 7 U
-dose-ratio-ack tests/test_scenario_narrate.py:103 | 5U
+dose-ratio-ack tests/test_scenario_narrate.py:104 | 5U
 dose-ratio-ack tests/test_scenario_narrate.py:16 | 1 U
-dose-ratio-ack tests/test_settings.py:121 | 15 U
-dose-ratio-ack tests/test_settings.py:124 | 0.6 U
-dose-ratio-ack tests/test_settings.py:126 | 7.0 g/U
-dose-ratio-ack tests/test_settings.py:220 | 5 g/U
+dose-ratio-ack tests/test_settings.py:112 | 15 U
+dose-ratio-ack tests/test_settings.py:115 | 0.6 U
+dose-ratio-ack tests/test_settings.py:117 | 7.0 g/U
+dose-ratio-ack tests/test_settings.py:195 | 5 g/U
 dose-ratio-ack tests/test_settling.py:93 | 0.6 U
 dose-ratio-ack tests/test_settling.py:94 | 0.9 U
 dose-ratio-ack tests/test_store.py:562 | 5.4U
 dose-ratio-ack tests/test_store.py:563 | 4.0U
 dose-ratio-ack tests/test_tandemsource_map_real.py:94 | 65.535 U
-dose-ratio-ack tests/test_tuning_priority.py:713 | 0.7 U
-dose-ratio-ack tests/test_tuning_priority.py:714 | 100 U
-dose-ratio-ack tests/test_tuning_priority.py:741 | 20 U
-dose-ratio-ack tests/test_tuning_priority.py:77 | 0.2 U
-dose-ratio-ack tests/test_tuning_priority.py:78 | 0.2 U
-dose-ratio-ack tests/test_tuning_priority.py:785 | 3.0 U
-dose-ratio-ack tests/test_tuning_priority.py:798 | 35 U
+dose-ratio-ack tests/test_tuning_priority.py:555 | 0.7 U
+dose-ratio-ack tests/test_tuning_priority.py:556 | 100 U
+dose-ratio-ack tests/test_tuning_priority.py:575 | 20 U
+dose-ratio-ack tests/test_tuning_priority.py:619 | 3.0 U
+dose-ratio-ack tests/test_tuning_priority.py:632 | 35 U
+dose-ratio-ack tests/test_tuning_priority.py:72 | 0.2 U
+dose-ratio-ack tests/test_tuning_priority.py:73 | 0.2 U
 dose-ratio-ack tests/test_user_correction_provenance.py:103 | 0.5U
 dose-ratio-ack tests/test_user_correction_provenance.py:104 | 0.5U
 dose-ratio-ack tests/test_user_correction_provenance.py:109 | 8.5U

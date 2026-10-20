@@ -10,9 +10,8 @@ Two registers, assigned by one mechanical rule and stamped on every row as
 ``register``:
 
 * ``assert`` — a parameter whose backend evidence asserts a direction
-  (``SlotEstimate.asserts_move`` for basal, ``IcBlock.asserts_move`` for I:C, and
-  the ISF analyzer's own ``evidence.direction`` for ISF). ISF stageability is a
-  separate explicit verdict carried beside this register. Contiguous asserting
+  (``SlotEstimate.asserts_move`` for basal, ``IcBlock.asserts_move`` for I:C).
+  The correction factor is never listed (ADR 564). Contiguous asserting
   basal slots sharing a direction are ONE row named by its span (term 13).
 * ``finding`` — one row per behavioral finding NAME (term 35), carrying its one
   window-local ``n of m``, counted in its own recurrence family (#550). A Pattern
@@ -263,7 +262,7 @@ class FindingsProjection:
     def _parameter_rows(self, query: WindowQuery) -> List[dict]:
         """Every window is asserting-only: a parameter that names no direction is
         never listed and never named (term 38)."""
-        return self._basal_rows(query) + self._ic_rows(query) + self._isf_rows()
+        return self._basal_rows(query) + self._ic_rows(query)
 
     def _lever_priority(self, parameter: str) -> Optional[int]:
         for lever in self._analysis.get("tuning_levers") or []:
@@ -372,42 +371,6 @@ class FindingsProjection:
                 support={"n": block.get("n_runs"), "noun": "meal runs",
                          "run_days": BLOCK_WINDOW_DAYS},
                 annotation=block.get("annotation"),
-            ))
-        return rows
-
-    def _isf_rows(self) -> List[dict]:
-        """ISF is one value for the whole day (term 31), so it meets every window.
-
-        Its register decision is the analyzer's own ``evidence.direction`` — never
-        re-derived from the band and the programmed value. Its independent staging
-        decision is copied from ``asserts_move``. A row with no direction is never
-        listed.
-        """
-        rows = []
-        for row in self._analysis.get("isf") or []:
-            evidence = row.get("evidence") or {}
-            direction = evidence.get("direction")
-            if direction is None:
-                continue
-            rows.append(_row(
-                id="isf",
-                register="assert",
-                kind="setting",
-                parameter="isf",
-                title=_title("Correction factor", direction),
-                label=row.get("label"),
-                priority=(self._lever_priority("isf")
-                          if row.get("asserts_move") is True else None),
-                span=None,
-                direction=direction,
-                asserts_move=row.get("asserts_move"),
-                current=row.get("current"),
-                recommended=row.get("recommended"),
-                estimate=row.get("estimate") or {},
-                support={"n": len(evidence.get("night_fits") or []),
-                         "noun": "fasting nights",
-                         "run_days": self._analysis.get("window_days")},
-                annotation=row.get("annotation"),
             ))
         return rows
 
@@ -561,8 +524,7 @@ def _title(name: str, direction: Optional[str]) -> str:
 #
 # Templates are the operator's, ruled in the attended round of 2026-09-03 and
 # recorded under `## Headline templates` in `design.md`. A slot names only a
-# served row field — every family's, correction factor included: the ISF
-# rest-window evidence is never a source. Nothing here recounts raw records or
+# served row field. Nothing here recounts raw records or
 # re-derives a direction, floor, threshold or priority.
 
 # The ranked-queue tiers whose event-comparison rows earn the "ranks among this
@@ -615,19 +577,6 @@ def _basal_headline(row: dict) -> str:
             f"{support_n} steady nights.")
 
 
-def _isf_headline(row: dict) -> str:
-    """Correction factor's headline: every slot is a row field (`support.n`,
-    `current`, `estimate.value`, `annotation`) — the ISF rest-window evidence is
-    never a source, so this reads only the row, like every other family."""
-    support_n = (row.get("support") or {}).get("n")
-    current = _fmt_precision(row.get("current"))
-    estimate_value = _fmt_precision((row.get("estimate") or {}).get("value"))
-    annotation = _sentence(row.get("annotation") or "")
-    return (f"{annotation}. Measured 1 U : {estimate_value} mg/dL across "
-            f"{support_n} fasting nights against 1 U : {current} mg/dL "
-            f"programmed.")
-
-
 def _ic_headline(row: dict) -> str:
     support_n = (row.get("support") or {}).get("n")
     current = _fmt_precision(row.get("current"))
@@ -670,8 +619,6 @@ def _headline_for(row: dict) -> str:
     parameter = row["parameter"]
     if parameter == "basal_rate":
         return _basal_headline(row)
-    if parameter == "isf":
-        return _isf_headline(row)
     if parameter == "carb_ratio":
         return _ic_headline(row)
     raise ValueError(f"no headline template for parameter {parameter!r}")  # pragma: no cover
@@ -826,8 +773,6 @@ _SETTINGS_CHIPS = {
     ("basal_rate", "lower"): ("lows",),
     ("carb_ratio", "raise"): ("lows",),
     ("carb_ratio", "lower"): ("highs",),
-    ("isf", "strengthen"): ("highs",),
-    ("isf", "weaken"): ("lows",),
 }
 
 _PATTERN_CHIPS = {
@@ -870,15 +815,13 @@ def _row(**fields) -> dict:
         "support": None, "annotation": None, "members": None,
         "lever": None, "appearances": None, "episodes": None,
         "evidence": None, "verdict_counts": None, "verdict_counts_by_family": None,
-        "chips": None, "window_scope": None, "count_sentences": None, "fold_sentences": None,
+        "chips": None, "window_scope": "window", "count_sentences": None, "fold_sentences": None,
         "event_chart": None,
         "pattern": None, "pattern_chart": None, "claimed_by": None,
         "anchored_by": None, "rank_note": None, "served_as": None, "cause_counts": None,
     }
     row.update(fields)
     row["chips"] = _chips_for(row)
-    if row["window_scope"] is None:
-        row["window_scope"] = "whole_day" if row["parameter"] == "isf" else "window"
     return row
 
 

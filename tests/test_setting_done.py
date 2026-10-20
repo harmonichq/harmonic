@@ -239,12 +239,13 @@ class OneDonePerCardTest(DoneCase):
 class IsfDoneTest(DoneCase):
     CASE = "isf-strengthen"
 
-    def test_a_queued_isf_takes_a_done(self):
+    def test_a_correction_factor_takes_no_done(self):
+        # ADR 564: no correction-factor card is served, so a Done on one is refused
+        # and records no Plan, even where the fasting nights read as a strengthen.
         response = self.done("setting:isf")
-        self.assertEqual(response.status_code, 200, response.text)
-        acknowledgment = self.candidate("setting:isf")["acknowledgment"]
-        self.assertEqual(acknowledgment["state"], "waiting")
-        self.assertEqual([(b["current"], b["recommended"]) for b in acknowledgment["blocks"]], [(40.0, 32.0)])
+        self.assertEqual(response.status_code, 409, response.text)
+        self.assertEqual(response.json()["detail"]["code"], "ineligible_source")
+        self.assertEqual(self.get("/api/plan/history")["history"], [])
 
 
 if __name__ == "__main__":

@@ -124,7 +124,7 @@ class AnalyzeFacadeTest(unittest.TestCase):
         self.assertGreaterEqual(len(r.isf), 1)
         self.assertGreaterEqual(len(r.ic), 1)
         self.assertEqual({e.parameter for e in r.epochs},
-                         {"basal_rate", "isf", "carb_ratio"})
+                         {"basal_rate", "carb_ratio"})
 
     def test_basal_estimate_recovers_delivered_rate(self):
         slot = next(s for s in self.result.basal if s.label == "03:00")
@@ -169,9 +169,9 @@ class AnalyzeFacadeTest(unittest.TestCase):
         for seg in basal_only.segments:
             self.assertEqual(unified.get(seg.start_min), seg.basal_rate)
 
-    def test_single_snapshot_flags_unverified_isf_history(self):
+    def test_single_snapshot_flags_unverified_carb_ratio_history(self):
         notes = " ".join(self.result.data_quality.notes)
-        self.assertIn("verified only since", notes)
+        self.assertIn("carb_ratio history is verified only since", notes)
 
     def test_isf_strengthen_check_reads_a_separate_prior_weekly_endpoint(self):
         # #413: do not split this run's nights into pretend decision points. The
@@ -470,9 +470,10 @@ class IcHistoryFacadeTest(unittest.TestCase):
 
 
 class DoseSettingEpochReconciliationTest(unittest.TestCase):
-    """#159: the retroactive dose-stamped ISF/I:C series reconciles with the
+    """#159: the retroactive dose-stamped I:C series reconciles with the
     forward-only snapshot so a first-time user's window/caveat reflects what the
-    pump actually used, not just the (initially one-point) snapshot log."""
+    pump actually used, not just the (initially one-point) snapshot log. The
+    correction factor has no setting epoch (ADR 564)."""
 
     def _store(self, boluses, snap_at="2026-06-29 09:00:00"):
         store = Store.open(":memory:")
@@ -480,70 +481,70 @@ class DoseSettingEpochReconciliationTest(unittest.TestCase):
         store.upsert_settings_snapshot(snap_at, parse_pump_settings(_raw_settings()))
         return store
 
-    def _isf_setting_epoch(self, result):
-        return next(e for e in result.epochs if e.parameter == "isf")
+    def _ic_setting_epoch(self, result):
+        return next(e for e in result.epochs if e.parameter == "carb_ratio")
 
     def test_constant_dose_series_gets_full_window_and_clears_caveat(self):
-        # ISF stamped 30 on a dose every day back to 06-01 — before the 14-day
+        # I:C stamped 6.0 on a dose every day back to 06-01 — before the 14-day
         # window start (06-16). The whole analyzable window is dose-verified, so the
         # "verified only since" caveat that a lone snapshot would raise clears, and
-        # the ISF window is the full requested window.
+        # the I:C window is the full requested window.
         boluses = [_bolus_raw(datetime(2026, 6, d, 8, 0, 0), isf=30, carbs=40,
-                              carb_ratio=5.0) for d in range(1, 30)]
+                              carb_ratio=6.0) for d in range(1, 30)]
         store = self._store(boluses)
         now = datetime(2026, 6, 30, 0, 0, 0)
         result = analyze(store, window_days=14, now=now)
         store.close()
-        ep = self._isf_setting_epoch(result)
+        ep = self._ic_setting_epoch(result)
         self.assertIsNone(ep.start)
         self.assertIsNone(ep.unverified_before)
         self.assertAlmostEqual(ep.effective_days, 14, places=0)
-        isf_note = [n for n in result.data_quality.notes
-                    if "isf" in n and "verified only since" in n]
-        self.assertEqual(isf_note, [])
+        ic_note = [n for n in result.data_quality.notes
+                   if "carb_ratio" in n and "verified only since" in n]
+        self.assertEqual(ic_note, [])
 
     def test_partial_dose_history_pushes_caveat_back_to_earliest_dose(self):
         # Constant, but the earliest dose is 06-20 — inside the 30-day window. The
         # caveat survives, dated to the earliest dose (06-20), far earlier than the
         # lone snapshot (06-29) would allow.
         boluses = [_bolus_raw(datetime(2026, 6, d, 8, 0, 0), isf=30, carbs=40,
-                              carb_ratio=5.0) for d in range(20, 30)]
+                              carb_ratio=6.0) for d in range(20, 30)]
         store = self._store(boluses)
         result = analyze(store, window_days=30, now=datetime(2026, 6, 30, 0, 0, 0))
         store.close()
-        ep = self._isf_setting_epoch(result)
+        ep = self._ic_setting_epoch(result)
         self.assertIsNone(ep.start)
         self.assertEqual(ep.unverified_before, "2026-06-20 08:00:00")
 
-    def test_recent_dose_change_is_detected_but_does_not_cut_the_isf_window(self):
-        # ISF walked 30 -> 40 on 06-21 (a change the forward-only snapshot never
-        # saw): the ISF setting-epoch start is still *detected* (it drives settling + the
+    def test_recent_dose_change_is_detected_but_does_not_cut_the_ic_window(self):
+        # I:C walked 6.0 -> 5.0 on 06-21 (a change the forward-only snapshot never
+        # saw): the I:C setting-epoch start is still *detected* (it drives settling + the
         # compare-to-current caveat), but ADR 0039's measure/compare split means
-        # the ISF *measurement* is NOT clamped to that boundary — it spans the
-        # full requested window. Pre-0039 this cut effective_days to ~9.
+        # the I:C *measurement* is NOT clamped to that boundary — it spans the
+        # full requested window.
         boluses = ([_bolus_raw(datetime(2026, 6, d, 8, 0, 0), isf=30, carbs=40,
-                               carb_ratio=5.0) for d in range(1, 21)]
-                   + [_bolus_raw(datetime(2026, 6, d, 8, 0, 0), isf=40, carbs=40,
+                               carb_ratio=6.0) for d in range(1, 21)]
+                   + [_bolus_raw(datetime(2026, 6, d, 8, 0, 0), isf=30, carbs=40,
                                  carb_ratio=5.0) for d in range(21, 30)])
         store = self._store(boluses)
         result = analyze(store, window_days=30, now=datetime(2026, 6, 30, 0, 0, 0))
         store.close()
-        ep = self._isf_setting_epoch(result)
+        ep = self._ic_setting_epoch(result)
         self.assertEqual(ep.start, "2026-06-21 08:00:00")  # change still detected
         self.assertAlmostEqual(ep.effective_days, 30, places=0)  # full window, not cut
 
-    def test_preview_mode_still_nulls_the_reconciled_isf_setting_epoch(self):
+    def test_preview_mode_still_nulls_the_reconciled_ic_setting_epoch(self):
         # A recent dose-detected change must vanish under ignore_setting_changes so
         # preview reveals the otherwise-suppressed recommendation.
         boluses = ([_bolus_raw(datetime(2026, 6, d, 8, 0, 0), isf=30, carbs=40,
-                               carb_ratio=5.0) for d in range(1, 21)]
-                   + [_bolus_raw(datetime(2026, 6, d, 8, 0, 0), isf=40, carbs=40,
+                               carb_ratio=6.0) for d in range(1, 21)]
+                   + [_bolus_raw(datetime(2026, 6, d, 8, 0, 0), isf=30, carbs=40,
                                  carb_ratio=5.0) for d in range(21, 30)])
         store = self._store(boluses)
         result = analyze(store, window_days=30, now=datetime(2026, 6, 30, 0, 0, 0),
                          ignore_setting_changes=True)
         store.close()
-        ep = self._isf_setting_epoch(result)
+        ep = self._ic_setting_epoch(result)
         self.assertIsNone(ep.start)
         self.assertIsNone(ep.unverified_before)
 
@@ -571,7 +572,7 @@ def _bolus_raw_from_event(ev, isf):
 
 class IsfMeasurementIsFullWindowTest(unittest.TestCase):
     """ADR 0039 / #288: ISF is measured over the full requested window even when a
-    setting edit is detected mid-window. Built from a real synthetic ISF signal so
+    setting edit lands mid-window. Built from a real synthetic ISF signal so
     it would go *degenerate* (only the ~3 post-edit nights) if the ISF setting
     epoch still clamped the measurement — the exact starvation #288 fixes."""
 
@@ -607,10 +608,7 @@ class IsfMeasurementIsFullWindowTest(unittest.TestCase):
         result = analyze(store, window_days=30, now=datetime(2026, 6, 17, 0, 0, 0))
         store.close()
 
-        isf_ep = next(e for e in result.epochs if e.parameter == "isf")
-        # The edit IS detected (drives settling + compare-to-current caveat)…
-        self.assertIsNotNone(isf_ep.start)
-        # …but the measurement spans the full window, not the ~3 post-edit nights.
+        # The measurement spans the full window, not the ~3 post-edit nights.
         seg = result.isf[0]
         self.assertIsNotNone(seg.estimate.value)
         # 16 fasting nights → 16 clusters. If the ISF setting epoch still clamped the

@@ -1275,7 +1275,7 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   *Proposed; not locked.* Harmonic stops estimating ISF and stops advising a
   correction-factor move: no passive method identifies ISF under Control-IQ
   (ADR 564). The operator, on the Overview's grid without the ISF card,
-  choosing among the options put to him: "5. A", the basal estimate across
+  choosing among the options put to them: "5. A", the basal estimate across
   the first row and Meal size across the second, each row one height.
   - **Overview.** The ISF estimate card goes, with its states (supported
     change, held, Uncertain, nights beyond the axis). Below the summary, the

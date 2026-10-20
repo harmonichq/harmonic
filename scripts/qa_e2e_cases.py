@@ -276,6 +276,47 @@ def _pattern_correction_collapse_recipe(store) -> None:
     } for index, minute in enumerate((14 * 60 + 10, 14 * 60 + 40))])
 
 
+def _pattern_meal_two_causes_recipe(store) -> None:
+    """Highs after meals with two admitted causes whose roster, count and severity
+    orders differ (ADR 593): Carb undercount, first in the roster, claims four
+    runaway meals; Late bolus claims three meals whose late climb holds just under
+    the runaway bar for two hours, each a longer high than any runaway's.
+    Fourteen flat breakfasts make the Pattern ready.
+    """
+    first = _materialize_behavioral_background(store, span_days=30)
+    bolus, cgm = [], []
+
+    def add_meal(offset: int, hour: int, minute: int, values, *, carbs: float,
+                 insulin: float) -> None:
+        start = datetime.combine(first + timedelta(days=offset), datetime.min.time())
+        start = start.replace(hour=hour, minute=minute)
+        cgm.extend((start + timedelta(minutes=5 * index), value)
+                   for index, value in enumerate(values))
+        bolus.append({
+            "seq_num": 593_000 + offset,
+            "request_time": (start + timedelta(minutes=25)).strftime("%Y-%m-%d %H:%M:%S"),
+            "description": "Synthetic meal bolus", "completion": "Completed",
+            "insulin": insulin, "requested_insulin": insulin, "carbs": carbs,
+            "carb_ratio": 5.0, "isf": 40.0, "target_bg": 110.0,
+        })
+
+    for offset in range(2, 16):
+        add_meal(offset, 7, 40, (120,) * 13, carbs=45.0, insulin=9.0)
+    # The late climb reaches 195 and holds 198, under Carb undercount's 200 runaway
+    # bar, for two hours before falling.
+    late_hold = _LATE_RISE_195[:9] + (198,) * 24 + (185, 170, 150, 130, 120)
+    for offset in range(16, 19):
+        add_meal(offset, 11, 40, late_hold, carbs=45.0, insulin=9.0)
+    runaway = (145, 145, 145, 145, 145, 145, 170, 220, 280, 330, 360, 355, 340)
+    for offset in range(23, 27):
+        add_meal(offset, 11, 40, runaway, carbs=30.0, insulin=6.0)
+    store.upsert_cgm([{
+        "EventDateTime": when.strftime("%Y-%m-%d %H:%M:%S"),
+        "Readings (CGM / BGM)": bg, "Description": "Synthetic EGV",
+    } for when, bg in cgm])
+    store.upsert_bolus(bolus)
+
+
 def _materialize_pattern_focus_meals(store, *, days=8, meals_per_day=3,
                                      measured=True) -> None:
     """Manufacture two four-day arms with twelve meal opportunities apiece."""
@@ -7057,5 +7098,30 @@ QA_CASES += (
             outcome_patterns=({'key': 'highs_after_meals', 'title': 'Highs after meals', 'subject': 'pattern:highs_after_meals', 'members': [{'subject': 'setting:carb_ratio', 'kind': 'setting', 'k': 18, 'price': 49, 'admitted': True, 'producer': 'tuning_levers', 'lo': None, 'hi': None, 'seriousness': None, 'seriousness_segments': [], 'action': 'carb_ratio'}], 'rate_levers': ['habit:carb_undercount', 'habit:late_bolus'], 'n': 4, 'k': 0, 'rate': 0.0, 'wilson': {'lo': 0.0, 'hi': 0.2911}, 'wide': False, 'rate_producer': 'exposures', 'readiness': {'count': 4, 'gate': 12, 'verdict': 'withheld'}, 'settled_price': 49, 'admission_route': 'setting_staging', 'collapse': 'remain_pattern', 'action': 'carb_ratio', 'seriousness': None, 'member_set_fingerprint': '13141e472c40a768'}, {'key': 'lows_after_meals', 'title': 'Lows after meals', 'subject': 'pattern:lows_after_meals', 'members': [{'subject': 'setting:carb_ratio', 'kind': 'setting', 'k': 18, 'price': 49, 'admitted': False, 'producer': 'tuning_levers', 'lo': None, 'hi': None, 'seriousness': None, 'seriousness_segments': [], 'action': None}], 'rate_levers': ['habit:meal_over_delivery'], 'n': 4, 'k': 0, 'rate': 0.0, 'wilson': {'lo': 0.0, 'hi': 0.2911}, 'wide': False, 'rate_producer': 'exposures', 'readiness': {'count': 4, 'gate': 12, 'verdict': 'withheld'}, 'settled_price': 0, 'admission_route': 'none', 'collapse': 'remain_pattern', 'action': None, 'seriousness': None, 'member_set_fingerprint': '13141e472c40a768'}, {'key': 'highs_after_treating_lows', 'title': 'Highs after treating lows', 'subject': 'pattern:highs_after_treating_lows', 'members': [], 'rate_levers': ['habit:over_treated_low'], 'n': 0, 'k': 0, 'rate': None, 'wilson': None, 'wide': True, 'rate_producer': 'exposures', 'readiness': {'count': 0, 'gate': 12, 'verdict': 'withheld'}, 'settled_price': 0, 'admission_route': 'none', 'collapse': 'remain_pattern', 'action': None, 'seriousness': None, 'member_set_fingerprint': 'e3b0c44298fc1c14'}, {'key': 'lows_after_correcting_highs', 'title': 'Lows after correcting highs', 'subject': 'pattern:lows_after_correcting_highs', 'members': [], 'rate_levers': ['habit:correction_stacking', 'habit:correction_on_iob'], 'n': 0, 'k': 0, 'rate': None, 'wilson': None, 'wide': True, 'rate_producer': 'exposures', 'readiness': {'count': 0, 'gate': 12, 'verdict': 'withheld'}, 'settled_price': 0, 'admission_route': 'none', 'collapse': 'remain_pattern', 'action': None, 'seriousness': None, 'member_set_fingerprint': 'e3b0c44298fc1c14'}),
         ),
         IC_SOURCE_SPAN_DAYS,
+    ),
+)
+
+# #593 (ADR 593): Highs after meals with two admitted causes whose roster order,
+# count order and severity order differ.
+QA_CASES += (
+    QaCase(
+        "pattern-meal-two-causes",
+        _pattern_meal_two_causes_recipe,
+        QaExpectation(
+            _explicit_rows({}), {}, {}, frozenset(),
+            _BEHAVIORAL_30_DAY_REST_WINDOWS, frozenset({('highs', '2024-05-24 12:30:00', 'clean'), ('highs', '2024-05-25 12:30:00', 'clean'), ('highs', '2024-05-26 12:30:00', 'clean'), ('highs', '2024-05-27 12:30:00', 'clean'), ('meals', '2024-05-03 08:05:00', 'no_data'), ('meals', '2024-05-04 08:05:00', 'no_data'), ('meals', '2024-05-05 08:05:00', 'no_data'), ('meals', '2024-05-06 08:05:00', 'no_data'), ('meals', '2024-05-07 08:05:00', 'no_data'), ('meals', '2024-05-08 08:05:00', 'no_data'), ('meals', '2024-05-09 08:05:00', 'no_data'), ('meals', '2024-05-10 08:05:00', 'no_data'), ('meals', '2024-05-11 08:05:00', 'no_data'), ('meals', '2024-05-12 08:05:00', 'no_data'), ('meals', '2024-05-13 08:05:00', 'no_data'), ('meals', '2024-05-14 08:05:00', 'no_data'), ('meals', '2024-05-15 08:05:00', 'no_data'), ('meals', '2024-05-16 08:05:00', 'no_data'), ('meals', '2024-05-17 12:05:00', 'fired'), ('meals', '2024-05-18 12:05:00', 'fired'), ('meals', '2024-05-19 12:05:00', 'fired'), ('meals', '2024-05-24 12:05:00', 'fired'), ('meals', '2024-05-25 12:05:00', 'fired'), ('meals', '2024-05-26 12:05:00', 'fired'), ('meals', '2024-05-27 12:05:00', 'fired')}),
+            frozenset({'Carb undercount', 'Highs after meals', 'Highs after treating lows', 'Late bolus', 'Lows after correcting highs', 'Lows after meals', 'meals-start-high'}),
+            {
+                ("carb_undercount", "meals"): _verdict_tally(
+                    21, fired=4, outranked=3, near_miss=0, no_data=0, clean=14,
+                ),
+                ("late_bolus", "meals"): _verdict_tally(
+                    21, fired=3, outranked=4, near_miss=0, no_data=0, clean=14,
+                ),
+            },
+            4,
+            outcome_patterns=({'key': 'highs_after_meals', 'title': 'Highs after meals', 'subject': 'pattern:highs_after_meals', 'members': [{'subject': 'habit:carb_undercount', 'kind': 'habit', 'k': 4, 'price': 19, 'admitted': True, 'producer': 'scenario', 'lo': 0.1048, 'hi': 0.321, 'seriousness': 'info', 'action': 'habit:carb_undercount', 'admission_basis': 'low_confidence'}, {'subject': 'habit:late_bolus', 'kind': 'habit', 'k': 3, 'price': 19, 'admitted': True, 'producer': 'scenario', 'lo': 0.071, 'hi': 0.2665, 'seriousness': 'info', 'action': 'habit:late_bolus', 'admission_basis': 'low_confidence'}, {'subject': 'setting:carb_ratio', 'kind': 'setting', 'k': 0, 'price': 0, 'admitted': False, 'producer': 'tuning_levers', 'lo': None, 'hi': None, 'seriousness': None, 'seriousness_segments': [], 'action': None}], 'rate_levers': ['habit:carb_undercount', 'habit:late_bolus'], 'n': 21, 'k': 7, 'rate': 0.3333, 'wilson': {'lo': 0.2179, 'hi': 0.473}, 'wide': True, 'rate_producer': 'exposures', 'readiness': {'count': 21, 'gate': 12, 'verdict': 'ready'}, 'settled_price': 19, 'admission_route': 'habit_threshold', 'collapse': 'remain_pattern', 'action': 'habit:carb_undercount', 'seriousness': 'info', 'member_set_fingerprint': '94bea84f7eec2f3c'}, {'key': 'lows_after_meals', 'title': 'Lows after meals', 'subject': 'pattern:lows_after_meals', 'members': [{'subject': 'setting:carb_ratio', 'kind': 'setting', 'k': 0, 'price': 0, 'admitted': False, 'producer': 'tuning_levers', 'lo': None, 'hi': None, 'seriousness': None, 'seriousness_segments': [], 'action': None}], 'rate_levers': ['habit:meal_over_delivery'], 'n': 21, 'k': 0, 'rate': 0.0, 'wilson': {'lo': 0.0, 'hi': 0.0725}, 'wide': False, 'rate_producer': 'exposures', 'readiness': {'count': 21, 'gate': 12, 'verdict': 'ready'}, 'settled_price': 0, 'admission_route': 'none', 'collapse': 'remain_pattern', 'action': None, 'seriousness': None, 'member_set_fingerprint': '13141e472c40a768'}, {'key': 'highs_after_treating_lows', 'title': 'Highs after treating lows', 'subject': 'pattern:highs_after_treating_lows', 'members': [], 'rate_levers': ['habit:over_treated_low'], 'n': 0, 'k': 0, 'rate': None, 'wilson': None, 'wide': True, 'rate_producer': 'exposures', 'readiness': {'count': 0, 'gate': 12, 'verdict': 'withheld'}, 'settled_price': 0, 'admission_route': 'none', 'collapse': 'remain_pattern', 'action': None, 'seriousness': None, 'member_set_fingerprint': 'e3b0c44298fc1c14'}, {'key': 'lows_after_correcting_highs', 'title': 'Lows after correcting highs', 'subject': 'pattern:lows_after_correcting_highs', 'members': [], 'rate_levers': ['habit:correction_stacking', 'habit:correction_on_iob'], 'n': 0, 'k': 0, 'rate': None, 'wilson': None, 'wide': True, 'rate_producer': 'exposures', 'readiness': {'count': 0, 'gate': 12, 'verdict': 'withheld'}, 'settled_price': 0, 'admission_route': 'none', 'collapse': 'remain_pattern', 'action': None, 'seriousness': None, 'member_set_fingerprint': 'e3b0c44298fc1c14'}),
+        ),
+        30,
     ),
 )

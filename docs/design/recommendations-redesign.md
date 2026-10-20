@@ -106,7 +106,7 @@ Each row lists a screen's states. Labels only; no state uses prose.
 
 | Screen | Default | Empty | Loading | Error | Other states |
 |---|---|---|---|---|---|
-| Queue | Ranked cards, top card expanded | "0 patterns" label | Card skeletons | Unavailable + Retry | A card expanded; mid-swipe; just snoozed (bar "Snoozed · Until <date>" + Undo); just Done (bar "Waiting for pump" + Undo, §2.5); a Setting Not on pump (§2.5); a Habit open, and pinned (§2.5, 2026-10-19); Snoozed footer when N > 0 |
+| Queue | Ranked cards, top card expanded | "0 patterns" label | Card skeletons | Unavailable + Retry | A card expanded; mid-swipe; just snoozed (bar "Snoozed until <date>" + Undo, §2.5 2026-10-20); just Done (bar "Waiting for pump" + Undo, §2.5); a Setting Not on pump (§2.5); a Habit open, and pinned (§2.5, 2026-10-19); Snoozed footer when N > 0 |
 | Queue · Snoozed | Each snoozed item as its Queue row, plus "Until <date>" + Restore | Not reachable (the footer is hidden at 0) | — | Unavailable + Retry | Restored (row leaves) |
 | Queue · setting detail | current → estimate, range, n, chart | — | Chart skeleton | Unavailable | A queued ISF: the Overview's ISF card in the Queue's frame (§2.5, 2026-10-14) |
 | Changes | The current Trial (head, trace, ranges, Mean/GMI/CV, Basal vs Pump profile) or Focus, then the Previous row with its count | "No active change" label; no Previous row at 0 | Skeleton | Unavailable + Retry | Maturing, every module as its data forms, each glucose module with its Readings, each Δ green or red by its direction (§2.5, 2026-10-19, colour shows direction); first hours (an empty after: Meals after 0, each after blank) (§2.5, 2026-10-19); Matured (result pill); a carb ratio Trial (Meals before / after; its trace meal by meal under three meals); a whole-profile switch (each setting it moved); **End** (Focus: anytime; Trial: once matured) → confirm sheet → ended; Waiting for pump rows after a Done, between the current change and Previous (§2.5) |
@@ -157,7 +157,6 @@ the system's own edge-swipe back is left to the platform, never overridden.
 |---|---|---|
 | **Queue** | noun | The ranked list of recommendations. |
 | **Pattern** | noun | A recurring glucose outcome the engine detected, such as highs after meals. |
-| **Pin** | verb | Start a Focus on a Pattern's habit, or on a Habit. |
 | **Habit** | noun | Something you do that the engine counts toward a glucose outcome, queued on its own when no Pattern holds it, such as a meal with no bolus. |
 | **Focus** | noun | A habit you pinned, watched for adherence and outcome. |
 | **Trial** | noun | A pump setting change the app detected, watched against its before period. |
@@ -1246,6 +1245,26 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   Queue panes start at their tops, level, and each tab's content starts at
   its pane's top, at 1440 px.
 
+- **2026-10-20 — the snooze bar loses its middle dot.** The transient bar
+  after a snooze read "Snoozed · Until <date>"; it now reads "Snoozed until
+  <date>", one phrase. The operator, on the drill-down's pinned pill, then
+  the bar: "Drop the bullet on snoozed too." The Snoozed list's own "Until
+  <date>" line is unchanged. §1.3 and §4.2 TransientBar follow; built with
+  the drill-down (#532).
+
+- **2026-10-20 — Pin is "Focus", and says so.** Tapping Pin swapped the button
+  for the Focus pill and said nothing else, while the Focus it made appeared on
+  Changes unannounced. The operator: "make it more clear that it's a focus or
+  a trial or whatever. The "Pin -> Changes" integration in the app right now
+  is shit." Decided (drill-down.md Q14 = A): the button reads "Focus", in
+  Pin's place and size on every Pattern and habit card; tapping it shows the
+  transient bar "Focus started" with the text action "Changes", which opens
+  that tab, the same bar Snooze and Done use with an action where theirs
+  have Undo. "Pin" leaves §1.5 and the control's name; "Focus" is already
+  there. Done is unchanged: a Trial starts through the pump. Built with the
+  drill-down (#532); §1.3, §1.4, §1.5, §4.2 PatternCard, HabitCard and
+  TransientBar follow.
+
 ### 2.6 Deferred (not cut)
 Not built in the current screens. The engine still serves what each needs, and
 nothing is removed from the engine or the fixtures for them.
@@ -1342,7 +1361,7 @@ unless noted. Loading is a skeleton of the component's own shape.
    - Fields: `findings.outcome_patterns[].wide` (Uncertain: the pattern's Queue admission does not hold at its low end, ADR 485); the trial and focus lifecycle and result.
    - Desktop: the same.
 6. **TransientBar**: a label plus one text action, shown above the tab bar.
-   - States: "Snoozed · Until <date>" + Undo; "Waiting for pump" + Undo,
+   - States: "Snoozed until <date>" + Undo (§2.5, 2026-10-20); "Waiting for pump" + Undo,
      after a Done (§2.5, 2026-10-14 Done); "Not saved" + Retry.
    - Fields: the snooze-until date (now + 14 d).
    - Desktop: the same, at the bottom of the detail pane; Undo also on ⌘Z.

@@ -16,6 +16,12 @@
 // its trace chart with its episodes named Habit, and Pin or the Focus pill with
 // Snooze beneath, as a Pattern's. The engine serves no Uncertain verdict and no
 // impact line for a habit, so it shows neither.
+//
+// The drill-down's cause card is the same card again (drill-down.md): a
+// Pattern's cause drawn as a habit with no Snooze, its Pin an outlined
+// secondary in the head beside the title, in view without scrolling to the
+// card's foot (one per cause card, so none is the screen's primary), or none
+// while a change is watched; pinned, the Focus pill sits there instead.
 import { Icon } from '../../icons';
 import { Num } from '../../Num';
 import type { PatternData } from '../../queue-model';
@@ -33,6 +39,10 @@ export type PatternCardProps =
       onSnooze?: () => void;
       /** Shows the collapse chevron; false where the card does not collapse. */
       collapsible?: boolean;
+      /** Pin's weight: the Queue's primary, the drill-down's secondary (one
+       *  per cause card, so none is the screen's primary), or none while a
+       *  change is watched. */
+      pin?: 'primary' | 'secondary' | 'none';
     };
 
 export function PatternCard(props: PatternCardProps) {
@@ -47,13 +57,16 @@ export function PatternCard(props: PatternCardProps) {
       </section>
     );
   }
-  const { data, onPin, onSnooze, collapsible = true } = props;
+  const { data, onPin, onSnooze, collapsible = true, pin = 'primary' } = props;
   const { magnitude } = data;
   return (
     <section className="ui-pcard">
       <div className="ui-pcard__head">
         <h2 className="ui-pcard__title">{data.title}</h2>
         {collapsible && <span className="ui-pcard__chevron"><Icon name="collapse" /></span>}
+        {pin !== 'primary' && (data.pinned
+          ? <StatePill state="focus" />
+          : pin === 'secondary' && <Button kind="secondary" label="Pin" onClick={onPin} />)}
       </div>
       {magnitude && (
         <>
@@ -79,9 +92,11 @@ export function PatternCard(props: PatternCardProps) {
           <TraceChart data={data.traces} own={data.kind === 'habit' ? 'Habit' : 'Pattern'} />
         </div>
       )}
-      <div className="ui-pcard__action">
-        {data.pinned ? <StatePill state="focus" /> : <Button kind="primary" label="Pin" onClick={onPin} />}
-      </div>
+      {pin === 'primary' && (
+        <div className="ui-pcard__action">
+          {data.pinned ? <StatePill state="focus" /> : <Button kind="primary" label="Pin" onClick={onPin} />}
+        </div>
+      )}
       {onSnooze && <div className="ui-card-snooze"><Button kind="text" label="Snooze" onClick={onSnooze} /></div>}
     </section>
   );

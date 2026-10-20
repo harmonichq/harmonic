@@ -836,7 +836,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         if days not in TIME_OF_DAY_DAYS:
             raise HTTPException(status_code=400,
                                 detail=f"days must be one of {list(TIME_OF_DAY_DAYS)}")
-        return fixed_response(fixed(("meal-size",), "meal-size-v2", build_meal_size_windows),
+        return fixed_response(fixed(("meal-size",), "meal-size-v3", build_meal_size_windows),
                               lambda windows: windows[str(days)])
 
     @app.get("/api/explore/exposures")

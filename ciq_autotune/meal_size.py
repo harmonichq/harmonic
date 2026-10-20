@@ -27,9 +27,11 @@ out, as the profile leaves them out.
 The three hours, the climb's horizon and the change's instant, is served as
 ``horizon_hours`` so the card prints the engine's own.
 
-**The sizes.** Under 25 g, 25–39 g, 40–59 g and 60 g or more, each served with its
-meals, the median and 25th and 75th percentiles of their climbs, the median minutes
-to peak, and the median change at three hours with how many meals it was read from.
+**The sizes.** Under 25 g, 25–39 g, 40–59 g and 60 g or more, each served with how
+many meals it counts, the median and 10th, 25th, 75th and 90th percentiles of their
+climbs, the median minutes to peak, and the median change at three hours with how
+many meals it was read from. The meals themselves are not served: the card draws
+each size from its percentiles (#570).
 Nothing here judges a setting or a habit: it is a report, never a Queue item.
 """
 
@@ -149,7 +151,6 @@ def _measure(meal, following, context: _Context):
     three = meal.t + _HORIZON
     landing = context.reading_at(three) if following is None or following > three else None
     return {
-        "t": format_t(meal.t),
         "carbs": meal.carbs,
         "climb": peak[1] - begin.bg,
         "to_peak": (peak[0] - meal.t).total_seconds() / 60,
@@ -157,18 +158,23 @@ def _measure(meal, following, context: _Context):
     }
 
 
+#: The climb percentiles each size serves, by name.
+_PERCENTILES = {"p10": 10, "p25": 25, "p75": 75, "p90": 90}
+
+
 def _size(lo, hi, meals: list) -> dict:
     climbs = [row["climb"] for row in meals]
     landings = [row["at_3h"] for row in meals if row["at_3h"] is not None]
     if len(climbs) > 1:
-        p25, median, p75 = statistics.quantiles(climbs, n=4, method="inclusive")
+        cuts = statistics.quantiles(climbs, n=100, method="inclusive")
+        spread = {name: cuts[at - 1] for name, at in _PERCENTILES.items()}
     else:
-        p25 = median = p75 = climbs[0] if climbs else None
+        spread = dict.fromkeys(_PERCENTILES, climbs[0] if climbs else None)
     return {
         "carbs_from": lo,
         "carbs_to": hi,
-        "meals": meals,
-        "climb": {"median": median, "p25": p25, "p75": p75},
+        "count": len(meals),
+        "climb": {"median": statistics.median(climbs) if climbs else None, **spread},
         "to_peak": {"median": statistics.median(row["to_peak"] for row in meals) if meals else None},
         "at_3h": {"count": len(landings),
                   "median": statistics.median(landings) if landings else None},

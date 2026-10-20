@@ -333,12 +333,13 @@ the readings.
 pump-local calendar days ending after the newest CGM day (`days`, refused otherwise), the engine's meals (`group_meals`, at least 10 g)
 that began at or under 180 mg/dL, read from the last reading at or up to 15 minutes
 before the first bolus, that the Late bolus classifier found flat before the bolus
-(its `no_trigger` verdict), and that have an Arc peak. For each it SHALL serve the
+(its `no_trigger` verdict), and that have an Arc peak. For each it SHALL read the
 climb (the Arc peak less the start), the minutes to that peak, and the change at
 three hours, only when no later meal began by then. It SHALL group them into four
-sizes, under 25 g, 25–39, 40–59, and 60 and over, each with its meals, the median
-and 25th and 75th percentiles of their climbs, the median minutes to peak, and the
-median change at three hours with how many meals it was read from. It SHALL serve
+sizes, under 25 g, 25–39, 40–59, and 60 and over, each served with how many meals it
+counts, the median and 10th, 25th, 75th and 90th percentiles of their climbs, the
+median minutes to peak, and the median change at three hours with how many meals it
+was read from. It SHALL NOT serve the meals one by one (ADR 570). It SHALL serve
 the window's days and the three hours (`horizon_hours`). Each window SHALL be its own
 fixed result keyed by the recorded-data revision (ADR 501, ADR 565).
 
@@ -349,14 +350,14 @@ fixed result keyed by the recorded-data revision (ADR 501, ADR 565).
 - **THEN** it serves only the June meal, over 26 May to 9 June, and a request
   for 7 days is refused
 
-#### Scenario: Each size serves its meals and medians
+#### Scenario: Each size serves its count and percentiles
 
 - **GIVEN** a flat 120 mg/dL history with meals of 15, 20, 25, 39, 40, 45, 50
   (30 g and a top-up), 60 and 90 g
 - **WHEN** the meal-size read is requested
-- **THEN** each meal is served in its size with its climb, minutes to peak and change
-  at three hours, the 30 g meal and its top-up as one 50 g meal, and each size's
-  medians and percentiles are those of its meals
+- **THEN** each size serves how many meals it counts, the 30 g meal and its top-up
+  as one 50 g meal, and the median and 10th, 25th, 75th and 90th percentiles of
+  its meals' climbs, their median minutes to peak and change at three hours
 
 #### Scenario: A meal bolused into a rise is left out
 

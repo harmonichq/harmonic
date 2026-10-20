@@ -1154,6 +1154,22 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   bar is 64 px plus its simulated inset, its items 10 px above that inset,
   and nothing below it (§2.2 Tab bar / rail item, §4.2 NavBar).
 
+- **2026-10-19 — Meal size draws no dots (#570).** Of the merged card, the
+  operator: "those meal dots look like weird artifacts not actual data", and
+  his decision: "drop the dots". Each size's strip now draws only what the
+  engine serves for the size:
+  - **A whisker** from the 10th to the 90th percentile of its Climbs, thin
+    and capped at both ends, in its shade of the estimate blue.
+  - **The Range**, its 25th to 75th, the thick line over it.
+  - **The median**, the short ink tick on top.
+  No meal is drawn on its own, so the halo #565 put behind the Range and the
+  tick goes with the dots it kept them apart from. The strip shrinks from
+  about 21 to 14 px, and the desktop card stays the estimates' height. The
+  legend reads Median, Range, 10–90%. "10–90%" is a fixed scale name, as the
+  glucose profile's legend prints it, so it needs no §1.5 entry. The engine
+  now serves each size's count and its 10th and 90th percentiles, and no
+  longer serves its meals one by one.
+
 ### 2.6 Deferred (not cut)
 Not built in the current screens. The engine still serves what each needs, and
 nothing is removed from the engine or the fixtures for them.
@@ -1445,18 +1461,19 @@ unless noted. Loading is a skeleton of the component's own shape.
     each size, over the selected window as the estimates are (§2.5, 2026-10-19
     #565), below the ISF and basal estimates, their height (§2.5, 2026-10-19
     #559). Titled "Meal size". One thin strip per size, <25 g, 25–39 g, 40–59 g
-    and 60 g+, on one shared Climb axis: a small, muted grey dot per counted
-    meal; above them the size's Range a thick line in its shade of the estimate
-    blue and its median a short ink tick, each on a halo of the card's surface;
-    grid lines at the ticks; "Climb · mg/dL" and the legend Meal, Median, Range beneath the axis.
+    and 60 g+, on one shared Climb axis, drawn from the size's percentiles
+    alone (§2.5, 2026-10-19 #570): its 10–90% a thin capped whisker in its shade
+    of the estimate blue, its Range a thick line over it, its median a short ink
+    tick on top; grid lines at the ticks; "Climb · mg/dL" and the legend Median,
+    Range, 10–90% beneath the axis.
     Each size's swatch and bounds over its meal count, then the signed medians
     Climb, Peak at (min) and At 3 h, At 3 h over its own meal count, aligned
     like a table: on the strip's row when wide, beneath the strips when narrow.
     Nothing to act on.
-    - States: populated; a size of one meal (one dot, no Range line); a size of
+    - States: populated; a size of one meal (its tick alone); a size of
       no meal (its row, "–"); no data ("No data"); not yet read (its skeleton).
     - Fields: `meal_size.window`; `meal_size.sizes[].carbs_from,
-      carbs_to, meals[].climb` and its length, `climb.median, p25, p75`,
+      carbs_to, count`, `climb.median, p10, p25, p75, p90`,
       `to_peak.median`, `at_3h.median, count`, read from
       `/api/explore/meal-size?days=N`.
     - Desktop: the Overview's full width, the row after the IsfCard and the

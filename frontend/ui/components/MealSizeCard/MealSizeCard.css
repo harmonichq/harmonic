@@ -22,12 +22,12 @@
 .ui-meal-size__grid--strips {
   grid-template-columns: max-content minmax(0, 1fr);
   column-gap: 12px;
-  row-gap: 2px;
+  row-gap: 0;
 }
 .ui-meal-size__grid--table {
   grid-template-columns: minmax(0, 1fr) repeat(3, max-content);
   column-gap: 20px;
-  row-gap: 6px;
+  row-gap: 4px;
   margin-top: 12px;
   padding-top: 10px;
   border-top: 1px solid var(--wk-rule);
@@ -68,14 +68,11 @@
 .ui-meal-size__climb { font-weight: var(--ui-weight-strong); }
 .ui-meal-size__unit { color: var(--wk-ink-meta); font-size: var(--ui-type-label); }
 
-/* A size's strip: half-transparent dots in its colour, brighter inside its
-   Range, the Range a thick line through them. */
+/* A size's strip, in its colour: its 10–90% a thin capped whisker, its Range a
+   thick line over it (#570). */
 .ui-meal-size__strip { display: block; }
-.ui-meal-size__dot { fill: var(--wk-ink-meta); fill-opacity: .3; }
-.ui-meal-size__dot--in { fill-opacity: .55; }
+.ui-meal-size__whisker { stroke: var(--ui-size); stroke-width: 1.5; fill: none; }
 .ui-meal-size__range { stroke: var(--ui-size); stroke-width: 5; stroke-linecap: round; }
-.ui-meal-size__halo { stroke: var(--wk-surface); stroke-width: 8; stroke-linecap: round; }
-.ui-meal-size__halo--tick { stroke-width: 5; stroke-linecap: butt; }
 
 /* Beneath the axis: what it measures, and the legend on the same line. */
 .ui-meal-size__foot {

@@ -119,13 +119,29 @@ def _at(day, hour):
     return datetime(2026, *day, hour).strftime("%Y-%m-%d %H:%M:%S")
 
 
-def _row(carbs_from, carbs_to, meals, climb, to_peak, at_3h):
-    return {"carbs_from": carbs_from, "carbs_to": carbs_to,
-            "meals": [{"t": t, "carbs": carbs, "climb": c, "to_peak": p, "at_3h": a}
-                      for t, carbs, c, p, a in meals],
-            "climb": dict(zip(("median", "p25", "p75"), climb)),
+def _row(carbs_from, carbs_to, count, climb, to_peak, at_3h):
+    """One size as served: how many meals it counts, its climbs' median and
+    10th, 25th, 75th and 90th percentiles, its median minutes to peak, and its
+    change at three hours with the meals that is read from (#570: no per-meal
+    list)."""
+    return {"carbs_from": carbs_from, "carbs_to": carbs_to, "count": count,
+            "climb": dict(zip(("median", "p10", "p25", "p75", "p90"), climb)),
             "to_peak": {"median": to_peak},
             "at_3h": dict(zip(("count", "median"), at_3h))}
+
+
+_NONE = (None, None, None, None, None)
+
+
+def _rounded(value):
+    """Served numbers to six places, so an interpolated percentile compares as written."""
+    if isinstance(value, float):
+        return round(value, 6)
+    if isinstance(value, dict):
+        return {key: _rounded(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_rounded(item) for item in value]
+    return value
 
 
 @unittest.skipUnless(_HAS_FASTAPI, "api extra not installed")
@@ -142,14 +158,14 @@ class MealSizeReadTest(unittest.TestCase):
     def _body(self, **params):
         response = self.client.get("/api/explore/meal-size", params=params)
         self.assertEqual(response.status_code, 200, response.text)
-        return response.json()
+        return _rounded(response.json())
 
     def _seed(self):
         with Store.open(self.tmp.name) as store:
             store.upsert_cgm(_cgm_rows())
             store.upsert_bolus(_bolus_rows())
 
-    def test_each_size_serves_its_meals_climbs_and_medians(self):
+    def test_each_size_serves_its_counts_and_climb_percentiles(self):
         self._seed()
 
         body = self._body(days=90)
@@ -157,26 +173,14 @@ class MealSizeReadTest(unittest.TestCase):
                                           "data_days": 90})
         self.assertEqual(body["horizon_hours"], 3)
         self.assertEqual(body["sizes"], [
-            _row(None, 25, [
-                (_at((4, 1), 12), 15.0, 30.0, 45.0, 0.0),
-                (_at((4, 2), 12), 20.0, 50.0, 60.0, 10.0),
-                (_at((4, 14), 8), 20.0, 40.0, 30.0, None),
-            ], (40.0, 35.0, 45.0), 45.0, (2, 5.0)),
-            _row(25, 40, [
-                (_at((4, 4), 12), 25.0, 60.0, 60.0, 20.0),
-                (_at((4, 5), 12), 39.0, 70.0, 75.0, 10.0),
-                (_at((4, 14), 10), 35.0, 50.0, 60.0, 0.0),
-                (_at((6, 1), 12), 30.0, 70.0, 60.0, 10.0),
-            ], (65.0, 57.5, 70.0), 60.0, (4, 10.0)),
-            _row(40, 60, [
-                (_at((4, 6), 12), 50.0, 90.0, 90.0, 30.0),
-                (_at((4, 7), 12), 40.0, 100.0, 90.0, 40.0),
-                (_at((4, 13), 12), 45.0, 40.0, 30.0, -20.0),
-            ], (90.0, 65.0, 95.0), 90.0, (3, 30.0)),
-            _row(60, None, [
-                (_at((4, 8), 12), 60.0, 140.0, 120.0, 60.0),
-                (_at((4, 9), 12), 90.0, 128.0, 120.0, None),
-            ], (134.0, 131.0, 137.0), 120.0, (1, 60.0)),
+            # 15 g, 20 g and the 20 g breakfast: climbs 30, 50, 40.
+            _row(None, 25, 3, (40.0, 32.0, 35.0, 45.0, 48.0), 45.0, (2, 5.0)),
+            # 25 g, 39 g, the 35 g meal after breakfast and 1 June's 30 g: 60, 70, 50, 70.
+            _row(25, 40, 4, (65.0, 53.0, 57.5, 70.0, 70.0), 60.0, (4, 10.0)),
+            # 30 g with its 20 g top-up, 40 g and 45 g: 90, 100, 40.
+            _row(40, 60, 3, (90.0, 50.0, 65.0, 95.0, 98.0), 90.0, (3, 30.0)),
+            # 60 g, and 90 g cut by the meal after it: 140, 128.
+            _row(60, None, 2, (134.0, 129.2, 131.0, 137.0, 138.8), 120.0, (1, 60.0)),
         ])
 
     def test_the_window_follows_the_overviews_switch(self):
@@ -187,10 +191,10 @@ class MealSizeReadTest(unittest.TestCase):
         self.assertEqual(body["window"], {"start": _at((5, 26), 0), "end": _at((6, 9), 0),
                                           "data_days": 14})
         self.assertEqual(body["sizes"], [
-            _row(None, 25, [], (None, None, None), None, (0, None)),
-            _row(25, 40, [(_at((6, 1), 12), 30.0, 70.0, 60.0, 10.0)], (70.0, 70.0, 70.0), 60.0, (1, 10.0)),
-            _row(40, 60, [], (None, None, None), None, (0, None)),
-            _row(60, None, [], (None, None, None), None, (0, None)),
+            _row(None, 25, 0, _NONE, None, (0, None)),
+            _row(25, 40, 1, (70.0, 70.0, 70.0, 70.0, 70.0), 60.0, (1, 10.0)),
+            _row(40, 60, 0, _NONE, None, (0, None)),
+            _row(60, None, 0, _NONE, None, (0, None)),
         ])
         refused = self.client.get("/api/explore/meal-size", params={"days": 7})
         self.assertEqual(refused.status_code, 400)
@@ -198,10 +202,10 @@ class MealSizeReadTest(unittest.TestCase):
     def test_a_store_with_no_readings_serves_four_empty_sizes(self):
         body = self._body()
         self.assertEqual(body, {"window": None, "horizon_hours": 3, "sizes": [
-            _row(None, 25, [], (None, None, None), None, (0, None)),
-            _row(25, 40, [], (None, None, None), None, (0, None)),
-            _row(40, 60, [], (None, None, None), None, (0, None)),
-            _row(60, None, [], (None, None, None), None, (0, None)),
+            _row(None, 25, 0, _NONE, None, (0, None)),
+            _row(25, 40, 0, _NONE, None, (0, None)),
+            _row(40, 60, 0, _NONE, None, (0, None)),
+            _row(60, None, 0, _NONE, None, (0, None)),
         ]})
 
 

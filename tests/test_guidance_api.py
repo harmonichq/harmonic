@@ -243,8 +243,8 @@ class GuidanceApiTest(unittest.TestCase):
              patch.object(scenario_mod, "build_model_view",
                           counting("model-view", scenario_mod.build_model_view)), \
              patch.object(api_mod, "analyze", counting("analyze", api_mod.analyze)), \
-             patch.object(api_mod, "build_meal_size",
-                          counting("meal-size", api_mod.build_meal_size)):
+             patch.object(api_mod, "build_meal_size_windows",
+                          counting("meal-size", api_mod.build_meal_size_windows)):
             def read_all():
                 for path, params in (("/api/outcomes", {"window": 14}),
                                      ("/api/model-view", {"date": day}),
@@ -260,7 +260,7 @@ class GuidanceApiTest(unittest.TestCase):
                                json={"generation": current["analysis_generation"]})
             self.assertEqual(saved.status_code, 200, saved.text)
             # Kept in memory, not merely reloadable from the derived results.
-            self.assertTrue(app.state.result_cache.contains(("meal-size", 30)))
+            self.assertTrue(app.state.result_cache.contains(("meal-size",)))
             read_all()
             # Nothing is computed again: the default analysis is keyed by the
             # recorded-data revision, which the snooze did not advance.

@@ -137,9 +137,11 @@ test('switching tabs back and forth reads nothing again', async () => {
   await readSettings(live);
   assert.equal(fake.calls.length, first);
   // One read of each shared answer across every tab: the badges, the roster, the guidance.
-  for (const name of ['status', 'prompts', 'guidance', 'focus', 'navigator', 'time-of-day', 'meal-size']) {
+  for (const name of ['status', 'prompts', 'guidance', 'focus', 'navigator']) {
     assert.equal(fake.count(name), 1, name);
   }
+  assert.equal(fake.count('time-of-day'), 3, 'one profile per Overview window, Day\'s among them');
+  assert.equal(fake.count('meal-size'), 3, 'one Meal size per Overview window');
   assert.equal(fake.count('trials', (c) => !detail(c)), 1);
 });
 
@@ -207,23 +209,70 @@ test('Done records the card\'s subject from the read it was made on, and a waiti
   assert.deepEqual(live.answers.changes.wearer.waiting, []);
 });
 
-test('the Overview reads each window\'s profile and ISF once, when it is shown, shared with the Queue and Day', async () => {
+test('the Overview reads each window\'s profile and ISF once, the first window first and the others behind it, shared with the Queue and Day', async () => {
   const fake = fakeClient();
   const live = createLive({ client: fake.client, glossary: [] });
   const windows = (name) => fake.calls.filter((c) => c.name === name).map((c) => c.args[0] ?? 'default');
   await live.readTab('overview');
-  assert.deepEqual(windows('time-of-day'), [14], 'the first window only');
-  assert.deepEqual(windows('analyze'), [14]);
+  assert.equal(windows('time-of-day')[0], 14, 'the tab is shown once its first window lands');
+  assert.equal(windows('analyze')[0], 14);
   assert.equal(fake.count('navigator'), 0, 'the Overview draws no days');
+  // The other two windows are read behind the first (#566), with no switch to them...
+  await new Promise((resolve) => { setImmediate(resolve); });
+  assert.deepEqual(windows('time-of-day'), [14, 30, 90]);
+  assert.deepEqual(Object.keys(live.answers.overview.wearer.analyze).sort(), ['14', '30', '90']);
+  // ...so switching to one reads nothing more.
+  await live.readWindow('30');
   await live.readWindow('90');
   await live.readWindow('14');
-  assert.deepEqual(windows('time-of-day'), [14, 90], 'a window shown again is not read again');
+  assert.deepEqual(windows('time-of-day'), [14, 30, 90], 'every window, each read once');
+  assert.deepEqual(windows('analyze'), [14, 'default', 90], 'the 30 d ISF is the Queue\'s analysis');
   await live.readTab('queue');
-  await live.readWindow('30');
-  assert.deepEqual(windows('analyze'), [14, 90, 'default'], 'the 30 d ISF is the Queue\'s analysis');
+  assert.deepEqual(windows('analyze'), [14, 'default', 90], 'which the Queue shares');
   assert.deepEqual(Object.keys(live.answers.overview.wearer.analyze).sort(), ['14', '30', '90']);
+  assert.deepEqual(Object.keys(live.answers.overview.wearer.time_of_day).sort(), ['14', '30', '90']);
   await live.readTab('day');
-  assert.deepEqual(windows('time-of-day'), [14, 90, 30], 'Day reads the target range from the first window');
+  assert.deepEqual(windows('time-of-day'), [14, 30, 90], 'Day reads the target range from the first window');
+});
+
+test('an answer the engine served from before its last sync marks its tab, and only it is read again until current (#566)', async () => {
+  const fake = fakeClient();
+  const age = { revision: 6, covers_to: '2026-01-01 00:00:00', newest_covers_to: '2026-01-01 01:00:00' };
+  let earlier = 2;
+  fake.client.fetchExploreTimeOfDay = (...args) => {
+    fake.calls.push({ name: 'time-of-day', args });
+    return Promise.resolve(args[0] === 14 && earlier-- > 0 ? { window: null, input_data_age: age } : { window: null });
+  };
+  const pauses = [];
+  const live = createLive({ client: fake.client, glossary: [], pause: (ms) => { pauses.push(ms); return Promise.resolve(); } });
+  await live.readTab('overview');
+  await live.readWindow('90');
+  assert.equal(live.behind('overview'), true, 'the 14 d profile is an earlier answer');
+  assert.equal(live.behind('day'), true, 'and so is the Day screen\'s, which reads it');
+  assert.equal(live.behind('queue'), false);
+  const outcomes = fake.count('outcomes');
+  await live.catchUp('overview');
+  assert.equal(live.behind('overview'), false, 'read again until current');
+  assert.equal(live.behind('day'), false);
+  assert.deepEqual(pauses, [1000, 2000], 'a pause before each read again, growing');
+  assert.equal(fake.count('time-of-day', (c) => c.args[0] === 14), 3);
+  assert.equal(fake.count('time-of-day', (c) => c.args[0] !== 14), 2, 'the current windows are not read again');
+  assert.equal(fake.count('outcomes'), outcomes, 'nor anything else the tab drew');
+  assert.equal(live.answers.overview.wearer.time_of_day['14'].input_data_age, undefined);
+});
+
+test('an answer that stays behind is read again a bounded number of times', async () => {
+  const fake = fakeClient();
+  fake.client.fetchMealSize = (...args) => {
+    fake.calls.push({ name: 'meal-size', args });
+    return Promise.resolve({ window: null, sizes: [],
+      ...(args[0] === 14 ? { input_data_age: { revision: 1, covers_to: '2026-01-01 00:00:00' } } : {}) });
+  };
+  const live = createLive({ client: fake.client, glossary: [], pause: () => Promise.resolve() });
+  await live.readTab('overview');
+  await Promise.all([live.catchUp('overview'), live.catchUp('overview')]);
+  assert.equal(live.behind('overview'), true, 'still marked, never shown as current');
+  assert.equal(fake.count('meal-size', (c) => c.args[0] === 14), 7, 'six reads again, one catch-up at a time');
 });
 
 test('concurrent tabs share one request for an answer in flight', async () => {
@@ -576,7 +625,7 @@ test('Pin on a standalone habit pins its lever under the habit\'s own subject, w
     input_revision: 7, analysis_generation: 'g1' });
 });
 
-test('the Overview reads each window\'s Meal size once, when it is shown, kept to what the card draws (#501, #565)', async () => {
+test('the Overview reads each window\'s Meal size once, the first window first, kept to what the card draws (#501, #565, #566)', async () => {
   const fake = fakeClient();
   const size = (from, to, count) => ({ carbs_from: from, carbs_to: to, count,
     climb: { median: 62, p10: 40, p25: 55, p75: 70, p90: 88 }, to_peak: { median: 75 }, at_3h: { count: 1, median: 4 } });
@@ -587,16 +636,19 @@ test('the Overview reads each window\'s Meal size once, when it is shown, kept t
   };
   const live = createLive({ client: fake.client, glossary: [] });
   await live.readTab('overview');
-  assert.deepEqual(fake.calls.filter((c) => c.name === 'meal-size').map((c) => c.args[0]), [14], 'the first window only');
+  assert.equal(fake.calls.find((c) => c.name === 'meal-size').args[0], 14, 'the first window first');
   for (const window of ['30', '90', '14', '30']) await live.readWindow(window);
   await live.readTab('overview');
   assert.deepEqual(fake.calls.filter((c) => c.name === 'meal-size').map((c) => c.args[0]), [14, 30, 90],
-    'each window once, when it is shown');
+    'each window once');
   assert.deepEqual(live.answers.overview.wearer.meal_size['90'], {
     window: { data_days: 90 },
     horizon_hours: 3,
     sizes: [size(null, 25, 0), size(25, 40, 1), size(40, 60, 0), size(60, null, 0)],
   }, 'each size as served, the window kept to its days');
   await live.retryTab('overview');
-  assert.equal(fake.count('meal-size'), 4, 'the Overview\'s Retry reads its window again');
+  await new Promise((resolve) => { setImmediate(resolve); });
+  const again = fake.calls.filter((c) => c.name === 'meal-size').slice(3).map((c) => c.args[0]);
+  assert.equal(again[0], 14, 'the Overview\'s Retry reads its first window first');
+  assert.deepEqual(again.sort((a, b) => a - b), [14, 30, 90], 'and every window again, once');
 });

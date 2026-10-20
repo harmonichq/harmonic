@@ -413,6 +413,42 @@ actionability.
 - **WHEN** the findings are requested
 - **THEN** the answer's window is unscoped and its rows are the whole day's
 
+### Requirement: After a write, a fixed read answers at once from its labelled predecessor
+
+While the warm worker runs, a fixed read whose current result is not yet computed
+SHALL answer at once from the newest result of its own key and shape computed
+before the write, carrying `input_data_age` (that result's revision, how far its
+data reaches, and how far the store's data now reaches), and SHALL ask the warm
+worker to compute the current result before its next shape. The worker SHALL take
+the results waiting on it lightest kind first — the profiles, then Meal size, then
+outcomes, then the rest — and in the order asked within a kind. One key SHALL be
+computed by one thread at a time. A warm shape SHALL compute, never answer from a
+predecessor; with no warm worker running, the first read computes. A read with no
+predecessor computes. Every window the Overview switches between — its outcomes,
+its glucose profile, its meal-size read and the analysis behind its
+correction-factor and basal estimates — SHALL be a fixed result, persisted in the
+derived-results file, so a restart answers it without computing. The three
+glucose profiles SHALL be one fixed result, and the three meal-size windows
+another, each computed in one pass over the history its windows share, each read
+serving its own window (#566).
+
+#### Scenario: After a write, every Overview window answers at once, labelled, then current
+
+- **GIVEN** the Overview's glucose profiles and Meal size read once at 14, 30 and
+  90 days
+- **WHEN** a carb entry is written and each window is read again before its new
+  result is computed
+- **THEN** each answers at once with its earlier body and `input_data_age`
+- **AND** the warm worker computes the profiles once and Meal size once, after
+  which every window's read carries no `input_data_age`
+
+#### Scenario: A restart answers every Overview window without computing
+
+- **GIVEN** every Overview read made once at 14, 30 and 90 days
+- **WHEN** the app restarts over the same store and the reads are made again
+- **THEN** each answers the same body, and no analysis, outcomes, profile or
+  meal-size builder runs
+
 ## MODIFIED Requirements
 
 ### Requirement: The heavy read endpoints answer from one per-process result cache
@@ -451,8 +487,10 @@ times in a row, before the loop falls back to hourly; the next success starts th
 count again. A
 fetch that committed nothing MUST NOT invalidate — there is nothing to invalidate
 against, and a failure must never kill the loop. A fetch that wrote calls one
-routine that invalidates first and only then re-warms, so no request can ever be
-served results computed before the new data landed.
+routine that invalidates first and only then re-warms, so no request is ever
+served a result computed before the new data landed as if it were current: until
+a fixed result is computed again, a read of it answers from its predecessor,
+labelled with `input_data_age` (#566).
 
 **What decides this is what the attempt committed, not whether it succeeded.** A
 multi-window pull commits each window as it lands, so an attempt that failed
@@ -465,12 +503,14 @@ compared across a window that closes before the attempt's outcome is recorded,
 because recording the outcome advances that revision itself and would otherwise
 report every failed fetch as a write.
 
-The warm pass covers exactly what the app's five tabs read, in the order a visit
-needs it (#522): the analysis, pooled and live; the findings and guidance
-snapshot; the Finding case-file preparation; the Trial roster; the outcomes, the
-glucose profile and the analysis for each window the Overview switches between;
-the Overview's meal-size read for each window; the day navigator; and the model-view and timeline of the latest day with
-readings and the day before it. Nothing the app does not read is warmed. Any
+The warm pass covers exactly what the app's five tabs read (#522), lightest
+screen first (#566): the Overview's glucose profiles, its meal-size read and its
+outcomes at each window it switches between; the analysis, pooled and live; the
+findings and guidance snapshot; the Finding case-file preparation; the Trial
+roster; the analysis at the Overview's other two windows; the day navigator; and
+the model-view and timeline of the latest day with readings and the day before
+it. A fixed result a read answered from its predecessor is computed before the
+pass's next shape. Nothing the app does not read is warmed. Any
 other date, month, or window stays lazy, so a warm cannot grow without bound;
 selected case-file projections likewise stay lazy behind their warmed prepared
 source. Every write the app makes runs the same pass after it invalidates, and
@@ -493,8 +533,8 @@ the loop.
 - **WHEN** a scheduled fetch commits some of its windows and a later window fails
 - **THEN** the attempt is recorded as a failure, with the last known good counts
   standing and a summary of how far it got, **AND** the cache is invalidated and the
-  landing set re-warmed exactly once, so no read is answered from data the store has
-  already moved past
+  landing set re-warmed exactly once, so no read is answered as current from data the
+  store has already moved past
 
 #### Scenario: A fetch that committed nothing leaves the cache alone
 

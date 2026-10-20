@@ -259,8 +259,22 @@ which bumps the cache and then starts the warm pass in the background. The
 hourly fetch invalidates through `run_fetch_loop`'s `on_write`, and `serve` also
 warms once at start (`warm_on_start`), so a restart is warm before its first
 fetch lands, or when that fetch commits nothing. The warm roster is exactly what
-the five tabs read, in visit order; a new screen read belongs in it. A new write
-endpoint that does not invalidate leaves a stale cache.
+the five tabs read, lightest screen first (the Overview's profiles, Meal size and
+outcomes lead); a new screen read belongs in it. A new write endpoint that does
+not invalidate leaves a stale cache.
+
+**After a write, a fixed read answers from its predecessor, labelled (ADR 566).**
+While the warm worker runs, a fixed result not yet computed for the current
+revision is served at once from the newest one before the write, carrying
+`input_data_age`, and its key is queued for the worker, which computes queued keys
+before its next shape, lightest kind first (`_LIGHTEST`) — one thread per key,
+never a second compute thread. A warm
+shape always computes, and with no worker running the first read computes. The app
+marks a screen drawn from such an answer `stale` and reads it again until it is
+current; never draw one as current. Every window the Overview switches between is
+a fixed result (outcomes, the live analysis, and the profiles and Meal size, each
+one result for all three windows), so a restart answers it from the
+derived-results file. A deploy changes the source fingerprint, so after one everything is cold.
 
 **The store keeps two revisions, and derived results key on the one their
 builder reads (ADR 538).** The input revision advances on every write and is the

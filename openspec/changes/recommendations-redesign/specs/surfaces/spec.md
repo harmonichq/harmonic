@@ -364,6 +364,16 @@ state and a transient bar SHALL show "Not saved" with Retry.
 - **THEN** Overview keeps drawing them, with Unavailable and Retry in its title row
 - **AND** a Retry that succeeds draws the new answers and clears the mark
 
+#### Scenario: A screen drawn from the engine's previous answer is marked until it is current
+
+- **GIVEN** the engine answers an Overview read with its previous answer, labelled
+  with `input_data_age`, because a sync landed and its new answer is not computed yet
+- **WHEN** Overview draws it
+- **THEN** Overview carries Unavailable and Retry in its title row, never drawing it
+  as current
+- **AND** the app reads only those answers again, after pauses of 1, 2, 4, 8, 15 and
+  30 seconds, and clears the mark once every one is current (#566)
+
 ### Requirement: Each screen draws its last answers at once, and reads them again behind them
 
 A tab the person has opened SHALL keep its answers on screen when they leave it
@@ -373,6 +383,14 @@ the API token they were read under, and after a page refresh a tab read before
 SHALL draw those answers at once while its first read asks the engine again. A
 new token SHALL forget every answer kept under the last one, and storage the
 browser refuses SHALL keep nothing, the app reading the engine as before (#522).
+The Overview SHALL read its other two windows behind the first it draws, so
+switching between 14, 30 and 90 days draws at once (#566).
+
+#### Scenario: Switching the Overview's window draws at once
+
+- **GIVEN** the Overview has drawn its first window
+- **WHEN** the person switches to 30 days and then to 90 days
+- **THEN** each draws from answers already read, with no read and no loading state
 
 #### Scenario: A refresh draws the remembered Queue before the engine answers
 

@@ -102,7 +102,8 @@ the flat programmed 40. Every QA case store with meals programs a flat ISF (40,
 or 50 in `ic-block-evidence`) and stamps its meals with it, with two exceptions: `behavioral-precedence` has two
 unstamped meals, both after its first snapshot (rule 2), and
 `behavioral-carb-undercount` stamps 32 against a programmed 40, so it moves under
-rule 1. No QA store has an unstamped meal before its first snapshot. The
+rule 1. Before slice 1 no QA store had an unstamped meal before its first
+snapshot; slice 1's `ic-dose-stamped-isf` adds three, which take rule 3. The
 chart-builder, findings-projection and missed-meal generators write unstamped
 boluses, and the chart-builder store captures its one snapshot a day after it
 starts, so its first day's meals take rule 3. The build re-measures all of them,

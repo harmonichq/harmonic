@@ -5,7 +5,7 @@ import { expectDirections } from '../../direction-check';
 import { expectMetricsAligned } from '../../metrics-check';
 import { failsOnce } from '../../flaky';
 import { expectTabBarEnds } from '../../tabbar-check';
-import { expectHeaderEmpty, expectTitlePrinted } from '../../title-check';
+import { expectAtPaneTop, expectHeaderEmpty, expectTitlePrinted } from '../../title-check';
 import { CHANGES_UNNAMED } from '../../served-variants';
 import { ChangesScreen, type ChangesScreenProps } from './ChangesScreen';
 
@@ -89,7 +89,13 @@ export const DefaultPhone: Story = {
     await expectHeaderEmpty(canvasElement, 'Changes');
   },
 };
-export const DefaultDesktop = story('desktop', DEFAULT);
+export const DefaultDesktop: Story = {
+  ...story('desktop', DEFAULT),
+  play: async ({ canvasElement }) => {
+    await expectHeaderEmpty(canvasElement, 'Changes');
+    await expectAtPaneTop(canvasElement.querySelector<HTMLElement>('.ui-changes__body')!);
+  },
+};
 // Six days in, the basal Trial's every Δ is green or red by the way it moved
 // (In range up, Mean up, Control-IQ's rows neutral), while the pill stays
 // Maturing and no result is shown: the colour is not the verdict.

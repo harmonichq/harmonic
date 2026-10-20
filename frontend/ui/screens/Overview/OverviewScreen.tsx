@@ -102,7 +102,7 @@ function Frame({ layout, state, nav, onRetry }: {
     <div className="ui-overview ui-overview--desktop">
       <NavBar layout="rail" selected="overview" dayCount={dayCount()} {...nav} />
       <section className="ui-overview__pane" data-scroll="page">
-        <div className="ui-overview__width">{header}</div>
+        {header}
         <div className="ui-overview__body">{loading}</div>
       </section>
     </div>
@@ -188,7 +188,7 @@ export function OverviewScreen({
     <div className="ui-overview ui-overview--desktop">
       <NavBar layout="rail" selected="overview" dayCount={dayCount()} {...nav} />
       <section className="ui-overview__pane" data-scroll="page">
-        <div className="ui-overview__width">{header}</div>
+        {header}
         <div className="ui-overview__body">
           {control}
           <div className="ui-overview__columns">{metrics}{glucoseProfile}</div>

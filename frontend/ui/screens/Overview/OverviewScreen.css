@@ -38,8 +38,8 @@
    the profile, the two estimates beneath both. */
 .ui-overview--desktop { display: grid; grid-template-columns: auto 1fr; height: 100%; }
 .ui-overview__pane { box-sizing: border-box; min-height: 0; overflow-y: auto; padding: 24px 32px; }
-.ui-overview--desktop .ui-overview__body,
-.ui-overview__width { max-width: 1120px; }
+.ui-overview--desktop .ui-header,
+.ui-overview--desktop .ui-overview__body { max-width: 1120px; }
 .ui-overview--desktop .ui-overview__control { max-width: 320px; }
 .ui-overview__columns {
   display: grid;

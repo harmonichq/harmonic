@@ -50,9 +50,9 @@ class Meal:
 
     Its anchor time and identity are the first bolus's, so a one-bolus meal's anchor,
     identity and occurrence ids are that bolus's own. It is judged on sums over its
-    members, at the first member's stamped carb ratio (ADR 470 decision 2). The
-    attributes a meal classifier reads (``t``, ``seq_num``, ``carbs``, ``insulin``,
-    ``carb_ratio``, ``bg``) mean the same on a :class:`Meal` and on a one-member
+    members, at the first member's stamped carb ratio (ADR 470 decision 2) and its
+    stamped ISF (ADR 563). The attributes a meal classifier reads (``t``,
+    ``seq_num``, ``carbs``, ``insulin``, ``carb_ratio``, ``isf``, ``bg``) mean the same on a :class:`Meal` and on a one-member
     meal's :class:`~ciq_autotune.events.BolusEvent`.
 
     ``completed`` is true when any member is a :func:`completed_carb_bolus`.
@@ -80,6 +80,10 @@ class Meal:
     @property
     def carb_ratio(self) -> Optional[float]:
         return self.first.carb_ratio
+
+    @property
+    def isf(self) -> Optional[float]:
+        return self.first.isf
 
     @property
     def carbs(self) -> float:

@@ -17,21 +17,10 @@ from ciq_autotune.settings import (
     Snapshot,
     active_schedule,
     changelog,
-    effective_isf,
     parse_pump_settings,
     parse_sleep_schedules,
     programmed_ic_range,
 )
-
-
-class _Estimate:
-    def __init__(self, value):
-        self.value = value
-
-
-class _IsfRow:
-    def __init__(self, value):
-        self.estimate = _Estimate(value)
 
 
 def _seg(start, basal_mu, isf, cr_mu, target):
@@ -200,22 +189,6 @@ class EffectiveSettingsTest(unittest.TestCase):
             active_schedule(snaps, "isf"),
             [(0, 40.0), (300, 40.0), (540, 40.0), (720, 40.0)],
         )
-
-    # --- effective_isf: measured -> programmed median -> None ------------
-    def test_effective_isf_prefers_measured(self):
-        # A measured ISF row wins over the programmed schedule (30).
-        snaps = [self._snap(isf=30)]
-        self.assertEqual(effective_isf([_IsfRow(42.0)], snaps), 42.0)
-
-    def test_effective_isf_falls_back_to_programmed_median(self):
-        # No measured value -> median of the active isf schedule (all 30).
-        snaps = [self._snap(isf=30)]
-        self.assertEqual(effective_isf([_IsfRow(None)], snaps), 30.0)
-        self.assertEqual(effective_isf([], snaps), 30.0)
-
-    def test_effective_isf_none_without_snapshot(self):
-        self.assertIsNone(effective_isf([], []))
-        self.assertIsNone(effective_isf([_IsfRow(None)], []))
 
     # --- programmed_ic_range: honest active-schedule bounds -> None ------
     def test_programmed_ic_range_keeps_real_schedule_bounds(self):

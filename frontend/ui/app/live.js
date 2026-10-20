@@ -58,15 +58,18 @@ const NO_STATUS = { last_attempt_at: null, last_success_at: null, last_error: nu
 // the remembered answers hold no evidence a screen does not read.
 
 /** gen_ui_fixtures._traces: a case file's trace chart, without its anchor lists. */
+const cohort = ({ episodes, points }) => ({ episodes, points });
 const traceChart = ({ anchor, window_min, pattern, typical }) => ({
-  anchor, window_min, pattern: { episodes: pattern.episodes, points: pattern.points }, typical: { points: typical.points },
+  anchor, window_min, pattern: cohort(pattern), typical: { points: typical.points },
 });
 
 /** gen_ui_fixtures._case_file: a case file as its card reads it: a Pattern's trace chart (ADR 523), and a
  *  standalone habit's with the count its card prints, the habit's own claimed of its denominator (ADR 528). */
 const caseFile = (subject, { summary, traces }) => (subject.startsWith('habit:')
   ? { summary: { claimed: summary.claimed, denominator: summary.denominator, noun: summary.noun }, traces: traceChart(traces) }
-  : { traces: traceChart(traces) });
+  // A Pattern's case file also draws each cause, in the engine's order, against its one Typical (ADR 593).
+  : { traces: { ...traceChart(traces),
+    causes: traces.causes.map(({ subject: cause, pattern }) => ({ subject: cause, pattern: cohort(pattern) })) } });
 
 /** gen_ui_fixtures._ic_blocks: the carb-ratio blocks the engine stages a move for, with the runs they count. */
 const icBlocks = (blocks) => blocks.filter((b) => b.asserts_move).map((b) => ({

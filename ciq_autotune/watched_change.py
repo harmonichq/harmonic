@@ -534,6 +534,16 @@ def is_pinnable(lever: str, pattern_key: str | None = None) -> bool:
                for key, _title, levers, _rates, _setting, _family in _ROSTER)
 
 
+def pinnable_members(pattern_key: str, members) -> list[str]:
+    """A Pattern's pinnable habit members, in member order (ADR 593): the levers a
+    Focus started from the Pattern may watch. The Focus endpoint admits a sent lever
+    exactly when it is here, and each cause the findings serve says ``pinnable``
+    from it. Whether the Pattern itself is ready is a separate gate."""
+    return [lever for lever in (member["subject"].split(":", 1)[1] for member in members
+                                if member["kind"] == "habit")
+            if is_pinnable(lever, pattern_key)]
+
+
 def focus_subject(record: dict) -> str:
     """A Focus's one key (ADR 528): the Pattern it was pinned from, else its habit.
 

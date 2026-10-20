@@ -48,7 +48,7 @@ function fakeClient(served = history()) {
       ? { selected: { title: 'Pattern', lever_title: 'Habit', reassessment: { comparison: { ...comparison, outcomes: [] } } } }
       : { trials: served.trials, focuses: served.focuses, admission: served.admission, input_revision: 7 })),
     fetchDiagnoseFindingCasePreparation: answer('case-preparation', () => ({ projection_id: 'fp' })),
-    fetchDiagnoseFindingCase: answer('case', () => ({ summary: { claimed: 1, denominator: 2, noun: 'meals' }, traces: { anchor: 'bolus', window_min: [-30, 240], pattern: { episodes: [], points: [] }, typical: { points: [] } } })),
+    fetchDiagnoseFindingCase: answer('case', () => ({ summary: { claimed: 1, denominator: 2, noun: 'meals' }, traces: { anchor: 'bolus', window_min: [-30, 240], pattern: { episodes: [], points: [] }, typical: { points: [] }, causes: [] } })),
     fetchOutcomes: answer('outcomes', () => ({})),
     fetchExploreTimeOfDay: answer('time-of-day', () => ({})),
     fetchMealSize: answer('meal-size', () => ({ window: null, sizes: [] })),
@@ -595,6 +595,8 @@ test('the Queue and Overview keep only what their charts draw, so the remembered
     anchor: 'nadir', window_min: [0, 180],
     pattern: { anchors: ['2024-05-01 07:00:00'], episodes: [[{ minute: 0, bg: 60 }]], points: [] },
     typical: { anchors: ['2024-05-02 07:00:00'], points: [] },
+    causes: [{ subject: 'habit:over_treated_low',
+      pattern: { anchors: ['2024-05-01 07:00:00'], episodes: [[{ minute: 0, bg: 60 }]], points: [] } }],
   } });
   fake.client.fetchGuidance = () => Promise.resolve({ analysis_generation: 'g1', candidates: [
     { subject: 'pattern:highs_after_treating_lows', kind: 'pattern', admitted: true, preference: { set_aside: false } }] });
@@ -604,6 +606,8 @@ test('the Queue and Overview keep only what their charts draw, so the remembered
   const queue = live.answers.queue.wearer;
   assert.deepEqual(queue.cases.highs_after_treating_lows.traces, {
     anchor: 'nadir', window_min: [0, 180], pattern: { episodes: [[{ minute: 0, bg: 60 }]], points: [] }, typical: { points: [] },
+    // Each cause's own trace, without its anchor list (ADR 593).
+    causes: [{ subject: 'habit:over_treated_low', pattern: { episodes: [[{ minute: 0, bg: 60 }]], points: [] } }],
   });
   assert.deepEqual(queue.analyze.ic_blocks, [{ block_id: 0, start_min: 0, end_min: 1440, current_values: [10],
     recommended: 9, estimate: { value: 8, lo: 7, hi: 9 }, evidence: { counted_runs: [run] } }]);

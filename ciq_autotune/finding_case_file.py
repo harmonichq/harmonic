@@ -10,9 +10,11 @@ import uuid
 
 from .analyzers.classifiers import classify_correction_stacking
 from .analyzers.meals import group_meals
-from .analyzers.scenario.engine import _effective_isf, low_prompt_answers
+from .analyzers.scenario.engine import low_prompt_answers
 from .analyzers.scenario.levers import Exposure, Lever, exposure, outcome_kind, title
-from .analyzers.scenario.outcome_patterns import credited_claims, outcome_window_population
+from .analyzers.scenario.outcome_patterns import (
+    cause_order, credited_claims, outcome_window_population,
+)
 from .analyzers.scenario.evidence_population import policy_for
 from .analyzers.scenario.evaluation import evaluate
 from .analyzers.scenario.model_view import _build_episode_view
@@ -21,6 +23,7 @@ from .analyzers.scenario_config import ScenarioConfig
 from . import event_comparison, findings_projection, outcomes_trend
 from .false_low import drop_readings, false_low_span_records, spans_from_records
 from .result_cache import PREPARATION_LEASE_SECONDS
+from .settings import IsfSource
 from .window_membership import WindowQuery
 
 PREPARATION_SCHEMA = "diagnose-finding-case-file-preparation-v1"
@@ -353,7 +356,10 @@ class PreparedCases:
             "projection": projection,
             "selection": selection,
             "traces": self._pattern_traces(
-                pattern["key"], pattern_roster, claimed_ids,
+                pattern["key"], pattern_roster, claimant_of,
+                [lever for lever, _count in cause_order(
+                    self.pattern_exposures or self.exposures or {}, family.value,
+                    rate_levers)],
                 {member_id: corrections[member_id].get(lever)
                  for member_id, lever in claimant_of.items()},
                 projection if alignment == "event" else _event(
@@ -362,10 +368,11 @@ class PreparedCases:
             ),
         }
 
-    def _pattern_traces(self, key, roster, claimed_ids, correction_of, event):
+    def _pattern_traces(self, key, roster, claimant_of, causes, correction_of, event):
         """The Pattern card's trace chart (ADR 523): the Pattern's episodes and Typical,
         the comparison episodes, each aligned at its start event over the Pattern's
-        window.
+        window. Each cause, in ``causes`` order, is drawn from its own credited
+        Occurrences the same way, against the one Typical (ADR 593).
 
         A meal Pattern starts at the meal's bolus, against its event comparison's
         meals. Lows after correcting highs starts at the correction each low it counts
@@ -373,20 +380,24 @@ class PreparedCases:
         treating lows starts at the low's nadir, against every other low.
         """
         anchor, window = _TRACE_CHART[key]
-        claimed = [member for member in roster if member.id in claimed_ids]
+
+        def anchors(claimed):
+            if anchor == "correction":
+                return sorted({datetime.strptime(correction_of[member.id], FMT)
+                               for member in claimed
+                               if correction_of.get(member.id) is not None})
+            return [member.opportunity.anchor_t for member in claimed]
+
+        own = anchors([member for member in roster if member.id in claimant_of])
         if anchor == "bolus":
             comparison = set(next(cohort for cohort in event["cohorts"]
                                   if cohort["key"] == "comparison")["occurrence_ids"])
-            own = [member.opportunity.anchor_t for member in claimed]
             typical = [member.opportunity.anchor_t for member in roster
                        if member.id in comparison]
         elif anchor == "nadir":
-            own = [member.opportunity.anchor_t for member in claimed]
             typical = [member.opportunity.anchor_t for member in roster
-                       if member.id not in claimed_ids]
+                       if member.id not in claimant_of]
         else:
-            own = sorted({datetime.strptime(correction_of[member.id], FMT) for member in claimed
-                          if correction_of.get(member.id) is not None})
             lone = opportunities.lone_corrections(
                 _window_bolus(self.bolus, self.cgm, self.basal, self.source_window_days),
                 scenario_config=ScenarioConfig())
@@ -394,7 +405,11 @@ class PreparedCases:
                        and self.query.contains(_minute(row.t))]
         return {"anchor": anchor, "window_min": list(window),
                 "pattern": _trace_cohort(own, self.cgm, window, episodes=True),
-                "typical": _trace_cohort(typical, self.cgm, window, episodes=False)}
+                "typical": _trace_cohort(typical, self.cgm, window, episodes=False),
+                "causes": [{"subject": f"habit:{lever}", "pattern": _trace_cohort(
+                    anchors([member for member in roster
+                             if claimant_of.get(member.id) == lever]),
+                    self.cgm, window, episodes=True)} for lever in causes]}
 
 
 # The Pattern card's trace chart, per Pattern (ADR 523): what each episode is
@@ -506,7 +521,7 @@ def _population(
     filtered_bolus = _slice(bolus, start, end)
     filtered_basal = _slice(basal, start, end)
     answers = low_prompt_answers(store, start, end)
-    isf = _effective_isf(bolus, basal, cgm, store.settings_snapshots(), start, end)
+    isf = IsfSource.from_snapshots(store.settings_snapshots())
     evaluated = evaluate(
         filtered_bolus, filtered_cgm, filtered_basal, isf=isf,
         scenario_config=config, low_answers=answers,

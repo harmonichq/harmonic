@@ -280,7 +280,9 @@ class ApiTest(unittest.TestCase):
         self.assertEqual(r.status_code, 200)
         body = r.json()
         self.assertEqual(body["date"], "2026-06-03")
-        self.assertIn("isf", body)
+        # Each meal converts with its own dose-stamped ISF, so no one ISF heads the
+        # day (ADR 563).
+        self.assertNotIn("isf", body)
         self.assertNotIn("programmed_ic", body)
         self.assertIn("cgm", body["window"])
         self.assertIsInstance(body["episodes"], list)

@@ -6,12 +6,13 @@ from datetime import datetime, timedelta
 
 from .analyzers.scenario.anchors import AnchorKind
 from .analyzers.scenario.evaluation import evaluate
-from .analyzers.scenario.engine import _effective_isf, low_prompt_answers
+from .analyzers.scenario.engine import low_prompt_answers
 from .analyzers.scenario.levers import Exposure, Lever, outcome_kind, title
 from .analyzers.scenario.model_view import _build_episode_view, _fmt, stacking_reached_low
 from .analyzers.scenario.opportunities import canonical_anchor_key
 from .analyzers.scenario_config import ScenarioConfig
 from .false_low import drop_readings, false_low_span_records, spans_from_records
+from .settings import IsfSource
 
 
 _FAMILY_FOR_KIND = {
@@ -74,6 +75,16 @@ def _opportunity_identities(families):
     return member_of
 
 
+def _stamp_claim_severity(target: dict, lever: str, severity: float) -> None:
+    """Keep beside a claim the severity of the episode it came from (ADR 593): the
+    largest when one lever claims an occurrence from more than one episode, as the
+    engine takes a policy Occurrence's worst episode. Rounded as the scenario
+    payload serves an episode's severity."""
+    claims = target.setdefault("claim_severity", {})
+    severity = round(severity, 2)
+    claims[lever] = max(claims.get(lever, severity), severity)
+
+
 def build_exposures(store, *, window_days: int = 30) -> dict:
     """Return recent scenario anchors flattened for the Diagnose workstation.
 
@@ -89,6 +100,8 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
     * ``attributed_levers`` — every lever this feed maps onto this opportunity: each
       claim associated with it, and the cross-family low reached by correction
       stacking. The primary driver fields stay unchanged.
+    * ``claim_severity`` — beside every attributed lever, the severity of the episode
+      its claim came from (ADR 593); absent on an occurrence nothing claims.
     * ``clean`` = ``n - attributed`` — no claim is associated with this occurrence.
       It says nothing about the episode: a high in a meal-driven episode is "clean"
       while its episode carries a lever, because the meal anchor drove it.
@@ -128,7 +141,7 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
     window_bolus = _slice(bolus, start, now)
     window_basal = _slice(basal, start, now)
     low_answers = low_prompt_answers(store, start, now)
-    isf = _effective_isf(bolus, basal, cgm, store.settings_snapshots(), start, now)
+    isf = IsfSource.from_snapshots(store.settings_snapshots())
     scenario_config = ScenarioConfig()
 
     evaluated = evaluate(window_bolus, window_cgm, window_basal, isf=isf,
@@ -169,7 +182,7 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
         if reached_low is not None:
             target_attributions.append(
                 ("lows", reached_low.t, attribution.lever.value,
-                 outcome_minute, attribution.driver_anchor.t)
+                 outcome_minute, attribution.driver_anchor.t, evaluated_episode.severity)
             )
         retained = {id(item): verdicts for item, verdicts
                     in zip(episode_anchors.anchors, attribution.anchor_verdicts)}
@@ -217,15 +230,17 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
                               if verdict.classifier == lever and verdict.matched
                               and verdict.correction_t is not None), None)
             claimed.append(((claim.driver_family, claim.driver_source_key), lever,
-                            outcome_minute, episode["steps"][0]["text"], corrected))
+                            outcome_minute, episode["steps"][0]["text"], corrected,
+                            evaluated_episode.severity))
 
     # A claim lands once the walk is done: an over-treated low claimed from its
     # rebound's High is the crash low, which an earlier episode emitted. The first
     # claim on an opportunity is its cause; every claim is one of its levers, and a
     # later one keeps where its own consequence landed.
-    for identity, lever, outcome_minute, text, corrected in claimed:
+    for identity, lever, outcome_minute, text, corrected, severity in claimed:
         target = by_identity[identity]
         target["attributed_levers"].append(lever)
+        _stamp_claim_severity(target, lever, severity)
         if corrected is not None:
             target.setdefault("corrections", {})[lever] = _fmt(corrected)
         if target["cause_lever"] is not None:
@@ -237,7 +252,7 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
         if outcome_minute is not None:
             target["outcome_minute"] = outcome_minute
 
-    for family_name, target_t, lever, outcome_minute, dose_t in target_attributions:
+    for family_name, target_t, lever, outcome_minute, dose_t, severity in target_attributions:
         target = next(
             (
                 item for item in families[family_name]["occurrences"]
@@ -247,6 +262,7 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
         )
         if target is not None and lever not in target["attributed_levers"]:
             target["attributed_levers"].append(lever)
+            _stamp_claim_severity(target, lever, severity)
             # A stacked pair reaches its low from the stacking dose, its driver.
             target.setdefault("corrections", {})[lever] = _fmt(dose_t)
             if outcome_minute is not None:

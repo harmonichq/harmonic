@@ -252,7 +252,7 @@ jobs:
       # five kinds, a queued carb ratio, a Pattern served as its habit whose
       # count its habit's own count would understate, and a maturing carb ratio
       # Trial retained by an earlier release (#554).
-      - name: Contract-test the live adapter on a queued ISF, active Trials, Day findings, a queued I:C and a collapsed Pattern
+      - name: Contract-test the live adapter on a queued ISF, active Trials, Day findings, a queued I:C, a collapsed Pattern and a two-cause Pattern
         run: |
           uv run python scripts/smoke_app.py --case isf-strengthen --then node --test frontend/ui/app/live.contract.test.mjs
           uv run python scripts/smoke_app.py --case c3-trial --then node --test frontend/ui/app/live.contract.test.mjs
@@ -261,6 +261,7 @@ jobs:
           uv run python scripts/smoke_app.py --case basal-and-carb-ratio-lower --then node --test frontend/ui/app/live.contract.test.mjs
           uv run python scripts/smoke_app.py --case pattern-correction-collapse --then node --test frontend/ui/app/live.contract.test.mjs
           uv run python scripts/smoke_app.py --case behavioral-missed-meal --then node --test frontend/ui/app/live.contract.test.mjs
+          uv run python scripts/smoke_app.py --case pattern-meal-two-causes --then node --test frontend/ui/app/live.contract.test.mjs
 
   docker-pr:
     name: build + smoke-test image

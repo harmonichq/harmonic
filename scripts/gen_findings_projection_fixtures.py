@@ -391,6 +391,8 @@ def _occurrence(ep_id, kind, at, *, lever=None, worst_bg=None, bg=None, insulin=
         "kind": kind, "label": kind.title(), "state": state,
         "attributed": lever is not None,
         "attributed_levers": [] if lever is None else [lever.value],
+        # The claiming episode's severity (ADR 593), one synthetic value for every claim.
+        **({} if lever is None else {"claim_severity": {lever.value: 600.0}}),
         "cause_lever": None if lever is None else lever.value,
         "cause_title": None if lever is None else title(lever),
         "text": text, "verdicts": verdicts, "ep_id": ep_id,
@@ -520,6 +522,11 @@ def _real_over_treated_low_occurrences():
     # Glucose anchors: the producer serves their anchor bolus as explicit nulls.
     for item in selected.values():
         item.update(insulin=None, carbs=None)
+    # Each claim's episode severity (ADR 593), as ``build_exposures`` scores these
+    # two claimed lows over ``_over_treated_fixture_events()``, read once: the slice
+    # was frozen before the feed served it.
+    selected["fired"]["claim_severity"] = {"over_treated_low": 4332.5}
+    selected["outranked"]["claim_severity"] = {"correction_on_iob": 1731.25}
     return selected
 
 

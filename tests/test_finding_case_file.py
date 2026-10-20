@@ -624,6 +624,8 @@ def test_pattern_case_uses_one_exposure_population_and_existing_member_states():
              "bg": None, "insulin": 4, "carbs": 40, "attributed": index < 2,
              "attributed_levers": (["carb_undercount", "late_bolus"][index:index + 1]
                                      if index < 2 else []),
+             **({"claim_severity": {("carb_undercount", "late_bolus")[index]: 600.0}}
+                if index < 2 else {}),
              "cause_lever": ("carb_undercount", "late_bolus", None)[index],
              "verdicts": ([{"classifier": "carb_undercount", "matched": False,
                              "silence_reason": "under_threshold"}]
@@ -699,6 +701,7 @@ def _pattern_meal_case(states):
             {"ep_id": f"ep-{index}", "t": stamp, "date": stamp[:10], "kind": "meal",
              "bg": 120, "attributed": state == "claimed",
              "attributed_levers": ["carb_undercount"] if state == "claimed" else [],
+             **({"claim_severity": {"carb_undercount": 600.0}} if state == "claimed" else {}),
              "cause_lever": "carb_undercount" if state == "claimed" else None,
              "verdicts": [{"classifier": "carb_undercount", **_MEAL_STATES[state]}]}
             for index, (state, stamp) in enumerate(zip(states, stamps))
@@ -750,6 +753,7 @@ def _meal_row(stamp, cause, claimants, matched):
     return {
         "ep_id": f"ep-{stamp[11:13]}", "t": stamp, "date": stamp[:10], "kind": "meal",
         "bg": 120, "attributed": cause is not None, "attributed_levers": list(claimants),
+        **({"claim_severity": {lever: 600.0 for lever in claimants}} if claimants else {}),
         "cause_lever": cause,
         "cause_title": cause,
         "verdicts": [{"classifier": lever, "matched": lever in matched,
@@ -846,6 +850,7 @@ def test_circular_pattern_projection_and_case_share_explicit_population():
             "label": "Meal", "bg": None, "insulin": 4.0, "carbs": 40.0, "worst_bg": 220,
             "state": "fired" if lever else "clean", "attributed": lever is not None,
             "attributed_levers": [lever] if lever else [], "cause_lever": lever,
+            **({"claim_severity": {lever: 600.0}} if lever else {}),
             "cause_title": lever.replace("_", " ").title() if lever else None,
             "text": "Synthetic bounded episode evidence.", "verdicts": [],
             "outcome_minute": outcome_minute,
@@ -936,6 +941,7 @@ def test_wrap_heads_a_pattern_and_withholds_only_its_uninspectable_member():
             "date": member.anchor_t.date().isoformat(), "kind": "meal",
             "bg": None, "insulin": 4, "carbs": 40,
             "attributed": True, "attributed_levers": [lever.value],
+            "claim_severity": {lever.value: 600.0},
             "cause_lever": lever.value, "verdicts": [],
         }]}}},
     )
@@ -1540,6 +1546,7 @@ def test_a_pattern_cause_carries_only_its_claimants_own_narrative():
         return {"ep_id": f"ep-{stamp}", "t": stamp, "date": stamp[:10], "kind": "meal",
                 "bg": None, "insulin": 4.0, "carbs": 40.0, "attributed": cause is not None,
                 "attributed_levers": claims, "cause_lever": cause, "text": text,
+                **({"claim_severity": {lever: 600.0 for lever in claims}} if claims else {}),
                 "verdicts": [{"classifier": "carb_undercount", "matched": matched,
                               "silence_reason": None if matched else "no_trigger",
                               "detail": f"Synthetic sentence at {stamp[11:16]}."}]}

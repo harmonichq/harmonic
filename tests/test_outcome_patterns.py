@@ -471,3 +471,47 @@ class PatternUncertainTest(unittest.TestCase):
                 self.assertEqual((pattern['k'], pattern['n']), (k, n))
                 self.assertEqual(pattern['admission_route'], 'none')
                 self.assertIs(pattern['wide'], wide)
+
+
+def _claim(t, **severity):
+    return {"t": t, "attributed_levers": list(severity), "claim_severity": severity}
+
+
+class CauseOrderTest(unittest.TestCase):
+    """ADR 593: a Pattern's causes by summed claim severity, crediting unchanged."""
+
+    LEVERS = ("carb_undercount", "late_bolus")
+
+    def _order(self, *occurrences):
+        from ciq_autotune.analyzers.scenario.outcome_patterns import cause_order
+        return cause_order({"exposures": {"meals": {"occurrences": list(occurrences)}}},
+                           "meals", self.LEVERS)
+
+    def test_equal_harm_keeps_roster_order(self):
+        self.assertEqual(self._order(_claim("2024-05-02 12:00:00", late_bolus=500.0),
+                                     _claim("2024-05-03 12:00:00", carb_undercount=500.0)),
+                         [("carb_undercount", 1), ("late_bolus", 1)])
+
+    def test_the_larger_summed_harm_leads(self):
+        self.assertEqual(self._order(_claim("2024-05-02 12:00:00", carb_undercount=300.0),
+                                     _claim("2024-05-03 12:00:00", carb_undercount=300.0),
+                                     _claim("2024-05-04 12:00:00", late_bolus=700.0),
+                                     {"t": "2024-05-05 12:00:00", "attributed_levers": []}),
+                         [("late_bolus", 1), ("carb_undercount", 2)])
+
+    def test_a_doubly_claimed_meal_counts_once_for_the_first_lever_and_its_own_claim(self):
+        # The second lever's claims are the more severe, but the shared meal is
+        # credited to the first in roster order, with only that lever's severity.
+        self.assertEqual(self._order(
+            _claim("2024-05-02 12:00:00", carb_undercount=100.0, late_bolus=900.0),
+            _claim("2024-05-03 12:00:00", carb_undercount=100.0),
+            _claim("2024-05-04 12:00:00", late_bolus=250.0),
+        ), [("late_bolus", 1), ("carb_undercount", 2)])
+        self.assertEqual(self._order(
+            _claim("2024-05-02 12:00:00", carb_undercount=100.0, late_bolus=900.0),
+            _claim("2024-05-04 12:00:00", late_bolus=150.0),
+        ), [("late_bolus", 1), ("carb_undercount", 1)])
+        self.assertEqual(self._order(
+            _claim("2024-05-02 12:00:00", carb_undercount=100.0, late_bolus=900.0),
+            _claim("2024-05-04 12:00:00", late_bolus=50.0),
+        ), [("carb_undercount", 1), ("late_bolus", 1)])

@@ -19,12 +19,12 @@ caveats/settling). Its own
 
 Two correctness rules this module is built around (issue #131):
 
-* **Fixed ISF.** Every window's behavior attribution is judged against the **constant
-  current-profile ISF**, held identical across all windows — never the
-  per-window ``analyze_isf`` estimate, which swings ~3× on 14 d and injects a phantom
-  ``carb_undercount`` (while starving ``late_bolus``). A behavior trend must reflect
-  behavior, not estimator noise. Carb-undercount uses each meal's Dose-stamped I:C;
-  an unstamped historical meal stays unknown rather than borrowing today's profile.
+* **Recorded ISF.** Every window's behavior attribution converts each meal with the
+  ISF the pump stamped on it, else its programmed segment as of then (ADR 563) —
+  never the per-window ``analyze_isf`` estimate, which swings ~3× on 14 d and injects
+  a phantom ``carb_undercount`` (while starving ``late_bolus``). A behavior trend must
+  reflect behavior, not estimator noise. Carb-undercount uses each meal's Dose-stamped
+  I:C; an unstamped historical meal stays unknown rather than borrowing today's profile.
 
 * **Honest denominators.** Each behavior keeps its **own** exposure denominator
   (``missed_meal`` on highs, ``correction_stacking`` on correction-pairs) even where
@@ -66,6 +66,7 @@ from .analyzers.scenario import (
 )
 from .analyzers.meals import ARC_PEAK_HORIZON_MIN, group_meals, meal_peak
 from .false_low import drop_readings, false_low_spans
+from .settings import IsfSource
 from .analyzers.scenario.levers import recommendation, title
 from .analyzers.scenario.evidence_population import policy_for
 from .analyzers.scenario.preempted import is_preempted_low_entry
@@ -110,7 +111,10 @@ from .rest_window import detect_rest_windows
 # ``observed_days``: coverage plus the four rescue-evidence states (confirmed rescue /
 # explicit no / not sure / no recorded observation), so each Outcomes window names what
 # the rescue log knew, not just how many days it was watching (ADR 467).
-SCHEMA_VERSION = 10
+# v11 (#589): ``profile_isf`` is removed. The behaviour tally converts each meal with
+# its dose-stamped ISF (else its programmed segment as of then, ADR 563) instead of the
+# schedule median it reported.
+SCHEMA_VERSION = 11
 
 # How much context to pad each window slice by when judging correction stacks and the
 # post-meal arc, so an anchor near a window edge still sees the boluses/CGM around it.
@@ -562,7 +566,6 @@ class OutcomesTrend:
 
     schema_version: int
     window_days: int
-    profile_isf: Optional[float]
     profile_ic: Optional[ProgrammedIcRange]
     windows: List[WindowMeta] = field(default_factory=list)
     behaviors: List[BehaviorTrend] = field(default_factory=list)
@@ -578,7 +581,6 @@ class OutcomesTrend:
         return {
             "schema_version": self.schema_version,
             "window_days": self.window_days,
-            "profile_isf": self.profile_isf,
             "profile_ic": self.profile_ic.to_dict() if self.profile_ic is not None else None,
             "windows": [w.to_dict() for w in self.windows],
             "behaviors": [b.to_dict() for b in self.behaviors],
@@ -825,12 +827,11 @@ def summarize_trend(
 ) -> OutcomesTrend:
     """Build the Outcomes trend for ``store`` (the CLI ``outcomes-trend`` entry).
 
-    Reads CGM / bolus / basal / settings once, resolves the **fixed** current-profile
-    ISF (held constant across every window — the #131 correctness rule), tiles the
-    data into equal ``window_days`` windows ending at ``now``, and for each window
-    computes the glycemic metrics + post-meal arc over the CGM series and behavior
-    attributions via the tally-only scenario path. Carb-undercount uses each meal's
-    dose-stamped I:C. ``now`` defaults to the latest basal, CGM or bolus instant (so
+    Reads CGM / bolus / basal / settings once, tiles the data into equal
+    ``window_days`` windows ending at ``now``, and for each window computes the
+    glycemic metrics + post-meal arc over the CGM series and behavior attributions via
+    the tally-only scenario path. Carb-undercount uses each meal's dose-stamped ISF and
+    I:C (ADR 563), never a per-window estimate (the #131 correctness rule). ``now`` defaults to the latest basal, CGM or bolus instant (so
     a static DB summarizes its own tail); pass it for deterministic tests.
 
     The rolling-window series are the command line's: ``/api/outcomes/trend`` serves
@@ -864,9 +865,10 @@ def summarize_trend(
     # from the tuning path, while a late rescue `no` (per-window filtered below) does not.
     cgm = drop_readings(cgm, false_low_spans(cgm, prompt_rows))
 
-    # Fixed ISF for attribution plus the active I:C range for display. Each meal's
-    # judgment uses its own dose stamp, never this current-profile display value.
-    profile_isf, profile_ic = _profile_settings(snaps)
+    # The active I:C range for display. Each meal's judgment uses its own dose stamps
+    # (ADR 563), never this current-profile display value.
+    profile_ic = _profile_ic(snaps)
+    isf = IsfSource.from_snapshots(snaps)
 
     bounds = _window_bounds(now, earliest, window_days)
     # Detect each Rest window once over the full history so a reporting-window edge
@@ -1001,7 +1003,7 @@ def summarize_trend(
         overnight_low_n.append(low_n)
         overnight_rest_n.append(rest_n)
 
-        # Behaviors: fixed profile ISF plus each meal's historical Dose-stamped I:C.
+        # Behaviors: each meal's historical Dose-stamped ISF and I:C.
         # Observation-aware, like the rescue carbs above (#467): a rescue low-prompt
         # answer (carbs / no / not-sure) may reclassify this window's over-treated-low
         # attribution only if it was *recorded* by the window's endpoint — an answer
@@ -1014,7 +1016,7 @@ def summarize_trend(
                      if a.answer == "false-low"
                      or (a.answered_at or a.anchor_t) <= end]
         exposure_counts, attributed = tally_attributions(
-            w_bolus, w_cgm, w_basal, isf=profile_isf,
+            w_bolus, w_cgm, w_basal, isf=isf,
             scenario_config=scenario_config,
             low_answers=w_answers,
         )
@@ -1130,7 +1132,6 @@ def summarize_trend(
     return OutcomesTrend(
         schema_version=SCHEMA_VERSION,
         window_days=window_days,
-        profile_isf=profile_isf,
         profile_ic=profile_ic,
         windows=windows,
         behaviors=behaviors,
@@ -1167,21 +1168,13 @@ def _data_anchor(basal, cgm, bolus) -> datetime:
     return max(times) if times else datetime.now()
 
 
-def _profile_settings(snaps) -> tuple:
-    """The fixed profile ISF plus real bounds of the programmed I:C schedule.
-
-    ISF remains the active schedule median, deliberately not the noisy per-window
-    fasting estimate (#131). I:C is display-only: meal judgments use dose stamps.
-    """
+def _profile_ic(snaps) -> Optional[ProgrammedIcRange]:
+    """The real bounds of the programmed I:C schedule, for display only: meal
+    judgments use dose stamps."""
     from . import settings as settings_mod
 
-    if not snaps:
-        return None, None
-    isf_sched = [v for _, v in settings_mod.active_schedule(snaps, "isf")]
-    profile_isf = float(statistics.median(isf_sched)) if isf_sched else None
-    ic_range = settings_mod.programmed_ic_range(snaps)
-    profile_ic = ProgrammedIcRange(*ic_range) if ic_range is not None else None
-    return profile_isf, profile_ic
+    ic_range = settings_mod.programmed_ic_range(snaps) if snaps else None
+    return ProgrammedIcRange(*ic_range) if ic_range is not None else None
 
 
 # --- CLI renderer (mirrors outcomes.markdown_outcomes) ---------------------
@@ -1239,7 +1232,6 @@ def markdown_trend(trend: OutcomesTrend) -> str:
     out: List[str] = []
     out.append("# Control-IQ Autotune — outcomes trend")
     out.append("")
-    isf = f"{t.profile_isf:.0f}" if t.profile_isf is not None else "—"
     if t.profile_ic is None:
         ic = "—"
     elif t.profile_ic.min == t.profile_ic.max:
@@ -1247,7 +1239,7 @@ def markdown_trend(trend: OutcomesTrend) -> str:
     else:
         ic = f"{t.profile_ic.min:.1f}–{t.profile_ic.max:.1f} · varies by time"
     out.append(
-        f"- {len(w)} × {t.window_days}d windows · fixed profile ISF {isf} mg/dL/U · "
+        f"- {len(w)} × {t.window_days}d windows · each meal's dose-stamped ISF · "
         f"I:C {ic} g/U"
     )
     if w:
@@ -1274,8 +1266,7 @@ def markdown_trend(trend: OutcomesTrend) -> str:
     out.append("## Behaviors — problem rate per window (lower is better)")
     out.append("")
     out.append(
-        "_Judged against the fixed current-profile ISF and each meal's "
-        "Dose-stamped I:C across all windows._"
+        "_Judged against each meal's Dose-stamped ISF and I:C across all windows._"
     )
     out.append("")
     out.append("| Behavior | Exposure | Trend (oldest → newest) | Current | Δ |")

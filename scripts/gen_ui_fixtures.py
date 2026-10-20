@@ -1016,9 +1016,10 @@ def _resolve_active_focus(client: TestClient) -> None:
 
 def _days(client: TestClient, navigator: dict) -> dict:
     """One day's timeline and logged carbs for each Day story, by rule: the
-    latest day with readings, a site change and no logged carbs, the latest of
-    the days with the most logged carbs, the first day after the history ends,
-    and the latest day with readings (the Day screen's default)."""
+    latest day with readings, a site change and no logged carbs; among the days
+    with logged carbs, the one whose served findings name the most distinct
+    habits, then the most logged carbs, then the latest; the first day after the
+    history ends; and the latest day with readings (the Day screen's default)."""
     logged: dict = {}
     for entry in _get(client, "/api/carbs")["carb_entries"]:
         logged[entry["t"][:10]] = logged.get(entry["t"][:10], 0) + 1
@@ -1029,9 +1030,14 @@ def _days(client: TestClient, navigator: dict) -> dict:
         return bool(_get(client, "/api/timeline", start=start.isoformat(),
                          end=(start + timedelta(days=1)).isoformat())["pump_events"])
 
+    def habits(iso: str) -> int:
+        return len({lever["lever"] for finding in _get(client, "/api/model-view", date=iso)["findings"]
+                    for lever in finding["levers"]})
+
     picks = {
         "default": next(iso for iso in reversed(with_data) if iso not in logged and site_change(iso)),
-        "with_carbs": max((iso for iso in with_data if iso in logged), key=lambda iso: (logged[iso], iso)),
+        "with_carbs": max((iso for iso in with_data if iso in logged),
+                          key=lambda iso: (habits(iso), logged[iso], iso)),
         "no_data": next(d["iso"] for d in navigator["days"] if not d["has_data"] and d["iso"] > with_data[-1]),
         "latest": with_data[-1],
     }
@@ -1138,7 +1144,8 @@ def _pin_habit(client: TestClient) -> None:
 
 
 ROW_FIELDS = ("id", "kind", "title", "chips", "claimed_by", "lever", "parameter",
-              "count_sentences", "fold_sentences", "span", "members", "served_as")
+              "count_sentences", "fold_sentences", "span", "members", "served_as",
+              "cause_counts")
 
 
 def _queue_store(client: TestClient) -> dict:
@@ -1220,8 +1227,12 @@ def _traces(served: dict) -> dict:
     """A case file's trace chart, trimmed to what the open Pattern card draws: the
     anchor and window, the Pattern's episodes and bins, and Typical's bins (ADR 523)."""
     return {"anchor": served["anchor"], "window_min": served["window_min"],
-            "pattern": {field: served["pattern"][field] for field in ("episodes", "points")},
+            "pattern": _cohort(served["pattern"]),
             "typical": {"points": served["typical"]["points"]}}
+
+
+def _cohort(drawn: dict) -> dict:
+    return {field: drawn[field] for field in ("episodes", "points")}
 
 
 def _case_file(subject: str, served: dict) -> dict:
@@ -1231,7 +1242,11 @@ def _case_file(subject: str, served: dict) -> dict:
     if subject.startswith("habit:"):
         return {"summary": {field: served["summary"][field] for field in ("claimed", "denominator", "noun")},
                 "traces": _traces(served["traces"])}
-    return {"traces": _traces(served["traces"])}
+    # A Pattern's case file also draws each cause, in the engine's order, against
+    # its one Typical (ADR 593).
+    return {"traces": _traces(served["traces"]) | {"causes": [
+        {"subject": cause["subject"], "pattern": _cohort(cause["pattern"])}
+        for cause in served["traces"]["causes"]]}}
 
 
 def _cases(client: TestClient, subjects: list[str]) -> dict:

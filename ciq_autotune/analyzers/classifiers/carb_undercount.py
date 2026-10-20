@@ -29,9 +29,10 @@ logged"), **never asserted**. And a runaway that is actually a rebound off a rec
 low / defensive suspend is not a meal at all — the shared :func:`upstream_cause`
 gate excludes it before we ever call it an undercount.
 
-Pure function, no I/O, no registry — the scenario engine (#70) supplies ``isf``;
-the historical I:C witness rides on ``meal.carb_ratio`` (this classifier never
-projects today's profile backward).
+Pure function, no I/O, no registry — the scenario engine (#70) supplies the
+:class:`~ciq_autotune.settings.IsfSource` that converts each meal (ADR 563); the
+historical I:C witness rides on ``meal.carb_ratio`` (this classifier never projects
+today's profile backward).
 """
 
 from __future__ import annotations
@@ -41,6 +42,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Optional, Sequence
 
+from ...settings import IsfSource
 from ...events import BasalEvent, BolusEvent, CgmReading
 from ...model import CgmSeries
 from ..meals import Meal, next_meal_t
@@ -111,14 +113,16 @@ def classify_carb_undercount(
     basal_events: Sequence[BasalEvent] = (),
     bolus_events: Sequence[BolusEvent] = (),
     *,
-    isf: Optional[float],
+    isf: Optional[IsfSource],
     scenario_config: ScenarioConfig = ScenarioConfig(),
 ) -> CarbUndercountVerdict:
     """Did ``meal`` run away high because the carbs were badly undercounted?
 
     ``meal`` is the :class:`~..meals.Meal` the engine passes (ADR 470); a unit test
-    that hands one bolus gets a one-member meal's judgement. ``isf`` is the effective
-    correction factor. I:C comes only from ``meal.carb_ratio``: the setting the pump
+    that hands one bolus gets a one-member meal's judgement. ``isf`` answers the
+    correction factor that converts this meal's rise: the one stamped on its first
+    bolus, else its programmed segment as of then, else none (ADR 563), and a meal
+    with none is left unjudged. ``None`` converts no meal. I:C comes only from ``meal.carb_ratio``: the setting the pump
     stamped on the meal's first bolus. ``meal.carbs`` and ``meal.insulin`` are the
     logged carbs and delivered dose, summed over the meal's members.
 
@@ -150,7 +154,8 @@ def classify_carb_undercount(
     logged = meal.carbs
     dose = meal.insulin
     meal_ic = meal.carb_ratio
-    if (isf is None or isf <= 0 or meal_ic is None or meal_ic <= 0
+    meal_isf = isf.at(meal) if isf is not None else None
+    if (meal_isf is None or meal_ic is None or meal_ic <= 0
             or logged is None or logged <= 0 or dose is None or dose <= 0):
         return CarbUndercountVerdict(
             matched=False,
@@ -209,7 +214,7 @@ def classify_carb_undercount(
     # The insulin the runaway still owed on top of the delivered dose, then the
     # carbs that whole insulin amount covers at the programmed ratio. Same
     # (bg_error)/isf → units → carbs primitive analyze_ic uses, off the peak.
-    implied_correction = (peak - baseline) / isf
+    implied_correction = (peak - baseline) / meal_isf
     implied_insulin = dose + implied_correction
     implied_carbs = implied_insulin * meal_ic
 

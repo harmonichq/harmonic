@@ -33,7 +33,7 @@
 - [x] 5.1 `Screens/DrillDown` (`frontend/ui/screens/DrillDown/DrillDown.stories.tsx`) renders the shipped `QueueScreen` opened on the drill-down, from the generated stores: Open and Pinned at 390x844 (re-approval against the served traces), Desktop at 1440x900, Loading, NotSaved (a cause Focus that fails once), FocusStarted (the bar on the drill-down), Unpinnable (`correction-collapse`), and a Back play ("‹ Queue" and Escape return with the card open)
 - [x] 5.2 `Screens/Queue`: MultiCauseOpen (no button, the "›" on the chart, the chart opens the drill-down) and MultiCausePinned ("Focus" over Late bolus), phone and desktop; FocusStarted on a habit card with the Changes action calling the nav; every story whose store serves an active Focus asserts no card offers Focus; JustSnoozed asserts "Snoozed until"
 - [x] 5.3 `PatternCard`, `HabitCard` and `TransientBar` stories: Focus for Pin in every play; a multi-cause card; the caption + value pinned state; the `focused` bar
-- [ ] 5.4 `npm run test:ui` clean for every story above; `UI_STORY=<id part>` while iterating
+- [x] 5.4 `npm run test:ui` clean for every story above; `UI_STORY=<id part>` while iterating
 
 ## 6. The contract test
 
@@ -49,5 +49,5 @@
 
 ## 8. Verify and evidence
 
-- [ ] 8.1 Run each complete suite of the pull-request gate once, on the commit that will be pushed
+- [x] 8.1 Run each complete suite of the pull-request gate once, on the commit that will be pushed
 - [ ] 8.2 Attach to the pull request, per ui-craft `revise` §4: before/after pairs from the same QA stores for every story in 5.1–5.3 and the live QA serve's Queue at 390x844 and 1440x900; the must-survive lines of both locks each with its render or live check; the precheck output; the base SHA, the quoted safe-start command and its data source; every Amendments line

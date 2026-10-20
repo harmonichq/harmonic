@@ -3,13 +3,13 @@
 // Sourced value naming its field or formula; nothing here invents a value.
 //
 // The wearer's own outcomes are the top-level `outcomes`; the other stores'
-// answers sit under `overview.<store>`. The glucose profile and the ISF
+// answers sit under `overview.<store>`. The glucose profile and the basal
 // estimate are served per window, under `time_of_day.<window>` and
 // `analyze.<window>`; a window the live adapter has not read yet is absent.
 // The Meal size card is served per window too, under `meal_size.<window>` (#565).
 import { answers, sourced, type Format, type Sourced } from './answers';
 import { delta, type Change, type Metric } from './direction';
-import { PARAMETER_FORMATS, PARAMETER_UNITS } from './settings-model';
+import { PARAMETER_UNITS } from './settings-model';
 
 export type OverviewStore = keyof typeof answers.overview;
 export type Window = '14' | '30' | '90';
@@ -163,65 +163,6 @@ export function metricState(state: 'better' | 'worse' | 'unavailable' | 'no_prev
   throw new Error(`no served metric is ${state}`);
 }
 
-// --- IsfCard -----------------------------------------------------------------
-
-export type IsfData = {
-  current: Sourced<number>;
-  /** The engine's one ISF staging verdict (`asserts_move`): only then is
-   *  "current → recommended" shown. */
-  recommended: Sourced<number> | null;
-  estimate: Sourced<number>;
-  lo: Sourced<number>;
-  hi: Sourced<number>;
-  /** The engine flags the estimate wide: Uncertain. */
-  uncertain: boolean;
-  /** The fasting nights the estimate counts. */
-  nights: Sourced<number>;
-  fits: { rate: Sourced<number> }[];
-  roster: string;
-  units: string;
-};
-
-export type IsfAnswer = {
-  current: number | null;
-  recommended: number | null;
-  asserts_move: boolean;
-  estimate: { value: number; lo: number; hi: number; wide: boolean; n_clusters: number } | null;
-  evidence: { night_fits: { date: string; isf: number }[] };
-};
-
-/** The ISF estimate over `window`: null when it has not been read yet, 'none'
- *  when the engine serves no estimate (or no programmed value to draw it
- *  against). */
-export function isfEstimate(store: OverviewStore, window: Window): IsfData | 'none' | null {
-  const served = (answers.overview[store] as { analyze?: Partial<Record<Window, { isf: IsfAnswer[] }>> })
-    .analyze?.[window];
-  if (!served) return null;
-  return isfData(`overview.${store}.analyze.${window}.isf`, served.isf);
-}
-
-/** The ISF card's data from one served `isf` list at `path`: its first
- *  segment, or 'none' when the engine serves no estimate or no programmed
- *  value. The Overview and the Queue draw the same card from it. */
-export function isfData(path: string, isf: IsfAnswer[]): IsfData | 'none' {
-  const row = isf[0];
-  if (!row?.estimate || row.current === null) return 'none';
-  const root = `${path}.0`;
-  const format = PARAMETER_FORMATS.isf;
-  return {
-    current: sourced(`${root}.current`, format),
-    recommended: row.asserts_move === true ? sourced(`${root}.recommended`, format) : null,
-    estimate: sourced(`${root}.estimate.value`, format),
-    lo: sourced(`${root}.estimate.lo`, format),
-    hi: sourced(`${root}.estimate.hi`, format),
-    uncertain: row.estimate.wide === true,
-    nights: sourced(`${root}.estimate.n_clusters`),
-    fits: row.evidence.night_fits.map((_, i) => ({ rate: sourced(`${root}.evidence.night_fits.${i}.isf`) })),
-    roster: `${root}.evidence.night_fits`,
-    units: 'mg/dL/U',
-  };
-}
-
 // --- BasalCard -----------------------------------------------------------------
 
 /** One of the day's 48 half-hour slots, as the basal analyzer serves it: the
@@ -259,14 +200,6 @@ export function basalEstimate(store: OverviewStore, window: Window): BasalDayDat
       move: slot.asserts_move && (slot.direction === 'raise' || slot.direction === 'lower') ? slot.direction : null,
     })),
   };
-}
-
-/** The story states the generator found in the served ISF answers, by name. */
-export function isfState(name: 'supported' | 'held' | 'uncertain' | 'edges'): IsfData {
-  const { store, window } = answers.states.isf[name];
-  const data = isfEstimate(store as OverviewStore, window as Window);
-  if (!data || data === 'none') throw new Error(`${store} serves no ISF estimate at ${window} d`);
-  return data;
 }
 
 // --- MealSizeCard --------------------------------------------------------------

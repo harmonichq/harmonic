@@ -75,9 +75,8 @@ Typical's median and band, computing no band and choosing no episode (ADR 523).
 A Setting card SHALL show the current value, the engine's estimate, its range,
 its count and its evidence chart, one dot per item its estimate counts, and SHALL
 end its evidence in one stat row in one order on every setting card: Estimate,
-Range, then the served count (Nights, Meal runs, Fasting nights); a queued
-correction factor SHALL use the Overview's ISF estimate card in the Queue's
-frame. A queued carb ratio's findings row SHALL serve its block as its one
+Range, then the served count (Nights, Meal runs). The Queue SHALL draw no
+correction-factor row or card (ADR 564). A queued carb ratio's findings row SHALL serve its block as its one
 member, in the shape a basal run serves its slots, so its card draws the block,
 current → recommended and its range. A Pattern served as its one habit SHALL be
 drawn with the Pattern's own count and its rate levers' credited shares, which
@@ -96,8 +95,9 @@ as `not_on_pump` SHALL carry the Not on pump pill on its row and its card. Every
 item SHALL offer Snooze, a text action beneath its primary, which sets it aside
 until fourteen days after the engine's served decision time, with an Undo; on the
 phone a row's swipe SHALL stay Snooze. The Snoozed list SHALL show each snoozed
-item with its until date and a Restore, and SHALL be reachable only while at
-least one item is snoozed.
+item it draws with its until date and a Restore, and SHALL be reachable only
+while at least one item is snoozed. A correction factor set aside before ADR 564
+SHALL be neither listed nor counted in it.
 
 #### Scenario: Done takes a Setting card out of the Queue
 
@@ -160,11 +160,20 @@ least one item is snoozed.
 - **WHEN** the Queue renders its I:C card
 - **THEN** it draws eight dots and its stat row reads Estimate, Range, Meal runs 8
 
-#### Scenario: A held setting is not queued
+#### Scenario: A correction factor is not queued
 
-- **GIVEN** a store whose correction factor the analyzer holds
+- **GIVEN** a store whose guidance serves a correction-factor concern
 - **WHEN** the Queue renders
-- **THEN** no correction-factor card appears in the Queue
+- **THEN** no correction-factor row or card appears in the Queue, and the count
+  it prints leaves the correction factor out
+
+#### Scenario: A correction factor set aside before ADR 564 is not counted
+
+- **GIVEN** a store holding a `setting:isf` preference set aside before ADR 564
+  beside other snoozed items
+- **WHEN** the Queue renders its Snoozed row and the Snoozed list
+- **THEN** the list leaves the correction factor out, and the row's count
+  leaves it out
 
 #### Scenario: Snoozing an item moves it to the Snoozed list
 
@@ -255,12 +264,11 @@ Overview SHALL show, for the selected 14, 30 or 90 days, the selected window's
 date span, In range and the standard CGM metrics against the period of the same
 length before, one time-in-ranges bar, and the glucose profile. Below 54 and
 Above 250 SHALL read as subsets of Below 70 and Above 180. Below the summary it
-SHALL show the ISF estimate whatever the engine decides, drawing current →
-recommended only when the analyzer's ISF staging verdict supports the change,
-and beside it, the same size, the basal estimate: the day's 48 half-hour slots,
-the programmed rate stepped, each slot's estimate over its range, and a mark on
-each slot whose staging verdict asserts a move, in its served direction (ADR 523).
-Below them, their height, it SHALL show Meal size over the selected window: one
+SHALL show the basal estimate: the day's 48 half-hour slots, the programmed rate
+stepped, each slot's estimate over its range, and a mark on each slot whose
+staging verdict asserts a move, in its served direction (ADR 523). It SHALL show
+no ISF estimate (ADR 564). Below it, its height, it SHALL show Meal size over the
+selected window; on desktop each spans a row of its own (ADR 564). Meal size SHALL draw one
 strip per size on one Climb axis, drawing the size's served 10–90% as a whisker,
 its Range (25–75%) over it and its median on top, and no meal on its own; and,
 aligned like a table, each
@@ -269,12 +277,12 @@ count. It SHALL compute none of these, print no explanatory text, and not repeat
 the window in its title (ADR 501, ADR 559, ADR 565, ADR 570). Overview
 SHALL carry nothing to act on.
 
-#### Scenario: A held ISF shows its estimate without a recommendation
+#### Scenario: Overview draws no ISF estimate
 
-- **GIVEN** a store whose correction factor the analyzer holds
-- **WHEN** Overview renders
-- **THEN** the ISF estimate shows its estimate and range, and no current →
-  recommended
+- **GIVEN** a store whose analysis serves a correction-factor estimate
+- **WHEN** Overview renders on desktop
+- **THEN** it draws no ISF estimate, and the basal estimate and Meal size each
+  span a row of the cards, one height
 
 #### Scenario: The basal estimate marks the slots the analyzer moves
 

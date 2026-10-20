@@ -12,11 +12,12 @@ import { OverviewScreen, type OverviewScreenProps } from './OverviewScreen';
 //   the 84-day history does not reach: the span alone, no changes.
 // - No data: the unsynced store, which serves every metric as null.
 // - Loading, and Unavailable; Stale, the last answers under Unavailable.
-// Plays per size: choosing 30 d shows that window's metrics, profile and ISF
-// estimate; each window's date line and changes name the period before it, or
-// none; and the page scrolls as one, the summary first, the ISF and basal
-// estimates below (ADR 523), then the Meal size card (ADR 501), which keeps its
-// one 90-day window whatever window is chosen. At 90 d the basal card marks the
+// Plays per size: choosing 30 d shows that window's metrics, profile, basal
+// estimate and Meal size; each window's date line and changes name the period
+// before it, or none; and the page scrolls as one, the summary first, the basal
+// estimate below (ADR 523), then the Meal size card (ADR 501). On desktop each
+// card spans a row of its own, every row one height; on the phone they keep
+// their proportions (§2.5, 2026-10-20 #564). At 90 d the basal card marks the
 // slots the engine stages a move for.
 const meta: Meta<typeof OverviewScreen> = {
   title: 'Screens/Overview',
@@ -76,10 +77,10 @@ export const Window90Phone: Story = { ...story('phone', { store: 'wearer', windo
 export const Window90Desktop: Story = {
   ...story('desktop', { store: 'wearer', window: '90' }), play: comparesWith('90', false),
 };
-/** No readings: every card says No data, the Meal size card among them. */
+/** No readings: every card says No data, the basal estimate and Meal size. */
 const noData: Story['play'] = async ({ canvasElement }) => {
-  const card = canvasElement.querySelector('.ui-meal-size')!;
-  await expect(card.querySelector('.ui-isf__none')?.textContent).toBe('No data');
+  const cards = [...canvasElement.querySelectorAll('.ui-overview__estimates > .ui-scard')];
+  await expect(cards.map((card) => card.querySelector('.ui-scard__none')?.textContent)).toEqual(['No data', 'No data']);
 };
 export const NoDataPhone: Story = { ...story('phone', { store: 'wearer-unsynced' }), play: noData };
 export const NoDataDesktop: Story = { ...story('desktop', { store: 'wearer-unsynced' }), play: noData };
@@ -98,8 +99,8 @@ export const StalePhone: Story = { ...story('phone', { store: 'wearer', state: '
 export const StaleDesktop: Story = { ...story('desktop', { store: 'wearer', state: 'stale' }), play: stale };
 
 /** The page scrolls as one: the summary fills the first screen (the profile
- *  ends inside it), the ISF and basal estimates follow, and scrolled to the end
- *  the last of them is in view. */
+ *  ends inside it), the basal estimate and Meal size follow, and scrolled to the
+ *  end the last of them is in view. */
 const scrolled: Story['play'] = async ({ canvasElement }) => {
   const page = canvasElement.querySelector<HTMLElement>('[data-scroll="page"]')!;
   const top = page.getBoundingClientRect();
@@ -120,41 +121,49 @@ export const ScrolledDesktop: Story = { ...story('desktop', { store: 'wearer' })
 const contentHeight = (card: Element) =>
   [...card.children].at(-1)!.getBoundingClientRect().bottom - card.getBoundingClientRect().top + 16;
 
-/** #559: on desktop the Meal size card spans the row beneath the ISF and basal
- *  estimates, and all three are one height, which the estimates set: the Meal
- *  size card's content fits inside it. */
+/** On desktop the basal estimate spans the first row of the cards and the Meal
+ *  size card the second, so no row is half empty, and both are one height,
+ *  which the basal estimate sets: the Meal size card's content fits inside it
+ *  (#559; §2.5, 2026-10-20 #564). */
 const oneHeight: Story['play'] = async ({ canvasElement }) => {
-  const [isf, basal, meals] = [...canvasElement.querySelectorAll('.ui-overview__estimates > .ui-scard')];
-  await expect(meals.classList.contains('ui-meal-size')).toBe(true);
-  const heights = [isf, basal, meals].map((card) => card.getBoundingClientRect().height);
-  await expect(Math.abs(heights[0] - heights[2])).toBeLessThan(0.5);
-  await expect(Math.abs(heights[1] - heights[2])).toBeLessThan(0.5);
-  await expect(contentHeight(meals)).toBeLessThanOrEqual(Math.max(contentHeight(isf), contentHeight(basal)) + 0.5);
-  await expect(meals.getBoundingClientRect().width).toBeGreaterThan(isf.getBoundingClientRect().width * 2);
+  const grid = canvasElement.querySelector('.ui-overview__estimates')!;
+  const cards = [...grid.querySelectorAll(':scope > .ui-scard')];
+  await expect(cards.map((card) => card.classList.contains('ui-meal-size'))).toEqual([false, true]);
+  const [basal, meals] = cards.map((card) => card.getBoundingClientRect());
+  for (const card of [basal, meals]) {
+    await expect(Math.abs(card.width - grid.getBoundingClientRect().width)).toBeLessThan(0.5);
+  }
+  await expect(meals.top).toBeGreaterThan(basal.bottom);
+  await expect(Math.abs(basal.height - meals.height)).toBeLessThan(0.5);
+  await expect(contentHeight(cards[1])).toBeLessThanOrEqual(contentHeight(cards[0]) + 0.5);
 };
-/** #559: on the phone the Meal size card keeps the estimates' proportions. */
+/** #559: on the phone the Meal size card keeps the basal estimate's proportions. */
 const inProportion: Story['play'] = async ({ canvasElement }) => {
-  const [, basal, meals] = [...canvasElement.querySelectorAll('.ui-overview__estimates > .ui-scard')];
+  const [basal, meals] = [...canvasElement.querySelectorAll('.ui-overview__estimates > .ui-scard')];
   await expect(meals.getBoundingClientRect().height).toBeLessThanOrEqual(basal.getBoundingClientRect().height * 1.4);
 };
 export const EstimatesDesktop: Story = { ...story('desktop', { store: 'wearer' }), play: oneHeight };
 export const EstimatesPhone: Story = { ...story('phone', { store: 'wearer' }), play: inProportion };
 
-/** Choosing 30 d shows that window's metrics, glucose profile and ISF estimate. */
+/** Choosing 30 d shows that window's metrics, glucose profile, basal estimate and Meal size. */
 const choose30: Story['play'] = async ({ canvasElement }) => {
   const canvas = within(canvasElement);
   const at = (path: string) => canvasElement.querySelector(`[data-source^="${path}"]`);
+  // The basal estimate prints no served value, so its drawing is compared:
+  // the 14 and 30 d windows serve different estimates.
+  const basal = () => canvasElement.querySelector('.ui-overview__estimates > .ui-scard:not(.ui-meal-size)')!.innerHTML;
+  const basal14 = basal();
   await expect(at('overview.wearer.time_of_day.14.')).not.toBeNull();
-  await expect(at('overview.wearer.analyze.14.')).not.toBeNull();
   await expect(at('overview.wearer.meal_size.14.')).not.toBeNull();
   await userEvent.click(canvas.getByRole('button', { name: '30 d' }));
   await expect(canvas.getByRole('button', { name: '30 d' })).toHaveAttribute('aria-pressed', 'true');
   await expect(canvasElement.querySelector('[data-source="outcomes.30.metrics.tir"]')).not.toBeNull();
   await expect(at('overview.wearer.time_of_day.30.')).not.toBeNull();
   await expect(at('overview.wearer.time_of_day.14.')).toBeNull();
-  await expect(at('overview.wearer.analyze.30.')).not.toBeNull();
-  await expect(at('overview.wearer.analyze.14.')).toBeNull();
-  // The Meal size card follows the window, as the estimates do (#565).
+  const basalCard = canvasElement.querySelector('.ui-overview__estimates > .ui-scard:not(.ui-meal-size)')!;
+  await expect(basalCard.getAttribute('aria-busy')).toBeNull();
+  await expect(basal()).not.toBe(basal14);
+  // The Meal size card follows the window, as the basal estimate does (#565).
   await expect(at('overview.wearer.meal_size.30.')).not.toBeNull();
   await expect(at('overview.wearer.meal_size.14.')).toBeNull();
 };

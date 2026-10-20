@@ -27,14 +27,11 @@ Two committed outputs, one generator, one ``--check``:
     every outcome metric is served as null.
 
   ``overview`` holds the Overview components' answers by store:
-  ``/api/explore/time-of-day`` for each window (14, 30 and 90 days), the ISF
-  estimate and the 48 basal slots of ``/api/analyze`` for each window, ``/api/day-navigator`` for the
+  ``/api/explore/time-of-day`` for each window (14, 30 and 90 days), the 48
+  basal slots of ``/api/analyze`` for each window, ``/api/day-navigator`` for the
   wearer's latest month, and ``/api/outcomes`` for each window where the
   top-level ``outcomes`` (the wearer's) does not already hold it. Every outcomes
-  answer carries its previous period. The wearer's ISF is held at every window,
-  so one more store, ``isf-supported``, serves an ISF the engine supports a
-  change for: ``scripts/qa_e2e_cases.py``'s manufactured fasting nights (a true
-  ISF of 33 under 8 mg/dL of sensor noise), read through the same API.
+  answer carries its previous period.
   ``/api/explore/meal-size`` (#501) for each window (#565), trimmed to what the Meal size card draws,
   is served for the wearer (a meal in every size), its first days (one meal at
   60 g+), the unsynced store (no window), and ``showcase``, the QA catalog's
@@ -103,8 +100,9 @@ Two committed outputs, one generator, one ``--check``:
   delivery row and a settings read whose profile is unchanged, written as a
   fetch would write them, so the card is back marked Not on pump.
   ``wearer-first-days-snoozed`` is the first days with everything snoozed (an
-  empty Queue); ``isf-supported`` is the Overview's store of the same name,
-  whose ISF the engine supports a change for and so queues;
+  empty Queue), and a correction factor set aside before #564 written straight
+  into the store with ``Store.save_guidance_preference``, as such a record was
+  saved, which no Queue row draws (§2.5, 2026-10-20);
   ``carb-ratio-supported`` is ``scripts/qa_e2e_cases.py``'s
   ``basal-and-carb-ratio-lower`` case, whose meals support lowering the carb
   ratio, so its I:C Setting queues; a standalone habit (ADR 528), the missed
@@ -115,8 +113,7 @@ Two committed outputs, one generator, one ``--check``:
   ``wearer-habit`` the wearer skipping the lunch bolus every weekday of the
   last four weeks, more rises than the chart draws one by one; and the unsynced
   store records its guidance disposition. Each Queue store's ``analyze`` holds
-  its first ISF segment, trimmed as the Overview's is, for the Queue's ISF
-  card, and each carb-ratio block the engine stages a move for, with the meal
+  each carb-ratio block the engine stages a move for, with the meal
   runs its estimate counts, for the I:C Setting card (ADR 523). Each
   Queue store also holds ``cases``: every admitted Pattern's event-aligned case
   file from ``/api/diagnose/finding-case-file``, trimmed to its trace chart
@@ -129,8 +126,8 @@ Two committed outputs, one generator, one ``--check``:
   ``last_error``. The wall clock every write stamps is pinned to one hour after
   the wearer's last reading, so the output is byte-reproducible.
 
-  ``states`` names, for each story state, the store and the pattern, basal
-  block, or ISF window that serves it, chosen by rule from what the engine served. A state
+  ``states`` names, for each story state, the store and the pattern or basal
+  block that serves it, chosen by rule from what the engine served. A state
   the stories need that the engine no longer serves fails the generator; a
   state that does not arise naturally is ``null`` and its story is absent.
 * ``frontend/ui/__fixtures__/ui-allowlist.json`` is every word a story may
@@ -166,6 +163,7 @@ import ui_patient  # noqa: E402
 import requests  # noqa: E402
 from ciq_autotune.api import create_app  # noqa: E402
 from ciq_autotune.fetch_loop import fetch_error_label  # noqa: E402
+from ciq_autotune.guidance import COMPARISON_VERSION  # noqa: E402
 from ciq_autotune.store import Store  # noqa: E402
 from ciq_autotune.watched_change import reconcile_ingested_follow_up  # noqa: E402
 
@@ -223,9 +221,6 @@ WEEKDAYS = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
 # The Overview's date line names its comparison once: "vs previous 14 d"
 # (§2.5, 2026-10-14). "Previous" is already a plain interface word below.
 OVERVIEW_LABELS = ("vs",)
-# An ISF the engine supports a change for: qa_e2e_cases' manufactured fasting
-# nights at a true ISF of 33 mg/dL/U under 8 mg/dL of sensor noise.
-ISF_SUPPORTED = {"true_isf": 33.0, "noise_sd": 8.0}
 CARB_RATIO_CASE = "basal-and-carb-ratio-lower"
 # A standalone habit (ADR 528): the QA case whose two rises its missed-meal habit
 # claims, and the wearer's lunch never bolused for on every weekday (the wearer's
@@ -445,14 +440,16 @@ def fixtures() -> dict:
         _unchanged_sync(done_database)
         queue["wearer-not-on-pump"] = _queue_store(done)
 
-        _, first_days = _wearer(scratch, "wearer-first-days", trial=False, days=FIRST_DAYS)
+        first_days_database, first_days = _wearer(scratch, "wearer-first-days", trial=False, days=FIRST_DAYS)
         overview["wearer-first-days"] = {"time_of_day": _profiles(first_days),
                                          "meal_size": _meal_sizes(first_days)}
         changes["wearer-first-days"] = _changes_store(first_days)
         # Everything the first days admit, snoozed: an empty Queue whose
         # Snoozed list holds them all (§1.3 Queue empty, Queue · Snoozed).
         _snooze_all(first_days)
+        _isf_set_aside(first_days_database)
         queue["wearer-first-days-snoozed"] = _queue_store(first_days)
+        _require_set_aside(queue["wearer-first-days-snoozed"], "setting:isf")
 
         # The Changes screen's last change beside an active one: the wearer
         # ends the matured Trial, then pins a Focus (one change is active at a
@@ -512,13 +509,6 @@ def fixtures() -> dict:
         _require_result(changes["wearer"], "favorable")
         _require_result(changes["wearer-worse"], "concerning")
 
-        supported = scratch / "isf-supported.sqlite"
-        with Store.open(str(supported)) as store:
-            qa_e2e_cases._materialize_isf_coverage(store, **ISF_SUPPORTED)
-        supported_client = _serve(supported)
-        overview["isf-supported"] = {"analyze": _windows(supported_client)}
-        queue["isf-supported"] = _queue_store(supported_client)
-
         # The wearer's I:C holds, so the carb-ratio Setting is queued from the QA
         # case whose meals support lowering it.
         carb_ratio = scratch / "carb-ratio-supported.sqlite"
@@ -562,10 +552,8 @@ def fixtures() -> dict:
         "_generated_by": GENERATED_BY,
         "_note": ("Synthetic only: a seeded simulated Control-IQ wearer "
                   "(scripts/ui_patient.py) ingested into scratch stores and served "
-                  "by the public API, in process. overview.isf-supported is "
-                  "scripts/qa_e2e_cases.py's manufactured fasting nights, served "
-                  "the same way. status.failed adds one invented failed sync "
-                  "attempt."),
+                  "by the public API, in process. status.failed adds one invented "
+                  "failed sync attempt."),
         "status": {"ok": status_ok, "failed": status_failed},
         "prompts": [prompt_marks(p) for p in prompts],
         "outcomes": {key: _outcome(answer) for key, answer in outcomes.items()},
@@ -582,7 +570,7 @@ def fixtures() -> dict:
         "settings": settings,
         "snooze": snooze,
         "glossary": glossary(),
-        "states": {**states(queue), "isf": isf_states(overview)},
+        "states": states(queue),
     }
 
 
@@ -648,6 +636,24 @@ def _snooze(client: TestClient, *, pinned_pattern: str) -> dict:
             "set_aside": after["preference"]["set_aside"], "decided_at": after["decision"]["decided_at"]}
 
 
+def _isf_set_aside(database: pathlib.Path) -> None:
+    """A correction factor the person set aside before #564, written straight
+    into the store as that record was saved: its comparison version and the
+    state of a setting with no action, as the first days serve it. No Queue row
+    draws a correction factor (§2.5, 2026-10-20), so the Snoozed list leaves it
+    out and its count does not include it."""
+    with Store.open(str(database)) as store:
+        store.save_guidance_preference(
+            "setting:isf", decided_at=CLOCK.strftime("%Y-%m-%d %H:%M:%S"), reason=None,
+            comparison_version=COMPARISON_VERSION, state={"kind": "setting", "action": [], "seriousness": []})
+
+
+def _require_set_aside(store: dict, subject: str) -> None:
+    """``subject`` is served set aside in the store's guidance."""
+    if not any(c["subject"] == subject and c["set_aside"] for c in store["guidance"]["candidates"]):
+        raise SystemExit(f"the store no longer serves {subject} set aside")
+
+
 def _snooze_all(client: TestClient) -> None:
     """The person snoozes every candidate the Queue holds."""
     answer = _get(client, "/api/guidance")
@@ -704,18 +710,6 @@ def _time_of_day(client: TestClient, days: int) -> dict:
     }
 
 
-def _isf(analysis: dict) -> list[dict]:
-    """``/api/analyze``'s first ISF segment, trimmed to what the ISF card reads."""
-    return [
-        {**{field: r[field] for field in ("current", "recommended", "asserts_move")},
-         # A store too short for an estimate serves none.
-         "estimate": r["estimate"] and {field: r["estimate"][field]
-                                        for field in ("value", "lo", "hi", "wide", "n_clusters")},
-         "evidence": {"night_fits": [{field: f[field] for field in ("date", "isf")}
-                                     for f in r["evidence"]["night_fits"]]}}
-        for r in analysis["isf"][:1]]
-
-
 def _ic_blocks(analysis: dict) -> list[dict]:
     """``/api/analyze``'s carb-ratio blocks the engine stages a move for, trimmed to
     what the I:C Setting card reads: the block, its programmed and recommended
@@ -739,12 +733,8 @@ def _basal_slots(analysis: dict) -> list[dict]:
 
 
 def _windows(client: TestClient) -> dict:
-    """The Overview's ISF estimate and basal cards for each window, from one read."""
-    out = {}
-    for w in WINDOWS:
-        analysis = _get(client, "/api/analyze", window=w)
-        out[str(w)] = {"isf": _isf(analysis), "basal": _basal_slots(analysis)}
-    return out
+    """The Overview's basal estimate for each window."""
+    return {str(w): {"basal": _basal_slots(_get(client, "/api/analyze", window=w))} for w in WINDOWS}
 
 
 def _meal_sizes(client: TestClient) -> dict:
@@ -1201,8 +1191,6 @@ def _queue_store(client: TestClient) -> dict:
                  ]}}
                 for b in analyze["basal"] if b.get("asserts_move")
             ],
-            # The Queue's ISF card is the Overview's, over the engine's default window.
-            "isf": _isf(analyze),
             "ic_blocks": _ic_blocks(analyze),
         },
         "trials": {
@@ -1388,37 +1376,6 @@ def states(queue: dict) -> dict:
     missing = [name for name in required if found[name] is None]
     if missing:
         raise SystemExit(f"the simulated wearer no longer serves: {', '.join(missing)}")
-    return found
-
-
-def isf_states(overview: dict) -> dict:
-    """The store and window behind each ISF card story, chosen from the served
-    answers: the engine supports a change; it holds; it is Uncertain; and the
-    window with the most nights far beyond its marks, with some on each side,
-    for the edge counts."""
-    served = {(store, window): answer["isf"][0] for store, answers in overview.items()
-              if "analyze" in answers for window, answer in answers["analyze"].items() if answer["isf"]}
-
-    def beyond(row) -> tuple[int, int]:
-        """Nights more than the marks' own span below and above them."""
-        low = min(row["estimate"]["lo"], row["current"])
-        high = max(row["estimate"]["hi"], row["current"])
-        fits = [f["isf"] for f in row["evidence"]["night_fits"]]
-        return sum(f < low - (high - low) for f in fits), sum(f > high + (high - low) for f in fits)
-
-    def pick(rule, rank=lambda row: 0):
-        found = sorted((pair for pair, row in served.items() if rule(row)), key=lambda pair: rank(served[pair]))
-        return {"store": found[0][0], "window": found[0][1]} if found else None
-
-    found = {
-        "supported": pick(lambda row: row["asserts_move"] is True),
-        "held": pick(lambda row: row["asserts_move"] is False and not row["estimate"]["wide"]),
-        "uncertain": pick(lambda row: row["estimate"]["wide"] is True),
-        "edges": pick(lambda row: min(beyond(row)) > 0, rank=lambda row: -sum(beyond(row))),
-    }
-    missing = [name for name, state in found.items() if state is None]
-    if missing:
-        raise SystemExit(f"the served ISF answers no longer serve: {', '.join(missing)}")
     return found
 
 

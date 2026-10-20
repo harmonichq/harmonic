@@ -24,6 +24,12 @@
 }
 /* Not on pump (#518), on the title line after the block. */
 .ui-scard__title .ui-pill { margin-left: 8px; vertical-align: 2px; }
+/* The Overview's estimate cards' heading: the kind word and its slot on one
+   baseline, six pixels apart; their "No data" and their skeleton. */
+.ui-scard__heading { display: flex; align-items: baseline; gap: 6px; }
+.ui-scard__heading .ui-scard__slot { margin-left: 0; }
+.ui-scard__none { margin: 12px 0 0; color: var(--wk-ink-meta); font-size: var(--ui-type-body); }
+.ui-scard__skeleton { display: block; height: 180px; margin-top: 16px; }
 
 /* The one dominant element: the suggestion strong, the current value it
    replaces regular and receded, the unit at label size on the baseline. */

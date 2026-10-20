@@ -8,7 +8,8 @@ import { BasalCard } from './BasalCard';
 //   ▲ or ▼ by its served direction.
 // - Holds: the 14-day window, where it stages none.
 // - No data, and not yet read (the skeleton).
-// Phone at 390; desktop at the half pane it shares with the ISF card.
+// Phone at 390; desktop at the Overview's full width, the first row of its
+// cards (§2.5, 2026-10-20 #564).
 const meta = {
   title: 'BasalCard',
   component: BasalCard,
@@ -17,7 +18,7 @@ const meta = {
 export default meta;
 
 type Story = StoryObj<typeof meta>;
-const DESKTOP = { frame: { width: 560 } };
+const DESKTOP = { frame: { width: 1120 } };
 
 const moves = basalEstimate('wearer', '90');
 const holds = basalEstimate('wearer', '14');

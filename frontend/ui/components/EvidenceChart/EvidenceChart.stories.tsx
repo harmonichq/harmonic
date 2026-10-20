@@ -8,8 +8,7 @@ import { EvidenceChart } from './EvidenceChart';
 // rate; and a queued I:C block's counted meal runs by their ratio, from the QA
 // case whose meals support lowering the carb ratio. Nights at one identical
 // rate do not arise in the wearer's history, so the zero-variance state has no
-// story; the chart draws it as one pile spread either side of the row. The ISF
-// card's stories show its fasting nights and the edge counts.
+// story; the chart draws it as one pile spread either side of the row.
 const meta = {
   title: 'EvidenceChart',
   component: EvidenceChart,

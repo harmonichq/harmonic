@@ -78,13 +78,13 @@ const basalSlots = (basal) => basal.map((b) => ({
   estimate: b.estimate && { value: b.estimate.value, lo: b.estimate.lo, hi: b.estimate.hi },
 }));
 
-/** gen_ui_fixtures._meal_size: the Meal size card's answer for one window, each meal kept as the dot it draws
- *  (its climb), the window (null for a store with no readings), and the hours At 3 h is read at (#501, #565). */
+/** gen_ui_fixtures._meal_size: the Meal size card's answer for one window: each size as served (its count and
+ *  percentiles, #570), the window kept to its days (null for a store with no readings), and the hours At 3 h is
+ *  read at (#501, #565). */
 const mealSizes = ({ window, horizon_hours, sizes }) => ({
   window: window && { data_days: window.data_days },
   horizon_hours,
-  sizes: sizes.map(({ carbs_from, carbs_to, meals, climb, to_peak, at_3h }) => ({
-    carbs_from, carbs_to, meals: meals.map((meal) => ({ climb: meal.climb })), climb, to_peak, at_3h })),
+  sizes,
 });
 
 /** The model-view trimmed to what the Day chart marks: the day's findings,

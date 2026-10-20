@@ -635,7 +635,8 @@ A meal's carbs, the grams its completed boluses entered (ADR 470), in four sizes
 under 25 g, 25–39, 40–59, 60 and over. The Overview's Meal size card counts the
 selected window's meals that began at or under 180 mg/dL and that the Late bolus
 classifier found flat before the bolus (its `no_trigger` verdict), and serves each
-size's meals and medians (ADR 501). A report: never a Queue item, a Focus or a
+size's count, its climbs' median and 10th–90th percentiles, and its other medians
+(ADR 501, ADR 570). A report: never a Queue item, a Focus or a
 setting move.
 _Avoid_: carb bucket, portion.
 

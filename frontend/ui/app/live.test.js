@@ -578,13 +578,12 @@ test('Pin on a standalone habit pins its lever under the habit\'s own subject, w
 
 test('the Overview reads each window\'s Meal size once, when it is shown, kept to what the card draws (#501, #565)', async () => {
   const fake = fakeClient();
-  const meal = { t: '2024-05-01 12:00:00', carbs: 30, climb: 62, to_peak: 75, at_3h: 4 };
-  const size = (from, to, meals) => ({ carbs_from: from, carbs_to: to, meals,
-    climb: { median: 62, p25: 62, p75: 62 }, to_peak: { median: 75 }, at_3h: { count: 1, median: 4 } });
+  const size = (from, to, count) => ({ carbs_from: from, carbs_to: to, count,
+    climb: { median: 62, p10: 40, p25: 55, p75: 70, p90: 88 }, to_peak: { median: 75 }, at_3h: { count: 1, median: 4 } });
   fake.client.fetchMealSize = (...args) => {
     fake.calls.push({ name: 'meal-size', args });
     return Promise.resolve({ window: { start: '2024-02-01 00:00:00', end: '2024-05-01 00:00:00', data_days: args[0] },
-      horizon_hours: 3, sizes: [size(null, 25, []), size(25, 40, [meal]), size(40, 60, []), size(60, null, [])] });
+      horizon_hours: 3, sizes: [size(null, 25, 0), size(25, 40, 1), size(40, 60, 0), size(60, null, 0)] });
   };
   const live = createLive({ client: fake.client, glossary: [] });
   await live.readTab('overview');
@@ -596,8 +595,8 @@ test('the Overview reads each window\'s Meal size once, when it is shown, kept t
   assert.deepEqual(live.answers.overview.wearer.meal_size['90'], {
     window: { data_days: 90 },
     horizon_hours: 3,
-    sizes: [size(null, 25, []), size(25, 40, [{ climb: 62 }]), size(40, 60, []), size(60, null, [])],
-  }, 'each meal kept as the dot it draws, its time and carbs left behind');
+    sizes: [size(null, 25, 0), size(25, 40, 1), size(40, 60, 0), size(60, null, 0)],
+  }, 'each size as served, the window kept to its days');
   await live.retryTab('overview');
   assert.equal(fake.count('meal-size'), 4, 'the Overview\'s Retry reads its window again');
 });

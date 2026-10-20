@@ -1948,3 +1948,32 @@ the gate becomes a no-op, since Firefox would report 0 there anyway. No
 emulator reproduces Firefox for Android's inset. The stories assert the bar is
 64 px plus a simulated inset with nothing below it, in Chromium (the gate) and
 Firefox (`UI_BROWSER=firefox`).
+
+## ADR 570 — The Meal size card draws each size from its percentiles, and no meal on its own
+
+**Context.** Connor, of the card #568 left: "those meal dots look like weird
+artifacts not actual data", and his decision: "drop the dots".
+
+**Decision.**
+
+1. *The engine serves percentiles, not meals.* Each size serves `count`, how many
+   meals it counts, and its climbs' median and 10th, 25th, 75th and 90th
+   percentiles. They come from one `statistics.quantiles(n=100, method="inclusive")`
+   cut, whose 25th and 75th equal the earlier quartile cut. A size of one meal
+   serves that climb for all five. The per-meal list (time, carbs, climb, minutes to
+   peak, change at three hours) is no longer served: nothing reads it once the dots
+   go. The builder still measures each meal, and the API test pins the population
+   through each size's count and statistics. The fixed result's marker becomes
+   `meal-size-v2`, since its shape changed.
+2. *The strip draws three marks.* A 10–90% whisker, thin and capped, in the size's
+   shade. The Range, a 5 px line over it. The median, an ink tick on top. The halo
+   ADR 565 added goes: it kept the Range apart from dots that are no longer drawn.
+   The strip is 14 px tall, and the axis covers 0 and every size's 10–90%.
+3. *The legend* reads Median · Range · 10–90%. "10–90%" is a fixed scale name,
+   marked as the axis is, as the glucose profile's legend already prints it.
+   ChartLegend's `dot` swatch goes, since nothing draws a dot key now. Its `scale`
+   flag returns, for this key.
+
+**Consequences.** The live adapter keeps each size as served. The UI fixtures
+regenerate, smaller. The beeswarm and dot styles stay in the chart module for the
+setting cards' EvidenceChart, which still draws its nights and meal runs as dots.

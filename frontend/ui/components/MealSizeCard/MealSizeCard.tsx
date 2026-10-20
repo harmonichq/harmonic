@@ -5,14 +5,11 @@
 // in their strong title style.
 //
 // Each size (under 25 g, 25–39, 40–59, 60 g+) is a thin strip on one shared
-// Climb axis: a small, half-transparent dot per counted meal, spread at most a
-// dot either side of the strip by the chart family's one beeswarm and left to
-// overlap past that, muted grey and small; above them the size's 25–75%
-// (Range) a thick line in its colour and its median a short ink tick, each on
-// a halo of the card's surface so no dot runs into it (#565). The sizes take a
+// Climb axis, drawn from its served percentiles alone (#570): its 10–90% a
+// thin capped whisker, its 25–75% (Range) a thick line over it, and its median
+// a short ink tick on top. No meal is drawn on its own. The sizes take a
 // sequential ramp of the estimate blue, the smallest lightest, and each size's
-// label carries its swatch. Dots inside the Range draw a little brighter; the
-// rest recede. Values print signed ("+24", "−6").
+// label carries its swatch. Values print signed ("+24", "−6").
 //
 // Wide (the desktop card spans the Overview's second row), each size is one
 // row aligned like a table: its swatch and label over its meal count, its
@@ -20,14 +17,14 @@
 // meals no later meal followed within three hours). Narrow (the phone), the
 // strips stand together and the same rows follow beneath them, as the mock.
 // Beneath the strips the axis, then "Climb · mg/dL" and the legend, glyph and
-// word: Meal, Median, Range. A size with no meal shows "–". Every number is
+// word: Median, Range, 10–90%. A size with no meal shows "–". Every number is
 // served; the card computes nothing. A window the engine counts no meal in
 // says "No data"; one not read yet is the card's skeleton. Nothing to act on.
 import { Num } from '../../Num';
 import { useWidth } from '../../measure';
 import type { MealSizeData, MealSizeRow } from '../../overview-model';
 import { ChartLegend } from '../Chart/ChartLegend';
-import { DOT_PITCH, DOT_R, labelledTicks, niceTicks, swarm } from '../Chart/scale';
+import { labelledTicks, niceTicks } from '../Chart/scale';
 import '../../shared.css';
 import '../Chart/Chart.css';
 import '../SettingCard/SettingCard.css';
@@ -36,8 +33,10 @@ import './MealSizeCard.css';
 
 /** The card's width from which each size's numbers sit on its strip's row. */
 const WIDE = 520;
-/** A strip: the row of dots and the dot either side of it. */
-const STRIP = 2 * DOT_PITCH + 2 * DOT_R + 2;
+/** A strip's height: the median tick, a little taller than the Range line. */
+const STRIP = 14;
+/** The room either side of the axis, so a cap or a tick at an end never clips. */
+const PAD = 3;
 const TICK_CHAR = 6.6;  // an 11 px Inter tick character, generously
 
 type Scale = { values: number[]; first: number; last: number };
@@ -61,15 +60,14 @@ const Count = ({ value }: { value: MealSizeRow['meals'] }) => (
 /** A served median, or "–" for a size with no meal. */
 const Median = ({ value }: { value: MealSizeRow['median'] }) => (value ? <Num value={value} /> : <>–</>);
 
-/** One size's strip, over the axis's grid lines: its dots muted and small,
- *  then above them its Range line in the size's colour and its median tick,
- *  each on a halo of the card's surface so no dot runs into it (#565). */
+/** One size's strip, over the axis's grid lines: its 10–90% a thin capped
+ *  whisker in its colour, its Range a thick line over it, and its median a
+ *  short ink tick on top (#570). No meal is drawn on its own. */
 function Strip({ row, scale, index }: { row: MealSizeRow; scale: Scale; index: number }) {
   const [box, width] = useWidth<HTMLDivElement>();
-  const x = (value: number) => DOT_R + (width - 2 * DOT_R) * ((value - scale.first) / (scale.last - scale.first));
-  const levels = swarm(row.climbs.map(x), 1);
+  const x = (value: number) => PAD + (width - 2 * PAD) * ((value - scale.first) / (scale.last - scale.first));
   const mid = STRIP / 2;
-  const inRange = (climb: number) => row.p25 !== null && row.p75 !== null && climb >= row.p25 && climb <= row.p75;
+  const cap = 3;
   return (
     <div ref={box} className="ui-meal-size__strip" data-size={index}>
       {width > 0 && (
@@ -78,23 +76,16 @@ function Strip({ row, scale, index }: { row: MealSizeRow; scale: Scale; index: n
             <line key={value} x1={x(value)} x2={x(value)} y1={0} y2={STRIP}
               className={value === 0 ? 'ui-chart__zero' : 'ui-chart__grid'} />
           ))}
-          <g aria-hidden="true">
-            {row.climbs.map((climb, k) => (
-              <circle key={k} cx={x(climb)} cy={mid + levels[k] * DOT_PITCH} r={DOT_R - 0.75}
-                className={inRange(climb) ? 'ui-meal-size__dot ui-meal-size__dot--in' : 'ui-meal-size__dot'} />
-            ))}
-          </g>
+          {row.p10 !== null && row.p90 !== null && row.p90 > row.p10 && (
+            <path data-whisker="" className="ui-meal-size__whisker"
+              d={`M${x(row.p10)},${mid - cap} V${mid + cap} M${x(row.p10)},${mid} H${x(row.p90)} M${x(row.p90)},${mid - cap} V${mid + cap}`} />
+          )}
           {row.p25 !== null && row.p75 !== null && row.p75 > row.p25 && (
-            <g data-range="">
-              <line x1={x(row.p25)} x2={x(row.p75)} y1={mid} y2={mid} className="ui-meal-size__halo" />
-              <line x1={x(row.p25)} x2={x(row.p75)} y1={mid} y2={mid} className="ui-meal-size__range" />
-            </g>
+            <line data-range="" x1={x(row.p25)} x2={x(row.p75)} y1={mid} y2={mid} className="ui-meal-size__range" />
           )}
           {row.median && (
-            <g data-median="">
-              <line x1={x(row.median.value)} x2={x(row.median.value)} y1={1} y2={STRIP - 1} className="ui-meal-size__halo ui-meal-size__halo--tick" />
-              <line x1={x(row.median.value)} x2={x(row.median.value)} y1={1} y2={STRIP - 1} className="ui-chart__median" />
-            </g>
+            <line data-median="" x1={x(row.median.value)} x2={x(row.median.value)} y1={1} y2={STRIP - 1}
+              className="ui-chart__median" />
           )}
         </svg>
       )}
@@ -106,7 +97,7 @@ function Strip({ row, scale, index }: { row: MealSizeRow; scale: Scale; index: n
  *  where it would touch its neighbour. */
 function Axis({ scale }: { scale: Scale }) {
   const [box, width] = useWidth<HTMLDivElement>();
-  const x = (value: number) => DOT_R + (width - 2 * DOT_R) * ((value - scale.first) / (scale.last - scale.first));
+  const x = (value: number) => PAD + (width - 2 * PAD) * ((value - scale.first) / (scale.last - scale.first));
   const lastIndex = scale.values.length - 1;
   const labelled = labelledTicks(scale.values.map((value, i) => {
     const at = x(value);
@@ -162,17 +153,18 @@ const Legend = () => (
   <div className="ui-meal-size__foot">
     <span className="ui-chart__caption">Climb · mg/dL</span>
     <ChartLegend keys={[
-      { label: 'Meal', swatch: 'dot' },
       { label: 'Median', swatch: 'tick' },
       { label: 'Range', swatch: 'range' },
+      { label: '10–90%', swatch: 'whisker', scale: true },
     ]} />
   </div>
 );
 
 function MealSizeBody({ data }: { data: MealSizeData }) {
   const [box, width] = useWidth<HTMLDivElement>();
-  const ticks = niceTicks(Math.min(0, ...data.rows.flatMap((row) => row.climbs)),
-    Math.max(0, ...data.rows.flatMap((row) => row.climbs)), 8);
+  // The axis covers 0 and every size's 10–90%, the widest mark drawn.
+  const ends = data.rows.flatMap((row) => (row.p10 === null || row.p90 === null ? [] : [row.p10, row.p90]));
+  const ticks = niceTicks(Math.min(0, ...ends), Math.max(0, ...ends), 8);
   const scale = { values: ticks.values, first: ticks.values[0], last: ticks.values[ticks.values.length - 1] };
   const wide = width >= WIDE;
   return (

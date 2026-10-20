@@ -272,20 +272,21 @@ export function isfState(name: 'supported' | 'held' | 'uncertain' | 'edges'): Is
 // --- MealSizeCard --------------------------------------------------------------
 
 /** One meal size, as the engine serves it (#501, ADR 501): its carbs bound
- *  (`from` ≤ carbs < `to`, either open), each counted meal's climb, and the
- *  medians the table prints. Nothing here is computed: the bar is the served
- *  25th–75th percentiles, the tick the served median. */
+ *  (`from` ≤ carbs < `to`, either open), its climbs' percentiles, and the
+ *  medians the table prints. Nothing here is computed: the whisker is the
+ *  served 10th–90th percentiles, the Range the 25th–75th, the tick the median
+ *  (#570). */
 export type MealSizeRow = {
   /** The label's bounds: "<25 g" (no `from`), "25–39 g" (`last` = to − 1), "60 g+" (no `to`). */
   from: Sourced<number> | null;
   to: Sourced<number> | null;
   last: Sourced<number> | null;
-  /** One dot per counted meal, at its climb (mg/dL). */
-  climbs: number[];
-  /** The served median and 25th–75th percentiles of the climbs; null with no meal. */
+  /** The served median and 10th, 25th, 75th and 90th percentiles of the climbs; null with no meal. */
   median: Sourced<number> | null;
+  p10: number | null;
   p25: number | null;
   p75: number | null;
+  p90: number | null;
   toPeak: Sourced<number> | null;
   at3h: Sourced<number> | null;
   /** How many meals the row counts, and how many of them At 3 h was read from. */
@@ -302,8 +303,8 @@ type MealSizeAnswer = {
   window: { data_days: number } | null;
   horizon_hours: number;
   sizes: {
-    carbs_from: number | null; carbs_to: number | null; meals: { climb: number }[];
-    climb: { median: number | null; p25: number | null; p75: number | null };
+    carbs_from: number | null; carbs_to: number | null; count: number;
+    climb: { median: number | null; p10: number | null; p25: number | null; p75: number | null; p90: number | null };
     to_peak: { median: number | null };
     at_3h: { count: number; median: number | null };
   }[];
@@ -315,7 +316,7 @@ export function mealSize(store: OverviewStore, window: Window): MealSizeData | '
   const served = (answers.overview[store] as { meal_size?: Partial<Record<Window, MealSizeAnswer>> })
     .meal_size?.[window];
   if (!served) return null;
-  if (!served.window || served.sizes.every((size) => size.meals.length === 0)) return 'none';
+  if (!served.window || served.sizes.every((size) => size.count === 0)) return 'none';
   const root = `overview.${store}.meal_size.${window}`;
   const median = (path: string, value: number | null, format: Format) =>
     (value === null ? null : sourced<number>(path, format));
@@ -327,13 +328,14 @@ export function mealSize(store: OverviewStore, window: Window): MealSizeData | '
         from: size.carbs_from === null ? null : sourced(`${at}.carbs_from`),
         to: size.carbs_to === null ? null : sourced(`${at}.carbs_to`),
         last: size.carbs_from === null || size.carbs_to === null ? null : sourced(`${at}.carbs_to − 1`),
-        climbs: size.meals.map((meal) => meal.climb),
         median: median(`${at}.climb.median`, size.climb.median, 'signed'),
+        p10: size.climb.p10,
         p25: size.climb.p25,
         p75: size.climb.p75,
+        p90: size.climb.p90,
         toPeak: median(`${at}.to_peak.median`, size.to_peak.median, 'round'),
         at3h: median(`${at}.at_3h.median`, size.at_3h.median, 'signed'),
-        meals: sourced(`${at}.meals.length`),
+        meals: sourced(`${at}.count`),
         at3hMeals: sourced(`${at}.at_3h.count`),
       };
     }),

@@ -14,7 +14,10 @@ claims it, and only the served order moves. The findings projection SHALL serve
 a Pattern's shares in that order wherever it serves them: on the row of a habit
 the Pattern is served as, and on every Pattern row that serves a count
 sentence, in the same entry shape. A Pattern row that serves no count sentence
-SHALL serve no shares. The Pattern case file's per-cause traces SHALL come in
+SHALL serve no shares. Every served share SHALL say whether its cause is
+`pinnable`: one of the Pattern's pinnable habit members, decided by the one
+predicate the Focus endpoint admits a sent lever by, and nothing else. The
+Pattern case file's per-cause traces SHALL come in
 the same order, from the same rule over the same window population.
 
 #### Scenario: A Pattern served as its habit serves its causes by severity
@@ -25,6 +28,8 @@ the same order, from the same rule over the same window population.
 - **WHEN** the findings projection is read for the whole day
 - **THEN** the habit row's served shares are Correction on active insulin (2)
   then Correction stacking (1)
+- **AND** Correction on active insulin is `pinnable` and Correction stacking,
+  credited but no member of the Pattern, is not
 
 #### Scenario: A meal Pattern serves its causes on its own row
 
@@ -33,7 +38,7 @@ the same order, from the same rule over the same window population.
   bolus three of longer highs
 - **WHEN** the findings projection is read for the whole day
 - **THEN** the Pattern row serves its shares as Late bolus (3) then Carb
-  undercount (4), adding up to the Pattern's count of 7
+  undercount (4), adding up to the Pattern's count of 7, both `pinnable`
 - **AND** the Pattern's count, denominator and published roster are unchanged
 
 #### Scenario: A doubly claimed meal is still credited in roster order

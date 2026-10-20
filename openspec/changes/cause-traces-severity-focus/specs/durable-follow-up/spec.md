@@ -8,7 +8,9 @@ with nothing written, when it is not. A Focus started from a Pattern with no
 `lever` SHALL watch the Pattern's first pinnable habit member, as before. Either
 way the record SHALL keep the Pattern's subject and key, so every reader of the
 Pattern's Focus is unchanged. A retried pin SHALL be refused when it names a
-`lever` other than the one its Focus watches.
+`lever` other than the one its Focus watches. A sent lever SHALL be admitted
+exactly when the findings projection serves its cause as `pinnable` for that
+Pattern.
 
 #### Scenario: A Focus started on the second cause watches it
 
@@ -39,3 +41,11 @@ Pattern's Focus is unchanged. A retried pin SHALL be refused when it names a
 - **WHEN** the same request id is sent again with `lever` `carb_undercount`
 - **THEN** it is refused as a request identity mismatch and the Focus still
   watches Late bolus
+
+#### Scenario: A cause served as not pinnable is refused
+
+- **GIVEN** the `pattern-correction-collapse` QA case, whose served cause
+  Correction stacking is not `pinnable`
+- **WHEN** a Focus is started on Lows after correcting highs with `lever`
+  `correction_stacking`
+- **THEN** it is refused and no Focus is written

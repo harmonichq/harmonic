@@ -100,3 +100,34 @@ empty list.
 and the causes' anchors together are the Pattern's, so a card's count, chart and
 population read one source. A correction dose that two causes' lows both
 followed is drawn once in the pooled trace and once under each cause.
+
+## ADR 593 — A served cause says whether it can be focused, from the endpoint's own predicate
+
+**Context.** The drill-down puts a Focus button on every cause card. A cause is
+a rate lever with a share, but a Focus can watch only one of the Pattern's
+pinnable habit members, the habit members its roster admits as Focus subjects
+(`watched_change.is_pinnable(lever, pattern_key)`). A rate lever credited from
+too few episodes for the scenario engine to price is no member: on
+`pattern-correction-collapse`, Correction stacking is credited one low, and Lows
+after correcting highs' only member is Correction on active insulin. The app may
+not re-derive membership (AGENTS.md "Keep policy in its owner"). Today the
+endpoint's member choice lives in a private helper in `api.py`
+(`_pinnable_pattern_member`), over a guidance candidate's members, which are the
+outcome Pattern's members with titles added.
+
+**Decision.**
+
+1. `watched_change.pinnable_members(pattern_key, members)` is the one
+   predicate: a Pattern's habit members that `is_pinnable` admits, in member
+   order. The Focus endpoint admits a sent `lever` exactly when it is in that
+   list, and pins the first when none is sent. The Pattern-level refusals (not
+   ready, no action) stay where they are, before it.
+2. Every served cause entry, on `served_as.cause_counts` and on a Pattern row's
+   `cause_counts`, carries `pinnable`: whether its lever is in that list for the
+   Pattern's members. It is a member-level fact only. Whether the Pattern is
+   ready for a Focus stays `GET /api/focus` `pinnable_patterns`, and whether any
+   Focus can start now stays `admission.focus_pin.available`.
+
+**Consequences.** The endpoint and the served fact read one function over the
+same member list, so they cannot disagree. `_pinnable_pattern_member` keeps its
+Pattern-level gate and delegates the member choice.

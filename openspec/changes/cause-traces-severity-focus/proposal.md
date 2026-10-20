@@ -43,6 +43,11 @@ served:
   is one of the Pattern's pinnable habit members and refuses otherwise. With no
   `lever` it pins the first pinnable member, as today. A retried pin must name
   the lever it first pinned.
+- Each served cause carries `pinnable`: whether it is one of the Pattern's
+  pinnable habit members, decided by the one predicate the Focus endpoint
+  admits a sent `lever` by. It says nothing about whether a change is already
+  watched (`GET /api/focus` `admission.focus_pin.available` stays that gate) or
+  whether the Pattern itself is ready.
 - The live adapter and the component library's fixture generator pass the new
   fields through unchanged; no screen reads them yet (#594 does).
 - A QA case, `pattern-meal-two-causes`, holds Highs after meals with two
@@ -62,8 +67,9 @@ served:
   sent (silent incorrect success), including through a retried request; a
   change to crediting, to any Pattern's count, denominator or share, or to the
   published roster; a cause trace drawing an episode its share does not count,
-  or a share whose episodes no trace draws; an order the app derives rather
-  than reads; a second implementation of the order (the projection and the case
+  or a share whose episodes no trace draws; an order or a `pinnable` verdict the app derives rather than
+  reads; a cause served `pinnable` that the Focus endpoint refuses as a
+  non-member, or the reverse; a second implementation of the order (the projection and the case
   file read one rule); a fixture or QA expectation re-baselined without its
   generator or derived from output at assertion time; any real value committed.
 - **Must recover:** nothing automatic. Every new field is derived from recorded
@@ -75,7 +81,7 @@ served:
   the other cause also saw. The scenario engine prices its own hero and
   Pattern rank the same way. A cause whose habit is credited but not a member
   of the Pattern (too few episodes for the engine to price) is served with its
-  share, order and trace, and a Focus on it is refused.
+  share, order and trace with `pinnable: false`, and a Focus on it is refused.
 - **Unsupported:** ordering or regrouping fold rows; ordering a Pattern's
   members; a per-cause count sentence wording; a Focus on a lever outside the
   Pattern's habit members.
@@ -84,9 +90,11 @@ served:
   `pattern-meal-two-causes` and `pattern-correction-collapse` case stores that
   fail on the base commit for the right reason: the shares come severity-first
   where roster order differs; each cause's trace draws exactly its credited
-  anchors and the traces' anchors partition the pooled one; a sent member lever
+  anchors and the causes' anchors together are the pooled trace's; a sent member lever
   is kept, a non-member lever is refused with no Focus written, no lever pins
-  the first member, and a retried pin with another lever is refused. A
+  the first member, and a retried pin with another lever is refused; each served cause's
+  `pinnable` agrees with what the endpoint does with that lever (Correction
+  stacking on `pattern-correction-collapse` is the false case). A
   test through `build_exposures` that every lever in an Occurrence's
   `attributed_levers` has a `claim_severity`, with the literal values the
   scenario engine scores for those episodes on `pattern-correction-collapse`

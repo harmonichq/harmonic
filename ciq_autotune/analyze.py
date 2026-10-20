@@ -4,12 +4,13 @@ One entry point funnels the whole model into the single result object the CLI an
 HTTP API render. It is where the foundation and the analyzers meet:
 
 1. load every stream and the latest settings snapshot from the store;
-2. compute basal and ISF/I:C setting epochs (basal from the dense feed; ISF/I:C from the
+2. compute basal and I:C setting epochs (basal from the dense feed; I:C from the
    snapshot diff). Basal cuts each slot's window to its own basal setting epoch; ISF/I:C are
    setting-independent physiology measurements and measure over the **full**
-   requested window (ADR 0039 measure/compare split) — ISF/I:C setting epochs still drive
+   requested window (ADR 0039 measure/compare split) — the I:C setting epoch still drives
    the settling detector and the "verified only since" caveat, and the
-   recommendation still compares to the current programmed value;
+   recommendation still compares to the current programmed value. The correction
+   factor has no setting epoch, settling gate or advice (ADR 564);
 3. run the four analyzers over their windows;
 4. assemble span, setting-epoch info, data-quality notes, and the estimates
    into a versioned :class:`~ciq_autotune.result.AnalysisResult`.
@@ -52,7 +53,6 @@ from .epochs import (
     setting_epoch,
 )
 from .analyzers.ic import IcConfig
-from .analyzers.isf import IsfConfig
 from .analyzers.scenario_config import ScenarioConfig
 from .analyzers.scenario.preempted import preempted_low_entries
 from .analyzers.tuning_priority import (
@@ -65,7 +65,6 @@ from .harm import HarmConfig, find_printed_lows
 from .false_low import drop_readings, false_low_spans
 from .model import ModelConfig
 from .rescue_evidence import (
-    RescueObservation,
     eligible_carb_entries,
     first_observation,
     observe,
@@ -207,12 +206,12 @@ def analyze(
     )
     now = now or span_end or datetime.now()
 
-    # Basal and ISF/I:C setting epochs plus measurement windows. target_bg is parsed and diffed by
+    # Basal and I:C setting epochs plus measurement windows. target_bg is parsed and diffed by
     # F1, but has no analyzer in v0.1: the setpoint is CIQ's built-in 110, reached
     # via the ISF lever (ROADMAP §3), not a tuned output — so no target_bg setting epoch is
     # surfaced.
     b_ep = basal_epoch(basal, config.slot_minutes)
-    # ISF/I:C setting epochs reconcile the forward-only snapshot log with the retroactive
+    # The I:C setting epoch reconciles the forward-only snapshot log with the retroactive
     # dose-stamped series the pump writes on every bolus (#159): a change either
     # source saw carries the caveat/settling signal (most-recent wins), and a dose
     # series that shows the setting constant back before the first snapshot pushes
@@ -222,16 +221,13 @@ def analyze(
     # than `window_days`. target_bg is dose-stamped too but has no analyzer (CIQ's
     # built-in 110), so no target_bg setting epoch is surfaced.
     window_start = now - timedelta(days=window_days)
-    isf_ep = reconcile_epoch(setting_epoch(snaps, "isf"),
-                             dose_setting_epoch(bolus, "isf"), window_start)
     ic_ep = reconcile_epoch(setting_epoch(snaps, "carb_ratio"),
                             dose_setting_epoch(bolus, "carb_ratio"), window_start)
     if ignore_setting_changes:
         # Preview mode: forget every setting-epoch boundary. No data is touched. Since
         # ISF/I:C measurements are already full-window below, this now affects
-        # basal's slot cuts and the ISF/I:C setting-epoch caveats/settling signals.
+        # basal's slot cuts and the I:C setting-epoch caveats/settling signals.
         b_ep = Epoch(b_ep.parameter, None, None)
-        isf_ep = Epoch(isf_ep.parameter, None, None)
         ic_ep = Epoch(ic_ep.parameter, None, None)
     # ADR 0039 — measure/compare split. ISF and I:C are setting-independent
     # *physiology* measurements: a setting edit doesn't change the body's
@@ -239,7 +235,7 @@ def analyze(
     # full requested window and are NEVER clamped to an ISF/I:C setting epoch
     # (clamping starves the estimate right after an edit — the degenerate
     # "ISF 58 · n=77 · CI[58,58]" that flipped the advice direction, #288).
-    # `isf_ep`/`ic_ep` are still computed above: ISF/I:C setting epochs drive
+    # `ic_ep` is still computed above: the I:C setting epoch drives
     # the settling detector (a fresh edit still gets
     # flagged when its analyzer gate is unmet) and the "verified only since"
     # caveat, and the recommendation still compares to the *current* programmed
@@ -471,17 +467,17 @@ def analyze(
     # (nulled in preview mode, so preview reveals the suppressed recommendation)
     # + post-change progress vs. each config's describe_gate().
     settling = _settling(
-        b_ep, isf_ep, ic_ep,
-        basal_rows=basal_rows, isf_rows=isf_rows, ic_runs=ic_runs,
+        b_ep, ic_ep,
+        basal_rows=basal_rows, ic_runs=ic_runs,
         slot_cuts=slot_cuts, config=config,
     )
 
-    # The unified per-flavor tuning Lever priorities (ADR 0032): basal / ISF / I:C each
+    # The unified per-flavor tuning Lever priorities (ADR 0032): basal and I:C each
     # roll up into one Lever scored in insulin currency, on the same 0–100 axis the
     # /api/scenarios behavioral Levers carry, so the Diagnose queue interleaves them.
     scenario_config = ScenarioConfig()
     # One robust user-level insulin baseline (#446), computed once over the window's total
-    # delivered insulin (basal + bolus) and shared by all three levers, so the currency is
+    # delivered insulin (basal + bolus) and shared by both levers, so the currency is
     # scale-invariant: the soft-curve knee becomes a fraction of *this* user's total dose.
     robust_daily_insulin_u = robust_daily_insulin(
         _between(basal, window_start, now), _between(bolus, window_start, now),
@@ -496,7 +492,7 @@ def analyze(
         robust_daily_insulin_u=robust_daily_insulin_u,
     )
     tuning_levers = build_tuning_levers(
-        basal_rows, isf_rows, ic_blocks,
+        basal_rows, ic_blocks,
         slot_minutes=config.slot_minutes, scenario_config=scenario_config,
         robust_daily_insulin_u=robust_daily_insulin_u,
     )
@@ -506,7 +502,6 @@ def analyze(
     b_eff_start = max(b_start, b_ep.start) if b_ep.start else b_start
     epochs = [
         _epoch_info(b_ep, b_eff_start, now),
-        _epoch_info(isf_ep, isf_start, isf_end),
         _epoch_info(ic_ep, ic_start, ic_end),
     ]
     return AnalysisResult(
@@ -517,8 +512,7 @@ def analyze(
         epochs=epochs,
         data_quality=DataQuality(
             counts=store.counts(),
-            notes=_quality_notes(epochs, snaps, basal_rows,
-                                 rescue_observation=isf_rescue_observation),
+            notes=_quality_notes(epochs, snaps, basal_rows),
         ),
         basal=basal_rows,
         # #98: build the unified four-parameter ≤16-segment pump profile once, here.
@@ -552,11 +546,9 @@ def analyze(
 
 def _settling(
     b_ep: Epoch,
-    isf_ep: Epoch,
     ic_ep: Epoch,
     *,
     basal_rows: List[SlotEstimate],
-    isf_rows: List,
     ic_runs: int,
     slot_cuts: dict,
     config: ModelConfig,
@@ -582,15 +574,6 @@ def _settling(
         if have < gate["needed"]:
             out.append(Settling("basal_rate", _fmt(b_ep.start), gate, have))
 
-    # ISF: soft gate — a fasting regression that yields a number only once enough
-    # clean fasting steps accrue (ADR 0001: no per-day breakdown). Settling while
-    # the change is recent and no estimate has been produced yet; no fabricated
-    # countdown (have/needed both None).
-    if isf_ep.start is not None:
-        isf_measured = isf_rows and isf_rows[0].estimate.value is not None
-        if not isf_measured:
-            out.append(Settling("isf", _fmt(isf_ep.start), IsfConfig().describe_gate(), None))
-
     # I:C: gate is IcConfig.min_runs qualifying MEAL RUNS (#518). `have` is the one
     # whole-day run total the active block estimator returned — never a sum across rows or
     # blocks, because a run that spans a block boundary belongs to both and summing
@@ -609,26 +592,8 @@ def _quality_notes(
     epochs: List[EpochInfo],
     snaps: List[Snapshot],
     basal_rows: Optional[List[SlotEstimate]] = None,
-    rescue_observation: Optional[RescueObservation] = None,
 ) -> List[str]:
     notes: List[str] = []
-    # #467: how much of the ISF decision window the rescue log was recording. An
-    # under-covered window is *unknown*, not rescue-free, so say so wherever the result
-    # is read — the same span also blocks a stronger-correction move.
-    ro = rescue_observation
-    if ro is not None and not ro.fully_observed:
-        if ro.observed_from is None:
-            notes.append(
-                "No rescue carbs have ever been logged, so none of the last "
-                f"{ro.window_days} day(s) can be read as rescue-free — corrections "
-                "will not be recommended stronger until that log has some history.")
-        else:
-            notes.append(
-                f"The rescue-carb log covers {ro.observed_days} of the last "
-                f"{ro.window_days} day(s) (it starts "
-                f"{ro.observed_from.strftime(_FMT)}); the earlier day(s) are unknown, "
-                "not rescue-free, so corrections will not be recommended stronger off "
-                "them.")
     # #85: per-slot pooling decisions the basal analyzer recorded on each row.
     # `pooled` slots recovered their pre-edit samples (regimes agreed); `diverged`
     # ones kept post-edit-only data and each carry a specific divergence note.

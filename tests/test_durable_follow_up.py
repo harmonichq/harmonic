@@ -675,19 +675,20 @@ class DurableApiTest(unittest.TestCase):
     def test_plan_history_names_each_recorded_subject_at_read_time(self):
         # ADR 451: the history read serves each recorded subject's name beside its
         # identifier. The name is computed on read and never stored; the recorded
-        # explanation is the served concern title at the moment of apply.
-        source = self.seed_case("isf-strengthen")
-        response = self.client.post("/api/plan/apply", headers=self.headers, json={
-            "request_id": "apply", "input_revision": source["input_revision"],
-            "subject": "setting:isf", "analysis_generation": source["analysis_generation"]})
-        self.assertEqual(response.status_code, 200, response.text)
+        # explanation is the served concern title at the moment of apply. A
+        # correction-factor Plan can no longer be applied (ADR 564), so the one
+        # recorded before that is written straight into the store, as it was saved.
+        from tests.test_remove_isf_advice import DECIDED_AT, _record_isf_plan
+        self.seed_case("isf-strengthen")
+        with Store.open(self.path) as store:
+            _record_isf_plan(store)
         read = self.client.get("/api/plan/history", headers=self.headers).json()
         context = read["history"][0]["decision_context"]
         self.assertEqual(context["subjects"], ["setting:isf"])
         self.assertEqual(context["subject_titles"], ["Correction factor"])
         self.assertEqual(context["explanation"], "Correction factor")
         with Store.open_readonly(self.path) as store:
-            stored = store.follow_up_record("plan", response.json()["applied_at"])
+            stored = store.follow_up_record("plan", DECIDED_AT)
         self.assertNotIn("subject_titles", stored["decision_context"])
         self.assertEqual(stored["decision_context"]["subjects"], ["setting:isf"])
 

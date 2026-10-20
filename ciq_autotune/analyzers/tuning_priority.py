@@ -1,13 +1,13 @@
-"""Tuning-Lever **Priority** builders — basal / ISF / I:C in one insulin currency (ADR 0032).
+"""Tuning-Lever **Priority** builders — basal and I:C in one insulin currency (ADR 0032).
 
 The unified priority core (:mod:`.scenario.priority`) turns two ``[0, 1]`` factors into a
 0–100 score. This module maps each *tuning* flavor's evidence — the
-:class:`~ciq_autotune.result.SlotEstimate` / :class:`~ciq_autotune.result.SegmentEstimate`
+:class:`~ciq_autotune.result.SlotEstimate` / :class:`~ciq_autotune.result.IcBlock`
 rows ``analyze()`` already built — onto those factors, in **one shared insulin currency**:
-the U/day implicated by the change the analyzer can recommend now. Basal, ISF and I:C are
+the U/day implicated by the change the analyzer can recommend now. Basal and I:C are
 therefore directly comparable and interleave with behavioral Levers on the Diagnose queue.
 
-The currency is honest across levers because all three price the **recommended move** —
+The currency is honest across levers because both price the **recommended move** —
 ``|f(current) − f(recommended)|`` — and pass through **one** soft-saturation curve, so
 identical U/day reads identical impact no matter which lever (ADR 435). The exception is
 I:C's existing rescue surcharge: logged rescue carbs are converted to insulin-equivalent
@@ -24,15 +24,6 @@ Plan — the mockup's decision #1):
   Recurrence = the Wilson lower bound of the headline block's "clean nights that ran on the
   suggested side of the programmed rate" — the *same*
   :func:`~ciq_autotune.uncertainty.wilson` behavioral uses.
-* **ISF** (#413): the same currency, with corrections/day and the representative correction
-  size read **from the window** (the analyzer stashes them in ``evidence.impact_inputs``),
-  and the divergence priced against the **recommended move** — the robust, step-capped,
-  harm-gated target derived from the night median, *not* the fragile pooled
-  ``estimate.value`` (#413) nor the raw ``night_median`` (which overstates the per-cycle
-  move, ADR 435). Recurrence is the strongest Wilson lower bound of ISF's three night-honest
-  channels (correction-caused low days, correction-attributed rescue-log days, per-night
-  suggested-side votes). It ranks in the tail, or above the line when the low pattern is
-  dense, instead of being forced to 0.
 * **I:C** (#410) against the first real unlocked-I:C case. Impact = ``carbs/day ·
   |1/current − 1/recommended|`` (the real windowed carb load, threaded) plus a rescue
   surcharge = ``logged meal-rescue g/day ÷ measured`` — the insulin-equivalent of the
@@ -43,6 +34,8 @@ Plan — the mockup's decision #1):
   the strongest of three Wilson lower bounds (meals on the suggested side when the band
   excludes programmed, days with meal-caused lows, days with meal-attributed rescues) — the
   same :func:`~ciq_autotune.uncertainty.wilson` basal uses.
+
+The correction factor has no Lever (ADR 564): Harmonic does not tune it.
 
 Reads the result rows (not the raw feeds), so it lives at ``analyzers/`` (whose
 ``__init__`` is inert) rather than inside the ``scenario`` package — the same reasoning
@@ -57,7 +50,7 @@ from statistics import median
 from typing import Iterable, List, Optional, Sequence
 
 from ..insulin import basal_microdoses
-from ..result import IcBlock, SegmentEstimate, SlotEstimate, TuningLever
+from ..result import IcBlock, SlotEstimate, TuningLever
 from ..uncertainty import wilson
 from . import ic as ic_module
 from .scenario_config import ScenarioConfig
@@ -171,7 +164,7 @@ def robust_daily_insulin(
     ``priority_baseline_min_days`` days with data it degrades to the calibrated reference
     (``priority_baseline_reference_u_day``) rather than trust a noisy few-day estimate.
 
-    It is **total** delivered insulin, shared by all three levers, so no single setting under
+    It is **total** delivered insulin, shared by both levers, so no single setting under
     test dominates the denominator: for the reference account bolus is ~2/3 of the day, so an
     excessive *basal* inflates its own denominator only fractionally while the corrective move
     (the numerator) grows in full — the self-dampening guard (#446, ADR 435).
@@ -287,92 +280,6 @@ def basal_lever(
         impact_u_day=impact_u_day,
         recurrence_channel=channel,
     )
-
-
-def isf_lever(
-    rows: Sequence[SegmentEstimate],
-    *,
-    scenario_config: ScenarioConfig = ScenarioConfig(),
-    robust_daily_insulin_u: Optional[float] = None,
-) -> Optional[TuningLever]:
-    """The single ISF tuning Lever (ADR 0032, #413; currency recalibrated ADR 435). ``None`` with no ISF row.
-
-    Currency (U/day implicated by the current recommendation) = ``corrections/day · mg-dL-over-target
-    · |1/current − 1/recommended|`` — corrections/day and the representative correction size
-    read **from the window** (#413 §4): the analyzer stashed them in
-    ``evidence.impact_inputs`` (the old 3.0/day and 50 mg/dL provisional constants are now
-    only a fallback when the window is empty). The divergence prices the **recommended move**
-    (ADR 435), not the raw ``night_median`` — see the body. Recurrence is the strongest
-    Wilson lower bound of the three night-honest channels the analyzer counted —
-    correction-caused low days, correction-attributed rescue-log days, or per-night
-    suggested-side votes when the measurement asserts. Unlike I:C, ISF is no longer
-    priority-suppressed: it has a real, day-based recurrence, so it ranks in the tail
-    (or above the line when the pattern is dense) instead of being forced to 0.
-    """
-    row = rows[0] if rows else None
-    if row is None:
-        return None
-    ev = row.evidence if isinstance(row.evidence, dict) else {}
-    inputs = ev.get("impact_inputs") or {}
-    per_day = inputs.get("corrections_per_day")
-    if per_day is None:
-        per_day = scenario_config.priority_isf_corrections_per_day
-    mgdl = inputs.get("median_mgdl_over_target")
-    if not mgdl:
-        mgdl = scenario_config.priority_isf_delta_bg_mgdl
-    # Impact prices the **recommended move** — the same basis basal uses — not the raw
-    # measured target: the currency is the insulin implicated by this cycle's recommendation
-    # (ADR 435). ``recommended`` is the step-capped half-gap toward the robust night
-    # median (see :func:`~ciq_autotune.analyzers.isf._recommend`), then harm-gated, so it
-    # stays robust (never the fragile pooled ``estimate.value``, #413) while being the
-    # move we will actually deliver. A confirm/hold read (``recommended is None`` or
-    # ``recommended == current``) redistributes nothing → zero divergence → zero impact.
-    #
-    # #468: a harm-owned weaken is **direction-only** — it carries no ``recommended``
-    # because its capped target is not a number we may advise. Its ranking must not
-    # collapse to zero, so fall back to the analyzer's pricing-only ``priced_target``
-    # (the very same capped move), stashed in evidence and never surfaced anywhere.
-    # Strengthen rows keep ``recommended`` and are unaffected.
-    target = (row.recommended if row.recommended is not None
-              else inputs.get("priced_target"))
-    divergence = _inverse_values(row.current, target) if target is not None else 0.0
-    impact_u_day = per_day * mgdl * divergence
-    impact = _impact_factor(impact_u_day, scenario_config, robust_daily_insulin_u)
-    recurrence, channel = _isf_recurrence(ev.get("recurrence_channels") or {})
-    return TuningLever(
-        parameter="isf",
-        title="ISF",
-        impact=impact,
-        recurrence=recurrence,
-        priority=priority_score(impact, recurrence),
-        impact_u_day=impact_u_day,
-        recurrence_channel=channel,
-    )
-
-
-def _isf_recurrence(channels: dict) -> tuple:
-    """The strongest Wilson lower bound across ISF's night-honest channels (#413 §4).
-
-    Each channel is a k-of-n day/night rate: correction-caused low days, correction-
-    attributed rescue-log days, and — only when the *measurement* asserts a direction
-    in silence — the per-night suggested-side votes. Nothing here counts 5-min steps.
-    Returns ``(bound, channel_dict_or_None)`` (#438) so the winning channel's identity and
-    observed k/n reach Diagnose. Day channels display ``covered_days``; the vote channel
-    displays its own ``side_n``.
-    """
-    covered = channels.get("covered_days") or 0
-    cands = []
-    if covered > 0:
-        cl = min(channels.get("corr_low_days", 0), covered)
-        cands.append((wilson(cl, covered)[1], 0, "isf_corr_lows", cl, covered))
-        rd = min(channels.get("rescue_days", 0), covered)
-        cands.append((wilson(rd, covered)[1], 1, "isf_rescues", rd, covered))
-    if channels.get("measurement_asserts") and channels.get("side_n"):
-        n = channels["side_n"]
-        sk = min(channels.get("side_k", 0), n)
-        cands.append((wilson(sk, n)[1], 2, "isf_votes", sk, n))
-    bound, channel = _pick_channel(cands)
-    return _clamp01(bound), channel
 
 
 def _ic_block_rescue_grams(block: IcBlock) -> float:
@@ -566,14 +473,13 @@ def _inverse_values(programmed: Optional[float], suggested: Optional[float]) -> 
 
 def build_tuning_levers(
     basal: Sequence[SlotEstimate],
-    isf: Sequence[SegmentEstimate],
     ic_blocks: Sequence[IcBlock],
     *,
     slot_minutes: int,
     scenario_config: ScenarioConfig = ScenarioConfig(),
     robust_daily_insulin_u: Optional[float] = None,
 ) -> List[TuningLever]:
-    """All present tuning Levers (basal, ISF, I:C) as one list for the /api/analyze payload.
+    """All present tuning Levers (basal, I:C) as one list for the /api/analyze payload.
 
     ``ic_blocks`` are the **priced** carb-ratio blocks (:func:`price_ic_blocks`) — each
     already carries its own 90-day carb denominator and its own emitted priority, so no
@@ -582,7 +488,7 @@ def build_tuning_levers(
     Lever's headline are the same block by construction.
 
     ``robust_daily_insulin_u`` (#446) is the **one** user-level insulin baseline
-    (:func:`robust_daily_insulin`), computed once by the caller and shared by all three
+    (:func:`robust_daily_insulin`), computed once by the caller and shared by both
     levers so the currency is scale-invariant — never a per-lever denominator. Omitted, each
     lever falls back to the calibrated reference, preserving the reference account's behavior.
     """
@@ -590,8 +496,6 @@ def build_tuning_levers(
     for lever in (
         basal_lever(basal, slot_minutes=slot_minutes, scenario_config=scenario_config,
                     robust_daily_insulin_u=robust_daily_insulin_u),
-        isf_lever(isf, scenario_config=scenario_config,
-                  robust_daily_insulin_u=robust_daily_insulin_u),
         ic_lever(ic_blocks, scenario_config=scenario_config,
                  robust_daily_insulin_u=robust_daily_insulin_u),
     ):

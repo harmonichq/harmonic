@@ -116,13 +116,9 @@ class GuidanceTest(unittest.TestCase):
         self.assertNotIn("recommended", rows["setting:basal_rate"]["members"][0])
 
     def test_analyzer_held_and_thin_verdicts_are_evidenced_without_advice(self):
-        # The correction factor is no Pattern member and never queues (ADR 499), so
-        # its held evidence leads no investigation.
         expected = {
             "basal-insufficient-seven-night": ("setting:basal_rate", None, "guided_investigation"),
             "basal-recurring-low-gate": ("setting:basal_rate", None, "guided_investigation"),
-            "isf-direction-only-weaken": ("setting:isf", "weaken", "quiet"),
-            "isf-held": ("setting:isf", None, "quiet"),
             "ic-collecting": ("setting:carb_ratio", None, "guided_investigation"),
             "ic-held": ("setting:carb_ratio", None, "guided_investigation"),
         }
@@ -225,7 +221,7 @@ class GuidanceTest(unittest.TestCase):
         _habit_result, execution = _qa("behavioral-missed-meal")
         basal = gen.basal_rows()
         levers = build_tuning_levers(
-            basal, [], [], slot_minutes=30, robust_daily_insulin_u=46.0,
+            basal, [], slot_minutes=30, robust_daily_insulin_u=46.0,
         )
         self.assertEqual(levers[0].priority, execution.scenarios["patterns"][0]["priority"])
 
@@ -358,8 +354,6 @@ class GuidanceTest(unittest.TestCase):
         # ADR 451: a setting concern is served under its setting's user label, never
         # the tuning lever's engine title, which stays in its Priority inputs.
         expected = {
-            "isf-strengthen": ("setting:isf", "Correction factor", "mg/dL/U"),
-            "isf-held": ("setting:isf", "Correction factor", "mg/dL/U"),
             "ic-lower": ("setting:carb_ratio", "Carb ratio", "g/U"),
             "ic-held": ("setting:carb_ratio", "Carb ratio", "g/U"),
             "basal-lower": ("setting:basal_rate", "Basal", "U/h"),

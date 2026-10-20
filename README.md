@@ -2,8 +2,8 @@
 
 Local, **advisory** tuning from your own pump data. No Tidepool, no Nightscout,
 no central service — a self-hostable pipeline that pulls your pump history into a
-local SQLite file and analyzes **basal, ISF, and I:C** and surfaces **behavioral
-coaching** from it.
+local SQLite file, tunes **basal and I:C**, and surfaces **behavioral
+coaching** from it. It never queues, stages or ranks a correction-factor change.
 
 **Current compatibility:** Harmonic imports data from Tandem Source™ for Tandem
 pumps using Control-IQ® technology. Harmonic may support other pump systems in
@@ -35,8 +35,7 @@ slot is confidence-gated: thin slots get no suggestion rather than a guess.
 
 "No bolus still acting" needs insulin-on-board, but Tandem Source has no dense
 IOB feed — so the tool reconstructs **bolus** IOB from the bolus log with a
-standard exponential insulin-activity curve (tunable peak / DIA). The same curve
-is the groundwork for later ICR/ISF tuning.
+standard exponential insulin-activity curve (tunable peak / DIA).
 
 Tandem Source tags every basal record with its source (`Profile` vs `Algorithm`
 vs `Temp` vs `Suspended`), which is what makes it possible to separate Control-IQ's

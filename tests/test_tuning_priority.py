@@ -1,6 +1,5 @@
 """Tuning-Lever priority builders — analyzer evidence in one insulin currency."""
 
-import random
 import unittest
 from dataclasses import replace
 from datetime import datetime, timedelta
@@ -11,21 +10,17 @@ from ciq_autotune.analyzers.ic import (
     analyze_ic_blocks,
     ic_asserts_move,
 )
-from ciq_autotune.analyzers.isf import IsfConfig, analyze_isf
 from ciq_autotune.analyzers.scenario_config import ScenarioConfig
 from ciq_autotune.analyzers.tuning_priority import (
     basal_lever,
     build_tuning_levers,
     ic_headline_block,
     ic_lever,
-    isf_lever,
     price_ic_blocks,
     robust_daily_insulin,
 )
 from ciq_autotune.events import BasalEvent, BolusEvent, CarbEntry, CgmReading
-from ciq_autotune.harm import HarmArm, HarmConfig, PrintedLow
-from ciq_autotune.insulin import InsulinActivity, basal_microdoses
-from ciq_autotune.rest_window import RestWindow
+from ciq_autotune.harm import HarmConfig
 from ciq_autotune.result import IcBlock, SegmentEstimate, SlotEstimate
 from ciq_autotune.safety import Status
 from ciq_autotune.uncertainty import Estimate
@@ -131,30 +126,6 @@ class BasalImpactTest(unittest.TestCase):
         self.assertIsNone(basal_lever([], slot_minutes=30))
 
 
-def _isf_row(current, recommended, *, corrections_per_day, median_mgdl,
-             corr_low_days=0, rescue_days=0, covered_days=30,
-             side_k=0, side_n=0, measurement_asserts=False, priced_target=None):
-    """An ISF SegmentEstimate carrying the #413 window-grounded impact inputs and
-    night-honest recurrence channels the calibrated lever reads."""
-    ref = recommended if recommended is not None else current
-    est = Estimate(value=ref, lo=ref * 0.9, hi=ref * 1.1, n=12, method="bootstrap")
-    ev = {
-        "night_median": recommended,
-        "impact_inputs": {"corrections_per_day": corrections_per_day,
-                          "median_mgdl_over_target": median_mgdl,
-                          "covered_days": covered_days,
-                          "priced_target": priced_target},
-        "recurrence_channels": {"corr_low_days": corr_low_days,
-                                "rescue_days": rescue_days,
-                                "covered_days": covered_days,
-                                "side_k": side_k, "side_n": side_n,
-                                "measurement_asserts": measurement_asserts},
-    }
-    return SegmentEstimate(start_min=0, label="Fasting", parameter="isf",
-                           current=current, estimate=est, recommended=recommended,
-                           annotation="", evidence=ev)
-
-
 def _ic_block(current, value, lo, hi, recommended, *, start_min=12 * 60,
               end_min=1440, members=None, n_runs=29, n_meals=None,
               carbs_per_day=174.4, low_days=0, rescue_days=0, rescue_grams=0.0,
@@ -223,66 +194,6 @@ class SegmentCurrencyTest(unittest.TestCase):
                                current=current, estimate=est, recommended=recommended,
                                annotation="")
 
-    def test_confirming_isf_has_zero_impact_and_priority(self):
-        # A confirm/hold read (no directional `recommended`) has no actionable currency.
-        row = _isf_row(36.0, None, corrections_per_day=4.2, median_mgdl=76.0)
-        lever = isf_lever([row])
-        self.assertEqual(lever.impact_u_day, 0.0)
-        self.assertEqual(lever.priority, 0)
-
-    def test_weaken_isf_scores_from_window_inputs_in_the_tail(self):
-        # Reference-snapshot shape: 36 → 43.2, 4.2 corrections/day, 76 mg/dL over
-        # target, 4-of-30 correction-low days. Impact enters the soft tail; recurrence is
-        # the Wilson lower bound of 4/30 — the priority lands in the tail, below 30, not 0.
-        row = _isf_row(36.0, 43.2, corrections_per_day=4.2, median_mgdl=76.0,
-                       corr_low_days=4)
-        lever = isf_lever([row])
-        expected = 4.2 * 76.0 * abs(1 / 36.0 - 1 / 43.2)
-        self.assertAlmostEqual(lever.impact_u_day, expected, places=6)
-        self.assertGreater(lever.priority, 0)
-        self.assertLess(lever.priority, 30)          # below the actionable line
-        self.assertGreaterEqual(lever.priority, 18)  # ≈ 25
-
-    def test_isf_impact_prices_the_recommended_move_not_the_measurement(self):
-        # ADR 435: ISF impact prices the recommended move (36 → 43.2) — the step-capped,
-        # harm-gated target derived from the robust night median — NOT the fragile pooled
-        # estimate (24.8, which reads the wrong way, #413) and NOT the raw night median
-        # (57.9, which overstates the per-cycle move basal would never make in one step).
-        row = _isf_row(36.0, 43.2, corrections_per_day=4.2, median_mgdl=76.0,
-                       corr_low_days=4)
-        row = replace(row, estimate=Estimate(value=24.8, lo=17.7, hi=35.2, n=1994,
-                                              method="bootstrap"))
-        row.evidence["night_median"] = 57.9
-        lever = isf_lever([row])
-        expected = 4.2 * 76.0 * abs(1 / 36.0 - 1 / 43.2)   # the recommended move
-        self.assertAlmostEqual(lever.impact_u_day, expected, places=6)
-        # explicitly neither the fragile pooled fit nor the raw night median
-        self.assertNotAlmostEqual(
-            lever.impact_u_day, 4.2 * 76.0 * abs(1 / 36.0 - 1 / 24.8), places=4)
-        self.assertNotAlmostEqual(
-            lever.impact_u_day, 4.2 * 76.0 * abs(1 / 36.0 - 1 / 57.9), places=4)
-
-    def test_direction_only_weaken_keeps_the_priority_the_number_had(self):
-        # #468: the harm-owned weaken no longer carries a number, but the ranking must
-        # be identical — the lever prices the analyzer's pricing-only capped target
-        # instead of a `recommended` it may no longer publish.
-        numbered = _isf_row(36.0, 43.2, corrections_per_day=4.2, median_mgdl=76.0,
-                            corr_low_days=4)
-        direction_only = _isf_row(36.0, None, corrections_per_day=4.2,
-                                  median_mgdl=76.0, corr_low_days=4,
-                                  priced_target=43.2)
-        was, now = isf_lever([numbered]), isf_lever([direction_only])
-        self.assertAlmostEqual(now.impact_u_day, was.impact_u_day, places=9)
-        self.assertEqual(now.priority, was.priority)
-        self.assertGreater(now.priority, 0)
-
-    def test_dense_correction_lows_lift_isf_above_the_line(self):
-        # At this user's typical historical level (7 low-days/30) the card rises above
-        # the actionable line — recurrence, not impact, does the lifting.
-        row = _isf_row(36.0, 43.2, corrections_per_day=4.2, median_mgdl=76.0,
-                       corr_low_days=7)
-        self.assertGreaterEqual(isf_lever([row]).priority, 30)
-
     def test_held_ic_has_zero_impact(self):
         # A block whose measurement matches its programmed value names no move, so the
         # one predicate holds it: currency 0, priority 0.
@@ -347,11 +258,6 @@ class SegmentCurrencyTest(unittest.TestCase):
     def test_ic_lever_returns_none_when_there_are_no_blocks(self):
         self.assertIsNone(ic_lever([]))
 
-    def test_none_rows_return_none(self):
-        self.assertIsNone(isf_lever([]))
-        self.assertIsNone(ic_lever([]))
-
-
 class IcEligibilityRanksTest(unittest.TestCase):
     """I:C is calibrated (#410) and ranks by default; only its own gate holds it.
 
@@ -366,11 +272,6 @@ class IcEligibilityRanksTest(unittest.TestCase):
         self.assertGreater(lever.priority, 0)
         self.assertGreater(lever.recurrence, 0.0)
         self.assertGreater(lever.impact_u_day, 0.0)
-
-    def test_isf_ranks_by_default_when_the_pattern_is_dense(self):
-        row = _isf_row(36.0, 43.2, corrections_per_day=4.2, median_mgdl=76.0,
-                       corr_low_days=7)
-        self.assertGreater(isf_lever([row]).priority, 0)
 
     def test_basal_is_unaffected_by_the_ic_gate(self):
         slots = [_slot(0, 0.6, 0.9, nights=20, on_side=18)]
@@ -448,7 +349,7 @@ class IcLeverCalibratedTest(unittest.TestCase):
 
 
 class AnalyzerArchetypeCurrencyGridTest(unittest.TestCase):
-    """ADR 435 acceptance grid: observations run through all three real analyzers."""
+    """ADR 435 acceptance grid: observations run through both real analyzers."""
 
     WINDOW = 30
     BASE = datetime(2026, 5, 1)
@@ -466,40 +367,6 @@ class AnalyzerArchetypeCurrencyGridTest(unittest.TestCase):
             cgm.extend(CgmReading(t=t0 + timedelta(minutes=5 * k), bg=120.0, type="EGV")
                        for k in range(duration_mins // 5 + 1))
         return analyze_basal(basal, cgm, [], [])
-
-    @classmethod
-    def _isf_rows(cls, true_isf, corrections_per_night, low_days, correction_bg=250.0):
-        cfg = IsfConfig()
-        bolus, basal, cgm, windows = [], [], [], []
-        templates = [(0, 30, .2), (1, 15, .35), (2, 0, .5),
-                     (3, 15, .65), (4, 0, .8)]
-        rng = random.Random(435 + corrections_per_night)
-        for i in range(cls.WINDOW):
-            t0 = cls.BASE + timedelta(days=i)
-            ba = [BasalEvent(t=t0 + timedelta(minutes=5 * k),
-                             delivery_type="algorithmDelivery", duration_mins=5,
-                             basal_rate=.6, profile_basal_rate=.6)
-                  for k in range(72)]
-            bs = [BolusEvent(t=t0 + timedelta(hours=h, minutes=m), insulin=u,
-                             carbs=None, bg=correction_bg)
-                  for h, m, u in templates[:corrections_per_night]]
-            activity = InsulinActivity(
-                [(b.t, b.insulin) for b in bs] + basal_microdoses(ba),
-                cfg.peak_min, cfg.dia_min)
-            times = [t0 + timedelta(minutes=5 * k) for k in range(72)]
-            bg = 250.0
-            readings = [CgmReading(t=times[0], bg=bg, type="EGV")]
-            for left, right in zip(times, times[1:]):
-                bg += -true_isf * activity.acted(left, right) + .4 + rng.gauss(0, .4)
-                readings.append(CgmReading(t=right, bg=round(bg, 1), type="EGV"))
-            bolus.extend(bs); basal.extend(ba); cgm.extend(readings)
-            windows.append(RestWindow(date=t0.date(), start=t0,
-                                      end=t0 + timedelta(hours=6)))
-        lows = [PrintedLow(cls.BASE + timedelta(days=i, hours=3), 60.0, 1.2,
-                           HarmArm.ISF) for i in range(low_days)]
-        return analyze_isf(
-            bolus, basal, cgm, [(0, 36.0)], rest_windows=windows,
-            harm_config=HarmConfig(), harm_lows=lows, window_days=cls.WINDOW)
 
     @classmethod
     def _ic_blocks(cls, measured=6.0, rescue_days=0, meal_carbs=60.0):
@@ -525,13 +392,11 @@ class AnalyzerArchetypeCurrencyGridTest(unittest.TestCase):
         return blocks
 
     @classmethod
-    def _user(cls, *, basal=0.6, isf=36.0, isf_corrections=2,
-              isf_low_days=0, ic=6.0, rescue_days=0):
+    def _user(cls, *, basal=0.6, ic=6.0, rescue_days=0):
         basal_rows = cls._basal_rows(basal)
-        isf_rows = cls._isf_rows(isf, isf_corrections, isf_low_days)
         ic_blocks = price_ic_blocks(cls._ic_blocks(ic, rescue_days))
         return {lever.parameter: lever for lever in build_tuning_levers(
-            basal_rows, isf_rows, ic_blocks, slot_minutes=30)}
+            basal_rows, ic_blocks, slot_minutes=30)}
 
     def test_well_tuned_user_surfaces_no_actionable_lever(self):
         levers = self._user()
@@ -540,14 +405,12 @@ class AnalyzerArchetypeCurrencyGridTest(unittest.TestCase):
     def test_one_lever_off_isolates_plausible_basal_signal(self):
         levers = self._user(basal=.66)
         self.assertGreaterEqual(levers["basal_rate"].priority, 30)
-        self.assertLess(levers["isf"].priority, 30)
         self.assertLess(levers["carb_ratio"].priority, 30)
 
-    def test_two_levers_off_both_rank_without_hard_saturation(self):
-        levers = self._user(isf=60.0, isf_corrections=5, isf_low_days=7, ic=5.0)
-        for name in ("isf", "carb_ratio"):
-            self.assertGreaterEqual(levers[name].priority, 30)
-            self.assertLess(levers[name].impact, 1.0)
+    def test_an_off_carb_ratio_ranks_without_hard_saturation(self):
+        levers = self._user(ic=5.0)
+        self.assertGreaterEqual(levers["carb_ratio"].priority, 30)
+        self.assertLess(levers["carb_ratio"].impact, 1.0)
 
     def test_masker_rescue_currency_survives_without_inventing_direction(self):
         levers = self._user(rescue_days=12)
@@ -555,28 +418,19 @@ class AnalyzerArchetypeCurrencyGridTest(unittest.TestCase):
         self.assertEqual(ic.priority, 0)
         self.assertGreater(ic.impact_u_day, 0.0)
 
-    def test_formerly_saturated_analyzer_outputs_remain_ordered(self):
-        low = isf_lever(self._isf_rows(60.0, 2, 15))
-        high = isf_lever(self._isf_rows(60.0, 5, 15))
-        self.assertGreater(low.impact_u_day, 1.0)
-        self.assertGreater(high.impact_u_day, low.impact_u_day)
-        self.assertGreater(high.impact, low.impact)
-        self.assertLess(high.impact, 1.0)
-
     def test_equal_analyzer_currencies_land_at_the_same_priority(self):
         basal = basal_lever(
             self._basal_rows(.65, active_days=29, duration_mins=120),
             slot_minutes=30)
-        isf = isf_lever(self._isf_rows(60.0, 1, 30, correction_bg=130.0))
         ic = ic_lever(price_ic_blocks(self._ic_blocks(5.8, meal_carbs=33.0)))
 
-        # Independent N-window observations are tuned to the action line. If all three
+        # Independent N-window observations are tuned to the action line. If both
         # analyzers price the same currency honestly, Priority 30 requires approximately
         # the same actionable U/day despite their different native parameter units.
-        currencies = [lever.impact_u_day for lever in (basal, isf, ic)]
-        priorities = [lever.priority for lever in (basal, isf, ic)]
+        currencies = [lever.impact_u_day for lever in (basal, ic)]
+        priorities = [lever.priority for lever in (basal, ic)]
         self.assertLess(max(currencies) - min(currencies), 0.02)
-        self.assertEqual(priorities, [30, 30, 30])
+        self.assertEqual(priorities, [30, 30])
 
 
 class RecurrenceChannelTest(unittest.TestCase):
@@ -638,18 +492,6 @@ class RecurrenceChannelTest(unittest.TestCase):
         slots = [_slot(0, 0.6, 0.9, wide=True, nights=20)]
         lever = basal_lever(slots, slot_minutes=30)
         self.assertEqual(lever.recurrence_channel, {"kind": "basal_thin"})
-
-    def test_isf_channel_is_correction_lows_over_the_window(self):
-        row = _isf_row(36.0, 43.2, corrections_per_day=4.2, median_mgdl=76.0,
-                       corr_low_days=4)
-        ch = isf_lever([row]).recurrence_channel
-        self.assertEqual(ch, {"kind": "isf_corr_lows", "k": 4, "n": 30})
-
-    def test_isf_tie_prefers_lows_over_rescues(self):
-        # Equal k and equal Wilson bound → the tie rule orders lows before rescues.
-        row = _isf_row(36.0, 43.2, corrections_per_day=4.2, median_mgdl=76.0,
-                       corr_low_days=4, rescue_days=4)
-        self.assertEqual(isf_lever([row]).recurrence_channel["kind"], "isf_corr_lows")
 
     def test_ic_channel_is_meal_lows_over_the_block_window(self):
         # Winning channel = meal-caused low days (11), displayed over the BLOCK's own
@@ -714,33 +556,25 @@ class ScaleInvariantCurrencyTest(unittest.TestCase):
     builders with a low/high dose pair (~20 vs ~100 U/day baseline).
     """
 
-    def _isf(self, current, recommended, base_u):
-        # ISF is mg/dL per U, so scaling insulin ×k scales ISF ÷k. corrections/day and
-        # mg/dL-over-target are physiology → unchanged, so the impact currency scales ×k.
-        return _isf_row(current, recommended, corrections_per_day=4.2,
-                        median_mgdl=76.0, corr_low_days=7)
-
     def _ic(self, current, recommended, value):
         # I:C is g per U, so scaling insulin ×k scales I:C ÷k. Same carbs/day (physiology).
         return _ic_block(current, value, value * 0.98, value * 1.02, recommended,
                          start_min=0, n_runs=29, low_days=12)
 
     def _levers(self, k, baseline):
-        # Every insulin quantity scaled by k: basal rates ×k, ISF ÷k, I:C ÷k, baseline ×k.
+        # Every insulin quantity scaled by k: basal rates ×k, I:C ÷k, baseline ×k.
         basal = basal_lever([_slot(0, 1.0 * k, 1.4 * k, nights=20, on_side=18)],
                             slot_minutes=60, robust_daily_insulin_u=baseline)
-        isf = isf_lever([self._isf(36.0 / k, 43.2 / k, k)],
-                        robust_daily_insulin_u=baseline)
         ic = ic_lever(
             price_ic_blocks([self._ic(5.4 / k, 5.1 / k, 5.11 / k)],
                             robust_daily_insulin_u=baseline),
             robust_daily_insulin_u=baseline)
-        return {"basal_rate": basal, "isf": isf, "carb_ratio": ic}
+        return {"basal_rate": basal, "carb_ratio": ic}
 
     def test_priority_is_invariant_across_dose_scales(self):
         low = self._levers(1.0, baseline=20.0)     # ~20 U/day user
         high = self._levers(5.0, baseline=100.0)   # same physiology, 5× the dose
-        for name in ("basal_rate", "isf", "carb_ratio"):
+        for name in ("basal_rate", "carb_ratio"):
             # The raw U/day currency differs 5× between the two users …
             self.assertNotAlmostEqual(low[name].impact_u_day, high[name].impact_u_day, places=3)
             # … but the scale-invariant Priority is identical.
@@ -812,12 +646,9 @@ class SelfDampeningGuardTest(unittest.TestCase):
 class BuildTuningLeversTest(unittest.TestCase):
     def test_collects_present_flavors(self):
         basal = [_slot(0, 0.6, 0.8, nights=20, on_side=18)]
-        isf = [SegmentEstimate(start_min=0, label="Fasting", parameter="isf", current=40.0,
-                               estimate=Estimate(40.0, 39.0, 41.0, 12, method="b"),
-                               recommended=None, annotation="")]
-        levers = build_tuning_levers(basal, isf, [], slot_minutes=30)
+        levers = build_tuning_levers(basal, [], slot_minutes=30)
         params = [lv.parameter for lv in levers]
-        self.assertEqual(params, ["basal_rate", "isf"])  # no I:C blocks → omitted
+        self.assertEqual(params, ["basal_rate"])  # no I:C blocks → omitted
 
 
 if __name__ == "__main__":

@@ -10,7 +10,6 @@ wrong).
 import importlib.util
 import json
 import pathlib
-import random
 import tempfile
 import unittest
 from datetime import datetime
@@ -22,11 +21,9 @@ try:
 except ImportError:  # pragma: no cover
     _HAS_FASTAPI = False
 
-from ciq_autotune.analyzers.isf import analyze_isf
 from ciq_autotune.analyzers.scenario.evidence_population import policy_for
 from ciq_autotune.analyzers.scenario.levers import Lever, outcome_kind
 from ciq_autotune.analyzers.scenario.outcome_patterns import _ROSTER, outcome_window_population
-from ciq_autotune.analyzers.tuning_priority import build_tuning_levers
 from ciq_autotune.findings_projection import (
     _CAUSE_OUTCOME,
     _headline_for,
@@ -40,8 +37,7 @@ from ciq_autotune.findings_projection import (
     pattern_chartable,
     prepare_findings_projection,
 )
-from ciq_autotune.events import BolusEvent
-from ciq_autotune.harm import HarmArm, HarmConfig, PrintedLow
+from ciq_autotune.harm import HarmConfig
 from ciq_autotune.safety import Status
 from ciq_autotune.store import Store
 from ciq_autotune.ic_history import HistoryIdentity, encode_history_id
@@ -49,7 +45,6 @@ from ciq_autotune.result import IcHistory
 from ciq_autotune.uncertainty import Estimate
 from ciq_autotune.window_membership import DAY_MINUTES
 from ciq_autotune.analyzers.basal import analyze_basal
-from tests.test_analyzer_isf import ISF_36, rw, synth_night
 from tests.test_harm_basal_arm import _build
 
 _GEN_PATH = (pathlib.Path(__file__).resolve().parents[1]
@@ -71,41 +66,6 @@ def _titles(rows, register):
 
 def _row(rows, title):
     return next(row for row in rows if row["title"] == title)
-
-
-def _direction_only_isf_analysis(base_analysis=None):
-    rng = random.Random(7)
-    plans = [[(1, 0, 3.0)], [(2, 0, 4.0), (4, 0, 2.0)], [(1, 30, 5.0)],
-             [(3, 0, 3.5)], [(0, 30, 2.0), (3, 30, 4.0)], [(2, 0, 6.0)],
-             [(1, 0, 3.0), (4, 30, 2.5)], [(2, 30, 5.0)]]
-    bolus, basal, cgm, windows = [], [], [], []
-    for index, plan in enumerate(plans):
-        b, ba, c = synth_night(index + 1, 58.0, plan, noise_sd=1.0, rng=rng)
-        bolus += b
-        basal += ba
-        cgm += c
-        windows += rw(index + 1)
-    bolus += [
-        BolusEvent(t=datetime(2026, 6, day, hour), insulin=2.0, bg=220.0)
-        for day in range(1, 31) for hour in (9, 12, 15, 18)
-    ]
-    lows = [PrintedLow(datetime(2026, 6, day, 3), 55.0, 1.2, HarmArm.ISF)
-            for day in (1, 5, 9, 13)]
-    segments = analyze_isf(
-        bolus, basal, cgm, ISF_36, rest_windows=windows,
-        harm_config=HarmConfig(), harm_lows=lows, window_days=30,
-    )
-    lever = next(lever for lever in build_tuning_levers(
-        [], segments, [], slot_minutes=30, robust_daily_insulin_u=42.0,
-    ) if lever.parameter == "isf")
-    analysis = dict(base_analysis or {"window_days": 30})
-    analysis["isf"] = [segment.to_dict() for segment in segments]
-    analysis["tuning_levers"] = [
-        *[item for item in analysis.get("tuning_levers", [])
-          if item["parameter"] != "isf"],
-        lever.to_dict(),
-    ]
-    return analysis, segments[0], lever
 
 
 def _with_history(projection, *, start_min=420, end_min=720,
@@ -314,50 +274,12 @@ class GroundedWindowTest(unittest.TestCase):
         self.assertEqual(_titles(rows, "assert"), ["Basal 05:30 · raise"])
         self.assertFalse([row for row in rows if row["title"].startswith("Basal 06:30")])
 
-    def test_the_afternoon_window_lists_no_blind_stretch_and_no_held_isf(self):
+    def test_the_afternoon_window_lists_no_blind_stretch(self):
         analysis = self.projection._analysis
         blind_slot = next(s for s in analysis["basal"] if s["slot"] == 39)
         self.assertEqual(blind_slot["safety_status"], str(Status.NO_DATA))
-        self.assertIsNone(analysis["isf"][0]["evidence"]["direction"])
         rows = self.projection.project(WindowQuery.clock(*AFTERNOON))["rows"]
         self.assertFalse([row for row in rows if row["title"].startswith("Basal 19:30")])
-        self.assertFalse([row for row in rows if row["parameter"] == "isf"])
-
-    def test_isf_register_stays_direction_derived_but_rank_follows_stageability(self):
-        analysis, segment, lever = _direction_only_isf_analysis()
-        self.assertEqual(segment.evidence["direction"], "weaken")
-        self.assertIs(segment.asserts_move, False)
-        self.assertGreater(lever.priority, 0)
-
-        projection = FindingsProjection(
-            _analysis=analysis,
-            _exposures={"exposures": {}},
-            _scenarios={"patterns": [], "low_confidence": []},
-            _outcome_patterns=[],
-        )
-        row = projection.project(WindowQuery.whole_day())["rows"][0]
-
-        self.assertEqual(row["register"], "assert")
-        self.assertEqual(row["direction"], "weaken")
-        self.assertIsNone(row["priority"])
-        self.assertEqual(row["tier"], "noted")
-        self.assertIs(row["asserts_move"], False)
-
-    def test_direction_only_isf_follows_every_actionable_or_priced_row(self):
-        base = gen.projection()
-        analysis, _segment, _lever = _direction_only_isf_analysis(base._analysis)
-        projection = FindingsProjection(analysis, base._exposures, base._scenarios,
-                                        base._outcome_patterns)
-
-        rows = projection.project(WindowQuery.whole_day())["rows"]
-        isf_index = next(index for index, row in enumerate(rows)
-                         if row["parameter"] == "isf")
-        ranked = [index for index, row in enumerate(rows)
-                  if (row["kind"] == "setting" and row["asserts_move"] is True)
-                  or (row["register"] == "finding" and row["priority"] is not None)]
-
-        self.assertTrue(ranked)
-        self.assertTrue(all(index < isf_index for index in ranked))
 
     def test_a_window_can_hold_nothing_at_all(self):
         empty = gen.empty_projection().project(WindowQuery.clock(*MORNING))
@@ -544,8 +466,6 @@ class PublicProducerPopulationProjectionTest(unittest.TestCase):
             ("basal_rate", "lower", "lows"),
             ("carb_ratio", "raise", "lows"),
             ("carb_ratio", "lower", "highs"),
-            ("isf", "strengthen", "highs"),
-            ("isf", "weaken", "lows"),
         )
         for parameter, direction, chip in cases:
             with self.subTest(parameter=parameter, direction=direction):
@@ -556,18 +476,12 @@ class PublicProducerPopulationProjectionTest(unittest.TestCase):
                         "current": 1.0, "recommended": 1.1,
                         "estimate": {"value": 1.1}, "days": 8,
                     }]
-                elif parameter == "carb_ratio":
+                else:
                     analysis["ic_blocks"] = [{
                         "block_id": 0, "start_min": 0, "end_min": 60,
                         "asserts_move": True, "direction": direction,
                         "current_values": [5.0], "recommended": 6.0,
                         "estimate": {"value": 6.0}, "n_runs": 8,
-                    }]
-                else:
-                    analysis["isf"] = [{
-                        "current": 40.0, "recommended": 35.0,
-                        "estimate": {"value": 35.0},
-                        "evidence": {"direction": direction, "night_fits": []},
                     }]
                 projection = FindingsProjection(
                     _analysis=analysis, _exposures={"exposures": {}},
@@ -576,8 +490,7 @@ class PublicProducerPopulationProjectionTest(unittest.TestCase):
                 )
                 row = projection.project(WindowQuery.whole_day())["rows"][0]
                 self.assertEqual(row["chips"], [chip])
-                self.assertEqual(row["window_scope"],
-                                 "whole_day" if parameter == "isf" else "window")
+                self.assertEqual(row["window_scope"], "window")
 
 
 class EventChartProjectionTest(unittest.TestCase):
@@ -688,20 +601,6 @@ class QueueOrderTest(unittest.TestCase):
         highs = rows["pattern:highs_after_meals"]
         self.assertIsNone(highs.get("anchored_by"))
         self.assertEqual(highs.get("rank_note"), "Ranked on all 30 days")
-
-    def test_an_asserting_row_that_cannot_stage_sorts_before_unranked_findings(self):
-        rows = FindingsProjection(
-            _analysis=gen.analysis(isf=gen.direction_only_isf_rows()),
-            _exposures=gen.exposures(), _scenarios=gen.scenarios(), _outcome_patterns=[],
-        ).project(WindowQuery.whole_day())["rows"]
-        ids = [row["id"] for row in rows]
-        by_id = {row["id"]: row for row in rows}
-        for cause in ("finding:correction_on_iob", "finding:correction_stacking"):
-            with self.subTest(cause=cause):
-                self.assertIsNone(by_id[cause]["priority"])
-                self.assertEqual(by_id[cause]["episodes"], 1)
-                self.assertIsNone(by_id["isf"]["priority"])
-                self.assertLess(ids.index("isf"), ids.index(cause))
 
     def test_the_order_is_the_servers_own_priorities_not_a_re_derivation(self):
         levers = {lever["parameter"]: lever["priority"]
@@ -1507,8 +1406,7 @@ class FindingEvidenceBlockTest(unittest.TestCase):
 class HeadlineTest(unittest.TestCase):
     """#306 ADR "Every findings row carries one served headline": every row
     published from ``FindingsProjection.project`` carries a composed sentence
-    built only from the row's own served fields (or, for correction factor, the
-    ISF rest-window evidence used purely as a coherence check).
+    built only from the row's own served fields.
     """
 
     def _project(self, analysis, *, exposures=None, scenarios=None, window=None):
@@ -1553,38 +1451,6 @@ class HeadlineTest(unittest.TestCase):
         self.assertNotIn("0.8", row["headline"])
         self.assertNotIn("1.1", row["headline"])
 
-    # --- correction factor (ISF) --------------------------------------------
-
-    def _isf_analysis(self, *, register):
-        direction = "strengthen" if register == "assert" else None
-        row = {
-            "parameter": "isf", "current": 40.0, "recommended": 24.0,
-            "estimate": {"value": 23.9974, "n_clusters": 1},
-            "asserts_move": register == "assert",
-            "evidence": {
-                "direction": direction,
-                "rest_windows": [{"date": "2026-06-01"}],
-                "n_steps": 2,
-            },
-            "annotation": (
-                "overnight you look more sensitive to insulin than the set "
-                "value, so corrections can run a little stronger"
-                if register == "assert" else
-                "rescue-carb history doesn't cover this window"
-            ),
-        }
-        return {"window_days": 30, "basal": [], "ic_blocks": [], "isf": [row]}
-
-    def test_correction_factor_assert_headline_with_no_retained_steps(self):
-        row = self._project(self._isf_analysis(register="assert"))[0]
-        self.assertEqual(row["register"], "assert")
-        self.assertEqual(
-            row["headline"],
-            "Overnight you look more sensitive to insulin than the set "
-            "value, so corrections can run a little stronger. Measured 1 U "
-            ": 24.0 mg/dL across 0 fasting nights against 1 U : 40 mg/dL "
-            "programmed.")
-
     # --- carb ratio (I:C) ----------------------------------------------------
 
     def test_carb_ratio_assert_headline(self):
@@ -1622,8 +1488,8 @@ class HeadlineTest(unittest.TestCase):
     # --- coverage + determinism ------------------------------------------------
 
     def test_every_served_family_leads_with_its_verdict_sentence(self):
-        # The four family-and-register pairs the answer serves (ADR 531): basal,
-        # carb ratio and correction factor asserting, and the finding. A held
+        # The three family-and-register pairs the answer serves (ADR 531, ADR 564):
+        # basal and carb ratio asserting, and the finding. A held
         # basal slot and a held carb-ratio block ride along and serve no row.
         analysis = {
             "window_days": 30,
@@ -1647,7 +1513,6 @@ class HeadlineTest(unittest.TestCase):
                  "current_values": [10], "estimate": {"value": 8}, "n_runs": 8,
                  "annotation": None},
             ],
-            "isf": self._isf_analysis(register="assert")["isf"],
         }
         rows = self._project(analysis, exposures=gen.exposures(),
                              scenarios=gen.scenarios())
@@ -1661,9 +1526,6 @@ class HeadlineTest(unittest.TestCase):
                 "One cautious step down is supported at this time.",
             ("assert", "carb_ratio"):
                 "Meals look slightly over-covered relative to the programmed carb ratio.",
-            ("assert", "isf"):
-                "Overnight you look more sensitive to insulin than the set "
-                "value, so corrections can run a little stronger.",
         }
         settings = [row for row in rows if row["kind"] == "setting"]
         self.assertEqual(sorted((row["register"], row["parameter"]) for row in settings),
@@ -1688,8 +1550,8 @@ class HeadlineTest(unittest.TestCase):
     def test_no_committed_fixture_headline_prints_the_string_none(self):
         """A blanket sweep over the committed fixture set: no served headline,
         in any window or case the generator built, ever prints the string
-        "None" — the same must-prevent the two targeted tests above cover for
-        a null-programmed-value ISF or carb-ratio held row, checked here
+        "None" — the same must-prevent the targeted tests above cover for
+        a null-programmed-value carb-ratio held row, checked here
         against everything actually shipped."""
         fixture_path = (pathlib.Path(__file__).resolve().parents[1]
                          / "frontend" / "__fixtures__" / "findings-projection.json")

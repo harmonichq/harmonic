@@ -500,7 +500,7 @@ holds the staged pump change).
 
 **Audit item**:
 The presentation-level umbrella for either a tuning item or a behavioral **Finding**
-in Audit. A tuning item is assembled from a **Tuning Lever** plus its basal, ISF, or
+in Audit. A tuning item is assembled from a **Tuning Lever** plus its basal or
 I:C estimate; it is not itself a Finding.
 _Avoid_: Finding when the item is tuning, recommendation (not every item can act).
 
@@ -549,24 +549,19 @@ One of the several `k of n` evidence streams a Lever's confidence-adjusted recur
 _Avoid_: signal, source, symptom; factor (a factor is impact or recurrence, one level up, not one of recurrence's channels).
 
 **Insulin currency**:
-The shared unit that makes all three tuning Levers (basal, ISF, I:C) comparable
+The shared unit that makes both tuning Levers (basal, I:C) comparable
 for Priority: **insulin units per day implicated by the change the analyzer can
 recommend now**. A basal block moving by 0.2 U/h for 90 min redistributes ~0.3
-U/day; an ISF recommendation changes correction insulin by
-`corrections/day·Δbg·|1/current − 1/recommended|`; an I:C recommendation changes
+U/day; an I:C recommendation changes
 meal insulin by `carbs/day·|1/current − 1/recommended|`. This deliberately prices
 the safe, step-capped action available this cycle, not the uncapped gap to an ideal
 measurement: Priority decides what is actionable now, while later windows can
 re-price the next step. I:C has one explicit masker exception: logged rescue carbs
 add `rescue grams/day ÷ measured I:C` insulin-equivalent currency even when the harm
 gate holds the number at current. That evidence exposes masked excess insulin but
-never invents a dose recommendation. ISF has the mirror-image exception: a harm-owned
-weaken is **direction-only** (adr-468-harm-owned-isf-weaken-is-direction-only) — the
-recurring correction-caused lows say which way to move but do not size the move — so it
-carries no recommendation, yet it is still priced off the capped step it would have
-taken, so removing the number does not remove the Lever from the ranking. One currency
-and one shared soft-saturation
-curve put all three on the same impact axis without a hard high-end clamp.
+never invents a dose recommendation. The correction factor has no Lever and is never
+advised (ADR 564). One currency and one shared soft-saturation
+curve put both on the same impact axis without a hard high-end clamp.
 _Avoid_: dose error, total mis-dose, recommendation size (say insulin currency when
 you mean the cross-parameter unit).
 

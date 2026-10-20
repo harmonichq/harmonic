@@ -1,6 +1,6 @@
 // MealSizeCard (§4.2, §2.5 2026-10-19, ADR 501, #559, #565): how far glucose
-// climbs after meals of each size, on the Overview with the ISF and basal
-// estimates, their height on desktop. It reads the window the Overview's switch
+// climbs after meals of each size, on the Overview below the basal estimate,
+// its height on desktop. It reads the window the Overview's switch
 // shows, as they do, and like them never repeats it: the title is "Meal size"
 // in their strong title style.
 //
@@ -28,7 +28,6 @@ import { labelledTicks, niceTicks } from '../Chart/scale';
 import '../../shared.css';
 import '../Chart/Chart.css';
 import '../SettingCard/SettingCard.css';
-import '../IsfCard/IsfCard.css';
 import './MealSizeCard.css';
 
 /** The card's width from which each size's numbers sit on its strip's row. */
@@ -212,23 +211,23 @@ function MealSizeBody({ data }: { data: MealSizeData }) {
 
 export function MealSizeCard({ data }: { data: MealSizeData | 'none' | null }) {
   const title = (
-    <h2 className="ui-scard__title ui-isf__title">
+    <h2 className="ui-scard__title ui-scard__heading">
       Meal size
     </h2>
   );
   if (data === null) {
     return (
-      <section className="ui-scard ui-isf ui-meal-size" aria-busy="true">
+      <section className="ui-scard ui-meal-size" aria-busy="true">
         {title}
-        <span className="ui-skeleton ui-isf__skeleton" aria-hidden="true" />
+        <span className="ui-skeleton ui-scard__skeleton" aria-hidden="true" />
       </section>
     );
   }
   if (data === 'none') {
-    return <section className="ui-scard ui-isf ui-meal-size">{title}<p className="ui-isf__none">No data</p></section>;
+    return <section className="ui-scard ui-meal-size">{title}<p className="ui-scard__none">No data</p></section>;
   }
   return (
-    <section className="ui-scard ui-isf ui-meal-size">
+    <section className="ui-scard ui-meal-size">
       {title}
       <MealSizeBody data={data} />
     </section>

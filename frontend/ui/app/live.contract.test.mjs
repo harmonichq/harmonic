@@ -80,13 +80,12 @@ const EXPECTED = {
       // episode serves no bin of three readings, so the card draws no impact line.
       traces: { anchor: 'nadir', window: [0, 180], episodes: 1, patternBins: 0, typicalBins: 37, typical: 4 },
       caseFile: { summary: { claimed: 1, denominator: 5, noun: 'lows' }, outcome: 'peak', impact: null } },
-    isf: null,
     change: { kind: 'none' },
     done: { subject: 'setting:basal_rate', waiting: { subject: 'setting:basal_rate', title: 'Basal',
       block: { start: 180, end: 240 }, moves: [{ name: null, slot: null, before: 0.6, after: 0.48, units: 'U/h' }] } },
     // One previous change: the whole-day carb ratio move, with no saved result.
     previous: [{ title: 'I:C', block: null, moves: [[null, 12, 10, 'g/U']], result: null }],
-    overview: { tir: 98.6, previous: 100, isf: { current: 40, recommended: null, uncertain: true, nights: 14 },
+    overview: { tir: 98.6, previous: 100,
       // The 48 half-hour slots, and the moves the basal analyzer stages (ADR 523).
       basal: { slots: 48, estimated: 48, moves: [[180, 'lower'], [210, 'lower']] },
       // Meal size at the window shown (ADR 501, #565): each size's bounds, its
@@ -130,7 +129,6 @@ const EXPECTED = {
       magnitude: { count: 4, denominator: 7, noun: 'lows' },
       traces: { anchor: 'correction', window: [0, 240], episodes: 4, patternBins: 49, typicalBins: 0, typical: 1 },
       caseFile: { summary: { claimed: 4, denominator: 7, noun: 'lows' }, outcome: 'nadir', impact: null } },
-    isf: null,
     change: { kind: 'none' },
     done: null,
     findings: {
@@ -144,12 +142,13 @@ const EXPECTED = {
     // and drawn at its served 385 mg/dL peak at 17:00, beside two lows.
     prompts: { lows: 2, rises: [{ anchorT: '2024-05-27 15:55:00', at: '2024-05-27 17:00:00', bg: 385 }] },
   },
+  // The engine still serves a correction factor it supports a move for, until
+  // #564's engine slice; no Queue component draws one (§2.5, 2026-10-20), so the
+  // Queue is empty and there is nothing to mark Done.
   'isf-strengthen': {
-    queue: ['setting:isf'],
-    isf: { current: 40, recommended: 32, uncertain: false, nights: 29 },
+    queue: [],
     change: { kind: 'none' },
-    done: { subject: 'setting:isf', waiting: { subject: 'setting:isf', title: 'ISF', block: null,
-      moves: [{ name: null, slot: null, before: 40, after: 32, units: 'mg/dL/U' }] } },
+    done: null,
   },
   // A queued carb ratio: its card draws the block, current → suggested and range.
   // Its move strengthens the ratio, so it answers highs after meals and never
@@ -159,7 +158,6 @@ const EXPECTED = {
     ic: { title: 'I:C', units: 'g/U', start: 0, end: 1440, current: 10, suggested: 9, estimate: 8, lo: 8, hi: 8,
       // The meal runs the estimate counts: the stat row's count and the chart's dots (ADR 523).
       count: { label: 'Meal runs', value: 8 }, dots: 8 },
-    isf: null,
     change: { kind: 'none' },
     // Done on the I:C card waits for the pump like any Setting (#518).
     done: { subject: 'setting:carb_ratio', waiting: { subject: 'setting:carb_ratio', title: 'I:C', block: { start: 0, end: 1440 },
@@ -180,7 +178,6 @@ const EXPECTED = {
       counts: [['habit:correction_on_iob', 'Correction on active insulin', 2, true],
         ['habit:correction_stacking', 'Correction stacking', 1, false]],
       traces: [['habit:correction_on_iob', 2], ['habit:correction_stacking', 1]] },
-    isf: null,
     change: { kind: 'none' },
     done: null,
   },
@@ -197,7 +194,6 @@ const EXPECTED = {
     causes: { row: 'pattern:highs_after_meals', key: 'highs_after_meals',
       counts: [['habit:late_bolus', 'Late bolus', 3, true], ['habit:carb_undercount', 'Carb undercount', 4, true]],
       traces: [['habit:late_bolus', 3], ['habit:carb_undercount', 4]] },
-    isf: null,
     change: { kind: 'none' },
     done: null,
   },
@@ -210,7 +206,6 @@ const EXPECTED = {
     habit: { subject: 'habit:missed_meal', title: 'Missed / unannounced meal',
       magnitude: { count: 2, denominator: 6, noun: 'highs' },
       traces: { anchor: 'meal_start', window: [-60, 300], episodes: 2, patternBins: 0, typicalBins: 0, typical: 2 } },
-    isf: null,
     change: { kind: 'none' },
     done: null,
     pin: { subject: 'habit:missed_meal',
@@ -219,7 +214,6 @@ const EXPECTED = {
   'c3-trial': {
     queue: ['setting:basal_rate'],
     basal: { start: 60, end: 90, current: 0.6, suggested: 0.48, trial: false },
-    isf: null,
     change: { kind: 'trial', title: 'Basal', maturing: false, result: 'unclear', canEnd: true },
     // A Done while the Trial is watched: it waits on its own (#518).
     done: { subject: 'setting:basal_rate', waiting: { subject: 'setting:basal_rate', title: 'Basal',
@@ -242,7 +236,6 @@ const EXPECTED = {
   // no result.
   'c3-ic-trial': {
     queue: [],
-    isf: null,
     change: { kind: 'trial', title: 'I:C', maturing: true, result: null, canEnd: false },
     done: null,
     trial: { block: [660, 840], moves: [['11:00', 5, 4.4, 'g/U']], meals: { before: 24, after: 6 },
@@ -279,6 +272,8 @@ test(`the live adapter serves each tab's model from the ${CASE} store`, async (t
     await live.readTab('queue');
     const ranking = values(queue.ranking('wearer'));
     assert.deepEqual(ranking.map((item) => item.subject), expected.queue);
+    // The count the empty Queue prints is the items it draws (§1.3 "0 patterns").
+    assert.equal(values(queue.queuedCount('wearer')), expected.queue.length, 'the Queue counts what it draws');
     if (expected.basal) {
       const basal = ranking.find((item) => item.subject === 'setting:basal_rate').data;
       for (const [key, value] of Object.entries(expected.basal)) assert.equal(basal[key], value, `basal ${key}`);
@@ -347,9 +342,6 @@ test(`the live adapter serves each tab's model from the ${CASE} store`, async (t
       assert.equal(served.summary.claimed, served.traces.pattern.anchors.length, 'each claimed episode is drawn');
       assert.equal(served.traces.typical.anchors.length, traces.typical, 'Typical episodes drawn');
     }
-    const isf = values(queue.isfSetting('wearer'));
-    if (expected.isf === null) assert.equal(isf, null);
-    else for (const [key, value] of Object.entries(expected.isf)) assert.equal(isf[key], value, `ISF ${key}`);
   });
 
   await t.test('Changes', async () => {
@@ -463,8 +455,6 @@ test(`the live adapter serves each tab's model from the ${CASE} store`, async (t
     const tir = values(overview.metric('wearer', '14', 'tir'));
     assert.deepEqual([tir.value, tir.previous], [expected.overview.tir, expected.overview.previous]);
     assert.ok(values(overview.profile('wearer', '14')).bins.length > 0, 'the glucose profile has bins');
-    const isf = values(overview.isfEstimate('wearer', '14'));
-    for (const [key, value] of Object.entries(expected.overview.isf)) assert.equal(isf[key], value, `ISF ${key}`);
     const basal = values(overview.basalEstimate('wearer', '14'));
     assert.deepEqual({
       slots: basal.slots.length, estimated: basal.slots.filter((slot) => slot.estimate).length,

@@ -180,7 +180,6 @@ the system's own edge-swipe back is left to the platform, never overridden.
 | **Peak / Nadir** | noun | The highest or lowest glucose after an event such as a meal, as the median across the events counted, in mg/dL. |
 | **Typical** | noun | The same for the comparison events: similar events that did not end in the Pattern's or the Habit's outcome. |
 | **Glucose profile** | noun | Glucose by time of day over the selected window (14, 30 or 90 days): the median and the 10th–90th percentile spread. |
-| **Fasting** | state | No food and no recent bolus: the nights an ISF estimate is read from. |
 | **Median** | noun | The middle value: of the profile at that time of day, or of a meal size's meals. |
 | **Meal size** | noun | A meal's carbs in grams: under 25, 25–39, 40–59 or 60 and over. Meal size counts the selected window's meals that began at or under 180 mg/dL with glucose flat before the bolus. |
 | **Climb** | metric | How far glucose rose after a meal: its highest reading in the 3 hours after the bolus, before any next meal, less the reading at the bolus, in mg/dL. |

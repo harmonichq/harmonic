@@ -671,6 +671,33 @@ test('Pin on a standalone habit pins its lever under the habit\'s own subject, w
     input_revision: 7, analysis_generation: 'g1' });
 });
 
+test('a cause\'s Focus sends its lever with the Pattern, under a request identity naming both (ADR 594)', async () => {
+  const fake = fakeClient();
+  const sent = [];
+  let refuse = true;
+  fake.client.pinFocus = (body) => {
+    sent.push(body);
+    if (refuse) { refuse = false; return Promise.reject(new Error('not saved')); }
+    return Promise.resolve({});
+  };
+  const live = createLive({ client: fake.client, glossary: [] });
+  await live.readTab('queue');
+  // Late bolus is refused, then Carb undercount is pressed, then Late bolus retried.
+  await assert.rejects(live.queueWrites.pin('pattern:p0', 'late_bolus'));
+  await live.queueWrites.pin('pattern:p0', 'carb_undercount');
+  await live.queueWrites.pin('pattern:p0', 'late_bolus');
+  const [late, carb, retried] = sent;
+  const { request_id: id, ...body } = late;
+  assert.deepEqual(body, { pattern_key: 'p0', lever: 'late_bolus', outcome_window: { start_min: 0, end_min: 1440 },
+    subject: 'pattern:p0', input_revision: 7, analysis_generation: 'g1' });
+  assert.equal(carb.lever, 'carb_undercount');
+  assert.notEqual(carb.request_id, late.request_id, 'two causes of one Pattern, two identities');
+  assert.equal(retried.request_id, late.request_id, 'a Retry keeps its own cause\'s identity');
+  // Without a lever, the Pattern's Focus is sent as before.
+  await live.queueWrites.pin('pattern:p1');
+  assert.equal('lever' in sent.at(-1), false);
+});
+
 test('the Overview reads each window\'s Meal size once, the first window first, kept to what the card draws (#501, #565, #566)', async () => {
   const fake = fakeClient();
   const size = (from, to, count) => ({ carbs_from: from, carbs_to: to, count,

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { TABS, parseRoute, resolveTab, serializeRoute, subscribeRoute, writeRoute } from './tab-routing.js';
+import { TABS, parseRoute, pushDrillDown, resolveTab, serializeRoute, subscribeRoute, writeRoute } from './tab-routing.js';
 
 test('the five tabs, in the order the nav draws them', () => {
   assert.deepEqual(TABS, ['queue', 'changes', 'overview', 'day', 'settings']);
@@ -44,4 +44,40 @@ test('Back and Forward report the tab they land on until unsubscribed', () => {
   stop();
   assert.equal(listeners.size, 0);
   assert.deepEqual(seen, ['overview']);
+});
+
+// A fake browser whose history keeps each entry's address and state, and whose
+// back() lands on the entry before, as popstate does.
+function browserAt(pathname) {
+  const entries = [{ address: pathname, state: null }];
+  const listeners = new Set();
+  const browser = {
+    location: { pathname, search: '', hash: '' },
+    history: {
+      get state() { return entries.at(-1).state; },
+      pushState: (state, _title, address) => { entries.push({ address, state }); browser.location.pathname = address; },
+      back: () => {
+        entries.pop();
+        browser.location.pathname = entries.at(-1).address;
+        for (const fn of listeners) fn();
+      },
+    },
+    addEventListener: (_type, fn) => listeners.add(fn),
+    removeEventListener: (_type, fn) => listeners.delete(fn),
+  };
+  return { browser, entries };
+}
+
+test('a drill-down pushes one history entry at the same address, and Back reports the return (ADR 594)', () => {
+  const { browser, entries } = browserAt('/');
+  const seen = [];
+  subscribeRoute((tab, { drillDown }) => seen.push([tab, drillDown]), browser);
+  pushDrillDown(browser);
+  assert.deepEqual(entries.map((e) => e.address), ['/', '/'], 'the address never changes');
+  assert.equal(browser.history.state?.drillDown, true);
+  browser.history.back();
+  assert.deepEqual(seen, [['queue', false]], 'Back lands on the Queue, out of the drill-down');
+  // A reload on a drill-down's entry parses to its tab: a drill-down is not addressed.
+  pushDrillDown(browser);
+  assert.equal(parseRoute(browser.location), 'queue');
 });

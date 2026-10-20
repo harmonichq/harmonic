@@ -21,8 +21,12 @@
 //
 // Saving a token in Settings reads the app again under it: Settings' parts and
 // badges at once, and every other tab when it next opens.
+//
+// A Queue drill-down takes one history entry from the router at the same
+// address (ADR 594): "‹ Queue" goes Back through it, and a Back that leaves it,
+// a phone's edge-swipe among them, returns the Queue to its list.
 import { useCallback, useEffect, useState } from 'react';
-import { parseRoute, subscribeRoute, writeRoute } from '../../tab-routing.js';
+import { parseRoute, pushDrillDown, subscribeRoute, writeRoute } from '../../tab-routing.js';
 import type { NavItem } from '../components/NavBar/NavBar';
 import { ChangesScreen } from '../screens/Changes/ChangesScreen';
 import { DayScreen } from '../screens/Day/DayScreen';
@@ -49,6 +53,15 @@ const memory = createMemory({ storage: browserStorage(), build: import.meta.url,
 const live = createLive({ client, glossary, memory });
 const { changesWrites, dayWrites, queueWrites, settingsWrites } = live;
 serve(live.answers as unknown as Answers);
+
+/** The router's drill-down entry, which the Queue opens and returns from. */
+const DRILL_DOWN = {
+  open: () => pushDrillDown(),
+  close: () => window.history.back(),
+  onReturn: (listener: () => void) => subscribeRoute((_tab: string, { drillDown }: { drillDown: boolean }) => {
+    if (!drillDown) listener();
+  }),
+};
 
 type Read = 'loading' | 'ready' | 'stale' | 'unavailable';
 type Part = 'status' | 'account' | 'pump';
@@ -138,7 +151,8 @@ export function App() {
 
   switch (tab) {
     case 'queue':
-      return <QueueScreen key={tab} layout={layout} store="wearer" state={state} nav={nav} onRetry={retry}
+      return <QueueScreen key={tab} layout={layout} store="wearer" state={state} nav={{ ...nav, drillDown: DRILL_DOWN }}
+        onRetry={retry}
         writes={{ snooze: drawn(queueWrites.snooze), restore: drawn(queueWrites.restore), pin: drawn(queueWrites.pin),
           done: drawn(queueWrites.done), undoDone: drawn(queueWrites.undoDone) }} />;
     case 'changes':

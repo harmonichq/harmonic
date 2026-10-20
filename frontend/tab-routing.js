@@ -1,8 +1,11 @@
 // ---------------------------------------------------------------------------
 // The app's one address (#389, #495). The current tab is the path: `/` is the
 // Queue, and each other tab is its own page path. Drill-downs stay inside
-// their tab and are not addressed. Framework-free, so the initial load and
-// popstate share one parse and the fallback is covered without a browser.
+// their tab and are not addressed: opening one pushes a history entry at the
+// same address, marked, so the platform's Back (a phone's edge-swipe) returns
+// from it, and a reload lands on the tab (ADR 594). Framework-free, so the
+// initial load and popstate share one parse and the fallback is covered without
+// a browser.
 //
 // ciq_autotune/api.py serves the same closed set of page paths; a path not in
 // it is a 404 there, and the Queue here.
@@ -28,9 +31,15 @@ export function writeRoute(tab, { location = window.location, history = window.h
   return address;
 }
 
-/** Call `listener` with the tab each Back or Forward lands on; returns the unsubscribe. */
+/** Open a drill-down: one history entry at the current address, marked as a drill-down. */
+export function pushDrillDown({ location = window.location, history = window.history } = {}) {
+  history.pushState({ drillDown: true }, '', `${location.pathname}${location.search}${location.hash}`);
+}
+
+/** Call `listener` with the tab each Back or Forward lands on, and whether that entry is a
+ *  drill-down's; returns the unsubscribe. */
 export function subscribeRoute(listener, browser = window) {
-  const notify = () => listener(parseRoute(browser.location));
+  const notify = () => listener(parseRoute(browser.location), { drillDown: browser.history?.state?.drillDown === true });
   browser.addEventListener('popstate', notify);
   return () => browser.removeEventListener('popstate', notify);
 }

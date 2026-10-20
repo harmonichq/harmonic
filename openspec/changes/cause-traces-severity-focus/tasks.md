@@ -1,0 +1,31 @@
+## 1. The two-cause QA case
+
+- [ ] 1.1 Per AGENTS.md "Maintaining QA coverage eras", add `QaCase('pattern-meal-two-causes', …)` to `scripts/qa_e2e_cases.py` with a recipe built from the existing materializers' idiom (manufactured CGM and boluses only, dates before 2025-07-01, no verdict, attribution or state written): at least twelve plain meals so Highs after meals is `ready`; three meals whose late bolus is followed by a long high under Carb undercount's 200 runaway bar (Late bolus claims them); four runaway meals Carb undercount claims, each less severe than a late-bolus meal, so roster order (Carb undercount, Late bolus), count order (4, 3) and severity order (Late bolus first) differ. Both habits must be admitted members of Highs after meals, Carb undercount first in its `members`. The triage spike reached that shape on a 30-day behavioral background with fourteen flat 07:40 meals (days 2–15), three late-bolus meals whose 11:40 trace climbs to 195 and holds 198 for two hours before falling (days 16–18), and four of the carb-undercount recipe's runaway traces at 30 g / 6 U (days 23–26): Late bolus 3 meals at 2285 each, Carb undercount 4 at 1200 each, both admitted members, the Pattern `ready` on 21 meals
+- [ ] 1.2 Materialize it, run `execute_case`, and copy its complete dump into a literal `QaExpectation`; run the generated `test_case_pattern_meal_two_causes`
+- [ ] 1.3 Re-measure the five budgets without raising a limit: showcase size ≤25 MiB, showcase drift ≤30 s, focused QA suite ≤150 s, slowest generated case ≤30 s, full pytest ≤2.5× the recorded chunk-1 baseline. A breach stops the work without changing the committed showcase
+
+## 2. Fail first
+
+- [ ] 2.1 Add `tests/test_cause_order.py` through the HTTP interface on the `pattern-meal-two-causes` and `pattern-correction-collapse` stores (the `_serve` idiom of `tests/test_queue_evidence.py`), with every expected value a literal: the shares severity-first on the collapsed habit row and on the Highs after meals Pattern row; each cause's trace in that order, drawing exactly the anchors of the occurrences whose `member` is that cause, its episodes served, and the causes' anchors together equal to `traces.pattern.anchors`; the Pattern's count, denominator and `occurrences[].member` unchanged
+- [ ] 2.2 In the same file, through `POST /api/focus` on `pattern-meal-two-causes` (an outcome window, the same request shape the app sends): `lever: late_bolus` watches Late bolus under `pattern:highs_after_meals`; `lever: meal_over_delivery` is 400 and the Focus list is unchanged; no `lever` watches Carb undercount; a durable retry of the Late bolus pin with `lever: carb_undercount` is refused as `request_identity_mismatch`
+- [ ] 2.3 Run 2.1 and 2.2 on the base commit and record that each fails for the right reason (roster order served; no `traces.causes`; no `cause_counts` on the Pattern row; the sent lever overridden)
+
+## 3. The engine
+
+- [ ] 3.1 `explore_exposures.build_exposures`: stamp `claim_severity[lever]` from the claiming evaluated episode's `severity` at both places a lever is appended to `attributed_levers` (the episode's own claim, the stacked pair's reached low), the largest per lever (ADR 593). Test through `build_exposures` in `tests/test_explore_exposures.py`: on `pattern-correction-collapse`, the literal values 720.0 and 3377.5, and every attributed lever of every Occurrence has one
+- [ ] 3.2 `analyzers/scenario/outcome_patterns.py`: add `cause_order(exposures, family, rate_levers)` beside `credited_claims` (ADR 593). Test the tie (roster order) and the doubly claimed meal (credited in roster order, summing only the crediting lever's severity) in `tests/test_outcome_patterns.py` over synthetic exposures
+- [ ] 3.3 `findings_projection.py`: `_served_as` reads `cause_order`; every Pattern row that serves a count sentence serves `cause_counts` from the same function, `null` otherwise (ADR 593)
+- [ ] 3.4 `finding_case_file.py`: `_pattern_traces` serves `traces.causes` in `cause_order`, each the pooled cohort's anchors restricted to that cause's credited occurrences, through `_trace_cohort` (ADR 593)
+- [ ] 3.5 `api.py` `pin_focus_endpoint`: with `pattern_key` and `lever`, keep the lever when it is one of the Pattern's pinnable habit members, else 400; with no lever, the first pinnable member as today. `lifecycle`'s pin retry also compares a sent `lever` with the record's. The record's subject and `pattern_key` are unchanged
+- [ ] 3.6 Give every hand-built exposure input that reaches a share or a Pattern case file a `claim_severity` for each attributed lever (the triage prototype's full run named `tests/test_findings_projection.py`, `tests/test_finding_case_file.py`, `tests/test_pattern_traces.py` and `scripts/gen_findings_projection_fixtures.py`); no reader defaults a missing one
+
+## 4. The adapter and fixtures
+
+- [ ] 4.1 `frontend/ui/app/live.js` `traceChart` passes `causes` through, each trimmed like `pattern` (`subject`, `episodes`, `points`); `scripts/gen_ui_fixtures.py` `_traces` trims the same, and its row field list keeps `cause_counts`
+- [ ] 4.2 `frontend/ui/app/live.contract.test.mjs`: a `pattern-meal-two-causes` entry asserting, as literals read once from the served answers, the Highs after meals row's `cause_counts` (subjects, titles, counts, order) and its case file's per-cause traces (subject order, episode counts) as the live adapter carries them; extend `pattern-correction-collapse` with its served order and per-cause traces. No screen model changes
+- [ ] 4.3 Add `pattern-meal-two-causes` to the app job's contract-test list in `.github/workflows/ci.yml`, to the file's own header list, and to the AGENTS.md paragraph that names the contract-test cases
+- [ ] 4.4 Regenerate every drift-checked artifact that goes stale through its generator (`frontend/__fixtures__/findings-projection.json` and `frontend/ui/__fixtures__/ui-fixtures.json` are expected; the chart-builder, QA database and missed-meal comparison checks stayed current under the triage prototype)
+
+## 5. Verify
+
+- [ ] 5.1 Run each complete suite of the pull-request gate once, on the commit that will be pushed

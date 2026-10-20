@@ -650,7 +650,7 @@ test('a standalone habit\'s case file is read, queued or snoozed, and kept to it
   assert.deepEqual(queue.findings.rows.map((r) => r.id), ['finding:missed_meal', 'finding:other_habit']);
 });
 
-test('Pin on a standalone habit pins its lever under the habit\'s own subject, with no Pattern or outcome window', async () => {
+test('Focus on a standalone habit pins its lever under the habit\'s own subject, with no Pattern or outcome window', async () => {
   const fake = fakeClient();
   fake.client.fetchGuidance = () => Promise.resolve({ analysis_generation: 'g1', candidates: [
     { subject: 'habit:missed_meal', kind: 'habit', lever: 'missed_meal', title: 'Habit', units: null, priority: 1,

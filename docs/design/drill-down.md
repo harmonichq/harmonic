@@ -89,12 +89,12 @@ Anything under `Open` is undecided; nothing there is a requirement.
 
 ## Served vocabulary
 - Pattern title, count — `GET /api/diagnose/findings` `outcome_patterns[].title`, `rows[].count_sentences`
-- Cause, cause count — `rows[].served_as.cause_counts[]` (`subject`, `title`, `count`)
-- Cause traces — not served: the case file pools every cause into `traces.pattern` (engine gap)
-- Cause order — `cause_counts` is in `rate_levers` roster order today; the build serves it by summed episode severity (`analyzers/scenario/severity.py`), largest first (engine gap)
-- Episode cause — `finding-case-file` `occurrences[].member` (served, not yet traced)
-- Focus target — `POST /api/focus` `lever`; the server overrides it with the first pinnable member (engine gap)
-- Focus button shown — `GET /api/focus` `admission.focus_pin.available`
+- Cause, cause count — the Pattern's counter: `rows[].cause_counts[]` on its Pattern row, or `rows[].served_as.cause_counts[]` on the row of the habit it is served as (`subject`, `title`, `count`, `pinnable`)
+- Cause traces — `finding-case-file` `traces.causes[]` (`subject`, `pattern`), each against the Pattern's `traces.typical`
+- Cause order — `cause_counts` as served, by summed episode severity, largest first (ADR 593)
+- Episode cause — `finding-case-file` `occurrences[].member`
+- Focus target — `POST /api/focus` `lever` with `pattern_key`, kept as sent (ADR 593)
+- Focus button shown — `GET /api/focus` `admission.focus_pin.available`, and a cause's `pinnable`
 
 ## Allowed strings
 - (none yet)

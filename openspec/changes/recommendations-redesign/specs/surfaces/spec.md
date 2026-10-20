@@ -69,7 +69,7 @@ The Queue SHALL list exactly the candidates the guidance read admits, the
 person has not snoozed and the guidance does not serve as waiting for the pump,
 by served priority, highest first, an exact tie broken by subject. It SHALL
 re-derive no admission, floor, threshold or direction. A Pattern card SHALL offer
-Pin, which starts a Focus on its habit, and SHALL draw the trace chart its case
+Focus, which starts a Focus on its habit, and SHALL draw the trace chart its case
 file serves: the Pattern's episodes, or its median and band past eight, against
 Typical's median and band, computing no band and choosing no episode (ADR 523).
 A Setting card SHALL show the current value, the engine's estimate, its range,
@@ -87,9 +87,9 @@ SHALL be its own item (ADR 528): its row a Pattern's row with the Habit glyph an
 no trailing value, and its card a Pattern's card, counting the episodes its case
 file claims of its denominator and drawing its case file's trace chart, its own
 episodes named Habit. Its card SHALL carry no Uncertain tag and no impact line,
-which the engine serves only for a Pattern. Its Pin SHALL start a Focus on the
+which the engine serves only for a Pattern. Its Focus SHALL start a Focus on the
 habit itself, under the habit's own subject, and its card SHALL show the Focus
-pill while that Focus is active. A Setting card's primary SHALL be Done (#518), where Pin sits on a
+pill while that Focus is active. A Setting card's primary SHALL be Done (#518), where Focus sits on a
 Pattern card: it SHALL take the card out of the Queue at once, with a bar reading
 "Waiting for pump" and an Undo that withdraws it. A Setting the guidance serves
 as `not_on_pump` SHALL carry the Not on pump pill on its row and its card. Every
@@ -145,14 +145,14 @@ least one item is snoozed.
   highs, its chart drawing those two rises, with no Uncertain tag and no impact
   line
 
-#### Scenario: Pin on a habit starts a Focus on that habit
+#### Scenario: Focus on a habit starts a Focus on that habit
 
 - **GIVEN** the same case
-- **WHEN** the person presses Pin on its card
+- **WHEN** the person presses Focus on its card
 - **THEN** a Focus starts under `habit:missed_meal`, with no Pattern, and the card
   shows the Focus pill
 - **AND** Changes shows that Focus titled by the habit, with no Pattern name
-- **AND** once the Focus is ended the card offers Pin again
+- **AND** once the Focus is ended the card offers Focus again
 
 #### Scenario: A queued carb ratio counts its meal runs
 

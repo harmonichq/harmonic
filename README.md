@@ -227,8 +227,9 @@ HTTP API. First real fetch run validates the Tandem Source login on your account
 tablet or desktop:
 
 - **Queue** — the ranked recommendations: the Patterns the engine detected and
-  the settings it would change, each opened beside its evidence. Pin a Pattern's
-  habit as a Focus, or Snooze an item for 14 days.
+  the settings it would change, each opened beside its evidence. Start a Focus
+  on a Pattern's habit (a Pattern with several causes opens one card per cause,
+  each with its own Focus), or Snooze an item for 14 days.
 - **Changes** — the one change you are watching, a Trial (a pump setting change
   it detected) or a Focus, against its before period, and the last one you
   ended.

@@ -1179,7 +1179,7 @@ def _require_causes(queue: dict) -> None:
 
 
 def _pin(client: TestClient) -> None:
-    """Pin a Focus on the first pattern whose habit the engine lets the person pin."""
+    """Start a Focus on the first pattern whose habit the engine lets the person focus."""
     for candidate in _get(client, "/api/guidance")["candidates"]:
         if candidate["kind"] != "pattern":
             continue
@@ -1193,7 +1193,7 @@ def _pin(client: TestClient) -> None:
 
 
 def _pin_habit(client: TestClient) -> None:
-    """Pin a Focus on the first standalone habit the Queue holds (ADR 528)."""
+    """Start a Focus on the first standalone habit the Queue holds (ADR 528)."""
     habit = next(c for c in _get(client, "/api/guidance")["candidates"]
                  if c["kind"] == "habit" and c["admitted"])
     _post(client, "/api/focus", {"lever": habit["lever"]})

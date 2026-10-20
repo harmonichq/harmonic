@@ -37,15 +37,15 @@
 
 ## 6. The contract test
 
-- [ ] 6.1 `frontend/ui/app/live.contract.test.mjs`: on `pattern-meal-two-causes`, the Queue card is multi-cause with no Focus; the drill-down model's causes (titles, counts, denominator, noun, `pinnable`, each trace's episode count) as literals read once from the served answers; a live `pin(subject, 'late_bolus')` makes the card's `focusedCause` Late bolus, the Late bolus cause `pinned`, `focusable` false, and Changes' Focus Late bolus under Highs after meals; End restores the button. On `pattern-correction-collapse`, the collapsed Pattern is multi-cause with Correction stacking not pinnable. Re-read the showcase's expectations if #593 serves any of its Patterns with two causes
+- [x] 6.1 `frontend/ui/app/live.contract.test.mjs`: on `pattern-meal-two-causes`, the Queue card is multi-cause with no Focus; the drill-down model's causes (titles, counts, denominator, noun, `pinnable`, each trace's episode count) as literals read once from the served answers; a live `pin(subject, 'late_bolus')` makes the card's `focusedCause` Late bolus, the Late bolus cause `pinned`, `focusable` false, and Changes' Focus Late bolus under Highs after meals; End restores the button. On `pattern-correction-collapse`, the collapsed Pattern is multi-cause with Correction stacking not pinnable. Re-read the showcase's expectations if #593 serves any of its Patterns with two causes
 
 ## 7. The lock docs and the record
 
 - [x] 7.1 `docs/design/recommendations-redesign.md`: the sections its 2026-10-20 amendments say follow: §1.3 (the Queue's just-focused bar), §1.4 (Snooze beneath Focus), §1.5 (no Pin row; Focus reworded per ADR 594), §4.2 PatternCard, HabitCard and TransientBar. No other section
 - [ ] 7.2 `docs/design/drill-down.md`: Served vocabulary names the served fields #593 added in place of the engine gaps; after Connor approves the stories on the pull request, a dated `Amendments` line quoting him and the `Approved screens` line updated for the re-approved Open and Pinned and the newly approved stories. Nothing else
-- [ ] 7.3 `openspec/changes/recommendations-redesign/specs/surfaces/spec.md`: the Queue requirement's Pin wording becomes Focus, nothing else
-- [ ] 7.4 `README.md`'s Pin sentence and AGENTS.md's contract-test paragraph (what `pattern-meal-two-causes` adds)
-- [ ] 7.5 Search the whole tree for `\bPin\b` once more and confirm every remaining hit is history or an internal identifier (ADR 594)
+- [x] 7.3 `openspec/changes/recommendations-redesign/specs/surfaces/spec.md`: the Queue requirement's Pin wording becomes Focus, nothing else
+- [x] 7.4 `README.md`'s Pin sentence and AGENTS.md's contract-test paragraph (what `pattern-meal-two-causes` adds)
+- [x] 7.5 Search the whole tree for `\bPin\b` once more and confirm every remaining hit is history or an internal identifier (ADR 594)
 
 ## 8. Verify and evidence
 

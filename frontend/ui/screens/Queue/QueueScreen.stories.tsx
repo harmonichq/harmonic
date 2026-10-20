@@ -1,7 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import type { CSSProperties } from 'react';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { fixtures, sourced } from '../../fixtures';
 import { swipe } from '../../gesture';
+import { expectTabBarEnds } from '../../tabbar-check';
 import { ranking } from '../../queue-model';
 import { failsOnce } from '../../flaky';
 import { QUEUE_UNDRAWABLE } from '../../served-variants';
@@ -86,7 +88,20 @@ const rowsLevel: Story['play'] = async ({ canvasElement }) => {
   }
 };
 
-export const DefaultPhone: Story = { ...story('phone', DEFAULT), play: rowsLevel };
+// The tab bar ends the screen: 64 px above the device's inset (§2.5, 2026-10-19).
+export const DefaultPhone: Story = {
+  ...story('phone', DEFAULT),
+  play: async (context) => {
+    await rowsLevel!(context);
+    await expectTabBarEnds(context.canvasElement);
+  },
+};
+// An iPhone's 34 px home indicator: the bar grows by it, the page shrinks by it.
+export const HomeIndicatorPhone: Story = {
+  ...story('phone', DEFAULT),
+  decorators: [(Story) => <div style={{ height: '100%', '--ui-inset-bottom': '34px' } as CSSProperties}><Story /></div>],
+  play: async ({ canvasElement }) => expectTabBarEnds(canvasElement),
+};
 export const DefaultDesktop: Story = { ...story('desktop', DEFAULT), play: rowsLevel };
 export const PatternOpenPhone = story('phone', PATTERN_OPEN);
 export const PatternOpenDesktop = story('desktop', PATTERN_OPEN);

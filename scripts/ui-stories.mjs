@@ -3,6 +3,8 @@
 //   node scripts/ui-stories.mjs check   the story prechecks, one test per story
 //   node scripts/ui-stories.mjs shots   one PNG per story into frontend/ui/__shots__/
 //   UI_STORY=<id part> narrows either to the matching story ids
+//   UI_BROWSER=firefox renders them in Playwright's Firefox instead (#567);
+//   the gate runs Chromium, the one browser it provisions
 //
 // Both read frontend/ui/storybook-static (`npm run build-storybook`) and serve
 // it from this process on a loopback port. Playwright comes from
@@ -50,7 +52,7 @@ if (mode !== 'check' && mode !== 'shots') {
   process.exit(2);
 }
 
-function chromium() {
+function browserType() {
   let module = process.env.PLAYWRIGHT_MODULE;
   if (!module) {
     const exports = execFileSync('python3', [join(ROOT, 'scripts/ensure_browser_gate_env.py')],
@@ -58,7 +60,9 @@ function chromium() {
     module = /PLAYWRIGHT_MODULE=['"]?([^'"\n]+)/.exec(exports)?.[1];
     if (!module) throw new Error('PLAYWRIGHT_MODULE is unset and ensure_browser_gate_env.py did not export it');
   }
-  return createRequire(import.meta.url)(module).chromium;
+  const name = process.env.UI_BROWSER ?? 'chromium';
+  if (name !== 'chromium' && name !== 'firefox') throw new Error(`UI_BROWSER is chromium or firefox, not ${name}`);
+  return createRequire(import.meta.url)(module)[name];
 }
 
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css',
@@ -146,7 +150,7 @@ console.log(`${stories.length} stories, ${plays} with a play function`);
 
 const server = await serve();
 const origin = `http://127.0.0.1:${server.address().port}`;
-const browser = await chromium().launch();
+const browser = await browserType().launch();
 
 // Before Storybook loads: catch the channel as it is assigned and record every
 // exception a story or its play function reports on it.

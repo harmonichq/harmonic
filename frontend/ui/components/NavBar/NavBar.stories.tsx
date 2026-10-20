@@ -2,11 +2,14 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import type { CSSProperties } from 'react';
 import { expect, within } from 'storybook/test';
 import { fixtures, sourced } from '../../fixtures';
+import { expectTabBarEnds } from '../../tabbar-check';
 import { NavBar, type NavBarProps, type NavItem } from './NavBar';
 
 // Each layout × each item selected, then the count badge and the alert badge
 // (§4.2 NavBar). The tab bar is 64 px above the device's bottom inset, with
-// 24 px glyphs (§2.5, 2026-10-14); TabBarHomeIndicator adds a 34 px inset. Every rail story opens with the wordmark (§2.5, 2026-10-13);
+// 24 px glyphs (§2.5, 2026-10-14), its items 10 px above the inset and nothing
+// below it; TabBarHomeIndicator adds a 34 px inset. Every rail story opens with
+// the wordmark (§2.5, 2026-10-13);
 // RailWordmark holds it alone with nothing selected but Queue. The count is the fixture's unanswered Prompts; the alert reads
 // the fixture's failed sync status.
 const meta = {
@@ -41,11 +44,7 @@ function story(layout: NavBarProps['layout'], selected: NavItem, extra: Partial<
       await expect(pill.backgroundColor).not.toBe('rgba(0, 0, 0, 0)');
       await expect(pill.borderTopLeftRadius).toBe('16px');
       await expect(icon.querySelector('svg')!.getBoundingClientRect().width).toBe(24);
-      if (layout === 'tabbar') {
-        const bar = canvasElement.querySelector('.ui-nav')!;
-        const inset = parseFloat(getComputedStyle(bar).getPropertyValue('--ui-inset-bottom')) || 0;
-        await expect(bar.getBoundingClientRect().height).toBe(64 + inset);
-      }
+      if (layout === 'tabbar') await expectTabBarEnds(canvasElement);
     },
   };
 }
@@ -60,6 +59,8 @@ export const TabBarAlertBadge = story('tabbar', 'queue', { syncFailed });
 export const TabBarDayBadgeSelected = story('tabbar', 'day', { dayCount });
 export const TabBarSettingsAlertSelected = story('tabbar', 'settings', { syncFailed });
 // An iPhone's 34 px home indicator: the bar grows by the inset and nothing else.
+// Firefox for Android's reported navigation-bar inset is not one (§2.5,
+// 2026-10-19): the bar takes no inset on Gecko.
 export const TabBarHomeIndicator: Story = {
   ...story('tabbar', 'queue'),
   decorators: [(Story) => <div style={{ '--ui-inset-bottom': '34px' } as CSSProperties}><Story /></div>],

@@ -1,7 +1,7 @@
 # AGENTS.md — Harmonic
 
-Local, advisory tuning of basal, correction factor and carb ratio from a pump
-wearer's own data. Self-contained: the data lands in a local SQLite file, the
+Local, advisory tuning of basal and carb ratio from a pump wearer's own
+data. Self-contained: the data lands in a local SQLite file, the
 model runs on that file, and nothing is sent anywhere. Harmonic works with
 Tandem pumps using Control-IQ technology, reading from Tandem Source; it is an
 independent project, not affiliated with Tandem Diabetes Care.

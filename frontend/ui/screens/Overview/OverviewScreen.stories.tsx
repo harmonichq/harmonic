@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, within } from 'storybook/test';
 import { expectDirections } from '../../direction-check';
+import { expectTabBarEnds } from '../../tabbar-check';
 import { OverviewScreen, type OverviewScreenProps } from './OverviewScreen';
 
 // The Overview screen in each state §1.3 lists, at phone (390) and desktop
@@ -47,7 +48,14 @@ const comparesWith = (window: '14' | '30' | '90', previous: boolean): Story['pla
     .toBe(previous ? 6 : 0);
 };
 
-export const DefaultPhone: Story = { ...story('phone', { store: 'wearer' }), play: comparesWith('14', true) };
+// The tab bar ends the screen: 64 px above the device's inset (§2.5, 2026-10-19).
+export const DefaultPhone: Story = {
+  ...story('phone', { store: 'wearer' }),
+  play: async (context) => {
+    await comparesWith('14', true)!(context);
+    await expectTabBarEnds(context.canvasElement);
+  },
+};
 export const DefaultDesktop: Story = { ...story('desktop', { store: 'wearer' }), play: comparesWith('14', true) };
 export const Window30Phone: Story = { ...story('phone', { store: 'wearer', window: '30' }), play: comparesWith('30', true) };
 export const Window30Desktop: Story = {

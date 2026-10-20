@@ -2074,3 +2074,84 @@ roster) still computes on its first read after a write. A new fixed result needs
 no change to be served this way. The derived-results file holds outcomes and the
 analysis for each window, and one row each for the profiles and Meal size; an
 install's older per-window Meal size and profile rows are never read again.
+
+## ADR 576 — The follow-up reconcile reads the history before it reserves the writer
+
+**Context.** After a restart on the home server the start fetch failed with
+`Hourly fetch failed: database is locked`, and its settings capture had already
+committed. No read takes the writer: tracing every statement in process on a real
+snapshot, with the start warm pass, the start fetch and the first-load reads
+running together, shows the fetch thread as the only writer to the store. The
+start warm pass, every page read and #566's derived results write only the
+derived-results file. The other writer that night was a person's own: a Prompt
+was answered while the start fetch ran. Every local write that advances the input
+revision finishes with the follow-up reconcile, and so does the fetch, twice.
+That reconcile reserved SQLite's one writer (`BEGIN IMMEDIATE`) and then read the
+whole history to find the Trials: every delivery, bolus and reading, about 1.3 s
+of its 1.5 s alone on a Mac. With the warm pass computing on other threads, every
+row of that read waits for the interpreter lock.
+
+Measured in process on the Mac, real snapshot, cold derived results (as after any
+deploy), with a local write (a carb entry, the same completion as a Prompt answer)
+3 s into the start fetch. The host column multiplies by 3, the scaling factor in
+the snapshot skill (an estimate, not a host measurement):
+
+| | Before | After | Host, before → after |
+|---|---|---|---|
+| Longest writer hold, fetch thread | 22.50 s (its reconcile) | 6.19 s (a window's upsert) | ~68 s → ~19 s |
+| Longest writer hold, the local write | 20.69 s (its reconcile) | 2.38 s | ~62 s → ~7 s |
+| The fetch's second window committed after the first | 28.9 s | 10.0 s | |
+
+Every other writer waits 30 s for the one writer, and ~60–70 s outlasts it, in
+either direction. Run the way it ran that night, the fetch fails. Run the other
+way, the person's write fails.
+
+**Decision.**
+
+1. *The reconcile reads the history before it reserves the writer*
+   (`read_follow_up_history`: the input revision, the data instant and the
+   Trials it reads). Under the writer it reuses that read only while the input
+   revision is still the one the read began at. Every committed write advances
+   that revision (ADR 538), so an unchanged revision means the read is exactly
+   what it would have read under the writer. The writer is then held only for
+   the follow-up rows.
+2. *A reconcile whose read another commit crossed is left to that commit's
+   writer.* Every write that advances the input revision is reconciled by its own
+   writer, in or after its transaction (ADR 557): the fetch after its pull, each
+   local write after it commits, each Trial, Focus and Done step inside its own.
+   That writer's reconcile begins after its commit, so its read includes the
+   crossed one's write. The chain ends at the last commit, whose reconcile no
+   later commit crosses. The one write that is not reconciled, the late
+   conclusion, leaves a frontier already behind for the next reconcile, as ADR
+   557 settled. The frontier is never claimed current from a read that is not.
+3. *A Trial, Focus or Done step reads the history the same way* before its
+   transaction. Its step needs the admission, so a crossed read is read again
+   under the writer, as before; that costs no more than it did.
+
+**Rejected.** Raising the busy timeout or retrying the failed fetch: the holder
+would still hold the writer for a minute on the host, and the fetch's own
+reconcile would still fail a person's write. A process-wide write lock in Python:
+it is a longer timeout under another name. Retrying a crossed read outside the
+writer: during a fetch, a commit lands every few seconds while the read takes
+tens of seconds on the host, so retries collide and add CPU to a two-core host;
+the crossing writer reconciles anyway. Falling back to reading under the writer
+after the retries: that is the defect this decision removes. Reconciling from a
+crossed read and marking the frontier current: it would be falsely current.
+
+**Not decided here.** A fetch window's upsert still holds the writer for one
+`executemany` of its rows (6.19 s on the Mac with the warm pass beside it, about
+19 s on the host), short of the 30 s busy timeout. During the same run three
+first-load reads answered 503 or 500 (`InputRevisionChanged`, "history inputs
+changed during every snapshot"). Their derived snapshots were crossed by fetch
+commits three times running. That is not a lock, and it is left for its own
+decision.
+
+**Dosing.** No analyzer, staging predicate, cap, floor or served value changes.
+The reconcile records the same Trials, receipts, endings and frontier from the
+same read; only when it reads changes.
+
+**Consequences.** `tests/test_fetch_beside_follow_up_reconcile.py` runs a fetch
+while a Prompt answer's reconcile reads the history. The fetch has to commit
+before that read ends, both writes answer without `database is locked`, and the
+frontier is current after both. It failed first: the fetch stayed blocked for the
+whole read.

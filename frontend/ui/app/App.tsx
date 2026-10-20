@@ -21,13 +21,19 @@
 //
 // Saving a token in Settings reads the app again under it: Settings' parts and
 // badges at once, and every other tab when it next opens.
+//
+// A Queue drill-down takes one history entry from the router at the same
+// address, marked with which drill-down it is (ADR 594): "‹ Queue" goes Back
+// through it, and a Back that leaves it, a phone's edge-swipe among them,
+// returns the Queue to its list. A Back from another tab onto that entry (after
+// "Focus started" → Changes) opens the Queue on that drill-down as it was.
 import { useCallback, useEffect, useState } from 'react';
-import { parseRoute, subscribeRoute, writeRoute } from '../../tab-routing.js';
+import { landRoute, parseRoute, pushDrillDown, subscribeRoute, writeRoute } from '../../tab-routing.js';
 import type { NavItem } from '../components/NavBar/NavBar';
 import { ChangesScreen } from '../screens/Changes/ChangesScreen';
 import { DayScreen } from '../screens/Day/DayScreen';
 import { OverviewScreen } from '../screens/Overview/OverviewScreen';
-import { QueueScreen } from '../screens/Queue/QueueScreen';
+import { QueueScreen, type DrillDown } from '../screens/Queue/QueueScreen';
 import { SettingsScreen } from '../screens/Settings/SettingsScreen';
 import { client, currentToken } from '../../data.js';
 import { glossary } from '../__fixtures__/ui-fixtures.json';
@@ -49,6 +55,18 @@ const memory = createMemory({ storage: browserStorage(), build: import.meta.url,
 const live = createLive({ client, glossary, memory });
 const { changesWrites, dayWrites, queueWrites, settingsWrites } = live;
 serve(live.answers as unknown as Answers);
+
+// A reload lands on its tab, never a drill-down: the entry the browser kept is the tab's own.
+landRoute();
+
+/** The router's drill-down entry, which the Queue opens and returns from. */
+const DRILL_DOWN = {
+  open: (drillDown: DrillDown) => pushDrillDown(drillDown),
+  close: () => window.history.back(),
+  onReturn: (listener: () => void) => subscribeRoute((_tab: string, { drillDown }: { drillDown: DrillDown | null }) => {
+    if (!drillDown) listener();
+  }),
+};
 
 type Read = 'loading' | 'ready' | 'stale' | 'unavailable';
 type Part = 'status' | 'account' | 'pump';
@@ -76,6 +94,9 @@ function useLayout() {
 export function App() {
   const layout = useLayout();
   const [tab, setTab] = useState<Tab>(() => parseRoute(window.location) as Tab);
+  // The Queue drill-down a Back landed on, which the Queue opens as it was; a
+  // reload lands on the Queue itself, a drill-down being unaddressed.
+  const [returnTo, setReturnTo] = useState<DrillDown | null>(null);
   const [reads, setReads] = useState<Partial<Record<Tab, Read>>>(() => remembered(READ_TABS, (t) => t));
   // Bumped when answers land, so the screen draws what was read.
   const [, setVersion] = useState(0);
@@ -109,7 +130,10 @@ export function App() {
     ).finally(redraw);
   }, [redraw]);
 
-  useEffect(() => subscribeRoute((next: string) => setTab(next as Tab)), []);
+  useEffect(() => subscribeRoute((next: string, { drillDown }: { drillDown: DrillDown | null }) => {
+    setTab(next as Tab);
+    setReturnTo(drillDown);
+  }), []);
   useEffect(() => {
     if (tab !== 'settings') { read(tab); return; }
     PARTS.forEach((which) => part(which));
@@ -119,6 +143,7 @@ export function App() {
   const go = (item: NavItem) => {
     writeRoute(item);
     setTab(item);
+    setReturnTo(null);
   };
   /** A write the screen awaits, then the redraw of what it read again. */
   const drawn = <A extends unknown[], R>(run: (...args: A) => Promise<R>) =>
@@ -138,7 +163,8 @@ export function App() {
 
   switch (tab) {
     case 'queue':
-      return <QueueScreen key={tab} layout={layout} store="wearer" state={state} nav={nav} onRetry={retry}
+      return <QueueScreen key={tab} layout={layout} store="wearer" state={state} nav={{ ...nav, drillDown: DRILL_DOWN }}
+        returnTo={returnTo ?? undefined} onRetry={retry}
         writes={{ snooze: drawn(queueWrites.snooze), restore: drawn(queueWrites.restore), pin: drawn(queueWrites.pin),
           done: drawn(queueWrites.done), undoDone: drawn(queueWrites.undoDone) }} />;
     case 'changes':

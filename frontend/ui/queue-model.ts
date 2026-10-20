@@ -1,8 +1,8 @@
 // The Queue components' data, read from one served store (#483). This is the
 // provenance table in code: every number a Queue component shows is built here
 // as a Sourced value naming its field, and nothing here invents a threshold or
-// a verdict — uncertain, pinned, matured, every chart's episodes and bands, and
-// every count are all served.
+// a verdict — uncertain, pinned, matured, every chart's episodes and bands,
+// every count, a Pattern's causes and whether a Focus can start are all served.
 //
 // A store is one entry of `answers.queue`; the screens will hand the same
 // answers in from the live API.
@@ -57,7 +57,17 @@ export type PatternData = {
   pinned: boolean;
   /** Null when the engine serves no comparison for this pattern. */
   impact: Impact | null;
+  /** The Pattern's counter serves more than one cause: its card opens the drill-down (ADR 594). */
+  multiCause: boolean;
+  /** The served title of the cause its active Focus watches, else null (ADR 594). */
+  focusedCause: string | null;
 };
+
+/** A multi-cause Pattern's cause, as its drill-down card draws it (ADR 594): the
+ *  cause's served title, its count over the Pattern's own, its own trace against
+ *  the Pattern's Typical, whether the engine lets it be focused, and pinned while
+ *  it is the Pattern's active Focus. */
+export type CauseData = PatternData & { subject: string; lever: string; pinnable: boolean };
 
 export type SettingData = {
   title: string;
@@ -105,19 +115,39 @@ function patternRow(name: QueueStore, key: string) {
   return { outcome, member, rowId, row: s.findings.rows.find((r) => r.id === rowId) };
 }
 
-export function pattern(name: QueueStore, key: string): PatternData {
-  const root = `queue.${name}.findings`;
-  const s = store(name);
-  const { outcome, member, rowId, row } = patternRow(name, key);
+type ServedCause = { subject: string; title: string; count: number; pinnable: boolean };
+type Counter = { count_sentences?: { noun: string }[] | null; cause_counts?: ServedCause[] | null };
+
+/** The object a Pattern's count and causes are served on, and its path: its own
+ *  row, or, for a pattern served as its habit, that row's `served_as`, never the
+ *  habit's own (ADR 520, ADR 594). */
+function counterOf(name: QueueStore, key: string) {
+  const found = patternRow(name, key);
+  const { member, rowId, row } = found;
   if (!row) throw new Error(`${name} serves no ${rowId} row`);
-  const rowPath = `${root}.rows[id=${rowId}].0`;
-  // A pattern served as its habit counts as the pattern, from the count its
-  // member row serves for it, never as the habit's own (ADR 520).
-  const counter = member ? row.served_as : row;
-  const countPath = member ? `${rowPath}.served_as` : rowPath;
+  const rowPath = `queue.${name}.findings.rows[id=${rowId}].0`;
+  return {
+    ...found, row,
+    counter: (member ? row.served_as : row) as Counter | null | undefined,
+    path: member ? `${rowPath}.served_as` : rowPath,
+  };
+}
+
+/** A Focus can start now: the served admission every Focus button follows (ADR 594). */
+export const focusable = (name: QueueStore): boolean =>
+  store(name).focus.admission.focus_pin.available;
+
+const activeFocus = (name: QueueStore, key: string) =>
+  store(name).focus.focuses.find((f) => f.status === 'active' && f.pattern_key === key);
+
+export function pattern(name: QueueStore, key: string): PatternData {
+  const s = store(name);
+  const { outcome, row, counter, path: countPath } = counterOf(name, key);
   const sentences = counter?.count_sentences;
+  const causes = counter?.cause_counts ?? [];
   const tone: Tone = row.chips?.includes('highs') ? 'high' : 'low';
   const served = (s.cases as Record<string, { traces: ServedTraces }>)[key]?.traces;
+  const focus = activeFocus(name, key);
   return {
     kind: 'pattern',
     title: outcome?.title ?? row.title,
@@ -131,9 +161,46 @@ export function pattern(name: QueueStore, key: string): PatternData {
       : null,
     traces: served ? traceData(served, tone) : null,
     uncertain: (outcome?.wide as boolean | null | undefined) === true,
-    pinned: s.focus.focuses.some((f) => f.status === 'active' && f.pattern_key === key),
+    pinned: focus !== undefined,
     impact: served ? impact(name, key, tone, served) : null,
+    multiCause: causes.length > 1,
+    focusedCause: (focus && causes.find((c) => c.subject === `habit:${focus.lever}`)?.title) ?? null,
   };
+}
+
+/** A multi-cause Pattern's causes, in the order the engine serves them, never
+ *  sorted, filtered or re-counted (ADR 594). Each count is over the Pattern's own
+ *  count and noun, and each trace is the served one with the cause's subject,
+ *  against the Pattern's Typical, so the card's count and chart read one
+ *  population. */
+export function causes(name: QueueStore, key: string): CauseData[] {
+  const { counter, path } = counterOf(name, key);
+  const { tone } = pattern(name, key);
+  const focus = activeFocus(name, key);
+  const served = (store(name).cases as Record<string, { traces: ServedTraces }>)[key]?.traces;
+  return (counter?.cause_counts ?? []).map((cause, i) => {
+    const drawn = served?.causes?.find((c) => c.subject === cause.subject);
+    const lever = cause.subject.replace(/^habit:/, '');
+    return {
+      kind: 'habit',
+      subject: cause.subject,
+      lever,
+      title: cause.title,
+      tone,
+      magnitude: {
+        count: sourced(`${path}.cause_counts.${i}.count`),
+        denominator: sourced(`${path}.count_sentences.0.count`),
+        noun: counter!.count_sentences![0].noun,
+      },
+      traces: served && drawn ? traceData({ ...served, pattern: drawn.pattern }, tone) : null,
+      uncertain: false,
+      pinned: focus?.lever === lever,
+      impact: null,
+      pinnable: cause.pinnable,
+      multiCause: false,
+      focusedCause: null,
+    };
+  });
 }
 
 type ServedTraces = {
@@ -141,6 +208,8 @@ type ServedTraces = {
   window_min: [number, number];
   pattern: { episodes: TraceData['episodes']; points: TraceBin[] };
   typical: { points: TraceBin[] };
+  /** A Pattern's own trace per cause, in the engine's order (ADR 593). */
+  causes?: { subject: string; pattern: ServedTraces['pattern'] }[];
 };
 
 const traceData = (served: ServedTraces, tone: Tone): TraceData => ({
@@ -154,7 +223,7 @@ type HabitCase = { summary: { claimed: number; denominator: number; noun: string
 
 /** A standalone habit the engine queues on its own (ADR 528), drawn as a
  *  Pattern is: its served title, the count its case file serves (the same
- *  population its chart draws), the trace chart, and Pin's Focus, keyed by the
+ *  population its chart draws), the trace chart, and its Focus, keyed by the
  *  habit's own subject. Its tone is its findings row's, as a Pattern's is. Null
  *  when the findings or the case files serve nothing for it. */
 export function habit(name: QueueStore, subject: string): PatternData | null {
@@ -177,6 +246,8 @@ export function habit(name: QueueStore, subject: string): PatternData | null {
     uncertain: false,
     pinned: s.focus.focuses.some((f) => f.status === 'active' && f.subject === subject),
     impact: null,
+    multiCause: false,
+    focusedCause: null,
   };
 }
 
@@ -297,13 +368,20 @@ export function carbRatioSetting(name: QueueStore): SettingData | null {
 
 /** The story states the generator found in the served answers, by name. */
 const states = () => answers.states;
-type PatternState = 'traces_episodes' | 'traces_band' | 'traces_gap' | 'pinned' | 'uncertain';
+type PatternState = 'traces_episodes' | 'traces_band' | 'traces_gap' | 'pinned' | 'uncertain'
+  | 'drill_down' | 'drill_down_pinned' | 'drill_down_unpinnable' | 'focusable';
 type HabitState = 'habit_episodes' | 'habit_band' | 'habit_pinned';
 type SettingState = 'setting' | 'setting_trial';
 
 export function patternState(name: PatternState): PatternData {
+  const { store, pattern: key } = patternStore(name);
+  return pattern(store, key);
+}
+
+/** A Pattern's story state: its store and key. */
+export function patternStore(name: PatternState): { store: QueueStore; pattern: string } {
   const { store, pattern: key } = states()[name];
-  return pattern(store as QueueStore, key);
+  return { store: store as QueueStore, pattern: key };
 }
 
 /** A standalone habit's story state (ADR 528): its store and subject. */

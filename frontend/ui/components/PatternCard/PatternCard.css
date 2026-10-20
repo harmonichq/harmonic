@@ -53,3 +53,42 @@
 
 
 .ui-pcard__action { display: flex; margin-top: 24px; }
+
+/* Once a cause is the Focus, the button's place holds the caption "Focus" over
+   the cause's served title (§2.2 Caption + value pair, stacked). */
+.ui-pcard__focus { margin: 0; }
+.ui-pcard__focus dd {
+  margin: 6px 0 0;
+  color: var(--wk-ink);
+  font-size: var(--ui-type-body);
+  font-weight: var(--ui-weight-strong);
+  line-height: 22px;
+}
+
+/* A multi-cause card's chart opens its drill-down: a drill-down row, the chart
+   in its own column so it still measures its own box (§2.2 Charts), and the
+   row's trailing "›" beside it. */
+.ui-pcard__open {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 8px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: inherit;
+  cursor: pointer;
+}
+.ui-pcard__open:focus { outline: none; }
+.ui-pcard__open:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
+.ui-pcard__more { color: var(--wk-ink-meta); font-size: var(--ui-type-title); line-height: 1; }
+
+/* A cause card's head holds Focus beside its title: a 32 px outlined secondary
+   whose hit area reaches 44 px, a transparent extension around it, so the head
+   is 44 px in every state, the button absent or the pill in its place. */
+.ui-pcard__slot { display: flex; flex: none; align-items: center; min-height: 44px; }
+.ui-pcard__slot .ui-button { position: relative; }
+.ui-pcard__slot .ui-button::after { content: ''; position: absolute; inset: -6px; }

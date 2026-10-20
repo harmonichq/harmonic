@@ -1,13 +1,13 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import type { CSSProperties } from 'react';
-import { expect, userEvent, waitFor, within } from 'storybook/test';
+import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { fixtures, sourced } from '../../fixtures';
 import { swipe } from '../../gesture';
 import { expectTabBarEnds } from '../../tabbar-check';
 import { expectAtPaneTop, expectHeaderEmpty, expectTitlePrinted } from '../../title-check';
-import { ranking, snoozed } from '../../queue-model';
+import { focusable, patternStore, ranking, snoozed, type QueueStore } from '../../queue-model';
 import { failsOnce } from '../../flaky';
-import { QUEUE_UNDRAWABLE } from '../../served-variants';
+import { QUEUE_UNDRAWABLE, ServedAfter } from '../../served-variants';
 import { QueueScreen, type QueueScreenProps } from './QueueScreen';
 
 // The Queue screen in each state §1.3 lists, at phone (390) and desktop (1440),
@@ -29,8 +29,12 @@ import { QueueScreen, type QueueScreenProps } from './QueueScreen';
 // - Done (#518): a fresh wearer's basal card Done and undone, and the same card
 //   back Not on pump after an unchanged sync.
 // - A standalone habit (ADR 528): open in the wearer's Queue beside its
-//   Patterns, its row's glyph named Habit; pinned, the Focus pill in Pin's
-//   place; and a live Pin, which shows the Focus pill at once.
+//   Patterns, its row's glyph named Habit; pinned, the Focus pill in Focus's
+//   place; a live Focus, which shows the Focus pill at once, then the bar
+//   "Focus started", whose Changes opens that tab.
+// - A multi-cause Pattern (ADR 594): no Focus, the "›" on its chart, which opens
+//   its drill-down; and pinned on a cause, "Focus" over that cause's title.
+// - Every store that serves a watched change offers no Focus on any card.
 // Two desktop plays: selecting a row opens it; Snooze shows the bar, and Undo
 // puts the item back.
 const meta: Meta<typeof QueueScreen> = {
@@ -62,6 +66,13 @@ const second = (store: 'wearer') => ranking(store)[1].subject;
 /** The drill-down's own header, which holds its "‹ Queue" (the tab bar has a Queue too). */
 const back = (canvas: ReturnType<typeof within>) =>
   canvas.getByRole('heading', { level: 1, name: 'Snoozed' }).closest('header') as HTMLElement;
+
+/** While a change is watched the engine admits no Focus: no card offers one (ADR 594). */
+const expectNoFocus = async (canvasElement: HTMLElement, store: QueueStore) => {
+  await expect(focusable(store)).toBe(false);
+  await expect(within(canvasElement).queryByRole('button', { name: 'Focus' })).toBeNull();
+};
+const snoozedBar = /^Snoozed until \d/;
 
 const DEFAULT = { store: 'wearer' } as const;
 const PATTERN_OPEN = {
@@ -98,6 +109,7 @@ const rowsLevel: Story['play'] = async ({ canvasElement }) => {
 export const DefaultPhone: Story = {
   ...story('phone', DEFAULT),
   play: async (context) => {
+    await expectNoFocus(context.canvasElement, 'wearer');
     await rowsLevel!(context);
     await expectTabBarEnds(context.canvasElement);
     await expectHeaderEmpty(context.canvasElement, 'Queue');
@@ -138,8 +150,14 @@ const trialPlay: Story['play'] = async ({ canvasElement }) => {
 };
 export const SettingTrialPhone: Story = { ...story('phone', SETTING_TRIAL), play: trialPlay };
 export const SettingTrialDesktop: Story = { ...story('desktop', SETTING_TRIAL), play: trialPlay };
-export const JustSnoozedPhone = story('phone', JUST_SNOOZED);
-export const JustSnoozedDesktop = story('desktop', JUST_SNOOZED);
+// Just snoozed: the bar names its date in one phrase (§2.5, 2026-10-20), and the
+// store's watched Focus leaves no card offering another.
+const justSnoozedPlay: Story['play'] = async ({ canvasElement }) => {
+  await expect(within(canvasElement).getByRole('status')).toHaveTextContent(snoozedBar);
+  await expectNoFocus(canvasElement, 'wearer-pinned');
+};
+export const JustSnoozedPhone: Story = { ...story('phone', JUST_SNOOZED), play: justSnoozedPlay };
+export const JustSnoozedDesktop: Story = { ...story('desktop', JUST_SNOOZED), play: justSnoozedPlay };
 // The first days' Snoozed list and its count, without the correction factor.
 // A correction factor set aside before #564 is served set aside and drawn by
 // no Queue row (§2.5, 2026-10-20), so it is neither listed nor counted.
@@ -189,16 +207,17 @@ export const SelectRowDesktop: Story = {
   },
 };
 
-// Desktop: the same Snooze text action beneath Pin (S is its shortcut).
+// Desktop: the same Snooze text action beneath Focus (S is its shortcut).
 export const SnoozeUndoDesktop: Story = {
   args: { layout: 'desktop', store: 'wearer-pinned', open: fixtures.snooze.subject, snooze },
   parameters: { frame: FRAMES.desktop },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const title = fixtures.snooze.title;
+    await expectNoFocus(canvasElement, 'wearer-pinned');
     await expect(canvas.getAllByText(title).length).toBeGreaterThan(0);
     await userEvent.click(canvas.getByRole('button', { name: 'Snooze' }));
-    await expect(canvas.getByRole('status')).toHaveTextContent(/Snoozed · Until/);
+    await expect(canvas.getByRole('status')).toHaveTextContent(snoozedBar);
     await expect(canvas.queryByRole('button', { name: new RegExp(title) })).toBeNull();
     await userEvent.click(canvas.getByRole('button', { name: 'Undo' }));
     await expect(canvas.queryByRole('status')).toBeNull();
@@ -207,14 +226,15 @@ export const SnoozeUndoDesktop: Story = {
 };
 
 // Phone snooze has a visible control as well as the swipe: the play presses
-// the open card's Snooze text action beneath Pin, sees the bar, and undoes it.
+// the open card's Snooze text action beneath Focus, sees the bar, and undoes it.
 export const SnoozeUndoPhone: Story = {
   args: { layout: 'phone', store: 'wearer-pinned', open: fixtures.snooze.subject, snooze },
   parameters: { frame: FRAMES.phone },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
+    await expectNoFocus(canvasElement, 'wearer-pinned');
     await userEvent.click(canvas.getByRole('button', { name: 'Snooze' }));
-    await expect(canvas.getByRole('status')).toHaveTextContent(/Snoozed · Until/);
+    await expect(canvas.getByRole('status')).toHaveTextContent(snoozedBar);
     await userEvent.click(canvas.getByRole('button', { name: 'Undo' }));
     await expect(canvas.queryByRole('status')).toBeNull();
   },
@@ -235,7 +255,7 @@ export const SwipeSnoozeUndoPhone: Story = {
     await swipe(row(), -30, 6);
     await expect(canvas.queryByRole('status')).toBeNull();
     await swipe(row(), -64);
-    await expect(canvas.getByRole('status')).toHaveTextContent(/Snoozed · Until/);
+    await expect(canvas.getByRole('status')).toHaveTextContent(snoozedBar);
     await expect(canvas.queryByRole('button', { name: new RegExp(fixtures.snooze.title) })).toBeNull();
     await userEvent.click(canvas.getByRole('button', { name: 'Undo' }));
     await expect(canvas.queryByRole('status')).toBeNull();
@@ -253,6 +273,7 @@ export const SnoozedDrillDownPhone: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const open = ranking('wearer-pinned-snoozed').find((i) => i.subject === 'setting:basal_rate')!;
+    await expectNoFocus(canvasElement, 'wearer-pinned-snoozed');
     await userEvent.click(canvas.getByRole('button', { name: /Snoozed/ }));
     await expectTitlePrinted(canvasElement, 'Snoozed');
     await expect(canvas.getByRole('button', { name: 'Restore' })).toBeInTheDocument();
@@ -373,7 +394,8 @@ export const UndrawableDesktop: Story = { ...story('desktop', { store: QUEUE_UND
 
 // A standalone habit (ADR 528), open: its row is a Pattern's with the Habit
 // glyph, and its card the PatternCard, the chart's episodes named Habit, with
-// Pin and Snooze beneath. Pinned, the Focus pill takes Pin's place.
+// Focus and Snooze beneath. Pinned, the Focus pill takes Focus's place, and the
+// watched Focus leaves no card offering another.
 const HABIT_OPEN = { store: fixtures.states.habit_band.store, open: fixtures.states.habit_band.subject } as QueueScreenProps;
 const HABIT_PINNED = {
   store: fixtures.states.habit_pinned.store, open: fixtures.states.habit_pinned.subject,
@@ -383,8 +405,9 @@ const habitPlay = (layout: 'phone' | 'desktop', pinned: boolean): Story['play'] 
   const card = canvasElement.querySelector('.ui-pcard') as HTMLElement;
   await expect(within(card).getByRole('heading', { level: 2, name: 'Missed / unannounced meal' })).toBeInTheDocument();
   await expect(card.querySelector('.ui-chart__legend')!.textContent).toContain('Habit');
-  await expect(within(card).queryByRole('button', { name: 'Pin' }) === null).toBe(pinned);
+  await expect(within(card).queryByRole('button', { name: 'Focus' }) === null).toBe(pinned);
   await expect(card.querySelector('.ui-pcard__action [data-state="focus"]') !== null).toBe(pinned);
+  if (pinned) await expectNoFocus(canvasElement, HABIT_PINNED.store);
   await expect(within(card).getByRole('button', { name: 'Snooze' })).toBeInTheDocument();
   // Desktop lists the habit's row beside the open card, its glyph named Habit.
   if (layout === 'desktop') await expect(canvas.getByRole('img', { name: 'Habit' })).toBeInTheDocument();
@@ -393,13 +416,13 @@ export const HabitOpenPhone: Story = { ...story('phone', HABIT_OPEN), play: habi
 export const HabitOpenDesktop: Story = { ...story('desktop', HABIT_OPEN), play: habitPlay('desktop', false) };
 export const HabitPinnedPhone: Story = { ...story('phone', HABIT_PINNED), play: habitPlay('phone', true) };
 export const HabitPinnedDesktop: Story = { ...story('desktop', HABIT_PINNED), play: habitPlay('desktop', true) };
-// Live: Pin on the habit's card shows the Focus pill at once, while the write
+// Live: Focus on the habit's card shows the Focus pill at once, while the write
 // is in flight.
 const livePinPlay: Story['play'] = async ({ canvasElement }) => {
   const card = canvasElement.querySelector('.ui-pcard') as HTMLElement;
-  await userEvent.click(within(card).getByRole('button', { name: 'Pin' }));
+  await userEvent.click(within(card).getByRole('button', { name: 'Focus' }));
   await waitFor(() => expect(card.querySelector('.ui-pcard__action [data-state="focus"]')).not.toBeNull());
-  await expect(within(card).queryByRole('button', { name: 'Pin' })).toBeNull();
+  await expect(within(card).queryByRole('button', { name: 'Focus' })).toBeNull();
 };
 const pinInFlight = (): QueueScreenProps['writes'] => ({ ...liveWrites()!, pin: () => new Promise<void>(() => {}) });
 export const LiveHabitPinPhone: Story = {
@@ -408,6 +431,83 @@ export const LiveHabitPinPhone: Story = {
 export const LiveHabitPinDesktop: Story = {
   ...story('desktop', { ...HABIT_OPEN, writes: pinInFlight() }), play: livePinPlay,
 };
+// A Focus started (§2.5, 2026-10-20): once the write is saved the screen draws
+// what the engine serves after it, the habit's Focus pill and no Focus on any
+// card, under the bar "Focus started", whose Changes opens that tab. It has no
+// Undo. The habit is the QA case's, whose store after the Focus is served too.
+const HABIT_FOCUS = {
+  store: fixtures.states.habit_episodes.store, open: fixtures.states.habit_episodes.subject,
+} as QueueScreenProps;
+const focusSaved = (): QueueScreenProps['writes'] => ({ ...liveWrites()!, pin: async () => undefined });
+const focusStartedPlay: Story['play'] = async ({ canvasElement, args }) => {
+  const canvas = within(canvasElement);
+  const card = () => canvasElement.querySelector('.ui-pcard') as HTMLElement;
+  await expect(fixtures.states.habit_pinned.subject).toBe(fixtures.states.habit_episodes.subject);
+  await userEvent.click(within(card()).getByRole('button', { name: 'Focus' }));
+  await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent('Focus started'));
+  await expect(card().querySelector('.ui-pcard__action [data-state="focus"]')).not.toBeNull();
+  await expectNoFocus(canvasElement, HABIT_PINNED.store);
+  await expect(within(canvas.getByRole('status')).queryByRole('button', { name: 'Undo' })).toBeNull();
+  await userEvent.click(within(canvas.getByRole('status')).getByRole('button', { name: 'Changes' }));
+  await expect(args.nav!.onSelect).toHaveBeenCalledWith('changes');
+};
+const focusStarted = (layout: 'phone' | 'desktop'): Story => ({
+  ...story(layout, { ...HABIT_FOCUS, writes: focusSaved(), nav: { onSelect: fn() } }),
+  render: (args) => <ServedAfter {...args} focused={HABIT_PINNED.store} />,
+  play: focusStartedPlay,
+});
+export const FocusStartedPhone: Story = focusStarted('phone');
+export const FocusStartedDesktop: Story = focusStarted('desktop');
+
+// A multi-cause Pattern (drill-down.md, ADR 594): its open card has no Focus;
+// its chart is a drill-down row marked only with "›", named by the card's
+// title, and opens the drill-down, "‹ Queue" over the Pattern's title.
+const MULTI = patternStore('drill_down');
+const MULTI_PINNED = patternStore('drill_down_pinned');
+/** The card as the Queue draws it: no Focus though one could start, the chart a
+ *  drill-down row marked "›", Snooze beneath. */
+const multiCauseCard = async (canvasElement: HTMLElement) => {
+  const card = canvasElement.querySelector('.ui-pcard') as HTMLElement;
+  const title = card.querySelector('h2')!.textContent!;
+  await expect(focusable(MULTI.store)).toBe(true);
+  await expect(within(card).queryByRole('button', { name: 'Focus' })).toBeNull();
+  const chart = within(card).getByRole('button', { name: title });
+  await expect(chart.dataset.role).toBe('row');
+  await expect(chart.querySelector('.ui-pcard__more')!.textContent).toBe('›');
+  await expect(within(card).getByRole('button', { name: 'Snooze' })).toBeInTheDocument();
+  return { title, chart };
+};
+const MULTI_OPEN = { store: MULTI.store, open: `pattern:${MULTI.pattern}` } as QueueScreenProps;
+export const MultiCauseOpenPhone: Story = {
+  ...story('phone', MULTI_OPEN), play: async ({ canvasElement }) => { await multiCauseCard(canvasElement); },
+};
+export const MultiCauseOpenDesktop: Story = {
+  ...story('desktop', MULTI_OPEN), play: async ({ canvasElement }) => { await multiCauseCard(canvasElement); },
+};
+// Its chart opens the drill-down, each cause with its own Focus.
+const multiCauseOpensPlay: Story['play'] = async ({ canvasElement }) => {
+  const { title, chart } = await multiCauseCard(canvasElement);
+  await userEvent.click(chart);
+  await expectTitlePrinted(canvasElement, title);
+  await expect(within(canvasElement).getAllByRole('button', { name: 'Focus' }).length).toBeGreaterThan(1);
+};
+export const MultiCauseOpensPhone: Story = { ...story('phone', MULTI_OPEN), play: multiCauseOpensPlay };
+export const MultiCauseOpensDesktop: Story = { ...story('desktop', MULTI_OPEN), play: multiCauseOpensPlay };
+// Pinned on its Late bolus cause: the button's place holds "Focus" over the
+// cause's served title, and no card offers Focus.
+const multiCausePinnedPlay: Story['play'] = async ({ canvasElement }) => {
+  const card = canvasElement.querySelector('.ui-pcard') as HTMLElement;
+  const pair = card.querySelector('.ui-pcard__action .ui-pcard__focus') as HTMLElement;
+  await expect(pair.querySelector('dt')!.textContent).toBe('Focus');
+  await expect(pair.querySelector('dd')!.textContent).toBe('Late bolus');
+  const [caption, value] = [pair.querySelector('dt')!.getBoundingClientRect(), pair.querySelector('dd')!.getBoundingClientRect()];
+  await expect(caption.bottom).toBeLessThanOrEqual(value.top);
+  await expect(caption.left).toBe(value.left);
+  await expectNoFocus(canvasElement, MULTI_PINNED.store);
+};
+const MULTI_PINNED_OPEN = { store: MULTI_PINNED.store, open: `pattern:${MULTI_PINNED.pattern}` } as QueueScreenProps;
+export const MultiCausePinnedPhone: Story = { ...story('phone', MULTI_PINNED_OPEN), play: multiCausePinnedPlay };
+export const MultiCausePinnedDesktop: Story = { ...story('desktop', MULTI_PINNED_OPEN), play: multiCausePinnedPlay };
 
 // An admitted I:C Setting: the SettingCard with its block, current →
 // suggested, printed as the pump profile prints it, its counted meal runs as

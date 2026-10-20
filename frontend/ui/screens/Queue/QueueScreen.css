@@ -25,3 +25,14 @@
 /* The open item fills its pane up to a reading width, from the pane's margin. */
 .ui-queue__detail { width: 100%; max-width: 720px; }
 .ui-queue--desktop .ui-queue__bar { position: sticky; bottom: 0; margin-top: auto; padding-top: 24px; }
+
+/* A multi-cause Pattern's drill-down (drill-down.md): its cause cards, every one
+   open. Phone: one column, scrolling as the page. Desktop: a grid filling the
+   detail pane, no column narrower than the phone's card (390 less its gutters). */
+.ui-queue__causes { display: flex; flex-direction: column; gap: 16px; }
+.ui-queue--desktop .ui-queue__causes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(358px, 1fr));
+  align-items: start;
+  margin-top: 8px;
+}

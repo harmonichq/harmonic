@@ -89,11 +89,13 @@ generator emits instead of the showcase.
   store. The showcase covers every tab; `c3-trial` adds an active Trial,
   `c3-ic-trial` a maturing carb ratio Trial an earlier release retained (#554),
   `basal-and-carb-ratio-lower` a queued carb ratio, `pattern-correction-collapse` a Pattern served as its
-  one habit, with its case file, `behavioral-missed-meal` a standalone
+  one habit, with its case file, and a multi-cause drill-down whose Correction
+  stacking cannot be focused (ADR 594), `behavioral-missed-meal` a standalone
   habit's card, pinned into a Focus on the habit itself and ended (ADR 528), and
   `pattern-meal-two-causes` a Pattern that keeps its row with two causes,
-  served largest harm first with each one's trace (ADR 593). A new screen-model
-  fact is asserted here.
+  served largest harm first with each one's trace (ADR 593): its card opens
+  the drill-down, and a Focus on its Late bolus cause watches that cause until
+  it is ended (ADR 594). A new screen-model fact is asserted here.
 - `frontend/app.browser.test.mjs` is the one browser smoke test: the built app
   opens each of its five tabs once at 1440×900, and each draws its primary
   content with no skeleton and no Unavailable. Its context sends
@@ -198,7 +200,10 @@ When an analyzer state or Finding changes:
    slowest generated case ≤30 s, and full pytest ≤2.5× the recorded chunk-1
    baseline (recorded in the active QA change's coverage appendix). A breach stops the work without changing the committed showcase.
 
-To inspect one case through the production APIs, emit its uncommitted case store:
+To inspect one case through the production APIs, emit its uncommitted case store
+(the generator reconciles an emitted case store as a sync leaves one, so its serve
+admits a Focus as a synced install's does; the committed showcase is not
+reconciled, #594):
 
 ```sh
 uv run python scripts/gen_qa_e2e_db.py --case <name> --out <scratch path>

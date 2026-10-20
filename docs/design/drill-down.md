@@ -89,12 +89,12 @@ Anything under `Open` is undecided; nothing there is a requirement.
 
 ## Served vocabulary
 - Pattern title, count — `GET /api/diagnose/findings` `outcome_patterns[].title`, `rows[].count_sentences`
-- Cause, cause count — `rows[].served_as.cause_counts[]` (`subject`, `title`, `count`)
-- Cause traces — not served: the case file pools every cause into `traces.pattern` (engine gap)
-- Cause order — `cause_counts` is in `rate_levers` roster order today; the build serves it by summed episode severity (`analyzers/scenario/severity.py`), largest first (engine gap)
-- Episode cause — `finding-case-file` `occurrences[].member` (served, not yet traced)
-- Focus target — `POST /api/focus` `lever`; the server overrides it with the first pinnable member (engine gap)
-- Focus button shown — `GET /api/focus` `admission.focus_pin.available`
+- Cause, cause count — the Pattern's counter: `rows[].cause_counts[]` on its Pattern row, or `rows[].served_as.cause_counts[]` on the row of the habit it is served as (`subject`, `title`, `count`, `pinnable`)
+- Cause traces — `finding-case-file` `traces.causes[]` (`subject`, `pattern`), each against the Pattern's `traces.typical`
+- Cause order — `cause_counts` as served, by summed episode severity, largest first (ADR 593)
+- Episode cause — `finding-case-file` `occurrences[].member`
+- Focus target — `POST /api/focus` `lever` with `pattern_key`, kept as sent (ADR 593)
+- Focus button shown — `GET /api/focus` `admission.focus_pin.available`, and a cause's `pinnable`
 
 ## Allowed strings
 - (none yet)
@@ -121,13 +121,13 @@ Anything under `Open` is undecided; nothing there is a requirement.
 
 ## Approved screens
 - Drill-down at 390x844 — Storybook `Screens/DrillDown`, Open and Pinned — locked 2026-10-20 — build ticket #591.
-  Both shots draw the Pattern's pooled trace on every cause card, a stand-in
-  until the engine serves per-cause traces; the build re-approves the screen
-  against the served ones. Not rendered, approved by this page's text: the
-  Queue card with no button and the "›" on its chart; its "Focus" over the
-  cause's name once pinned; the "Focus started" bar; loading and Not saved on
-  a cause card (the Queue's own states). The build (#591) renders each as a
-  story and the operator approves them there.
+  Re-approved 2026-10-20 against the engine's served per-cause traces (#593),
+  on PR #605 (#594), with the stories that render what this page first
+  approved by text: the Queue card with no button and the "›" on its chart;
+  its "Focus" over the cause's name once pinned; the "Focus started" bar on a
+  cause card and on a habit card; a cause card loading and Not saved; a cause
+  that cannot be focused; the snooze bar; no Focus while a Trial is watched;
+  and the drill-down in the desktop pane at 1440x900.
 
 ## Amendments
 - 2026-10-20 Connor: the phone drill-down is a pushed sub-screen scrolling as
@@ -189,3 +189,7 @@ Anything under `Open` is undecided; nothing there is a requirement.
   bar in States), the mock's cause order (3) and its "Focus" label (1) are
   applied; the pooled trace (2) stays a stand-in the build replaces; 12 and
   13 are out of scope.
+- 2026-10-20 Connor, on the build's stories (PR #605), after asking why some
+  cause cards draw single traces rather than the band (a cause of eight or
+  fewer episodes draws each one, as the TraceChart does): "yeah looks good
+  then!"

@@ -169,6 +169,11 @@ const EXPECTED = {
       counts: [['habit:correction_on_iob', 'Correction on active insulin', 2, true],
         ['habit:correction_stacking', 'Correction stacking', 1, false]],
       traces: [['habit:correction_on_iob', 2], ['habit:correction_stacking', 1]] },
+    // Served as its habit, it is multi-cause like any Pattern (ADR 594): its
+    // drill-down offers no Focus on Correction stacking.
+    drillDown: { key: 'lows_after_correcting_highs', focusable: true,
+      causes: [['habit:correction_on_iob', 'Correction on active insulin', 2, 3, 'lows', true, 2],
+        ['habit:correction_stacking', 'Correction stacking', 1, 3, 'lows', false, 1]] },
     change: { kind: 'none' },
     done: null,
   },
@@ -185,13 +190,22 @@ const EXPECTED = {
     causes: { row: 'pattern:highs_after_meals', key: 'highs_after_meals',
       counts: [['habit:late_bolus', 'Late bolus', 3, true], ['habit:carb_undercount', 'Carb undercount', 4, true]],
       traces: [['habit:late_bolus', 3], ['habit:carb_undercount', 4]] },
+    // Its card is multi-cause, so it offers no Focus; its drill-down draws each
+    // cause's count over the Pattern's 7 meals and its own trace (ADR 594). A
+    // Focus on Late bolus, served first though Carb undercount is the Pattern's
+    // first member, watches Late bolus.
+    drillDown: { key: 'highs_after_meals', focusable: true,
+      causes: [['habit:late_bolus', 'Late bolus', 3, 7, 'meals', true, 3],
+        ['habit:carb_undercount', 'Carb undercount', 4, 7, 'meals', true, 4]],
+      pin: { lever: 'late_bolus', focusedCause: 'Late bolus',
+        focus: { kind: 'focus', habit: 'Late bolus', pattern: 'Highs after meals', maturing: true } } },
     change: { kind: 'none' },
     done: null,
   },
   // A standalone habit (ADR 528): the missed meal no Pattern owns is its own
   // card. Its count is its case file's, the rises it claims of its own highs; its
   // chart each rise from its onset, against the meals bolused for (two, too few
-  // for a band); and Pin starts a Focus on the habit itself, with no Pattern.
+  // for a band); and Focus starts one on the habit itself, with no Pattern.
   'behavioral-missed-meal': {
     queue: ['habit:missed_meal'],
     habit: { subject: 'habit:missed_meal', title: 'Missed / unannounced meal',
@@ -314,6 +328,17 @@ test(`the live adapter serves each tab's model from the ${CASE} store`, async (t
       assert.deepEqual(carried.cases[key].traces.causes.map((c) => [c.subject, c.pattern.episodes?.length ?? null]),
         traces);
     }
+    if (expected.drillDown) {
+      // A multi-cause Pattern (ADR 594): its card offers no Focus, and its
+      // drill-down's causes are the served ones, in the served order, each count
+      // over the Pattern's own and each trace the cause's own.
+      const { key, focusable, causes } = expected.drillDown;
+      const card = values(queue.pattern('wearer', key));
+      assert.deepEqual([card.multiCause, card.focusedCause, card.pinned], [true, null, false]);
+      assert.equal(queue.focusable('wearer'), focusable, 'the served admission');
+      assert.deepEqual(values(queue.causes('wearer', key)).map((c) => [c.subject, c.title, c.magnitude.count,
+        c.magnitude.denominator, c.magnitude.noun, c.pinnable, c.traces?.episodes?.length ?? null]), causes);
+    }
     if (expected.habit) {
       // The habit's card, as served: its count, its chart, unpinned; and its row
       // and card read one population, the case file's own.
@@ -392,10 +417,10 @@ test(`the live adapter serves each tab's model from the ${CASE} store`, async (t
   });
 
   if (expected.pin) {
-    // Pin on a standalone habit's card (ADR 528): a Focus on the habit itself,
+    // Focus on a standalone habit's card (ADR 528): a Focus on the habit itself,
     // under its own key, which the card shows pinned and Changes follows as a
     // Focus with no Pattern; End resolves it, and the card is unpinned again.
-    await t.test('Pin a habit, then End its Focus', async () => {
+    await t.test('Focus a habit, then End it', async () => {
       const { subject, focus } = expected.pin;
       const card = () => values(queue.ranking('wearer')).find((i) => i.subject === subject).data;
       await live.queueWrites.pin(subject);
@@ -404,7 +429,29 @@ test(`the live adapter serves each tab's model from the ${CASE} store`, async (t
       for (const [key, value] of Object.entries(focus)) assert.deepEqual(active[key], value, `focus ${key}`);
       await live.changesWrites.end();
       assert.equal(values(changes.change('wearer')).kind, 'none');
-      assert.equal(card().pinned, false, 'the card offers Pin again');
+      assert.equal(card().pinned, false, 'the card offers Focus again');
+    });
+  }
+
+  if (expected.drillDown?.pin) {
+    // A cause's Focus (ADR 594): it watches the cause it was started on, which the
+    // Queue card names and Changes follows; then no card offers Focus, and End
+    // brings the buttons back.
+    await t.test('Focus a cause, then End it', async () => {
+      const { key, pin } = expected.drillDown;
+      const subject = `pattern:${key}`;
+      await live.queueWrites.pin(subject, pin.lever);
+      const card = values(queue.pattern('wearer', key));
+      assert.deepEqual([card.pinned, card.focusedCause], [true, pin.focusedCause]);
+      assert.deepEqual(values(queue.causes('wearer', key)).filter((c) => c.pinned).map((c) => c.lever), [pin.lever]);
+      assert.equal(queue.focusable('wearer'), false, 'no other Focus while one is watched');
+      const active = values(changes.change('wearer'));
+      for (const [field, value] of Object.entries(pin.focus)) assert.deepEqual(active[field], value, `focus ${field}`);
+      await live.changesWrites.end();
+      assert.equal(values(changes.change('wearer')).kind, 'none');
+      await live.readTab('queue');
+      assert.deepEqual([values(queue.pattern('wearer', key)).focusedCause, queue.focusable('wearer')], [null, true],
+        'End brings the buttons back');
     });
   }
 

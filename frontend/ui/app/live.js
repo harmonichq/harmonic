@@ -50,7 +50,7 @@ const CATCH_UP_MS = [1000, 2000, 4000, 8000, 15000, 30000];
 /** The Overview's first window, and the analysis window the engine answers by default. */
 const FIRST_WINDOW = '14';
 const DEFAULT_ANALYSIS = '30';
-/** A Pattern Focus is pinned over the whole day, the window the Queue's findings read. */
+/** A Pattern Focus watches the whole day, the window the Queue's findings read. */
 const WHOLE_DAY = { start_min: 0, end_min: 1440 };
 const NO_STATUS = { last_attempt_at: null, last_success_at: null, last_error: null, last_error_label: null };
 
@@ -503,19 +503,22 @@ export function createLive({ client, glossary, memory = null,
         identities.delete(`undo ${appliedAt}`);
       }, FOLLOW_UP, both);
     },
-    /** Pin a Pattern's habit, or a standalone habit itself: its Focus is its own, with no Pattern and no
-     *  outcome window (ADR 528). */
-    pin: async (subject) => {
+    /** Start a Focus on a Pattern, on one of its causes (`lever`, ADR 594), or on a standalone habit itself,
+     *  whose Focus is its own, with no Pattern and no outcome window (ADR 528). A cause's request identity
+     *  names its lever, so a Retry never reuses another cause's. */
+    pin: async (subject, lever) => {
       const [guided, focused] = await Promise.all([guidance(), focus()]);
       const candidate = guided.candidates.find((c) => c.subject === subject);
       const target = candidate?.kind === 'habit' ? { lever: candidate.lever }
-        : { pattern_key: candidate?.pattern_key ?? subject.replace(/^pattern:/, ''), outcome_window: WHOLE_DAY };
+        : { pattern_key: candidate?.pattern_key ?? subject.replace(/^pattern:/, ''), ...(lever ? { lever } : {}),
+          outcome_window: WHOLE_DAY };
+      const intent = lever ? `pin ${subject} ${lever}` : `pin ${subject}`;
       await write(async () => {
         await client.pinFocus({
-          ...target, request_id: requestId(`pin ${subject}`), input_revision: focused.input_revision, subject,
+          ...target, request_id: requestId(intent), input_revision: focused.input_revision, subject,
           analysis_generation: guided.analysis_generation,
         });
-        identities.delete(`pin ${subject}`);
+        identities.delete(intent);
       }, FOLLOW_UP, both);
     },
   };

@@ -12,15 +12,18 @@
 //   hold no row for, a standalone habit the case files serve nothing for, and a
 //   candidate of a kind the app does not know.
 // - A Pattern whose trace chart is served with nothing to draw (ADR 523).
-// - A Pattern served with two causes, for the drill-down mock (drill-down.md),
-//   and the same with one of them pinned.
 // - A day navigator with no readings, as a store before its first sync serves it.
+// - A Queue screen as the engine serves it after a story's write or read: the
+//   store read after a saved Focus, or a read state that changes once the screen
+//   has opened (`ServedAfter`).
 // - A day with no Control-IQ boluses: the latest day's timeline with
 //   `insulin_totals.control_iq_bolus` served as 0 and its `total` the served
 //   sum of the other three, as the engine adds them (timeline.insulin_totals).
-import { useEffect, type ReactNode } from 'react';
+import { createElement, useEffect, useState, type ReactNode } from 'react';
 import { answers } from './answers';
 import { fixtures } from './fixtures';
+import type { QueueStore } from './queue-model';
+import { QueueScreen, type QueueScreenProps } from './screens/Queue/QueueScreen';
 
 type Json = Record<string, unknown>;
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value));
@@ -69,35 +72,9 @@ const blankKey = fixtures.states.traces_episodes.pattern as keyof typeof blank.c
 Object.assign(blank.cases[blankKey].traces, { pattern: { episodes: [], points: [] }, typical: { points: [] } });
 add('queue', 'wearer-traces-empty', blank);
 
-/** The wearer's Queue with its Highs after meals row served with two causes,
- *  as `served_as` serves a Pattern's credited shares (ADR 520): Late bolus and
- *  Carb undercount, their served titles, short of the Pattern's own count
- *  together, served smallest first. No generated store serves a Pattern with
- *  more than one cause; the counts are the mock's own. */
-const twoCauses = clone(fixtures.queue.wearer) as typeof fixtures.queue.wearer;
-{
-  const rows = twoCauses.findings.rows;
-  const row = rows.find((r) => r.id === 'pattern:highs_after_meals')!;
-  const cause = (lever: string, count: number) =>
-    ({ subject: `habit:${lever}`, title: rows.find((r) => r.id === `finding:${lever}`)!.title, count, pinnable: true });
-  row.served_as = {
-    subject: 'pattern:highs_after_meals',
-    count_sentences: clone(row.count_sentences!),
-    cause_counts: [cause('carb_undercount', 31), cause('late_bolus', 9)],
-  };
-}
-add('queue', 'wearer-two-causes', twoCauses);
-
-/** The same, its Carb undercount pinned, as the pinned wearer's Focus serves it. */
-const twoCausesPinned = clone(twoCauses);
-twoCausesPinned.focus = clone(fixtures.queue['wearer-pinned'].focus) as typeof twoCauses.focus;
-add('queue', 'wearer-two-causes-pinned', twoCausesPinned);
-
 export const CHANGES_UNNAMED = 'wearer-unnamed' as keyof typeof fixtures.changes;
 export const QUEUE_UNDRAWABLE = 'wearer-undrawable' as keyof typeof fixtures.queue;
 export const QUEUE_TRACES_EMPTY = 'wearer-traces-empty' as keyof typeof fixtures.queue;
-export const QUEUE_TWO_CAUSES = 'wearer-two-causes' as keyof typeof fixtures.queue;
-export const QUEUE_TWO_CAUSES_PINNED = 'wearer-two-causes-pinned' as keyof typeof fixtures.queue;
 
 /** The latest day as served on a day Control-IQ gave no automatic bolus. */
 const noControlIq = (() => {
@@ -158,4 +135,25 @@ export function monthReader(failing: string[] = []): { readMonth: (month: string
     },
     cleanup: () => { delete day.months; },
   };
+}
+
+/** The Queue screen as the engine serves it after a story's write or read: once
+ *  a Focus write saves, the generated store read after it (`focused`), as the live
+ *  adapter reads the engine again before a write resolves; and, once the screen
+ *  has opened, the read state `then` (a drill-down opened, then its answers
+ *  loading, unavailable or stale). */
+export function ServedAfter({ focused, then, ...props }: QueueScreenProps & {
+  focused?: QueueStore; then?: QueueScreenProps['state'];
+}) {
+  const [store, setStore] = useState(props.store);
+  const [state, setState] = useState(props.state);
+  useEffect(() => { if (then) setState(then); }, [then]);
+  const writes = props.writes && focused ? {
+    ...props.writes,
+    pin: async (subject: string, lever?: string) => {
+      await props.writes!.pin(subject, lever);
+      setStore(focused);
+    },
+  } : props.writes;
+  return createElement(QueueScreen, { ...props, store, state, writes });
 }

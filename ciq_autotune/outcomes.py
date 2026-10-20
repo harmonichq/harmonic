@@ -49,6 +49,7 @@ from .analyzers.scenario import (
 )
 from .analyzers.scenario.evidence_population import policy_for
 from .false_low import drop_readings, false_low_spans
+from .settings import IsfSource
 from .uncertainty import Confidence
 
 # Bump on any breaking change to the shapes below; a frontend keys off this.
@@ -419,9 +420,10 @@ def summarize_outcomes(
     metrics = compute_metrics(w_cgm)
     coverage = compute_coverage(w_cgm, span_days=_span_days(w_cgm, start, now))
 
-    isf = _effective_isf(store, w_bolus, w_basal, w_cgm)
+    # Each meal converts with its own dose-stamped ISF (ADR 563), as the scenario
+    # engine's does.
     exposure_counts, attributed = tally_attributions(
-        w_bolus, w_cgm, w_basal, isf=isf,
+        w_bolus, w_cgm, w_basal, isf=IsfSource.from_snapshots(store.settings_snapshots()),
         low_answers=low_prompt_answers(store, start, now),
     )
     clean_rates = compute_clean_rates(exposure_counts, attributed)
@@ -450,25 +452,6 @@ def summarize_outcomes(
         clean_rates=clean_rates,
         previous=previous,
     )
-
-
-def _effective_isf(store, bolus, basal, cgm):
-    """The effective ISF for carb-undercount, mirroring the scenario engine.
-
-    Each meal supplies its historical Dose-stamped I:C. Best-effort: if the ISF
-    analyzer cannot run, return ``None`` and carb-undercount stays unjudged.
-    """
-    from . import settings as settings_mod
-    from .analyzers.isf import analyze_isf
-
-    snaps = store.settings_snapshots()
-    if not snaps:
-        return None
-    try:
-        isf_rows = analyze_isf(bolus, basal, cgm, settings_mod.active_schedule(snaps, "isf"))
-        return settings_mod.effective_isf(isf_rows, snaps)
-    except Exception:
-        return None
 
 
 # --- CLI renderer (mirrors report.py's markdown renderer) -------------------

@@ -1,8 +1,8 @@
 """Outcomes-trend tests (#131) — deterministic, stdlib unittest, synthetic inputs.
 
 Covers what the issue is emphatic about: the rolling-window tiling (oldest→newest,
-index-aligned, newest ending at ``now``); the **fixed-ISF** rule (every window judged
-against the same constant profile ISF, never a per-window estimate); **honest
+index-aligned, newest ending at ``now``); the **dose-stamped ISF** rule (every window
+converts each meal with its own stamp, never a per-window estimate); **honest
 denominators** (each behavior keeps its own exposure, even the affinity-moved ones);
 the ``correction_stacking`` behavior-vs-harm split (two numerators, ``harm ⊆
 behavior``); the net-new post-meal spike; and the payload shape + both renderers.
@@ -41,12 +41,13 @@ from ciq_autotune.outcomes_trend import (
     summarize_trend,
 )
 from ciq_autotune.settings import (
+    IsfSource,
     ProfileSegment,
     ProfileSettings,
     PumpSettings,
     Snapshot,
 )
-from tests.test_scenario_engine import ISF, dose_stamped_ic_fixture
+from tests.test_scenario_engine import dose_stamped_ic_fixture
 
 try:
     from fastapi.testclient import TestClient
@@ -439,14 +440,15 @@ class CountCorrectionStacksTest(unittest.TestCase):
         self.assertEqual((behavior, harm), (0, 0))
 
 
-class FixedIsfTest(unittest.TestCase):
-    """The window loop must judge every window against the SAME constant profile ISF."""
+class DoseStampedIsfTest(unittest.TestCase):
+    """Every window converts each meal with its dose-stamped ISF (ADR 563), never a
+    per-window estimate or a schedule median."""
 
-    def test_same_profile_isf_threaded_to_every_window(self):
+    def test_every_window_converts_with_the_dose_stamped_isf(self):
         now = datetime(2026, 7, 2, 0, 0, 0)
         start = now - timedelta(days=42)  # 3 windows
         cgm = _cgm([120] * (288 * 42), start=start)
-        store = _FakeStore(cgm=cgm)
+        store = _FakeStore(cgm=cgm, snaps=[_snapshot_with_ic(5.0)])
 
         captured = []
 
@@ -455,30 +457,27 @@ class FixedIsfTest(unittest.TestCase):
             return ({e: 0 for e in Exposure}, {})
 
         with mock.patch(
-            "ciq_autotune.outcomes_trend._profile_settings",
-            return_value=(12.3, ProgrammedIcRange(5.0, 5.0)),
-        ), mock.patch(
             "ciq_autotune.outcomes_trend.tally_attributions", side_effect=_spy
         ):
             trend = summarize_trend(store, window_days=14, now=now)
 
         self.assertEqual(len(trend.windows), 3)
         self.assertEqual(len(captured), 3)
-        # Identical fixed ISF on every window — not a per-window estimate.
-        self.assertEqual(set(captured), {12.3})
-        self.assertEqual(trend.profile_isf, 12.3)
+        stamped = BolusEvent(t=now - timedelta(days=1), insulin=4.0, carbs=40.0, isf=55.0)
+        unstamped = BolusEvent(t=now - timedelta(days=1), insulin=4.0, carbs=40.0)
+        before_capture = BolusEvent(t=datetime(2026, 6, 17), insulin=4.0, carbs=40.0)
+        for isf in captured:
+            self.assertEqual(isf.at(stamped), 55.0)
+            self.assertEqual(isf.at(unstamped), 40.0)
+            self.assertIsNone(isf.at(before_capture))
         self.assertEqual(trend.profile_ic, ProgrammedIcRange(5.0, 5.0))
 
     def test_unstamped_meal_matches_scenario_aggregate(self):
         bolus, cgm = dose_stamped_ic_fixture()
-        with mock.patch(
-            "ciq_autotune.outcomes_trend._profile_settings",
-            return_value=(ISF, None),
-        ):
-            trend = summarize_trend(
-                _FakeStore(cgm=cgm, bolus=bolus), window_days=14,
-                now=datetime(2026, 6, 19),
-            )
+        trend = summarize_trend(
+            _FakeStore(cgm=cgm, bolus=bolus), window_days=14,
+            now=datetime(2026, 6, 19),
+        )
 
         carb_undercount = next(
             behavior for behavior in trend.behaviors
@@ -533,12 +532,10 @@ class LateAnswerBoundaryTest(unittest.TestCase):
     def _older_point(self, *, answer, answered_at):
         row = {"detector": "low", "anchor_t": self.ANCHOR, "answer": answer,
                "answered_at": answered_at}
-        with mock.patch("ciq_autotune.outcomes_trend._profile_settings",
-                        return_value=(ISF, None)):
-            trend = summarize_trend(
-                _FakeStore(cgm=self._cgm(), responses=[row]),
-                window_days=1, now=self.NOW,
-            )
+        trend = summarize_trend(
+            _FakeStore(cgm=self._cgm(), responses=[row]),
+            window_days=1, now=self.NOW,
+        )
         beh = next(b for b in trend.behaviors if b.lever == Lever.OVER_TREATED_LOW.value)
         return beh.series[0]  # series[0] == the older window
 
@@ -724,7 +721,7 @@ class PayloadShapeTest(unittest.TestCase):
         body = json.loads(self._trend().to_json())
         self.assertEqual(
             set(body),
-            {"schema_version", "window_days", "profile_isf", "profile_ic",
+            {"schema_version", "window_days", "profile_ic",
              "windows", "behaviors", "metrics", "arc", "pre_meal",
              "overnight_lows", "watched_change"},
         )
@@ -1086,8 +1083,9 @@ class CliRendererTest(unittest.TestCase):
     def test_markdown_covers_all_sections(self):
         md = markdown_trend(self._trend())
         self.assertIn("outcomes trend", md.lower())
-        self.assertIn("fixed profile ISF", md)
-        self.assertIn("each meal's Dose-stamped I:C", md)
+        self.assertIn("each meal's dose-stamped ISF", md)
+        self.assertIn("each meal's Dose-stamped ISF and I:C", md)
+        self.assertNotIn("fixed profile ISF", md)
         self.assertNotIn("fixed current-profile ISF/I:C", md)
         self.assertIn("Windows", md)
         self.assertIn("Behaviors", md)
@@ -1514,7 +1512,7 @@ class ExactPeriodObservationsTest(unittest.TestCase):
                  BolusEvent(start, insulin=3, seq_num=2)]
         cgm = _cgm([120] * 24 + [60] * 6, start=start - timedelta(minutes=60))
         result = behavior_observations(bolus, cgm, [], lever="correction_stacking",
-                                       start=start, end=start + timedelta(minutes=45), isf=40)
+                                       start=start, end=start + timedelta(minutes=45), isf=IsfSource.fixed(40))
         self.assertEqual([{k: r[k] for k in ("t", "n", "k", "harm")} for r in result["rows"]],
                          [{"t":start, "n":1, "k":1, "harm":0}])
         self.assertTrue(result["rows"][0]["measured"])
@@ -1563,7 +1561,7 @@ class ComparisonMeasurementTest(unittest.TestCase):
             with self.subTest(lever=lever, readings=len(readings)):
                 observed = behavior_observations(
                     [dose], readings, [], lever=lever, start=dose.t,
-                    end=dose.t+timedelta(hours=8), isf=40,
+                    end=dose.t+timedelta(hours=8), isf=IsfSource.fixed(40),
                 )
                 self.assertEqual(observed["rows"][0]["n"], 1)
                 self.assertEqual(observed["rows"][0]["k"], 0)
@@ -1575,7 +1573,7 @@ class ComparisonMeasurementTest(unittest.TestCase):
         start = datetime(2026, 6, 15, 12)
         observed = behavior_observations(
             [], [CgmReading(start, 300)], [], lever="missed_meal",
-            start=start, end=start+timedelta(hours=1), isf=40,
+            start=start, end=start+timedelta(hours=1), isf=IsfSource.fixed(40),
         )
         self.assertEqual(sum(row["n"] for row in observed["rows"]), 1)
         self.assertEqual(observed["reason"], "insufficient_measurement")
@@ -1588,7 +1586,7 @@ class ComparisonMeasurementTest(unittest.TestCase):
             with self.subTest(observed_tail=bool(tail)):
                 observed = behavior_observations(
                     [], [CgmReading(start, 60), *tail], [], lever="over_treated_low",
-                    start=start, end=start+timedelta(hours=1), isf=40,
+                    start=start, end=start+timedelta(hours=1), isf=IsfSource.fixed(40),
                 )
                 self.assertEqual(sum(row["n"] for row in observed["rows"]), 1)
                 self.assertEqual(sum(row["k"] for row in observed["rows"]), 0)
@@ -1602,7 +1600,7 @@ class ComparisonMeasurementTest(unittest.TestCase):
         positive=override_correction(start,requested=5)
         missing=replace(positive,t=start+timedelta(hours=1),food_insulin=None)
         result=behavior_observations([positive,missing],[],[],lever='user_override',
-                                    start=start,end=start+timedelta(days=1),isf=40)
+                                    start=start,end=start+timedelta(days=1),isf=IsfSource.fixed(40))
         self.assertEqual(sum(r['n'] for r in result['rows']),2)
         self.assertEqual(sum(r['k'] for r in result['rows']),1)
         self.assertEqual(sum(r['measured'] for r in result['rows']),1)

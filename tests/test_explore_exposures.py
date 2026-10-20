@@ -3,7 +3,6 @@
 import tempfile
 import unittest
 from datetime import datetime, timedelta
-from unittest.mock import patch
 
 try:
     from fastapi.testclient import TestClient
@@ -45,7 +44,8 @@ class ExploreExposuresTest(unittest.TestCase):
         store.upsert_bolus([
             {"seq_num": index, "request_time": event.t.strftime("%Y-%m-%d %H:%M:%S"),
              "description": "Bolus", "carbs": event.carbs, "insulin": event.insulin,
-             "carb_ratio": event.carb_ratio}
+             # Every dose stamps the ISF its meal converts with (ADR 563).
+             "carb_ratio": event.carb_ratio, "isf": 40}
             for index, event in enumerate(bolus, start=1)
         ])
 
@@ -123,7 +123,7 @@ class ExploreExposuresTest(unittest.TestCase):
         never reaches 250 and so is no high: the claim sits on the crash low, beside
         the low's own cause, and its episode's narrative stays the low's."""
         from ciq_autotune.explore_exposures import build_exposures
-        from tests.test_scenario_engine import ISF, cgm_flat, cgm_ramp, corr, meal
+        from tests.test_scenario_engine import cgm_flat, cgm_ramp, corr, meal
 
         cgm = (
             cgm_flat(19, 18, 40, 120, 20)
@@ -136,8 +136,7 @@ class ExploreExposuresTest(unittest.TestCase):
         with tempfile.NamedTemporaryFile(suffix=".db") as db:
             with Store.open(db.name) as store:
                 self._seed_scenario_events(store, bolus, cgm)
-                with patch("ciq_autotune.explore_exposures._effective_isf", return_value=ISF):
-                    payload = build_exposures(store)
+                payload = build_exposures(store)
 
         self.assertEqual(payload["exposures"]["highs"]["occurrences"], [])
         [low] = payload["exposures"]["lows"]["occurrences"]
@@ -156,7 +155,7 @@ class ExploreExposuresTest(unittest.TestCase):
 
     def test_every_occurrence_serves_its_anchor_bolus_dose_and_carbs(self):
         from ciq_autotune.explore_exposures import build_exposures
-        from tests.test_scenario_engine import ISF, cgm_flat, cgm_ramp, corr, meal
+        from tests.test_scenario_engine import cgm_flat, cgm_ramp, corr, meal
 
         cgm = (
             # An unbolused rise past 250 in the afternoon: a high.
@@ -176,8 +175,7 @@ class ExploreExposuresTest(unittest.TestCase):
         with tempfile.NamedTemporaryFile(suffix=".db") as db:
             with Store.open(db.name) as store:
                 self._seed_scenario_events(store, bolus, cgm)
-                with patch("ciq_autotune.explore_exposures._effective_isf", return_value=ISF):
-                    payload = build_exposures(store)
+                payload = build_exposures(store)
 
         families = payload["exposures"]
         [served_meal] = families["meals"]["occurrences"]
@@ -195,7 +193,7 @@ class ExploreExposuresTest(unittest.TestCase):
 
     def test_announced_meal_low_stays_in_low_population_without_association(self):
         from ciq_autotune.explore_exposures import build_exposures
-        from tests.test_scenario_engine import ISF, cgm_flat, cgm_ramp, corr, meal
+        from tests.test_scenario_engine import cgm_flat, cgm_ramp, corr, meal
 
         cgm = (
             cgm_flat(19, 18, 40, 120, 20)
@@ -212,8 +210,7 @@ class ExploreExposuresTest(unittest.TestCase):
         with tempfile.NamedTemporaryFile(suffix=".db") as db:
             with Store.open(db.name) as store:
                 self._seed_scenario_events(store, bolus, cgm)
-                with patch("ciq_autotune.explore_exposures._effective_isf", return_value=ISF):
-                    payload = build_exposures(store)
+                payload = build_exposures(store)
 
         low = next(row for row in payload["exposures"]["lows"]["occurrences"]
                    if row["t"] == "2026-06-19 21:20:00")
@@ -229,7 +226,7 @@ class ExploreExposuresTest(unittest.TestCase):
             build_outcome_patterns,
         )
         from ciq_autotune.explore_exposures import build_exposures
-        from tests.test_scenario_engine import ISF, cgm_flat, cgm_ramp, corr
+        from tests.test_scenario_engine import cgm_flat, cgm_ramp, corr
 
         cgm = (
             cgm_ramp(20, 14, 0, 160, -0.8, 60)
@@ -240,10 +237,7 @@ class ExploreExposuresTest(unittest.TestCase):
         with tempfile.NamedTemporaryFile(suffix=".db") as db:
             with Store.open(db.name) as store:
                 self._seed_scenario_events(store, bolus, cgm)
-                with patch(
-                    "ciq_autotune.explore_exposures._effective_isf", return_value=ISF,
-                ):
-                    exposures = build_exposures(store)
+                exposures = build_exposures(store)
 
         pattern = next(
             item for item in build_outcome_patterns(

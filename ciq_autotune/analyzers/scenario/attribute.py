@@ -42,6 +42,7 @@ from datetime import datetime, timedelta
 from typing import List, Optional, Sequence
 
 from ...events import BasalEvent, BolusEvent, CgmReading
+from ...settings import IsfSource
 from ..classifiers import (
     Verdict,
     classify_carb_undercount,
@@ -446,7 +447,7 @@ def _meal_lever(
     basal: Sequence[BasalEvent],
     bolus: Sequence[BolusEvent] = (),
     *,
-    isf: Optional[float],
+    isf: Optional[IsfSource],
     scenario_config: ScenarioConfig = ScenarioConfig(),
     matches: Optional[list] = None,
     verdicts: Optional[list] = None,
@@ -772,7 +773,7 @@ def attribute(
     bolus: Sequence[BolusEvent],
     basal: Sequence[BasalEvent] = (),
     *,
-    isf: Optional[float] = None,
+    isf: Optional[IsfSource] = None,
     scenario_config: ScenarioConfig = ScenarioConfig(),
     low_answers: Sequence[LowPromptAnswer] = (),
     known_rebounds: Sequence[ReboundOwner] = (),
@@ -786,7 +787,8 @@ def attribute(
 
     ``cgm`` / ``bolus`` / ``basal`` should span at least the episode plus the
     classifiers' own look-back/ahead (the engine passes a padded slice). ``isf``
-    feeds the carb-undercount classifier; the meal's I:C comes from its Dose-stamped
+    is the :class:`~ciq_autotune.settings.IsfSource` the carb-undercount classifier
+    converts each meal with (ADR 563); the meal's I:C comes from its Dose-stamped
     ``BolusEvent.carb_ratio``. Over-treated-low classification is shape-only (#400) —
     it reads neither ISF/I:C nor residual IOB.
 
@@ -985,7 +987,7 @@ def split_caused_over_treatments(
     bolus: Sequence[BolusEvent],
     basal: Sequence[BasalEvent] = (),
     *,
-    isf: Optional[float] = None,
+    isf: Optional[IsfSource] = None,
     scenario_config: ScenarioConfig = ScenarioConfig(),
     low_answers: Sequence[LowPromptAnswer] = (),
 ) -> List[EpisodeAnchors]:
@@ -1024,7 +1026,7 @@ def _split_over_treatment_one(
     bolus: Sequence[BolusEvent],
     basal: Sequence[BasalEvent],
     *,
-    isf: Optional[float],
+    isf: Optional[IsfSource],
     scenario_config: ScenarioConfig = ScenarioConfig(),
     low_answers: Sequence[LowPromptAnswer] = (),
 ) -> List[EpisodeAnchors]:

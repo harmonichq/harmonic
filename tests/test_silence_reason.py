@@ -35,6 +35,7 @@ from ciq_autotune.analyzers.scenario.attribute import attribute
 from ciq_autotune.analyzers.scenario.levers import Lever
 from ciq_autotune.analyzers.scenario.segment import segment
 from ciq_autotune.events import BasalEvent, BolusEvent, CgmReading
+from ciq_autotune.settings import IsfSource
 
 
 # --- builders (mirror the per-classifier test suites) ------------------------
@@ -115,7 +116,7 @@ class LateBolusSilenceTest(unittest.TestCase):
 class CarbUndercountSilenceTest(unittest.TestCase):
     def _classify(self, m, cgm, basal=()):
         return classify_carb_undercount(
-            replace(m, carb_ratio=CU_IC), cgm, basal, isf=CU_ISF,
+            replace(m, carb_ratio=CU_IC), cgm, basal, isf=IsfSource.fixed(CU_ISF),
         )
 
     def test_missing_settings_is_insufficient_data(self):
@@ -309,7 +310,7 @@ class AttributeSilenceTest(unittest.TestCase):
         cgm = cgm_ramp(15, 12, 0, 120, 0.4, 120)
         m = meal(15, 12, 0, carbs=40.0, dose=8.0)
         eps = segment(collect_anchors([m], cgm, []))
-        attr = attribute(eps[0], cgm, [m], [], isf=self.ISF)
+        attr = attribute(eps[0], cgm, [m], [], isf=IsfSource.fixed(self.ISF))
         self.assertIsNone(attr.lever)
         self.assertIsNotNone(attr.silence)
         self.assertEqual(attr.silence.silence_reason, SilenceReason.NO_TRIGGER)
@@ -322,7 +323,7 @@ class AttributeSilenceTest(unittest.TestCase):
         cgm = pre + runup
         m = meal(28, 19, 56, carbs=35.0, dose=8.0)
         eps = segment(collect_anchors([m], cgm, []))
-        attr = attribute(eps[0], cgm, [m], [], isf=self.ISF)
+        attr = attribute(eps[0], cgm, [m], [], isf=IsfSource.fixed(self.ISF))
         self.assertEqual(attr.lever, Lever.CARB_UNDERCOUNT)
         self.assertIsNone(attr.silence)
 
@@ -341,7 +342,7 @@ class LeverFiringRegressionTest(unittest.TestCase):
         levers = []
         for e in eps:
             attr = attribute(e, cgm, list(boluses), list(basal),
-                             isf=self.ISF)
+                             isf=IsfSource.fixed(self.ISF))
             if attr.lever is not None:
                 self.assertIsNone(attr.silence)                # fired -> no silence
                 levers.append(attr.lever)

@@ -1016,9 +1016,10 @@ def _resolve_active_focus(client: TestClient) -> None:
 
 def _days(client: TestClient, navigator: dict) -> dict:
     """One day's timeline and logged carbs for each Day story, by rule: the
-    latest day with readings, a site change and no logged carbs, the latest of
-    the days with the most logged carbs, the first day after the history ends,
-    and the latest day with readings (the Day screen's default)."""
+    latest day with readings, a site change and no logged carbs; among the days
+    with logged carbs, the one whose served findings name the most distinct
+    habits, then the most logged carbs, then the latest; the first day after the
+    history ends; and the latest day with readings (the Day screen's default)."""
     logged: dict = {}
     for entry in _get(client, "/api/carbs")["carb_entries"]:
         logged[entry["t"][:10]] = logged.get(entry["t"][:10], 0) + 1
@@ -1029,9 +1030,14 @@ def _days(client: TestClient, navigator: dict) -> dict:
         return bool(_get(client, "/api/timeline", start=start.isoformat(),
                          end=(start + timedelta(days=1)).isoformat())["pump_events"])
 
+    def habits(iso: str) -> int:
+        return len({lever["lever"] for finding in _get(client, "/api/model-view", date=iso)["findings"]
+                    for lever in finding["levers"]})
+
     picks = {
         "default": next(iso for iso in reversed(with_data) if iso not in logged and site_change(iso)),
-        "with_carbs": max((iso for iso in with_data if iso in logged), key=lambda iso: (logged[iso], iso)),
+        "with_carbs": max((iso for iso in with_data if iso in logged),
+                          key=lambda iso: (habits(iso), logged[iso], iso)),
         "no_data": next(d["iso"] for d in navigator["days"] if not d["has_data"] and d["iso"] > with_data[-1]),
         "latest": with_data[-1],
     }

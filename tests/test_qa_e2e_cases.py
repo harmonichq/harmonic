@@ -72,6 +72,7 @@ EXPECTED_CASE_NAMES = (
     "delivery-basal-across-midnight", "delivery-basal-whole-day",
     "behavioral-over-treated-near-low",
     "ic-dose-stamped-isf",
+    "behavioral-carb-undercount-segment",
     "pattern-meal-two-causes",
 )
 

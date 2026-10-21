@@ -1,16 +1,10 @@
-"""Coverage-driven tests for the four analyzers and the analyze() facade.
+"""Coverage-driven tests for the analyzers and the analyze() facade.
 
 Targets the uncovered branches identified by `coverage run -m pytest` on the
 existing analyzer / facade test files.  All tests use synthetic, deterministic
 data — no live Tandem fetch, no filesystem reads.
 
 Coverage targets (at time of writing, 94 % → 100 % goal):
-
-``ciq_autotune/analyzers/isf.py``
-  * IsfConfig.describe_gate() — never called in existing tests
-  * _programmed_fasting_isf([], …) → None (empty segment list, line 147)
-  * _programmed_fasting_isf with segments that do NOT overlap the fasting window
-    → covers the "not covering" branch (line 154)
 
 ``ciq_autotune/analyzers/ic.py``
   * IcConfig.describe_gate() — never called
@@ -47,29 +41,10 @@ from ciq_autotune.analyzers.basal import (
     programmed_basal_by_slot,
 )
 from ciq_autotune.analyzers.ic import IcConfig, _recommend as _ic_recommend, analyze_ic
-from ciq_autotune.analyzers.isf import (
-    IsfConfig,
-    _programmed_fasting_isf,
-    analyze_isf,
-    fasting_steps,
-)
 from ciq_autotune.events import BasalEvent, BolusEvent, CgmReading
 from ciq_autotune.model import ModelConfig
-from ciq_autotune.rest_window import RestWindow, RestWindowConfig
-from ciq_autotune.result import SegmentEstimate, SlotEstimate
+from ciq_autotune.result import SlotEstimate
 from ciq_autotune.uncertainty import Estimate, estimate_median
-
-
-def _night_rest_window(day, start_h=0, end_h=8):
-    """A single rest window covering a synthetic night's overnight CGM on `day`.
-
-    The ISF gate is now rest-window membership (#110), so direct ``fasting_steps``
-    / ``analyze_isf`` unit tests inject a covering window instead of relying on the
-    detector's coverage heuristics (which the detector's own tests exercise)."""
-    from datetime import date
-    return [RestWindow(date=date(2026, 6, day),
-                       start=datetime(2026, 6, day, start_h, 0, 0),
-                       end=datetime(2026, 6, day, end_h, 0, 0))]
 
 
 # ---------------------------------------------------------------------------
@@ -116,78 +91,6 @@ def _meal(day, hh, carbs=60.0, dose=10.0):
     return BolusEvent(t=datetime(2026, 6, day, hh, 0, 0),
                       insulin=dose, carbs=carbs)
 
-
-# ---------------------------------------------------------------------------
-# ISF analyzer — uncovered branches
-# ---------------------------------------------------------------------------
-
-class IsfConfigDescribeGateTest(unittest.TestCase):
-    """IsfConfig.describe_gate() was never called in the existing test suite."""
-
-    def test_describe_gate_returns_soft_gate(self):
-        gate = IsfConfig().describe_gate()
-        self.assertIsNone(gate["unit"])
-        self.assertIsNone(gate["needed"])
-        self.assertTrue(gate["soft"])
-        self.assertIn("criteria", gate)
-        self.assertTrue(len(gate["criteria"]) >= 1)
-
-    def test_describe_gate_interpolates_rest_envelope(self):
-        # The rest-window envelope (#110) appears in a criterion — change the
-        # envelope constants, the gate text tracks them.
-        cfg = IsfConfig(rest_window=RestWindowConfig(env_start_min=1380,   # 23:00
-                                                     env_end_min=420))     # 07:00
-        gate = cfg.describe_gate()
-        criteria_text = " ".join(gate["criteria"])
-        self.assertIn("23:00", criteria_text)
-        self.assertIn("07:00", criteria_text)
-
-    def test_describe_gate_carb_lookback_in_criteria(self):
-        # Carb-bearing boluses keep the flat ~DIA lookback (excursion guard, #169),
-        # so the criterion still interpolates carb_lookback_min.
-        cfg = IsfConfig(carb_lookback_min=240)  # 4h
-        gate = cfg.describe_gate()
-        criteria_text = " ".join(gate["criteria"])
-        self.assertIn("4 h", criteria_text)
-        self.assertIn("still on board", criteria_text)  # grams-scaled Carb-log half
-
-
-class ProgrammedFastingIsfTest(unittest.TestCase):
-    """_programmed_fasting_isf edge cases."""
-
-    def test_empty_segments_returns_none(self):
-        # Line 147: empty segment list hits the early-return guard.
-        result = _programmed_fasting_isf([], IsfConfig())
-        self.assertIsNone(result)
-
-    def test_all_none_isf_segments_return_none(self):
-        # The `isf is not None` filter leaves `covering` empty → return None.
-        # (A schedule can't be "entirely outside" the nocturnal envelope: its last
-        # segment always extends to 24:00 and so always overlaps the evening side.)
-        cfg = IsfConfig()
-        segs = [(0, None), (720, None)]
-        result = _programmed_fasting_isf(segs, cfg)
-        self.assertIsNone(result)
-
-    def test_single_segment_covering_window_returned_directly(self):
-        cfg = IsfConfig()
-        segs = [(0, 42.0)]
-        result = _programmed_fasting_isf(segs, cfg)
-        self.assertEqual(result, 42.0)
-
-    def test_multiple_overlapping_segments_take_median(self):
-        # Two segments overlapping the rest envelope — median of two == upper one
-        # when sorted (len=2, index=1 → second of sorted pair).
-        cfg = IsfConfig()
-        segs = [(0, 30.0), (180, 50.0)]
-        result = _programmed_fasting_isf(segs, cfg)
-        # covering = [30.0, 50.0], sorted; index len//2 = 1 → 50.0
-        self.assertEqual(result, 50.0)
-
-
-# ---------------------------------------------------------------------------
-# I:C analyzer — uncovered branches
-# ---------------------------------------------------------------------------
 
 class IcConfigDescribeGateTest(unittest.TestCase):
     """IcConfig.describe_gate() was never called in the existing test suite."""
@@ -303,39 +206,6 @@ class PoolDecisionNoneValueTest(unittest.TestCase):
         self.assertIsNone(note)
 
 
-class FastingStepsCarbPointerAdvanceTest(unittest.TestCase):
-    """fasting_steps advances the carb-pointer ci past expired carb times (isf.py:130).
-
-    The while loop on line 129-130 advances `ci` beyond carb times that fall
-    before the current step's lookback guard.  To exercise it we need *two*
-    carb boluses well-separated in time so that the second CGM step's guard_lo
-    advances past the first carb time, triggering `ci += 1`.
-    """
-
-    def test_two_carbs_advances_ci_and_includes_later_steps(self):
-        cfg = IsfConfig(carb_lookback_min=60)
-        # Two carb boluses: one at 01:00, one at 02:00.
-        # CGM steps from 03:00 onwards have guard_lo = 03:0x - 1h = ~02:0x.
-        # For a step at 03:30, guard_lo = 02:30, which is past the 01:00 carb
-        # → ci advances past the 01:00 carb (line 130).  The 02:00 carb is also
-        # past guard_lo = 02:30, so ci moves to 2 (past both), and the step is
-        # included (no blocking carb ≤ t1).
-        base = datetime(2026, 6, 1, 0, 0, 0)
-        boluses = [
-            BolusEvent(t=base + timedelta(hours=1), insulin=3.0, carbs=30.0),
-            BolusEvent(t=base + timedelta(hours=2), insulin=2.0, carbs=20.0),
-        ]
-        # Flat CGM from 03:00 to 06:00.
-        cgm = [CgmReading(t=base + timedelta(minutes=m), bg=120.0)
-               for m in range(180, 361, 5)]
-        steps = fasting_steps(boluses, [], cgm, cfg, _night_rest_window(1))
-        # Steps from 03:00+ should be present: no active carb within 1h.
-        self.assertTrue(len(steps) > 0)
-        for s in steps:
-            tod = s.t.hour * 60 + s.t.minute
-            self.assertGreaterEqual(tod, 180)  # all inside the rest window
-
-
 class SlotLeanMagnitudeAdditionalTest(unittest.TestCase):
     """Additional _slot_lean_magnitude branch tests.
 
@@ -413,17 +283,6 @@ class ConsolidateProfileNoneBasalTest(unittest.TestCase):
     loop must skip such rows rather than crash on None arithmetic.
     """
 
-    def _seg_est(self, start_min, current, recommended):
-        return SegmentEstimate(
-            start_min=start_min,
-            label=f"{start_min // 60:02d}:00",
-            parameter="isf",
-            current=current,
-            estimate=Estimate(recommended, None, None, 5, 0.8, "measured"),
-            recommended=recommended,
-            annotation="",
-        )
-
     def test_isf_boundary_before_first_basal_boundary_does_not_crash(self):
         # Flat basal across all 48 slots starting at 0, but an ISF boundary at
         # minute 0 and another at minute 30.  The union adds minute 30; the basal
@@ -431,7 +290,7 @@ class ConsolidateProfileNoneBasalTest(unittest.TestCase):
         # must still be computed without a crash.
         prof = consolidate_profile(
             _slots_flat(0.6, n=48),
-            isf=[self._seg_est(0, 50.0, 50.0), self._seg_est(30, 50.0, 45.0)],
+            programmed_isf=[(0, 50.0), (30, 45.0)],
         )
         # 0.6 U/h over 24h = 14.4 U
         self.assertAlmostEqual(prof.total_daily_basal, 0.6 * 24, delta=0.1)
@@ -440,7 +299,7 @@ class ConsolidateProfileNoneBasalTest(unittest.TestCase):
         # Empty slot list → empty profile → 0 total.
         prof = consolidate_profile(
             [],
-            isf=[self._seg_est(0, 50.0, 50.0)],
+            programmed_isf=[(0, 50.0)],
         )
         self.assertEqual(prof.total_daily_basal, 0.0)
 

@@ -5,13 +5,13 @@ HTTP API render. It is where the foundation and the analyzers meet:
 
 1. load every stream and the latest settings snapshot from the store;
 2. compute basal and I:C setting epochs (basal from the dense feed; I:C from the
-   snapshot diff). Basal cuts each slot's window to its own basal setting epoch; ISF/I:C are
-   setting-independent physiology measurements and measure over the **full**
+   snapshot diff). Basal cuts each slot's window to its own basal setting epoch; I:C is a
+   setting-independent physiology measurement and measures over the **full**
    requested window (ADR 0039 measure/compare split) — the I:C setting epoch still drives
    the settling detector and the "verified only since" caveat, and the
    recommendation still compares to the current programmed value. The correction
-   factor has no setting epoch, settling gate or advice (ADR 564);
-3. run the four analyzers over their windows;
+   factor has no estimate, setting epoch, settling gate or advice (ADR 564);
+3. run the analyzers over their windows;
 4. assemble span, setting-epoch info, data-quality notes, and the estimates
    into a versioned :class:`~ciq_autotune.result.AnalysisResult`.
 
@@ -24,10 +24,9 @@ Window default (``window_days=30``)
 * Too short (< ~21 d): overnight slots often stay below n≥5 clean days,
   producing wide CIs and no directional recommendation for exactly the slots
   where CIQ is most active.
-* 30 d: fills overnight to n≥5 on typical Control-IQ data (verified: ~28/30
-  nights have clean fasting steps) while tracking current physiology more
-  closely than a 60-day window. 60 days buries the current month when ISF is
-  drifting.
+* 30 d: fills overnight to n≥5 on typical Control-IQ data while tracking
+  current physiology more closely than a 60-day window. 60 days buries the
+  current month when physiology is drifting.
 * Too long (> ~75 d for the reference dataset): pools pre- and post-edit delivery
   for slots whose programmed rate changed mid-window. Per-slot basal setting-epoch
   measurement cuts (``slot_cuts`` in ``analyze()``) mitigate this, but a raw long
@@ -43,7 +42,6 @@ from typing import List, Optional
 from .analyzers.basal import analyze_basal, consolidate_profile
 from .analyzers.ic import BLOCK_WINDOW_DAYS, analyze_ic
 from .analyzers.ic_regression import analyze_ic_blocks_fuzzy
-from .analyzers.isf import analyze_isf
 from .epochs import (
     Epoch,
     basal_epoch,
@@ -54,7 +52,6 @@ from .epochs import (
 )
 from .analyzers.ic import IcConfig
 from .analyzers.scenario_config import ScenarioConfig
-from .analyzers.scenario.preempted import preempted_low_entries
 from .analyzers.tuning_priority import (
     build_tuning_levers,
     ic_headline_block,
@@ -64,11 +61,7 @@ from .analyzers.tuning_priority import (
 from .harm import HarmConfig, find_printed_lows
 from .false_low import drop_readings, false_low_spans
 from .model import ModelConfig
-from .rescue_evidence import (
-    eligible_carb_entries,
-    first_observation,
-    observe,
-)
+from .rescue_evidence import eligible_carb_entries
 from .result import (
     SCHEMA_VERSION,
     AnalysisResult,
@@ -86,7 +79,6 @@ from .store import Store, wall_clock_now
 # Boluses delivered before a basal window still leave decaying IOB inside it, so
 # the basal clean-window filter must see a day of lead-in (cf. backtest).
 _BOLUS_LEADIN = timedelta(days=1)
-_ISF_DECISION_INTERVAL = timedelta(days=7)
 
 _FMT = "%Y-%m-%d %H:%M:%S"
 
@@ -120,22 +112,21 @@ def analyze(
     harm_config: Optional[HarmConfig] = HarmConfig(),
     prompt_responses: Optional[List[dict]] = None,
     ic_estimator=analyze_ic_blocks_fuzzy,
-    isf_fasting_evidence_sink=None,
 ) -> AnalysisResult:
     """Run the whole model over ``store`` and return one AnalysisResult.
 
     ``carb_entries`` (#125) is the unbolused-carb log — a manual **exclusion**
-    signal (never a modeling input) that de-biases the analyzers (#127): it drops
-    fasting-ISF steps, isolates I:C meals, and bars basal clean minutes around each
-    entry. Threaded (windowed) to all three analyzers below. Callers pass
+    signal (never a modeling input) that de-biases the analyzers (#127): it isolates
+    I:C meals and bars basal clean minutes around each entry. Threaded (windowed) to
+    both analyzers below. Callers pass
     ``store.carb_entries()`` (explicitly, unlike the other streams this facade
     reads from ``store`` itself).
 
     ``ignore_setting_changes`` is a **preview** switch: it nulls detected
     setting-epoch metadata as if the pump had never been re-programmed. It alters
-    no data and defaults off. Since ADR 0039 the ISF/I:C *measurements* are
-    full-window by default (they're setting-independent physiology), so this
-    switch is a no-op for those measurements. It now only governs **basal**
+    no data and defaults off. Since ADR 0039 the I:C *measurement* is
+    full-window by default (it is setting-independent physiology), so this
+    switch is a no-op for that measurement. It now only governs **basal**
     measurement: it drops the per-slot basal setting-epoch measurement cuts so the basal
     suggestion pools delivery from before and after a real profile edit. Read
     that as "average maintenance need over the window", not a live recommendation.
@@ -151,23 +142,22 @@ def analyze(
     Defaults off (see #56 for the original hard cut).
 
     ``harm_config`` (ADR 0038) enables the harm layer: printed lows are attributed
-    to basal / ISF / I:C, gate a move toward more insulin, and on recurrence nudge
-    the owning setting one capped step toward less insulin. Enabled by default
+    to basal / correction / I:C, gate a move toward more insulin, and on recurrence
+    nudge the owning basal or carb-ratio setting one capped step toward less insulin
+    (a correction-attributed low keeps out of the carb-ratio arm and moves nothing,
+    ADR 564 rule 5). Enabled by default
     (:class:`~ciq_autotune.harm.HarmConfig`); pass ``None`` to disable.
 
     ``prompt_responses`` (#381) are ``store.prompt_responses()`` rows; the
     ``false-low`` answers among them each invalidate a whole flagged excursion (a
     sensor-artifact / compression low). Their spans (:func:`false_low_spans`) drop the
-    in-span CGM readings *before* the harm layer's printed-low detection (basal + ISF
-    arms) and the fasting-ISF regression + rest-window ever see them — reading
-    invalidation, not the carb *mask*. ``None`` (the default) means no false-low
+    in-span CGM readings *before* the harm layer's printed-low detection ever sees
+    them — reading invalidation, not the carb *mask*. ``None`` (the default) means no false-low
     suppression, so the CLI/back-compat callers are unaffected.
 
-    Both manual streams are read **observation-aware** (#467): the rescue evidence a
-    window may use is only what had been recorded by that window's endpoint, and how
-    much of the window the log was recording at all rides on the ISF row and the data
-    quality notes. Callers pass the *full* streams (as they already do) so coverage can
-    be measured from the log's first-ever entry.
+    The carb log is read **observation-aware** (#467): the rescue evidence a window
+    may use is only what had been recorded by that window's endpoint. Callers pass
+    the *full* streams (as they already do).
     """
     basal = store.basal_events()
     cgm = store.cgm_readings()
@@ -178,19 +168,14 @@ def analyze(
     # feed. Ignored downstream until slice 3, so an empty default is harmless.
     carb_entries = carb_entries or []
     prompt_rows = prompt_responses or []
-    # When the rescue log first recorded anything (#467). Resolved once here off the
-    # full streams, then handed to each window's coverage read below: a window reaching
-    # back before this instant has no rescue rows because the log did not exist yet, so
-    # its quiet is *unknown* and cannot license a stronger correction. The endpoint
-    # eligibility boundary applies to the rescue-carb exclusion + attribution stream too
-    # (`current_carbs` below, and every replayed endpoint): a carb recorded after a read
-    # closed did not exist when it closed, so it may not retroactively mask that read's
-    # fasting/basal minutes or shift its attribution. The one retroactive exception is
-    # `false-low` reading invalidation (`fl_spans` below) — a CGM correction, not rescue
-    # evidence, so by adr-381 it applies to every read of the excursion however late.
-    rescue_from = first_observation(carb_entries, prompt_rows)
-    # False-low excursion spans (#381): the CGM the harm layer and the fasting-ISF
-    # path read has these readings removed entirely (reading invalidation). Computed
+    # The endpoint eligibility boundary (#467) applies to the rescue-carb exclusion +
+    # attribution stream (`current_carbs` below): a carb recorded after a read closed
+    # did not exist when it closed, so it may not retroactively mask that read's basal
+    # minutes or shift its attribution. The one retroactive exception is `false-low`
+    # reading invalidation (`fl_spans` below) — a CGM correction, not rescue evidence,
+    # so by adr-381 it applies to every read of the excursion however late.
+    # False-low excursion spans (#381): the CGM the harm layer reads has these
+    # readings removed entirely (reading invalidation). Computed
     # once here off the full CGM so the anchor's whole excursion resolves, then applied
     # at each read boundary below. The Day chart still draws them (greyed) — that
     # display path (/api/timeline) keeps the readings and only surfaces the span.
@@ -207,9 +192,8 @@ def analyze(
     now = now or span_end or datetime.now()
 
     # Basal and I:C setting epochs plus measurement windows. target_bg is parsed and diffed by
-    # F1, but has no analyzer in v0.1: the setpoint is CIQ's built-in 110, reached
-    # via the ISF lever (ROADMAP §3), not a tuned output — so no target_bg setting epoch is
-    # surfaced.
+    # F1, but has no analyzer in v0.1: the setpoint is CIQ's built-in 110, not a tuned
+    # output — so no target_bg setting epoch is surfaced.
     b_ep = basal_epoch(basal, config.slot_minutes)
     # The I:C setting epoch reconciles the forward-only snapshot log with the retroactive
     # dose-stamped series the pump writes on every bolus (#159): a change either
@@ -225,16 +209,15 @@ def analyze(
                             dose_setting_epoch(bolus, "carb_ratio"), window_start)
     if ignore_setting_changes:
         # Preview mode: forget every setting-epoch boundary. No data is touched. Since
-        # ISF/I:C measurements are already full-window below, this now affects
+        # the I:C measurement is already full-window below, this now affects
         # basal's slot cuts and the I:C setting-epoch caveats/settling signals.
         b_ep = Epoch(b_ep.parameter, None, None)
         ic_ep = Epoch(ic_ep.parameter, None, None)
-    # ADR 0039 — measure/compare split. ISF and I:C are setting-independent
-    # *physiology* measurements: a setting edit doesn't change the body's
-    # response, only which number we compare against. So they measure over the
-    # full requested window and are NEVER clamped to an ISF/I:C setting epoch
-    # (clamping starves the estimate right after an edit — the degenerate
-    # "ISF 58 · n=77 · CI[58,58]" that flipped the advice direction, #288).
+    # ADR 0039 — measure/compare split. I:C is a setting-independent
+    # *physiology* measurement: a setting edit doesn't change the body's
+    # response, only which number we compare against. So it measures over the
+    # full requested window and is NEVER clamped to an I:C setting epoch
+    # (clamping starves the estimate right after an edit, #288).
     # `ic_ep` is still computed above: the I:C setting epoch drives
     # the settling detector (a fresh edit still gets
     # flagged when its analyzer gate is unmet) and the "verified only since"
@@ -242,7 +225,6 @@ def analyze(
     # value (`settings.active_schedule` below). Only the measurement window is
     # decoupled from the setting-edit boundary. Basal keeps its per-slot basal setting-epoch
     # cuts (for basal the setting *is* the delivered quantity — ADR 0035 / #85).
-    isf_start, isf_end = window_start, now
     ic_start, ic_end = window_start, now
 
     # Basal runs over the full requested window; each slot is then cut to its own
@@ -269,8 +251,8 @@ def analyze(
     # Today's endpoint is a replay boundary too (#467): a carb whose physiological time
     # lands inside the current window but whose `created_at` is after `now` was not yet
     # recorded when this read closed, so it must not retroactively change basal clean
-    # minutes, the fasting-ISF steps, or I:C meal exclusion. Filter the whole current
-    # carb stream at `now` ONCE and feed that single eligible stream to all three, so no
+    # minutes or I:C meal exclusion. Filter the whole current
+    # carb stream at `now` ONCE and feed that single eligible stream to both, so no
     # analyzer reads an entry the endpoint could not have seen. (With a live `now` this is
     # a no-op — every recorded row is already eligible — it only bites a past-dated replay.)
     current_carbs = eligible_carb_entries(carb_entries, now)
@@ -286,102 +268,6 @@ def analyze(
         carb_entries=_between(current_carbs, b_start, now),
         harm_config=harm_config,
         harm_lows=harm_lows,
-    )
-    # Correction-attributed rescue-log days (#413 §4): manual carb entries the
-    # pre-empted-low gate buckets to ISF — the masked-rescue channel that catches a
-    # future correction-masker even when the CGM never printed the low. A days count
-    # (never a rate/grams surcharge — nothing to price yet, ADR 0012 under-logging).
-    isf_cgm = drop_readings(_between(cgm, isf_start, isf_end), fl_spans)
-    # Two predicates, not one (#467): the usual event-time slice says the rescue
-    # happened in this window, and the eligibility filter (already baked into
-    # `current_carbs`, whose endpoint is this same `now`) says it was recorded by the
-    # window's endpoint. Applied in the caller so the pre-empted-low gate stays a pure,
-    # dependency-blind event function (ADR 0012); once eligible, its own `t` still drives
-    # attribution and the per-day tally.
-    isf_rescue_days = len({
-        e.entry.t.date()
-        for e in preempted_low_entries(
-            _between(current_carbs, isf_start, isf_end),
-            _between(bolus, isf_start, isf_end),
-            isf_cgm,
-        )
-        if e.bucket == "isf"
-    })
-    isf_rescue_observation = observe(
-        carb_entries, prompt_rows,
-        start=isf_start, end=isf_end, observed_from=rescue_from,
-    )
-    # A stronger-ISF recommendation needs two actual weekly decision windows, not two
-    # halves of today's data. Analyze the preceding endpoint through the same read-only
-    # path, then pass only its independently qualifying signal into today's decision.
-    prior_isf_end = isf_end - _ISF_DECISION_INTERVAL
-    prior_isf_start = isf_start - _ISF_DECISION_INTERVAL
-    prior_cgm = drop_readings(_between(cgm, prior_isf_start, prior_isf_end), fl_spans)
-    prior_harm_lows = None
-    if harm_config is not None:
-        prior_harm_lows = [
-            low for low in find_printed_lows(
-                drop_readings(_between(cgm, prior_isf_start - _BOLUS_LEADIN,
-                                       prior_isf_end), fl_spans),
-                _between(bolus, prior_isf_start - _BOLUS_LEADIN, prior_isf_end),
-                harm_config,
-            )
-            if prior_isf_start <= low.t <= prior_isf_end
-        ]
-    # The prior endpoint is a *second* replay boundary and needs the same eligibility
-    # filter — at its own, earlier endpoint. Fixing only today's path would leave the
-    # strengthen gate leaky, since a rescue logged after that endpoint would still count
-    # itself out of a week-old window it was never part of.
-    prior_rescue_days = len({
-        e.entry.t.date()
-        for e in preempted_low_entries(
-            eligible_carb_entries(
-                _between(carb_entries, prior_isf_start, prior_isf_end), prior_isf_end),
-            _between(bolus, prior_isf_start, prior_isf_end),
-            prior_cgm,
-        )
-        if e.bucket == "isf"
-    })
-    prior_rescue_observation = observe(
-        carb_entries, prompt_rows,
-        start=prior_isf_start, end=prior_isf_end, observed_from=rescue_from,
-    )
-    prior_isf = analyze_isf(
-        _between(bolus, prior_isf_start, prior_isf_end),
-        _between(basal, prior_isf_start, prior_isf_end),
-        prior_cgm,
-        settings.active_schedule(snaps, "isf"),
-        # The eligibility boundary belongs on the stream the analyzer itself reads, not
-        # only on `prior_rescue_days` above (#467): the fasting-exclusion mask and the
-        # prior strengthen signal are computed inside `analyze_isf` off this stream, so a
-        # rescue backfilled after this closed endpoint could still shift a fasting step
-        # or the prior signal if it leaked in by event time alone.
-        carb_entries=eligible_carb_entries(
-            _between(carb_entries, prior_isf_start, prior_isf_end), prior_isf_end),
-        harm_config=harm_config,
-        harm_lows=prior_harm_lows,
-        window_days=window_days,
-        correction_rescue_days=prior_rescue_days,
-        rescue_observation=prior_rescue_observation,
-    )
-    prior_strengthen_signal = bool(
-        prior_isf and prior_isf[0].evidence.get("strengthen_signal"))
-    isf_rows = analyze_isf(
-        _between(bolus, isf_start, isf_end),
-        _between(basal, isf_start, isf_end),
-        # False-low excursions drop from the fasting-ISF regression + rest-window: the
-        # readings are gone, so no fasting step (nor rest-window coverage) can form
-        # across the flagged drop→rejoin — including the fake rebound above 70 (#381).
-        isf_cgm,
-        settings.active_schedule(snaps, "isf"),
-        carb_entries=_between(current_carbs, isf_start, isf_end),
-        harm_config=harm_config,
-        harm_lows=harm_lows,
-        window_days=window_days,
-        correction_rescue_days=isf_rescue_days,
-        prior_strengthen_signal=prior_strengthen_signal,
-        rescue_observation=isf_rescue_observation,
-        fasting_evidence_sink=isf_fasting_evidence_sink,
     )
     ic_rows, ic_findings = analyze_ic(
         # At least one Accounting-DIA of bolus lead-in certifies whether each in-window
@@ -412,9 +298,9 @@ def analyze(
     # compute, not I/O, because the streams above are already loaded unwindowed.
     #
     # EVERYTHING the block decision reads follows the same 90-day span, including its
-    # own harm lows. `harm_lows` above stays exactly as it was — the basal (:284) and
-    # ISF (:375) arms must see the identical request-windowed list they saw before this
-    # change, and a test pins their rows byte-identical across the split.
+    # own harm lows. `harm_lows` above stays exactly as it was — the basal arm must see
+    # the identical request-windowed list it saw before this change, and a test pins
+    # its rows byte-identical across the split.
     block_start = now - timedelta(days=BLOCK_WINDOW_DAYS)
     ic_harm_lows = None
     retained_ic_harm_lows = None
@@ -518,12 +404,11 @@ def analyze(
         # #98: build the unified four-parameter ≤16-segment pump profile once, here.
         # Boundaries are the union of basal/ISF/I:C/target change points; unchanged
         # params carry forward from the current programmed profile via the #105
-        # effective-settings seam (settings.active_schedule). target has no analyzer,
-        # so it is pure carry-forward. render.py/report.py read this off the result;
+        # effective-settings seam (settings.active_schedule). ISF and target have no
+        # analyzer, so they are pure carry-forward. render.py/report.py read this off the result;
         # their derive-on-read fallback (basal-only) covers older stored JSON.
         consolidated_basal=consolidate_profile(
             basal_rows,
-            isf=isf_rows,
             # #518: the deliverable carb-ratio schedule is written by the HEADLINE block
             # and no other — machine-initiated advice is one change at a time. A user
             # who wants a second block programmed stages it through the Plan path.
@@ -532,7 +417,6 @@ def analyze(
             programmed_ic=settings.active_schedule(snaps, "carb_ratio"),
             programmed_target=settings.active_schedule(snaps, "target_bg"),
         ),
-        isf=isf_rows,
         ic=ic_rows,
         behavioral=findings,
         settling=settling,
@@ -610,11 +494,11 @@ def _quality_notes(
             if p.get("note"):
                 diverge_notes.append(p["note"])
     if not snaps:
-        notes.append("No settings snapshot yet — ISF/I:C compared to nothing until "
-                     "the first fetch records one. Programmed values fill in over time.")
+        notes.append("No settings snapshot yet — the carb ratio is compared to nothing "
+                     "until the first fetch records one. Programmed values fill in over time.")
     for e in epochs:
-        # ADR 0039: only basal setting changes cut basal measurement. ISF/I:C measure
-        # over the full window (setting-independent physiology), so a recent ISF/I:C
+        # ADR 0039: only basal setting changes cut basal measurement. I:C measures
+        # over the full window (setting-independent physiology), so a recent I:C
         # setting change emits NO "window cut" note — the settling detector surfaces a
         # still-thin fresh edit, and the recommendation always compares to the current
         # programmed value. The "verified only since" caveat below still applies.

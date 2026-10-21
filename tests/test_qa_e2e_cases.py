@@ -5,7 +5,6 @@ import tempfile
 import unittest
 from dataclasses import replace
 from datetime import date, datetime, timedelta
-from unittest.mock import patch
 
 from ciq_autotune.store import Store
 from ciq_autotune.guidance import build_guidance
@@ -16,7 +15,7 @@ from ciq_autotune.window_membership import WindowQuery
 from scripts.qa_e2e_cases import (
     BASAL_SOURCE_SPAN_DAYS,
     IC_SOURCE_SPAN_DAYS,
-    ISF_SOURCE_SPAN_DAYS,
+    OVERNIGHT_CORRECTION_SPAN_DAYS,
     QA_CASES,
     ExpectedAnalyzerRow,
     ExpectedAnalyzerRows,
@@ -40,7 +39,6 @@ EXPECTED_CASE_NAMES = (
     "basal-recurring-low-lower", "basal-recurring-low-no-clean-median",
     "basal-recurring-low-gate", "basal-recurring-low-within-floor",
     "basal-recurring-low-spread", "basal-range-hold",
-    "isf-strengthen", "isf-direction-only-weaken", "isf-held", "isf-range-hold",
     "ic-collecting", "ic-raise", "ic-lower", "ic-capped-raise",
     "ic-capped-lower", "ic-held", "ic-quiet-seven-run",
     "ic-history-register", "ic-block-evidence",
@@ -58,7 +56,6 @@ EXPECTED_CASE_NAMES = (
     "behavioral-over-treated-rebound-ownership",
     "behavioral-correction-on-iob",
     "behavioral-missed-meal",
-    "behavioral-carb-log-fasting-exclusion",
     "behavioral-preempted-detector",
     "pattern-near-tie", "pattern-collapse", "pattern-correction-fold",
     "pattern-correction-collapse",
@@ -225,31 +222,12 @@ class QaE2ECasesTest(unittest.TestCase):
                 ),
             ), execution)
 
-    def test_carb_log_fasting_exclusion_changes_isf_support(self):
-        case = next(
-            case for case in QA_CASES
-            if case.name == "behavioral-carb-log-fasting-exclusion"
-        )
-        with tempfile.NamedTemporaryFile(suffix=".sqlite") as database:
-            with Store.open(database.name) as store:
-                with patch.object(
-                    Store, "upsert_carb_entry", autospec=True,
-                ) as upsert_carb_entry:
-                    materialize_case(store, case)
-                upsert_carb_entry.assert_called_once()
-            with Store.open_readonly(database.name) as store:
-                execution = execute_case(store, case)
-        fasting = next(
-            row for row in execution.analysis["isf"] if row["label"] == "Fasting"
-        )
-        self.assertNotEqual(fasting["evidence"]["n_steps"], 102)
-
     def test_catalog_names_every_declared_coverage_case(self):
         self.assertEqual(tuple(case.name for case in QA_CASES), EXPECTED_CASE_NAMES)
 
     def test_representative_lever_cases_declare_their_family_spans(self):
         expected = {
-            "isf-strengthen": ("isf", ISF_SOURCE_SPAN_DAYS),
+            "pattern-near-tie": (None, OVERNIGHT_CORRECTION_SPAN_DAYS),
             "ic-raise": ("ic", IC_SOURCE_SPAN_DAYS),
         }
         observed = {
@@ -342,21 +320,6 @@ class QaE2ECasesTest(unittest.TestCase):
                 with self.assertRaises(AssertionError):
                     assert_expectation(replace(case, expectation=expectation), execution)
 
-    def test_direction_only_isf_is_served_no_row(self):
-        # ADR 564: the analyzer still reads a weaken, but the findings serve no
-        # correction-factor row for it.
-        case = next(
-            case for case in QA_CASES
-            if case.name == "isf-direction-only-weaken"
-        )
-        execution = _execution(case)
-        analyzer_row = execution.analysis["isf"][0]
-        self.assertEqual(analyzer_row["evidence"]["direction"], "weaken")
-        self.assertIsNone(analyzer_row["recommended"])
-        self.assertIs(analyzer_row["asserts_move"], False)
-        self.assertNotIn("isf", {row.get("parameter")
-                                 for row in execution.findings["whole_day"]["rows"]})
-
     def test_capped_and_uncapped_ic_recommendations_are_distinct(self):
         expected = {
             "ic-raise": 11.0,
@@ -418,12 +381,6 @@ def _case_test(case):
             self.assertEqual(len(rows), 48)
             self.assertTrue(rows.overrides)
             self.assertEqual(case.source_span_days, BASAL_SOURCE_SPAN_DAYS)
-        elif case.target_family == "isf":
-            rows = case.expectation.analyzer_rows
-            self.assertIsInstance(rows, ExpectedAnalyzerRows)
-            self.assertIsInstance(rows.default, ExpectedAnalyzerRow)
-            self.assertEqual(len(rows), 1)
-            self.assertEqual(case.source_span_days, ISF_SOURCE_SPAN_DAYS)
         elif case.target_family == "ic":
             rows = case.expectation.analyzer_rows
             self.assertIsInstance(rows, ExpectedAnalyzerRows)

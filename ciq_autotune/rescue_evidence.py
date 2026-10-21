@@ -22,8 +22,7 @@ ask, and nothing else:
 2. **Coverage** — :func:`observe` reports how much of a window the log was even
    watching (:attr:`RescueObservation.observed_days`, counted from the first-ever
    observation) plus the four rescue-evidence states. Pre-instrumentation time is
-   **unknown**, so it can neither be read as zero rescues nor satisfy the "silence"
-   the ISF strengthen gate requires.
+   **unknown**, so it can never be read as zero rescues.
 
 The hard lines (ADR 0012 / adr-166) hold here: coverage is an *observed-window day
 count*, never a rate over rescues and never a per-low "covered ✓" ledger. Pure

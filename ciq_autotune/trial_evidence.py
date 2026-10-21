@@ -328,11 +328,10 @@ def comparison_evidence(*, parameter, slot, block, changed_at, before, after,
 
     Inputs retain detection context; every returned reading and plotted point is
     clipped to the half-open period. Meal windows form a union, never a weighted
-    concatenation. Rest evidence keeps its detected-window/fasting-step identity.
+    concatenation. Rest evidence keeps its detected-window identity.
     ``isf`` is the :class:`~ciq_autotune.settings.IsfSource` a carb-ratio
     comparison converts its meal runs with.
     """
-    from .analyzers.isf import IsfConfig, fasting_steps
     from .event_comparison import project_cohort
     from .rest_window import detect_rest_windows
 
@@ -345,10 +344,9 @@ def comparison_evidence(*, parameter, slot, block, changed_at, before, after,
              and (meal_block is None or _in_block(meal.t, meal_block))]
     intervals = []
     occurrences = []
-    steps = []
     windows = []
-    # The clock span a clock-aligned trace reads: a basal or ISF Trial's block or
-    # slot, else the whole day.
+    # The clock span a clock-aligned trace reads: a basal Trial's block or slot,
+    # else the whole day.
     clock_span = (0, 1440)
     if parameter == "carb_ratio":
         for meal in meals:
@@ -362,7 +360,7 @@ def comparison_evidence(*, parameter, slot, block, changed_at, before, after,
                     if -60 <= (r.t - meal.t).total_seconds() / 60 <= 300
                 ]},
             })
-    elif parameter in ("basal_rate", "isf"):
+    elif parameter == "basal_rate":
         rest = [w for w in detect_rest_windows(cgm, bolus) if start <= w.start < end]
         # A basal block Trial reads its whole captured block (#506), wrapping
         # past midnight when its end precedes its start; a slotted Trial with no
@@ -388,15 +386,6 @@ def comparison_evidence(*, parameter, slot, block, changed_at, before, after,
                     if left < right:
                         intervals.append((left, right))
                     day += timedelta(days=1)
-        if parameter == "isf":
-            next_times = {a.t: b.t for a, b in zip(cgm, cgm[1:])}
-            for step in fasting_steps(bolus, basal, cgm, IsfConfig(), rest, carb_entries=carbs):
-                finish = next_times.get(step.t)
-                if finish is not None and finish < end and any(
-                    lo <= step.t and finish < hi for lo, hi in intervals
-                ):
-                    steps.append({"t": str(step.t), "window_id": f"rest:{step.cluster}",
-                                  "insulin_acted": step.insulin_acted, "dbg": step.dbg})
     else:
         if start < end:
             intervals.append((start, end))
@@ -413,7 +402,7 @@ def comparison_evidence(*, parameter, slot, block, changed_at, before, after,
     trace = _meal_trace(meals, owned_cgm) if parameter == "carb_ratio" else _clock_trace(readings, clock_span)
     readiness =_comparison_readiness(
         "focus" if focus else parameter, slot, block, start, end, cgm, bolus, basal, carbs, snapshots,
-        pump_events, isf, captured_members, steps, coverage,
+        pump_events, isf, captured_members, coverage,
     )
     return {
         "readiness": readiness, "coverage": coverage,
@@ -422,7 +411,7 @@ def comparison_evidence(*, parameter, slot, block, changed_at, before, after,
                  "projection": project_cohort("period", occurrences, (-60, 300))
                  if parameter == "carb_ratio" else None,
                  "clock": _clock_envelope(readings, (start, end)),
-                 "rest_windows": windows, "fasting_steps": steps,
+                 "rest_windows": windows,
                  "trace": trace,
                  **({"basal": _basal_activity(basal, merged)} if parameter == "basal_rate" else {}),
                  "changes": _constituent_changes(
@@ -545,7 +534,7 @@ def comparison_coverage(readings, intervals, start, end):
 
 
 def _comparison_readiness(parameter, slot, block, start, end, cgm, bolus, basal, carbs,
-                          snapshots, pump_events, isf, captured_members, steps, coverage):
+                          snapshots, pump_events, isf, captured_members, coverage):
     from .model import ModelConfig, clean_samples
     from .analyzers.ic import _in_block as in_block
     from .analyzers.ic_regression import analyze_ic_blocks_fuzzy
@@ -605,12 +594,6 @@ def _comparison_readiness(parameter, slot, block, start, end, cgm, bolus, basal,
                           regime=selected.regime, captured_block=list(block),
                           captured_members=list(selected.member_start_mins))
             result["criterion_met"] = result["observed"] >= 8
-    elif parameter == "isf":
-        ids = {step["window_id"] for step in steps}
-        result.update(unit="qualifying fasting Rest windows", required=30, observed=len(ids),
-                      step_count=len(steps), window_ids=sorted(ids),
-                      contributing_dates=sorted({datetime.fromisoformat(s["t"]).date().isoformat() for s in steps}),
-                      criterion_met=len(ids)>=30)
     else:
         dates = [r["date"] for r in coverage if r["coverage"] >= CONSENSUS_MIN_COVERAGE]
         result.update(unit="coverage-qualified informative dates", required=30, required_elapsed_days=30,

@@ -13,8 +13,6 @@ from ciq_autotune.uncertainty import (
     Estimate,
     estimate_mean,
     estimate_median,
-    estimate_slope,
-    estimate_slope_clustered,
     finding_severity,
     wilson,
 )
@@ -63,96 +61,6 @@ class EstimateMeanTest(unittest.TestCase):
         e = estimate_mean([28, 30, 32, 31, 29, 33, 27])
         self.assertLessEqual(e.lo, e.value)
         self.assertLessEqual(e.value, e.hi)
-
-
-class EstimateSlopeClusteredTest(unittest.TestCase):
-    """Cluster (night-level) bootstrap for the fasting-ISF slope (#177).
-
-    Steps from the same night move together, so resampling individual steps as if
-    independent understates uncertainty. The clustered estimator keeps the plain
-    OLS point estimate over every step but resamples whole clusters, so the band
-    reflects the ~N nights of real evidence, not the thousands of 5-min steps.
-    """
-
-    @staticmethod
-    def _clustered_pairs():
-        """Five clusters, each an internally-tight line with a very different
-        slope (10..50). Pooled together the steps look like abundant independent
-        evidence; honestly there are only five nights, and which nights land in a
-        resample swings the slope a lot."""
-        pairs, cluster_ids = [], []
-        for c, slope in enumerate((10.0, 20.0, 30.0, 40.0, 50.0)):
-            for k in range(40):
-                x = 1.0 + 0.05 * k
-                pairs.append((x, slope * x))
-                cluster_ids.append(c)
-        return pairs, cluster_ids
-
-    def test_point_estimate_is_the_plain_ols_slope_over_all_steps(self):
-        pairs, cluster_ids = self._clustered_pairs()
-        clustered = estimate_slope_clustered(pairs, cluster_ids)
-        plain = estimate_slope(pairs)
-        self.assertEqual(clustered.value, plain.value)
-        self.assertEqual(clustered.n, len(pairs))
-        self.assertEqual(clustered.method, "bootstrap-slope-clustered")
-
-    def test_cluster_band_is_wider_than_the_step_band(self):
-        pairs, cluster_ids = self._clustered_pairs()
-        step = estimate_slope(pairs)
-        clustered = estimate_slope_clustered(pairs, cluster_ids)
-        self.assertGreater(clustered.hi - clustered.lo, step.hi - step.lo)
-
-    def test_ci_brackets_the_point_estimate(self):
-        pairs, cluster_ids = self._clustered_pairs()
-        e = estimate_slope_clustered(pairs, cluster_ids)
-        self.assertLessEqual(e.lo, e.value)
-        self.assertLessEqual(e.value, e.hi)
-
-    def test_is_deterministic(self):
-        pairs, cluster_ids = self._clustered_pairs()
-        self.assertEqual(
-            estimate_slope_clustered(pairs, cluster_ids).to_dict(),
-            estimate_slope_clustered(pairs, cluster_ids).to_dict(),
-        )
-
-    def test_single_cluster_collapses_and_is_flagged_wide(self):
-        # One night gives no between-cluster spread to resample, so the band
-        # collapses to the point — honest (n<3 keeps it flagged wide) rather than
-        # a fabricated interval, mirroring the single-sample bootstrap.
-        e = estimate_slope_clustered([(1.0, 40.0), (2.0, 80.0)], ["night-1", "night-1"])
-        self.assertAlmostEqual(e.value, 40.0)
-        self.assertEqual(e.lo, e.hi)
-        self.assertTrue(e.wide)
-
-    def test_too_few_points_gives_no_estimate(self):
-        e = estimate_slope_clustered([(1.0, 2.0)], ["a"])
-        self.assertIsNone(e.value)
-        self.assertEqual(e.n, 1)
-        self.assertEqual(e.n_clusters, 1)
-        self.assertEqual(e.to_dict()["n_clusters"], 1)
-        self.assertEqual(e.method, "none")
-
-    def test_zero_variance_keeps_cluster_population_without_a_fit(self):
-        e = estimate_slope_clustered([(0.0, 2.0), (0.0, 3.0)], ["a", "b"])
-        self.assertIsNone(e.value)
-        self.assertEqual(e.n_clusters, 2)
-        self.assertEqual(e.to_dict()["n_clusters"], 2)
-
-    def test_records_the_number_of_distinct_clusters(self):
-        pairs, cluster_ids = self._clustered_pairs()  # five nights
-        self.assertEqual(estimate_slope_clustered(pairs, cluster_ids).n_clusters, 5)
-
-    def test_single_cluster_with_enough_steps_is_still_wide(self):
-        # One night, three pooled steps: n≥3 and the (degenerate) band collapses to
-        # lo==hi, so the step-count and width rules both read "confident". The
-        # cluster floor is what must flag it wide — one night is not independent
-        # evidence, regardless of how many 5-min steps it holds (#185).
-        e = estimate_slope_clustered([(1.0, 40.0), (2.0, 80.0), (3.0, 120.0)],
-                                     ["night-1", "night-1", "night-1"])
-        self.assertEqual(e.n, 3)
-        self.assertEqual(e.n_clusters, 1)
-        self.assertEqual(e.lo, e.hi)  # band collapsed to a point
-        self.assertTrue(e.wide)       # ...but read as maximally uncertain, not confident
 
 
 class EstimateSerializationTest(unittest.TestCase):

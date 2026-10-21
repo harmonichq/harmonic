@@ -632,18 +632,16 @@ class WindowSplitTest(unittest.TestCase):
         self.assertGreater(block_meals, seg_meals)
         self.assertLessEqual(block_meals, BLOCK_WINDOW_DAYS)
 
-    def test_a_low_only_the_block_window_can_see_never_reaches_basal_or_isf(self):
+    def test_a_low_only_the_block_window_can_see_never_reaches_basal(self):
         # The real hazard of the second harm list: a 60-day-old low is inside the
         # blocks' 90-day span and outside the 30-day request window. It must change
-        # the I:C side and leave basal/ISF byte-identical — if the two arms shared a
+        # the I:C side and leave basal byte-identical — if the two arms shared a
         # list, this low would start gating a 30-day basal read.
         quiet = self._result(window_days=30)
         with_low = self._result(window_days=30, old_low=True)
 
         self.assertEqual([r.to_dict() for r in quiet.basal],
                          [r.to_dict() for r in with_low.basal])
-        self.assertEqual([r.to_dict() for r in quiet.isf],
-                         [r.to_dict() for r in with_low.isf])
 
         # ...and the low really is visible to the block side, or this proves nothing.
         def ic_harm_days(res):
@@ -775,7 +773,7 @@ class DeriveOnReadFallbackTest(unittest.TestCase):
             schema_version=8, generated_at="2026-06-01 00:00:00", window_days=30,
             span=Span(None, None), epochs=[],
             data_quality=DataQuality(counts={}, notes=[]),
-            basal=slots, isf=[], ic=[], behavioral=[],
+            basal=slots, ic=[], behavioral=[],
             consolidated_basal=None, ic_blocks=blocks,
         )
         return result, headline, report_prof, render_prof

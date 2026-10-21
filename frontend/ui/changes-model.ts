@@ -382,7 +382,7 @@ export function change(name: ChangesStore): ChangeData {
 }
 
 /** A Setting a Done left waiting for the pump (#518), drawn as a Previous row
- *  is: its name, its block (none for ISF, one fasting value), and the value it
+ *  is: its name, its block (none when the setting has none), and the value it
  *  was Done from → the suggestion, as one move in the list's shared columns. */
 export type WaitingRow = {
   subject: string;

@@ -1,8 +1,8 @@
 """#600 (ADR 564 rules 1 and 6): the engine serves no correction-factor advice,
 and the durable state that names the correction factor still reads.
 
-The store is the manufactured QA case `isf-strengthen`, whose fasting nights
-the analyzer still reads as a supported strengthen until slice B2 removes it, so
+The store is the manufactured QA case `pattern-near-tie`, whose overnight
+correction nights are the evidence a correction-factor estimate once read, so
 every absence here is the advice's, not the evidence's.
 """
 import tempfile
@@ -16,7 +16,7 @@ from ciq_autotune.store import Store
 from ciq_autotune.watched_change import reconcile_ingested_follow_up
 from scripts.qa_e2e_cases import QA_CASES, execute_case, materialize_case
 
-CASE = next(case for case in QA_CASES if case.name == "isf-strengthen")
+CASE = next(case for case in QA_CASES if case.name == "pattern-near-tie")
 DECIDED_AT = "2024-06-08 12:00:00"
 
 
@@ -56,10 +56,6 @@ class RemoveIsfAdviceTest(unittest.TestCase):
             _record_isf_plan(store)
             self.preferences = store.guidance_preferences()
             self.execution = execute_case(store, CASE)
-
-    def test_the_fasting_nights_still_read_as_a_supported_strengthen(self):
-        (isf,) = self.execution.analysis["isf"]
-        self.assertTrue(isf["asserts_move"])
 
     def test_guidance_serves_no_correction_factor_candidate(self):
         from ciq_autotune.guidance import build_guidance

@@ -229,8 +229,8 @@ including for isolated chart layout or interaction.
 - `ciq_autotune/insulin.py` — reconstructed bolus insulin-on-board.
 - `ciq_autotune/model.py` — the clean-window filter used by basal, backtest,
   and report.
-- `ciq_autotune/analyzers/` — basal, correction factor (ISF), carb ratio (I:C),
-  and the behavioral detectors. One versioned `AnalysisResult` comes out.
+- `ciq_autotune/analyzers/` — basal, carb ratio (I:C), and the behavioral
+  detectors. Nothing estimates the correction factor (ADR 564). One versioned `AnalysisResult` comes out.
 - `ciq_autotune/safety.py` — the caps and the support floors. Read "Safety
   invariants" below before changing anything here.
 - `ciq_autotune/credentials.py` — encrypted credential storage, DB-first with a
@@ -367,7 +367,7 @@ value (ADR 489).** `Estimate.excludes(current)` — the served `lo`/`hi`, closed
 both ends — is one more condition inside each kind's one predicate: basal in
 `cap()` beside the sign verdict and in `apply_harm` for a median-deferred
 recurring-lows cut (a slot with no clean median has no range, so its full step
-stands); carb ratio as `band_excludes_programmed`; ISF in `isf_asserts_move`.
+stands); carb ratio as `band_excludes_programmed`.
 Never re-check the range in a reader.
 
 `cap()`'s separate `min_directional_days` parameter (default
@@ -384,9 +384,9 @@ one flag. `ic.py` imports exactly one name from `safety.py`,
 `_MIN_SUPPORTED_BLOCK_RUNS` — the same floor of eight, applied to closed meal
 runs.
 
-**The correction factor is never advised (ADR 564).** Harmonic serves no
-correction-factor Queue card, Finding, Plan move, settling gate or Priority
-Lever, whatever the fasting nights read. A set-aside correction factor reads as
+**The correction factor is never estimated or advised (ADR 564).** Harmonic
+computes no correction-factor estimate and serves no correction-factor Queue
+card, Finding, Plan move, settling gate or Priority Lever. A set-aside correction factor reads as
 an absent row named "Correction factor", a recorded correction-factor Plan
 keeps its name in Plan history, and a correction-factor edit on the pump is a
 Trial that shows its outcomes and advises nothing. Do not add a correction-factor
@@ -447,8 +447,7 @@ Hard-won, and expensive to re-derive.
   delivery's `eventTimestamp` is not stable across pulls — the vendor re-decodes
   it a few seconds off from a prior generation — so keying on it lets a re-pull
   insert a jittered parallel copy instead of merging. That doubles every
-  5-minute slot, roughly doubles reconstructed basal insulin, and collapses the
-  fasting correction-factor estimate that reads it. `seqNum` is monotonic and
+  5-minute slot and roughly doubles reconstructed basal insulin. `seqNum` is monotonic and
   identical across pulls of the same event, so re-pulls merge losslessly while
   two genuinely distinct deliveries never conflate. This applies to
   `basal_events`, `bolus_events`, `iob_events` and `pump_events`.
@@ -470,7 +469,8 @@ Hard-won, and expensive to re-derive.
   (`LidBolusRequestedMsg1.carbAmount` into `bolus_events.carbs`). The separate
   **manual carb log** (`carb_entries`, `prompt_responses`) holds *user-entered*
   unbolused carbs, and is threaded through the analysis purely as an
-  **exclusion** signal to de-bias the fasting window — never a modeling input,
+  **exclusion** signal to de-bias basal clean minutes and carb-ratio meals —
+  never a modeling input,
   never a synthetic bolus, never sourced from the pump feed. The two streams are
   unrelated; do not conflate them.
 - **Cancelled-bolus carbs are unrecoverable, and the pump-logs event filter

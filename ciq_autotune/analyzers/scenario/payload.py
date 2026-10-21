@@ -262,7 +262,9 @@ class PreemptedLows:
     * ``total`` — pre-empted lows in the window (always ``ic + isf + unattributed``).
     * ``ic`` — arrested after a **meal** bolus still on board → look at I:C (over-bolus
       *or* carb overcount — the flag is cause-agnostic between them).
-    * ``isf`` — arrested after a **correction** still on board → look at ISF.
+    * ``isf`` — arrested after a **correction** still on board: correction
+      attribution (ADR 564 rule 5), which keeps the low out of ``ic`` and advises
+      no setting.
     * ``unattributed`` — no live bolus IOB at the rescue (a basal / activity drop);
       counted in the tally but pointed at no setting.
     * ``floor_u`` — the residual bolus-IOB floor (U) that gated attributability, echoed

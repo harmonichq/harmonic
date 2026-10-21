@@ -15,30 +15,33 @@ from datetime import date, datetime, timedelta
 from functools import partial
 from typing import Callable, Literal, TypeAlias
 
-from ciq_autotune.analyze import _BOLUS_LEADIN, _ISF_DECISION_INTERVAL, analyze
+from ciq_autotune.analyze import _BOLUS_LEADIN, analyze
 from ciq_autotune.analyzers.ic import _CIQ_SUSPEND_TYPE, BLOCK_WINDOW_DAYS
-from ciq_autotune.analyzers.isf import IsfConfig
 from ciq_autotune.analyzers.scenario import build_scenarios
 from ciq_autotune.analyzers.scenario.outcome_patterns import build_outcome_patterns
 from ciq_autotune.events import CarbEntry
 from ciq_autotune.explore_exposures import build_exposures
+from ciq_autotune.false_low import drop_readings, false_low_spans
 from ciq_autotune.findings_projection import (
     FINDING_VERDICTS,
     WindowQuery,
     prepare_findings_projection,
 )
 from ciq_autotune.insulin import InsulinActivity, basal_microdoses
-from ciq_autotune.rest_window import RestWindowConfig
+from ciq_autotune.rest_window import RestWindowConfig, detect_rest_windows
 from ciq_autotune.settings import ProfileSegment, ProfileSettings, PumpSettings
 
 
 WINDOW_DAYS = 30
 BASAL_SOURCE_SPAN_DAYS = WINDOW_DAYS + _BOLUS_LEADIN.days + 1
-ISF_SOURCE_SPAN_DAYS = (
-    WINDOW_DAYS + _ISF_DECISION_INTERVAL.days + _BOLUS_LEADIN.days + 1
+# pattern-near-tie's overnight correction nights start a week before its analysis
+# window opens, plus the bolus lead-in: 39 inclusive days.
+_OVERNIGHT_CORRECTION_LEADIN = timedelta(days=7)
+OVERNIGHT_CORRECTION_SPAN_DAYS = (
+    WINDOW_DAYS + _OVERNIGHT_CORRECTION_LEADIN.days + _BOLUS_LEADIN.days + 1
 )
 IC_SOURCE_SPAN_DAYS = BLOCK_WINDOW_DAYS + 1
-AnalyzerFamily: TypeAlias = Literal["basal", "isf", "ic"]
+AnalyzerFamily: TypeAlias = Literal["basal", "ic"]
 AnalyzerRowKey: TypeAlias = tuple[AnalyzerFamily, str]
 WindowKey: TypeAlias = Literal["whole_day"] | tuple[int, int]
 
@@ -46,13 +49,6 @@ WindowKey: TypeAlias = Literal["whole_day"] | tuple[int, int]
 @dataclass(frozen=True)
 class ExpectedBasalRow:
     safety_status: str | None = None
-    direction: str | None = None
-    asserts_move: bool = False
-    omitted: frozenset[str] = frozenset()
-
-
-@dataclass(frozen=True)
-class ExpectedIsfRow:
     direction: str | None = None
     asserts_move: bool = False
     omitted: frozenset[str] = frozenset()
@@ -68,7 +64,7 @@ class ExpectedIcRow:
     omitted: frozenset[str] = frozenset()
 
 
-ExpectedAnalyzerRow: TypeAlias = ExpectedBasalRow | ExpectedIsfRow | ExpectedIcRow
+ExpectedAnalyzerRow: TypeAlias = ExpectedBasalRow | ExpectedIcRow
 
 
 @dataclass(frozen=True)
@@ -156,6 +152,7 @@ class QaExecution:
     scenarios: dict
     findings: Mapping[WindowKey, dict]
     outcome_patterns: tuple[dict, ...]
+    rest_windows: frozenset[tuple[str, str, str]]
 
 
 _SHOWCASE = "showcase"
@@ -189,16 +186,6 @@ _BASAL_HARM_LOWER = ExpectedBasalRow(
     safety_status="lower (recurring lows)", direction="lower", asserts_move=True,
 )
 _BASAL_HARM_GATED = ExpectedBasalRow(safety_status="held (recurring-low gate)")
-_ISF_STRENGTHEN = ExpectedIsfRow(
-    direction="strengthen", asserts_move=True, omitted=frozenset({"block_id"}),
-)
-_ISF_DIRECTION_ONLY_WEAKEN = ExpectedIsfRow(
-    direction="weaken",
-    omitted=frozenset({"block_id", "recommended"}),
-)
-_ISF_HELD = ExpectedIsfRow(
-    omitted=frozenset({"block_id", "recommended"}),
-)
 _IC_COLLECTING = ExpectedIcRow(state="collecting", days_observed=29)
 _IC_RAISE = ExpectedIcRow(
     state="numeric", direction="raise", asserts_move=True, days_observed=90,
@@ -237,7 +224,7 @@ def _behavioral_precedence_recipe(store) -> None:
 
 def _pattern_near_tie_recipe(store) -> None:
     _materialize_basal_coverage(store, clean_rate=0.48)
-    _materialize_isf_coverage(store, true_isf=48.0)
+    _materialize_overnight_correction_nights(store, drop_per_unit=48.0)
     _materialize_behavioral_correction_on_iob(store, meal_runs_away=True)
 
 
@@ -356,19 +343,21 @@ def _materialize_behavioral_background(store, *, span_days: int) -> date:
 
 # A manufactured flat observation lane. Its readings inside the nocturnal rest
 # envelope are not flat: _respond_fasting_lane makes them answer the insulin that
-# acted, at the programmed sensitivity, so the fasting ISF fit measures a real
-# number instead of a 0 slope over a 120 mg/dL wall.
+# acted, at the programmed sensitivity, instead of a 120 mg/dL wall.
 _LANE_EGV = "Synthetic lane EGV"
 _LANE_BASELINE = 120.0
 _LANE_ISF = 40.0  # the _settings() programmed ISF: the lane's true sensitivity
 _LANE_NOISE_SD = 0.5
+# The lane's insulin action curve: peak and duration, in minutes.
+_LANE_INSULIN_PEAK_MIN = 75.0
+_LANE_INSULIN_DIA_MIN = 300.0
 
 
 def _materialize_automatic_corrections(store, *, first: date, days: int) -> None:
     """Two seeded Control-IQ automatic corrections early each lane morning.
 
-    They are the fasting insulin a lane night carries of its own, so the fasting
-    fit measures the lane's sensitivity rather than one story's evening tail. They
+    They are the fasting insulin a lane night carries of its own, so a lane night
+    answers the lane's sensitivity rather than one story's evening tail. They
     sit between 04:00 and 05:00: after the 01:00 and 03:00 basal slots the basal
     recipes read have cleared of bolus insulin, after the evening stories' lows,
     and an hour before the earliest manufactured meal. The pump tags them
@@ -390,7 +379,7 @@ def _materialize_automatic_corrections(store, *, first: date, days: int) -> None
 
 
 def _respond_fasting_lane(store) -> None:
-    """Make every lane night move with insulin the way the ISF analyzer models it.
+    """Make every lane night move with the insulin that acted in it.
 
     On each night's 5-minute grid across the rest envelope, glucose moves by one
     constant endogenous drift minus ``_LANE_ISF`` times the insulin that acted in
@@ -409,7 +398,6 @@ def _respond_fasting_lane(store) -> None:
     ``materialize_case`` calls it again at the end.
     """
     envelope = RestWindowConfig()
-    isf = IsfConfig()
     readings = {r.t: r for r in store.cgm_readings()}
     nights = sorted({
         (r.t - timedelta(days=1)).date()
@@ -423,7 +411,7 @@ def _respond_fasting_lane(store) -> None:
     if not nights:
         return
     basal = InsulinActivity(basal_microdoses(store.basal_events()),
-                            isf.peak_min, isf.dia_min)
+                            _LANE_INSULIN_PEAK_MIN, _LANE_INSULIN_DIA_MIN)
     boluses = [(b.t, float(b.insulin)) for b in store.bolus_events()
                if b.insulin and b.insulin > 0 and not b.carbs]
     steps = (24 * 60 - envelope.env_start_min + envelope.env_end_min) // 5
@@ -440,12 +428,12 @@ def _respond_fasting_lane(store) -> None:
         first = next(k for k, t in enumerate(grid) if t in readings)
         acted, since = [], grid[first]
         stretch = InsulinActivity([d for d in boluses if d[0] >= since],
-                                  isf.peak_min, isf.dia_min)
+                                  _LANE_INSULIN_PEAK_MIN, _LANE_INSULIN_DIA_MIN)
         for k, (t0, t1) in enumerate(zip(grid, grid[1:])):
             if overlay[k] and not overlay[k + 1]:
                 since = t1
                 stretch = InsulinActivity([d for d in boluses if d[0] >= since],
-                                          isf.peak_min, isf.dia_min)
+                                          _LANE_INSULIN_PEAK_MIN, _LANE_INSULIN_DIA_MIN)
             acted.append(basal.acted(t0, t1) + stretch.acted(t0, t1))
         nightly.append((night, grid, overlay, acted, first))
     drift = _LANE_ISF * (
@@ -1131,17 +1119,6 @@ def _materialize_behavioral_missed_meal(store) -> None:
     store.upsert_basal(basal)
 
 
-def _materialize_behavioral_carb_log_fasting_exclusion(store) -> None:
-    first = _materialize_behavioral_background(store, span_days=2)
-    logged_at = datetime.combine(first + timedelta(days=1), datetime.min.time()).replace(
-        hour=3,
-    )
-    store.upsert_carb_entry(CarbEntry(
-        t=logged_at, grams=20.0, certainty="estimate", source="manual",
-        note="Synthetic fasting exclusion", created_at=logged_at,
-    ))
-
-
 def _materialize_behavioral_preempted_detector(store) -> None:
     first = _materialize_behavioral_background(store, span_days=2)
     day = datetime.combine(first + timedelta(days=1), datetime.min.time())
@@ -1299,7 +1276,7 @@ def _materialize_basal_verdict_gallery(store) -> None:
     store.upsert_settings_snapshot(f"{first.isoformat()} 00:00:00", _settings())
 
 
-_ISF_CORRECTION_PLANS = (
+_OVERNIGHT_CORRECTION_PLANS = (
     ((1, 0, 0.75),),
     ((1, 30, 1.0),),
     ((2, 0, 1.25),),
@@ -1309,68 +1286,6 @@ _ISF_CORRECTION_PLANS = (
     ((4, 0, 2.25),),
     ((4, 30, 2.5),),
 )
-
-# SYNTHETIC-FIXTURE: Exact detected rest windows for manufactured ISF nights.
-_ISF_REST_WINDOWS = frozenset({
-    ("2024-05-10", "2024-05-10 22:00:00", "2024-05-11 08:00:00"),
-    ("2024-05-11", "2024-05-11 22:00:00", "2024-05-12 08:00:00"),
-    ("2024-05-12", "2024-05-12 22:00:00", "2024-05-13 08:00:00"),
-    ("2024-05-13", "2024-05-13 22:00:00", "2024-05-14 08:00:00"),
-    ("2024-05-14", "2024-05-14 22:00:00", "2024-05-15 08:00:00"),
-    ("2024-05-15", "2024-05-15 22:00:00", "2024-05-16 08:00:00"),
-    ("2024-05-16", "2024-05-16 22:00:00", "2024-05-17 08:00:00"),
-    ("2024-05-17", "2024-05-17 22:00:00", "2024-05-18 08:00:00"),
-    ("2024-05-18", "2024-05-18 22:00:00", "2024-05-19 08:00:00"),
-    ("2024-05-19", "2024-05-19 22:00:00", "2024-05-20 08:00:00"),
-    ("2024-05-20", "2024-05-20 22:00:00", "2024-05-21 08:00:00"),
-    ("2024-05-21", "2024-05-21 22:00:00", "2024-05-22 08:00:00"),
-    ("2024-05-22", "2024-05-22 22:00:00", "2024-05-23 08:00:00"),
-    ("2024-05-23", "2024-05-23 22:00:00", "2024-05-24 08:00:00"),
-    ("2024-05-24", "2024-05-24 22:00:00", "2024-05-25 08:00:00"),
-    ("2024-05-25", "2024-05-25 22:00:00", "2024-05-26 08:00:00"),
-    ("2024-05-26", "2024-05-26 22:00:00", "2024-05-27 08:00:00"),
-    ("2024-05-27", "2024-05-27 22:00:00", "2024-05-28 08:00:00"),
-    ("2024-05-28", "2024-05-28 22:00:00", "2024-05-29 08:00:00"),
-    ("2024-05-29", "2024-05-29 22:00:00", "2024-05-30 08:00:00"),
-    ("2024-05-30", "2024-05-30 22:00:00", "2024-05-31 08:00:00"),
-    ("2024-05-31", "2024-05-31 22:00:00", "2024-06-01 08:00:00"),
-    ("2024-06-01", "2024-06-01 22:00:00", "2024-06-02 08:00:00"),
-    ("2024-06-02", "2024-06-02 22:00:00", "2024-06-03 08:00:00"),
-    ("2024-06-03", "2024-06-03 22:00:00", "2024-06-04 08:00:00"),
-    ("2024-06-04", "2024-06-04 22:00:00", "2024-06-05 08:00:00"),
-    ("2024-06-05", "2024-06-05 22:00:00", "2024-06-06 08:00:00"),
-    ("2024-06-06", "2024-06-06 22:00:00", "2024-06-07 08:00:00"),
-    ("2024-06-07", "2024-06-07 22:00:00", "2024-06-08 08:00:00"),
-})
-
-# SYNTHETIC-FIXTURE: Exact correction occurrences from manufactured ISF nights.
-_ISF_CORRECTION_ROWS = frozenset({
-    ("correction_clusters", "2024-05-12 00:00:00", "clean"),
-    ("correction_clusters", "2024-05-13 00:30:00", "clean"),
-    ("correction_clusters", "2024-05-14 01:00:00", "clean"),
-    ("correction_clusters", "2024-05-15 01:30:00", "clean"),
-    ("correction_clusters", "2024-05-16 02:00:00", "clean"),
-    ("correction_clusters", "2024-05-17 02:30:00", "clean"),
-    ("correction_clusters", "2024-05-18 23:30:00", "clean"),
-    ("correction_clusters", "2024-05-20 00:00:00", "clean"),
-    ("correction_clusters", "2024-05-21 00:30:00", "clean"),
-    ("correction_clusters", "2024-05-22 01:00:00", "clean"),
-    ("correction_clusters", "2024-05-23 01:30:00", "clean"),
-    ("correction_clusters", "2024-05-24 02:00:00", "clean"),
-    ("correction_clusters", "2024-05-25 02:30:00", "clean"),
-    ("correction_clusters", "2024-05-26 23:30:00", "clean"),
-    ("correction_clusters", "2024-05-28 00:00:00", "clean"),
-    ("correction_clusters", "2024-05-29 00:30:00", "clean"),
-    ("correction_clusters", "2024-05-30 01:00:00", "clean"),
-    ("correction_clusters", "2024-05-31 01:30:00", "clean"),
-    ("correction_clusters", "2024-06-01 02:00:00", "clean"),
-    ("correction_clusters", "2024-06-02 02:30:00", "clean"),
-    ("correction_clusters", "2024-06-03 23:30:00", "clean"),
-    ("correction_clusters", "2024-06-05 00:00:00", "clean"),
-    ("correction_clusters", "2024-06-06 00:30:00", "clean"),
-    ("correction_clusters", "2024-06-07 01:00:00", "clean"),
-    ("correction_clusters", "2024-06-08 01:30:00", "clean"),
-})
 
 _IC_EIGHT_MEAL_ROWS = frozenset({
     ("meals", "2024-05-17 09:00:00", "no_data"),
@@ -1432,24 +1347,17 @@ _IC_HISTORY_MEAL_ROWS = frozenset({
 })
 
 
-def _materialize_isf_coverage(
-    store, *, true_isf: float, rescue_offsets: tuple[int, ...] = (),
-    noise_sd: float = 0.0,
-) -> None:
-    """Write two analyzer-visible ISF decision windows over manufactured nights.
-
-    ``noise_sd`` adds seeded Gaussian sensor noise (mg/dL) to every reading
-    after the first of each night, so the fasting range has real width; ``0``
-    writes the exact curve.
-    """
+def _materialize_overnight_correction_nights(store, *, drop_per_unit: float) -> None:
+    """Write manufactured overnight correction nights: one to two corrections a
+    night from 22:00, each night's glucose falling ``drop_per_unit`` mg/dL per
+    unit of insulin that acted."""
     first = date(2024, 5, 1)
     cgm, bolus = [], []
-    rng = random.Random(489)
     seq_num = 40_000
-    for offset in range(ISF_SOURCE_SPAN_DAYS - 1):
+    for offset in range(OVERNIGHT_CORRECTION_SPAN_DAYS - 1):
         current = first + timedelta(days=offset)
         start = datetime.combine(current, datetime.min.time()).replace(hour=22)
-        plan = _ISF_CORRECTION_PLANS[offset % len(_ISF_CORRECTION_PLANS)]
+        plan = _OVERNIGHT_CORRECTION_PLANS[offset % len(_OVERNIGHT_CORRECTION_PLANS)]
         correction_times = [
             (start + timedelta(hours=hour, minutes=minute), units)
             for hour, minute, units in plan
@@ -1465,11 +1373,10 @@ def _materialize_isf_coverage(
             "Description": "Synthetic EGV",
         })
         for left, right in zip(times, times[1:]):
-            bg = bg - true_isf * activity.acted(left, right) + 0.4
-            noise = rng.gauss(0.0, noise_sd) if noise_sd else 0.0
+            bg = bg - drop_per_unit * activity.acted(left, right) + 0.4
             cgm.append({
                 "EventDateTime": right.strftime("%Y-%m-%d %H:%M:%S"),
-                "Readings (CGM / BGM)": round(bg + noise, 1),
+                "Readings (CGM / BGM)": round(bg, 1),
                 "Description": "Synthetic EGV",
             })
         for when, units in correction_times:
@@ -1483,7 +1390,7 @@ def _materialize_isf_coverage(
                 "isf": 40.0,
             })
             seq_num += 1
-    last = first + timedelta(days=ISF_SOURCE_SPAN_DAYS - 1)
+    last = first + timedelta(days=OVERNIGHT_CORRECTION_SPAN_DAYS - 1)
     cgm.append({
         "EventDateTime": f"{last.isoformat()} 23:59:00",
         "Readings (CGM / BGM)": 170.0,
@@ -1496,17 +1403,6 @@ def _materialize_isf_coverage(
     store.record_prompt_response(
         detector="low", anchor_t=observed_at, answer="no", answered_at=observed_at,
     )
-    for offset in rescue_offsets:
-        current = first + timedelta(days=offset)
-        plan = _ISF_CORRECTION_PLANS[offset % len(_ISF_CORRECTION_PLANS)]
-        rescue_at = (
-            datetime.combine(current, datetime.min.time()).replace(hour=22)
-            + timedelta(hours=plan[0][0], minutes=plan[0][1] + 120)
-        )
-        store.upsert_carb_entry(CarbEntry(
-            t=rescue_at, grams=16.0, certainty="estimate", source="manual",
-            note="Synthetic correction rescue", created_at=rescue_at,
-        ))
 
 
 def _materialize_ic_coverage(
@@ -2028,10 +1924,6 @@ def _basal_rows(
     return ExpectedAnalyzerRows(_BASAL_SLOT_KEYS, default, overrides)
 
 
-def _isf_rows(default: ExpectedIsfRow) -> ExpectedAnalyzerRows:
-    return ExpectedAnalyzerRows((("isf", "Fasting"),), default)
-
-
 def _ic_rows(default: ExpectedIcRow) -> ExpectedAnalyzerRows:
     return ExpectedAnalyzerRows((("ic", "All day"),), default)
 
@@ -2526,60 +2418,6 @@ QA_CASES = (
             outcome_patterns=({'key': 'highs_after_meals', 'title': 'Highs after meals', 'subject': 'pattern:highs_after_meals', 'members': [{'subject': 'setting:carb_ratio', 'kind': 'setting', 'k': 0, 'price': 0, 'admitted': False, 'producer': 'tuning_levers', 'lo': None, 'hi': None, 'seriousness': None, 'seriousness_segments': [], 'action': None}], 'rate_levers': ['habit:carb_undercount', 'habit:late_bolus'], 'n': 0, 'k': 0, 'rate': None, 'wilson': None, 'wide': True, 'rate_producer': 'exposures', 'readiness': {'count': 0, 'gate': 12, 'verdict': 'withheld'}, 'settled_price': 0, 'admission_route': 'none', 'collapse': 'remain_pattern', 'action': None, 'seriousness': None, 'member_set_fingerprint': '13141e472c40a768'}, {'key': 'lows_after_meals', 'title': 'Lows after meals', 'subject': 'pattern:lows_after_meals', 'members': [{'subject': 'setting:carb_ratio', 'kind': 'setting', 'k': 0, 'price': 0, 'admitted': False, 'producer': 'tuning_levers', 'lo': None, 'hi': None, 'seriousness': None, 'seriousness_segments': [], 'action': None}], 'rate_levers': ['habit:meal_over_delivery'], 'n': 0, 'k': 0, 'rate': None, 'wilson': None, 'wide': True, 'rate_producer': 'exposures', 'readiness': {'count': 0, 'gate': 12, 'verdict': 'withheld'}, 'settled_price': 0, 'admission_route': 'none', 'collapse': 'remain_pattern', 'action': None, 'seriousness': None, 'member_set_fingerprint': '13141e472c40a768'}, {'key': 'highs_after_treating_lows', 'title': 'Highs after treating lows', 'subject': 'pattern:highs_after_treating_lows', 'members': [], 'rate_levers': ['habit:over_treated_low'], 'n': 0, 'k': 0, 'rate': None, 'wilson': None, 'wide': True, 'rate_producer': 'exposures', 'readiness': {'count': 0, 'gate': 12, 'verdict': 'withheld'}, 'settled_price': 0, 'admission_route': 'none', 'collapse': 'remain_pattern', 'action': None, 'seriousness': None, 'member_set_fingerprint': 'e3b0c44298fc1c14'}, {'key': 'lows_after_correcting_highs', 'title': 'Lows after correcting highs', 'subject': 'pattern:lows_after_correcting_highs', 'members': [], 'rate_levers': ['habit:correction_stacking', 'habit:correction_on_iob'], 'n': 0, 'k': 0, 'rate': None, 'wilson': None, 'wide': True, 'rate_producer': 'exposures', 'readiness': {'count': 0, 'gate': 12, 'verdict': 'withheld'}, 'settled_price': 0, 'admission_route': 'none', 'collapse': 'remain_pattern', 'action': None, 'seriousness': None, 'member_set_fingerprint': 'e3b0c44298fc1c14'})), BASAL_SOURCE_SPAN_DAYS, "basal", ((180, 240),),
     ),
     QaCase(
-        "isf-strengthen",
-        partial(_materialize_isf_coverage, true_isf=24.0),
-        QaExpectation(
-            _isf_rows(_ISF_STRENGTHEN),
-            {("isf", "Fasting"): ExpectedSupport(n_steps=2784)},
-            {}, frozenset({("whole_day", ("isf", "Fasting"))}),
-            _ISF_REST_WINDOWS, _ISF_CORRECTION_ROWS,
-            frozenset({'Highs after meals', 'Highs after treating lows', 'Lows after correcting highs', 'Lows after meals'}),
-            outcome_patterns=({'key': 'highs_after_meals', 'title': 'Highs after meals', 'subject': 'pattern:highs_after_meals', 'members': [{'subject': 'setting:carb_ratio', 'kind': 'setting', 'k': 0, 'price': 0, 'admitted': False, 'producer': 'tuning_levers', 'lo': None, 'hi': None, 'seriousness': None, 'seriousness_segments': [], 'action': None}], 'rate_levers': ['habit:carb_undercount', 'habit:late_bolus'], 'n': 0, 'k': 0, 'rate': None, 'wilson': None, 'wide': True, 'rate_producer': 'exposures', 'readiness': {'count': 0, 'gate': 12, 'verdict': 'withheld'}, 'settled_price': 0, 'admission_route': 'none', 'collapse': 'remain_pattern', 'action': None, 'seriousness': None, 'member_set_fingerprint': '13141e472c40a768'}, {'key': 'lows_after_meals', 'title': 'Lows after meals', 'subject': 'pattern:lows_after_meals', 'members': [{'subject': 'setting:carb_ratio', 'kind': 'setting', 'k': 0, 'price': 0, 'admitted': False, 'producer': 'tuning_levers', 'lo': None, 'hi': None, 'seriousness': None, 'seriousness_segments': [], 'action': None}], 'rate_levers': ['habit:meal_over_delivery'], 'n': 0, 'k': 0, 'rate': None, 'wilson': None, 'wide': True, 'rate_producer': 'exposures', 'readiness': {'count': 0, 'gate': 12, 'verdict': 'withheld'}, 'settled_price': 0, 'admission_route': 'none', 'collapse': 'remain_pattern', 'action': None, 'seriousness': None, 'member_set_fingerprint': '13141e472c40a768'}, {'key': 'highs_after_treating_lows', 'title': 'Highs after treating lows', 'subject': 'pattern:highs_after_treating_lows', 'members': [], 'rate_levers': ['habit:over_treated_low'], 'n': 0, 'k': 0, 'rate': None, 'wilson': None, 'wide': True, 'rate_producer': 'exposures', 'readiness': {'count': 0, 'gate': 12, 'verdict': 'withheld'}, 'settled_price': 0, 'admission_route': 'none', 'collapse': 'remain_pattern', 'action': None, 'seriousness': None, 'member_set_fingerprint': 'e3b0c44298fc1c14'}, {'key': 'lows_after_correcting_highs', 'title': 'Lows after correcting highs', 'subject': 'pattern:lows_after_correcting_highs', 'members': [], 'rate_levers': ['habit:correction_stacking', 'habit:correction_on_iob'], 'n': 0, 'k': 0, 'rate': None, 'wilson': None, 'wide': True, 'rate_producer': 'exposures', 'readiness': {'count': 0, 'gate': 12, 'verdict': 'withheld'}, 'settled_price': 0, 'admission_route': 'none', 'collapse': 'remain_pattern', 'action': None, 'seriousness': None, 'member_set_fingerprint': 'e3b0c44298fc1c14'})),
-        ISF_SOURCE_SPAN_DAYS,
-        "isf",
-    ),
-    QaCase(
-        "isf-direction-only-weaken",
-        partial(
-            _materialize_isf_coverage, true_isf=24.0,
-            rescue_offsets=(12, 18, 24, 30),
-        ),
-        QaExpectation(
-            _isf_rows(_ISF_DIRECTION_ONLY_WEAKEN),
-            {("isf", "Fasting"): ExpectedSupport(n_steps=2716)},
-            {}, frozenset({("whole_day", ("isf", "Fasting"))}),
-            _ISF_REST_WINDOWS, _ISF_CORRECTION_ROWS,
-            frozenset({'Highs after meals', 'Highs after treating lows', 'Lows after correcting highs', 'Lows after meals'}),
-            outcome_patterns=({'key': 'highs_after_meals', 'title': 'Highs after meals', 'subject': 'pattern:highs_after_meals', 'members': [{'subject': 'setting:carb_ratio', 'kind': 'setting', 'k': 0, 'price': 0, 'admitted': False, 'producer': 'tuning_levers', 'lo': None, 'hi': None, 'seriousness': None, 'seriousness_segments': [], 'action': None}], 'rate_levers': ['habit:carb_undercount', 'habit:late_bolus'], 'n': 0, 'k': 0, 'rate': None, 'wilson': None, 'wide': True, 'rate_producer': 'exposures', 'readiness': {'count': 0, 'gate': 12, 'verdict': 'withheld'}, 'settled_price': 0, 'admission_route': 'none', 'collapse': 'remain_pattern', 'action': None, 'seriousness': None, 'member_set_fingerprint': '13141e472c40a768'}, {'key': 'lows_after_meals', 'title': 'Lows after meals', 'subject': 'pattern:lows_after_meals', 'members': [{'subject': 'setting:carb_ratio', 'kind': 'setting', 'k': 0, 'price': 0, 'admitted': False, 'producer': 'tuning_levers', 'lo': None, 'hi': None, 'seriousness': None, 'seriousness_segments': [], 'action': None}], 'rate_levers': ['habit:meal_over_delivery'], 'n': 0, 'k': 0, 'rate': None, 'wilson': None, 'wide': True, 'rate_producer': 'exposures', 'readiness': {'count': 0, 'gate': 12, 'verdict': 'withheld'}, 'settled_price': 0, 'admission_route': 'none', 'collapse': 'remain_pattern', 'action': None, 'seriousness': None, 'member_set_fingerprint': '13141e472c40a768'}, {'key': 'highs_after_treating_lows', 'title': 'Highs after treating lows', 'subject': 'pattern:highs_after_treating_lows', 'members': [], 'rate_levers': ['habit:over_treated_low'], 'n': 0, 'k': 0, 'rate': None, 'wilson': None, 'wide': True, 'rate_producer': 'exposures', 'readiness': {'count': 0, 'gate': 12, 'verdict': 'withheld'}, 'settled_price': 0, 'admission_route': 'none', 'collapse': 'remain_pattern', 'action': None, 'seriousness': None, 'member_set_fingerprint': 'e3b0c44298fc1c14'}, {'key': 'lows_after_correcting_highs', 'title': 'Lows after correcting highs', 'subject': 'pattern:lows_after_correcting_highs', 'members': [], 'rate_levers': ['habit:correction_stacking', 'habit:correction_on_iob'], 'n': 0, 'k': 0, 'rate': None, 'wilson': None, 'wide': True, 'rate_producer': 'exposures', 'readiness': {'count': 0, 'gate': 12, 'verdict': 'withheld'}, 'settled_price': 0, 'admission_route': 'none', 'collapse': 'remain_pattern', 'action': None, 'seriousness': None, 'member_set_fingerprint': 'e3b0c44298fc1c14'})),
-        ISF_SOURCE_SPAN_DAYS,
-        "isf",
-    ),
-    QaCase(
-        "isf-held",
-        partial(_materialize_isf_coverage, true_isf=24.0, rescue_offsets=(24,)),
-        QaExpectation(
-            _isf_rows(_ISF_HELD),
-            {("isf", "Fasting"): ExpectedSupport(n_steps=2767)},
-            {}, frozenset({("whole_day", ("isf", "Fasting"))}),
-            _ISF_REST_WINDOWS, _ISF_CORRECTION_ROWS, frozenset({'Highs after meals', 'Highs after treating lows', 'Lows after correcting highs', 'Lows after meals'}),
-            outcome_patterns=({'key': 'highs_after_meals', 'title': 'Highs after meals', 'subject': 'pattern:highs_after_meals', 'members': [{'subject': 'setting:carb_ratio', 'kind': 'setting', 'k': 0, 'price': 0, 'admitted': False, 'producer': 'tuning_levers', 'lo': None, 'hi': None, 'seriousness': None, 'seriousness_segments': [], 'action': None}], 'rate_levers': ['habit:carb_undercount', 'habit:late_bolus'], 'n': 0, 'k': 0, 'rate': None, 'wilson': None, 'wide': True, 'rate_producer': 'exposures', 'readiness': {'count': 0, 'gate': 12, 'verdict': 'withheld'}, 'settled_price': 0, 'admission_route': 'none', 'collapse': 'remain_pattern', 'action': None, 'seriousness': None, 'member_set_fingerprint': '13141e472c40a768'}, {'key': 'lows_after_meals', 'title': 'Lows after meals', 'subject': 'pattern:lows_after_meals', 'members': [{'subject': 'setting:carb_ratio', 'kind': 'setting', 'k': 0, 'price': 0, 'admitted': False, 'producer': 'tuning_levers', 'lo': None, 'hi': None, 'seriousness': None, 'seriousness_segments': [], 'action': None}], 'rate_levers': ['habit:meal_over_delivery'], 'n': 0, 'k': 0, 'rate': None, 'wilson': None, 'wide': True, 'rate_producer': 'exposures', 'readiness': {'count': 0, 'gate': 12, 'verdict': 'withheld'}, 'settled_price': 0, 'admission_route': 'none', 'collapse': 'remain_pattern', 'action': None, 'seriousness': None, 'member_set_fingerprint': '13141e472c40a768'}, {'key': 'highs_after_treating_lows', 'title': 'Highs after treating lows', 'subject': 'pattern:highs_after_treating_lows', 'members': [], 'rate_levers': ['habit:over_treated_low'], 'n': 0, 'k': 0, 'rate': None, 'wilson': None, 'wide': True, 'rate_producer': 'exposures', 'readiness': {'count': 0, 'gate': 12, 'verdict': 'withheld'}, 'settled_price': 0, 'admission_route': 'none', 'collapse': 'remain_pattern', 'action': None, 'seriousness': None, 'member_set_fingerprint': 'e3b0c44298fc1c14'}, {'key': 'lows_after_correcting_highs', 'title': 'Lows after correcting highs', 'subject': 'pattern:lows_after_correcting_highs', 'members': [], 'rate_levers': ['habit:correction_stacking', 'habit:correction_on_iob'], 'n': 0, 'k': 0, 'rate': None, 'wilson': None, 'wide': True, 'rate_producer': 'exposures', 'readiness': {'count': 0, 'gate': 12, 'verdict': 'withheld'}, 'settled_price': 0, 'admission_route': 'none', 'collapse': 'remain_pattern', 'action': None, 'seriousness': None, 'member_set_fingerprint': 'e3b0c44298fc1c14'})),
-        ISF_SOURCE_SPAN_DAYS,
-        "isf",
-    ),
-    QaCase(
-        "isf-range-hold",
-        partial(_materialize_isf_coverage, true_isf=40.4, noise_sd=8.0),
-        QaExpectation(
-            _isf_rows(_ISF_HELD),
-            {("isf", "Fasting"): ExpectedSupport(n_steps=2765)},
-            {}, frozenset({("whole_day", ("isf", "Fasting"))}),
-            frozenset({('2024-06-07', '2024-06-07 22:00:00', '2024-06-08 08:00:00'), ('2024-05-11', '2024-05-11 22:00:00', '2024-05-12 08:00:00'), ('2024-05-16', '2024-05-16 22:00:00', '2024-05-17 08:00:00'), ('2024-05-12', '2024-05-12 22:00:00', '2024-05-13 08:00:00'), ('2024-05-19', '2024-05-19 22:00:00', '2024-05-20 08:00:00'), ('2024-05-14', '2024-05-14 22:00:00', '2024-05-15 08:00:00'), ('2024-05-21', '2024-05-21 22:00:00', '2024-05-22 08:00:00'), ('2024-05-29', '2024-05-29 22:00:00', '2024-05-30 08:00:00'), ('2024-05-17', '2024-05-17 22:00:00', '2024-05-18 08:00:00'), ('2024-05-20', '2024-05-20 22:00:00', '2024-05-21 08:00:00'), ('2024-05-31', '2024-05-31 22:00:00', '2024-06-01 08:00:00'), ('2024-06-05', '2024-06-05 22:20:00', '2024-06-06 08:00:00'), ('2024-05-27', '2024-05-27 22:00:00', '2024-05-28 08:00:00'), ('2024-05-15', '2024-05-15 22:00:00', '2024-05-16 08:00:00'), ('2024-05-28', '2024-05-28 22:00:00', '2024-05-29 08:00:00'), ('2024-05-13', '2024-05-13 22:00:00', '2024-05-14 08:00:00'), ('2024-06-04', '2024-06-04 22:00:00', '2024-06-05 08:00:00'), ('2024-05-24', '2024-05-24 22:00:00', '2024-05-25 08:00:00'), ('2024-05-26', '2024-05-26 22:00:00', '2024-05-27 08:00:00'), ('2024-05-30', '2024-05-30 22:00:00', '2024-05-31 08:00:00'), ('2024-05-22', '2024-05-22 22:00:00', '2024-05-23 08:00:00'), ('2024-06-03', '2024-06-03 22:00:00', '2024-06-04 08:00:00'), ('2024-05-10', '2024-05-10 22:00:00', '2024-05-11 08:00:00'), ('2024-05-18', '2024-05-18 22:00:00', '2024-05-19 08:00:00'), ('2024-05-25', '2024-05-25 22:00:00', '2024-05-26 08:00:00'), ('2024-05-23', '2024-05-23 22:00:00', '2024-05-24 08:00:00'), ('2024-06-01', '2024-06-01 22:00:00', '2024-06-02 08:00:00'), ('2024-06-02', '2024-06-02 22:10:00', '2024-06-03 08:00:00'), ('2024-06-06', '2024-06-06 22:00:00', '2024-06-07 08:00:00')}), frozenset({('correction_clusters', '2024-05-12 00:00:00', 'clean'), ('correction_clusters', '2024-05-13 00:30:00', 'clean'), ('correction_clusters', '2024-05-14 01:00:00', 'clean'), ('correction_clusters', '2024-05-15 01:30:00', 'clean'), ('correction_clusters', '2024-05-16 02:00:00', 'clean'), ('correction_clusters', '2024-05-17 02:30:00', 'clean'), ('correction_clusters', '2024-05-18 23:30:00', 'clean'), ('correction_clusters', '2024-05-20 00:00:00', 'clean'), ('correction_clusters', '2024-05-21 00:30:00', 'clean'), ('correction_clusters', '2024-05-22 01:00:00', 'clean'), ('correction_clusters', '2024-05-23 01:30:00', 'clean'), ('correction_clusters', '2024-05-24 02:00:00', 'clean'), ('correction_clusters', '2024-05-25 02:30:00', 'clean'), ('correction_clusters', '2024-05-26 23:30:00', 'clean'), ('correction_clusters', '2024-05-28 00:00:00', 'clean'), ('correction_clusters', '2024-05-29 00:30:00', 'clean'), ('correction_clusters', '2024-05-30 01:00:00', 'clean'), ('correction_clusters', '2024-05-31 01:30:00', 'clean'), ('correction_clusters', '2024-06-01 02:00:00', 'clean'), ('correction_clusters', '2024-06-02 02:30:00', 'clean'), ('correction_clusters', '2024-06-03 23:30:00', 'clean'), ('correction_clusters', '2024-06-05 00:00:00', 'clean'), ('correction_clusters', '2024-06-06 00:30:00', 'clean'), ('correction_clusters', '2024-06-07 01:00:00', 'clean'), ('correction_clusters', '2024-06-08 01:30:00', 'clean'), ('lows', '2024-05-17 05:20:00', 'clean')}),
-            frozenset({'Highs after meals', 'Highs after treating lows', 'Lows after correcting highs', 'Lows after meals'}),
-            outcome_patterns=({'key': 'highs_after_meals', 'title': 'Highs after meals', 'subject': 'pattern:highs_after_meals', 'members': [{'subject': 'setting:carb_ratio', 'kind': 'setting', 'k': 0, 'price': 0, 'admitted': False, 'producer': 'tuning_levers', 'lo': None, 'hi': None, 'seriousness': None, 'seriousness_segments': [], 'action': None}], 'rate_levers': ['habit:carb_undercount', 'habit:late_bolus'], 'n': 0, 'k': 0, 'rate': None, 'wilson': None, 'wide': True, 'rate_producer': 'exposures', 'readiness': {'count': 0, 'gate': 12, 'verdict': 'withheld'}, 'settled_price': 0, 'admission_route': 'none', 'collapse': 'remain_pattern', 'action': None, 'seriousness': None, 'member_set_fingerprint': '13141e472c40a768'}, {'key': 'lows_after_meals', 'title': 'Lows after meals', 'subject': 'pattern:lows_after_meals', 'members': [{'subject': 'setting:carb_ratio', 'kind': 'setting', 'k': 0, 'price': 0, 'admitted': False, 'producer': 'tuning_levers', 'lo': None, 'hi': None, 'seriousness': None, 'seriousness_segments': [], 'action': None}], 'rate_levers': ['habit:meal_over_delivery'], 'n': 0, 'k': 0, 'rate': None, 'wilson': None, 'wide': True, 'rate_producer': 'exposures', 'readiness': {'count': 0, 'gate': 12, 'verdict': 'withheld'}, 'settled_price': 0, 'admission_route': 'none', 'collapse': 'remain_pattern', 'action': None, 'seriousness': None, 'member_set_fingerprint': '13141e472c40a768'}, {'key': 'highs_after_treating_lows', 'title': 'Highs after treating lows', 'subject': 'pattern:highs_after_treating_lows', 'members': [], 'rate_levers': ['habit:over_treated_low'], 'n': 1, 'k': 0, 'rate': 0.0, 'wilson': {'lo': 0.0, 'hi': 0.6216}, 'wide': False, 'rate_producer': 'exposures', 'readiness': {'count': 1, 'gate': 12, 'verdict': 'withheld'}, 'settled_price': 0, 'admission_route': 'none', 'collapse': 'remain_pattern', 'action': None, 'seriousness': None, 'member_set_fingerprint': 'e3b0c44298fc1c14'}, {'key': 'lows_after_correcting_highs', 'title': 'Lows after correcting highs', 'subject': 'pattern:lows_after_correcting_highs', 'members': [], 'rate_levers': ['habit:correction_stacking', 'habit:correction_on_iob'], 'n': 1, 'k': 0, 'rate': 0.0, 'wilson': {'lo': 0.0, 'hi': 0.6216}, 'wide': False, 'rate_producer': 'exposures', 'readiness': {'count': 1, 'gate': 12, 'verdict': 'withheld'}, 'settled_price': 0, 'admission_route': 'none', 'collapse': 'remain_pattern', 'action': None, 'seriousness': None, 'member_set_fingerprint': 'e3b0c44298fc1c14'})),
-        ISF_SOURCE_SPAN_DAYS,
-        "isf",
-    ),
-    QaCase(
         "ic-collecting",
         partial(
             _materialize_ic_coverage, measured_ratio=12.0,
@@ -3056,20 +2894,6 @@ QA_CASES = (
         30,
     ),
     QaCase(
-        "behavioral-carb-log-fasting-exclusion",
-        _materialize_behavioral_carb_log_fasting_exclusion,
-        QaExpectation(
-            _isf_rows(ExpectedIsfRow(omitted=frozenset({"block_id", "recommended"}))),
-            {("isf", "Fasting"): ExpectedSupport(n_steps=102)},
-            {}, frozenset(),
-            frozenset({
-                ("2024-05-01", "2024-05-01 22:00:00", "2024-05-02 08:00:00"),
-            }),
-            frozenset(), frozenset({'Highs after meals', 'Highs after treating lows', 'Lows after correcting highs', 'Lows after meals'}),
-            outcome_patterns=({'key': 'highs_after_meals', 'title': 'Highs after meals', 'subject': 'pattern:highs_after_meals', 'members': [{'subject': 'setting:carb_ratio', 'kind': 'setting', 'k': 0, 'price': 0, 'admitted': False, 'producer': 'tuning_levers', 'lo': None, 'hi': None, 'seriousness': None, 'seriousness_segments': [], 'action': None}], 'rate_levers': ['habit:carb_undercount', 'habit:late_bolus'], 'n': 0, 'k': 0, 'rate': None, 'wilson': None, 'wide': True, 'rate_producer': 'exposures', 'readiness': {'count': 0, 'gate': 12, 'verdict': 'withheld'}, 'settled_price': 0, 'admission_route': 'none', 'collapse': 'remain_pattern', 'action': None, 'seriousness': None, 'member_set_fingerprint': '13141e472c40a768'}, {'key': 'lows_after_meals', 'title': 'Lows after meals', 'subject': 'pattern:lows_after_meals', 'members': [{'subject': 'setting:carb_ratio', 'kind': 'setting', 'k': 0, 'price': 0, 'admitted': False, 'producer': 'tuning_levers', 'lo': None, 'hi': None, 'seriousness': None, 'seriousness_segments': [], 'action': None}], 'rate_levers': ['habit:meal_over_delivery'], 'n': 0, 'k': 0, 'rate': None, 'wilson': None, 'wide': True, 'rate_producer': 'exposures', 'readiness': {'count': 0, 'gate': 12, 'verdict': 'withheld'}, 'settled_price': 0, 'admission_route': 'none', 'collapse': 'remain_pattern', 'action': None, 'seriousness': None, 'member_set_fingerprint': '13141e472c40a768'}, {'key': 'highs_after_treating_lows', 'title': 'Highs after treating lows', 'subject': 'pattern:highs_after_treating_lows', 'members': [], 'rate_levers': ['habit:over_treated_low'], 'n': 0, 'k': 0, 'rate': None, 'wilson': None, 'wide': True, 'rate_producer': 'exposures', 'readiness': {'count': 0, 'gate': 12, 'verdict': 'withheld'}, 'settled_price': 0, 'admission_route': 'none', 'collapse': 'remain_pattern', 'action': None, 'seriousness': None, 'member_set_fingerprint': 'e3b0c44298fc1c14'}, {'key': 'lows_after_correcting_highs', 'title': 'Lows after correcting highs', 'subject': 'pattern:lows_after_correcting_highs', 'members': [], 'rate_levers': ['habit:correction_stacking', 'habit:correction_on_iob'], 'n': 0, 'k': 0, 'rate': None, 'wilson': None, 'wide': True, 'rate_producer': 'exposures', 'readiness': {'count': 0, 'gate': 12, 'verdict': 'withheld'}, 'settled_price': 0, 'admission_route': 'none', 'collapse': 'remain_pattern', 'action': None, 'seriousness': None, 'member_set_fingerprint': 'e3b0c44298fc1c14'})),
-        2,
-    ),
-    QaCase(
         "behavioral-preempted-detector",
         _materialize_behavioral_preempted_detector,
         QaExpectation(
@@ -3149,7 +2973,30 @@ def execute_case(store, case: QaCase | None = None) -> QaExecution:
         )
         for window in (() if case is None else case.scoped_windows)
     })
-    return QaExecution(analysis, exposures, scenarios, findings, outcome_patterns)
+    return QaExecution(analysis, exposures, scenarios, findings, outcome_patterns,
+                       _analysis_rest_windows(store))
+
+
+def _analysis_rest_windows(store) -> frozenset[tuple[str, str, str]]:
+    """The rest-window detector's windows over the analysis window (ADR 564 rule 7):
+    the window's CGM with false-low spans dropped, and its boluses, as the
+    analysis reads them."""
+    cgm, bolus = store.cgm_readings(), store.bolus_events()
+    times = [event.t for event in store.basal_events()] + [reading.t for reading in cgm]
+    if not times:
+        return frozenset()
+    end = max(times)
+    start = end - timedelta(days=WINDOW_DAYS)
+    spans = false_low_spans(cgm, store.prompt_responses())
+    windows = detect_rest_windows(
+        drop_readings([r for r in cgm if start <= r.t <= end], spans),
+        [event for event in bolus if start <= event.t <= end],
+    )
+    return frozenset(
+        (window.date.isoformat(), window.start.strftime("%Y-%m-%d %H:%M:%S"),
+         window.end.strftime("%Y-%m-%d %H:%M:%S"))
+        for window in windows
+    )
 
 
 def _analyzer_key(family: AnalyzerFamily, row: dict) -> AnalyzerRowKey:
@@ -3160,10 +3007,6 @@ _OMISSION_FIELDS = {
     "basal": frozenset({
         "slot", "label", "current", "estimate", "recommended", "annotation",
         "days", "evidence",
-    }),
-    "isf": frozenset({
-        "block_id", "current", "estimate", "label", "parameter", "recommended",
-        "start_min", "annotation", "evidence",
     }),
     "ic": frozenset({
         "block_id", "current_values", "days_needed", "end_min", "estimate", "evidence",
@@ -3186,12 +3029,6 @@ def _expected_row(family: AnalyzerFamily, row: dict) -> ExpectedAnalyzerRow:
             asserts_move=bool(row.get("asserts_move")),
             omitted=omitted,
         )
-    if family == "isf":
-        return ExpectedIsfRow(
-            direction=(row.get("evidence") or {}).get("direction"),
-            asserts_move=bool(row.get("asserts_move")),
-            omitted=omitted,
-        )
     return ExpectedIcRow(
         direction=row.get("direction"),
         asserts_move=bool(row.get("asserts_move")),
@@ -3205,11 +3042,6 @@ def _expected_row(family: AnalyzerFamily, row: dict) -> ExpectedAnalyzerRow:
 def _quiet(family: AnalyzerFamily, row: dict) -> bool:
     if family == "basal":
         return row.get("safety_status") in {"no change", "no data", None}
-    if family == "isf":
-        return (
-            not row.get("asserts_move")
-            and not (row.get("evidence") or {}).get("direction")
-        )
     return (
         row.get("state") in {"collecting", "below-floor", "unmeasured-alone"}
         or (
@@ -3226,8 +3058,6 @@ def _support(family: AnalyzerFamily, row: dict) -> ExpectedSupport:
         return ExpectedSupport(
             directional_support_count=evidence.get("directional_support_count"),
         )
-    if family == "isf":
-        return ExpectedSupport(n_steps=evidence.get("n_steps"))
     return ExpectedSupport(
         n_runs=row.get("n_runs"),
         effective_run_count=(evidence.get("eligibility") or {}).get("effective_run_count"),
@@ -3239,8 +3069,6 @@ def _queue_key(row: dict) -> AnalyzerRowKey | None:
     if parameter == "basal_rate":
         minute = row["span"]["start_min"]
         return "basal", f"{minute // 60:02d}:{minute % 60:02d}"
-    if parameter == "isf":
-        return "isf", row["label"]
     if parameter == "carb_ratio":
         return "ic", row["label"]
     return None
@@ -3254,7 +3082,7 @@ def assert_expectation(case: QaCase, execution: QaExecution) -> None:
         raise AssertionError(f"{case.name}: outcome_patterns differ")
     observed_analyzer_rows = {}
     observed_support = {}
-    payloads = (("basal", "basal"), ("isf", "isf"), ("ic", "ic_blocks"))
+    payloads = (("basal", "basal"), ("ic", "ic_blocks"))
     for family, payload_name in payloads:
         for row in execution.analysis[payload_name]:
             key = _analyzer_key(family, row)
@@ -3282,15 +3110,6 @@ def assert_expectation(case: QaCase, execution: QaExecution) -> None:
         for row in projection["rows"]
         if (key := _queue_key(row)) is not None
     }
-    isf_row = next(
-        (row for row in execution.analysis["isf"] if row["label"] == "Fasting"),
-        None,
-    )
-    assert isf_row is not None, "missing Fasting ISF analyzer row"
-    observed_rest_windows = frozenset(
-        (row["date"], row["start"], row["end"])
-        for row in isf_row["evidence"]["rest_windows"]
-    )
     finding_rows = {
         row["lever"]: row
         for row in whole_day["rows"]
@@ -3332,7 +3151,7 @@ def assert_expectation(case: QaCase, execution: QaExecution) -> None:
         assert absent not in observed_queue_rows, absent
     assert observed_rows == case.expectation.behavioral_rows, observed_rows
     assert observed_titles == case.expectation.finding_titles, observed_titles
-    assert observed_rest_windows == case.expectation.rest_windows, observed_rest_windows
+    assert execution.rest_windows == case.expectation.rest_windows, execution.rest_windows
     assert (execution.exposures["exposures"]["highs"]["uncaused"]
             == case.expectation.uncaused_highs)
 

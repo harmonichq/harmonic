@@ -188,9 +188,9 @@ class PumpEvent:
 # The unbolused-carb log (#125). A first-class manual stream — deliberately NOT a
 # synthetic BolusEvent, which would lie at the interface and silently break I:C
 # isolation (analyzers' `_is_meal` requires insulin). Used only as an *exclusion*
-# signal for the analyzers (de-biasing the fasting-ISF window), never a modeling
-# input. Revisits ADR 0003's dead event-48 `carb_entries` path, this time fed by a
-# real manual source.
+# signal for the analyzers (de-biasing the basal clean window and I:C meal
+# isolation), never a modeling input. Revisits ADR 0003's dead event-48
+# `carb_entries` path, this time fed by a real manual source.
 CARB_CERTAINTIES = ("exact", "estimate", "unknown")
 CARB_SOURCES = ("manual", "rise-prompt", "low-prompt")
 

@@ -237,11 +237,11 @@ class OneDonePerCardTest(DoneCase):
 
 
 class IsfDoneTest(DoneCase):
-    CASE = "isf-strengthen"
+    CASE = "pattern-near-tie"
 
     def test_a_correction_factor_takes_no_done(self):
         # ADR 564: no correction-factor card is served, so a Done on one is refused
-        # and records no Plan, even where the fasting nights read as a strengthen.
+        # and records no Plan, even over a store with overnight correction nights.
         response = self.done("setting:isf")
         self.assertEqual(response.status_code, 409, response.text)
         self.assertEqual(response.json()["detail"]["code"], "ineligible_source")

@@ -1,5 +1,5 @@
-This tool reads *your own* Control-IQ history and tells you where your basal,
-ISF, and I:C settings might be off, and where your habits, not your settings,
+This tool reads *your own* Control-IQ history and tells you where your basal
+and I:C settings might be off, and where your habits, not your settings,
 are driving the highs and lows. It is **advisory**. It never touches your pump;
 it hands you a specific number and the evidence behind it to take to your
 clinician.

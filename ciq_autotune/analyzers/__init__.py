@@ -2,7 +2,6 @@
 plus the scenario engine (episode-level behavioral insight).
 
 * :mod:`~ciq_autotune.analyzers.basal` — A1, the hardened mimic-CIQ basal tuner.
-* :mod:`~ciq_autotune.analyzers.isf` — A2, correction-response ISF.
 * :mod:`~ciq_autotune.analyzers.ic` — A3, the I:C + carb-counting engine.
 * :mod:`~ciq_autotune.analyzers.classifiers` — the per-instance behavioral
   classifiers (#71–#76).

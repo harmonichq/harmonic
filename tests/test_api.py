@@ -184,7 +184,7 @@ class ApiTest(unittest.TestCase):
             self.assertEqual(body["schema_version"], SCHEMA_VERSION)
             self.assertEqual(len(body["basal"]), 48)
             self.assertEqual(body["basal_support_floor"], 8)
-            self.assertIn("isf", body)
+            self.assertIn("ic", body)
             self.assertIn("behavioral", body)
 
     def test_analyze_is_cached_two_identical_gets_are_equal(self):
@@ -238,11 +238,10 @@ class ApiTest(unittest.TestCase):
         r = self.client.post("/api/pattern-sweep/approve", json={})
         self.assertEqual(r.status_code, 400)
 
-    def test_isf_is_a_single_fasting_estimate(self):
+    def test_analyze_serves_no_isf_estimate(self):
         r = self.client.get("/api/analyze", params={"window": 30})
-        isf = r.json()["isf"]
-        self.assertEqual(len(isf), 1)
-        self.assertEqual(isf[0]["start_min"], 0)
+        self.assertEqual(r.status_code, 200, r.text)
+        self.assertNotIn("isf", r.json())
 
     def test_root_serves_the_shell(self):
         r = self.client.get("/")

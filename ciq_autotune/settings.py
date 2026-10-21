@@ -341,7 +341,7 @@ def diff_profiles(old: ProfileSettings, new: ProfileSettings) -> List[ParameterD
 #
 # "Which single ISF / I:C is in force over this window?" One place, called by
 # both orchestrators (analyze.py, scenario/engine.py). Pure and store-free: it
-# reads the latest snapshot's active schedule and the ISF analyzer's rows.
+# reads the latest snapshot's active schedule.
 # Converting one meal's glucose miss reads ``IsfSource`` instead (ADR 563).
 
 

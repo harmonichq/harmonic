@@ -75,14 +75,14 @@ historical records outside that surface.
 - **AND** the #319 migration's decision record stays in the archived
   `qa-e2e-coverage-eras` change, unedited
 
-### Requirement: ISF and I:C eras prove analyzer-owned states and the queue rows they serve exactly
+### Requirement: I:C eras prove analyzer-owned states and the queue rows they serve exactly
 
-Each ISF and I:C case SHALL use the shared expectation contract and its declared
-span. Cases SHALL cover every ISF and I:C condition in the design matrix,
-including direction-only non-stageable ISF, explicit 30-day I:C collecting, quiet
+Each I:C case SHALL use the shared expectation contract and its declared
+span. Cases SHALL cover every I:C condition in the design matrix,
+including explicit 30-day I:C collecting, quiet
 I:C, and an active past setting. Their isolated executions SHALL compare exact
-analyzer rows, queue rows and absences, support values, staging values, the single
-Fasting ISF row's keyed rest windows. The queue serves only asserting setting rows and Findings, so a held,
+analyzer rows, queue rows and absences, support values, staging values, and the
+rest-window detector's keyed rest windows. The queue serves only asserting setting rows and Findings, so a held,
 no-clean-day or past-setting state is proved by its analyzer row and its absence
 from the queue (ADR 531).
 
@@ -106,21 +106,22 @@ from the queue (ADR 531).
 
 #### Scenario: Only asserting settings reach the queue
 
-- **WHEN** isolated ISF and I:C cases run the whole-day projection and the clock
+- **WHEN** isolated I:C cases run the whole-day projection and the clock
   windows named by `QaCase.scoped_windows`
-- **THEN** asserting, held, blind, quiet, direction-only non-stageable and active
-  past-setting analyzer rows match their exact expected rows
+- **THEN** asserting, held, blind, quiet and active past-setting analyzer rows
+  match their exact expected rows
 - **AND** the queue rows are exactly the asserting ones expected, with no row for a
   held, blind, quiet or past-setting state
-- **AND** direction-only ISF weaken never gains a recommendation, rank, or move
 
 ## MODIFIED Requirements
 
 ### Requirement: Behavioral eras prove occurrence states and verdict denominators exactly
 
 Task 3 added the 17 isolated cases in the design's `#193 eras` table. ADR 499
-removed `behavioral-meal-bolus-short` with its Lever, so exactly 16 SHALL remain:
-11 positive behavioral/output cases and five suppression or negative guards. Each SHALL use the existing `QaCase.recipe`, `source_span_days`,
+removed `behavioral-meal-bolus-short` with its Lever, and ADR 564 removed
+`behavioral-carb-log-fasting-exclusion` with the correction-factor estimate it
+proved, so exactly 15 SHALL remain: 11 positive behavioral/output cases and four
+suppression or negative guards. Each SHALL use the existing `QaCase.recipe`, `source_span_days`,
 production composition, literal exact catalog tuple, and generated
 `test_case_*` contract. Each SHALL set `target_family=None`; no new analyzer-family
 value SHALL be introduced. Dates SHALL precede 2025-07-01. The committed showcase
@@ -186,15 +187,11 @@ defaulted so existing cases retain their output. The `behavioral-uncaused-highs`
 case SHALL produce two high Occurrences that are both non-driver/clean at the
 family level in one whole Episode with no Lever; it SHALL pin
 `uncaused_highs == 2`, counted once per high anchor by
-`ciq_autotune/explore_exposures.py:155-156`. The five negative cases SHALL prove, through exact whole-set
+`ciq_autotune/explore_exposures.py:155-156`. The four negative cases SHALL prove, through exact whole-set
 rows, titles, tallies, and denominators, that a false-low excursion is removed, a
 `low:no` answer suppresses over-treated-low attribution without deleting the
-printed low, an unbolused Carb-log entry reduces the exact Fasting ISF `n_steps`
-support value without changing behavioral rows, one correction creates no
-correction cluster, and precedence retains an outranked anchor while only the
-earlier driver owns attribution. Removing the Carb-log entry SHALL change the
-literal `n_steps` value, proving that case's expectation is load-bearing through
-the current `QaExecution.analysis` surface.
+printed low, one correction creates no correction cluster, and precedence retains
+an outranked anchor while only the earlier driver owns attribution.
 
 Every case SHALL declare the exact `source_span_days` shown in the design table.
 The six-Occurrence Lever cases and both five-Occurrence Lever cases SHALL use the
@@ -232,8 +229,8 @@ suite as the projection input and the recorded 62.93 s whole-pytest baseline /
 
 #### Scenario: Negative evidence cannot become a finding
 
-- **WHEN** the five named negative cases execute
-- **THEN** false-low, `low:no`, Carb-log fasting exclusion, lone-correction, and preempted
+- **WHEN** the four named negative cases execute
+- **THEN** false-low, `low:no`, lone-correction, and preempted
   conditions retain exactly the rows and absences named by the design
 - **AND** no recipe injects the verdict or attribution that the assertion expects
 
@@ -257,35 +254,32 @@ suite as the projection input and the recorded 62.93 s whole-pytest baseline /
 Each basal coverage case SHALL materialize manufactured source rows into one
 isolated store and SHALL run production analysis, exposure, scenario and findings
 composition. `AnalyzerRowKey` SHALL be analyzer family plus its
-emitted parameter key: basal clock-slot label, ISF segment, or I:C block.
+emitted parameter key: basal clock-slot label or I:C block.
 `ExpectedAnalyzerRow` SHALL be family-discriminated from the serialized-row dump:
 basal SHALL contain exact `safety_status`, top-level `direction`, `asserts_move`,
-and `omitted: frozenset[str]`; ISF SHALL contain exact `asserts_move`, `direction`
-read from `evidence["direction"]`, and `omitted`; I:C SHALL contain exact `state`,
+and `omitted: frozenset[str]`; I:C SHALL contain exact `state`,
 `direction`, `held_reason`, `asserts_move`, conditionally present
 `days_observed`, and `omitted`. `omitted` SHALL compare exactly and SHALL range
 only over the family's serialized field names outside its value-pinned list. A
 value-pinned field whose value is `None` SHALL be pinned as that value and SHALL
 NOT also appear in `omitted`. Basal no-baseline SHALL use
 `omitted={"current"}` because `current` is outside basal's value-pinned list and
-serializes as `None`; ISF direction-only SHALL use
-`omitted={"recommended"}`. I:C collecting and asserting rows SHALL pin exact
+serializes as `None`. I:C collecting and asserting rows SHALL pin exact
 emitted `days_observed`; every other I:C row SHALL include `days_observed` in
 `omitted`, and its non-collecting span guard SHALL be exact `state`.
 `QaExpectation` SHALL gain
 `analyzer_rows: Mapping[AnalyzerRowKey, ExpectedAnalyzerRow]`. Whole-set equality
 SHALL fail on every unexpected or missing analyzer key without a separate absence
 collection. `QaCase` SHALL gain
-`target_family: Literal["basal", "isf", "ic"] | None`. Every new #192 coverage
+`target_family: Literal["basal", "ic"] | None`. Every new #192 coverage
 case SHALL name its family; `showcase`, `setting-recommendation`, and
 `behavioral-precedence` SHALL use `None`. `assert_expectation` SHALL pin a named
 target family's full emitted key set and each other family's exact set of keys
 outside its measured quiet predicate. A `None` target SHALL pin that measured
-non-quiet complement in all three families. The quiet predicates are: basal
+non-quiet complement in both families. The quiet predicates are: basal
 quiet SHALL mean `safety_status` in
 `{NO_CHANGE, NO_DATA, None}` (a `NO_DATA` blind slot has no estimate and cannot
-hide a move); ISF quiet SHALL mean `asserts_move == false` with no
-`evidence["direction"]`; I:C quiet SHALL mean `state` in `collecting`,
+hide a move); I:C quiet SHALL mean `state` in `collecting`,
 `below-floor`, or `unmeasured-alone`, or `state == "numeric"` with
 `asserts_move == false` and no `held_reason`. The non-target set SHALL be the
 exact measured complement of those predicates, never an assumed-empty set, so
@@ -295,15 +289,15 @@ empty by default; `execute_case` SHALL project `whole_day()` and every declared
 window through `WindowQuery.clock`. Queue rows and absences SHALL be keyed by
 `(window | "whole_day", row key)`. `QaExpectation` SHALL also compare support
 through `support: Mapping[AnalyzerRowKey, ExpectedSupport]`. Basal support SHALL
-pin `evidence["directional_support_count"]` (`analyzers/basal.py:562-564`); ISF
-support SHALL pin `evidence["n_steps"]` (`analyzers/isf.py:634-645`); I:C support
+pin `evidence["directional_support_count"]` (`analyzers/basal.py:562-564`); I:C support
 SHALL pin top-level `n_runs` and
 `evidence["eligibility"]["effective_run_count"]` (`result.py:330-366`;
 `analyzers/ic.py:2511-2518`). Support SHALL distinguish
 `basal-insufficient-seven-night` from
 `basal-insufficient-unsupported-sign`, and `ic-quiet-seven-run` from `ic-raise`.
-The single Fasting ISF row's rest windows SHALL be an exact set
-keyed by `(date, start, end)`.
+The rest-window detector's windows over the analysis window, read on that
+window's CGM with false-low spans dropped and its boluses, SHALL be an exact set
+keyed by `(date, start, end)` (ADR 564 rule 7).
 
 Every case's target-family map SHALL be authored by hand as one literal per-case
 default `ExpectedAnalyzerRow` plus named per-key literal overrides from the design
@@ -348,6 +342,6 @@ condition in the design matrix.
 
 ### Requirement: ISF and I:C eras prove analyzer-owned states exactly
 
-**Reason:** Its last scenario proves held, blind and past-setting queue rows, which the findings answer no longer serves because nothing the app reads served them (#531, ADR 531). It is restated with that scenario replaced as "ISF and I:C eras prove analyzer-owned states and the queue rows they serve exactly".
+**Reason:** Its last scenario proves held, blind and past-setting queue rows, which the findings answer no longer serves because nothing the app reads served them (#531, ADR 531). It is restated with that scenario replaced as "I:C eras prove analyzer-owned states and the queue rows they serve exactly".
 
-**Migration:** Read "ISF and I:C eras prove analyzer-owned states and the queue rows they serve exactly", ADDED in this change. The held, blind and past-setting states stay proved through their analyzer rows.
+**Migration:** Read "I:C eras prove analyzer-owned states and the queue rows they serve exactly", ADDED in this change. The held, blind and past-setting states stay proved through their analyzer rows.

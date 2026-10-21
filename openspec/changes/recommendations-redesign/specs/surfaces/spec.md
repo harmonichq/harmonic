@@ -455,17 +455,17 @@ no-clean-day or past-setting row, so it serves no headline for one (ADR 531).
 
 ### Requirement: Setting findings are titled by their user labels
 
-The findings projection SHALL title a correction-factor row "Correction factor"
-and a carb-ratio block "Carb ratio <span>", each with its direction suffix
-(" · <direction>"). A basal row keeps "Basal <span>". The regenerated fixtures and
-the QA finding-title literals SHALL carry the same titles. The projection lists no
-setting that asserts nothing, so no title carries a lean (ADR 531).
+The findings projection SHALL title a carb-ratio block "Carb ratio <span>", with
+its direction suffix (" · <direction>"). A basal row keeps "Basal <span>". The
+regenerated fixtures and the QA finding-title literals SHALL carry the same titles.
+The projection lists no setting that asserts nothing, so no title carries a lean
+(ADR 531), and it serves no correction-factor row (ADR 564).
 
-#### Scenario: A correction-factor finding reads as Correction factor
+#### Scenario: A carb-ratio finding reads as Carb ratio
 
-- **GIVEN** the manufactured case isf-strengthen
-- **WHEN** the findings projection publishes its correction-factor row
-- **THEN** the row is titled "Correction factor · strengthen"
+- **GIVEN** the manufactured case basal-and-carb-ratio-lower
+- **WHEN** the findings projection publishes its carb-ratio row
+- **THEN** the row is titled "Carb ratio 00:00 to 24:00 · lower"
 - **AND** no setting row's title contains "ISF" or "I:C"
 
 ## MODIFIED Requirements

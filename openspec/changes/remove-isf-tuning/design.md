@@ -155,6 +155,9 @@ conversion reads the meal's dose-stamped ISF.
   keeps its overnight correction nights as plain synthetic data, so its store
   and every literal in its expectation stay as they are. No remaining case's
   expectation is re-copied.
+  Measured when slice B2 was built (#601): the catalog holds 74 cases, every
+  one of their rest-window literals (38 non-empty) equals the detector's
+  windows over the analysis window, and no expectation was re-copied.
 - A correction-factor Trial retained before B2 reads its comparison over the
   whole period on its next read (rule 4), so its outcome numbers can differ
   from those shown before. Its stored record is not rewritten.

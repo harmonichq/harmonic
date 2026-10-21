@@ -2,206 +2,39 @@
 
 ## Purpose
 
-Harmonic estimates the two tunable dosing parameters that are not the basal
-schedule: ISF (insulin sensitivity factor — how far one unit moves glucose) and
-I:C (the grams of carb one unit covers). Neither is ever logged by the pump, so
-both are *inferred* from glucose response, and this capability owns that
-inference: which stretches of history are admissible evidence, what the estimate
-and its interval mean, and whether an estimate has earned the right to move a
-deliverable schedule.
+Harmonic estimates two tunable dosing parameters: basal (the schedule) and I:C
+(the grams of carb one unit covers). Neither is ever logged by the pump, so both
+are *inferred* from glucose response, and this capability owns that inference:
+which stretches of history are admissible evidence, what the estimate and its
+interval mean, and whether an estimate has earned the right to move a deliverable
+schedule. ISF (insulin sensitivity factor) is not estimated; it is only the
+dose-stamped conversion input that the pump's own programmed value supplies.
 
 It does not own the basal schedule, basal's caps, floors, or `Status`, or the
 reconstruction of insulin activity — it consumes the last of these as the
 bolus-and-basal activity curve every calculation here is measured against. It
-does own the analyzer-local ISF and I:C eligibility decisions that are stamped
-onto their result rows for every downstream consumer.
+does own the analyzer-local I:C eligibility decisions that are stamped
+onto its result rows for every downstream consumer.
 
 ## Requirements
-
-### Requirement: ISF is a single fasting number, never a time-of-day schedule
-
-The system SHALL satisfy the following:
-
-The ISF analyzer produces exactly one estimate, labelled for the fasting regime,
-carried in the result schema as a one-row list anchored at the start of the day.
-Daytime ISF is not separately identifiable from this data — meal boluses logged
-with no carbs are indistinguishable from corrections — so the analysis measures
-the one regime it can read cleanly and reports it alone. The programmed ISF it
-compares against is the median of the programmed segments overlapping the
-nocturnal envelope, because the pump's schedule is per-segment and the fasting
-regime spans several segments and wraps midnight.
-
-#### Scenario: ISF is a single fasting number, never a time-of-day schedule
-
-- **WHEN** the capability evaluates the behavior described by this requirement
-- **THEN** the stated behavior applies
-
-### Requirement: ISF is the slope of glucose change against insulin that acted
-
-The system SHALL satisfy the following:
-
-Over each consecutive pair of CGM readings inside a fasting window, the analyzer
-regresses the glucose change on the units of insulin that were absorbed across
-that step — total activity, boluses plus the pump's own basal micro-doses, read
-off the shared exponential activity curve. ISF is the negation of the fitted
-slope; the intercept absorbs steady-state drift so the slope isolates insulin's
-marginal effect. Steps whose endpoints are further apart than a sensor gap
-allows, or whose glucose change is physiologically implausible, are dropped
-before the fit.
-
-#### Scenario: ISF is the slope of glucose change against insulin that acted
-
-- **WHEN** the capability evaluates the behavior described by this requirement
-- **THEN** the stated behavior applies
-
-### Requirement: The fasting window is a detected rest window with no carbs in play
-
-The system SHALL satisfy the following:
-
-A step is admissible only when **both** of its CGM endpoints fall inside the
-*same* detected rest window for that night — the behaviorally inferred at-rest
-period, clamped to a nocturnal envelope, not a fixed clock — **and** no carbs
-were in play. Carbs disqualify a step through two distinct guards, because a
-carb-bearing bolus and an unbolused Carb log entry contaminate differently:
-
-- A carb-bearing bolus is masked by a flat lookback of roughly one duration of
-  insulin action, because the covering insulin acts for that whole span and the
-  post-meal descent would read as false insulin potency.
-- A known-grams Carb log entry is masked by static forward-decay COB, so a small
-  rescue releases the window in a fraction of that time. An entry with no
-  recorded grams is never decayed and keeps the flat lookback.
-
-#### Scenario: A carb-bearing bolus falls inside the lookback
-
-- **GIVEN** a CGM step wholly inside a detected rest window
-- **WHEN** a carb-bearing bolus was delivered within the flat lookback before the
-  step, or at any point up to its end
-- **THEN** the step is excluded from the fit entirely, and no partial or
-  grams-scaled credit is given for it
-
-#### Scenario: Sleep starts late
-
-- **GIVEN** a night where the user was awake and eating well past midnight
-- **WHEN** the rest-window detector places that night's window later than the
-  usual hours
-- **THEN** fasting steps are taken from the detected window for that night, not
-  from a fixed clock, and the waking hours inside the nocturnal envelope
-  contribute nothing
 
 ### Requirement: The Carb log is an exclusion signal only
 
 The system SHALL satisfy the following:
 
 The manual Carb log — user-entered unbolused carbs, in practice a rescue log — is
-threaded into ISF purely to de-bias the fasting window. It scales how long a
-window stays masked and nothing else. It is never a modelling input, never
+threaded into the analysis purely to de-bias basal's clean minutes. It scales
+how long a span stays masked and nothing else. It is never a modelling input, never
 converted into a synthetic bolus, and its COB is never re-fit from CGM shape:
 inferring absorption from the glucose curve would launder the very residual the
-ISF fit exists to measure.
+clean-minute filter exists to exclude.
 
 #### Scenario: A rescue is logged overnight
 
-- **GIVEN** a fasting night in which the user logged rescue carbs
-- **WHEN** ISF is estimated for that window
-- **THEN** the steps under that entry's decayed COB are excluded, and the entry
-  contributes no dose, no carb term, and no adjustment to the fitted slope
-
-### Requirement: Every estimate carries an interval, and a wide interval blocks assertion
-
-The system SHALL satisfy the following:
-
-Estimates ship as a point value, an 80% percentile-bootstrap interval, and the
-sample size behind them; thin data surfaces as a wide interval and a visible `n`,
-never as a blank. The resampling unit is the correlated cluster, not the raw
-observation — whole nights for ISF, whole meal runs for I:C — so same-night steps
-and same-run meals cannot read as independent evidence. An estimate is *wide*
-when its half-width exceeds a quarter of the point value, when fewer than three
-observations back it, or when a clustered estimate rests on fewer than two
-clusters. A wide estimate still displays; it simply cannot support a move.
-
-#### Scenario: Many fasting steps, one night
-
-- **GIVEN** hundreds of admissible fasting steps that all come from a single
-  detected rest window
-- **WHEN** the ISF interval is computed
-- **THEN** the estimate reads as wide on the cluster floor alone, regardless of
-  how narrow the raw step-level band would have been
-
-### Requirement: Harm evidence owns the ISF direction; the measurement may only strengthen
-
-The system SHALL satisfy the following:
-
-Correction-caused printed lows and correction-attributed rescue logs decide when
-ISF eases weaker. That check runs first, and it clears whenever the Wilson lower
-bound of the low-day rate over the covered window exceeds the day-rate floor. The
-pooled regression's interval never decides direction on its own — it is
-leverage-fragile, and a handful of contaminated high-leverage nights drag it
-toward stronger corrections precisely when the lows say the opposite. The
-measurement channel may assert a direction only in silence, only toward
-*stronger* corrections, only when its estimate is not wide, and only when the
-same signal held across two consecutive decision points. A single
-correction-caused low or rescue log on record blocks any move toward stronger
-corrections outright.
-
-#### Scenario: Recurring lows while the fit points the other way
-
-- **GIVEN** correction-caused low days recurring past the day-rate floor
-- **AND** a pooled fasting interval sitting entirely on the stronger side of the
-  programmed ISF
-- **WHEN** the ISF card is produced
-- **THEN** the direction is weaken, and the card says plainly that the overnight
-  reading points the other way but is unsteady and the lows carry the decision
-
-#### Scenario: A quiet window the rescue log did not cover
-
-- **GIVEN** a window with no correction-caused lows and no rescue logs recorded
-- **AND** part of that window predates the Carb log's first-ever entry
-- **WHEN** the strengthen gate is evaluated
-- **THEN** the window is treated as unobserved rather than quiet, no strengthen is
-  asserted, and no strengthen signal is carried forward as a prior decision point
-
-### Requirement: A harm-owned weaken is direction-only and never names a new ISF
-
-The system SHALL satisfy the following:
-
-When lows own the direction, the analysis states the direction and withholds the
-number: no recommended value is emitted, so nothing can be staged or programmed
-from it. The capped half-gap toward the robust per-night median survives only as
-an internal basis for pricing the lever's ranking — it is never rendered, never
-stageable, and never a schedule value. Harm evidence establishes that corrections
-are too aggressive; it does not identify a trustworthy replacement.
-
-#### Scenario: A harm-owned weaken is direction-only and never names a new ISF
-
-- **WHEN** the capability evaluates the behavior described by this requirement
-- **THEN** the stated behavior applies
-
-### Requirement: One predicate decides whether an ISF row may stage
-
-The system SHALL satisfy the following:
-
-`isf_asserts_move` is **the** ISF staging decision. The analyzer evaluates it
-after every harm adjustment and any final rounding, then stamps its boolean
-result onto the published segment. It is true only when the current programmed
-value exists, the final row names a direction, the final recommendation exists,
-and that recommendation differs from current. Direction, annotation, evidence,
-and the findings queue register remain independent outputs; no consumer may use
-one of them as a substitute staging gate.
-
-#### Scenario: ISF is measurable but no programmed value is available
-
-- **GIVEN** a fasting estimate with its interval and supporting-night evidence
-- **AND** no programmed ISF overlaps the fasting envelope
-- **WHEN** the analyzer publishes its segment
-- **THEN** it preserves the estimate and evidence, emits no recommendation, and
-  stamps `asserts_move = false`
-
-#### Scenario: The final recommendation equals current
-
-- **GIVEN** the evidence channel names a strengthen direction
-- **WHEN** the capped and rounded final recommendation equals the programmed ISF
-- **THEN** the segment preserves that direction and annotation but stamps
-  `asserts_move = false`, so it cannot enter Plan
+- **GIVEN** a night in which the user logged rescue carbs
+- **WHEN** basal's clean minutes are taken for that night
+- **THEN** the minutes under that entry's decayed COB are excluded, and the entry
+  contributes no dose, no carb term, and no adjustment to the basal number
 
 ### Requirement: I:C is measured from closed meal-run ledgers
 
@@ -431,17 +264,11 @@ The system SHALL satisfy the following:
 
 Several silences are deliberate and must survive refactoring:
 
-- **No daytime ISF schedule.** Only the fasting regime is identifiable; a
-  per-segment ISF would be invented.
-- **No conditioning gate on individual fasting nights.** A short window sitting on
-  a flat part of the insulin decay has almost no leverage, so an extreme
-  single-night fit is expected rather than corrupt. The reduction over nights is a
-  median plus a per-night vote, which weight such a night once each; gating them
-  would tighten the pooled band and thereby unblock stronger-correction advice.
-- **No direction from a pooled interval alone for ISF.** Nights, not five-minute
-  steps, are the estimator and recurrence unit.
+- **No correction-factor estimate and no correction-factor advice.** No passive
+  method identifies ISF under Control-IQ (ADR 564), and Harmonic assigns no
+  experiment to identify it.
 - **No dynamic COB anywhere.** Carb absorption is a static forward decay from the
-  logged amount; re-fitting it from CGM shape would absorb the ISF residual.
+  logged amount; re-fitting it from CGM shape would absorb the glucose residual the analysis attributes to insulin.
 - **No pooled ratio behind a fabricated denominator.** A run that crosses a block
   boundary may enter numeric pooling only through the joint inverse-ratio fit, which
   assigns each block its carb-share ownership. Effective support remains whole runs
@@ -696,9 +523,8 @@ the pump stamped on its bolus; for a chained run, its first member's. A bolus
 with no stamp SHALL use the programmed ISF segment in force at its time of day
 in the latest settings snapshot captured at or before it. With neither, the
 meal SHALL NOT be converted, and the ledger falls back to its correction-only
-form and flags that run as unconfirmed. No conversion SHALL read the ISF
-analyzer's fasting estimate, because no passive method identifies ISF under
-Control-IQ and the pooled estimate leans toward stronger corrections. Confirmed
+form and flags that run as unconfirmed. Harmonic estimates no ISF (ADR 564),
+so no conversion has any ISF to read but the stamped or programmed one. Confirmed
 and fallback runs centre differently, so whenever any run in a pool has a
 readable outcome the estimate is taken from that subpopulation alone rather than
 folding a mixture into one number.
@@ -728,8 +554,68 @@ folding a mixture into one number.
 #### Scenario: A carb-ratio result does not move with the fasting ISF estimate
 
 - **GIVEN** two synthetic stores with the same meals, stamps, printed lows and
-  meal-window basal, which differ only in their fasting nights, so that the ISF
-  analyzer serves a different estimate for each, one of them zero
+  meal-window basal, which differ only in their fasting nights: in one the
+  overnight corrections act, in the other glucose holds flat
 - **WHEN** the analysis runs over each store
 - **THEN** both serve the same carb-ratio segment rows and blocks, including
   every staging verdict, and every meal with a readable outcome is converted
+- **AND** neither result carries an ISF estimate
+
+### Requirement: Harmonic does not estimate the correction factor or advise moving it
+
+The analysis SHALL NOT estimate ISF and SHALL serve no correction-factor
+estimate, recommendation, direction or staging verdict (ADR 564). No passive
+method identifies ISF under Control-IQ: insulin delivery responds to glucose, so
+insulin and glucose movement are confounded. Recurring correction lows are a
+habit, owned by the correction habit detectors, and are not a setting signal.
+Harmonic SHALL NOT replace the estimate with an experiment it assigns, such as
+an engine-assigned basal Trial or a correction challenge. The programmed ISF
+and each meal's dose-stamped ISF stay inputs Harmonic reads: the dose-stamped
+ISF converts a meal's glucose miss into insulin (ADR 563), and the programmed
+ISF is carried, unchanged, in every pump profile Harmonic shows or delivers.
+
+#### Scenario: The analysis serves no ISF estimate
+
+- **GIVEN** any store, including one with many clean fasting nights and
+  correction boluses
+- **WHEN** the analysis runs
+- **THEN** its result carries no `isf` rows, no ISF tuning lever, no ISF settling
+  gate and no ISF setting epoch
+- **AND** its basal and carb-ratio rows are what they would be with the fasting
+  nights removed
+
+#### Scenario: Correction lows stay a habit
+
+- **GIVEN** a window of recurring lows after corrections given over the
+  calculator's insulin-on-board credit
+- **WHEN** the analysis and the behavioral layer run
+- **THEN** the correction habit detectors judge those lows as they did before
+- **AND** no correction-factor direction or recommendation is served for them
+
+#### Scenario: The programmed correction factor is still read
+
+- **GIVEN** a meal bolus stamped with an ISF and a programmed ISF schedule
+- **WHEN** the carb-ratio ledger converts that meal and the deliverable profile
+  is built
+- **THEN** the meal converts with its stamp, and the profile carries the
+  programmed ISF unchanged
+
+### Requirement: Every I:C estimate carries an interval, and a wide interval blocks assertion
+
+The system SHALL satisfy the following:
+
+Estimates ship as a point value, an 80% percentile-bootstrap interval, and the
+sample size behind them; thin data surfaces as a wide interval and a visible `n`,
+never as a blank. The resampling unit is the correlated cluster, not the raw
+observation — whole meal runs for I:C — so same-night steps
+and same-run meals cannot read as independent evidence. An estimate is *wide*
+when its half-width exceeds a quarter of the point value, when fewer than three
+observations back it, or when a clustered estimate rests on fewer than two
+clusters. A wide estimate still displays; it simply cannot support a move.
+
+#### Scenario: Many meals, one run
+
+- **GIVEN** several meals that all belong to a single closed meal run
+- **WHEN** the I:C interval is computed
+- **THEN** the run is resampled as one cluster, so its meals cannot read as
+  independent evidence

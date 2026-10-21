@@ -256,51 +256,6 @@ be the failure this capability exists to prevent.
 - **WHEN** the capability evaluates the behavior described by this requirement
 - **THEN** the stated behavior applies
 
-### Requirement: The verdict is the only staging and delivery predicate
-
-The system SHALL satisfy the following:
-
-The safety verdict — exposed as `SlotEstimate.asserts_move` for basal and as the I:C
-and ISF analyzers' own single eligibility flags — is what every
-downstream consumer reads to decide whether a change may move a deliverable schedule
-or be staged into a plan. Basal and I:C also use that same eligibility when counting
-actionable priority; ISF ranking remains independently priced from its
-direction and never treats stageability as its register or priority gate. **No other
-layer may re-derive an evidence floor of its own.** Not the consolidated-profile
-builder, not the ranking layer, not any frontend surface. This is the invariant this
-codebase has regressed on repeatedly:
-each recurrence took the form of a second predicate — a display-only thinness marker,
-a `not wide` check, an extra "has a recommendation" test — placed at one call site
-while the verdict underneath kept admitting the move, so the change was held in one
-place and delivered in another. A new hold belongs *inside* the verdict; a consumer
-that re-tests a condition the verdict already covers is a defect regardless of whether
-it currently agrees.
-
-#### Scenario: A consumer sees a moved recommendation on a held slot
-
-- **GIVEN** a slot whose verdict is `INSUFFICIENT` but which still carries a capped
-  recommendation different from its current rate
-- **WHEN** the consolidated profile, the priority tally, or a staging surface reads
-  that slot
-- **THEN** each of them carries the *current programmed rate* forward and stages
-  nothing, because each keys on the verdict and none re-derives eligibility from the
-  recommendation, the interval width, or the day count
-
-#### Scenario: An ISF row carries a stale-looking recommendation
-
-- **GIVEN** an ISF row whose recommendation is present but whose
-  backend `asserts_move` verdict is false or absent
-- **WHEN** Diagnose, Plan, or any fixture-only projection consumes that row
-- **THEN** it stages nothing and shows no actionable number, even if the direction
-  register still reports the analyzer's independent direction
-
-#### Scenario: A new hold is needed for basal
-
-- **GIVEN** a newly identified condition under which a basal slot must not move
-- **WHEN** that hold is implemented
-- **THEN** it is expressed as part of the verdict computation, so that the deliverable
-  schedule, the priority tally, and every surface inherit it at once
-
 ### Requirement: The harm layer may only ever move toward less insulin
 
 The system SHALL satisfy the following:
@@ -382,77 +337,6 @@ is the point.
 - **AND** a slot programmed at 0.72 U/h in the same state still steps one full step,
   to 0.576
 
-### Requirement: ISF and I:C moves are half-gap steps under the same 20% cap
-
-The system SHALL satisfy the following:
-
-The ISF and I:C analyzers do not route through the basal cap;
-each computes its own recommendation as half the gap from the programmed value toward
-its measured target, clamped to ±20% of the programmed value. Moving halfway per
-window converges on the right value while re-measuring at each step, where repeated
-full steps overshoot and reverse. The ±20% clamp is the same per-pass limit the basal
-step cap enforces, applied to a different parameter.
-
-#### Scenario: ISF and I:C moves are half-gap steps under the same 20% cap
-
-- **WHEN** the capability evaluates the behavior described by this requirement
-- **THEN** the stated behavior applies
-
-### Requirement: One backend predicate decides whether an ISF row may stage
-
-The system SHALL satisfy the following:
-
-`isf_asserts_move` is the ISF staging decision. It is evaluated after
-the harm gate from the final values that the analyzer publishes, and is true only
-when the current programmed value exists, a direction is named, a recommendation
-exists, and that recommendation differs from current. A direction-only weakening, a
-hold, a missing programmed value, and a rounded no-op all carry `asserts_move = false`.
-Consumers require the exact boolean `true`; an absent legacy field fails closed.
-
-This predicate controls staging only. The harm and measurement channels still own
-direction, the findings projection still derives its queue register from that
-direction, and the ISF analyzer still owns its half-gap cap. ISF does
-not inherit basal's `Status`, evidence floors, or consolidated-profile path merely
-because it now shares the one-verdict staging invariant.
-
-#### Scenario: No programmed ISF exists
-
-- **GIVEN** a trustworthy fasting measurement but no programmed ISF
-- **WHEN** the analyzer publishes its row
-- **THEN** the estimate, interval, support, and evidence remain visible, while
-  `recommended` is empty and `asserts_move` is false
-
-#### Scenario: Rounding removes the proposed move
-
-- **GIVEN** a named strengthen direction whose final recommendation rounds back to
-  the current programmed ISF
-- **WHEN** the final staging predicate is evaluated
-- **THEN** the direction remains available for explanation, but `asserts_move` is
-  false and no consumer may stage the row
-
-### Requirement: A direction without a trustworthy number recommends nothing
-
-The system SHALL satisfy the following:
-
-Where harm evidence establishes a direction but the measurement cannot supply a value
-worth programming, no recommendation is emitted at all. Recurring correction-caused
-lows weaken ISF as a *direction*, and if the supporting overnight
-median is absent or points the other way, the recommendation stays empty and nothing
-can be staged or programmed — a number is never manufactured to give the direction
-something to carry. Conversely, a move toward *stronger* corrections requires observed
-silence: zero attributed lows and zero attributed rescue logs over a window the rescue
-log was actually recording across, a measurement that is not flagged wide, and the same
-signal holding on two consecutive decision points. A quiet stretch that merely predates
-the rescue log is unknown, not silence, and may never license a stronger correction.
-
-#### Scenario: A single attributed low with no recurrence
-
-- **GIVEN** one correction-attributed low on record and a measurement that would
-  otherwise support a stronger ISF
-- **WHEN** the ISF recommendation is computed
-- **THEN** the setting is held as it is; a single low is enough to gate a move toward
-  more insulin even though it is not enough to force one away from it
-
 ### Requirement: A basal slot's harm evidence serves the recurrence count its nudge used
 
 Every basal slot that printed an attributed overnight low SHALL serve, in its harm
@@ -478,3 +362,55 @@ it from `band_nights`, `slot_nights` or the listed lows.
 - **WHEN** the basal analyzer serves 03:00
 - **THEN** its harm evidence serves `recurrence_nights` 2 and `recurrence_bar` 2
 - **AND** the slot is nudged
+
+### Requirement: The verdict is the only basal and I:C staging and delivery predicate
+
+The system SHALL satisfy the following:
+
+The safety verdict — exposed as `SlotEstimate.asserts_move` for basal and as the I:C
+analyzer's own single eligibility flag — is what every
+downstream consumer reads to decide whether a change may move a deliverable schedule
+or be staged into a plan. Basal and I:C also use that same eligibility when counting
+actionable priority. **No other
+layer may re-derive an evidence floor of its own.** Not the consolidated-profile
+builder, not the ranking layer, not any frontend surface. This is the invariant this
+codebase has regressed on repeatedly:
+each recurrence took the form of a second predicate — a display-only thinness marker,
+a `not wide` check, an extra "has a recommendation" test — placed at one call site
+while the verdict underneath kept admitting the move, so the change was held in one
+place and delivered in another. A new hold belongs *inside* the verdict; a consumer
+that re-tests a condition the verdict already covers is a defect regardless of whether
+it currently agrees.
+
+#### Scenario: A consumer sees a moved recommendation on a held slot
+
+- **GIVEN** a slot whose verdict is `INSUFFICIENT` but which still carries a capped
+  recommendation different from its current rate
+- **WHEN** the consolidated profile, the priority tally, or a staging surface reads
+  that slot
+- **THEN** each of them carries the *current programmed rate* forward and stages
+  nothing, because each keys on the verdict and none re-derives eligibility from the
+  recommendation, the interval width, or the day count
+
+#### Scenario: A new hold is needed for basal
+
+- **GIVEN** a newly identified condition under which a basal slot must not move
+- **WHEN** that hold is implemented
+- **THEN** it is expressed as part of the verdict computation, so that the deliverable
+  schedule, the priority tally, and every surface inherit it at once
+
+### Requirement: I:C moves are half-gap steps under the 20% cap
+
+The system SHALL satisfy the following:
+
+The I:C analyzer does not route through the basal cap;
+it computes its own recommendation as half the gap from the programmed value toward
+its measured target, clamped to ±20% of the programmed value. Moving halfway per
+window converges on the right value while re-measuring at each step, where repeated
+full steps overshoot and reverse. The ±20% clamp is the same per-pass limit the basal
+step cap enforces, applied to a different parameter.
+
+#### Scenario: I:C moves are half-gap steps under the 20% cap
+
+- **WHEN** the capability evaluates the behavior described by this requirement
+- **THEN** the stated behavior applies

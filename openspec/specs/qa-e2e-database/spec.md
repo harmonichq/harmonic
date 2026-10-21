@@ -99,13 +99,10 @@ coverage case SHALL declare its source span and `materialize_case` SHALL write
 exactly that depth. The family days-back rule SHALL be a minimum only when the
 case's pinned expectation requires family maturity. A case MAY declare a shorter
 span when its pinned I:C `state` is `collecting` with exact emitted
-`days_observed`, or when its pinned ISF outcome does not require the prior-decision
-window. Task 1 SHALL assert declaration against recipe depth and SHALL NOT apply a
+`days_observed`. Task 1 SHALL assert declaration against recipe depth and SHALL NOT apply a
 family floor independently of the pinned expectation. Mature basal coverage SHALL reach at least
 `window_days + _BOLUS_LEADIN` = 31 days back for the segment lane, 32 inclusive;
-ISF coverage whose outcome needs the prior-decision window SHALL reach at least
-`window_days + _ISF_DECISION_INTERVAL + _BOLUS_LEADIN` = 38 days back, 39
-inclusive; and mature I:C coverage SHALL reach at least `BLOCK_WINDOW_DAYS` = 90 days
+and mature I:C coverage SHALL reach at least `BLOCK_WINDOW_DAYS` = 90 days
 back, 91 inclusive, because block maturity is
 `now - earliest basal/CGM/bolus event >= BLOCK_WINDOW_DAYS` and that block lane
 does not read `_BOLUS_LEADIN`. Because `observed_days` floors elapsed seconds,
@@ -161,12 +158,11 @@ prove the committed store's bytes were untouched.
 
 #### Scenario: Pinned maturity determines source depth
 
-- **WHEN** new basal, ISF, and I:C coverage cases are materialized
+- **WHEN** new basal and I:C coverage cases are materialized
 - **THEN** each declaration exactly matches its recipe's event depth
 - **AND** a case whose pinned expectation requires family maturity meets the
   imported family-specific minimum without repeated numeric policy literals
-- **AND** a collecting I:C case or an ISF case that does not need prior-decision
-  replay may declare a shorter depth
+- **AND** a collecting I:C case may declare a shorter depth
 - **AND** collecting and asserting I:C rows pin emitted `days_observed`, while
   every other I:C row pins its exact state and omits that field
 - **AND** each case runs using only its own rows and snapshots

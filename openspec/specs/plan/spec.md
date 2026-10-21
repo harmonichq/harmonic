@@ -127,31 +127,6 @@ After the user keys settings into their pump and a new data fetch arrives, Harmo
 - **WHEN** the capability evaluates the behavior described by this requirement
 - **THEN** the stated behavior applies
 
-### Requirement: Direction-only ISF recommendations cannot be staged
-
-The system SHALL satisfy the following:
-
-An ISF recommendation that carries only a direction (no `recommended` value) may not be staged into the Plan because the Plan requires a concrete value to program. A harm-owned ISF weakening is direction-only and remains advisory only, never reaching the Plan. A row with no programmed value, a rounded recommendation equal to current, an explicit false verdict, or no verdict also cannot stage, even if it carries a stale-looking recommendation or an asserted direction.
-
-#### Scenario: Direction-only ISF recommendations cannot be staged
-
-- **WHEN** the capability evaluates the behavior described by this requirement
-- **THEN** the stated behavior applies
-
-### Requirement: A stageable fasting ISF applies to every programmed ISF segment
-
-The system SHALL satisfy the following:
-
-ISF analysis produces one fasting recommendation while the pump stores a segmented
-ISF schedule. When that analyzer row carries `asserts_move = true`,
-staging applies the unchanged capped recommendation to every currently programmed
-ISF segment. Plan does not recalculate, distribute, or otherwise alter the value.
-
-#### Scenario: A stageable fasting ISF applies to every programmed ISF segment
-
-- **WHEN** the capability evaluates the behavior described by this requirement
-- **THEN** the stated behavior applies
-
 ### Requirement: A staged I:C block's captured bounds carry an inclusive start and an exclusive end
 
 The system SHALL satisfy the following:

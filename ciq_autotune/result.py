@@ -1,7 +1,7 @@
 """The single versioned result object every analyzer writes into and every
 interface renders from (ROADMAP §5, F3).
 
-``analyze()`` (see :mod:`~ciq_autotune.analyze`) funnels basal, ISF, I:C and
+``analyze()`` (see :mod:`~ciq_autotune.analyze`) funnels basal, I:C and
 behavioral analysis into one :class:`AnalysisResult`. The CLI renders it as text,
 the HTTP API serves its JSON, and a future frontend consumes the same JSON — so
 this schema, not the transport, *is* the contract. It is versioned
@@ -51,7 +51,10 @@ from .uncertainty import Confidence, Estimate
 # v9 (issue #10): additive `ic_history` — analyzer-owned, dose-stamped historical
 # regime measurements with canonical identities and lifecycle. These records carry
 # no recommendation or assertion fields and cannot enter the action path.
-SCHEMA_VERSION = 9
+# v10 (issue #601, ADR 564): `isf` removed — the analysis no longer estimates the
+# correction factor. The consolidated profile's ISF column stays the programmed
+# schedule carried forward.
+SCHEMA_VERSION = 10
 
 _PLAN_PRECISION = {"basal_rate": 3, "isf": 0, "carb_ratio": 1}
 
@@ -86,7 +89,7 @@ class EpochInfo:
     """Parameter setting-epoch metadata surfaced with the result.
 
     ``effective_days`` is the cut span for the basal setting-epoch summary and the
-    full measurement span for ISF/I:C, whose setting epochs drive
+    full measurement span for I:C, whose setting epoch drives
     caveats/settling instead.
     """
 
@@ -222,28 +225,26 @@ class SlotEstimate:
 
 @dataclass(frozen=True)
 class SegmentEstimate:
-    """An ISF or I:C reading: measured-vs-programmed + CI + capped recommendation.
+    """An I:C reading: measured-vs-programmed + CI + capped recommendation.
 
-    I:C stays per-segment (one row per programmed segment); ISF is a single
-    fasting estimate carried as a one-row list with ``start_min=0`` (ADR 0001)."""
+    I:C stays per-segment (one row per programmed segment)."""
 
     start_min: int
     label: str
-    parameter: str            # "isf" | "carb_ratio"
+    parameter: str            # "carb_ratio"
     current: Optional[float]
     estimate: Estimate
     recommended: Optional[float]
     annotation: str
     evidence: Dict = field(default_factory=dict)
-    # The analyzer-owned staging verdict. A live ISF row stamps the
-    # post-harm-gate decision from `analyzers.isf.isf_asserts_move`; direction remains
-    # separate evidence. For `carb_ratio` this is always False because segment rows are
-    # pump-lane display and the live eligibility verdict rides the owning `IcBlock`.
+    # The analyzer-owned staging verdict. For `carb_ratio` this is always False
+    # because segment rows are pump-lane display and the live eligibility verdict
+    # rides the owning `IcBlock`.
     # `None` is reserved for legacy payloads and non-analyzer constructed rows that did
     # not record a decision.
     asserts_move: Optional[bool] = None
     # The `IcBlock` that owns this segment (#518) — its `block_id`, i.e. the block's
-    # own `start_min`. `None` for ISF rows and legacy payloads. The surface uses it to
+    # own `start_min`. `None` for legacy payloads. The surface uses it to
     # say which stretch reads for a segment that has no number of its own.
     block_id: Optional[int] = None
     guidance: Optional[Dict] = None
@@ -507,7 +508,7 @@ class ConsolidatedProfile:
     **four-parameter** schedule (#98). Boundaries are the union of change boundaries
     across basal / ISF / I:C / target; each segment carries all four values, with
     unchanged params carried forward from the current programmed profile. Additive to
-    the raw ``basal`` / ``isf`` / ``ic`` views, not a replacement.
+    the raw ``basal`` / ``ic`` views, not a replacement.
 
     ``forced_merges`` is true when the union of boundaries exceeded ``max_segments``
     and the builder had to merge otherwise-distinct adjacent segments to fit the
@@ -639,7 +640,6 @@ class AnalysisResult:
     epochs: List[EpochInfo]
     data_quality: DataQuality
     basal: List[SlotEstimate]
-    isf: List[SegmentEstimate]
     ic: List[SegmentEstimate]
     behavioral: List[Finding]
     disclaimer: str = DISCLAIMER
@@ -677,7 +677,6 @@ class AnalysisResult:
             "epochs": [e.to_dict() for e in self.epochs],
             "data_quality": self.data_quality.to_dict(),
             "basal": [s.to_dict() for s in self.basal],
-            "isf": [s.to_dict() for s in self.isf],
             "ic": [s.to_dict() for s in self.ic],
             "behavioral": [f.to_dict() for f in self.behavioral],
             "disclaimer": self.disclaimer,

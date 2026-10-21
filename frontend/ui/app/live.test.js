@@ -118,10 +118,10 @@ test('the Queue reads a case file only for each Pattern it ranks', async () => {
   assert.equal(fake.count('case-preparation'), 1);
 });
 
-test('the Queue and the Overview keep none of the ISF segments the analysis still serves (#564)', async () => {
+test('the Queue and the Overview keep only the analysis keys their screens read', async () => {
   const fake = fakeClient();
-  const segments = [{ start_min: 0, current: 40, recommended: 36.2, asserts_move: true }, { start_min: 720 }];
-  fake.client.fetchAnalysis = () => Promise.resolve({ basal: [], isf: segments, ic_blocks: [] });
+  const segments = [{ start_min: 0, label: '00:00', parameter: 'carb_ratio', current: 10 }];
+  fake.client.fetchAnalysis = () => Promise.resolve({ basal: [], ic: segments, ic_blocks: [] });
   const live = createLive({ client: fake.client, glossary: [] });
   await live.readTab('queue');
   await live.readTab('overview');

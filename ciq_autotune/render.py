@@ -35,7 +35,7 @@ def _consolidated(result: AnalysisResult) -> ConsolidatedProfile:
     # D5): writing the headline block's recommendation with no programmed schedule
     # behind it leaves the move with no restoring boundary, so it would render as
     # running to midnight. See the identical note in report.py.
-    return consolidate_profile(result.basal, isf=result.isf)
+    return consolidate_profile(result.basal)
 
 
 def _consolidated_section(prof: ConsolidatedProfile) -> List[str]:
@@ -136,8 +136,6 @@ def render_text(result: AnalysisResult) -> str:
     lines += _basal_section(r.basal)
     lines.append("")
     lines += _consolidated_section(_consolidated(r))
-    lines.append("")
-    lines += _segment_section("ISF", "mg/dL per unit", r.isf, nd=1)
     lines.append("")
     lines += _segment_section("I:C", "grams per unit", r.ic, nd=1)
     lines.append("")

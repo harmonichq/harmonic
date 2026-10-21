@@ -871,7 +871,6 @@ def _value_at(schedule: List[Tuple[int, Optional[float]]], minute: int) -> Optio
 def consolidate_profile(
     slots: List[SlotEstimate],
     *,
-    isf: Optional[List[SegmentEstimate]] = None,
     carb_ratio: Optional["IcBlock"] = None,
     programmed_isf: Optional[List[Tuple[int, float]]] = None,
     programmed_ic: Optional[List[Tuple[int, float]]] = None,
@@ -894,8 +893,8 @@ def consolidate_profile(
     2. ISF / I:C / target each become a ``[(start_min, value)]`` step function: the
        analyzer recommendation where present, else the value **carried forward** from
        the current programmed profile — the #105 effective-settings seam, passed in as
-       ``programmed_*`` from ``settings.active_schedule``. Target has no analyzer, so it
-       is pure carry forward. I:C comes from :func:`_ic_schedule` and carries the
+       ``programmed_*`` from ``settings.active_schedule``. ISF and target have no
+       analyzer, so they are pure carry forward. I:C comes from :func:`_ic_schedule` and carries the
        **headline block only**, written at every one of that block's member boundaries
        (#518); ``carb_ratio`` is therefore a single
        :class:`~ciq_autotune.result.IcBlock`, not a list of rows. This function does
@@ -908,21 +907,12 @@ def consolidate_profile(
        is then set and ``note`` carries the caveat with the worst forced-merge basal
        deviation — the same semantics as the basal-only version, extended to 4-param.
 
-    Segment boundaries are 30-min-aligned. A fully empty input (no basal, no ISF/IC
-    recommendations, no programmed schedules) yields an empty profile.
+    Segment boundaries are 30-min-aligned. A fully empty input (no basal, no I:C
+    recommendation, no programmed schedules) yields an empty profile.
     """
     basal_segs = _collapse_islands(
         _basal_segments(slots, slot_minutes, noise_floor), noise_floor
     )
-    # #180: ISF is carried forward from the *programmed* schedule only — the analyzer
-    # `isf` rows are deliberately NOT fed into the pump-profile schedule. The ISF
-    # analyzer returns a single rest-window regression as a one-row list with
-    # start_min=0 (ADR 0001), which _param_schedule would write as sched[0] only,
-    # producing a synthetic short ISF segment bounded by an unrelated programmed
-    # boundary. The consolidated profile carries only numbers defended as a full-day
-    # schedule; the fasting-ISF rec is surfaced advisory-only on the Recommendations
-    # tab instead (see frontend/index.html; formalized by the #142 redesign). The
-    # `isf` param is retained for call-site compatibility but intentionally unused.
     isf_sched = _param_schedule(None, programmed_isf)
     ic_sched = _ic_schedule(carb_ratio, programmed_ic)
     target_sched = _param_schedule(None, programmed_target)

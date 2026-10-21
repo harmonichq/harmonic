@@ -20,13 +20,12 @@ from __future__ import annotations
 
 import re
 import unittest
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 
 from ciq_autotune.analyze import analyze
 from ciq_autotune.analyzers.basal import _annotation_for
 from ciq_autotune.analyzers.ic import IcConfig, _history_annotation, analyze_ic
 from ciq_autotune.analyzers.ic import _recommend as _ic_recommend
-from ciq_autotune.analyzers.isf import IsfChannels, IsfConfig, _recommend
 from ciq_autotune.events import CarbEntry, CgmReading
 from ciq_autotune.harm import HarmArm, HarmConfig, PrintedLow
 from ciq_autotune.render import render_text
@@ -53,24 +52,6 @@ from tests.test_analyzer_ic import (
 from tests.test_ic_blocks import blocks_for, by_id
 from tests.test_ic_blocks import meal as block_meal
 
-_CFG = IsfConfig()
-
-
-def _est(value, lo, hi, n=200):
-    return Estimate(value=value, lo=lo, hi=hi, n=n, method="bootstrap-ols-isf")
-
-
-def _ch(*, night_median=None, fits=None, corr_low_days=0, rescue_days=0,
-        covered_days=30, rescue_observed=True):
-    pairs = [(date(2026, 6, i + 1), v) for i, v in enumerate(fits or [])]
-    if night_median is None and pairs:
-        vals = sorted(v for _, v in pairs)
-        m = len(vals) // 2
-        night_median = vals[m] if len(vals) % 2 else (vals[m - 1] + vals[m]) / 2
-    return IsfChannels(night_fits=pairs, night_median=night_median,
-                       corr_low_days=corr_low_days, rescue_days=rescue_days,
-                       covered_days=covered_days, rescue_observed=rescue_observed)
-
 
 def basal_annotations() -> dict:
     """Every basal status's sentence, keyed by the status string the API emits,
@@ -85,49 +66,6 @@ def basal_annotations() -> dict:
     sentences[f"{Status.HARM_GATED.value} (range hold)"] = _annotation_for(
         Status.HARM_GATED, range_hold=True)
     return sentences
-
-
-# One entry per reachable `_recommend` branch. The `direction` each case is expected
-# to produce is asserted here, so a case that quietly stops reaching its branch
-# fails instead of silently checking yesterday's sentence.
-_ISF_CASES = [
-    ("no_baseline_no_data", None, _est(None, None, None, 0), _ch(), False, None),
-    ("no_baseline_measured", None, _est(40.0, 32.0, 48.0), _ch(night_median=40.0),
-     False, None),
-    ("no_measurement", 36.0, _est(None, None, None, 0), _ch(), False, None),
-    ("weaken_no_target", 36.0, _est(30.0, 26.0, 40.0),
-     _ch(night_median=30.0, corr_low_days=4), False, "weaken"),
-    ("weaken_easing", 36.0, _est(42.0, 36.5, 48.0),
-     _ch(night_median=45.0, corr_low_days=4), False, "weaken"),
-    ("weaken_easing_disagreeing_measurement", 36.0, _est(28.0, 24.0, 32.0),
-     _ch(night_median=45.0, corr_low_days=4), False, "weaken"),
-    ("confirmed", 36.0, _est(40.0, 32.0, 48.0),
-     _ch(night_median=40.0, corr_low_days=1), False, None),
-    ("held_after_a_low", 36.0, _est(24.0, 18.0, 30.0),
-     _ch(fits=[24.0, 25.0, 23.0], corr_low_days=1), False, None),
-    ("held_rescue_log_incomplete", 36.0, _est(24.0, 18.0, 30.0),
-     _ch(fits=[24.0, 25.0, 23.0], rescue_observed=False), False, None),
-    ("collecting_range_too_wide", 36.0, _est(60.0, 45.0, 110.0),
-     _ch(fits=[60.0, 58.0, 62.0]), False, None),
-    ("strengthen", 36.0, _est(28.0, 25.0, 31.0),
-     _ch(fits=[28.0, 27.0, 29.0, 26.0, 28.5]), True, "strengthen"),
-    ("watching_not_yet_held", 36.0, _est(28.0, 25.0, 31.0),
-     _ch(fits=[28.0, 27.0, 29.0, 26.0, 28.5]), False, None),
-]
-
-
-def isf_annotations() -> dict:
-    """Every correction-strength sentence `_recommend` can return, by branch."""
-    out = {}
-    for name, programmed, est, ch, prior, want_direction in _ISF_CASES:
-        _rec, ann, direction, _priced = _recommend(
-            programmed, est, ch, _CFG, prior_strengthen_signal=prior)
-        if direction != want_direction:
-            raise AssertionError(
-                f"{name}: expected direction {want_direction!r}, got {direction!r} — "
-                "the case no longer reaches the branch it was built for")
-        out[name] = ann
-    return out
 
 
 # One entry per carb-ratio `_recommend` branch, with where its recommendation must
@@ -375,11 +313,6 @@ class RegisterTest(unittest.TestCase):
             with self.subTest(status=key):
                 self._check(f"basal {key}", sentence)
 
-    def test_every_correction_strength_branch_is_in_register(self):
-        for branch, sentence in isf_annotations().items():
-            with self.subTest(branch=branch):
-                self._check(f"correction strength {branch}", sentence)
-
     def test_every_carb_ratio_branch_is_in_register(self):
         for branch, sentence in ic_annotations().items():
             with self.subTest(branch=branch):
@@ -410,7 +343,7 @@ class HeldSlotPrintsInRegisterTest(unittest.TestCase):
                 6, "03:00", 0.65,
                 Estimate(0.72, 0.68, 0.79, 12, 0.8, "bootstrap-median"),
                 0.65, held, 12)],
-            isf=[], ic=[], behavioral=[],
+            ic=[], behavioral=[],
         )
 
     def test_cli_prints_the_held_sentence(self):

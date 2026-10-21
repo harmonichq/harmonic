@@ -42,11 +42,6 @@ def _minimal_result():
         data_quality=DataQuality(counts={"cgm_readings": 2169}, notes=["thin basal epoch"]),
         basal=[SlotEstimate(slot=0, label="00:00", current=0.6, estimate=est,
                             recommended=0.6, annotation="no change", days=3)],
-        isf=[SegmentEstimate(start_min=0, label="Fasting", parameter="isf", current=36.0,
-                             estimate=Estimate(35.0, 30.0, 41.0, 12, 0.8, "bootstrap-ols-isf"),
-                             recommended=None,
-                             annotation="fasting data confirms your programmed ISF",
-                             evidence={"n_steps": 12})],
         ic=[],
         behavioral=[Finding(detector="not-pre-bolusing", severity="medium",
                             summary="Boluses land after the meal spike.", evidence={"share": 0.4},
@@ -161,8 +156,10 @@ class ResultSerializationTest(unittest.TestCase):
         self.assertIn("wide", slot0["estimate"])
         self.assertEqual(slot0["current"], 0.6)
 
-    def test_isf_segment_serializes_its_explicit_staging_verdict(self):
-        base = _minimal_result().isf[0]
+    def test_segment_serializes_its_explicit_staging_verdict(self):
+        base = SegmentEstimate(start_min=0, label="00:00", parameter="carb_ratio", current=10.0,
+                               estimate=Estimate(9.0, 8.0, 10.5, 12, 0.8, "bootstrap-mean"),
+                               recommended=None, annotation="")
         for verdict in (False, True):
             with self.subTest(asserts_move=verdict):
                 row = replace(base, asserts_move=verdict).to_dict()
@@ -170,7 +167,7 @@ class ResultSerializationTest(unittest.TestCase):
 
     def test_sections_present(self):
         d = _minimal_result().to_dict()
-        for key in ("span", "epochs", "data_quality", "basal", "isf", "ic",
+        for key in ("span", "epochs", "data_quality", "basal", "ic",
                     "behavioral", "disclaimer", "window_days"):
             self.assertIn(key, d)
 

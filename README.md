@@ -45,10 +45,10 @@ algorithm activity from your programmed profile.
 `AnalysisResult`; the CLI prints it and the HTTP API serves it as JSON (same
 contract, two renderers). On top of basal:
 
-- **ISF** is measured from clean correction→response windows (including Control-IQ's
-  automatic corrections) and compared to your programmed value, with an
-  aggressiveness knob — ISF, not basal, is the lever that pulls your setpoint
-  toward Control-IQ's built-in 110 target.
+- **The correction factor (ISF)** is neither estimated nor tuned: no passive
+  method identifies it under Control-IQ (ADR 564). Harmonic reads your programmed
+  and dose-stamped ISF, and follows a pump edit to it as a Trial that shows what
+  followed and advises nothing.
 - **I:C + carb counting** is one engine over post-meal correction burden: a
   *systematic* excess implies a tighter ratio, while a *high-variance* burden
   flags inconsistent carb counting instead.
@@ -56,9 +56,9 @@ contract, two renderers). On top of basal:
   unannounced meals — an extensible registry contributors can add to.
 
 Nothing is blanked: thin data shows a **wide confidence interval and its `n`**,
-not a gap. ISF/I:C measurements use the full requested analysis window; setting
-epochs for ISF/I:C now drive caveats and settling, while basal setting epochs keep
-per-slot basal measurement cuts so a basal edit does not starve unrelated slots. ISF/I:C
+not a gap. I:C measurements use the full requested analysis window; the I:C setting
+epoch drives caveats and settling, while basal setting epochs keep
+per-slot basal measurement cuts so a basal edit does not starve unrelated slots. Settings
 history is reconstructed forward-only by snapshotting and diffing pump settings
 each fetch (Tandem emits no settings-change event).
 
@@ -93,10 +93,9 @@ record is bucketed by (a basal profile is a wall-clock schedule).
 # 1. Pull pump history into the local store (also snapshots current settings).
 uv run harmonic fetch --days 120
 
-# 2. Run the full model — basal, ISF, I:C, and behavioral — over one result.
+# 2. Run the full model — basal, I:C, and behavioral — over one result.
 uv run harmonic analyze                 # human-readable text
 uv run harmonic analyze --json          # the AnalysisResult as JSON
-uv run harmonic analyze --aggressiveness 0.5   # tighter ISF (with hypo framing)
 
 # 3. Serve the same result over HTTP and the web UI (localhost; set
 #    HARMONIC_API_TOKEN to gate it — the UI then expects that token pasted into
@@ -218,7 +217,7 @@ normal operation.
 
 ## Status
 
-**v0.1**: the full model (basal hardened, ISF, I:C + carb counting, behavioral
+**v0.1**: the full model (basal hardened, I:C + carb counting, behavioral
 detectors) over one `AnalysisResult`, rendered by both the CLI and a localhost
 HTTP API. First real fetch run validates the Tandem Source login on your account.
 

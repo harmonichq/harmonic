@@ -211,8 +211,8 @@ def timeline(
         store.bolus_events(rest_lo, rest_hi),
     )
 
-    # Carb-log exclusion spans for the fasting-band display: the intervals
-    # fasting_steps drops due to unbolused Carb-log COB. Computed over the same
+    # Carb-log exclusion spans for the rest-band display: the intervals an
+    # unbolused Carb-log entry's COB covers. Computed over the same
     # padded window as rest detection so entries that straddle day boundaries are
     # captured, then clamped to the requested span before emission.
     carb_entries = store.carb_entries(rest_lo, rest_hi)
@@ -279,12 +279,11 @@ def timeline(
         ],
         # Concrete sleep intervals for the viewed span, from the CIQ sleep schedule.
         "sleep_windows": [{"start": _fmt(lo), "end": _fmt(hi)} for lo, hi in sleep],
-        # Detected fasting/rest windows for the viewed span (model input for ISF).
+        # Detected rest windows for the viewed span.
         # One per calendar night; the frontend clips to the visible day panel.
         "rest_windows": [{"start": _fmt(w.start), "end": _fmt(w.end)} for w in rest],
-        # Carb-log COB-exclusion intervals (#202): spans the fasting_steps fit drops
-        # due to unbolused Carb-log entries. The frontend subtracts these from the
-        # rest-window band so the shaded area matches what the ISF fit actually saw.
+        # Carb-log COB-exclusion intervals (#202): spans unbolused Carb-log entries
+        # cover. The frontend subtracts these from the rest-window band.
         "carb_exclusion_spans": carb_excl,
         # False-low excursions (#381): the Day chart greys these as sensor artifacts
         # (still drawn) with an inline undo. The readings stay in ``cgm`` above.

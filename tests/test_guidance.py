@@ -230,7 +230,7 @@ class GuidanceTest(unittest.TestCase):
                 schema_version=SCHEMA_VERSION, generated_at="2026-08-17 09:00:00",
                 window_days=30, span=Span(start="2026-07-18", end="2026-08-17"),
                 epochs=[], data_quality=DataQuality(counts={}, notes=[]),
-                basal=rows, isf=[], ic=[], behavioral=[], tuning_levers=levers,
+                basal=rows, ic=[], behavioral=[], tuning_levers=levers,
             ).to_dict()
             return prepare_findings_projection(
                 analysis=analysis, exposures=execution.exposures,

@@ -414,7 +414,6 @@ def compare_follow_up(store, *, record, data_cutoff, input_revision, context_mod
             "readings": len(population["readings"]), "contributing_meals": len(population["meals"]),
             "informative_dates": sum(row["coverage"] >= CONSENSUS_MIN_COVERAGE for row in coverage), "coverage": coverage,
             "detected_rest_windows": len(population["view"]["rest_windows"]),
-            "qualifying_fasting_steps": len(population["view"]["fasting_steps"]),
         }
         observed = observe(carbs, [r for r in responses
                            if r.get("anchor_t") and lo <= _time(r["anchor_t"]) < hi], start=lo, end=hi,
@@ -512,7 +511,7 @@ def compare_follow_up(store, *, record, data_cutoff, input_revision, context_mod
             [m.n_readings for m in metrics], rate_groups, statistic, polarity, "observed CGM readings in eligible windows",
             [sum(row["coverage"] >= CONSENSUS_MIN_COVERAGE for row in coverage) for coverage in coverages], ready=outcome_ready,
         ))
-    if parameter in ("basal_rate", "isf"):
+    if parameter == "basal_rate":
         arms = []
         for population in populations:
             counts = []

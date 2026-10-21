@@ -19,9 +19,7 @@ from datetime import datetime, timedelta
 
 from ciq_autotune.analyze import analyze
 from ciq_autotune.analyzers.ic import IcConfig
-from ciq_autotune.analyzers.isf import IsfConfig
 from ciq_autotune.model import ModelConfig
-from ciq_autotune.rest_window import RestWindowConfig
 from ciq_autotune.settings import parse_pump_settings
 from ciq_autotune.store import Store
 
@@ -64,24 +62,6 @@ class DescribeGateInterpolationTest(unittest.TestCase):
         mcrit = " ".join(moved["criteria"])
         self.assertIn("25 g carbs", mcrit)
         self.assertIn("0.5 U bolus", mcrit)
-        self.assertIn("6 h", mcrit)
-
-    def test_isf_gate_is_soft_no_number(self):
-        gate = IsfConfig().describe_gate()
-        self.assertTrue(gate["soft"])
-        self.assertIsNone(gate["unit"])
-        self.assertIsNone(gate["needed"])       # no fabricated countdown
-        crit = " ".join(gate["criteria"])
-        self.assertIn("22:00–08:00", crit)       # default rest-window envelope
-        # Carb-bearing boluses keep the flat ~DIA lookback (excursion guard, #169),
-        # so the "N h" interpolates again; the Carb-log half is grams-scaled COB.
-        self.assertIn("5 h", crit)               # carb_lookback_min / 60
-        self.assertIn("still on board", crit)    # the grams-scaled Carb-log half
-        moved = IsfConfig(
-            rest_window=RestWindowConfig(env_start_min=1380, env_end_min=420),  # 23:00–07:00
-            carb_lookback_min=360).describe_gate()
-        mcrit = " ".join(moved["criteria"])
-        self.assertIn("23:00–07:00", mcrit)
         self.assertIn("6 h", mcrit)
 
 

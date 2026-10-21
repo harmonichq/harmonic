@@ -21,7 +21,6 @@ from ciq_autotune.window_membership import WindowQuery
 
 
 def _products(store):
-    captured = []
     analysis = analyze(
         store,
         window_days=DIAGNOSE_SOURCE_WINDOW_DAYS,
@@ -29,10 +28,7 @@ def _products(store):
         pool_agreeing_basal_regimes=True,
         carb_entries=store.carb_entries(),
         prompt_responses=store.prompt_responses(),
-        isf_fasting_evidence_sink=captured.append,
     ).to_dict()
-    if len(captured) != 1:
-        raise RuntimeError("ISF analyzer did not retain one fasting evidence set")
     return (
         analysis,
         build_exposures(store, window_days=DIAGNOSE_SOURCE_WINDOW_DAYS),

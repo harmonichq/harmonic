@@ -87,10 +87,10 @@ def main(argv: Optional[List[str]] = None) -> int:
     p_basal.add_argument("--bg-high", type=float)
     p_basal.add_argument("--flat-slope", type=float, metavar="MGDL_MIN")
 
-    p_an = sub.add_parser("analyze", help="full model (basal/ISF/I:C/behavioral) over one result")
+    p_an = sub.add_parser("analyze", help="full model (basal/I:C/behavioral) over one result")
     p_an.add_argument("--db", default=None)
     p_an.add_argument("--window", type=int, default=30, metavar="DAYS",
-                      help="analysis window (default 30); ISF/I:C use the full window; basal slots keep basal setting-epoch measurement cuts")
+                      help="analysis window (default 30); I:C uses the full window; basal slots keep basal setting-epoch measurement cuts")
     p_an.add_argument("--ignore-changes", action="store_true",
                       help="preview: ignore basal setting-epoch measurement cuts and setting-change caveats")
     p_an.add_argument("--json", action="store_true", help="emit the AnalysisResult as JSON")
@@ -139,7 +139,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     p_report.add_argument("--db", default=None)
     p_report.add_argument("--out", default="tconnect-data/report.md")
     p_report.add_argument("--window", type=int, default=30, metavar="DAYS",
-                          help="analysis window (default 30); ISF/I:C use the full window; basal slots keep basal setting-epoch measurement cuts")
+                          help="analysis window (default 30); I:C uses the full window; basal slots keep basal setting-epoch measurement cuts")
     p_report.add_argument("--holdout", type=int, default=2, metavar="DAYS")
     p_report.add_argument("--plot", action="store_true",
                           help="also write a why-plot PNG (needs matplotlib)")

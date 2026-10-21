@@ -11,8 +11,8 @@ watched change (:func:`trend_watched_change`, #447).
 
 Like :mod:`~ciq_autotune.outcomes` it is **standalone**, NOT a field on
 :class:`~ciq_autotune.result.AnalysisResult` (which carries analyzer-specific window
-semantics — basal keeps per-slot basal measurement cuts, while ISF/I:C measure
-over the full requested window and use ISF/I:C setting epochs for
+semantics — basal keeps per-slot basal measurement cuts, while I:C measures
+over the full requested window and uses its setting epoch for
 caveats/settling). Its own
 :data:`SCHEMA_VERSION`, its own CLI renderers (markdown and JSON), mirroring
 ``result.py``'s "one versioned result, many renderers" pattern.
@@ -21,7 +21,7 @@ Two correctness rules this module is built around (issue #131):
 
 * **Recorded ISF.** Every window's behavior attribution converts each meal with the
   ISF the pump stamped on it, else its programmed segment as of then (ADR 563) —
-  never the per-window ``analyze_isf`` estimate, which swings ~3× on 14 d and injects
+  never a per-window ISF estimate, which swung ~3× on 14 d and injected
   a phantom ``carb_undercount`` (while starving ``late_bolus``). A behavior trend must
   reflect behavior, not estimator noise. Carb-undercount uses each meal's Dose-stamped
   I:C; an unstamped historical meal stays unknown rather than borrowing today's profile.

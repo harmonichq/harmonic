@@ -126,11 +126,8 @@ class ModelConfig:
     # fed here (do not "fix" without re-deriving). This filter already masks every
     # bolus via bolus IOB (DIA ~300 min), and under this decay curve bolus carbs
     # always clear before the insulin that covered them (75 g ≈ 4.7 h < 5 h DIA), so
-    # bolus-carb COB would be strictly redundant. The ISF gate reaches the same
-    # conclusion from the other side: feeding it bolus carbs collapsed the fit
-    # (fasting ISF sharply lower on real data) by admitting the post-meal descent, so
-    # it too masks boluses by insulin (its flat ~DIA carb-bolus lookback) and hands
-    # COB the Carb-log stream only. Both consumers are symmetric; #169.
+    # bolus-carb COB would be strictly redundant; admitting the post-meal descent
+    # reads as false insulin potency (#169).
     #
     # The −15 back-buffer is kept (logging clock skew: a low treatment is often
     # logged a few minutes after eating it); only the old flat +120 forward is

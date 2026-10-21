@@ -2,10 +2,8 @@
 
 Two stores carry the same meals, bolus stamps, printed lows and meal-window basal,
 and differ only in their fasting nights: one lane answers the insulin that acted
-overnight, the other is a flat wall, so the ISF analyzer serves a real fasting
-estimate for the first and zero for the second. Neither the carb-ratio result nor
-the scenario engine's carb-undercount attribution may move with that estimate, and
-the zero must not switch the glucose term off.
+overnight, the other is a flat wall. Neither the carb-ratio result nor the scenario
+engine's carb-undercount attribution may move with those nights.
 """
 
 import hashlib
@@ -65,18 +63,11 @@ class DoseStampedIsfConversionTest(unittest.TestCase):
         cls.measured, cls.measured_exposures = _served(responded_nights=True)
         cls.flat, cls.flat_exposures = _served(responded_nights=False)
 
-    def test_the_two_stores_serve_different_fasting_estimates_one_zero(self):
-        measured = self.measured["isf"][0]["estimate"]["value"]
-        flat = self.flat["isf"][0]["estimate"]["value"]
-        self.assertIsNotNone(measured)
-        self.assertNotEqual(measured, 0.0)
-        self.assertEqual(flat, 0.0)
-
-    def test_carb_ratio_rows_and_blocks_do_not_move_with_the_fasting_estimate(self):
+    def test_carb_ratio_rows_and_blocks_do_not_move_with_the_fasting_nights(self):
         self.assertEqual(self.measured["ic"], self.flat["ic"])
         self.assertEqual(self.measured["ic_blocks"], self.flat["ic_blocks"])
 
-    def test_carb_undercount_attribution_does_not_move_with_the_fasting_estimate(self):
+    def test_carb_undercount_attribution_does_not_move_with_the_fasting_nights(self):
         measured = _carb_undercount_verdicts(self.measured_exposures)
         flat = _carb_undercount_verdicts(self.flat_exposures)
         judged = [t for t, (_, tier, _) in measured.items() if tier != "not_in_data"]
@@ -213,9 +204,12 @@ _RETAINED_CONTEXT = {
 
 # Copied from a run on the base commit (0cd6b642) over this store: the SHA-256 of
 # each record's served comparison as sorted JSON, and the values the ISF reaches.
+# Re-copied at #601, which drops each period's always-empty `fasting_steps` view and
+# `qualifying_fasting_steps` denominator; restoring those two keys reproduces the
+# 0cd6b642 digests exactly.
 _BEFORE_DIGEST = {
-    "trial": "79734985c3877fd78d21bab03385bcbce69caeb6b18cf9995573575c186390e3",
-    "focus": "04d8aa5d456d15d175b0625cb01f4e0b5c45fbbfc5998ca8830a4ef2044b2d5e",
+    "trial": "231224017074fe26f5b53e3c1d80237a2b575b5f73b5e4c97c8b7f5160297e1b",
+    "focus": "22ecff2922baee51fa73b9d4cf7607eb8f2e5944ddcb812caff7c2882d02565f",
 }
 _BEFORE_RUN_UNITS = [0.75, 0.75, 0.75, 0.75]       # 30 mg/dL at the retained 40
 _BEFORE_UNDERCOUNTS = (4, 4)                        # the 07:00 runaways, of 8 meals per arm

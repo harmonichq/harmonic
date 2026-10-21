@@ -443,28 +443,24 @@ class SupportedComparisonTest(unittest.TestCase):
         store._cgm=[]
         self.assertEqual(self.compare(store,record,datetime(2026,6,12))["availability"]["reason"],"no_source_evidence")
 
-    def test_basal_and_isf_keep_rest_denominators_including_zero_low_nights(self):
+    def test_basal_keeps_rest_denominators_including_zero_low_nights(self):
         from dataclasses import replace
         from ciq_autotune.settings import PumpSettings
-        for parameter in ("basal_rate","isf"):
-            with self.subTest(parameter=parameter):
-                store,record,end=self.dense_profile(constant=True)
-                latest=store._snaps[-1]
-                new=latest.settings.profiles[-1]
-                new=replace(new,segments=(replace(new.segments[0],isf=45),))
-                store._snaps[-1]=replace(latest,settings=PumpSettings(2,(latest.settings.profiles[0],new)))
-                record.update(parameter=parameter,slot="22:00")
-                record["comparison_context"]=capture_comparison_context(store,at=latest.captured_at,input_revision=1)
-                result=self.compare(store,record,end)
-                self.assertEqual(result["availability"]["state"],"available")
-                night=next(row for row in result["outcomes"] if row["key"] == "nights_with_low")
-                # The final tail ends before the detector's three-hour minimum.
-                self.assertEqual(night["denominators"],{"before":16,"after":15})
-                self.assertEqual((night["before"],night["after"]),(0,0))
-                self.assertEqual(night["assessment"]["state"],"unclear")
-                self.assertIsNotNone(night["assessment"]["interval"])
-                if parameter == "isf":
-                    self.assertGreater(result["denominators"]["after"]["qualifying_fasting_steps"],0)
+        store,record,end=self.dense_profile(constant=True)
+        latest=store._snaps[-1]
+        new=latest.settings.profiles[-1]
+        new=replace(new,segments=(replace(new.segments[0],isf=45),))
+        store._snaps[-1]=replace(latest,settings=PumpSettings(2,(latest.settings.profiles[0],new)))
+        record.update(parameter="basal_rate",slot="22:00")
+        record["comparison_context"]=capture_comparison_context(store,at=latest.captured_at,input_revision=1)
+        result=self.compare(store,record,end)
+        self.assertEqual(result["availability"]["state"],"available")
+        night=next(row for row in result["outcomes"] if row["key"] == "nights_with_low")
+        # The final tail ends before the detector's three-hour minimum.
+        self.assertEqual(night["denominators"],{"before":16,"after":15})
+        self.assertEqual((night["before"],night["after"]),(0,0))
+        self.assertEqual(night["assessment"]["state"],"unclear")
+        self.assertIsNotNone(night["assessment"]["interval"])
 
 
 class MeasurementComparisonTest(unittest.TestCase):
@@ -905,3 +901,72 @@ class PracticalComparisonTest(unittest.TestCase):
         signal=self.compare(store,record,pin+shift)
         self.assertTrue(all(r['criterion_met'] for r in signal['readiness'].values()))
         self.assertEqual(next(r for r in signal['outcomes'] if r['key']=='tir')['assessment']['state'],'favorable')
+
+
+class IsfTrialReadsAsTargetTrialTest(unittest.TestCase):
+    """ADR 564 rule 4, on the manufactured QA case ``c4-isf``: a retained
+    correction-factor Trial reads like a target Trial over the whole period and
+    serves nothing about the correction factor."""
+
+    @classmethod
+    def setUpClass(cls):
+        from scripts.qa_e2e_cases import QA_CASES, execute_case, materialize_case
+        cls.directory = tempfile.TemporaryDirectory()
+        cls.path = cls.directory.name + "/synthetic.sqlite"
+        case = next(case for case in QA_CASES if case.name == "c4-isf")
+        with Store.open(cls.path) as store:
+            materialize_case(store, case)
+            (cls.record,) = store.follow_up_records("trial")
+            cls.comparison = compare_follow_up(
+                store, record=cls.record, data_cutoff=cls.record["ending"]["effective_at"],
+                input_revision=store.input_data_revision())["comparison"]
+            cls.execution = execute_case(store, case)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.directory.cleanup()
+
+    def test_premise_a_retained_matured_isf_all_trial(self):
+        self.assertEqual(self.record["parameter"], "isf")
+        self.assertTrue(self.record["id"].startswith("isf-all-"))
+        self.assertEqual(self.record["ending"]["assessment"]["state"], "available")
+
+    def test_comparison_serves_target_readiness_and_outcomes(self):
+        c = self.comparison
+        self.assertEqual(c["availability"]["state"], "available")
+        for arm in ("before", "after"):
+            with self.subTest(arm=arm):
+                readiness = c["readiness"][arm]
+                self.assertEqual(readiness["unit"], "coverage-qualified informative dates")
+                self.assertEqual(readiness["required"], 30)
+                self.assertNotIn("step_count", readiness)
+                self.assertNotIn("fasting_steps", c["views"][arm])
+                self.assertEqual(c["views"][arm]["rest_windows"], [])
+                self.assertNotIn("qualifying_fasting_steps", c["denominators"][arm])
+                self.assertEqual(c["denominators"][arm]["detected_rest_windows"], 0)
+        self.assertEqual([row["key"] for row in c["outcomes"]],
+                         ["tir", "tbr", "tar", "mean", "gmi", "cv"])
+        for row in c["outcomes"]:
+            self.assertIn(row["assessment"]["state"],
+                          {"favorable", "concerning", "unclear", "context"})
+
+    def test_guidance_serves_no_correction_factor_candidate(self):
+        from ciq_autotune.guidance import build_guidance
+        e = self.execution
+        guidance = build_guidance(analysis=e.analysis, exposures=e.exposures,
+                                  scenarios=e.scenarios)
+        self.assertNotIn("setting:isf", {row["subject"] for row in guidance["candidates"]})
+        self.assertNotIn("isf", e.analysis)
+
+    def test_the_retained_trial_reads_on_the_roster(self):
+        from fastapi.testclient import TestClient
+        from ciq_autotune.api import create_app
+        client = TestClient(create_app(db_path=self.path, token="", enable_fetch_loop=False))
+        roster = client.get("/api/verify/trials")
+        self.assertEqual(roster.status_code, 200, roster.text)
+        self.assertIn(self.record["id"], [trial["id"] for trial in roster.json()["trials"]])
+        selected = client.get("/api/verify/trials", params={"selected": self.record["id"]})
+        self.assertEqual(selected.status_code, 200, selected.text)
+        self.assertEqual(selected.json()["selected"]["target_metrics"], ["tir"])
+        trend = client.get("/api/outcomes/trend")
+        self.assertEqual(trend.status_code, 200, trend.text)

@@ -68,9 +68,8 @@ class EngineCutsTest(unittest.TestCase):
 
     def test_correction_factor_is_never_a_candidate(self):
         # ADR 564 rule 1: no correction-factor concern is served, whatever the
-        # fasting nights read, so none queues, leads, or rides on a Pattern.
-        for name in ("isf-strengthen", "isf-held", "isf-direction-only-weaken",
-                     "isf-range-hold"):
+        # overnight correction nights read, so none queues, leads, or rides on a Pattern.
+        for name in ("pattern-near-tie",):
             with self.subTest(case=name):
                 _client, findings, guidance = self._reads(name)
                 self.assertNotIn("setting:isf",

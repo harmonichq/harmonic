@@ -71,8 +71,9 @@ _Avoid_: final profile, merged profile.
 ## Other tunable parameters
 
 **ISF**:
-Insulin sensitivity factor — how far one unit of insulin drops glucose. Estimated
-from a fasting-window regression. **ISF** is the engine and technical-documentation
+Insulin sensitivity factor — how far one unit of insulin drops glucose. Harmonic
+reads the pump's programmed and **Dose-stamped** ISF and estimates none (ADR 564).
+**ISF** is the engine and technical-documentation
 term; **"Correction factor"** is the sanctioned user-facing label. User copy puts
 the insulin unit first, such as **1 U : 36 mg/dL**.
 _Avoid_: sensitivity; ISF, mg/dL/U, or mg/dL per unit in user copy; correction
@@ -115,11 +116,6 @@ between them by carb share. A run whose insulin denominator had to be floored is
 **directional-only**: shown, but never pooled into a block's numeric estimate.
 _Avoid_: bolus run, meal chain (ambiguous with the underlying bolus chain itself,
 not the closed ledger read over it).
-
-**Fasting window**:
-A stretch with no recent carbs used to read ISF, where glucose change is
-attributable to insulin alone.
-_Avoid_: fasting period, resting window.
 
 ## Settings history
 
@@ -205,10 +201,10 @@ Excursion and cannot become an Episode or a **Lever**. Gated as a `manual` entry
 with **no printed low nadir** nearby (with a nadir, it is a printed-low treatment,
 not this). Surfaced two ways: as an aggregate count with the low evidence, and as
 a quiet Day tag at the rescue time because it is user intervention that prevented
-a low. Attributed by the preceding bolus (meal → an I:C signal, correction → an
-ISF signal). An attributed pre-empted low may **gate** advice that would make that
-arm stronger — more meal insulin for meal-attributed rescues, stronger corrections
-for correction-attributed rescues — because the user intervened to prevent a low.
+a low. Attributed by the preceding bolus (meal → an I:C signal; correction →
+correction attribution, which keeps the low out of the I:C arm and advises
+nothing, ADR 564). A meal-attributed pre-empted low may **gate** advice that would
+add meal insulin, because the user intervened to prevent a low.
 A meal-attributed pre-empted low may also become numeric inside a closed **I:C meal
 ledger** (its logged rescue grams are carbs-covered); outside that closed ledger it
 stays gate-only. Never a standalone precision input, never a rate (a denominator
@@ -225,9 +221,8 @@ first-ever recorded entry or prompt answer onward (no heartbeat proves a prompt 
 ever seen). Two consequences. Historical replay is **observation-aware** — a window
 counts only the rows recorded by its own endpoint, so a rescue backfilled today
 never lands in a window that closed before it; event time still does the window
-slice and the attribution once a row is eligible. And an under-covered window
-cannot supply the silence a stronger-correction move requires (see **ISF**): quiet
-that was never watched is not quiet. Alongside coverage, rescue evidence names four
+slice and the attribution once a row is eligible. And a stretch the log never
+watched is unknown, never rescue-free: quiet that was never watched is not quiet. Alongside coverage, rescue evidence names four
 states — confirmed rescue, explicit no, not sure, and no recorded observation.
 _Avoid_: rescue rate, coverage %, per-low audit trail (a count of observed days
 only — ADR 0012 forbids a denominator over rescues).
@@ -711,17 +706,14 @@ The period a user is actually at rest / asleep, **inferred behaviorally** —
 primarily from bolus absence (people don't eat or touch the pump asleep),
 corroborated by CGM quiescence. Deliberately *not* the CIQ Sleep schedule or
 Sleep-mode-active events: those are CIQ behavior regimes and are useless as a
-sleep proxy for the many users who run Sleep 24×7. A shared primitive with two
-consumers — the Outcome summary's overnight cut and a future ISF retrofit (a
-detected rest window excludes unlogged meals more directly than the clock window
-ISF hardcodes today; ADR 0001).
+sleep proxy for the many users who run Sleep 24×7. A shared primitive: the
+Outcome summary's overnight cut, basal **Trial** evidence and the timeline read it
+(ADR 564 rule 7).
 _Avoid_: sleep window, CIQ sleep, night, overnight (unqualified).
 
 **Reporting overnight**:
 The sleep-time cut the Outcome summary splits TIR/TBR by — bounded by the **Rest
-window**, not by a clock or the CIQ Sleep schedule. A *presentation* concept,
-distinct from the **Fasting window** (an ISF *identifiability* construct, the
-regime where unlogged meals are negligible, per ADR 0001). Never conflate them.
+window**, not by a clock or the CIQ Sleep schedule. A *presentation* concept.
 _Avoid_: overnight (unqualified), fasting window, night.
 
 ## Watching changes

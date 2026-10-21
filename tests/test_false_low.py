@@ -1,7 +1,7 @@
 """False-low flag (#381): a manual "not real (compression low)" answer invalidates
 the whole flagged excursion from tuning — the harm layer's printed-low detection
-(basal + ISF arms), the fasting-ISF regression + rest-window, and the count of lows
-the scenario queue works from — while the Day chart keeps it drawn (greyed) for an undo.
+and the count of lows the scenario queue works from — while the Day chart keeps it
+drawn (greyed) for an undo.
 
 The excursion is a *reading invalidation* (the readings vanish), distinct from the
 carb *mask* (the reading survives, it just doesn't count as fasting). These tests
@@ -221,34 +221,6 @@ class LowCountDenominatorTest(unittest.TestCase):
         store.record_prompt_response(
             detector="low", anchor_t=datetime(2026, 6, 21, 3, 10), answer="false-low")
         self.assertEqual(len(self._queued_lows(store)), 1)   # exactly one fewer
-
-
-class FastingIsfSuppressionTest(unittest.TestCase):
-    """AC: the flagged excursion drops from the fasting-ISF regression + rest-window
-    and contributes no fasting sample."""
-
-    def test_no_fasting_step_falls_inside_a_flagged_excursion(self):
-        from ciq_autotune.analyzers.isf import IsfConfig, fasting_steps
-        from ciq_autotune.rest_window import detect_rest_windows
-
-        # A full overnight rest window needs the prior evening's lead-in (the 22:00
-        # envelope anchor) or the detector starves (#147). Add a calm 22:00→24:00 on
-        # the 20th so the 20th-evening night covers the 21st's compression V.
-        evening = [CgmReading(t=datetime(2026, 6, 20, 22, 0) + timedelta(minutes=5 * k),
-                              bg=110, type="EGV") for k in range(24)]
-        cgm = evening + _compression_v()
-        rest = detect_rest_windows(cgm, [])
-        self.assertTrue(rest)                         # a rest window did form
-        cfg = IsfConfig()
-        spans = false_low_spans(cgm, [_false_low_response()])
-
-        before = fasting_steps([], [], cgm, cfg, rest)
-        after = fasting_steps([], [], drop_readings(cgm, spans), cfg, rest)
-
-        # At least one fasting sample sat inside the excursion before the flag (the
-        # settling tail on the fake rebound) — that's the sample the flag must remove.
-        self.assertTrue(any(in_spans(s.t, spans) for s in before))
-        self.assertFalse(any(in_spans(s.t, spans) for s in after))
 
 
 class TimelineDisplayTest(unittest.TestCase):

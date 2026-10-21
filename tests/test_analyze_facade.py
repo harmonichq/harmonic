@@ -5,20 +5,17 @@ AnalysisResult is well-formed, setting-epoch metadata-aware, and JSON-serializab
 """
 
 import json
-import random
 import tempfile
 import unittest
 from datetime import datetime, timedelta
-from unittest.mock import patch
 
 from ciq_autotune.analyze import analyze
 from ciq_autotune.events import CarbEntry
 from ciq_autotune.findings_projection import FindingsProjection, WindowQuery
 from ciq_autotune.model import ModelConfig
-from ciq_autotune.result import SCHEMA_VERSION, SegmentEstimate
+from ciq_autotune.result import SCHEMA_VERSION
 from ciq_autotune.settings import parse_pump_settings
 from ciq_autotune.store import Store
-from ciq_autotune.uncertainty import Estimate
 
 
 def _raw_settings(isf=30, cr_mu=6000):
@@ -121,7 +118,6 @@ class AnalyzeFacadeTest(unittest.TestCase):
     def test_all_sections_present(self):
         r = self.result
         self.assertEqual(len(r.basal), 48)            # full day of basal slots
-        self.assertGreaterEqual(len(r.isf), 1)
         self.assertGreaterEqual(len(r.ic), 1)
         self.assertEqual({e.parameter for e in r.epochs},
                          {"basal_rate", "carb_ratio"})
@@ -131,8 +127,11 @@ class AnalyzeFacadeTest(unittest.TestCase):
         self.assertAlmostEqual(slot.estimate.value, 0.8, places=2)
         self.assertAlmostEqual(slot.current, 0.6, places=2)
 
-    def test_isf_segment_carries_programmed_value(self):
-        self.assertEqual(self.result.isf[0].current, 30.0)
+    def test_serves_no_isf_estimate(self):
+        # ADR 564 rule 1: the analysis runs no fasting ISF regression and serves
+        # no correction-factor estimate.
+        self.assertNotIn("isf", self.result.to_dict())
+        self.assertEqual(self.result.to_dict()["schema_version"], 10)
 
     def test_consolidated_basal_is_populated_at_build_time(self):
         # #92: analyze() populates consolidated_basal (was derived on-read by the
@@ -172,58 +171,6 @@ class AnalyzeFacadeTest(unittest.TestCase):
     def test_single_snapshot_flags_unverified_carb_ratio_history(self):
         notes = " ".join(self.result.data_quality.notes)
         self.assertIn("carb_ratio history is verified only since", notes)
-
-    def test_isf_strengthen_check_reads_a_separate_prior_weekly_endpoint(self):
-        # #413: do not split this run's nights into pretend decision points. The
-        # facade must run the prior endpoint through the analyzer, then pass that
-        # independently-qualified signal into today's call.
-        from ciq_autotune.analyzers.isf import analyze_isf as real_analyze_isf
-        with patch("ciq_autotune.analyze.analyze_isf", wraps=real_analyze_isf) as spy:
-            analyze(self.store, window_days=30, now=datetime(2026, 6, 8, 0, 0, 0))
-        self.assertEqual(spy.call_count, 2)
-        prior, current = spy.call_args_list
-        self.assertLessEqual(max(r.t for r in prior.args[2]),
-                             datetime(2026, 6, 1, 0, 0, 0))
-        self.assertGreater(max(r.t for r in current.args[2]),
-                           max(r.t for r in prior.args[2]))
-        self.assertIn("prior_strengthen_signal", current.kwargs)
-        self.assertFalse(current.kwargs["prior_strengthen_signal"])
-
-    def test_isf_strengthen_requires_two_facade_decision_endpoints(self):
-        # The analyzer's actual night-vote policy is covered in test_analyzer_isf.
-        # This facade test proves it supplies the first endpoint's result to the
-        # second rather than manufacturing history inside a single analyzer call.
-        def run(prior_signal):
-            calls = []
-
-            def fake_isf(*_args, **kwargs):
-                calls.append(kwargs)
-                current = "prior_strengthen_signal" in kwargs
-                signal = kwargs.get("prior_strengthen_signal", prior_signal)
-                return [SegmentEstimate(
-                    start_min=0, label="Fasting", parameter="isf", current=30.0,
-                    estimate=Estimate(24.0, 20.0, 28.0, 12, method="fixture"),
-                    recommended=24.0 if current and signal else None,
-                    annotation="", evidence={
-                        "strengthen_signal": prior_signal if not current else True,
-                        "direction": "strengthen" if current and signal else None,
-                        "night_median": 24.0,
-                        "impact_inputs": {}, "recurrence_channels": {},
-                    },
-                )]
-
-            with patch("ciq_autotune.analyze.analyze_isf", side_effect=fake_isf):
-                result = analyze(self.store, window_days=30,
-                                 now=datetime(2026, 6, 8, 0, 0, 0))
-            return result, calls
-
-        one, one_calls = run(False)
-        self.assertIsNone(one.isf[0].recommended)
-        self.assertFalse(one_calls[1]["prior_strengthen_signal"])
-        two, two_calls = run(True)
-        self.assertEqual(two.isf[0].recommended, 24.0)
-        self.assertTrue(two_calls[1]["prior_strengthen_signal"])
-
 
 class WindowDefaultTest(unittest.TestCase):
     """analyze() must default to window_days=30."""
@@ -547,77 +494,6 @@ class DoseSettingEpochReconciliationTest(unittest.TestCase):
         ep = self._ic_setting_epoch(result)
         self.assertIsNone(ep.start)
         self.assertIsNone(ep.unverified_before)
-
-
-def _basal_raw(ev):
-    ts = ev.t.strftime("%Y-%m-%d %H:%M:%S")
-    return {"seq_num": int(ev.t.strftime("%Y%m%d%H%M%S")), "time": ts,
-            "delivery_type": ev.delivery_type, "duration_mins": ev.duration_mins,
-            "basal_rate": ev.basal_rate, "profile_basal_rate": ev.profile_basal_rate}
-
-
-def _cgm_raw(ev):
-    return {"EventDateTime": ev.t.strftime("%Y-%m-%dT%H:%M:%S"),
-            "Readings (CGM / BGM)": ev.bg, "Description": "EGV"}
-
-
-def _bolus_raw_from_event(ev, isf):
-    # Fasting correction bolus (carbs=None); stamped with the *programmed* ISF the
-    # pump used that night so dose_setting_epoch can detect the setting edit.
-    return {"seq_num": int(ev.t.strftime("%Y%m%d%H%M%S")),
-            "request_time": ev.t.strftime("%Y-%m-%d %H:%M:%S"),
-            "description": "Bolus", "completion": "Completed", "insulin": ev.insulin,
-            "carbs": None, "isf": isf, "carb_ratio": None}
-
-
-class IsfMeasurementIsFullWindowTest(unittest.TestCase):
-    """ADR 0039 / #288: ISF is measured over the full requested window even when a
-    setting edit lands mid-window. Built from a real synthetic ISF signal so
-    it would go *degenerate* (only the ~3 post-edit nights) if the ISF setting
-    epoch still clamped the measurement — the exact starvation #288 fixes."""
-
-    def _seed(self):
-        # Import the validated ISF-signal generator (physiology is constant across
-        # all nights; only the *programmed* ISF stamp changes at night 14).
-        from tests.test_analyzer_isf import synth_night
-
-        store = Store.open(":memory:")
-        basal_rows, cgm_rows, bolus_rows = [], [], []
-        plans = [[(1, 0, 3.0)], [(2, 0, 4.0), (4, 0, 2.0)], [(1, 30, 5.0)],
-                 [(3, 0, 3.5)], [(0, 30, 2.0), (3, 30, 4.0)], [(2, 0, 6.0)],
-                 [(1, 0, 3.0), (4, 30, 2.5)], [(2, 30, 5.0)]]
-        rng = random.Random(11)
-        for night in range(1, 17):  # 16 nights of true-ISF-40 physiology
-            plan = plans[(night - 1) % len(plans)]
-            bolus, basal, cgm = synth_night(night, 40.0, plan, noise_sd=1.5, rng=rng)
-            # Programmed ISF walked 30 -> 40 at night 14 (a dose-detected edit).
-            stamped = 30 if night < 14 else 40
-            basal_rows += [_basal_raw(b) for b in basal]
-            cgm_rows += [_cgm_raw(c) for c in cgm]
-            bolus_rows += [_bolus_raw_from_event(b, stamped) for b in bolus]
-        store.upsert_basal(basal_rows)
-        store.upsert_cgm(cgm_rows)
-        store.upsert_bolus(bolus_rows)
-        # Current programmed ISF = 40 (compare-to-current target).
-        store.upsert_settings_snapshot("2026-06-01 09:00:00",
-                                       parse_pump_settings(_raw_settings(isf=40)))
-        return store
-
-    def test_isf_measured_over_full_window_despite_midwindow_edit(self):
-        store = self._seed()
-        result = analyze(store, window_days=30, now=datetime(2026, 6, 17, 0, 0, 0))
-        store.close()
-
-        # The measurement spans the full window, not the ~3 post-edit nights.
-        seg = result.isf[0]
-        self.assertIsNotNone(seg.estimate.value)
-        # 16 fasting nights → 16 clusters. If the ISF setting epoch still clamped the
-        # window to nights 14-16 this would be ~3 — the degenerate starvation #288 removes.
-        self.assertGreaterEqual(seg.estimate.n_clusters, 12)
-        self.assertGreater(seg.estimate.n, 100)
-        # Recovered ISF tracks the true physiology (≈40) with a real interval.
-        self.assertAlmostEqual(seg.estimate.value, 40.0, delta=6.0)
-        self.assertLess(seg.estimate.lo, seg.estimate.hi)
 
 
 if __name__ == "__main__":

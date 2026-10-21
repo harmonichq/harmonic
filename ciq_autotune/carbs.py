@@ -119,18 +119,17 @@ def carb_log_exclusion_spans(
     guard_min: float = CARB_TRAILING_GUARD_MIN,
     flat_lookback_min: float = 300.0,
 ) -> List[Tuple[datetime, datetime]]:
-    # Mirrors fasting_steps' two-path drop: grams-bearing entries are excluded for
-    # onset+grams/rate·60+guard (COB clearance + guard); NULL-gram entries use the
-    # flat carb_lookback_min window (never decayed, ADR 0011 §2). Overlaps merged.
-    # flat_lookback_min must match IsfConfig.carb_lookback_min (default 300).
+    # Two paths: grams-bearing entries are excluded for onset+grams/rate·60+guard
+    # (COB clearance + guard); NULL-gram entries use the flat ``flat_lookback_min``
+    # window (never decayed, ADR 0011 §2). Overlaps merged.
     raw: List[Tuple[datetime, datetime]] = []
     for c in (carb_entries or []):
         t = c.t
         if c.grams is None:
-            # NULL-gram: flat lookback, same as the flat_carb_times guard in fasting_steps.
+            # NULL-gram: flat lookback.
             end = t + timedelta(minutes=flat_lookback_min)
         elif c.grams <= 0:
-            # Zero/negative grams: no COB, not in flat_carb_times — fasting_steps skips it.
+            # Zero/negative grams: no COB, nothing to exclude.
             continue
         else:
             rate = meal_rate if c.source == "rise-prompt" else fast_rate
@@ -171,11 +170,8 @@ def carb_doses(
     be masked for its whole insulin *excursion* (~DIA), not just carb absorption:
     the meal bolus is sized for the carbs, so BG spends ~5 h resolving the
     excursion, and that post-meal descent — if admitted — reads as false insulin
-    potency and collapses the ISF fit (measured on real data: feeding bolus carbs
-    into COB dragged fasting ISF sharply lower by admitting ~1,500 post-meal-descent
-    minutes; #169). Both consumers therefore mask boluses by *insulin* (ISF via its
-    flat ~DIA carb-bolus lookback; the basal filter via bolus IOB) and hand COB the
-    Carb-log stream only. See the wiring notes in isf.py / model.py.
+    potency (#169). The basal filter therefore masks boluses by *insulin* (bolus
+    IOB) and hands COB the Carb-log stream only. See the wiring note in model.py.
     """
     doses: List[Tuple[datetime, float, float]] = []
     for c in (carb_entries or []):

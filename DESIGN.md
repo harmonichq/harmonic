@@ -1,6 +1,6 @@
 ---
 name: harmonic
-description: Local, advisory basal/ISF/I:C tuning for Tandem Control-IQ users — a clinical instrument, not a wellness app.
+description: Local, advisory basal and I:C tuning for Tandem Control-IQ users — a clinical instrument, not a wellness app.
 colors:
   primary: "#E07F3F"
   primary-600: "#EF9459"

@@ -137,7 +137,7 @@ class CarbDosesTest(unittest.TestCase):
 
 
 class CarbLogExclusionSpansTest(unittest.TestCase):
-    """carb_log_exclusion_spans mirrors fasting_steps' drop logic as intervals."""
+    """carb_log_exclusion_spans: each Carb-log entry's exclusion as an interval."""
 
     def _entry(self, hh, mm, grams, source="manual", certainty="exact"):
         return CarbEntry(t=at(hh, mm), grams=grams, certainty=certainty, source=source)
@@ -188,8 +188,8 @@ class CarbLogExclusionSpansTest(unittest.TestCase):
         self.assertEqual(len(spans), 2)
 
     def test_zero_gram_entry_produces_no_span(self):
-        # grams=0 is not in flat_carb_times (only grams is None qualifies) and
-        # generates no COB, so fasting_steps does not exclude it — neither should we.
+        # grams=0 takes no flat lookback (only grams is None does) and generates
+        # no COB, so it excludes nothing.
         entry = self._entry(5, 0, 0.0)
         self.assertEqual(carb_log_exclusion_spans([entry]), [])
 

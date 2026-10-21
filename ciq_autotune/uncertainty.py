@@ -6,7 +6,7 @@ interval, and the sample size behind it (ROADMAP §8). Thin data shows up as a
 *wide* interval and an ``n`` you can see, not a blank.
 
 Intervals come from a percentile **bootstrap** — distribution-free, works the
-same for a median (basal per-slot) or a mean (ISF correction-response), and
+same for a median (basal per-slot) or a pooled ratio (I:C), and
 honestly widens as the samples spread or thin out. The resampling RNG is seeded,
 so an estimate is a pure function of its inputs (the API contract and its tests
 depend on that).
@@ -19,7 +19,7 @@ from __future__ import annotations
 import random
 import statistics
 from dataclasses import dataclass
-from typing import Callable, Dict, Hashable, List, Optional, Sequence, Tuple
+from typing import Callable, List, Optional, Sequence, Tuple
 
 # Default interval mass. 80%, not 95%: this is an advisory instrument, and a
 # tighter band keeps thin-data intervals readable rather than spanning the world.
@@ -62,7 +62,7 @@ class Estimate:
     n: int
     confidence: float = DEFAULT_CONFIDENCE
     method: str = "none"
-    # Distinct clusters behind a *clustered* estimate (e.g. fasting nights, #177).
+    # Distinct clusters behind a *clustered* estimate (e.g. I:C meal runs, #518).
     # ``None`` for non-clustered estimates, whose softness the cluster floor does
     # not apply to — so existing call sites are unaffected.
     n_clusters: Optional[int] = None
@@ -109,7 +109,7 @@ class Estimate:
             "wide": self.wide,
         }
         # Clustered estimators retain this observed-population count even when
-        # their slope cannot fit; non-clustered estimates have no such concept.
+        # their statistic cannot be computed; non-clustered estimates have no such concept.
         if self.n_clusters is not None:
             out["n_clusters"] = self.n_clusters
         return out
@@ -265,24 +265,8 @@ def estimate_median(samples: Sequence[float],
 
 def estimate_mean(samples: Sequence[float],
                   confidence: float = DEFAULT_CONFIDENCE) -> Estimate:
-    """Mean point estimate with a bootstrap CI (ISF correction-response)."""
+    """Mean point estimate with a bootstrap CI."""
     return _estimate(samples, statistics.fmean, "bootstrap-mean", confidence)
-
-
-def _ols_slope(pairs: Sequence[Tuple[float, float]]) -> float:
-    """Least-squares slope of ``y`` on ``x`` for ``(x, y)`` pairs.
-
-    Raises :class:`ZeroDivisionError` when ``x`` has no spread (an undefined
-    slope) — the paired bootstrap below skips such degenerate resamples.
-    """
-    n = len(pairs)
-    mx = sum(p[0] for p in pairs) / n
-    my = sum(p[1] for p in pairs) / n
-    sxx = sum((p[0] - mx) ** 2 for p in pairs)
-    if sxx == 0:
-        raise ZeroDivisionError("no variance in x")
-    sxy = sum((p[0] - mx) * (p[1] - my) for p in pairs)
-    return sxy / sxx
 
 
 def _bootstrap_ci_pairs(pairs: Sequence[Tuple[float, float]],
@@ -394,12 +378,10 @@ def estimate_pooled_ratio_clustered(
     comes from :func:`_bootstrap_ci_clusters`, so a run's meals enter or leave a
     resample together. Meals inside one run share a starting BG, a single outcome
     read and one CIQ response, and treating them as independent understates the 80%
-    interval by 1.6–1.8× on real data — the same correlated-sample error
-    :func:`estimate_slope_clustered` fixes for fasting nights.
+    interval by 1.6–1.8× on real data.
 
-    Unlike that one, ``n`` is the number of **clusters**, not pooled pairs: a run is
-    one closed balance sheet (a night is many 5-min steps), so runs are the unit the
-    estimate is measured in, the unit ``wide``'s ``n < 3`` floor should judge, and
+    ``n`` is the number of **clusters**, not pooled pairs: a run is one closed
+    balance sheet, so runs are the unit the estimate is measured in, the unit ``wide``'s ``n < 3`` floor should judge, and
     the unit every downstream count and countdown speaks. Empty clusters are dropped.
     """
     clusters = [[(float(x), float(y)) for x, y in cluster]
@@ -418,56 +400,3 @@ def estimate_pooled_ratio_clustered(
     return Estimate(value=point, lo=lo, hi=hi, n=len(clusters),
                     n_clusters=len(clusters), confidence=confidence,
                     method="bootstrap-pooled-ratio-clustered")
-
-
-def estimate_slope(pairs: Sequence[Tuple[float, float]],
-                   confidence: float = DEFAULT_CONFIDENCE) -> Estimate:
-    """OLS slope of ``y`` on ``x`` with a paired percentile-bootstrap CI.
-
-    The ISF deviation model regresses 5-min ΔBG on the insulin that acted in the
-    step; ``ISF = -slope`` (see :func:`ciq_autotune.analyzers.isf.analyze_isf`).
-    A slope needs at least two points and some spread in ``x`` — otherwise the
-    estimate is a valueless (n-carrying) :class:`Estimate`, same as an empty mean.
-    """
-    pts = [(float(x), float(y)) for x, y in pairs]
-    if len(pts) < 2:
-        return Estimate(value=None, lo=None, hi=None, n=len(pts),
-                        confidence=confidence, method="none")
-    try:
-        point = round(_ols_slope(pts), 4)
-    except ZeroDivisionError:
-        return Estimate(value=None, lo=None, hi=None, n=len(pts),
-                        confidence=confidence, method="none")
-    lo, hi = _bootstrap_ci_pairs(pts, _ols_slope, confidence)
-    return Estimate(value=point, lo=lo, hi=hi, n=len(pts),
-                    confidence=confidence, method="bootstrap-slope")
-
-
-def estimate_slope_clustered(pairs: Sequence[Tuple[float, float]],
-                             cluster_ids: Sequence[Hashable],
-                             confidence: float = DEFAULT_CONFIDENCE) -> Estimate:
-    """OLS slope with a *cluster* percentile-bootstrap CI (fasting-ISF, #177).
-
-    Same point estimate as :func:`estimate_slope` — the plain OLS slope over every
-    step — but the CI resamples whole clusters instead of individual pairs.
-    ``cluster_ids`` is parallel to ``pairs``: pairs sharing an id belong to one
-    night, and a night's steps always resample together. This stops thousands of
-    correlated same-night 5-min steps from reading as independent evidence, which
-    otherwise halves an honest band. ``n`` stays the step count (the estimate still
-    ran over every step); a single cluster collapses the band to the point.
-    """
-    pts = [(float(x), float(y)) for x, y in pairs]
-    groups: Dict[Hashable, List[Tuple[float, float]]] = {}
-    for pair, cid in zip(pts, cluster_ids):
-        groups.setdefault(cid, []).append(pair)
-    if len(pts) < 2:
-        return Estimate(value=None, lo=None, hi=None, n=len(pts),
-                        n_clusters=len(groups), confidence=confidence, method="none")
-    try:
-        point = round(_ols_slope(pts), 4)
-    except ZeroDivisionError:
-        return Estimate(value=None, lo=None, hi=None, n=len(pts),
-                        n_clusters=len(groups), confidence=confidence, method="none")
-    lo, hi = _bootstrap_ci_clusters(list(groups.values()), _ols_slope, confidence)
-    return Estimate(value=point, lo=lo, hi=hi, n=len(pts), n_clusters=len(groups),
-                    confidence=confidence, method="bootstrap-slope-clustered")

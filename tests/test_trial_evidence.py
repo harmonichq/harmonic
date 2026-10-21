@@ -258,7 +258,9 @@ class ExactComparisonEvidenceTest(unittest.TestCase):
             self.assertTrue(all(start <= anchor + timedelta(minutes=p["minute"]) < end
                                 for p in occurrence["trace"]["cgm"]))
 
-    def test_isf_keeps_real_fasting_steps_in_owned_rest_hours(self):
+    def test_isf_reads_the_whole_period_like_a_target_trial(self):
+        # ADR 564 rule 4: an ISF Trial serves no fasting-step population and no
+        # fasting readiness; it reads the whole of each period.
         from ciq_autotune.trial_evidence import comparison_evidence
         from ciq_autotune.events import CgmReading
         start, end = datetime(2026,6,1), datetime(2026,6,3)
@@ -266,14 +268,14 @@ class ExactComparisonEvidenceTest(unittest.TestCase):
         result = comparison_evidence(parameter="isf", slot="01:00", block=None,
                                      changed_at=start, before=40, after=45, start=start, end=end,
                                      cgm=cgm, bolus=[], basal=[], carbs=[], snapshots=[])
-        self.assertGreater(len(result["view"]["rest_windows"]),0)
-        self.assertGreater(len(result["view"]["fasting_steps"]),0)
-        self.assertTrue(all(r.t.hour == 1 and r.t.minute < 30 for r in result["readings"]))
-        self.assertTrue(all(step["window_id"].startswith("rest:") for step in result["view"]["fasting_steps"]))
+        self.assertEqual(result["intervals"], [(start, end)])
+        self.assertEqual(len(result["readings"]), 576)
+        self.assertNotIn("fasting_steps", result["view"])
+        self.assertEqual(result["view"]["rest_windows"], [])
         readiness = result["readiness"]
-        self.assertEqual(readiness["observed"], len({s["window_id"] for s in result["view"]["fasting_steps"]}))
-        self.assertGreater(readiness["step_count"], readiness["observed"])
+        self.assertEqual(readiness["unit"], "coverage-qualified informative dates")
         self.assertEqual(readiness["required"], 30)
+        self.assertEqual(readiness["observed"], 2)
         self.assertFalse(readiness["criterion_met"])
 
 

@@ -58,7 +58,7 @@ def _consolidated_profile(result: AnalysisResult) -> ConsolidatedProfile:
     # recommended ratio at the block's members and leave NO restoring boundary after
     # it, so a 07:00–12:00 move would render as running from 07:00 to midnight. An
     # empty I:C column is honest; an unbounded one is a dosing error.
-    return consolidate_profile(result.basal, isf=result.isf)
+    return consolidate_profile(result.basal)
 
 
 def _consolidated_table(prof: ConsolidatedProfile) -> List[str]:
@@ -122,7 +122,6 @@ def markdown_report(
 
     out += _basal_table(r.basal)
     out += _consolidated_table(_consolidated_profile(r))
-    out += _segment_table("ISF", "mg/dL per unit", r.isf, nd=1)
     out += _segment_table("I:C", "grams per unit", r.ic, nd=1)
 
     out.append("## Behavioral findings")

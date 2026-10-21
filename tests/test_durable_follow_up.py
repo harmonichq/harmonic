@@ -679,7 +679,7 @@ class DurableApiTest(unittest.TestCase):
         # correction-factor Plan can no longer be applied (ADR 564), so the one
         # recorded before that is written straight into the store, as it was saved.
         from tests.test_remove_isf_advice import DECIDED_AT, _record_isf_plan
-        self.seed_case("isf-strengthen")
+        self.seed_case("pattern-near-tie")
         with Store.open(self.path) as store:
             _record_isf_plan(store)
         read = self.client.get("/api/plan/history", headers=self.headers).json()

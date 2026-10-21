@@ -567,7 +567,7 @@ def analysis(*, blocks=None):
                   end=DAY.isoformat()),
         epochs=[],
         data_quality=DataQuality(counts={}, notes=[]),
-        basal=basal, isf=[], ic=[], behavioral=[],
+        basal=basal, ic=[], behavioral=[],
         tuning_levers=build_tuning_levers(
             basal, blocks, slot_minutes=SLOT_MINUTES,
             robust_daily_insulin_u=42.0),
@@ -589,7 +589,7 @@ def empty_projection() -> FindingsProjection:
             generated_at=f"{DAY.isoformat()} 09:00:00", window_days=WINDOW_DAYS,
             span=Span(start=None, end=None), epochs=[],
             data_quality=DataQuality(counts={}, notes=[]),
-            basal=[], isf=[], ic=[], behavioral=[],
+            basal=[], ic=[], behavioral=[],
         ).to_dict(),
         exposures={"window": {"start": None, "end": None}, "exposures": {}},
         scenarios={"patterns": [], "low_confidence": []},

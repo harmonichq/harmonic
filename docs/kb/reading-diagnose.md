@@ -15,7 +15,7 @@ Every lever is chipped **⚙ Setting** or **◈ Cause**. That flavor is a chip, 
 a lane, so the rank stays honest across both. What differs is where "accept" sends
 you:
 
-- **⚙ Setting** findings (basal, ISF, or I:C) flow to
+- **⚙ Setting** findings (basal or I:C) flow to
   [The Plan tab](#the-plan-tab) as a proposed settings change.
 - **◈ Cause** levers (late bolus, over-treated low) flow to a Focus, followed in
   Changes, because no pump setting fixes them.

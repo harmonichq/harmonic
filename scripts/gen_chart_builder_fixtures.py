@@ -222,7 +222,6 @@ def analysis_payload(store: Store) -> dict:
         "_generated_by": "scripts/gen_chart_builder_fixtures.py",
         "_note": _NOTE,
         "basal": result["basal"],
-        "isf": result["isf"],
         "ic": result["ic"],
     }
 

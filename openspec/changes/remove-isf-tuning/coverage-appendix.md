@@ -2,11 +2,12 @@
 
 Slice B2 (`remove-isf-tuning`, tasks 7.1–9.3) changes the QA catalog: five
 cases go (79 to 74) and every remaining case's rest windows come from the
-rest-window detector. Its measurements are taken on the build commit
-`15d5e10f`, the one the full verification ran on. All inputs are manufactured
+rest-window detector. Its measurements are taken on the build commit before its
+rebase onto `a6a7a9a0` (pre-rebase OID `15d5e10f`); the pull request records the
+rerun on the pushed head. All inputs are manufactured
 (`scripts/qa_e2e_cases.py`).
 
-| Budget | Measurement (`15d5e10f`) | Limit |
+| Budget | Measurement (pre-rebase build) | Limit |
 | --- | ---: | ---: |
 | Committed showcase size | 1,486,848 bytes (unchanged) | 25 MiB (26,214,400 bytes) |
 | Showcase drift check | 0.52 s wall | 30 s |
@@ -20,7 +21,7 @@ showcase is untouched (`git status` clean after the serves).
 ## The analysis on the base and on the head (task 7.1)
 
 `analyze(...).to_dict()` minus `generated_at`, run through `execute_case` for
-every QA case, on the base `a2dbdfbf` and on `15d5e10f`:
+every QA case, on the base `a2dbdfbf` and on the pre-rebase build:
 
 - base: 79 cases;
 - head: 74 cases, the five deleted cases absent;

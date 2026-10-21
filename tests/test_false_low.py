@@ -1,7 +1,7 @@
 """False-low flag (#381): a manual "not real (compression low)" answer invalidates
 the whole flagged excursion from tuning — the harm layer's printed-low detection
-(basal + ISF arms), the fasting-ISF regression + rest-window, and the count of lows
-the scenario queue works from — while the Day chart keeps it drawn (greyed) for an undo.
+and the count of lows the scenario queue works from — while the Day chart keeps it
+drawn (greyed) for an undo.
 
 The excursion is a *reading invalidation* (the readings vanish), distinct from the
 carb *mask* (the reading survives, it just doesn't count as fasting). These tests

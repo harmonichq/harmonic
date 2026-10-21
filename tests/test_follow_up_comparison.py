@@ -958,7 +958,7 @@ class IsfTrialReadsAsTargetTrialTest(unittest.TestCase):
         self.assertNotIn("setting:isf", {row["subject"] for row in guidance["candidates"]})
         self.assertNotIn("isf", e.analysis)
 
-    def test_the_retained_trial_reads_on_the_roster_and_the_trend(self):
+    def test_the_retained_trial_reads_on_the_roster(self):
         from fastapi.testclient import TestClient
         from ciq_autotune.api import create_app
         client = TestClient(create_app(db_path=self.path, token="", enable_fetch_loop=False))

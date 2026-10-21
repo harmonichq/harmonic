@@ -63,11 +63,11 @@ class DoseStampedIsfConversionTest(unittest.TestCase):
         cls.measured, cls.measured_exposures = _served(responded_nights=True)
         cls.flat, cls.flat_exposures = _served(responded_nights=False)
 
-    def test_carb_ratio_rows_and_blocks_do_not_move_with_the_fasting_estimate(self):
+    def test_carb_ratio_rows_and_blocks_do_not_move_with_the_fasting_nights(self):
         self.assertEqual(self.measured["ic"], self.flat["ic"])
         self.assertEqual(self.measured["ic_blocks"], self.flat["ic_blocks"])
 
-    def test_carb_undercount_attribution_does_not_move_with_the_fasting_estimate(self):
+    def test_carb_undercount_attribution_does_not_move_with_the_fasting_nights(self):
         measured = _carb_undercount_verdicts(self.measured_exposures)
         flat = _carb_undercount_verdicts(self.flat_exposures)
         judged = [t for t, (_, tier, _) in measured.items() if tier != "not_in_data"]

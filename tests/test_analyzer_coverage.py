@@ -296,7 +296,7 @@ class ConsolidateProfileNoneBasalTest(unittest.TestCase):
         self.assertAlmostEqual(prof.total_daily_basal, 0.6 * 24, delta=0.1)
 
     def test_no_basal_slots_with_isf_only_has_zero_or_none_total(self):
-        # Empty slot list → empty profile → 0 total.
+        # Empty slot list → one ISF-only segment with no basal → 0 total.
         prof = consolidate_profile(
             [],
             programmed_isf=[(0, 50.0)],

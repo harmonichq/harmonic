@@ -57,7 +57,7 @@ the active change's detail before it resolves. It SHALL drop Changes' answer,
 from the page and from the answers the browser remembers, so Changes draws its
 loading state, never the answer it held before the write, until a read of it
 started after the write lands, after a reload too. A Changes read already in
-flight when the write starts SHALL NOT be drawn or remembered when it lands.
+flight when the write starts SHALL read again rather than land its answer.
 
 #### Scenario: A snooze reads no roster
 
@@ -70,15 +70,8 @@ flight when the write starts SHALL NOT be drawn or remembered when it lands.
 
 - **GIVEN** Changes' read is in flight
 - **WHEN** the person returns to the Queue and presses Done before it lands
-- **THEN** that read is not drawn or remembered when it lands, and Changes
-  draws its loading state until a read started after the Done lands
-
-#### Scenario: A Changes read in flight across a Queue write
-
-- **GIVEN** Changes' read is in flight
-- **WHEN** the person returns to the Queue and presses Done before it lands
-- **THEN** that read is not drawn or remembered when it lands, and Changes
-  draws its loading state until a read started after the Done lands
+- **THEN** that read's answer is never drawn or remembered; Changes reads
+  again and draws the roster served after the Done
 
 ### Requirement: A Prompt answer moves the Day badge when the Prompts land
 

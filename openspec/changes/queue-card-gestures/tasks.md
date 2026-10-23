@@ -40,5 +40,5 @@
 
 ## 6. Verify and evidence
 
-- [ ] 6.1 Run each complete suite of the pull-request gate once, on the commit that will be pushed
-- [ ] 6.2 Attach to the pull request: before/after frames for 0.1's stories plus CollapsePhone and CardMidSwipePhone; a frame strip of the open card's swipe (slow commit, Undo) and of it under reduced motion; the precheck output; the base SHA
+- [x] 6.1 Run each complete suite of the pull-request gate once, on the commit that will be pushed
+- [x] 6.2 Attach to the pull request: before/after frames for 0.1's stories plus CollapsePhone and CardMidSwipePhone; a frame strip of the open card's swipe (slow commit, Undo) and of it under reduced motion; the precheck output; the base SHA

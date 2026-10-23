@@ -51,11 +51,10 @@
 /* An arm's meals, when the engine left any off the trace (#575): as the Trial
    card's "of 14", in meta ink. */
 .ui-trace__of { color: var(--wk-ink-meta); }
-/* A meal legend narrower than Meals, Before with its "of N" and After need at
-   20 px apart (about 277 px), a 320 px phone: the three close up, 4 px apart
-   and each key's line 4 px from its words, and hold one row with room for a
-   wider rendering of the same words (#611). Nights and Days, and every wider
-   trace, keep their gaps. */
+/* A meal trace under 296 px wide, a 320 px phone: Meals, Before with its
+   "of N" and After close up, 4 px apart and each key's line 4 px from its
+   words, and hold one row with room for a wider rendering of the same words
+   (#611). Nights and Days, and every wider trace, keep their gaps. */
 @container (width < 296px) {
   .ui-trace__legend--meal { column-gap: 4px; }
   .ui-trace__legend--meal .ui-trace__key { gap: 4px; }

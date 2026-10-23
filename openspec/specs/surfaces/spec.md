@@ -4240,7 +4240,8 @@ listed, never as one stretch of the day.
 
 A Pattern whose counter serves more than one cause (`cause_counts` on its
 Pattern row, or on the row of the habit it is served as) SHALL be drawn on the
-Queue with its count, impact line, trace chart and Snooze, and no Focus button.
+Queue with its count, impact line, trace chart and Snooze (on the phone, the
+card's swipe; on desktop, its text action), and no Focus button.
 Its trace chart SHALL be a control marked only with a trailing "›", which opens
 the Pattern's drill-down. The drill-down SHALL show "‹ Queue" above the
 Pattern's served title, then one open card per served cause in the served
@@ -4326,7 +4327,8 @@ card's head SHALL keep the button's height in every state.
   active
 - **WHEN** the Queue and a drill-down render
 - **THEN** no card offers Focus, the watched card shows its pill, and every
-  other card shows its chart and, on the Queue, Snooze
+  other card shows its chart and, on the Queue, Snooze (on the phone, the
+  card's swipe; on desktop, its text action)
 
 #### Scenario: A cause the engine will not focus has no button
 
@@ -4500,3 +4502,41 @@ then, never its answer from before the Prompt answer.
   again after them, and the other two days are not read
 - **WHEN** the person shows one of the other two days
 - **THEN** it draws its loading state, is read, and draws
+
+### Requirement: On the phone an open Queue card swipes to Snooze and closes to its row
+
+On the phone the open Pattern, habit or Setting card SHALL swipe to Snooze by a
+Queue row's rule and exit: its reveal SHALL fill while a release would commit,
+and on a commit it SHALL slide off and close its height before it is snoozed,
+with the bar and Undo. The phone's open card SHALL draw no Snooze text action;
+the desktop's open card SHALL keep it, with the shortcut S. On the phone the open
+card's chevron SHALL be a control that closes the card to its row, leaving no
+card open, and tapping a row SHALL open its card. The closed state SHALL belong
+to the mounted screen only, so a tab change SHALL open the top card again.
+
+#### Scenario: Swiping the open card snoozes it after it has gone
+
+- **GIVEN** the phone Queue with a card open
+- **WHEN** the person drags the card left past half its width and releases
+- **THEN** the reveal is filled before the release, the card slides off and
+  closes up, and then the bar reads "Snoozed until <date>" with Undo
+
+#### Scenario: A swipe over a button does not press it
+
+- **GIVEN** the phone Queue with a Setting card open
+- **WHEN** the person drags left from Done, short of the commit rule, and
+  releases
+- **THEN** the card eases back, nothing is snoozed and Done is not pressed
+
+#### Scenario: Snooze is a swipe on the phone and a text action on desktop
+
+- **WHEN** the Queue draws an open card
+- **THEN** on the phone the card has no Snooze button, and on desktop it has
+  one beneath its primary
+
+#### Scenario: The chevron closes the open card
+
+- **GIVEN** the phone Queue with a card open
+- **WHEN** the person taps the card's chevron
+- **THEN** every item is a row and none is open, and tapping a row opens its
+  card

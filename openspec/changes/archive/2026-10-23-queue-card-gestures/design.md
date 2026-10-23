@@ -5,8 +5,9 @@ the Snooze reveal, inline in `QueueRow.tsx` with its CSS in `QueueRow.css`
 (`ui-qrow-swipe*`). The open card is that wrapper's second caller, so the
 wrapper becomes one exported component in the same module, `SnoozeSwipe`
 (`QueueRow.tsx`), which the row and the Queue screen's phone open card both
-render. Its props are the hook's (`held`, `onCommit`) and its children; it
-always `leaves`, and its reveal is always Snooze at 88 px. For both callers it
+render. Its props are the hook's (`held`, `onCommit`), an optional `onLeaving`
+that tells the open card to stay drawn until its commit has run, and its
+children; it always `leaves`, and its reveal is always Snooze at 88 px. For both callers it
 renders the moving element itself, a `div.ui-swipe-settle` carrying the hook's
 `style` around its children, as the wrapper's last child: that class carries
 `touch-action: pan-y` and the settle and leave transitions (`shared.css`), and

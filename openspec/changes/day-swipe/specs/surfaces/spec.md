@@ -3,15 +3,16 @@
 ### Requirement: A phone swipe on the Day body steps to the adjacent day with data
 
 On the phone, a horizontal swipe on the Day body SHALL step to the previous
-or the next day with data, by the same axis lock, tracking, flick speed and
+or the next day with data, by the same axis lock, flick speed and
 pointer-cancel rule as a Queue row's swipe. The body SHALL follow the finger
-both ways, and the day it would step to SHALL be drawn beside it, coming in
+one to one both ways, and the day it would step to SHALL be drawn beside it, coming in
 from the side the finger moves away from: moving left shows the next day,
 moving right the previous. A release SHALL step when the finger has travelled
-half the body's width that way, or is moving that way faster than 500 px/s,
-and that way has a day with data; otherwise the body SHALL ease back. Where no
-further day with data exists that way, the body SHALL be resisted and SHALL
-ease back. A press that starts at either screen edge SHALL be left to the
+half the body's width that way, or is moving that way faster than 500 px/s
+having travelled at least the flick's minimum, and that way had a served day
+with data when the press became a swipe; otherwise the body SHALL ease back.
+Where no served day with data lies that way, the body SHALL be resisted and
+SHALL ease back. A press that starts at either screen edge SHALL be left to the
 platform. The step SHALL cross month boundaries through the day navigator,
 reading the next month when the served weeks do not reach a day with data.
 The stepped-to day's chart SHALL be its skeleton until its timeline is

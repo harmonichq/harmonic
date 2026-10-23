@@ -5,9 +5,9 @@
 ## 1. The hook (`frontend/ui/motion.ts`, ADR 619)
 
 - [ ] 1.1 The interface ADR 619 states: `useSwipe(reveal, { held, onCommit, leaves, step })` with `step?: { can, onStep }`, returning today's fields plus `peek`; without `step` nothing the hook does changes
-- [ ] 1.2 Two-way tracking: one to one in a way whose `can` is true, `RESISTANCE` from rest in a way whose `can` is false
-- [ ] 1.3 The mirrored commit predicate: half the element's width that way, or a flick over 500 px/s that way having travelled `STEP_FLICK_MIN`, and `can` true at release; `pointercancel` never commits
-- [ ] 1.4 `EDGE`: a press within it of the viewport's left or right edge never becomes a step swipe
+- [ ] 1.2 Two-way tracking: one to one in a way whose `can` is true, `RESISTANCE` from rest in a way whose `can` is false; `can` latched when the axis is decided
+- [ ] 1.3 The mirrored commit predicate: half the element's width that way, or a flick over 500 px/s that way having travelled `STEP_FLICK_MIN`, and `can` true both when the axis was decided and at release; `pointercancel` never commits
+- [ ] 1.4 `EDGE`: a press within it of the Day screen root's left or right edge never becomes a step swipe
 - [ ] 1.5 The commit: element and neighbour travel to rest, then `onStep(way)` with the hook at rest in the same update; presses ignored while it slides; under `--ui-motion-move: 0` the step is at once and the ease-back instant
 - [ ] 1.6 Update the file's header comment for the step form, in its idiom
   - `EDGE` and `STEP_FLICK_MIN` keep their defaults (24 px, 48 px) until Connor approves values in the replay; the approved values are written here and in 6.1 after his "locked".
@@ -20,14 +20,14 @@
 
 - [ ] 3.1 Bind the step form on the phone Day body only where ADR 619 says, with `can` from `adjacentDay` and `onStep` selecting that day (so `onDay` reads it, as a pick does)
 - [ ] 3.2 Read ahead: on each selected day, read the month each way's `adjacentDay` names through `readMonth`, and redraw when it lands
-- [ ] 3.3 Draw the neighbour's day content (insulin bar and chart, or the skeleton) beside the body on the `peek` side, the pair translating together; `touch-action: pan-y` on the body; the transitions on the existing motion tokens, multiplied by `--ui-motion-move`
+- [ ] 3.3 Inside the body, a track (`.ui-dayscreen__track`) holding the day content and, on the `peek` side, the neighbour's (insulin bar and chart, or the skeleton); the hook's style goes on the track, never on the `.ui-push` body; `touch-action: pan-y` on the body; the track's transitions on the existing motion tokens, multiplied by `--ui-motion-move`, none while dragging
 - [ ] 3.4 Update the screen's header comment for the swipe, in its idiom
 
 ## 4. The story driver and the stories
 
 - [ ] 4.1 `frontend/ui/gesture.ts`: an optional start fraction on `swipe`, `hold` and `scrollThenSwipe` (default 0.7), the signatures otherwise unchanged
 - [ ] 4.2 `Foundations/Motion` → Day swipe (`frontend/ui/Motion.stories.tsx`): on the phone Day screen with the story month reader, replays a short drag that eases back, a slow swipe left to the next day, a flick right back, a swipe right across May 1 into April 30, a swipe right from April 24 that reads April, and a swipe left on the latest day that is resisted; the Reduced motion story's picker reaches it; a play presses Replay and waits for its last step, so the gate runs the replay
-- [ ] 4.3 `Screens/Day`: SwipeNextPhone, SwipePreviousPhone (header, chart source and insulin bar all name the stepped-to day; the skeleton where its timeline is not served), SwipeMonthPhone (May 1 to April 30 inside the served weeks), SwipeReadMonthPhone (April 24 reads April through the month reader, then steps), SwipeLastDayPhone (resisted: the body moves less than the finger, the day unchanged), SwipeShortPhone, SwipeFlickPhone, SwipeEdgePhone, SwipeScrollPhone, SwipeCancelPhone, SwipeReducedPhone (after pointerup the body's translate never changes and the day changes in place), SwipeDesktop (the same drag moves nothing)
+- [ ] 4.3 `Screens/Day`: SwipeNextPhone, SwipePreviousPhone (header, chart source and insulin bar all name the stepped-to day; the skeleton where its timeline is not served), SwipeMonthPhone (May 1 to April 30 inside the served weeks), SwipeReadMonthPhone (April 24 reads April through the month reader, then steps), SwipeLastDayPhone (resisted: the body moves less than the finger, the day unchanged), SwipeShortPhone, SwipeFlickPhone, SwipeEdgePhone (a press at the left edge and one at the right: nothing moves), SwipeScrollPhone, SwipeCancelPhone, SwipeReducedPhone (from the first frame after pointerup the track sits at rest and stays there, no frame showing an intermediate translate, and the day changes in place), SwipeDesktop (the same drag moves nothing)
 - [ ] 4.4 `Screens/Day` PromptSwipePhone also asserts the header's day is unchanged after its swipe
 - [ ] 4.5 `npm run test:ui` clean for every story above and for the `Screens/Queue` swipe stories and `Foundations/Motion` → Snooze swipe; `UI_STORY=<id part>` while iterating
 

@@ -22,7 +22,7 @@ and the Prompt's stories are the proof.
 Once the axis is across, the element's offset is the finger's travel, one to
 one, in a way whose `can` is true. In a way whose `can` is false the element
 moves `RESISTANCE` (0.3) of the travel from rest, and a release there never
-commits. `can` is read as the axis is decided and again at release.
+commits. `can` is latched when the axis is decided: a way whose `can` was false then stays resisted for the whole press, and a release commits only if `can` was true then and is still true at release, so a month read that lands mid-drag never commits to a day the body did not show.
 
 ## ADR 619 — The commit rule, mirrored
 
@@ -36,9 +36,11 @@ eases back and never commits.
 
 ## ADR 619 — The screen's edges are the platform's
 
-A press that starts within `EDGE` (24 px) of the viewport's left or right
+A press that starts within `EDGE` (24 px) of the Day screen's left or right
 edge never becomes a step swipe, so the system's back gesture keeps both
-edges (§1.4). The mock sets the width; the amendment records the value
+edges (§1.4). The edges are the Day screen root's box, which is the
+viewport on a phone and the 390 px frame in a story, so a play and the replay
+can press either edge. The mock sets the width; the amendment records the value
 approved. This applies to the step form only: a row or a Prompt is inset from
 the edge by the screen's own gutter.
 
@@ -77,9 +79,16 @@ Unavailable + Retry is untouched.
 ## ADR 619 — Where the swipe lives
 
 The step form binds the phone Day body (`.ui-dayscreen__body` in the day
-view) only when the layout is phone, the view is the day (not the Prompts),
+view) and translates a track inside it, `.ui-dayscreen__track`, which holds
+the day content and its neighbour. The body itself keeps `.ui-push` and its
+drill-down transition untouched: that rule (`shared.css`, `[data-push] >
+.ui-push`) transitions translate over the emphasized duration, which reduced
+motion shortens to the fast duration rather than removing, so the swipe never
+moves the `.ui-push` element. The track's transitions are the ones this ADR
+sets, each multiplied by `--ui-motion-move`, and none while dragging. It binds
+only when the layout is phone, the view is the day (not the Prompts),
 the screen state is ready or stale, and neither the month nor the Log carbs
-sheet is open. The neighbour drawn beside the body is the same day content
+sheet is open. The neighbour drawn beside the day content is the same day content
 for the adjacent day: its insulin bar and chart, or the chart's skeleton when
 its timeline is not served, beside the same Lows and Rises rows, which are the
 store's and not the day's. The body keeps `touch-action: pan-y`, so the page

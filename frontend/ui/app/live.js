@@ -267,9 +267,11 @@ export function createLive({ client, glossary, memory = null,
     return out;
   }
 
-  const queue = () => once('queue', async () => {
+  /** The Queue, composed with `held`, the roster it already holds, after a Queue write (ADR 610), or with the
+   *  roster read now. */
+  const queue = (held) => once('queue', async () => {
     const [served, guided, analysis, roster, focused] = await Promise.all([
-      findings(), guidance(), analyze(), trials(), focus()]);
+      findings(), guidance(), analyze(), held ?? trials(), focus()]);
     // gen_ui_fixtures._queue_store: the rows a Queue component reads, among them every admitted setting block
     // and each admitted standalone habit's own row, which its card's tone is read from (ADR 528).
     const habits = guided.candidates.filter((c) => c.kind === 'habit' && c.admitted).map((c) => c.subject);
@@ -315,11 +317,30 @@ export function createLive({ client, glossary, memory = null,
     };
   }
 
+  // How many Queue writes were made and answered, and the last of them in order (#610): a Changes read
+  // checks them, so it never lands an answer a Queue write crossed.
+  let queueWritesMade = 0;
+  let queueWritesAnswered = 0;
+  let queueTail = Promise.resolve();
+
   /** gen_ui_fixtures._changes_store, for what the screen draws: every Trial on the roster (the active one and
    *  the previous ones, #524), the active Focus and every ended one. Only the active change takes a detail
    *  read: a Trial's retained comparison (its traces, metrics and meals), or a Focus's tracking. A previous
-   *  change prints only what the roster serves. */
+   *  change prints only what the roster serves.
+   *  A read a Queue write crosses, made before the write was answered, is discarded and made again behind
+   *  the Queue's writes, so Changes lands only an answer read after the last of them (#610). */
   const changes = () => once('changes', async () => {
+    for (;;) {
+      const made = queueWritesMade;
+      const read = await changesRead();
+      if (made === queueWritesMade && queueWritesAnswered === queueWritesMade) {
+        answers.changes.wearer = read;
+        return;
+      }
+      await queueTail;
+    }
+  });
+  async function changesRead() {
     const answer = await trials();
     const { admission } = answer;
     const active = admission.active_kind === 'trial'
@@ -333,7 +354,7 @@ export function createLive({ client, glossary, memory = null,
     const detail = tracked && tracked.selected;
     // The active change's detail, read with the roster, can be an earlier answer too (#579).
     served('changes', [reassessed, tracked].find((read) => read?.input_data_age));
-    answers.changes.wearer = {
+    return {
       admission,
       input_revision: answer.input_revision,
       trials: answer.trials.map((t) => (t === active ? { ...t, reassessment: comparison } : t)),
@@ -345,7 +366,7 @@ export function createLive({ client, glossary, memory = null,
       // The Settings a Done left waiting for the pump, served on the roster (#518).
       waiting: answer.waiting ?? [],
     };
-  });
+  }
 
   const credentials = () => once('credentials', async () => {
     const served = await client.fetchCredentials();
@@ -472,36 +493,33 @@ export function createLive({ client, glossary, memory = null,
   // What a Queue or Changes write changes: the guidance, the change roster, and both screens' answers.
   const FOLLOW_UP = ['queue', 'changes', 'guidance', 'trials', 'focus', 'findings'];
   const both = () => Promise.all([queue(), changes()]);
-  /** The days on screen, which a carb write changes. */
+  /** The day the Day screen last read, which a Prompt answer leaves for the app to read again (#610). */
+  let onScreen;
+  /** The days visited, which a carb write changes. */
   const shownDays = () => Object.keys(answers.day.days);
   const rereadDays = () => Promise.all(shownDays().map(day));
 
-  const queueWrites = {
+  /** Each Queue write's request, on the guidance (and Focus list) it reads as it is sent. */
+  const SENDS = {
     snooze: async (subject) => {
       const { analysis_generation: generation } = await guidance();
-      await write(() => client.setGuidancePreference(subject, { generation }), FOLLOW_UP, both);
+      await client.setGuidancePreference(subject, { generation });
     },
-    restore: async (subject) => {
-      await write(() => client.restoreGuidancePreference(subject), FOLLOW_UP, both);
-    },
+    restore: (subject) => client.restoreGuidancePreference(subject),
     /** Done on a Setting card (#518): the subject's served suggestion is on the pump. */
     done: async (subject) => {
       const guided = await guidance();
-      await write(async () => {
-        await client.recordDone({ subject, request_id: requestId(`done ${subject}`),
-          input_revision: guided.input_revision, analysis_generation: guided.analysis_generation });
-        identities.delete(`done ${subject}`);
-      }, FOLLOW_UP, both);
+      await client.recordDone({ subject, request_id: requestId(`done ${subject}`),
+        input_revision: guided.input_revision, analysis_generation: guided.analysis_generation });
+      identities.delete(`done ${subject}`);
     },
     /** Undo a Done: withdraw the subject's acknowledgment while it still waits for the pump. */
     undoDone: async (subject) => {
       const guided = await guidance();
       const { applied_at: appliedAt } = guided.candidates.find((c) => c.subject === subject).acknowledgment;
-      await write(async () => {
-        await client.withdrawDone({ applied_at: appliedAt, request_id: requestId(`undo ${appliedAt}`),
-          input_revision: guided.input_revision });
-        identities.delete(`undo ${appliedAt}`);
-      }, FOLLOW_UP, both);
+      await client.withdrawDone({ applied_at: appliedAt, request_id: requestId(`undo ${appliedAt}`),
+        input_revision: guided.input_revision });
+      identities.delete(`undo ${appliedAt}`);
     },
     /** Start a Focus on a Pattern, on one of its causes (`lever`, ADR 594), or on a standalone habit itself,
      *  whose Focus is its own, with no Pattern and no outcome window (ADR 528). A cause's request identity
@@ -513,14 +531,67 @@ export function createLive({ client, glossary, memory = null,
         : { pattern_key: candidate?.pattern_key ?? subject.replace(/^pattern:/, ''), ...(lever ? { lever } : {}),
           outcome_window: WHOLE_DAY };
       const intent = lever ? `pin ${subject} ${lever}` : `pin ${subject}`;
-      await write(async () => {
-        await client.pinFocus({
-          ...target, request_id: requestId(intent), input_revision: focused.input_revision, subject,
-          analysis_generation: guided.analysis_generation,
-        });
-        identities.delete(intent);
-      }, FOLLOW_UP, both);
+      await client.pinFocus({
+        ...target, request_id: requestId(intent), input_revision: focused.input_revision, subject,
+        analysis_generation: guided.analysis_generation,
+      });
+      identities.delete(intent);
     },
+  };
+  /** The writes that take their item out of its list while in flight; a Focus shows its pill instead. */
+  const TAKES_OUT = new Set(['snooze', 'restore', 'done']);
+
+  // The Queue's writes (#610), sent one at a time in the order made, so each reads the guidance its write
+  // before it left behind and none spends another's generation. The subjects in flight and the refused writes
+  // are held here, not by the screen, so a tab change neither brings back an item in flight nor loses a
+  // refusal. A Queue write never reads the roster or Changes' detail (ADR 610): it drops Changes' answer,
+  // and Changes reads its own when next shown.
+  const inFlight = new Set();
+  let refused = [];
+  const same = (a) => (b) => a.kind === b.kind && a.subject === b.subject && a.lever === b.lever;
+  const dropChanges = () => {
+    forget('changes', 'trials');
+    delete answers.changes.wearer;
+    landed.delete('changes');
+    fromMemory.delete('changes');
+  };
+  function queueWrite(write) {
+    queueWritesMade += 1;
+    const takesOut = TAKES_OUT.has(write.kind);
+    if (takesOut) inFlight.add(write.subject);
+    dropChanges();
+    remember();
+    const run = queueTail.then(async () => {
+      const retried = refused.some(same(write));
+      try {
+        await SENDS[write.kind](write.subject, write.lever);
+        refused = refused.filter((r) => !same(write)(r));
+      } catch (error) {
+        // A refusal is held until it saves, or until Retry finds its subject no longer served.
+        if (retried && error?.status === 404) refused = refused.filter((r) => !same(write)(r));
+        else if (!retried) refused = [...refused, write];
+        throw error;
+      } finally {
+        queueWritesAnswered += 1;
+        const roster = answers.queue.wearer.trials;
+        forget(...FOLLOW_UP);
+        await queue(roster).then(() => remember(), () => undefined);
+        if (takesOut) inFlight.delete(write.subject);
+      }
+    });
+    queueTail = run.catch(() => undefined);
+    return run;
+  }
+  const queueWrites = {
+    snooze: (subject) => queueWrite({ kind: 'snooze', subject }),
+    restore: (subject) => queueWrite({ kind: 'restore', subject }),
+    done: (subject) => queueWrite({ kind: 'done', subject }),
+    undoDone: (subject) => queueWrite({ kind: 'undoDone', subject }),
+    pin: (subject, lever) => queueWrite({ kind: 'pin', subject, ...(lever ? { lever } : {}) }),
+    /** The subjects a write in flight takes out of their list, and the refused writes, in the order made. */
+    held: () => ({ inFlight: new Set(inFlight), refused }),
+    /** Send every refused write again, in order; it resolves once each is answered. */
+    retry: () => Promise.all(refused.map((write) => queueWrite(write).catch(() => undefined))).then(() => undefined),
   };
 
   const changesWrites = {
@@ -537,13 +608,22 @@ export function createLive({ client, glossary, memory = null,
   };
 
   const dayWrites = {
-    answer: (prompt, answer) => write(async () => {
-      const saved = await client.answerPrompt({
-        detector: prompt.detector, anchor_t: prompt.anchorT, answer,
-        ...(answer === 'carbs' ? { entry: { grams: null, certainty: 'unknown' } } : {}),
+    /** A Prompt answer resolves once the Prompts are read again, so the badge moves then (#610). It drops every
+     *  visited day: the one on screen stays drawn until the app reads it again, and the others are read when
+     *  next shown. */
+    answer: (prompt, answer) => {
+      const days = shownDays();
+      return write(async () => {
+        const saved = await client.answerPrompt({
+          detector: prompt.detector, anchor_t: prompt.anchorT, answer,
+          ...(answer === 'carbs' ? { entry: { grams: null, certainty: 'unknown' } } : {}),
+        });
+        return { carbEntryId: saved.carb_entry_id ?? null };
+      }, ['prompts', ...days.map((iso) => `day ${iso}`)], () => {
+        days.filter((iso) => iso !== onScreen).forEach((iso) => { delete answers.day.days[iso]; });
+        return prompts();
       });
-      return { carbEntryId: saved.carb_entry_id ?? null };
-    }, ['prompts', ...shownDays().map((iso) => `day ${iso}`)], () => Promise.all([prompts(), rereadDays()])),
+    },
     grams: async (carbEntryId, grams) => {
       await write(() => client.updateCarb(carbEntryId, { grams, certainty: 'exact' }),
         shownDays().map((iso) => `day ${iso}`), rereadDays);
@@ -573,7 +653,10 @@ export function createLive({ client, glossary, memory = null,
     readTab,
     retryTab,
     settings,
-    readDay: remembering(day),
+    /** One day, which is then the day on screen. */
+    readDay: remembering((iso) => { onScreen = iso; return day(iso); }),
+    /** The day on screen: the one `readDay` last read. */
+    shownDay: () => onScreen,
     /** The weeks of one month (`YYYY-MM`), read once; Retry is a second call after a failure. */
     readMonth: remembering(month),
     /** The Overview's profile, basal estimate and Meal size for a window it switched to. */

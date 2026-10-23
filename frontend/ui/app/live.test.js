@@ -156,13 +156,147 @@ test('Retry and a write read again only what they change', async () => {
   await live.readTab('overview');
   await live.readTab('queue');
   const outcomes = fake.count('outcomes');
+  const rosters = fake.count('trials');
   await live.queueWrites.snooze('pattern:p0');
   assert.equal(fake.count('guidance'), 2, 'the snooze reads the guidance again');
-  assert.equal(fake.count('outcomes'), outcomes, 'and not the Overview');
+  assert.equal(fake.count('trials'), rosters, 'and not the roster (ADR 610)');
+  assert.equal(fake.count('outcomes'), outcomes, 'nor the Overview');
   await live.dayWrites.answer({ detector: 'low', anchorT: '2026-01-01 03:00:00' }, 'no');
   assert.equal(fake.count('prompts'), 2, 'an answer reads the Prompts again');
+  assert.equal(fake.count('model-view'), 0, 'and no day');
   await live.retryTab('overview');
   assert.equal(fake.count('outcomes'), outcomes + 3, 'Retry reads the tab again');
+});
+
+/** Let every answer the fake has already given land. */
+const landed = () => new Promise((resolve) => { setImmediate(resolve); });
+const refusal = (status) => Object.assign(new Error('not saved'), { status });
+
+test('two snoozes fired without waiting both save, each on a guidance read made after the one before (#610)', async () => {
+  const fake = fakeClient();
+  // The engine advances the generation on every saved snooze, and refuses one carrying a spent generation.
+  let generation = 1;
+  fake.client.fetchGuidance = (...args) => {
+    fake.calls.push({ name: 'guidance', args });
+    return Promise.resolve({ analysis_generation: `g${generation}`, candidates: history().candidates });
+  };
+  const sent = [];
+  fake.client.setGuidancePreference = (subject, { generation: carried }) => {
+    sent.push([subject, carried]);
+    if (carried !== `g${generation}`) return Promise.reject(refusal(409));
+    generation += 1;
+    return Promise.resolve({});
+  };
+  const live = createLive({ client: fake.client, glossary: [] });
+  await live.readTab('queue');
+  await Promise.all([live.queueWrites.snooze('pattern:p0'), live.queueWrites.snooze('pattern:p1')]);
+  assert.deepEqual(sent, [['pattern:p0', 'g1'], ['pattern:p1', 'g2']], 'in the order made, each on its own generation');
+  assert.deepEqual(live.queueWrites.held().refused, []);
+});
+
+test('the adapter holds a Queue write in flight, and a refused one until Retry saves it or its subject is gone (#610)', async () => {
+  const fake = fakeClient();
+  let answer;
+  fake.client.setGuidancePreference = () => new Promise((resolve, reject) => { answer = { resolve, reject }; });
+  const live = createLive({ client: fake.client, glossary: [] });
+  await live.readTab('queue');
+  const first = live.queueWrites.snooze('pattern:p0');
+  assert.deepEqual([...live.queueWrites.held().inFlight], ['pattern:p0'], 'in flight from the moment it is made');
+  await landed();
+  answer.reject(refusal(409));
+  await assert.rejects(first);
+  assert.deepEqual(live.queueWrites.held().inFlight, new Set());
+  assert.deepEqual(live.queueWrites.held().refused, [{ kind: 'snooze', subject: 'pattern:p0' }]);
+  const retried = live.queueWrites.retry();
+  await landed();
+  assert.deepEqual([...live.queueWrites.held().inFlight], ['pattern:p0'], 'Retry sends it again');
+  assert.equal(live.queueWrites.held().refused.length, 1, 'held until it saves');
+  answer.resolve({});
+  await retried;
+  assert.deepEqual(live.queueWrites.held(), { inFlight: new Set(), refused: [] }, 'saved, it leaves');
+  // A refusal whose subject the engine no longer serves is dropped when Retry is answered 404.
+  const second = live.queueWrites.snooze('pattern:p1');
+  await landed();
+  answer.reject(refusal(409));
+  await assert.rejects(second);
+  assert.equal(live.queueWrites.held().refused.length, 1);
+  const gone = live.queueWrites.retry();
+  await landed();
+  answer.reject(refusal(404));
+  await gone;
+  assert.deepEqual(live.queueWrites.held().refused, []);
+});
+
+test('a Queue write reads no Trial roster, and leaves Changes to read its own after it (#610)', async () => {
+  const { storage, memory } = browser();
+  const fake = fakeClient();
+  const live = createLive({ client: fake.client, glossary: [], memory });
+  await live.readTab('queue');
+  await live.readTab('changes');
+  const rosters = () => fake.count('trials', (c) => !detail(c));
+  assert.equal(rosters(), 1);
+  await live.queueWrites.snooze('pattern:p0');
+  assert.equal(rosters(), 1, 'the snooze resolves with no roster read');
+  assert.equal(fake.count('trials', detail), 1, 'nor a read of the active change\'s detail');
+  assert.equal(fake.count('guidance'), 2, 'the Queue\'s own answers are read again');
+  assert.equal(live.answers.changes.wearer, undefined, 'Changes has nothing to draw until its own read');
+  const refreshed = createLive({ client: fakeClient().client, glossary: [],
+    memory: createMemory({ storage, build: 'build-1', token: () => 'token-a' }) });
+  assert.equal(refreshed.remembered('changes'), false, 'nor after a refresh');
+  assert.equal(refreshed.answers.changes.wearer, undefined);
+  assert.equal(refreshed.remembered('queue'), true);
+  await live.readTab('changes');
+  assert.equal(rosters(), 2, 'Changes reads the roster');
+  assert.equal(live.answers.changes.wearer.admission.active_kind, 'focus');
+});
+
+test('a Changes read a Queue write crosses reads again, and lands only the roster served after the write (#610)', async () => {
+  const { storage, memory } = browser();
+  const fake = fakeClient();
+  let revision = 7;
+  let release;
+  const stalled = new Promise((resolve) => { release = resolve; });
+  let stall = false;
+  const roster = fake.client.fetchVerifyTrials;
+  fake.client.fetchVerifyTrials = async (opts) => {
+    const at = revision;
+    const answer = await roster(opts);
+    if (opts?.selected) return answer;
+    if (stall) { stall = false; await stalled; }
+    return { ...answer, input_revision: at };
+  };
+  fake.client.setGuidancePreference = () => { revision += 1; return Promise.resolve({}); };
+  const live = createLive({ client: fake.client, glossary: [], memory });
+  await live.readTab('queue');
+  stall = true;
+  const reading = live.retryTab('changes');
+  await landed();
+  await live.queueWrites.snooze('pattern:p0');
+  const remembered = () => createLive({ client: fakeClient().client, glossary: [],
+    memory: createMemory({ storage, build: 'build-1', token: () => 'token-a' }) }).remembered('changes');
+  assert.equal(remembered(), false, 'Changes is not landed while its read is in flight');
+  release();
+  await reading;
+  assert.equal(fake.count('trials', (c) => !detail(c)), 3, 'the crossed read reads the roster again');
+  assert.equal(live.answers.changes.wearer.input_revision, 8, 'Changes holds the roster served after the snooze');
+  assert.equal(remembered(), true, 'and only then is it landed');
+});
+
+test('a Prompt answer resolves once the Prompts land, and reads no day (#610)', async () => {
+  const fake = fakeClient();
+  const live = createLive({ client: fake.client, glossary: [] });
+  await live.readTab('day');
+  for (const iso of ['2026-01-03', '2026-01-04', '2026-01-05']) await live.readDay(iso);
+  assert.equal(live.shownDay(), '2026-01-05', 'the day on screen is the one last read');
+  const views = fake.count('model-view');
+  await live.dayWrites.answer({ detector: 'low', anchorT: '2026-01-05 03:00:00' }, 'no');
+  assert.equal(fake.count('prompts'), 2, 'the Prompts are read again before it resolves');
+  assert.equal(fake.count('model-view'), views, 'no day is read before it resolves');
+  assert.deepEqual(Object.keys(live.answers.day.days), ['2026-01-05'], 'every other visited day is dropped');
+  await live.readDay(live.shownDay());
+  assert.equal(fake.count('model-view'), views + 1, 'the day on screen is read again after it');
+  await live.readDay('2026-01-03');
+  assert.equal(fake.count('model-view'), views + 2, 'another visited day is read again when next shown');
 });
 
 test('Done records the card\'s subject from the read it was made on, and a waiting Setting leaves the Queue for Changes', async () => {
@@ -199,6 +333,8 @@ test('Done records the card\'s subject from the read it was made on, and a waiti
   assert.deepEqual({ ...done, request_id: typeof done.request_id },
     { subject: 'setting:basal_rate', request_id: 'string', input_revision: 7, analysis_generation: 'g1' });
   assert.equal(live.answers.queue.wearer.guidance.candidates[0].queued, false, 'a waiting Setting is not queued');
+  // Changes reads its own answer after the Done (ADR 610), and serves the Setting waiting.
+  await live.readTab('changes');
   assert.deepEqual(live.answers.changes.wearer.waiting.map((w) => w.subject), ['setting:basal_rate']);
   // A refresh draws the Done state from the remembered answers before the engine answers (#522).
   const refreshed = createLive({ client: fake.client, glossary: [],
@@ -211,6 +347,7 @@ test('Done records the card\'s subject from the read it was made on, and a waiti
   assert.deepEqual({ ...undo, request_id: typeof undo.request_id },
     { applied_at: '2026-01-02 00:00:00', request_id: 'string', input_revision: 7 });
   assert.equal(live.answers.queue.wearer.guidance.candidates[0].queued, true, 'Undo queues it again');
+  await live.readTab('changes');
   assert.deepEqual(live.answers.changes.wearer.waiting, []);
 });
 

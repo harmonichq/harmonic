@@ -2,11 +2,11 @@
 
 ## Why
 
-The pull-request gate block in `AGENTS.md` lists three of the eight contract
-cases CI's `app` job runs. #606 removed the retired correction-factor case from
-both, but the block never carried the other five, so a contributor who runs the
-block runs less than CI does. The contract-test paragraph beneath it omits
-`pattern-correction-fold`, and CI's comment over that step still names "a
+The pull-request gate block in `AGENTS.md` lists two of the seven named-case
+contract runs CI's `app` job makes. #606 removed the retired correction-factor
+case from both, but the block never carried the other five, so a contributor who
+runs the block runs less than CI does. The contract-test paragraph beneath it omits
+`pattern-correction-fold`, and CI's comment over the named-case step still names "a
 queued correction factor", which no case serves since #606.
 
 `openspec archive recommendations-redesign` refuses on main. The change removes

@@ -476,6 +476,32 @@ const LIVE_DONE = { store: 'wearer-before-done', open: 'setting:basal_rate' } as
 export const LiveDoneNotSavedPhone = live('phone', LIVE_DONE, liveDonePlay);
 export const LiveDoneNotSavedDesktop = live('desktop', LIVE_DONE, liveDonePlay);
 
+// Retry's bar is its own (#610): a snooze refused, then a Done that saves under
+// "Not saved", then Retry saves the snooze: the bar leaves, since Retry saved no
+// Done or Focus, and the earlier Done's bar is not drawn.
+const RETRIED = 'pattern:lows_after_meals';
+const retryOwnBarPlay: Story['play'] = async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  await userEvent.click(canvas.getByRole('button', { name: 'Snooze' }));
+  await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent(/Not saved/));
+  // Phone: the Basal card, opened while the snooze was in flight, closes back into its row first.
+  await userEvent.click(await canvas.findByRole('button', { name: /^Setting Basal/ }));
+  await userEvent.click(canvas.getByRole('button', { name: 'Done' }));
+  await waitFor(() => expect(basalCard(canvas)).toBeInTheDocument());
+  await expect(canvas.getByRole('status')).toHaveTextContent(/Not saved/);
+  await userEvent.click(canvas.getByRole('button', { name: 'Retry' }));
+  await waitFor(() => expect(canvas.queryByText(/Not saved/)).toBeNull());
+  await expect(canvas.queryByText('Waiting for pump')).toBeNull();
+  await waitFor(() => expect(canvas.queryByRole('status')).toBeNull());
+};
+const retryOwnBar = (layout: 'phone' | 'desktop'): Story => ({
+  ...story(layout, { store: 'wearer-before-done', open: RETRIED }),
+  render: (props) => <LiveQueue {...props} sends={{ snooze: refusesOnce(RETRIED), done: async () => undefined }} />,
+  play: retryOwnBarPlay,
+});
+export const RetryOwnBarPhone = retryOwnBar('phone');
+export const RetryOwnBarDesktop = retryOwnBar('desktop');
+
 // A ranking holding candidates the Queue cannot draw (a correction factor,
 // which no Queue row draws, an I:C Setting with no admitted row, a Pattern the
 // findings serve no row for, and a kind the app does not know): they are left

@@ -282,6 +282,83 @@ test('a Changes read a Queue write crosses reads again, and lands only the roste
   assert.equal(remembered(), true, 'and only then is it landed');
 });
 
+test('a Changes read made while a Queue write waits for its answer reads again (#610)', async () => {
+  const fake = fakeClient();
+  let revision = 7;
+  let answerWrite;
+  let release;
+  const stalled = new Promise((resolve) => { release = resolve; });
+  let stall = false;
+  const roster = fake.client.fetchVerifyTrials;
+  fake.client.fetchVerifyTrials = async (opts) => {
+    const at = revision;
+    const answer = await roster(opts);
+    if (opts?.selected) return answer;
+    if (stall) { stall = false; await stalled; }
+    return { ...answer, input_revision: at };
+  };
+  fake.client.setGuidancePreference = () => new Promise((resolve) => {
+    answerWrite = () => { revision += 1; resolve({}); };
+  });
+  const live = createLive({ client: fake.client, glossary: [] });
+  await live.readTab('queue');
+  const written = live.queueWrites.snooze('pattern:p0');
+  await landed();
+  // The roster is read while the snooze is made but not answered, and lands after it is.
+  stall = true;
+  const reading = live.retryTab('changes');
+  await landed();
+  answerWrite();
+  await written;
+  release();
+  await reading;
+  assert.equal(live.answers.changes.wearer.input_revision, 8, 'Changes holds the roster served after the snooze');
+});
+
+test('Changes never lands without its answer, though a Queue write drops it while the badges land (#610)', async () => {
+  const { storage, memory } = browser();
+  const fake = fakeClient();
+  let release;
+  const badges = new Promise((resolve) => { release = resolve; });
+  const { fetchPrompts } = fake.client;
+  fake.client.fetchPrompts = () => badges.then(fetchPrompts);
+  const live = createLive({ client: fake.client, glossary: [], memory });
+  const reading = live.readTab('changes');
+  await landed();
+  assert.ok(live.answers.changes.wearer, 'its roster has landed; the Prompts have not');
+  await live.queueWrites.snooze('pattern:p0');
+  release();
+  await reading;
+  assert.ok(live.answers.changes.wearer, 'Changes resolves with an answer to draw');
+  const refreshed = createLive({ client: fakeClient().client, glossary: [],
+    memory: createMemory({ storage, build: 'build-1', token: () => 'token-a' }) });
+  assert.equal(refreshed.remembered('changes'), refreshed.answers.changes.wearer !== undefined,
+    'and is remembered only with it');
+});
+
+test('a Retry pressed while one is in flight sends nothing more (#610)', async () => {
+  const fake = fakeClient();
+  let answer;
+  const sent = [];
+  fake.client.setGuidancePreference = (subject) => {
+    sent.push(subject);
+    return new Promise((resolve, reject) => { answer = { resolve, reject }; });
+  };
+  const live = createLive({ client: fake.client, glossary: [] });
+  await live.readTab('queue');
+  const first = live.queueWrites.snooze('pattern:p0');
+  await landed();
+  answer.reject(refusal(409));
+  await assert.rejects(first);
+  const retried = live.queueWrites.retry();
+  const again = live.queueWrites.retry();
+  await landed();
+  answer.resolve({});
+  await Promise.all([retried, again]);
+  assert.deepEqual(sent, ['pattern:p0', 'pattern:p0'], 'the refusal is sent again once');
+  assert.deepEqual(live.queueWrites.held().refused, []);
+});
+
 test('a Prompt answer resolves once the Prompts land, and reads no day (#610)', async () => {
   const fake = fakeClient();
   const live = createLive({ client: fake.client, glossary: [] });

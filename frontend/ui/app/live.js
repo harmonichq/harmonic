@@ -327,13 +327,15 @@ export function createLive({ client, glossary, memory = null,
    *  the previous ones, #524), the active Focus and every ended one. Only the active change takes a detail
    *  read: a Trial's retained comparison (its traces, metrics and meals), or a Focus's tracking. A previous
    *  change prints only what the roster serves.
-   *  A read a Queue write crosses, made before the write was answered, is discarded and made again behind
-   *  the Queue's writes, so Changes lands only an answer read after the last of them (#610). */
+   *  A read a Queue write crosses, one started while a write was unanswered or during which a write was
+   *  made, is discarded and made again behind the Queue's writes, so Changes lands only an answer read
+   *  after the last of them (#610). */
   const changes = () => once('changes', async () => {
     for (;;) {
       const made = queueWritesMade;
+      const clear = queueWritesAnswered === made;
       const read = await changesRead();
-      if (made === queueWritesMade && queueWritesAnswered === queueWritesMade) {
+      if (clear && made === queueWritesMade) {
         answers.changes.wearer = read;
         return;
       }
@@ -409,8 +411,12 @@ export function createLive({ client, glossary, memory = null,
   };
   const BADGES = ['status', 'prompts'];
 
-  /** Read what `tab` shows, and the badges; whatever has landed already is not read again. */
-  const readTab = (tab) => Promise.all([TABS[tab].read(), status(), prompts()]).then(() => remember(tab));
+  /** Whether `tab` has its answer to draw: a Queue write drops Changes' (#610), even while its badges land. */
+  const drawable = (tab) => tab !== 'changes' || answers.changes.wearer !== undefined;
+  /** Read what `tab` shows, and the badges; whatever has landed already is not read again. Changes whose
+   *  answer was dropped meanwhile is read again, never landed without one. */
+  const readTab = (tab) => Promise.all([TABS[tab].read(), status(), prompts()])
+    .then(() => (drawable(tab) ? remember(tab) : readTab(tab)));
 
   /** Retry: forget what `tab` shows, and the badges, and read them again. */
   const retryTab = (tab) => {
@@ -434,7 +440,7 @@ export function createLive({ client, glossary, memory = null,
           // A tab's own composed read (the Queue's, Changes') is composed again from them.
           forget(...keys, tab);
           await Promise.all([TABS[tab].read(), ...keys.map((key) => once(key, runs.get(key)))])
-            .then(() => remember(tab), () => undefined);
+            .then(() => { if (drawable(tab)) remember(tab); }, () => undefined);
         }
       })().finally(() => catchingUp.delete(tab)));
     }
@@ -548,6 +554,7 @@ export function createLive({ client, glossary, memory = null,
   // and Changes reads its own when next shown.
   const inFlight = new Set();
   let refused = [];
+  let retrying = null;
   const same = (a) => (b) => a.kind === b.kind && a.subject === b.subject && a.lever === b.lever;
   const dropChanges = () => {
     forget('changes', 'trials');
@@ -590,9 +597,13 @@ export function createLive({ client, glossary, memory = null,
     pin: (subject, lever) => queueWrite({ kind: 'pin', subject, ...(lever ? { lever } : {}) }),
     /** The subjects a write in flight takes out of their list, and the refused writes, in the order made. */
     held: () => ({ inFlight: new Set(inFlight), refused }),
-    /** Send every refused write again, in order; it resolves, once each is answered, with those that saved. */
-    retry: () => Promise.all(refused.map((write) => queueWrite(write).then(() => write, () => null)))
-      .then((sent) => sent.filter(Boolean)),
+    /** Send every refused write again, in order; it resolves, once each is answered, with those that saved.
+     *  A Retry pressed while one is in flight sends nothing more, and resolves with it. */
+    retry: () => {
+      retrying ??= Promise.all(refused.map((write) => queueWrite(write).then(() => write, () => null)))
+        .then((sent) => sent.filter(Boolean)).finally(() => { retrying = null; });
+      return retrying;
+    },
   };
 
   const changesWrites = {

@@ -53,8 +53,8 @@
 // A write that fails puts the item back as it was, with "Not saved" and Retry
 // in the bar, which outranks every other bar until Retry saves it or the engine
 // no longer serves its item. Once Retry leaves nothing refused, the bar is the
-// last saved Done's or Focus's own, as on a first save; a retried Snooze,
-// Restore or Undo shows none. The writes in flight and the refused ones are the
+// own bar of the last Done or Focus that Retry saved, as on a first save, and
+// otherwise none. The writes in flight and the refused ones are the
 // live adapter's (`held`, #610), so a tab change keeps both; the screen keeps
 // neither.
 //
@@ -287,13 +287,12 @@ export function QueueScreen({
   const liveUndoDone = (subject: string) => {
     writes!.undoDone(subject).then(() => { setLiveBar(null); setSelected(subject); }, unsaved);
   };
-  /** Retry: once nothing refused is held, the last saved Done's or Focus's bar (#610). */
+  /** Retry: once nothing refused is held, the bar of the last Done or Focus it saved, else none (#610). */
   const liveRetry = () => {
     writes!.retry().then((saved) => {
-      const last = saved.at(-1);
-      if (writes!.held().refused.length > 0 || !last) return;
-      if (last.kind === 'done') setLiveBar({ kind: 'waiting', subject: last.subject });
-      if (last.kind === 'pin') setLiveBar({ kind: 'focused' });
+      const last = writes!.held().refused.length > 0 ? undefined
+        : saved.filter((write) => write.kind === 'done' || write.kind === 'pin').at(-1);
+      setLiveBar(last?.kind === 'done' ? { kind: 'waiting', subject: last.subject } : last ? { kind: 'focused' } : null);
     });
   };
   const pinKey = (subject: string, lever?: string) => (lever ? `${subject} ${lever}` : subject);

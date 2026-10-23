@@ -105,7 +105,11 @@ const EXPECTED = {
           [60, null, 1, 153, 153, 153, 120, 96, 1],
         ] },
       } },
-    day: { latest: '2024-06-30', insulin: 19.56, firstLowBg: 48 },
+    day: { latest: '2024-06-30', insulin: 19.56, firstLowBg: 48,
+      // The Day swipe's adjacent days (ADR 619): none after the latest. The served
+      // weeks begin on 25 May, in May's last week without readings, so stepping
+      // back from it names May to read; once read, its previous day is 24 May.
+      adjacent: { next: null, previous: '2024-06-29', first: '2024-05-25', read: '2024-05', then: '2024-05-24' } },
     // Five lows and no rise: Day's Lows row alone.
     prompts: { lows: 5, rises: [] },
     // The 22:00 low resolves after midnight: it is the 29th's finding.
@@ -527,6 +531,14 @@ test(`the live adapter serves each tab's model from the ${CASE} store`, async (t
       ['basal', 'meal', 'correction', 'control_iq_bolus']);
     assert.ok(values(day.dayChartOf(latest)).cgm.length > 0, 'the day chart has readings');
     assert.equal(values(day.promptsOfKind('low'))[0].bg, expected.day.firstLowBg);
+    if (expected.day.adjacent) {
+      const { next, previous, first, read, then } = expected.day.adjacent;
+      assert.equal(day.adjacentDay(latest, 1), next, 'no day with readings after the latest');
+      assert.equal(day.adjacentDay(latest, -1), previous);
+      assert.deepEqual(day.adjacentDay(first, -1), { read }, 'off the served weeks, the month to read');
+      await live.readMonth(read);
+      assert.equal(day.adjacentDay(first, -1), then, 'through the month read');
+    }
   });
 
   await t.test('Settings', async () => {

@@ -7,6 +7,7 @@ import { swipe } from './gesture';
 import { Button } from './components/Button/Button';
 import { DayScreen } from './screens/Day/DayScreen';
 import { ranking } from './queue-model';
+import { monthReader } from './served-variants';
 import { QueueScreen } from './screens/Queue/QueueScreen';
 
 // The library's motion (tokens.css, motion.ts), one story per motion, each on
@@ -35,6 +36,10 @@ type Motion = { name: string; frame: Frame; screen: () => ReactNode; run: (stage
 /** An item of the pinned store's Queue other than the one a swipe snoozes, open first. */
 const otherThanSnoozed = ranking('wearer-pinned').find((item) => item.subject !== fixtures.snooze.subject)!.subject;
 const snooze = { subject: fixtures.snooze.subject, after: 'wearer-pinned-snoozed', until: sourced<string>('snooze.decided_at', 'until') } as const;
+
+/** The Day swipe's months: March and April are read as the screen reaches them. */
+const dayMonths = monthReader();
+const dayBody = (stage: HTMLElement) => stage.querySelector<HTMLElement>('.ui-dayscreen__body')!;
 
 const MOTIONS = {
   sheet: {
@@ -95,6 +100,39 @@ const MOTIONS = {
       await swipe(row(), -120, 4, 'flick');
       await pause(1400);
       control(stage, 'Undo').click();
+    },
+  },
+  daySwipe: {
+    name: 'Day swipe',
+    frame: PHONE,
+    screen: () => <DayScreen layout="phone" store="wearer" day="2025-05-01" readMonth={dayMonths.readMonth} />,
+    run: async (stage) => {
+      // Each replay reads April again.
+      dayMonths.cleanup();
+      // On 1 May: a slow drag short of half eases back; a slow swipe left
+      // steps to 2 May; a flick right steps back, and another crosses into
+      // 30 April; flicks step back to 24 April, the served weeks' first day,
+      // which reads April; a slow swipe right steps to 23 April, out of them.
+      // Then, through the month, 25 May, the latest day: a swipe left is resisted.
+      await swipe(dayBody(stage), -120, 16, 'slow');
+      await pause(450);
+      await swipe(dayBody(stage), -200, 16, 'slow');
+      // Eight flicks: 2 May to 1 May, 30 April, and on to 24 April.
+      for (let flick = 0; flick < 8; flick += 1) {
+        await pause(350);
+        await swipe(dayBody(stage), 80, 4, 'flick');
+      }
+      await pause(450);
+      await swipe(dayBody(stage), 200, 16, 'slow');
+      await pause(450);
+      stage.querySelector<HTMLElement>('.ui-header__day')!.click();
+      await pause(350);
+      control(stage, 'Next').click();
+      await pause(350);
+      control(stage, 'Sun 25 May').click();
+      await pause(450);
+      await swipe(dayBody(stage), -200, 16, 'slow');
+      await pause(400);
     },
   },
   bar: {
@@ -225,6 +263,20 @@ export const SnoozeSwipe: Story = {
     await waitFor(() => expect(within(canvasElement).getByRole('status')).toBeInTheDocument(), { timeout: 5000 });
     await waitFor(() => expect(canvasElement.querySelector('[data-replayed]')).not.toBeNull(), { timeout: 10000 });
     await expect(within(canvasElement).queryByRole('status')).toBeNull();
+  },
+};
+// The gate runs the replay: Replay, and the replay to its resisted swipe on
+// the latest day, every step taken on the way.
+export const DaySwipe: Story = {
+  ...story('daySwipe'),
+  name: 'Day swipe',
+  beforeEach: () => dayMonths.cleanup,
+  play: async ({ canvasElement }) => {
+    const day = () => canvasElement.querySelector('.ui-header__day')!.textContent;
+    within(document.body).getByRole('button', { name: 'Replay' }).click();
+    await waitFor(() => expect(day()).toContain('23 Apr'), { timeout: 10000 });
+    await waitFor(() => expect(canvasElement.querySelector('[data-replayed]')).not.toBeNull(), { timeout: 10000 });
+    await expect(day()).toContain('25 May');
   },
 };
 export const TransientBar: Story = { ...story('bar'), name: 'Transient bar' };

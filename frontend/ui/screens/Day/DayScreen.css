@@ -25,6 +25,27 @@
 
 .ui-dayscreen__skeleton { height: 320px; }
 
+/* Phone: the day swipe (ADR 619). The body stays put (its drill-down is its
+   own) and the swipe moves the track inside it, which holds the day and, while
+   it is drawn off rest, the adjacent day beside it, one gutter apart. The
+   track is the body's width and a gutter more, so a step that moves it its own
+   width brings the neighbour exactly to rest. What lies past the screen's
+   margins is clipped; the page still scrolls under a vertical press. */
+.ui-dayscreen__body--steps { overflow: clip; overflow-clip-margin: 16px; touch-action: pan-y; }
+.ui-dayscreen__track { position: relative; display: flex; flex-direction: column; gap: 16px; margin-inline: -8px; padding-inline: 8px; }
+.ui-dayscreen__neighbour {
+  position: absolute;
+  top: 0;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  padding-inline: 8px;
+}
+.ui-dayscreen__neighbour--next { left: 100%; }
+.ui-dayscreen__neighbour--previous { right: 100%; }
+
 /* The month, dropped down from the header's day: on phone the screen's full
    width under the header, over a scrim; on desktop a popover under the day. */
 .ui-dayscreen__scrim { position: absolute; inset: 0; z-index: 1; background: rgb(0 0 0 / .5); }

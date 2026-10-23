@@ -39,7 +39,11 @@ import { DayScreen, type DayScreenProps } from './DayScreen';
 // Prompts walked through (Yes, Recorded, Next, the second, ‹ Day); a Yes not
 // saved, then retried; Not sure on the phone; the Rises walked through (No,
 // "2 / 2", Yes, Next, back to Day with its Lows row alone), and live, a Rise's
-// No posted as a rise's. Desktop fits its panes without scrolling.
+// No posted as a rise's. Desktop fits its panes without scrolling. On the
+// phone, the Day swipe (ADR 619): a step each way, across a month inside the
+// served weeks and through a month read, the latest day resisted, a short drag
+// and a flick, an edge press, a scroll, a pointer cancel, reduced motion, and
+// none on desktop.
 const meta: Meta<typeof DayScreen> = {
   title: 'Screens/Day',
   component: DayScreen,
@@ -408,6 +412,8 @@ export const PromptSwipePhone: Story = {
     await waitFor(() => expect(canvasElement.querySelector('.ui-prompt-swipe__reveal')).toBeNull());
     await swipe(card(), -120, 4, 'flick');
     await expect(canvas.getByRole('heading', { level: 1, name: 'Day' })).toBeInTheDocument();
+    // The Prompts' swipe is the card's: the day is the one Day showed.
+    await expect(headerDay(canvas)).toHaveTextContent(printed(latest));
   },
 };
 // Phone: a drag past half held there, the finger still down: the reveal filled
@@ -441,7 +447,217 @@ const risesFlowPlay: Story['play'] = async ({ canvasElement }) => {
 export const RisesFlowPhone: Story = { ...story('phone', RISES), play: risesFlowPlay };
 export const RisesFlowDesktop: Story = { ...story('desktop', RISES), play: risesFlowPlay };
 
-export const PromptRetryPhone: Story = { ...story('phone', { ...PROMPTS, failing: true }), play: notSavedPlay };
+// Phone: swiping the Day body steps to the adjacent day with data (§2.5,
+// 2026-10-23, Day swipe; ADR 619). The body follows the finger with that day
+// beside it; past half its width, or a flick of 48 px, it steps, and the
+// header, the chart and the insulin bar are that day's (its skeleton where its
+// timeline is not served); otherwise it eases back. The latest day is
+// resisted. An edge press, a press that scrolls first, a pointer cancel and
+// the desktop never move it.
+const body = (canvasElement: HTMLElement) => canvasElement.querySelector<HTMLElement>('.ui-dayscreen__body')!;
+const track = (canvasElement: HTMLElement) => canvasElement.querySelector<HTMLElement>('.ui-dayscreen__track');
+/** How far the track sits from rest, px (left is negative). */
+const offset = (canvasElement: HTMLElement) =>
+  track(canvasElement)!.getBoundingClientRect().left - body(canvasElement).getBoundingClientRect().left
+    - (parseFloat(getComputedStyle(track(canvasElement)!).marginLeft) || 0);
+/** Every translate the body's elements are given from now until the returned read. */
+const translated = (canvasElement: HTMLElement) => {
+  const seen: string[] = [];
+  const watch = new MutationObserver((changes) => {
+    for (const change of changes) {
+      const moved = (change.target as HTMLElement).style.translate;
+      if (moved) seen.push(moved);
+    }
+  });
+  watch.observe(body(canvasElement), { attributes: true, attributeFilter: ['style'], subtree: true });
+  return () => { watch.disconnect(); return seen; };
+};
+/** The finger lifted where `hold` left it. */
+const lift = (target: HTMLElement, dx: number) => {
+  const box = target.getBoundingClientRect();
+  target.dispatchEvent(new PointerEvent('pointerup', {
+    bubbles: true, pointerId: 1, pointerType: 'touch', isPrimary: true,
+    clientX: box.left + box.width * 0.7 + dx, clientY: box.top + box.height / 2,
+  }));
+};
+/** The header, the chart and the insulin bar all name `iso`: the chart and bar
+ *  draw its served timeline, or, where none is served, the chart's skeleton and no bar. */
+const showsDay = async (canvasElement: HTMLElement, iso: string) => {
+  const canvas = within(canvasElement);
+  await waitFor(() => expect(headerDay(canvas)).toHaveTextContent(printed(iso)));
+  const sources = [...track(canvasElement)!.querySelectorAll('[data-source^="day.days."]')]
+    .map((element) => element.getAttribute('data-source')!);
+  await expect(sources.every((source) => source.startsWith(`day.days.${iso}.`))).toBe(true);
+  if ((fixtures.day.days as Record<string, unknown>)[iso]) {
+    await expect(sources.some((source) => source.startsWith(`day.days.${iso}.timeline.insulin_totals`))).toBe(true);
+    await expect(track(canvasElement)!.querySelector('.ui-daychart')).not.toBeNull();
+  } else {
+    await expect(sources).toEqual([]);
+    await expect(track(canvasElement)!.querySelector('.ui-skeleton')).not.toBeNull();
+  }
+};
+const atRest = (canvasElement: HTMLElement) => waitFor(() => expect(Math.abs(offset(canvasElement))).toBeLessThan(0.5));
+/** Nothing moves and the header still names `iso`. */
+const unmoved = async (canvasElement: HTMLElement, iso: string, gesture: () => Promise<void>) => {
+  const seen = translated(canvasElement);
+  await gesture();
+  await expect(seen()).toEqual([]);
+  await expect(headerDay(within(canvasElement))).toHaveTextContent(printed(iso));
+};
+
+// Left past half: the next day comes in from the right while the finger is
+// down, and it is the day the header then names, its chart and bar drawn.
+export const SwipeNextPhone: Story = {
+  ...story('phone', { ...DEFAULT, day: '2025-05-24' }),
+  play: async ({ canvasElement }) => {
+    await hold(body(canvasElement), -240, 16);
+    await expect(offset(canvasElement)).toBeCloseTo(-240, 0);
+    const coming = canvasElement.querySelector('.ui-dayscreen__neighbour');
+    await expect(coming?.querySelector(`[data-source^="day.days.${latest}.timeline.insulin_totals"]`)).not.toBeNull();
+    lift(body(canvasElement), -240);
+    await showsDay(canvasElement, latest);
+    await atRest(canvasElement);
+    await expect(canvasElement.querySelector('.ui-dayscreen__neighbour')).toBeNull();
+  },
+};
+// Right past half: the previous day, whose timeline is not served, so its
+// chart is the skeleton and it has no insulin bar.
+export const SwipePreviousPhone: Story = {
+  ...story('phone', DEFAULT),
+  play: async ({ canvasElement }) => {
+    await swipe(body(canvasElement), 240, 16);
+    await showsDay(canvasElement, '2025-05-24');
+  },
+};
+// Across a month inside the served weeks: 1 May steps back to 30 April.
+export const SwipeMonthPhone: Story = {
+  ...story('phone', { ...DEFAULT, day: '2025-05-01' }),
+  play: async ({ canvasElement }) => {
+    await swipe(body(canvasElement), 240, 16);
+    await showsDay(canvasElement, '2025-04-30');
+  },
+};
+// 24 April is the served weeks' first day: opening it reads April through the
+// month reader, and the swipe steps to 23 April.
+const readAhead: string[] = [];
+const readingApril = (() => {
+  const months = monthReader();
+  return {
+    ...story('phone', { ...DEFAULT, day: '2025-04-24',
+      readMonth: (month: string) => { readAhead.push(month); return months.readMonth(month); } }),
+    beforeEach: () => { readAhead.length = 0; return months.cleanup; },
+  };
+})();
+export const SwipeReadMonthPhone: Story = {
+  ...readingApril,
+  play: async ({ canvasElement }) => {
+    await waitFor(() => expect(readAhead).toEqual(['2025-04']));
+    await swipe(body(canvasElement), 240, 16);
+    await showsDay(canvasElement, '2025-04-23');
+    await expect(readAhead).toEqual(['2025-04']);
+  },
+};
+// The latest day: left is resisted, the body moving less than the finger, and
+// it eases back to the same day.
+export const SwipeLastDayPhone: Story = {
+  ...story('phone', DEFAULT),
+  play: async ({ canvasElement }) => {
+    await hold(body(canvasElement), -240, 16);
+    await expect(offset(canvasElement)).toBeLessThan(-1);
+    await expect(offset(canvasElement)).toBeGreaterThan(-120);
+    lift(body(canvasElement), -240);
+    await atRest(canvasElement);
+    await expect(headerDay(within(canvasElement))).toHaveTextContent(printed(latest));
+  },
+};
+// A slow drag short of half eases back on the same day.
+export const SwipeShortPhone: Story = {
+  ...story('phone', { ...DEFAULT, day: siteDay }),
+  play: async ({ canvasElement }) => {
+    const seen = translated(canvasElement);
+    await swipe(body(canvasElement), -120, 16, 'slow');
+    await expect(seen().length).toBeGreaterThan(0);
+    await atRest(canvasElement);
+    await expect(headerDay(within(canvasElement))).toHaveTextContent(printed(siteDay));
+  },
+};
+// A flick of 40 px is short of the flick's minimum and eases back; one of 80 px
+// steps to the previous day.
+export const SwipeFlickPhone: Story = {
+  ...story('phone', DEFAULT),
+  play: async ({ canvasElement }) => {
+    await swipe(body(canvasElement), 40, 4, 'flick');
+    await atRest(canvasElement);
+    await expect(headerDay(within(canvasElement))).toHaveTextContent(printed(latest));
+    await swipe(body(canvasElement), 80, 4, 'flick');
+    await showsDay(canvasElement, '2025-05-24');
+  },
+};
+// A press within 24 px of either screen edge is the platform's back gesture.
+export const SwipeEdgePhone: Story = {
+  ...story('phone', { ...DEFAULT, day: siteDay }),
+  play: async ({ canvasElement }) => {
+    const root = canvasElement.querySelector<HTMLElement>('.ui-dayscreen')!.getBoundingClientRect();
+    const box = body(canvasElement).getBoundingClientRect();
+    const left = 0.02;
+    const right = 0.98;
+    await expect(box.left + box.width * left - root.left).toBeLessThan(24);
+    await expect(root.right - (box.left + box.width * right)).toBeLessThan(24);
+    await unmoved(canvasElement, siteDay, () => swipe(body(canvasElement), 240, 16, 'slow', left));
+    await unmoved(canvasElement, siteDay, () => swipe(body(canvasElement), -240, 16, 'slow', right));
+    // Just inside the band, the same swipe steps.
+    await expect(box.left + box.width * 0.1 - root.left).toBeGreaterThan(24);
+    await swipe(body(canvasElement), 240, 16, 'slow', 0.1);
+    await showsDay(canvasElement, '2025-05-22');
+  },
+};
+// A press that moves down first is the page's scroll.
+export const SwipeScrollPhone: Story = {
+  ...story('phone', { ...DEFAULT, day: siteDay }),
+  play: async ({ canvasElement }) => {
+    await unmoved(canvasElement, siteDay, () => scrollThenSwipe(body(canvasElement), -240));
+  },
+};
+// The system taking the gesture eases back and never steps.
+export const SwipeCancelPhone: Story = {
+  ...story('phone', { ...DEFAULT, day: siteDay }),
+  play: async ({ canvasElement }) => {
+    await swipe(body(canvasElement), -240, 16, 'cancel');
+    await atRest(canvasElement);
+    await expect(headerDay(within(canvasElement))).toHaveTextContent(printed(siteDay));
+  },
+};
+// Reduced motion: the body follows the finger, and from the first frame after
+// it lifts the track is at rest and stays there while the day changes in place.
+const reduced: Story['decorators'] = [(Story) => <div data-motion-reduce="" style={{ height: '100%' }}><Story /></div>];
+export const SwipeReducedPhone: Story = {
+  ...story('phone', { ...DEFAULT, day: '2025-05-24' }),
+  decorators: reduced,
+  play: async ({ canvasElement }) => {
+    const frames: number[] = [];
+    body(canvasElement).addEventListener('pointerup', () => {
+      const started = performance.now();
+      const sample = () => {
+        frames.push(offset(canvasElement));
+        if (performance.now() - started < 400) requestAnimationFrame(sample);
+      };
+      requestAnimationFrame(sample);
+    }, { once: true });
+    await swipe(body(canvasElement), -240, 16);
+    await showsDay(canvasElement, latest);
+    await waitFor(() => expect(frames.length).toBeGreaterThan(10), { timeout: 2000 });
+    await expect(frames.filter((at) => Math.abs(at) >= 0.5)).toEqual([]);
+  },
+};
+// Desktop has no swipe: the same drag moves nothing.
+export const SwipeDesktop: Story = {
+  ...story('desktop', { ...DEFAULT, day: siteDay }),
+  play: async ({ canvasElement }) => {
+    await unmoved(canvasElement, siteDay, () => swipe(body(canvasElement), -240, 16));
+  },
+};
+
+export const PromptRetryPhone: Story ={ ...story('phone', { ...PROMPTS, failing: true }), play: notSavedPlay };
 export const PromptRetryDesktop: Story = { ...story('desktop', { ...PROMPTS, failing: true }), play: notSavedPlay };
 
 // Desktop: the month pane and the day pane each hold all of their content.

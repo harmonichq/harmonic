@@ -344,7 +344,8 @@ function heldWrites(sends: Sends = {}, redraw = () => {}, saved = (_write: Refus
     done: (subject) => write({ kind: 'done', subject }),
     undoDone: (subject) => write({ kind: 'undoDone', subject }),
     held: () => ({ inFlight: new Set(inFlight), refused }),
-    retry: () => Promise.all(refused.map((r) => write(r).catch(() => undefined))).then(() => undefined),
+    retry: () => Promise.all(refused.map((r) => write(r).then(() => r, () => null)))
+      .then((sent) => sent.filter((r): r is Refused => r !== null)),
   };
 }
 /** The Queue over `heldWrites`, redrawn as each write starts and settles, and
@@ -460,14 +461,14 @@ export const NotOnPumpPhone: Story = { ...story('phone', NOT_ON_PUMP), play: not
 export const NotOnPumpDesktop: Story = { ...story('desktop', NOT_ON_PUMP), play: notOnPumpPlay('desktop') };
 
 // Live: a Done the engine does not save puts the card back with "Not saved",
-// and Retry saves it; then the bar leaves (#610).
+// and Retry saves it; then the bar reads "Waiting for pump".
 const liveDonePlay: Story['play'] = async ({ canvasElement }) => {
   const canvas = within(canvasElement);
   await userEvent.click(canvas.getByRole('button', { name: 'Done' }));
   await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent(/Not saved/));
   await expect(basalCard(canvas)).toBeInTheDocument();
   await userEvent.click(canvas.getByRole('button', { name: 'Retry' }));
-  await waitFor(() => expect(canvas.queryByText(/Not saved/)).toBeNull());
+  await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent('Waiting for pump'));
 };
 const LIVE_DONE = { store: 'wearer-before-done', open: 'setting:basal_rate' } as QueueScreenProps;
 export const LiveDoneNotSavedPhone = live('phone', LIVE_DONE, liveDonePlay);

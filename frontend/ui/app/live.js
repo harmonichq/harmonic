@@ -590,8 +590,9 @@ export function createLive({ client, glossary, memory = null,
     pin: (subject, lever) => queueWrite({ kind: 'pin', subject, ...(lever ? { lever } : {}) }),
     /** The subjects a write in flight takes out of their list, and the refused writes, in the order made. */
     held: () => ({ inFlight: new Set(inFlight), refused }),
-    /** Send every refused write again, in order; it resolves once each is answered. */
-    retry: () => Promise.all(refused.map((write) => queueWrite(write).catch(() => undefined))).then(() => undefined),
+    /** Send every refused write again, in order; it resolves, once each is answered, with those that saved. */
+    retry: () => Promise.all(refused.map((write) => queueWrite(write).then(() => write, () => null)))
+      .then((sent) => sent.filter(Boolean)),
   };
 
   const changesWrites = {

@@ -150,7 +150,7 @@ export function App() {
     (...args: A) => run(...args).finally(redraw);
   /** A Queue write: drawn as it starts, so its item leaves its list at once, and again as it settles. It
    *  drops Changes' answer (ADR 610), so Changes draws its loading state until its own read lands. */
-  const queued = <A extends unknown[]>(run: (...args: A) => Promise<void>) => (...args: A) => {
+  const queued = <A extends unknown[], R>(run: (...args: A) => Promise<R>) => (...args: A) => {
     const written = run(...args);
     setReads(({ changes: _, ...now }) => now);
     redraw();

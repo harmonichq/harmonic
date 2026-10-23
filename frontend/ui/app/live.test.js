@@ -212,7 +212,7 @@ test('the adapter holds a Queue write in flight, and a refused one until Retry s
   assert.deepEqual([...live.queueWrites.held().inFlight], ['pattern:p0'], 'Retry sends it again');
   assert.equal(live.queueWrites.held().refused.length, 1, 'held until it saves');
   answer.resolve({});
-  await retried;
+  assert.deepEqual(await retried, [{ kind: 'snooze', subject: 'pattern:p0' }], 'Retry names the writes it saved');
   assert.deepEqual(live.queueWrites.held(), { inFlight: new Set(), refused: [] }, 'saved, it leaves');
   // A refusal whose subject the engine no longer serves is dropped when Retry is answered 404.
   const second = live.queueWrites.snooze('pattern:p1');
@@ -223,7 +223,7 @@ test('the adapter holds a Queue write in flight, and a refused one until Retry s
   const gone = live.queueWrites.retry();
   await landed();
   answer.reject(refusal(404));
-  await gone;
+  assert.deepEqual(await gone, [], 'a write the engine no longer serves is not saved');
   assert.deepEqual(live.queueWrites.held().refused, []);
 });
 

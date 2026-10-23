@@ -46,5 +46,5 @@ Quote only words Connor wrote on #612, on this change's pull request, or that th
 
 ## 6. Verify and evidence
 
-- [ ] 6.1 Run each complete suite of the pull-request gate once, on the commit that will be pushed
-- [ ] 6.2 Attach to the pull request: before/after frames for 0.1's stories; a screen recording or frame strip of the Snooze swipe replay (cancel, slow commit, flick, Undo) and of it under reduced motion; the precheck output; the base SHA. Ask Connor to replay `Foundations/Motion` → Snooze swipe and say "locked"; 5.5 and the resistance value in 5.1 land after his word, in the same pull request
+- [x] 6.1 Run each complete suite of the pull-request gate once, on the commit that will be pushed
+- [x] 6.2 Attach to the pull request: before/after frames for 0.1's stories; a screen recording or frame strip of the Snooze swipe replay (cancel, slow commit, flick, Undo) and of it under reduced motion; the precheck output; the base SHA. Ask Connor to replay `Foundations/Motion` → Snooze swipe and say "locked"; 5.5 and the resistance value in 5.1 land after his word, in the same pull request

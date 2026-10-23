@@ -16,7 +16,8 @@
 // left off still counts among the Trial card's Meals before and after, so an
 // arm that left any off prints its episodes against those meals ("Before 71
 // of 74", §2.5 2026-10-19, #575): every meal count on the screen is one
-// population. The chart measures its box (§2.2 Charts).
+// population. The chart measures its box (§2.2 Charts). On a 320 px phone the
+// meal legend's keys close up so Meals, Before and After hold one row (#611).
 import type { Block, Trace, TraceArm } from '../../changes-model';
 import { Num } from '../../Num';
 import { formatValue } from '../../provenance.js';
@@ -121,7 +122,7 @@ export function ChangeTrace({ data, block }: ChangeTraceProps) {
           </svg>
         )}
       </div>
-      <div className="ui-trace__legend">
+      <div className={`ui-trace__legend${meal ? ' ui-trace__legend--meal' : ''}`}>
         {meal && <span className="ui-trace__axis-name">Minutes</span>}
         <span className="ui-caption">{EPISODES[data.episode]}</span>
         {arms.map(([key, arm]) => (

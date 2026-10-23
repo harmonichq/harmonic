@@ -78,10 +78,12 @@ async function marksInOrder(strip: Element, card: Element) {
   if (whisker) await expect(contrast(getComputedStyle(whisker).stroke, surface)).toBeGreaterThanOrEqual(3);
 }
 
-/** Each strip draws no meal of its own (#570): its whisker when its 10–90%
- *  spans, its Range line when its 25–75% does, its median tick when it has a
- *  meal; no two axis labels touch; one table row per size, each median signed. */
+/** The card is titled "Climb by meal size" (#611); each strip draws no meal of
+ *  its own (#570): its whisker when its 10–90% spans, its Range line when its
+ *  25–75% does, its median tick when it has a meal; no two axis labels touch;
+ *  one table row per size, each median signed. */
 const drawn = (data: MealSizeData, layout: 'wide' | 'narrow'): Story['play'] => async ({ canvasElement }) => {
+  await expect(canvasElement.querySelector('.ui-meal-size h2')?.textContent).toBe('Climb by meal size');
   await expect(canvasElement.querySelector(`.ui-meal-size__body--${layout}`)).not.toBeNull();
   await expect(canvasElement.querySelectorAll('.ui-meal-size circle').length).toBe(0);
   for (const [i, row] of data.rows.entries()) {

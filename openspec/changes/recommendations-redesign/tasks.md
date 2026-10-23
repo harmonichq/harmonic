@@ -29,5 +29,5 @@
 - [x] 6.11 The Meal size card spans the Overview's second row at the estimates' height, in their colours (#559, ADR 559)
 - [x] 6.12 The Meal size card follows the window, and its Range stands in front of its dots (#565, ADR 565)
 - [x] 6.13 The Meal size card draws each size from its percentiles, and no meal on its own (#570, ADR 570)
-- [ ] 6.14 On a phone, a maturing carb ratio Trial's meal trace legend keeps Meals, Before and After on one row at 390 and 320 px, pinned by a story play (#611)
-- [ ] 6.15 The Overview's Meal size card is titled "Climb by meal size" in the app, its stories, the lock doc's §1.5, §2.5 and §4.2, and the glossary (#611)
+- [x] 6.14 On a phone, a maturing carb ratio Trial's meal trace legend keeps Meals, Before and After on one row at 390 and 320 px, pinned by a story play (#611)
+- [x] 6.15 The Overview's Meal size card is titled "Climb by meal size" in the app, its stories, the lock doc's §1.5, §2.5 and §4.2, and the glossary (#611)

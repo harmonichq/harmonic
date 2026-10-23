@@ -614,7 +614,7 @@ _Avoid_: post-meal crash (too narrow — a nadir can be 90 without a crash), flo
 **Climb**:
 How far glucose rose after a meal: its **Arc peak** less its start reading, the
 last reading at or up to 15 minutes before the first bolus, in mg/dL. Read only by
-the Overview's **Meal size** card, beside the minutes to that peak (Peak at) and the
+the Overview's Climb by meal size card, beside the minutes to that peak (Peak at) and the
 change at three hours (At 3 h, only for a meal no later meal began within them).
 The Arc peak stays absolute everywhere else; Climb is the card's one relative
 measure (ADR 501).
@@ -622,7 +622,7 @@ _Avoid_: rise (a **Rise** is the unbolused high Day asks about), spike, net-new 
 
 **Meal size**:
 A meal's carbs, the grams its completed boluses entered (ADR 470), in four sizes:
-under 25 g, 25–39, 40–59, 60 and over. The Overview's Meal size card counts the
+under 25 g, 25–39, 40–59, 60 and over. The Overview's Climb by meal size card counts the
 selected window's meals that began at or under 180 mg/dL and that the Late bolus
 classifier found flat before the bolus (its `no_trigger` verdict), and serves each
 size's count, its climbs' median and 10th–90th percentiles, and its other medians

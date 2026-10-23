@@ -198,7 +198,9 @@ data as it forms (ADR 554): its meals, its trace and every metric module over
 what its after period has read so far, each glucose module closed by the
 readings it is read from, before → after; an after period with nothing read yet
 SHALL show the before values beside an empty after. While it matures no result
-SHALL be shown; each Δ SHALL still take its direction's colour (ADR 558).
+SHALL be shown; each Δ SHALL still take its direction's colour (ADR 558). On a
+phone, a meal trace's legend SHALL keep its episode name, Before and After on one
+row beneath "Minutes" (#611).
 
 #### Scenario: A maturing Trial shows its data as it forms
 
@@ -209,6 +211,13 @@ SHALL be shown; each Δ SHALL still take its direction's colour (ADR 558).
   bolus for both periods, In range / Below 70 / Above 180 and Mean / GMI / CV,
   and each glucose module's Readings before → after
 - **AND** no result and no End is offered
+
+#### Scenario: A maturing carb ratio Trial's legend holds one row on a phone
+
+- **GIVEN** a maturing carb ratio Trial whose before arm left a meal off its
+  trace, so its legend prints "Before n of N"
+- **WHEN** Changes renders at 390 and at 320 px
+- **THEN** Meals, Before and After share one row of the trace's legend
 
 #### Scenario: A Trial in its first hours shows an empty after period
 
@@ -267,8 +276,8 @@ Above 250 SHALL read as subsets of Below 70 and Above 180. Below the summary it
 SHALL show the basal estimate: the day's 48 half-hour slots, the programmed rate
 stepped, each slot's estimate over its range, and a mark on each slot whose
 staging verdict asserts a move, in its served direction (ADR 523). It SHALL show
-no ISF estimate (ADR 564). Below it, its height, it SHALL show Meal size over the
-selected window; on desktop each spans a row of its own (ADR 564). Meal size SHALL draw one
+no ISF estimate (ADR 564). Below it, its height, it SHALL show Meal size, titled
+"Climb by meal size" (#611), over the selected window; on desktop each spans a row of its own (ADR 564). Meal size SHALL draw one
 strip per size on one Climb axis, drawing the size's served 10–90% as a whisker,
 its Range (25–75%) over it and its median on top, and no meal on its own; and,
 aligned like a table, each

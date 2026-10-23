@@ -193,18 +193,21 @@ function Card({ item, focusable, onOpen, onSnooze, onCollapse, onDone, actions =
 /** Phone: an item is its row, or its card in the row's place while open. A card
  *  the person opens grows out of its row, and a card that closes (its chevron)
  *  shrinks back into it before the row returns. Row and card swipe to Snooze
- *  alike, by the one SnoozeSwipe. */
+ *  alike, by the one SnoozeSwipe. A card swiped to Snooze stays its card until
+ *  it has left and is snoozed, whatever else opens meanwhile: taking it away
+ *  first would drop the snooze its exit ends in. */
 function PhoneItem({ item, open, grows, swiping, focusable, onOpen, onSelect, onSnooze, onCollapse, onDone, actions }: {
   item: QueueItem; open: boolean; grows: boolean; swiping: boolean; focusable: boolean; onOpen: () => void;
   onSelect: () => void; onSnooze: () => void; onCollapse: () => void; onDone: () => void; actions?: CardActions;
 }) {
-  const card = usePresence(open);
+  const [leaving, setLeaving] = useState(false);
+  const card = usePresence(open || leaving);
   if (!card.value) {
     return <Row item={item} layout="phone" swiping={swiping} onSelect={onSelect} onSnooze={onSnooze} />;
   }
   return (
     <div className={grows || card.closing ? 'ui-queue__open ui-expand' : 'ui-queue__open'} {...card.exit}>
-      <SnoozeSwipe held={swiping} onCommit={onSnooze}>
+      <SnoozeSwipe held={swiping} onCommit={onSnooze} onLeaving={setLeaving}>
         <Card item={item} focusable={focusable} onOpen={onOpen} onCollapse={onCollapse} onDone={onDone}
           actions={actions} />
       </SnoozeSwipe>

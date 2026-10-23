@@ -28,7 +28,7 @@
 //
 // Snoozed (the Snoozed list): the same row, read-only — no chevron, no swipe,
 // no selection — with a last line holding "Until <date>" and Restore.
-import type { ReactNode } from 'react';
+import { useLayoutEffect, type ReactNode } from 'react';
 import type { Sourced } from '../../answers';
 import { Icon } from '../../icons';
 import { useSwipe } from '../../motion';
@@ -96,13 +96,17 @@ export type SnoozeSwipeProps = {
   held?: boolean;
   /** A swipe that commits snoozes, once what moves has left. */
   onCommit?: () => void;
+  /** Hears when what moves starts and stops leaving, so a caller that would
+   *  otherwise take it away keeps it until its commit has run (ADR 614). */
+  onLeaving?: (leaving: boolean) => void;
   /** What moves: a row, or an open card. */
   children: ReactNode;
 };
 
 /** The Snooze swipe (ADR 613, ADR 614): what moves slides left over the reveal. */
-export function SnoozeSwipe({ held = false, onCommit, children }: SnoozeSwipeProps) {
+export function SnoozeSwipe({ held = false, onCommit, onLeaving, children }: SnoozeSwipeProps) {
   const swipe = useSwipe(REVEAL, { held, onCommit, leaves: true });
+  useLayoutEffect(() => onLeaving?.(swipe.leaving), [swipe.leaving]);
   return (
     <div className={`ui-qrow-swipe${swipe.revealed ? ' ui-qrow-swipe--revealed' : ''}${swipe.open ? ' ui-qrow-swipe--open' : ''}${swipe.filled ? ' ui-qrow-swipe--filled' : ''}${swipe.dragging ? ' ui-swipe--dragging' : ''}`}
       {...swipe.bind} {...swipe.exit}>

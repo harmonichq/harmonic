@@ -457,6 +457,27 @@ export const SnoozeUndoPhone: Story = {
   },
 };
 
+// A row tapped while the swiped card is still leaving opens its own card, and
+// the card that left is still snoozed once its exit ends: the bar, with Undo,
+// and the item gone from the list.
+export const CardSwipeThenRowTapPhone: Story = {
+  args: { layout: 'phone', store: 'wearer-pinned', open: fixtures.snooze.subject, snooze },
+  parameters: { frame: FRAMES.phone },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const tapped = ranking('wearer-pinned').find((item) => item.subject !== fixtures.snooze.subject
+      && ranking('wearer-pinned-snoozed').some((after) => after.subject === item.subject))!;
+    await swipe(snoozedCard(canvasElement)!, -240, 16, 'slow');
+    await expect(canvasElement.querySelector('.ui-qrow-swipe[data-closing]')).not.toBeNull();
+    await userEvent.click(rowTitled(canvasElement, tapped.data.title)!);
+    await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent(snoozedBar), { timeout: 3000 });
+    await expect(within(canvas.getByRole('status')).getByRole('button', { name: 'Undo' })).toBeInTheDocument();
+    await expect(rowTitled(canvasElement, fixtures.snooze.title)).toBeNull();
+    await expect(snoozedCard(canvasElement)).toBeNull();
+    await expect(canvas.getByRole('heading', { level: 2, name: new RegExp(tapped.data.title) })).toBeInTheDocument();
+  },
+};
+
 // The open card held mid-swipe over its reveal, which runs the card's height.
 export const CardMidSwipePhone: Story = {
   args: { layout: 'phone', store: 'wearer', swiping: ranking('wearer')[0].subject },

@@ -509,6 +509,10 @@ const afterStep = (canvasElement: HTMLElement, iso: string) => new Promise<numbe
   };
   requestAnimationFrame(sample);
 });
+/** Until the last gesture has come to rest: the neighbour is drawn until its
+ *  slide or ease-back has ended, and presses are ignored until then. */
+const settled = (canvasElement: HTMLElement) =>
+  waitFor(() => expect(canvasElement.querySelector('.ui-dayscreen__neighbour')).toBeNull());
 const atRest = (canvasElement: HTMLElement) => waitFor(() => expect(Math.abs(offset(canvasElement))).toBeLessThan(0.5));
 /** Nothing moves and the header still names `iso`. */
 const unmoved = async (canvasElement: HTMLElement, iso: string, gesture: () => Promise<void>) => {
@@ -605,6 +609,7 @@ export const SwipeFlickPhone: Story = {
   play: async ({ canvasElement }) => {
     await swipe(body(canvasElement), 40, 4, 'flick');
     await atRest(canvasElement);
+    await settled(canvasElement);
     await expect(headerDay(within(canvasElement))).toHaveTextContent(printed(latest));
     await swipe(body(canvasElement), 80, 4, 'flick');
     await showsDay(canvasElement, '2025-05-24');

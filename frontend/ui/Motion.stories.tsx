@@ -40,6 +40,12 @@ const snooze = { subject: fixtures.snooze.subject, after: 'wearer-pinned-snoozed
 /** The Day swipe's months: March and April are read as the screen reaches them. */
 const dayMonths = monthReader();
 const dayBody = (stage: HTMLElement) => stage.querySelector<HTMLElement>('.ui-dayscreen__body')!;
+/** `ms`, and at least until the last swipe has come to rest: its neighbour is
+ *  drawn until its slide or ease-back has ended, and presses wait until then. */
+async function rested(stage: HTMLElement, ms: number) {
+  const still = async () => { while (stage.querySelector('.ui-dayscreen__neighbour')) await frame(); };
+  await Promise.all([pause(ms), still()]);
+}
 
 const MOTIONS = {
   sheet: {
@@ -115,16 +121,16 @@ const MOTIONS = {
       // which reads April; a slow swipe right steps to 23 April, out of them.
       // Then, through the month, 25 May, the latest day: a swipe left is resisted.
       await swipe(dayBody(stage), -120, 16, 'slow');
-      await pause(450);
+      await rested(stage, 450);
       await swipe(dayBody(stage), -200, 16, 'slow');
       // Eight flicks: 2 May to 1 May, 30 April, and on to 24 April.
       for (let flick = 0; flick < 8; flick += 1) {
-        await pause(350);
+        await rested(stage, 350);
         await swipe(dayBody(stage), 80, 4, 'flick');
       }
-      await pause(450);
+      await rested(stage, 450);
       await swipe(dayBody(stage), 200, 16, 'slow');
-      await pause(450);
+      await rested(stage, 450);
       stage.querySelector<HTMLElement>('.ui-header__day')!.click();
       await pause(350);
       control(stage, 'Next').click();

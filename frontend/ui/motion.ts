@@ -251,9 +251,8 @@ export function useSwipe(reveal: number, { held = false, onCommit, leaves = fals
   const bind = {
     onPointerDown: (event: PointerEvent<HTMLElement>) => {
       gesture.current = null;
-      // Presses wait while a step slides; one made while the element eases back takes it from there.
-      if (leaving || moving?.steps) return;
-      if (moving) setMoving(null);
+      // Ignored while a step slides or the element eases back.
+      if (leaving || moving) return;
       if (step) {
         // The screen's edges (its root, which the motion gate marks) are the platform's.
         const screen = (event.currentTarget.closest('[data-motion]') ?? document.documentElement).getBoundingClientRect();

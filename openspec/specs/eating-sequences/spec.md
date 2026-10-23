@@ -244,8 +244,8 @@ SD difference is positive, ordered by largest SD rise. Both tiers SHALL break ti
 shorter period and then pooled before evening. Without an adverse supported candidate
 its status SHALL be `insufficient` and its finding null. The summary SHALL use the
 fixed TIR variant `In <scope> sequences, the highest-carb fifth spent <q5 TIR>% of
-the <period label> in range against <reference TIR>% for the rest (n = <high_n> vs
-<reference_n>)` or the fixed SD variant `In <scope> sequences, the highest-carb
+the <period label> in range against <reference TIR>% for the rest (n = <high_n>
+vs <reference_n>)` or the fixed SD variant `In <scope> sequences, the highest-carb
 fifth's <period label> glucose spread was <q5 SD> mg/dL against <reference SD> mg/dL
 for the rest (n = <high_n> vs <reference_n>)`, naming the served metric. It SHALL
 state an association and SHALL NOT state cause, a carb limit, or a setting change.
@@ -304,13 +304,13 @@ SHALL first select the TIR-drop tier, ordered by largest absolute negative
 the SD-rise tier ordered by largest positive `sd_difference_mgdl`. Both tiers SHALL
 break ties by `post_4h`, `post_6h`, `in_sequence`, then lower quintile number. Its
 TIR summary SHALL be `In carb quintile <q> sequences, those with three or more
-eating windows spent <repeat TIR>% of the <period label> in range against
-<reference TIR>% for single-window sequences (n = <repeat_n> vs <reference_n>)`.
+eating windows spent <repeat TIR>% of the <period label> in range
+against <reference TIR>% for single-window sequences (n = <repeat_n> vs <reference_n>)`.
 Its SD summary SHALL be `In carb quintile <q> sequences, those with three or more
-eating windows had a <period label> glucose spread of <repeat SD> mg/dL against
-<reference SD> mg/dL for single-window sequences (n = <repeat_n> vs
-<reference_n>)`. Both state association only and SHALL NOT state cause, a carb
-limit, an eating-frequency prescription, or a setting change. When no adverse
+eating windows had a <period label> glucose spread of <repeat SD> mg/dL
+against <reference SD> mg/dL for single-window sequences (n = <repeat_n>
+vs <reference_n>)`. Both state association only and SHALL NOT state cause, a
+carb limit, an eating-frequency prescription, or a setting change. When no adverse
 supported comparison exists, status SHALL be `insufficient` and finding null.
 
 #### Scenario: An adverse matched repeat cohort headlines the TIR association

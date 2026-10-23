@@ -3,7 +3,7 @@ import { expect, fireEvent, userEvent, waitFor, within } from 'storybook/test';
 import { fixtures } from '../../fixtures';
 import { formatValue } from '../../provenance.js';
 import { dayDate, loggedGrams } from '../../day-model';
-import { scrollThenSwipe, swipe } from '../../gesture';
+import { hold, scrollThenSwipe, swipe } from '../../gesture';
 import { failsOnce } from '../../flaky';
 import { expectTabBarEnds } from '../../tabbar-check';
 import { expectTitlePrinted, expectTitleUnprinted } from '../../title-check';
@@ -362,8 +362,30 @@ export const PromptNotSurePhone: Story = {
 };
 // Phone: the swipe is Not sure's shortcut, by the row's rule (ADR 613). A
 // press that moves down first, and a slow drag short of half the card's
-// width, record nothing; a slow drag past half records Not sure and moves to
+// width, record nothing, and the drag never fills the reveal; a slow drag
+// past half fills it before the finger lifts, records Not sure and moves to
 // the next prompt, and so does a flick short of half.
+/** The card's reveal filled: marked so, and drawn in the accent. */
+const promptFilled = (card: HTMLElement) => {
+  const reveal = card.parentElement!.querySelector<HTMLElement>('.ui-prompt-swipe__reveal');
+  if (!card.parentElement!.classList.contains('ui-prompt-swipe--filled') || !reveal) return false;
+  const probe = document.createElement('i');
+  probe.style.color = 'var(--primary)';
+  reveal.append(probe);
+  const accent = getComputedStyle(probe).color;
+  probe.remove();
+  return getComputedStyle(reveal).color === accent;
+};
+/** Whether the card's reveal is ever filled from now until the returned read. */
+const promptEverFilled = (card: HTMLElement) => {
+  let seen = false;
+  const watch = new MutationObserver((changes) => {
+    seen ||= card.parentElement!.classList.contains('ui-prompt-swipe--filled')
+      || changes.some((change) => change.oldValue?.includes('ui-prompt-swipe--filled'));
+  });
+  watch.observe(card.parentElement!, { attributes: true, attributeFilter: ['class'], attributeOldValue: true });
+  return () => { watch.disconnect(); return seen; };
+};
 export const PromptSwipePhone: Story = {
   ...story('phone', PROMPTS),
   play: async ({ canvasElement }) => {
@@ -371,14 +393,32 @@ export const PromptSwipePhone: Story = {
     const card = () => canvasElement.querySelector<HTMLElement>('.ui-prompt')!;
     await scrollThenSwipe(card(), -240);
     await expect(place(canvas)).toHaveTextContent('1 / 2');
+    const filledEver = promptEverFilled(card());
     await swipe(card(), -120, 16, 'slow');
     await expect(place(canvas)).toHaveTextContent('1 / 2');
+    await expect(filledEver()).toBe(false);
     await expect(120).toBeLessThan(card().getBoundingClientRect().width / 2);
+    let filledAtRelease: boolean | null = null;
+    card().addEventListener('pointerup', (event) => {
+      filledAtRelease = promptFilled(event.currentTarget as HTMLElement);
+    }, { once: true });
     await swipe(card(), -240, 16, 'slow');
+    await expect(filledAtRelease).toBe(true);
     await expect(place(canvas)).toHaveTextContent('2 / 2');
     await waitFor(() => expect(canvasElement.querySelector('.ui-prompt-swipe__reveal')).toBeNull());
     await swipe(card(), -120, 4, 'flick');
     await expect(canvas.getByRole('heading', { level: 1, name: 'Day' })).toBeInTheDocument();
+  },
+};
+// Phone: a drag past half held there, the finger still down: the reveal filled
+// with the accent's tint (§2.5, 2026-10-23), nothing recorded yet.
+export const PromptSwipeFilledPhone: Story = {
+  ...story('phone', PROMPTS),
+  play: async ({ canvasElement }) => {
+    const card = canvasElement.querySelector<HTMLElement>('.ui-prompt')!;
+    await hold(card, -240, 16);
+    await expect(promptFilled(card)).toBe(true);
+    await expect(place(within(canvasElement))).toHaveTextContent('1 / 2');
   },
 };
 // The Rises row drills in to "1 / 2", answered Yes · No and Not sure with no

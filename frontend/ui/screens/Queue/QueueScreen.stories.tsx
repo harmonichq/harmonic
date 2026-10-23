@@ -255,12 +255,44 @@ const rowTitled = (canvasElement: HTMLElement, title: string) =>
   [...canvasElement.querySelectorAll<HTMLElement>('.ui-queue__list .ui-qrow')]
     .find((each) => each.textContent?.includes(title)) ?? null;
 const swipedRow = (canvasElement: HTMLElement) => rowTitled(canvasElement, fixtures.snooze.title);
-const filled = (row: HTMLElement) => row.parentElement!.classList.contains('ui-qrow-swipe--filled');
+/** The row's reveal filled: marked so, and drawn in the accent. */
+const filled = (row: HTMLElement) => {
+  const reveal = row.parentElement!.querySelector<HTMLElement>('.ui-qrow-swipe__reveal');
+  if (!row.parentElement!.classList.contains('ui-qrow-swipe--filled') || !reveal) return false;
+  const probe = document.createElement('i');
+  probe.style.color = 'var(--primary)';
+  reveal.append(probe);
+  const accent = getComputedStyle(probe).color;
+  probe.remove();
+  return getComputedStyle(reveal).color === accent;
+};
 /** Whether the reveal is filled as the finger lifts, read before the row's own handler. */
 const filledAtRelease = (row: HTMLElement) => {
   let seen: boolean | null = null;
   row.addEventListener('pointerup', () => { seen = filled(row); }, { once: true });
   return () => seen;
+};
+/** Whether the reveal is ever filled from now until the returned read, as each
+ *  class change of the row's swipe lands. */
+const everFilled = (row: HTMLElement) => {
+  let seen = false;
+  const swipe = row.parentElement!;
+  const watch = new MutationObserver((changes) => {
+    seen ||= swipe.classList.contains('ui-qrow-swipe--filled')
+      || changes.some((change) => change.oldValue?.includes('ui-qrow-swipe--filled'));
+  });
+  watch.observe(swipe, { attributes: true, attributeFilter: ['class'], attributeOldValue: true });
+  return () => { watch.disconnect(); return seen; };
+};
+/** Whether a row of the list is ever marked leaving ([data-closing]) from now until the returned read. */
+const everLeft = (canvasElement: HTMLElement) => {
+  let seen = false;
+  const list = canvasElement.querySelector('.ui-queue__list')!;
+  const watch = new MutationObserver(() => {
+    seen ||= list.querySelector('.ui-qrow-swipe[data-closing]') !== null;
+  });
+  watch.observe(list, { attributes: true, attributeFilter: ['data-closing'], subtree: true });
+  return () => { watch.disconnect(); return seen; };
 };
 const nextFrame = () => new Promise((done) => requestAnimationFrame(() => done(undefined)));
 /** What `read` sees each frame until `until` holds of it (or 3 s pass). */
@@ -304,10 +336,10 @@ export const SwipeSnoozeUndoPhone: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const row = () => swipedRow(canvasElement);
-    const atRelease = filledAtRelease(row()!);
+    const filledEver = everFilled(row()!);
     await swipe(row()!, -120, 16, 'slow');
-    await expect(atRelease()).toBe(false);
     await atRest(canvasElement, row);
+    await expect(filledEver()).toBe(false);
     await expect(canvas.queryByRole('status')).toBeNull();
     await snoozedBySwipe(canvasElement, 'slow');
     await userEvent.click(canvas.getByRole('button', { name: 'Undo' }));
@@ -359,8 +391,8 @@ export const SwipeCancelPhone: Story = {
   },
 };
 
-// A row the story's snooze does not take: its action removes nothing, so the
-// row is drawn at rest once it has acted, with nothing left closing.
+// A row the story's snooze does not take: it leaves, its action removes
+// nothing, so the row is drawn at rest again, with nothing left closing.
 export const SwipeNoopPhone: Story = {
   args: SWIPE,
   parameters: { frame: FRAMES.phone },
@@ -368,8 +400,10 @@ export const SwipeNoopPhone: Story = {
     const other = ranking('wearer-pinned')
       .find((item) => item.subject !== fixtures.snooze.subject && item.subject !== SWIPE.open)!.data.title;
     const row = () => rowTitled(canvasElement, other);
+    const left = everLeft(canvasElement);
     await swipe(row()!, -240, 16, 'slow');
     await atRest(canvasElement, row);
+    await expect(left()).toBe(true);
     await expect(canvasElement.querySelector('[data-closing]')).toBeNull();
     await expect(within(canvasElement).queryByRole('status')).toBeNull();
   },

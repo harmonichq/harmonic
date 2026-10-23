@@ -55,8 +55,9 @@ findings, the Focus list and the case files the Queue reads) are read again.
 It SHALL keep the Trial roster the Queue holds and SHALL NOT read the roster or
 the active change's detail before it resolves. It SHALL drop Changes' answer,
 from the page and from the answers the browser remembers, so Changes draws its
-loading state, never the answer it held before the write, until its own read
-after the write lands, after a reload too.
+loading state, never the answer it held before the write, until a read of it
+started after the write lands, after a reload too. A Changes read already in
+flight when the write starts SHALL NOT be drawn or remembered when it lands.
 
 #### Scenario: A snooze reads no roster
 
@@ -64,6 +65,13 @@ after the write lands, after a reload too.
 - **THEN** the Queue redraws without a Trial roster read
 - **WHEN** the person then opens Changes, in the same page or after a reload
 - **THEN** Changes draws its loading state, reads the roster, and draws it
+
+#### Scenario: A Changes read in flight across a Queue write
+
+- **GIVEN** Changes' read is in flight
+- **WHEN** the person returns to the Queue and presses Done before it lands
+- **THEN** that read is not drawn or remembered when it lands, and Changes
+  draws its loading state until a read started after the Done lands
 
 #### Scenario: A Changes read in flight across a Queue write
 

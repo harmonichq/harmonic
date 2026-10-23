@@ -122,12 +122,13 @@
 .ui-qrow__until { color: var(--wk-ink-meta); font-size: var(--ui-type-label); font-variant-numeric: tabular-nums; }
 .ui-qrow--loading .ui-qrow__body { display: flex; flex-direction: column; gap: 10px; }
 
-/* Mid-swipe: the row slides left over the Snooze reveal, which is drawn only
-   while the row is off its rest. The reveal lies under the whole row, so it
-   shows from the row's trailing edge to the right edge however far the row
-   goes, its icon and label in its right-hand 88 px column. Once a release
-   would commit it fills with the accent's tint, the tab bar's indicator
-   (§2.2), over the fast duration, at once under reduced motion. */
+/* Mid-swipe (SnoozeSwipe): what moves, a row or an open card, slides left
+   over the Snooze reveal, which is drawn only while it is off its rest. The
+   reveal lies under the whole of what moves, its full height, so it shows from
+   its trailing edge to the right edge however far it goes, its icon and label
+   centred in its right-hand 88 px column. Once a release would commit it fills
+   with the accent's tint, the tab bar's indicator (§2.2), over the fast
+   duration, at once under reduced motion. */
 .ui-qrow-swipe--revealed { position: relative; overflow: hidden; }
 .ui-qrow-swipe__reveal {
   position: absolute;
@@ -153,4 +154,10 @@
   background: color-mix(in srgb, var(--primary) 18%, transparent);
   color: var(--primary);
 }
-.ui-qrow-swipe--open .ui-qrow { translate: -88px 0; }
+/* What moves is the wrapper's last child, drawn over the reveal. */
+.ui-qrow-swipe > .ui-swipe-settle { position: relative; }
+.ui-qrow-swipe--open > .ui-swipe-settle { translate: -88px 0; }
+/* An open card (ADR 614): no rule above it, so its reveal starts at its top,
+   and its rounded corners clip the reveal. */
+.ui-qrow-swipe:has(> .ui-swipe-settle > :is(.ui-pcard, .ui-scard)) { border-radius: var(--wk-radius); }
+.ui-qrow-swipe:has(> .ui-swipe-settle > :is(.ui-pcard, .ui-scard)) > .ui-qrow-swipe__reveal { inset: 0; }

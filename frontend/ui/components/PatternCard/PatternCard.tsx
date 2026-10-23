@@ -8,10 +8,12 @@
 // pattern) or nadir (a low one) of the pattern's own episodes against the
 // typical episode the engine compares them with, as two caption + value pairs
 // on one baseline. A pattern the engine serves no comparison for has no impact
-// line. Snooze is the lesser action, a centred text action beneath Focus
-// (Apple's primary-plus-"Not Now" stack). The header holds the title and the
-// collapse chevron, which a screen drops where the card does not collapse
-// (desktop).
+// line. Snooze, when the screen offers it (desktop; the phone's is the card's
+// swipe, ADR 614), is the lesser action, a centred text action beneath Focus
+// (Apple's primary-plus-"Not Now" stack). The header holds the title and, where
+// the screen lets the card close to its row (the phone), the chevron that does:
+// a 44 px icon button named by the card's title, the open half of the row's
+// disclosure (aria-expanded true).
 //
 // Focus is drawn only where the card is `focusable`: the served admission lets
 // a Focus start (and, on a cause card, the engine serves its cause as one it
@@ -49,10 +51,10 @@ export type PatternCardProps =
   | { loading: true }
   | {
       loading?: false; data: PatternData; onPin?: () => void;
-      /** Snooze, the text action beneath Focus. */
+      /** Snooze, the text action beneath Focus, where the screen offers it. */
       onSnooze?: () => void;
-      /** Shows the collapse chevron; false where the card does not collapse. */
-      collapsible?: boolean;
+      /** Closes the card to its row: the chevron is drawn only with it. */
+      onCollapse?: () => void;
       /** Where Focus sits: the Queue card's foot, as its primary, or a cause card's
        *  head, as an outlined secondary (one per cause card, so none is the
        *  drill-down's primary). */
@@ -63,6 +65,17 @@ export type PatternCardProps =
       /** A multi-cause card's chart opens its drill-down. */
       onOpen?: () => void;
     };
+
+/** An open card's chevron (ADR 614), the Pattern's and the Setting's: it closes
+ *  the card to its row, and is named by the card's title, `titleId`. */
+export function CardChevron({ titleId, onCollapse }: { titleId: string; onCollapse: () => void }) {
+  return (
+    <button type="button" className="ui-pcard__chevron" data-role="icon" aria-labelledby={titleId}
+      aria-expanded="true" onClick={onCollapse}>
+      <Icon name="collapse" />
+    </button>
+  );
+}
 
 export function PatternCard(props: PatternCardProps) {
   const titleId = useId();
@@ -77,7 +90,7 @@ export function PatternCard(props: PatternCardProps) {
       </section>
     );
   }
-  const { data, onPin, onSnooze, onOpen, collapsible = true, pin = 'primary', focusable = false } = props;
+  const { data, onPin, onSnooze, onOpen, onCollapse, pin = 'primary', focusable = false } = props;
   const { magnitude } = data;
   const focus = (kind: 'primary' | 'secondary') => (data.pinned
     ? (data.multiCause && data.focusedCause
@@ -95,7 +108,7 @@ export function PatternCard(props: PatternCardProps) {
     <section className={pin === 'secondary' ? 'ui-pcard ui-pcard--cause' : 'ui-pcard'}>
       <div className="ui-pcard__head">
         <h2 className="ui-pcard__title" id={titleId}>{data.title}</h2>
-        {collapsible && <span className="ui-pcard__chevron"><Icon name="collapse" /></span>}
+        {onCollapse && <CardChevron titleId={titleId} onCollapse={onCollapse} />}
         {pin === 'secondary' && <span className="ui-pcard__slot">{focus('secondary')}</span>}
       </div>
       {magnitude && (

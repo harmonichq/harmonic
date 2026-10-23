@@ -23,7 +23,8 @@ after Connor says "locked" on its pull request.
   never swipes. The row then tracks the finger one to one up to its reveal,
   and with resistance past it. A release commits when the finger has
   travelled half the row's width, or is moving left faster than 500 px/s
-  having passed the reveal's start; otherwise the row eases back. Each kind of
+  having travelled the reveal's full width; otherwise the row eases back. A
+  pointer cancel always eases back. Each kind of
   swipe still does what it does today when it commits.
 - **The reveal shows the decision.** Once a release would commit, the reveal
   fills with the accent's tint; it empties again if the finger comes back.
@@ -34,14 +35,15 @@ after Connor says "locked" on its pull request.
 - **Durations are the library's.** The slide-off takes the standard duration
   on a new accelerating easing that never overshoots; the close-up and the
   ease-back take the emphasized duration on the standard easing. Under reduced
-  motion nothing travels: the slide-off is a fade of the fast duration, the
-  close-up and the ease-back are instant.
+  motion nothing the app animates travels: at release the row fades out where
+  the finger left it over the fast duration, and the close-up and the
+  ease-back are instant.
 - **The mock.** The Snooze swipe Motion story replays a cancel, a commit past
   half, a flick commit and Undo, on the shipped Queue, and with reduced motion
   on.
 - **The amendment.** `docs/design/recommendations-redesign.md` gains a dated
-  §2.5 amendment for all four of #612's decisions, the §1.4 rows, the §1.3
-  states, the §2.1 easing token and the §4.2 component states, so #614 builds
+  §2.5 amendment for all four of #612's decisions (recording the third
+  easing), the §1.4 rows, the §1.3 states and the §4.2 component states, so #614 builds
   against a locked page.
 
 ## Not in this change
@@ -74,7 +76,8 @@ after Connor says "locked" on its pull request.
   another row is leaving.
 - **Evidence owed:** story plays through the shipped Queue and Day for a
   cancel, a slow commit past half, a flick commit, a vertical drag that does
-  not swipe, the filled reveal before release, the slide-off and close-up
-  ending before the bar rises, Undo, a failed snooze write, and reduced motion
-  (no translation on any frame); the replayable Motion story; the amendment
+  not swipe, a pointer cancel past half that does not commit, the filled
+  reveal before release, the slide-off and close-up ending before the bar
+  rises, Undo, a failed snooze write, a swipe whose action removes nothing
+  (the row back at rest), and reduced motion (no translation after release); the replayable Motion story; the amendment
   text; the full pull-request gate once on the pushed commit.

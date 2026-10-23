@@ -8,12 +8,12 @@ that moves down first SHALL never become one. The swiping element SHALL track
 the finger one to one up to its reveal and with resistance past it, and SHALL
 never be drawn right of rest. A release SHALL commit when the finger has
 travelled half the element's width to the left, or is moving left faster than
-500 px/s past the reveal's start; otherwise the element SHALL ease back to
-rest. While a release would commit, the reveal SHALL be filled with the
+500 px/s having travelled the reveal's full width; otherwise, and on a pointer
+cancel, the element SHALL ease back to rest. While a release would commit, the reveal SHALL be filled with the
 accent's tint. On a commit a Queue row SHALL slide off to the left and then
 close its height before it is snoozed, and the bar SHALL rise only after it
-has gone. Under reduced motion nothing SHALL travel: the commit SHALL fade the
-row out and the cancel SHALL return it at once.
+has gone. Under reduced motion nothing SHALL move after release: the commit SHALL fade
+the row out where the finger left it and the cancel SHALL return it at once.
 
 #### Scenario: A slow drag past half snoozes after the row has gone
 
@@ -35,6 +35,11 @@ row out and the cancel SHALL return it at once.
 - **WHEN** the person flicks a row left faster than 500 px/s and releases
   before half its width
 - **THEN** the row is snoozed as a slow drag past half is
+
+#### Scenario: A cancelled gesture never snoozes
+
+- **WHEN** the system cancels the pointer while the row is past half its width
+- **THEN** the row eases back and no snooze is written
 
 #### Scenario: A vertical drag scrolls and never swipes
 

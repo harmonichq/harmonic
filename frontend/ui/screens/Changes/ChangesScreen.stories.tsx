@@ -149,9 +149,11 @@ const formingPlay: Story['play'] = async ({ canvasElement }) => {
 // On a phone the trace's legend holds Meals, Before (with its "of N") and
 // After on one row (#611): each key's vertical centre lies within the Meals
 // caption's box. The caption sits a little below the keys' tops by its own
-// type, so tops are not compared.
+// type, so tops are not compared. Inter swaps in after the first draw, so the
+// legend is measured once it has.
 const phoneFormingPlay: Story['play'] = async (context) => {
   await formingPlay!(context);
+  await document.fonts.ready;
   const legend = context.canvasElement.querySelector('.ui-trace__legend')!;
   const caption = legend.querySelector('.ui-caption')!.getBoundingClientRect();
   for (const arm of ['before', 'after']) {

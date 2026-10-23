@@ -36,7 +36,9 @@ Done on both layouts; only a closed row swipes to Snooze (`useSwipe`, ADR 613).
 - **The surfaces spec follows.** The active `recommendations-redesign`
   change's sentence "Every item SHALL offer Snooze, a text action beneath its
   primary" is rewritten for the phone's swipe, as #613's task 5.6 handed to
-  this ticket.
+  this ticket. Two baseline requirements that name a Queue card's Snooze (a
+  multi-cause Pattern's card, and the Focus button's "No button while a change
+  is watched") are modified to say which Snooze each layout draws.
 
 ## Not in this change
 
@@ -59,9 +61,10 @@ Done on both layouts; only a closed row swipes to Snooze (`useSwipe`, ADR 613).
   the card that swipes it; motion that travels under reduced motion; silent
   incorrect success: a card that leaves but is not snoozed, or is snoozed but
   stays drawn.
-- **Must recover:** a snooze write that fails after the card has left puts the
-  card back open at rest, with Not saved + Retry in the bar, as a failed row
-  swipe does today.
+- **Must recover:** a snooze write the engine refuses after the card has left
+  brings the item back through the live adapter's held writes (#610, `held()`
+  and `retry()`), under the "Not saved" bar with Retry, as a refused row swipe
+  does today.
 - **Accepted failure:** on the phone, Snooze is reached only by a swipe
   (Connor's decision, recorded in §2.5 on 2026-10-23); a person who cannot drag
   has no Snooze on the phone.

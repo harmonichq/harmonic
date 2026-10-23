@@ -5,10 +5,14 @@ the Snooze reveal, inline in `QueueRow.tsx` with its CSS in `QueueRow.css`
 (`ui-qrow-swipe*`). The open card is that wrapper's second caller, so the
 wrapper becomes one exported component in the same module, `SnoozeSwipe`
 (`QueueRow.tsx`), which the row and the Queue screen's phone open card both
-render. Its props are the hook's (`held`, `onCommit`) and the element it
-moves; it always `leaves`, and its reveal is always Snooze at 88 px. The
-moving element stays the wrapper's last child, which the hook's transition end
-reads. The reveal spans the moving element's full height, its icon and label
+render. Its props are the hook's (`held`, `onCommit`) and its children; it
+always `leaves`, and its reveal is always Snooze at 88 px. For both callers it
+renders the moving element itself, a `div.ui-swipe-settle` carrying the hook's
+`style` around its children, as the wrapper's last child: that class carries
+`touch-action: pan-y` and the settle and leave transitions (`shared.css`), and
+the hook's transition end reads the last child. The row's button moves inside
+that div rather than carrying the class itself, and `QueueRow.css`'s open
+offset follows it. The reveal spans the moving element's full height, its icon and label
 centred in its right-hand 88 px column, so a card's reveal is a row's, taller.
 The Prompt's Not sure reveal is a different action at 96 px and keeps its own
 markup.
@@ -26,8 +30,11 @@ pass one.
 ## ADR 614 — The chevron is a disclosure control named by the card's title
 
 The prechecks allow only glossary words in an accessible name, and the
-glossary has no word for closing a card. The chevron is therefore an `icon`
-role button (44 px, §4.1) named by the card's title (`aria-labelledby`), with
+glossary has no word for closing a card. The chevron is therefore a plain
+`<button type="button" data-role="icon">` (44 px, §4.1), not the library
+`Button`, whose `icon` kind is named only by an `aria-label`. It is named by
+the card's title (`aria-labelledby` the title's id; `SettingCard`'s title gains
+one, from `useId`, as `PatternCard`'s has), with
 `aria-expanded="true"`: the open half of the disclosure whose closed half is
 the row, a button named by its title with `aria-expanded="false"`. A
 multi-cause card's chart is also a button named by the title; a test that

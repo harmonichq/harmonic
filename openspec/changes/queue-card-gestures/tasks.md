@@ -25,7 +25,8 @@
 
 - [ ] 4.1 `Screens/Queue` SnoozeUndoPhone: swipes the open card past half; asserts the reveal filled before release, no bar until the card has gone, Undo restores it open; its comment no longer claims a visible phone Snooze
 - [ ] 4.2 `Screens/Queue` new stories: CardMidSwipePhone (the open card held over its reveal); CardSwipeCancelPhone (a short drag on the card eases back, no bar); CardSwipeOverDonePhone (a drag begun on Done, short of the rule, presses nothing and snoozes nothing; a tap on Done then shows "Waiting for pump"); CollapsePhone (the chevron leaves no card open, every row `aria-expanded="false"`; a row tap opens its card); ClosedPhone (`closed`: nothing open at mount)
-- [ ] 4.3 `Screens/Queue` LiveSnoozeNotSavedPhone swipes the open card: the card returns open at rest with Not saved, and Retry saves it; the Desktop twin keeps the text action
+- [ ] 4.3 `Screens/Queue` LiveSnoozeNotSavedPhone swipes the open card: once the refused write is held, the card is back with "Not saved", and Retry saves it; the Desktop twin keeps the text action
+- [ ] 4.3a `Screens/Queue` TwoSnoozesSecondRefusedPhone and RetryOwnBarPhone (#610) swipe the open card where they press Snooze today; their Desktop twins keep the text action
 - [ ] 4.4 `Screens/Queue` DoneUndoPhone, HabitOpenPhone, HabitPinnedPhone and the multi-cause card check assert no Snooze button on the phone and one on desktop; the multi-cause chart is reached by its element, not the title alone
 - [ ] 4.5 `PatternCard`, `HabitCard` and `SettingCard` stories: the phone stories pass no `onSnooze` and press the chevron (`onCollapse` called once); the desktop stories keep Snooze and draw no chevron
 - [ ] 4.6 `Foundations/Motion` → Transient bar swipes the open card instead of pressing Snooze
@@ -34,6 +35,7 @@
 ## 5. The spec
 
 - [ ] 5.1 `openspec/changes/recommendations-redesign/specs/surfaces/spec.md`: the Queue requirement's Snooze sentence says Snooze is a text action beneath its primary on desktop (shortcut S), and on the phone the swipe of the item's row or open card, with no Snooze text action (§2.5, 2026-10-23); nothing else in that file changes
+- [ ] 5.1a The change's MODIFIED deltas (a multi-cause Pattern's card; "No button while a change is watched") stand as written; nothing else in `openspec/specs` is edited by hand
 - [ ] 5.2 `npx --yes @fission-ai/openspec@1.14.0 validate --all --strict` passes
 
 ## 6. Verify and evidence

@@ -69,6 +69,11 @@ Status: **exploring** (#481).
   across the second; the Queue without a queued ISF. Revised on the locked
   Overview and Queue screens. The operator: "Go for it. Locked"
   (2026-10-20).
+- **Phone gestures locked 2026-10-23** (#612, #613, §2.5): Storybook
+  `Foundations/Motion` → Snooze swipe at commit `63020278`: the smoother row
+  swipe, with its resistance of 0.3 past the reveal, and the amendment's open
+  card swipe, closing card and Day swipe, to be built by #614 on the locked
+  Queue and Day screens. Connor: "locked looks good." (2026-10-23).
 
 This document is the durable record of the redesign. Sections 1–3 are what the
 build will be checked against once they are approved. The appendix keeps the
@@ -1387,11 +1392,10 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
      moved 10 px and more across than down; a press that moves down first is
      the page's scroll for the rest of it, and never swipes. The row then
      follows the finger one to one up to its reveal, and past it with
-     resistance: it moves a fraction of the finger's further travel, the one
-     value the replay settles (the mock shows 0.3, pending; the fraction
-     the operator approves is written here when he locks this page). It is
-     never drawn right of rest. A release commits when the finger has travelled half the row's
-     width, or is moving left faster than 500 px/s over its last 100 ms having
+     resistance: it moves 0.3 of the finger's further travel, the fraction
+     the operator approved in the replay. It is never drawn right of rest. A
+     release commits when the finger has travelled half the row's width, or
+     is moving left faster than 500 px/s over its last 100 ms having
      travelled the reveal's full width; otherwise the row eases back over the
      emphasized duration on the standard easing. When the system takes the
      gesture (a pointer cancel) the row always eases back. This replaces the

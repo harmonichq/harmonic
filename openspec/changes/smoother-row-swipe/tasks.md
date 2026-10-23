@@ -5,8 +5,8 @@
 ## 1. The hook (`frontend/ui/motion.ts`, ADR 613)
 
 - [x] 1.1 Axis lock at 10 px: across first makes the press a swipe; down first leaves it to the page for the rest of the press
-- [ ] 1.2 Tracking one to one to the reveal, resistance past it at the fraction the mock settles; never right of rest
-  - Built with `RESISTANCE = 0.3` in `frontend/ui/motion.ts`, the default the replay shows; ticked once Connor approves the value in the replay, with 5.1's.
+- [x] 1.2 Tracking one to one to the reveal, resistance past it at the fraction the mock settles; never right of rest
+  - `RESISTANCE = 0.3` in `frontend/ui/motion.ts`, approved by Connor in the replay (2026-10-23).
 - [x] 1.0 The interface ADR 613 states: `useSwipe(reveal, { held, onCommit, leaves })` returning `{ revealed, filled, dragging, open, leaving, style, bind, exit }`
 - [x] 1.3 One would-commit predicate (half the element's width of finger travel, or a leftward velocity over the last 100 ms above 500 px/s having travelled the reveal's full width), read both for `filled` while dragging and at release; `pointercancel` settles back and never commits
 - [x] 1.4 The row's exit: hold the element, slide it off, close its height, then call the action; `[data-closing]` and `aria-hidden` while it leaves; the action at once where nothing transitions; presses ignored while it leaves; the hook back at rest in the same update that calls the action, so a row the action does not remove is drawn at rest
@@ -36,12 +36,12 @@
 
 Quote only words Connor wrote on #612, on this change's pull request, or that the coordinating session relays to this one as his verbatim words; otherwise cite "#612, 2026-10-23" without quotation marks. Never edit an earlier dated amendment.
 
-- [ ] 5.1 §2.5, one amendment dated 2026-10-23 with four parts: (1) the smoother swipe as ADR 613 sets it, with the resistance fraction approved in the replay, and `--ui-ease-accelerate` as a third easing beside the 2026-10-13 motion amendment's two; (2) an open Pattern, Setting or habit card swipes to Snooze as a row does, sized for the card, and the phone has no Snooze text action (desktop keeps it, with S), recorded as the operator's decision after the conflict with §1.4's "a swipe is a shortcut, never the only way" and WCAG 2.5.7 was raised, superseding the 2026-10-13 "Snooze has a visible control on the phone"; (3) on the phone the open card's chevron closes it to its row, leaving nothing open, and tapping the row reopens it, the closed state the screen's alone and gone on a tab change; (4) a horizontal swipe on the Day body steps to the previous or next day with data, the skeleton while it loads, across month boundaries through the day navigator, the screen's edges left to the platform, and the month drop-down the visible equivalent on both layouts
-  - Written, with the resistance fraction stated as pending (the mock shows 0.3); ticked once Connor approves the value and says "locked", when it lands in the same amendment.
+- [x] 5.1 §2.5, one amendment dated 2026-10-23 with four parts: (1) the smoother swipe as ADR 613 sets it, with the resistance fraction approved in the replay, and `--ui-ease-accelerate` as a third easing beside the 2026-10-13 motion amendment's two; (2) an open Pattern, Setting or habit card swipes to Snooze as a row does, sized for the card, and the phone has no Snooze text action (desktop keeps it, with S), recorded as the operator's decision after the conflict with §1.4's "a swipe is a shortcut, never the only way" and WCAG 2.5.7 was raised, superseding the 2026-10-13 "Snooze has a visible control on the phone"; (3) on the phone the open card's chevron closes it to its row, leaving nothing open, and tapping the row reopens it, the closed state the screen's alone and gone on a tab change; (4) a horizontal swipe on the Day body steps to the previous or next day with data, the skeleton while it loads, across month boundaries through the day navigator, the screen's edges left to the platform, and the month drop-down the visible equivalent on both layouts
+  - The resistance fraction is written as approved, 0.3, after Connor's "locked" on the replay (2026-10-23).
 - [x] 5.2 §1.4: the row-swipe row rewritten for 5.1 (1); new rows for 5.1 (2), (3) and (4) with their desktop equivalents; the closing paragraph names the phone's Snooze as the one swipe with no visible equivalent, citing the amendment
 - [x] 5.3 §1.3: Queue gains "lead card closed (nothing open)" and "a card mid-swipe"; Day gains "stepping to the next or previous day (skeleton)"
 - [x] 5.4 §4.2: QueueRow (the filled reveal; leaving), PromptCard (the filled reveal), PatternCard, SettingCard and HabitCard (phone: the swipe, no Snooze text action; the chevron a control), each as 5.1 states it
-- [ ] 5.5 The status list at the top: a line for this amendment, built by #614, written once Connor says "locked", quoting him
+- [x] 5.5 The status list at the top: a line for this amendment, built by #614, written once Connor says "locked", quoting him
 - [x] 5.6 The active change's surfaces spec (`openspec/changes/recommendations-redesign/specs/surfaces/spec.md`) is not edited here: #614 changes its Snooze sentence when it builds
 
 ## 6. Verify and evidence

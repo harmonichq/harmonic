@@ -87,8 +87,9 @@ type Gesture = {
 
 /** How far the press moves before its axis is decided. */
 const AXIS = 10;
-/** Past the reveal the row moves this fraction of the finger's further travel.
- *  Pending: the value Connor approves in the Snooze swipe replay (ADR 613). */
+/** Past the reveal the row moves this fraction of the finger's further travel:
+ *  the value the operator approved in the Snooze swipe replay (§2.5,
+ *  2026-10-23; ADR 613). */
 const RESISTANCE = 0.3;
 /** A flick: the finger's leftward speed over its last 100 ms, in px/s. */
 const FLICK = 500;

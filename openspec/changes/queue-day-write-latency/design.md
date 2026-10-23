@@ -11,8 +11,9 @@ store, after a snooze, the guidance and the findings answered from the engine's
 cache and the roster missed it.
 
 **Decision.** A Queue write re-reads the Queue's own answers and composes the
-Queue with the roster it already holds. It forgets the roster and Changes'
-answer without reading them. Changes draws its loading state until its own
+Queue with the roster it already holds. It forgets the roster and drops Changes'
+answer, from the page and from the browser's remembered answers, without
+reading them. Changes draws its loading state until its own
 read after the write lands, so a Focus or Done shows on Changes only once the
 engine serves it.
 

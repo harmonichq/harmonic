@@ -1,22 +1,29 @@
+## 0. Interface (settled at triage)
+
+- `QueueWrites` (`QueueScreen.tsx`) gains `held: () => { inFlight: ReadonlySet<string>; refused: readonly Refused[] }` and `retry: () => Promise<void>`, where `Refused = { kind: 'snooze' | 'restore' | 'done' | 'undoDone' | 'pin'; subject: string; lever?: string }`. The live adapter's `queueWrites` implements both; the screen hides `inFlight` subjects, draws "Not saved" + Retry while `refused` is non-empty (outranking its own bars), and calls `retry` from it. The screen keeps no in-flight or refused state of its own.
+- App redraws when a Queue write starts as well as when it settles.
+- The live adapter holds the day on screen as the iso its `readDay` last read, and exposes it as `shownDay()`. `dayWrites.answer(prompt, answer)` keeps its signature. After it settles, App calls `live.readDay(live.shownDay())` and redraws when that lands. `DayScreen.tsx` is untouched.
+
 ## 1. Tests first
 
 - [ ] 1.1 Live-adapter test: two snoozes fired unawaited against a fake that refuses a reused generation both save, each with a distinct generation (fails on today's code)
-- [ ] 1.2 Live-adapter test: a Queue write resolves with no Trial roster read, and reading Changes afterwards reads the roster
-- [ ] 1.3 Live-adapter test: a Prompt answer resolves after the Prompts, reads no day other than the one on screen, and drops the other visited days' answers
-- [ ] 1.4 Queue stories, phone and desktop: two live snoozes where the second is refused show the first snoozed, the second back with "Not saved", and Retry saves it
+- [ ] 1.2 Live-adapter test: `held().inFlight` names a snooze's subject until it settles; a refused snooze is in `held().refused` until `retry()` saves it; a refusal answered 404 on Retry is dropped
+- [ ] 1.3 Live-adapter test: a Queue write resolves with no Trial roster read; afterwards Changes is not landed, in the page and after a memory refresh, and reading it reads the roster
+- [ ] 1.4 Live-adapter test: a Prompt answer resolves after the Prompts, reads no day, and drops every visited day's answer but `shownDay()`'s
+- [ ] 1.5 Queue stories, phone and desktop, on the existing stores: a wrapper renders `wearer-pinned` and switches to `wearer-pinned-snoozed` when a snooze of `fixtures.snooze.subject` saves; a second ranked item's snooze is refused on its first call; the play asserts the first item gone, the second back, the bar "Not saved", and after Retry that the bar leaves. The fake `writes` implement `held` and `retry` in the story file
 
 ## 2. Live adapter (`frontend/ui/app/live.js`)
 
 - [ ] 2.1 Queue writes run one at a time in the order made, each on a guidance (and Focus list) read made after the write before it was answered
-- [ ] 2.2 The adapter keeps the subjects of Queue writes in flight and the refused writes, so a remounted Queue reads them
-- [ ] 2.3 A Queue write forgets the roster and Changes, re-reads only the Queue's own answers with the held roster, and resolves
-- [ ] 2.4 A Prompt answer forgets every visited day, drops the off-screen days' answers, re-reads the Prompts and resolves; the day on screen is read again after it
+- [ ] 2.2 `held()` and `retry()` as in section 0; a refusal leaves on save or on a 404
+- [ ] 2.3 A Queue write forgets the roster, deletes `answers.changes.wearer` and drops 'changes' from the landed tabs before remembering, re-reads only the Queue's own answers with the held roster, and resolves
+- [ ] 2.4 `shownDay()`; a Prompt answer forgets the Prompts and every visited day, deletes every visited day's answer but `shownDay()`'s, re-reads the Prompts and resolves
 
 ## 3. App and screens
 
-- [ ] 3.1 `App.tsx`: after a Queue write, Changes is drawn loading until its read lands; after a Prompt answer, the day on screen is read again and redrawn
-- [ ] 3.2 `QueueScreen.tsx`: hide the adapter's in-flight subjects; hold "Not saved" while any refusal is held, with Retry sending each again
-- [ ] 3.3 Update `live.test.js` assertions the change moves (the write test's re-read counts)
+- [ ] 3.1 `App.tsx`: redraw on a Queue write's start; after a Queue write, drop Changes' read state so it draws loading until its read lands; after a Prompt answer, read `live.shownDay()` again and redraw
+- [ ] 3.2 `QueueScreen.tsx`: the section 0 interface, replacing the component's `hidden` set and its `not_saved` bar
+- [ ] 3.3 Update `live.test.js` where the change moves it: the re-read counts in 'Retry and a write read again only what they change', and the Done test (`Done records the card's subject…`), which reads Changes before asserting its waiting list, in the page and after the memory refresh
 
 ## 4. Gate
 

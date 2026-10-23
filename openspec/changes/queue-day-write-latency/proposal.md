@@ -23,14 +23,16 @@ day's model view recomputes after the engine's cache is cleared.
   time, in the order made, each carrying the token of a guidance read made after
   the write before it was answered.
 - A refused Queue write puts its item back and holds "Not saved" with Retry
-  until Retry saves it; a later write that saves does not clear it, and Retry
-  retries every refused write the bar holds. The writes in flight and the
+  until Retry saves it or the engine no longer serves its item; that bar
+  outranks the bar of a later write that saves, and Retry retries every
+  refused write the bar holds. The writes in flight and the
   refused ones are kept by the live adapter, so a tab change neither brings
   back a card whose write is in flight nor loses a refusal.
 - A Queue write redraws the Queue once the Queue's own answers are read again.
   It keeps the Trial roster the Queue holds and reads neither the roster nor
-  Changes' detail. Changes draws its loading state, not its pre-write answer,
-  until its own read after the write lands.
+  Changes' detail. It drops Changes' answer, from the page and from the
+  answers the browser remembers, so Changes draws its loading state, not its
+  pre-write answer, until its own read after the write lands.
 - A Prompt answer redraws the Day badge and the Lows and Rises counts once the
   Prompts are read again. It reads again only the day on screen, behind the
   Prompts; any other visited day is read again when next shown, with its

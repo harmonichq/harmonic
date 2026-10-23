@@ -37,11 +37,12 @@
 Quote only words Connor wrote on #612, on this change's pull request, or that the coordinating session relays to this one as his verbatim words; otherwise cite "#612, 2026-10-23" without quotation marks. Never edit an earlier dated amendment.
 
 - [ ] 5.1 §2.5, one amendment dated 2026-10-23 with four parts: (1) the smoother swipe as ADR 613 sets it, with the resistance fraction approved in the replay, and `--ui-ease-accelerate` as a third easing beside the 2026-10-13 motion amendment's two; (2) an open Pattern, Setting or habit card swipes to Snooze as a row does, sized for the card, and the phone has no Snooze text action (desktop keeps it, with S), recorded as the operator's decision after the conflict with §1.4's "a swipe is a shortcut, never the only way" and WCAG 2.5.7 was raised, superseding the 2026-10-13 "Snooze has a visible control on the phone"; (3) on the phone the open card's chevron closes it to its row, leaving nothing open, and tapping the row reopens it, the closed state the screen's alone and gone on a tab change; (4) a horizontal swipe on the Day body steps to the previous or next day with data, the skeleton while it loads, across month boundaries through the day navigator, the screen's edges left to the platform, and the month drop-down the visible equivalent on both layouts
-- [ ] 5.2 §1.4: the row-swipe row rewritten for 5.1 (1); new rows for 5.1 (2), (3) and (4) with their desktop equivalents; the closing paragraph names the phone's Snooze as the one swipe with no visible equivalent, citing the amendment
-- [ ] 5.3 §1.3: Queue gains "lead card closed (nothing open)" and "a card mid-swipe"; Day gains "stepping to the next or previous day (skeleton)"
-- [ ] 5.4 §4.2: QueueRow (the filled reveal; leaving), PromptCard (the filled reveal), PatternCard, SettingCard and HabitCard (phone: the swipe, no Snooze text action; the chevron a control), each as 5.1 states it
+  - Written, with the resistance fraction stated as pending (the mock shows 0.3); ticked once Connor approves the value and says "locked", when it lands in the same amendment.
+- [x] 5.2 §1.4: the row-swipe row rewritten for 5.1 (1); new rows for 5.1 (2), (3) and (4) with their desktop equivalents; the closing paragraph names the phone's Snooze as the one swipe with no visible equivalent, citing the amendment
+- [x] 5.3 §1.3: Queue gains "lead card closed (nothing open)" and "a card mid-swipe"; Day gains "stepping to the next or previous day (skeleton)"
+- [x] 5.4 §4.2: QueueRow (the filled reveal; leaving), PromptCard (the filled reveal), PatternCard, SettingCard and HabitCard (phone: the swipe, no Snooze text action; the chevron a control), each as 5.1 states it
 - [ ] 5.5 The status list at the top: a line for this amendment, built by #614, written once Connor says "locked", quoting him
-- [ ] 5.6 The active change's surfaces spec (`openspec/changes/recommendations-redesign/specs/surfaces/spec.md`) is not edited here: #614 changes its Snooze sentence when it builds
+- [x] 5.6 The active change's surfaces spec (`openspec/changes/recommendations-redesign/specs/surfaces/spec.md`) is not edited here: #614 changes its Snooze sentence when it builds
 
 ## 6. Verify and evidence
 

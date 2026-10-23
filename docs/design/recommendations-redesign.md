@@ -190,7 +190,7 @@ the system's own edge-swipe back is left to the platform, never overridden.
 | **Typical** | noun | The same for the comparison events: similar events that did not end in the Pattern's or the Habit's outcome. |
 | **Glucose profile** | noun | Glucose by time of day over the selected window (14, 30 or 90 days): the median and the 10th–90th percentile spread. |
 | **Median** | noun | The middle value: of the profile at that time of day, or of a meal size's meals. |
-| **Meal size** | noun | A meal's carbs in grams: under 25, 25–39, 40–59 or 60 and over. Meal size counts the selected window's meals that began at or under 180 mg/dL with glucose flat before the bolus. |
+| **Meal size** | noun | A meal's carbs in grams: under 25, 25–39, 40–59 or 60 and over. The Climb by meal size card counts the selected window's meals that began at or under 180 mg/dL with glucose flat before the bolus. |
 | **Climb** | metric | How far glucose rose after a meal: its highest reading in the 3 hours after the bolus, before any next meal, less the reading at the bolus, in mg/dL. |
 | **Peak at** | metric | Minutes from a meal's bolus to the reading its Climb is read from. |
 | **At 3 h** | metric | Glucose 3 hours after a meal's bolus less the reading at the bolus, in mg/dL, for a meal no later meal began within those 3 hours. |
@@ -1435,6 +1435,18 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
      navigator. The screen's edges are left to the platform's own gestures.
      The month drop-down is the visible equivalent on both layouts.
 
+- **2026-10-23 — the phone trace legend holds one row, and the card is
+  titled Climb by meal size (#611).** During a maturing carb ratio Trial, the
+  meal trace's After key dropped alone onto a third row at 320 px, under
+  Meals instead of beside Before. Meals, Before with its "of N" and After now
+  share one row at 390 and 320 px: on the narrowest phone a meal legend's keys
+  close up, and the Nights and Days legends and desktop are unchanged (§4.2
+  ChangeTrace). The Overview's Meal size card is titled "Climb by meal size",
+  naming what it measures; the operator: "Climb by meal size is perfect." The
+  title is the whole change: no subtitle and no explanatory line (§2.3 ban 1).
+  Meal size stays the word for the four carb sizes. §1.5 and §4.2
+  MealSizeCard follow.
+
 ### 2.6 Deferred (not cut)
 Not built in the current screens. The engine still serves what each needs, and
 nothing is removed from the engine or the fixtures for them.
@@ -1732,7 +1744,7 @@ unless noted. Loading is a skeleton of the component's own shape.
 27. **MealSizeCard** (§2.5, 2026-10-19): how far glucose climbs after meals of
     each size, over the selected window as the estimates are (§2.5, 2026-10-19
     #565), below the basal estimate, its height (§2.5, 2026-10-19 #559;
-    2026-10-20 #564). Titled "Meal size". One row per size, <25 g, 25–39 g, 40–59 g
+    2026-10-20 #564). Titled "Climb by meal size" (§2.5, 2026-10-23 #611). One row per size, <25 g, 25–39 g, 40–59 g
     and 60 g+, each two lines on one shared mg/dL axis (§2.5, 2026-10-20 #602):
     Climb, then At 3 h, each its median as a dot on a capped 25–75% whisker,
     Climb's in neutral ink and At 3 h's in the estimate blue; the signed
@@ -1803,6 +1815,9 @@ unless noted. Loading is a skeleton of the component's own shape.
       p25, p75`, `traces`) and `denominators.before|after.contributing_meals`
       (ADR 524).
     - Desktop: the pane's width.
+    - Phone: at 390 and 320 px the legend's episode name, Before (with any
+      "of N") and After hold one row; a meal trace's keys close up on the
+      narrowest phone to keep it (§2.5, 2026-10-23 #611).
 24. **ChangeMetrics**: one module of a Trial's metrics, before → after with
     the shared Delta, in fixed columns shared by every module (§2.5,
     2026-10-14).

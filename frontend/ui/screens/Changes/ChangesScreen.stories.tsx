@@ -146,12 +146,29 @@ const formingPlay: Story['play'] = async ({ canvasElement }) => {
   await expect(legend('after')).toBe(`After ${meals('after')}`);
   await expectMetricsAligned(canvasElement);
 };
-export const CarbRatioMaturingPhone: Story = { ...story('phone', CARB_RATIO), play: formingPlay };
+// On a phone the trace's legend holds Meals, Before (with its "of N") and
+// After on one row (#611): each key's vertical centre lies within the Meals
+// caption's box. The caption sits a little below the keys' tops by its own
+// type, so tops are not compared. Inter swaps in after the first draw, so the
+// legend is measured once it has.
+const phoneFormingPlay: Story['play'] = async (context) => {
+  await formingPlay!(context);
+  await document.fonts.ready;
+  const legend = context.canvasElement.querySelector('.ui-trace__legend')!;
+  const caption = legend.querySelector('.ui-caption')!.getBoundingClientRect();
+  for (const arm of ['before', 'after']) {
+    const key = legend.querySelector(`.ui-trace__key--${arm}`)!.getBoundingClientRect();
+    const centre = key.top + key.height / 2;
+    await expect(centre).toBeGreaterThanOrEqual(caption.top);
+    await expect(centre).toBeLessThanOrEqual(caption.bottom);
+  }
+};
+export const CarbRatioMaturingPhone: Story = { ...story('phone', CARB_RATIO), play: phoneFormingPlay };
 export const CarbRatioMaturingDesktop: Story = { ...story('desktop', CARB_RATIO), play: formingPlay };
 // The narrowest phone the lock serves (#575): each metric's label on its own
 // line above its values, the columns still shared.
 export const CarbRatioMaturingPhone320: Story = {
-  ...story('phone', CARB_RATIO), parameters: { frame: FRAMES.narrow }, play: formingPlay,
+  ...story('phone', CARB_RATIO), parameters: { frame: FRAMES.narrow }, play: phoneFormingPlay,
 };
 
 // Hours after the change, before its block has a reading: the before arm, and

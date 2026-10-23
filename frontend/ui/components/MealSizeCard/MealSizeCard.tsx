@@ -1,8 +1,8 @@
 // MealSizeCard (§4.2, §2.5 2026-10-19, ADR 501, #559, #565): how far glucose
 // climbs after meals of each size, on the Overview below the basal estimate,
 // its height on desktop. It reads the window the Overview's switch
-// shows, as they do, and like them never repeats it: the title is "Meal size"
-// in their strong title style.
+// shows, as they do, and like them never repeats it: the title is "Climb by
+// meal size" (#611) in their strong title style.
 //
 // Each size (under 25 g, 25–39, 40–59, 60 g+) is a thin strip on one shared
 // Climb axis, drawn from its served percentiles alone (#570): its 10–90% a
@@ -212,7 +212,7 @@ function MealSizeBody({ data }: { data: MealSizeData }) {
 export function MealSizeCard({ data }: { data: MealSizeData | 'none' | null }) {
   const title = (
     <h2 className="ui-scard__title ui-scard__heading">
-      Meal size
+      Climb by meal size
     </h2>
   );
   if (data === null) {

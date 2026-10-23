@@ -73,7 +73,7 @@ Status: **exploring** (#481).
   `Foundations/Motion` → Snooze swipe at commit `63020278`: the smoother row
   swipe, with its resistance of 0.3 past the reveal, and the amendment's open
   card swipe, closing card and Day swipe, to be built by #614 on the locked
-  Queue and Day screens. Connor: "locked looks good." (2026-10-23).
+  Queue and Day screens. The operator: "locked looks good." (2026-10-23).
 
 This document is the durable record of the redesign. Sections 1–3 are what the
 build will be checked against once they are approved. The appendix keeps the

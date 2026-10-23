@@ -310,7 +310,8 @@ export const SnoozedDrillDownDesktop: Story = {
 // the adapter holds them. Each kind fails on its first call unless `sends`
 // gives it another; `saved` hears each write that saves, before it resolves, as
 // the adapter reads the engine again first; `redraw` hears each start and
-// settle, as App redraws.
+// settle, as App redraws. It neither drops a refusal answered 404 nor ignores
+// a Retry pressed while one is in flight; the adapter's own tests cover both.
 type Sends = Partial<Record<Refused['kind'], (subject: string, lever?: string) => Promise<unknown>>>;
 const TAKES_OUT: readonly Refused['kind'][] = ['snooze', 'restore', 'done'];
 export function heldWrites(sends: Sends = {}, redraw = () => {}, saved = (_write: Refused) => {}): QueueWrites {

@@ -12,7 +12,7 @@ travelled half the element's width to the left, or is moving left faster than
 cancel, the element SHALL ease back to rest. While a release would commit, the reveal SHALL be filled with the
 accent's tint. On a commit a Queue row SHALL slide off to the left and then
 close its height before it is snoozed, and the bar SHALL rise only after it
-has gone. Under reduced motion nothing SHALL move after release: the commit SHALL fade
+has gone. Under reduced motion nothing SHALL travel after release: the commit SHALL fade
 the row out where the finger left it and the cancel SHALL return it at once.
 
 #### Scenario: A slow drag past half snoozes after the row has gone

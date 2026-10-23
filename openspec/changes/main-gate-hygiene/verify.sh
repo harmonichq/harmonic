@@ -6,12 +6,12 @@ spec=openspec/specs/eating-sequences/spec.md
 
 echo '== the rewrapped spec keeps every word of main'
 diff <(git show origin/main:"$spec" | tr -s ' \n' '\n\n') <(tr -s ' \n' '\n\n' < "$spec")
-! grep -n '^<' "$spec"
+if grep -n '^<' "$spec"; then exit 1; fi
 
 echo '== the gate block runs every named case CI runs, in CI order'
 cases() { grep -oE -- '^ *uv run python scripts/smoke_app.py --case [a-z0-9-]+' "$1" | sed 's/^ *//'; }
 diff <(cases AGENTS.md) <(cases .github/workflows/ci.yml)
-! grep -n 'correction factor' .github/workflows/ci.yml
+if grep -n 'correction factor' .github/workflows/ci.yml; then exit 1; fi
 
 echo '== the branch validates'
 openspec validate --all --strict

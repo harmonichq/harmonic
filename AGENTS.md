@@ -54,6 +54,11 @@ uv run python scripts/smoke_app.py         # the server serves the built app and
 uv run python scripts/smoke_app.py --then node --test frontend/ui/app/live.contract.test.mjs frontend/app.browser.test.mjs
 uv run python scripts/smoke_app.py --case c3-trial --then node --test frontend/ui/app/live.contract.test.mjs
 uv run python scripts/smoke_app.py --case c3-ic-trial --then node --test frontend/ui/app/live.contract.test.mjs
+uv run python scripts/smoke_app.py --case pattern-correction-fold --then node --test frontend/ui/app/live.contract.test.mjs
+uv run python scripts/smoke_app.py --case basal-and-carb-ratio-lower --then node --test frontend/ui/app/live.contract.test.mjs
+uv run python scripts/smoke_app.py --case pattern-correction-collapse --then node --test frontend/ui/app/live.contract.test.mjs
+uv run python scripts/smoke_app.py --case behavioral-missed-meal --then node --test frontend/ui/app/live.contract.test.mjs
+uv run python scripts/smoke_app.py --case pattern-meal-two-causes --then node --test frontend/ui/app/live.contract.test.mjs
 npx --yes @fission-ai/openspec@1.14.0 validate --all --strict # OpenSpec requirements and changes
 python3 scripts/check_adr_numbers.py       # decision-record naming guard
 python3 scripts/check_owned_identifiers.py # product-name guard
@@ -88,6 +93,7 @@ generator emits instead of the showcase.
   and asserts each of the five tabs' screen models against literal values per
   store. The showcase covers every tab; `c3-trial` adds an active Trial,
   `c3-ic-trial` a maturing carb ratio Trial an earlier release retained (#554),
+  `pattern-correction-fold` Day findings of five kinds,
   `basal-and-carb-ratio-lower` a queued carb ratio, `pattern-correction-collapse` a Pattern served as its
   one habit, with its case file, and a multi-cause drill-down whose Correction
   stacking cannot be focused (ADR 594), `behavioral-missed-meal` a standalone

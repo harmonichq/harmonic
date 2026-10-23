@@ -97,18 +97,27 @@
 .ui-prompt__grams .ui-button--text { margin-right: -8px; }
 
 /* Mid-swipe: the card slides left over the Not sure reveal, which is drawn
-   only while the card is off its rest. */
+   only while the card is off its rest. The reveal lies under the whole card,
+   so it shows from the card's trailing edge to the right edge, its label in
+   its right-hand 96 px column; it fills with the accent's tint once a release
+   would commit, as a Queue row's does. */
 .ui-prompt-swipe--revealed { position: relative; overflow: hidden; border-radius: var(--wk-radius); }
 .ui-prompt-swipe__reveal {
   position: absolute;
-  inset: 0 0 0 auto;
-  width: 96px;
+  inset: 0;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
   background: var(--wk-surface-rail);
   color: var(--wk-ink);
   font: var(--ui-weight-strong) var(--ui-type-label) / 1 var(--ui-font);
+  transition:
+    background-color calc(var(--ui-motion-fast) * var(--ui-motion-move)) var(--ui-ease-standard),
+    color calc(var(--ui-motion-fast) * var(--ui-motion-move)) var(--ui-ease-standard);
+}
+.ui-prompt-swipe__action { width: 96px; display: flex; align-items: center; justify-content: center; }
+.ui-prompt-swipe--filled .ui-prompt-swipe__reveal {
+  background: color-mix(in srgb, var(--primary) 18%, transparent);
+  color: var(--primary);
 }
 .ui-prompt-swipe--open .ui-prompt { translate: -96px 0; }
 

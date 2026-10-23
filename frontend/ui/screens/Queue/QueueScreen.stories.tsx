@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import type { CSSProperties } from 'react';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { fixtures, sourced } from '../../fixtures';
-import { swipe } from '../../gesture';
+import { scrollThenSwipe, swipe } from '../../gesture';
 import { expectTabBarEnds } from '../../tabbar-check';
 import { expectAtPaneTop, expectHeaderEmpty, expectTitlePrinted } from '../../title-check';
 import { focusable, patternStore, ranking, snoozed, type QueueStore } from '../../queue-model';
@@ -25,7 +25,9 @@ import { QueueScreen, type QueueScreenProps } from './QueueScreen';
 // - Loading, and Unavailable (the unsynced store serves guidance unavailable);
 //   Stale, the last answers under Unavailable.
 // - Phone mid-swipe: a row held over its Snooze reveal, the QueueRow's own
-//   still state.
+//   still state; and its swipe played through (ADR 613): a short drag, a slow
+//   drag past half, a flick, a scroll, a cancel, a row the snooze does not
+//   take, a write that fails, and reduced motion.
 // - Done (#518): a fresh wearer's basal card Done and undone, and the same card
 //   back Not on pump after an unchanged sync.
 // - A standalone habit (ADR 528): open in the wearer's Queue beside its
@@ -240,26 +242,160 @@ export const SnoozeUndoPhone: Story = {
   },
 };
 
-// The swipe is Snooze's shortcut on a phone row: short of half its reveal it
-// settles back; past half it snoozes the row as Snooze does, the bar with
-// Undo, and Undo puts the row back.
+// The swipe is Snooze's shortcut on a phone row (ADR 613). A slow drag short
+// of half the row's width never fills the reveal and eases back; a slow drag
+// past half fills it before the finger lifts, and the row slides off and
+// closes up before the bar rises. Undo puts the row back.
+const SWIPE = {
+  layout: 'phone', store: 'wearer-pinned', snooze,
+  open: ranking('wearer-pinned').find((item) => item.subject !== fixtures.snooze.subject)!.subject,
+} as QueueScreenProps;
+/** A phone row by its title, drawn or leaving (a leaving row is aria-hidden). */
+const rowTitled = (canvasElement: HTMLElement, title: string) =>
+  [...canvasElement.querySelectorAll<HTMLElement>('.ui-queue__list .ui-qrow')]
+    .find((each) => each.textContent?.includes(title)) ?? null;
+const swipedRow = (canvasElement: HTMLElement) => rowTitled(canvasElement, fixtures.snooze.title);
+const filled = (row: HTMLElement) => row.parentElement!.classList.contains('ui-qrow-swipe--filled');
+/** Whether the reveal is filled as the finger lifts, read before the row's own handler. */
+const filledAtRelease = (row: HTMLElement) => {
+  let seen: boolean | null = null;
+  row.addEventListener('pointerup', () => { seen = filled(row); }, { once: true });
+  return () => seen;
+};
+const nextFrame = () => new Promise((done) => requestAnimationFrame(() => done(undefined)));
+/** What `read` sees each frame until `until` holds of it (or 3 s pass). */
+const eachFrame = async <T,>(read: () => T, until: (seen: T) => boolean) => {
+  const seen: T[] = [];
+  for (const end = performance.now() + 3000; performance.now() < end;) {
+    seen.push(read());
+    if (until(seen[seen.length - 1])) break;
+    await nextFrame();
+  }
+  return seen;
+};
+/** The list's leading edge, where a row at rest starts. */
+const restLeft = (canvasElement: HTMLElement) =>
+  canvasElement.querySelector<HTMLElement>('.ui-queue__list')!.getBoundingClientRect().left;
+const atRest = (canvasElement: HTMLElement, row: () => HTMLElement | null) => waitFor(() => {
+  expect(row()!.getBoundingClientRect().left).toBe(restLeft(canvasElement));
+  expect(row()!.closest('[data-closing]')).toBeNull();
+}, { timeout: 2000 });
+
+/** A swipe that snoozes: the row leaves, and the bar rises only once it has gone. */
+const snoozedBySwipe = async (canvasElement: HTMLElement, pace: 'slow' | 'flick') => {
+  const canvas = within(canvasElement);
+  const row = swipedRow(canvasElement)!;
+  const atRelease = filledAtRelease(row);
+  await (pace === 'slow' ? swipe(row, -240, 16, 'slow') : swipe(row, -120, 4, 'flick'));
+  if (pace === 'slow') await expect(atRelease()).toBe(true);
+  const frames = await eachFrame(() => ({
+    bar: canvas.queryByRole('status') !== null,
+    drawn: swipedRow(canvasElement) !== null,
+    leaving: canvasElement.querySelector('.ui-qrow-swipe[data-closing]') !== null,
+  }), (seen) => seen.bar);
+  await expect(frames.some((each) => each.leaving)).toBe(true);
+  await expect(frames.filter((each) => each.bar).every((each) => !each.drawn)).toBe(true);
+  await expect(canvas.getByRole('status')).toHaveTextContent(snoozedBar);
+};
+
 export const SwipeSnoozeUndoPhone: Story = {
-  args: {
-    layout: 'phone', store: 'wearer-pinned', snooze,
-    open: ranking('wearer-pinned').find((item) => item.subject !== fixtures.snooze.subject)!.subject,
-  },
+  args: SWIPE,
   parameters: { frame: FRAMES.phone },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const row = () => canvas.getByRole('button', { name: new RegExp(fixtures.snooze.title) });
-    await swipe(row(), -30, 6);
+    const row = () => swipedRow(canvasElement);
+    const atRelease = filledAtRelease(row()!);
+    await swipe(row()!, -120, 16, 'slow');
+    await expect(atRelease()).toBe(false);
+    await atRest(canvasElement, row);
     await expect(canvas.queryByRole('status')).toBeNull();
-    await swipe(row(), -64);
-    await expect(canvas.getByRole('status')).toHaveTextContent(snoozedBar);
-    await expect(canvas.queryByRole('button', { name: new RegExp(fixtures.snooze.title) })).toBeNull();
+    await snoozedBySwipe(canvasElement, 'slow');
     await userEvent.click(canvas.getByRole('button', { name: 'Undo' }));
     await expect(canvas.queryByRole('status')).toBeNull();
-    await expect(row()).toBeInTheDocument();
+    await atRest(canvasElement, row);
+  },
+};
+
+// A flick: short of half the row's width, faster than 500 px/s, it snoozes as
+// a slow drag past half does.
+export const SwipeFlickPhone: Story = {
+  args: SWIPE,
+  parameters: { frame: FRAMES.phone },
+  play: async ({ canvasElement }) => {
+    await expect(120).toBeLessThan(swipedRow(canvasElement)!.getBoundingClientRect().width / 2);
+    await snoozedBySwipe(canvasElement, 'flick');
+  },
+};
+
+// A press that moves down first is the page's scroll: no row moves and no
+// reveal is drawn, however far it then goes across.
+export const SwipeScrollPhone: Story = {
+  args: SWIPE,
+  parameters: { frame: FRAMES.phone },
+  play: async ({ canvasElement }) => {
+    const row = swipedRow(canvasElement)!;
+    const left = row.getBoundingClientRect().left;
+    const seen: number[] = [];
+    const watch = () => seen.push(row.getBoundingClientRect().left);
+    row.addEventListener('pointermove', watch);
+    await scrollThenSwipe(row, -240);
+    row.removeEventListener('pointermove', watch);
+    await expect(seen.every((each) => each === left)).toBe(true);
+    await expect(canvasElement.querySelector('.ui-qrow-swipe__reveal')).toBeNull();
+    await expect(within(canvasElement).queryByRole('status')).toBeNull();
+  },
+};
+
+// The system takes the gesture (pointercancel) past half: the row eases back
+// and nothing is snoozed.
+export const SwipeCancelPhone: Story = {
+  args: SWIPE,
+  parameters: { frame: FRAMES.phone },
+  play: async ({ canvasElement }) => {
+    const row = () => swipedRow(canvasElement);
+    await swipe(row()!, -240, 16, 'cancel');
+    await atRest(canvasElement, row);
+    await expect(within(canvasElement).queryByRole('status')).toBeNull();
+  },
+};
+
+// A row the story's snooze does not take: its action removes nothing, so the
+// row is drawn at rest once it has acted, with nothing left closing.
+export const SwipeNoopPhone: Story = {
+  args: SWIPE,
+  parameters: { frame: FRAMES.phone },
+  play: async ({ canvasElement }) => {
+    const other = ranking('wearer-pinned')
+      .find((item) => item.subject !== fixtures.snooze.subject && item.subject !== SWIPE.open)!.data.title;
+    const row = () => rowTitled(canvasElement, other);
+    await swipe(row()!, -240, 16, 'slow');
+    await atRest(canvasElement, row);
+    await expect(canvasElement.querySelector('[data-closing]')).toBeNull();
+    await expect(within(canvasElement).queryByRole('status')).toBeNull();
+  },
+};
+
+// Reduced motion: once the finger lifts the row never travels; it fades out
+// where the finger left it, and then the bar rises.
+export const SwipeReducedPhone: Story = {
+  args: SWIPE,
+  parameters: { frame: FRAMES.phone },
+  decorators: [(Story) => <div data-motion-reduce="" style={{ height: '100%' }}><Story /></div>],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const row = swipedRow(canvasElement)!;
+    let left: number | null = null;
+    row.addEventListener('pointerup', () => { left = row.getBoundingClientRect().left; }, { once: true });
+    await swipe(row, -240, 16, 'slow');
+    const frames = await eachFrame(() => ({
+      bar: canvas.queryByRole('status') !== null,
+      left: row.isConnected ? row.getBoundingClientRect().left : null,
+      opacity: row.isConnected ? Number(getComputedStyle(row).opacity) : null,
+    }), (seen) => seen.bar);
+    await expect(left).not.toBeNull();
+    await expect(frames.every((each) => each.left === null || each.left === left)).toBe(true);
+    await expect(frames.some((each) => each.opacity !== null && each.opacity < 1)).toBe(true);
+    await expect(canvas.getByRole('status')).toHaveTextContent(snoozedBar);
   },
 };
 
@@ -317,6 +453,20 @@ const liveWrites = (): QueueScreenProps['writes'] => ({
 });
 export const LiveSnoozeNotSavedPhone: Story = { ...story('phone', { store: 'wearer', writes: liveWrites() }), play: liveSnoozePlay };
 export const LiveSnoozeNotSavedDesktop: Story = { ...story('desktop', { store: 'wearer', writes: liveWrites() }), play: liveSnoozePlay };
+// The same through a row's swipe: the row has left when the write fails, and
+// comes back at rest with Not saved; Retry saves it.
+export const SwipeNotSavedPhone: Story = {
+  ...story('phone', { store: 'wearer', writes: liveWrites() }),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const row = () => rowTitled(canvasElement, ranking('wearer')[1].data.title);
+    await swipe(row()!, -240, 16, 'slow');
+    await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent(/Not saved/), { timeout: 2000 });
+    await atRest(canvasElement, row);
+    await userEvent.click(canvas.getByRole('button', { name: 'Retry' }));
+    await waitFor(() => expect(canvas.queryByText(/Not saved/)).toBeNull());
+  },
+};
 
 // Done (#518), a Setting card's primary: a fresh wearer presses Done on the
 // basal card. The screen shows the Queue the engine served after it (the card

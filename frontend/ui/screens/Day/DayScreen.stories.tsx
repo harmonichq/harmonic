@@ -3,7 +3,7 @@ import { expect, fireEvent, userEvent, waitFor, within } from 'storybook/test';
 import { fixtures } from '../../fixtures';
 import { formatValue } from '../../provenance.js';
 import { dayDate, loggedGrams } from '../../day-model';
-import { swipe } from '../../gesture';
+import { scrollThenSwipe, swipe } from '../../gesture';
 import { failsOnce } from '../../flaky';
 import { expectTabBarEnds } from '../../tabbar-check';
 import { expectTitlePrinted, expectTitleUnprinted } from '../../title-check';
@@ -360,13 +360,25 @@ export const PromptNotSurePhone: Story = {
     await expect(place(canvas)).toHaveTextContent('2 / 2');
   },
 };
-// Phone: a full swipe is Not sure's shortcut, and moves to the next prompt.
+// Phone: the swipe is Not sure's shortcut, by the row's rule (ADR 613). A
+// press that moves down first, and a slow drag short of half the card's
+// width, record nothing; a slow drag past half records Not sure and moves to
+// the next prompt, and so does a flick short of half.
 export const PromptSwipePhone: Story = {
   ...story('phone', PROMPTS),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await swipe(canvasElement.querySelector<HTMLElement>('.ui-prompt')!, -72);
+    const card = () => canvasElement.querySelector<HTMLElement>('.ui-prompt')!;
+    await scrollThenSwipe(card(), -240);
+    await expect(place(canvas)).toHaveTextContent('1 / 2');
+    await swipe(card(), -120, 16, 'slow');
+    await expect(place(canvas)).toHaveTextContent('1 / 2');
+    await expect(120).toBeLessThan(card().getBoundingClientRect().width / 2);
+    await swipe(card(), -240, 16, 'slow');
     await expect(place(canvas)).toHaveTextContent('2 / 2');
+    await waitFor(() => expect(canvasElement.querySelector('.ui-prompt-swipe__reveal')).toBeNull());
+    await swipe(card(), -120, 4, 'flick');
+    await expect(canvas.getByRole('heading', { level: 1, name: 'Day' })).toBeInTheDocument();
   },
 };
 // The Rises row drills in to "1 / 2", answered Yes · No and Not sure with no

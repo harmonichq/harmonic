@@ -1,6 +1,6 @@
 ## 0. Interface (settled at triage)
 
-- `QueueWrites` (`QueueScreen.tsx`) gains `held: () => { inFlight: ReadonlySet<string>; refused: readonly Refused[] }` and `retry: () => Promise<void>`, where `Refused = { kind: 'snooze' | 'restore' | 'done' | 'undoDone' | 'pin'; subject: string; lever?: string }`. The live adapter's `queueWrites` implements both; the screen hides `inFlight` subjects, draws "Not saved" + Retry while `refused` is non-empty (outranking its own bars), and calls `retry` from it. The screen keeps no in-flight or refused state of its own.
+- `QueueWrites` (`QueueScreen.tsx`) gains `held: () => { inFlight: ReadonlySet<string>; refused: readonly Refused[] }` and `retry: () => Promise<readonly Refused[]>` (the writes it saved), where `Refused = { kind: 'snooze' | 'restore' | 'done' | 'undoDone' | 'pin'; subject: string; lever?: string }`. The live adapter's `queueWrites` implements both; the screen hides `inFlight` subjects, draws "Not saved" + Retry while `refused` is non-empty (outranking its own bars), and calls `retry` from it. The screen keeps no in-flight or refused state of its own.
 - App redraws when a Queue write starts as well as when it settles.
 - The live adapter holds the day on screen as the iso its `readDay` last read, and exposes it as `shownDay()`. `dayWrites.answer(prompt, answer)` keeps its signature. After it settles, App calls `live.readDay(live.shownDay())` and redraws when that lands. `DayScreen.tsx` is untouched.
 
@@ -21,7 +21,7 @@
 
 ## 3. App and screens
 
-- [ ] 3.1 `App.tsx`: redraw on a Queue write's start; after a Queue write, drop Changes' read state so it draws loading until its read lands; after a Prompt answer, read `live.shownDay()` again and redraw
+- [x] 3.1 `App.tsx`: redraw on a Queue write's start; after a Queue write, drop Changes' read state so it draws loading until its read lands; after a Prompt answer, read `live.shownDay()` again and redraw
 - [x] 3.2 `QueueScreen.tsx`: the section 0 interface, replacing the component's `hidden` set and its `not_saved` bar
 - [x] 3.3 Update `live.test.js` where the change moves it: the re-read counts in 'Retry and a write read again only what they change', and the Done test (`Done records the card's subject…`), which reads Changes before asserting its waiting list, in the page and after the memory refresh
 

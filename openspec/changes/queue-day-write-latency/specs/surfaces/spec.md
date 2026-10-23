@@ -36,6 +36,14 @@ tab change.
 - **WHEN** the person presses Retry and the engine saves it
 - **THEN** both are snoozed and the bar leaves
 
+#### Scenario: A refused Done that Retry saves shows its own bar
+
+- **GIVEN** a held refused Done, and no other refused Queue write
+- **WHEN** the person presses Retry and the engine saves it
+- **THEN** the bar reads "Waiting for pump" with Undo, as on a first save
+- **AND** a refused Focus that Retry saves likewise shows "Focus started" with
+  Changes
+
 #### Scenario: A snooze in flight across a tab change
 
 - **WHEN** the person snoozes an item, opens another tab and returns before the

@@ -43,6 +43,8 @@ import { QueueScreen, type QueueScreenProps, type QueueWrites, type Refused } fr
 const meta: Meta<typeof QueueScreen> = {
   title: 'Screens/Queue',
   component: QueueScreen,
+  // The live writes' fake and its Queue, which the drill-down's stories share.
+  excludeStories: ['heldWrites', 'LiveQueue'],
 };
 export default meta;
 
@@ -311,7 +313,7 @@ export const SnoozedDrillDownDesktop: Story = {
 // settle, as App redraws.
 type Sends = Partial<Record<Refused['kind'], (subject: string, lever?: string) => Promise<unknown>>>;
 const TAKES_OUT: readonly Refused['kind'][] = ['snooze', 'restore', 'done'];
-function heldWrites(sends: Sends = {}, redraw = () => {}, saved = (_write: Refused) => {}): QueueWrites {
+export function heldWrites(sends: Sends = {}, redraw = () => {}, saved = (_write: Refused) => {}): QueueWrites {
   const send = { snooze: failsOnce(undefined), restore: failsOnce(undefined), pin: failsOnce(undefined),
     done: failsOnce(undefined), undoDone: failsOnce(undefined), ...sends };
   const inFlight = new Set<string>();
@@ -350,7 +352,7 @@ function heldWrites(sends: Sends = {}, redraw = () => {}, saved = (_write: Refus
 }
 /** The Queue over `heldWrites`, redrawn as each write starts and settles, and
  *  switched to `after.store` once a snooze of `after.subject` saves. */
-function LiveQueue({ sends, after, ...props }: QueueScreenProps & {
+export function LiveQueue({ sends, after, ...props }: QueueScreenProps & {
   sends?: Sends; after?: { subject: string; store: QueueStore };
 }) {
   const [, setVersion] = useState(0);

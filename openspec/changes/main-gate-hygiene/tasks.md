@@ -2,7 +2,7 @@
 
 - [ ] 1.1 Add CI's five missing `--case` lines to the `AGENTS.md` gate block, in CI's order
 - [ ] 1.2 Describe `pattern-correction-fold` (Day findings of five kinds) in the contract-test paragraph, in CI's order
-- [ ] 1.3 Drop "a queued correction factor" from CI's comment over the named-case step
+- [ ] 1.3 Drop "a queued correction factor," from CI's comment over the named-case step; change nothing else in that comment
 
 ## 2. The archive preflight
 
@@ -12,4 +12,4 @@
 
 ## 3. Verification
 
-- [ ] 3.1 `openspec validate --all --strict` and `check_adr_numbers.py` pass on the branch
+- [ ] 3.1 Commit, then `bash openspec/changes/main-gate-hygiene/verify.sh` prints `verify: pass` (it reads the committed tree)

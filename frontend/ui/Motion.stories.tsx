@@ -102,7 +102,9 @@ const MOTIONS = {
     frame: PHONE,
     screen: () => <QueueScreen layout="phone" store="wearer-pinned" open={fixtures.snooze.subject} snooze={snooze} />,
     run: async (stage) => {
-      control(stage, 'Snooze').click();
+      // The phone's Snooze is the open card's swipe (ADR 614): past half, it
+      // leaves, then the bar rises.
+      await swipe(stage.querySelector<HTMLElement>('.ui-queue__open .ui-pcard')!, -240, 16, 'slow');
       await pause(1400);
       control(stage, 'Undo').click();
     },
@@ -217,17 +219,14 @@ export const Popover: Story = { ...story('popover'), name: 'Popover' };
 export const DrillDown: Story = { ...story('drillDown'), name: 'Drill-down' };
 export const Expand: Story = { ...story('expand'), name: 'Expand' };
 // The gate runs the replay: Replay, the bar, and the replay to its last Undo.
-export const SnoozeSwipe: Story = {
-  ...story('swipe'),
-  name: 'Snooze swipe',
-  play: async ({ canvasElement }) => {
-    within(document.body).getByRole('button', { name: 'Replay' }).click();
-    await waitFor(() => expect(within(canvasElement).getByRole('status')).toBeInTheDocument(), { timeout: 5000 });
-    await waitFor(() => expect(canvasElement.querySelector('[data-replayed]')).not.toBeNull(), { timeout: 10000 });
-    await expect(within(canvasElement).queryByRole('status')).toBeNull();
-  },
+const replays: Story['play'] = async ({ canvasElement }) => {
+  within(document.body).getByRole('button', { name: 'Replay' }).click();
+  await waitFor(() => expect(within(canvasElement).getByRole('status')).toBeInTheDocument(), { timeout: 5000 });
+  await waitFor(() => expect(canvasElement.querySelector('[data-replayed]')).not.toBeNull(), { timeout: 10000 });
+  await expect(within(canvasElement).queryByRole('status')).toBeNull();
 };
-export const TransientBar: Story = { ...story('bar'), name: 'Transient bar' };
+export const SnoozeSwipe: Story = { ...story('swipe'), name: 'Snooze swipe', play: replays };
+export const TransientBar: Story = { ...story('bar'), name: 'Transient bar', play: replays };
 export const Month: Story = { ...story('month'), name: 'Month' };
 export const NextPrompt: Story = { ...story('nextPrompt'), name: 'Next prompt' };
 export const Recorded: Story = { ...story('recorded'), name: 'Recorded' };

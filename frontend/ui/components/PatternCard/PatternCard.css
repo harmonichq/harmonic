@@ -17,7 +17,27 @@
   font-weight: var(--ui-weight-strong);
   letter-spacing: -.01em;
 }
-.ui-pcard__chevron { display: flex; color: var(--wk-ink-meta); }
+/* The chevron (CardChevron, a Setting card's too) closes the card to its row:
+   a 44 px icon control (§4.1) whose glyph sits where a 20 px glyph would at
+   the line's end, so the line keeps its height. */
+.ui-pcard__chevron {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--ui-size-icon);
+  height: var(--ui-size-icon);
+  margin: -12px -12px -12px 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--wk-radius);
+  background: none;
+  color: var(--wk-ink-meta);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.ui-pcard__chevron:focus { outline: none; }
+.ui-pcard__chevron:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
 
 .ui-pcard__magnitude {
   display: flex;

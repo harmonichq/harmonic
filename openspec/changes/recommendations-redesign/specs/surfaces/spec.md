@@ -92,9 +92,10 @@ pill while that Focus is active. A Setting card's primary SHALL be Done (#518), 
 Pattern card: it SHALL take the card out of the Queue at once, with a bar reading
 "Waiting for pump" and an Undo that withdraws it. A Setting the guidance serves
 as `not_on_pump` SHALL carry the Not on pump pill on its row and its card. Every
-item SHALL offer Snooze, a text action beneath its primary, which sets it aside
-until fourteen days after the engine's served decision time, with an Undo; on the
-phone a row's swipe SHALL stay Snooze. The Snoozed list SHALL show each snoozed
+item SHALL offer Snooze, which sets it aside until fourteen days after the
+engine's served decision time, with an Undo: on desktop a text action beneath its
+primary (shortcut S), and on the phone the swipe of the item's row or open card,
+with no Snooze text action (§2.5, 2026-10-23). The Snoozed list SHALL show each snoozed
 item it draws with its until date and a Restore, and SHALL be reachable only
 while at least one item is snoozed. A correction factor set aside before ADR 564
 SHALL be neither listed nor counted in it.

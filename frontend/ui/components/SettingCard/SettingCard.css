@@ -9,6 +9,9 @@
   font-family: var(--ui-font);
 }
 
+/* The title line, the chevron at its end where the card closes to its row. */
+.ui-scard__head { display: flex; align-items: center; gap: 8px; }
+.ui-scard__head > .ui-scard__title { flex: 1; }
 /* One line, quieter than the figure: the kind word strong, its slot regular. */
 .ui-scard__title {
   margin: 0;

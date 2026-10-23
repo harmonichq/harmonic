@@ -3,8 +3,12 @@
 //
 // Phone: the header stays put while the page scrolls under it, above the tab
 // bar; the open item shows its card in the row's place (accordion; the others
-// stay rows), with Snooze as a text action centred beneath Focus, or at a
-// Setting card's foot (the swipe is its shortcut). No correction factor is
+// stay rows). Snooze is a swipe on the phone (§2.5, 2026-10-23; ADR 614): the
+// open card swipes as a row does (SnoozeSwipe), and draws no Snooze text
+// action. The open card's chevron closes it to its row, leaving nothing open
+// (`closed`, this screen's own state, which only the chevron sets and only a
+// row's tap clears); a tab change mounts the screen again with the top card
+// open. No correction factor is
 // queued (§2.5, 2026-10-20). A standalone habit
 // is a Pattern's row and card with its own glyph, its Focus one on the habit
 // itself (ADR 528). A quiet "Snoozed · N" row ends the list when anything is
@@ -32,8 +36,9 @@
 // the rail, the ranked list on the left (the selected row marked; the Snoozed
 // list drills down inside this pane and the open item stays), and the open
 // item on the right, up to a
-// reading width, with the same Snooze text action and no collapse chevron
-// (shortcut S; ↑/↓ move the selection), the bar at the foot of that pane.
+// reading width, with the Snooze text action beneath its primary, no chevron
+// and no swipe (shortcut S; ↑/↓ move the selection), the bar at the foot of
+// that pane.
 // Each pane scrolls as a whole; nothing scrolls inside a card (§2.3).
 //
 // Motion: the drill-down pushes in from the right and back from the left; a
@@ -43,8 +48,8 @@
 // Queue, its Snoozed count, and the bar's date (the decision time plus the
 // fourteen days of a snooze). Undo shows the store as it was.
 //
-// Live (`writes`, #495): Snooze — the text action, S, or a row's full swipe on
-// the phone — and Restore take the item out of their list at once; Focus shows
+// Live (`writes`, #495): Snooze — the text action and S on desktop, or a row's
+// or the open card's full swipe on the phone — and Restore take the item out of their list at once; Focus shows
 // the Focus pill at once on the card pressed (a cause's Focus names its lever),
 // then the bar "Focus started" with Changes, which opens that tab. Each write
 // resolves once the engine's answers are read again, so what the screen then
@@ -61,7 +66,7 @@
 // Done (#518) is a Setting card's primary, where Focus sits on a Pattern card:
 // it takes the card out of the Queue at once and the bar reads "Waiting for
 // pump" with Undo (⌘Z on desktop), which puts it back. Snooze stays the text
-// action beneath it, and on the phone the row's swipe stays Snooze. A card the
+// action beneath it on desktop, and the card's swipe on the phone. A card the
 // engine serves back after a sync found the setting unchanged carries the Not
 // on pump pill, on its row and its card. In a story, Done shows the `done.after`
 // store, as Snooze shows `snooze.after`.
@@ -76,7 +81,7 @@ import {
 import { ListGroup, ListRow } from '../../components/ListRow/ListRow';
 import { NavBar, type NavHooks } from '../../components/NavBar/NavBar';
 import { PatternCard } from '../../components/PatternCard/PatternCard';
-import { QueueRow } from '../../components/QueueRow/QueueRow';
+import { QueueRow, SnoozeSwipe } from '../../components/QueueRow/QueueRow';
 import { ScreenHeader } from '../../components/ScreenHeader/ScreenHeader';
 import { SettingCard } from '../../components/SettingCard/SettingCard';
 import { TransientBar } from '../../components/TransientBar/TransientBar';
@@ -95,8 +100,10 @@ export type QueueScreenProps = {
   view?: View;
   /** The drill-down a Back from another tab returned to (ADR 594): it opens as it was. */
   returnTo?: DrillDown;
-  /** Phone: the row held mid-swipe over its Snooze reveal. */
+  /** Phone: the row, or the open card, held mid-swipe over its Snooze reveal. */
   swiping?: string;
+  /** Phone: start with the open card closed to its row, nothing open. */
+  closed?: boolean;
   /** What snoozing `subject` serves: the store read after it, and the bar's date. */
   snooze?: { subject: string; after: QueueStore; until: Sourced<string> };
   /** Start just after that snooze, with the bar showing. */
@@ -169,22 +176,27 @@ function Row({ item, layout, selected, swiping, onSelect, onSnooze, until, onRes
  *  link to Changes. */
 type CardActions = { onPin?: () => void; pinned?: boolean; onChanges?: () => void };
 
-function Card({ item, layout, focusable, onOpen, onSnooze, onDone, actions = {} }: {
-  item: QueueItem; layout: Layout; focusable: boolean; onOpen: () => void; onSnooze: () => void; onDone: () => void;
-  actions?: CardActions;
+/** The screen decides which Snooze a layout gets (ADR 614): desktop passes
+ *  `onSnooze`, its text action; the phone passes `onCollapse`, its chevron, and
+ *  swipes the card instead. */
+function Card({ item, focusable, onOpen, onSnooze, onCollapse, onDone, actions = {} }: {
+  item: QueueItem; focusable: boolean; onOpen: () => void; onSnooze?: () => void; onCollapse?: () => void;
+  onDone: () => void; actions?: CardActions;
 }) {
   return item.kind === 'setting'
-    ? <SettingCard data={item.data} onDone={onDone} onSnooze={onSnooze} onChanges={actions.onChanges} />
+    ? <SettingCard data={item.data} onDone={onDone} onSnooze={onSnooze} onCollapse={onCollapse}
+        onChanges={actions.onChanges} />
     : <PatternCard data={actions.pinned ? { ...item.data, pinned: true } : item.data} onSnooze={onSnooze}
-        onPin={actions.onPin} focusable={focusable} onOpen={onOpen} collapsible={layout === 'phone'} />;
+        onCollapse={onCollapse} onPin={actions.onPin} focusable={focusable} onOpen={onOpen} />;
 }
 
 /** Phone: an item is its row, or its card in the row's place while open. A card
- *  the person opens grows out of its row, and a card that closes shrinks back
- *  into it before the row returns. */
-function PhoneItem({ item, open, grows, swiping, focusable, onOpen, onSelect, onSnooze, onDone, actions }: {
+ *  the person opens grows out of its row, and a card that closes (its chevron)
+ *  shrinks back into it before the row returns. Row and card swipe to Snooze
+ *  alike, by the one SnoozeSwipe. */
+function PhoneItem({ item, open, grows, swiping, focusable, onOpen, onSelect, onSnooze, onCollapse, onDone, actions }: {
   item: QueueItem; open: boolean; grows: boolean; swiping: boolean; focusable: boolean; onOpen: () => void;
-  onSelect: () => void; onSnooze: () => void; onDone: () => void; actions?: CardActions;
+  onSelect: () => void; onSnooze: () => void; onCollapse: () => void; onDone: () => void; actions?: CardActions;
 }) {
   const card = usePresence(open);
   if (!card.value) {
@@ -192,8 +204,10 @@ function PhoneItem({ item, open, grows, swiping, focusable, onOpen, onSelect, on
   }
   return (
     <div className={grows || card.closing ? 'ui-queue__open ui-expand' : 'ui-queue__open'} {...card.exit}>
-      <Card item={item} layout="phone" focusable={focusable} onOpen={onOpen} onSnooze={onSnooze} onDone={onDone}
-        actions={actions} />
+      <SnoozeSwipe held={swiping} onCommit={onSnooze}>
+        <Card item={item} focusable={focusable} onOpen={onOpen} onCollapse={onCollapse} onDone={onDone}
+          actions={actions} />
+      </SnoozeSwipe>
     </div>
   );
 }
@@ -208,8 +222,8 @@ const NOT_SAVED_BAR: Bar = { kind: 'not_saved' };
 const NONE_HELD: ReturnType<QueueWrites['held']> = { inFlight: new Set(), refused: [] };
 
 export function QueueScreen({
-  layout, store, state = 'ready', open, view: viewProp = 'queue', returnTo, swiping, snooze, justSnoozed = false,
-  done, writes, nav, onRetry,
+  layout, store, state = 'ready', open, view: viewProp = 'queue', returnTo, swiping, closed: closedAtMount = false,
+  snooze, justSnoozed = false, done, writes, nav, onRetry,
 }: QueueScreenProps) {
   const [snoozedNow, setSnoozedNow] = useState(justSnoozed);
   const [doneNow, setDoneNow] = useState(false);
@@ -217,6 +231,9 @@ export function QueueScreen({
   const [view, setView] = useState<View>(initialView);
   // The row the person opened on the phone, which grows into its card.
   const [expanded, setExpanded] = useState<string>();
+  // Phone: the open card closed to its row by its chevron, so nothing is open;
+  // a row's tap clears it. Nothing else sets or clears it (ADR 614).
+  const [closed, setClosed] = useState(closedAtMount);
   const root = useMotionGate<HTMLDivElement>();
   const shown = snoozedNow && snooze ? snooze.after : doneNow && done ? done.after : store;
   const ready = state === 'ready' || state === 'stale';
@@ -381,7 +398,7 @@ export function QueueScreen({
   const causeCards = !causeView ? null : state === 'loading'
     ? Array.from({ length: drill?.causes ?? 0 }, (_, i) => <PatternCard key={i} loading />)
     : drilled && causes(shown, drilled.subject.replace(/^pattern:/, '')).map((cause) => (
-      <PatternCard key={cause.subject} collapsible={false} pin="secondary"
+      <PatternCard key={cause.subject} pin="secondary"
         data={pinning === pinKey(drilled.subject, cause.lever) ? { ...cause, pinned: true } : cause}
         focusable={focusable(shown) && cause.pinnable}
         onPin={writes && (() => livePin(drilled.subject, cause.lever))} />
@@ -402,11 +419,12 @@ export function QueueScreen({
       : items.length === 0 && ready
         ? <p className="ui-queue__empty"><Num value={queuedCount(shown)} /> patterns</p>
         : items.map((item) => (layout === 'phone'
-          ? <PhoneItem key={item.subject} item={item} open={item.subject === current?.subject}
+          ? <PhoneItem key={item.subject} item={item} open={!closed && item.subject === current?.subject}
               grows={item.subject === expanded} swiping={item.subject === swiping} focusable={focusable(shown)}
               onOpen={() => go('causes', item.subject)}
-              onSelect={() => { setSelected(item.subject); setExpanded(item.subject); }}
-              onSnooze={() => doSnooze(item.subject)} onDone={() => doDone(item.subject)} actions={actions(item)} />
+              onSelect={() => { setClosed(false); setSelected(item.subject); setExpanded(item.subject); }}
+              onSnooze={() => doSnooze(item.subject)} onCollapse={() => setClosed(true)}
+              onDone={() => doDone(item.subject)} actions={actions(item)} />
           : <Row key={item.subject} item={item} layout={layout} selected={item.subject === current?.subject}
               onSelect={() => select(item.subject)} />));
 
@@ -470,7 +488,7 @@ export function QueueScreen({
             {state === 'loading' && <div className="ui-queue__detail"><PatternCard loading /></div>}
             {ready && current && (
               <div key="detail" className="ui-queue__detail ui-push">
-                <Card item={current} layout={layout} focusable={focusable(shown)} onOpen={() => go('causes', current.subject)}
+                <Card item={current} focusable={focusable(shown)} onOpen={() => go('causes', current.subject)}
                   onSnooze={() => doSnooze()} onDone={() => doDone(current.subject)} actions={actions(current)} />
               </div>
             )}

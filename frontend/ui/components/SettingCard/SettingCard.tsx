@@ -7,19 +7,23 @@
 // says the person programmed it, where Focus sits on a Pattern card. Once the
 // slot's change has matured into a Trial, the card names it and links to
 // Changes. A card back from a Done the next sync did not show carries the Not
-// on pump pill on its title line. Snooze, when the screen offers it, is a
-// centred text action beneath Done.
+// on pump pill on its title line. Snooze, when the screen offers it (desktop;
+// the phone's is the card's swipe, ADR 614), is a centred text action beneath
+// Done. Where the screen lets the card close to its row (the phone), the
+// Pattern card's chevron ends the title line, named by the title.
 //
 // The stat row (ADR 523) is the same on every setting card, in the same order
 // and place: Estimate, Range, then the count of what the estimate counts
 // (Nights, Meal runs), each a caption above its
 // served value. A range the engine serves as one value (lo = hi) shows that
 // value once.
+import { useId } from 'react';
 import type { Sourced } from '../../answers';
 import { Num } from '../../Num';
 import type { SettingData } from '../../queue-model';
 import { Button } from '../Button/Button';
 import { EvidenceChart } from '../EvidenceChart/EvidenceChart';
+import { CardChevron } from '../PatternCard/PatternCard';
 import { StatePill } from '../StatePill/StatePill';
 import '../../shared.css';
 import './SettingCard.css';
@@ -62,18 +66,24 @@ export type SettingCardProps = {
   data: SettingData; onChanges?: () => void;
   /** Done, the card's primary action. */
   onDone?: () => void;
-  /** Snooze, the text action beneath Done. */
+  /** Snooze, the text action beneath Done, where the screen offers it. */
   onSnooze?: () => void;
+  /** Closes the card to its row: the chevron is drawn only with it. */
+  onCollapse?: () => void;
 };
 
-export function SettingCard({ data, onChanges, onDone, onSnooze }: SettingCardProps) {
+export function SettingCard({ data, onChanges, onDone, onSnooze, onCollapse }: SettingCardProps) {
+  const titleId = useId();
   return (
     <section className="ui-scard">
-      <h2 className="ui-scard__title">
-        {data.title}{' '}
-        <span className="ui-scard__slot"><Num value={data.start} />–<Num value={data.end} /></span>
-        {data.notOnPump && <StatePill state="not_on_pump" />}
-      </h2>
+      <div className="ui-scard__head">
+        <h2 className="ui-scard__title" id={titleId}>
+          {data.title}{' '}
+          <span className="ui-scard__slot"><Num value={data.start} />–<Num value={data.end} /></span>
+          {data.notOnPump && <StatePill state="not_on_pump" />}
+        </h2>
+        {onCollapse && <CardChevron titleId={titleId} onCollapse={onCollapse} />}
+      </div>
       <div className="ui-scard__figure">
         <span className="ui-scard__current"><Num value={data.current} /></span>
         <span className="ui-scard__arrow" aria-hidden="true">→</span>

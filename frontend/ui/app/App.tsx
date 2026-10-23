@@ -148,6 +148,19 @@ export function App() {
   /** A write the screen awaits, then the redraw of what it read again. */
   const drawn = <A extends unknown[], R>(run: (...args: A) => Promise<R>) =>
     (...args: A) => run(...args).finally(redraw);
+  /** A Queue write: drawn as it starts, so its item leaves its list at once, and again as it settles. It
+   *  drops Changes' answer (ADR 610), so Changes draws its loading state until its own read lands. */
+  const queued = <A extends unknown[], R>(run: (...args: A) => Promise<R>) => (...args: A) => {
+    const written = run(...args);
+    setReads(({ changes: _, ...now }) => now);
+    redraw();
+    return written.finally(redraw);
+  };
+  /** A Prompt answer, drawn once the Prompts land; the day on screen is read again behind it. */
+  const answered: typeof dayWrites.answer = (prompt, answer) => dayWrites.answer(prompt, answer).finally(() => {
+    redraw();
+    live.readDay(live.shownDay()).then(redraw, redraw);
+  });
 
   const state = (tab === 'settings' ? parts.status : reads[tab]) ?? 'loading';
   const nav = { onSelect: go, syncFailed: syncFailed() };
@@ -165,8 +178,9 @@ export function App() {
     case 'queue':
       return <QueueScreen key={tab} layout={layout} store="wearer" state={state} nav={{ ...nav, drillDown: DRILL_DOWN }}
         returnTo={returnTo ?? undefined} onRetry={retry}
-        writes={{ snooze: drawn(queueWrites.snooze), restore: drawn(queueWrites.restore), pin: drawn(queueWrites.pin),
-          done: drawn(queueWrites.done), undoDone: drawn(queueWrites.undoDone) }} />;
+        writes={{ snooze: queued(queueWrites.snooze), restore: queued(queueWrites.restore), pin: queued(queueWrites.pin),
+          done: queued(queueWrites.done), undoDone: queued(queueWrites.undoDone), held: queueWrites.held,
+          retry: queued(queueWrites.retry) }} />;
     case 'changes':
       return <ChangesScreen key={tab} layout={layout} store="wearer" state={state} nav={nav} onRetry={retry}
         writes={{ end: drawn(changesWrites.end) }} />;
@@ -177,7 +191,7 @@ export function App() {
       return <DayScreen key={tab} layout={layout} store="wearer" state={state} nav={nav} onRetry={retry}
         onDay={(iso) => { live.readDay(iso).then(redraw, redraw); }}
         readMonth={(month) => live.readMonth(month).finally(redraw)}
-        writes={{ answer: drawn(dayWrites.answer), grams: drawn(dayWrites.grams), logCarbs: drawn(dayWrites.logCarbs) }} />;
+        writes={{ answer: answered, grams: drawn(dayWrites.grams), logCarbs: drawn(dayWrites.logCarbs) }} />;
     case 'settings':
       return <SettingsScreen key={tab} layout={layout} sync={null} state={state} onRetry={retry} onToken={reread}
         account={live.accountState()} nav={nav}

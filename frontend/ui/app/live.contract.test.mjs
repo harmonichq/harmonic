@@ -410,9 +410,12 @@ test(`the live adapter serves each tab's model from the ${CASE} store`, async (t
     const { subject, waiting } = expected.done;
     await live.queueWrites.done(subject);
     assert.ok(!queued().includes(subject), 'Done takes the card out of the Queue');
+    // A Queue write leaves Changes to read its own answer (ADR 610).
+    await live.readTab('changes');
     assert.deepEqual(values(changes.waiting('wearer')), [waiting]);
     await live.queueWrites.undoDone(subject);
     assert.deepEqual(queued(), expected.queue, 'Undo puts it back');
+    await live.readTab('changes');
     assert.deepEqual(values(changes.waiting('wearer')), []);
   });
 
@@ -425,6 +428,7 @@ test(`the live adapter serves each tab's model from the ${CASE} store`, async (t
       const card = () => values(queue.ranking('wearer')).find((i) => i.subject === subject).data;
       await live.queueWrites.pin(subject);
       assert.equal(card().pinned, true, 'the card shows the Focus pill');
+      await live.readTab('changes');
       const active = values(changes.change('wearer'));
       for (const [key, value] of Object.entries(focus)) assert.deepEqual(active[key], value, `focus ${key}`);
       await live.changesWrites.end();
@@ -445,6 +449,7 @@ test(`the live adapter serves each tab's model from the ${CASE} store`, async (t
       assert.deepEqual([card.pinned, card.focusedCause], [true, pin.focusedCause]);
       assert.deepEqual(values(queue.causes('wearer', key)).filter((c) => c.pinned).map((c) => c.lever), [pin.lever]);
       assert.equal(queue.focusable('wearer'), false, 'no other Focus while one is watched');
+      await live.readTab('changes');
       const active = values(changes.change('wearer'));
       for (const [field, value] of Object.entries(pin.focus)) assert.deepEqual(active[field], value, `focus ${field}`);
       await live.changesWrites.end();

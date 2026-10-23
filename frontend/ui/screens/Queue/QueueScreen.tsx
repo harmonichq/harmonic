@@ -51,7 +51,12 @@
 // shows is what the engine served: the snooze bar dates from the served
 // decision time, and Undo restores the item.
 // A write that fails puts the item back as it was, with "Not saved" and Retry
-// in the bar.
+// in the bar, which outranks every other bar until Retry saves it or the engine
+// no longer serves its item. Once Retry leaves nothing refused, the bar is the
+// own bar of the last Done or Focus that Retry saved, as on a first save, and
+// otherwise none. The writes in flight and the refused ones are the
+// live adapter's (`held`, #610), so a tab change keeps both; the screen keeps
+// neither.
 //
 // Done (#518) is a Setting card's primary, where Focus sits on a Pattern card:
 // it takes the card out of the Queue at once and the bar reads "Waiting for
@@ -121,6 +126,9 @@ export type DrillDownHooks = {
   onReturn: (listener: () => void) => () => void;
 };
 
+/** A refused Queue write, held until it saves (#610). */
+export type Refused = { kind: 'snooze' | 'restore' | 'done' | 'undoDone' | 'pin'; subject: string; lever?: string };
+
 /** Each resolves once the engine's answers are read again, and rejects when the write was not saved. */
 export type QueueWrites = {
   snooze: (subject: string) => Promise<void>;
@@ -129,6 +137,10 @@ export type QueueWrites = {
   pin: (subject: string, lever?: string) => Promise<void>;
   done: (subject: string) => Promise<void>;
   undoDone: (subject: string) => Promise<void>;
+  /** The subjects a write in flight takes out of their list, and the refused writes. */
+  held: () => { inFlight: ReadonlySet<string>; refused: readonly Refused[] };
+  /** Send every refused write again; it resolves with those that saved. */
+  retry: () => Promise<readonly Refused[]>;
 };
 
 const dayCount = () => sourced<number>('prompts[answer=null].length');
@@ -187,11 +199,13 @@ function PhoneItem({ item, open, grows, swiping, focusable, onOpen, onSelect, on
 }
 
 /** The bar: the stories' simulated snooze or Done, a live snooze or Done with its subject, a started
- *  Focus, or a failed write. */
+ *  Focus, or a refused write held. */
 type Bar = { kind: 'story' } | { kind: 'story_done' } | { kind: 'snoozed'; subject: string }
-  | { kind: 'waiting'; subject: string } | { kind: 'focused' } | { kind: 'not_saved'; retry: () => void };
+  | { kind: 'waiting'; subject: string } | { kind: 'focused' } | { kind: 'not_saved' };
 const STORY_BAR: Bar = { kind: 'story' };
 const STORY_DONE_BAR: Bar = { kind: 'story_done' };
+const NOT_SAVED_BAR: Bar = { kind: 'not_saved' };
+const NONE_HELD: ReturnType<QueueWrites['held']> = { inFlight: new Set(), refused: [] };
 
 export function QueueScreen({
   layout, store, state = 'ready', open, view: viewProp = 'queue', returnTo, swiping, snooze, justSnoozed = false,
@@ -233,9 +247,10 @@ export function QueueScreen({
   const returned = useRef(() => setView('queue'));
   useEffect(() => router?.onReturn(() => returned.current()), [router]);
   const push = view === 'queue' ? 'back' : 'forward';
-  // Live: the items a snooze or restore in flight has taken out, the Focus in
-  // flight (its subject and any cause's lever), and the live bar.
-  const [hidden, setHidden] = useState<ReadonlySet<string>>(new Set());
+  // Live: the adapter's writes in flight and refused, the Focus in flight (its
+  // subject and any cause's lever), and the live bar.
+  const held = writes?.held() ?? NONE_HELD;
+  const hidden = held.inFlight;
   const [pinning, setPinning] = useState<string>();
   const [liveBar, setLiveBar] = useState<Bar | null>(null);
   const items = ready ? ranking(shown).filter((i) => !hidden.has(i.subject)) : [];
@@ -252,41 +267,39 @@ export function QueueScreen({
   };
   const snoozedTotal = ready ? snoozedCount(shown) : null;
 
-  const hide = (subject: string, out: boolean) => setHidden((now) => {
-    const next = new Set(now);
-    if (out) next.add(subject); else next.delete(subject);
-    return next;
-  });
-  const notSaved = (retry: () => void) => () => setLiveBar({ kind: 'not_saved', retry });
+  // A refused write is the adapter's to hold, and its bar outranks this one.
+  const unsaved = () => setLiveBar(null);
   const liveSnooze = (subject: string) => {
-    hide(subject, true);
     setLiveBar(null);
-    writes!.snooze(subject).then(() => setLiveBar({ kind: 'snoozed', subject }), notSaved(() => liveSnooze(subject)))
-      .finally(() => hide(subject, false));
+    writes!.snooze(subject).then(() => setLiveBar({ kind: 'snoozed', subject }), unsaved);
   };
   const liveRestore = (subject: string) => {
-    hide(subject, true);
     setLiveBar(null);
-    writes!.restore(subject).catch(notSaved(() => liveRestore(subject))).finally(() => hide(subject, false));
+    writes!.restore(subject).catch(unsaved);
   };
   const liveUndo = (subject: string) => {
-    writes!.restore(subject).then(() => { setLiveBar(null); setSelected(subject); }, notSaved(() => liveUndo(subject)));
+    writes!.restore(subject).then(() => { setLiveBar(null); setSelected(subject); }, unsaved);
   };
   const liveDone = (subject: string) => {
-    hide(subject, true);
     setLiveBar(null);
-    writes!.done(subject).then(() => setLiveBar({ kind: 'waiting', subject }), notSaved(() => liveDone(subject)))
-      .finally(() => hide(subject, false));
+    writes!.done(subject).then(() => setLiveBar({ kind: 'waiting', subject }), unsaved);
   };
   const liveUndoDone = (subject: string) => {
-    writes!.undoDone(subject).then(() => { setLiveBar(null); setSelected(subject); },
-      notSaved(() => liveUndoDone(subject)));
+    writes!.undoDone(subject).then(() => { setLiveBar(null); setSelected(subject); }, unsaved);
+  };
+  /** Retry: once nothing refused is held, the bar of the last Done or Focus it saved, else none (#610). */
+  const liveRetry = () => {
+    writes!.retry().then((saved) => {
+      const last = writes!.held().refused.length > 0 ? undefined
+        : saved.filter((write) => write.kind === 'done' || write.kind === 'pin').at(-1);
+      setLiveBar(last?.kind === 'done' ? { kind: 'waiting', subject: last.subject } : last ? { kind: 'focused' } : null);
+    });
   };
   const pinKey = (subject: string, lever?: string) => (lever ? `${subject} ${lever}` : subject);
   const livePin = (subject: string, lever?: string) => {
     setPinning(pinKey(subject, lever));
     setLiveBar(null);
-    writes!.pin(subject, lever).then(() => setLiveBar({ kind: 'focused' }), notSaved(() => livePin(subject, lever)))
+    writes!.pin(subject, lever).then(() => setLiveBar({ kind: 'focused' }), unsaved)
       .finally(() => setPinning(undefined));
   };
   const changes = nav?.onSelect && (() => nav.onSelect!('changes'));
@@ -321,7 +334,8 @@ export function QueueScreen({
     setSelected(ranking(done.after)[0]?.subject);
   };
   const undoDone = () => { setDoneNow(false); setSelected(done?.subject); };
-  const barShown = usePresence(liveBar ?? (snoozedNow && snooze ? STORY_BAR : doneNow && done ? STORY_DONE_BAR : null));
+  const barShown = usePresence(held.refused.length > 0 ? NOT_SAVED_BAR
+    : liveBar ?? (snoozedNow && snooze ? STORY_BAR : doneNow && done ? STORY_DONE_BAR : null));
 
   useEffect(() => {
     if (layout !== 'desktop' || view === 'snoozed') return undefined;
@@ -400,7 +414,7 @@ export function QueueScreen({
   const liveUntil = shownBar?.kind === 'snoozed' && ready
     ? snoozed(shown).find((s) => s.subject === shownBar.subject)?.until : undefined;
   const barContent = shownBar?.kind === 'not_saved'
-    ? <TransientBar kind="not_saved" onRetry={shownBar.retry} layout={layout} />
+    ? <TransientBar kind="not_saved" onRetry={liveRetry} layout={layout} />
     : shownBar?.kind === 'focused'
       ? <TransientBar kind="focused" onChanges={changes} layout={layout} />
     : shownBar?.kind === 'snoozed'

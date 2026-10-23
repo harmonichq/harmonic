@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import type { CSSProperties } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { fixtures, sourced } from '../../fixtures';
 import { scrollThenSwipe, swipe } from '../../gesture';
@@ -8,7 +8,7 @@ import { expectAtPaneTop, expectHeaderEmpty, expectTitlePrinted } from '../../ti
 import { focusable, patternStore, ranking, snoozed, type QueueStore } from '../../queue-model';
 import { failsOnce } from '../../flaky';
 import { QUEUE_UNDRAWABLE, ServedAfter } from '../../served-variants';
-import { QueueScreen, type QueueScreenProps } from './QueueScreen';
+import { QueueScreen, type QueueScreenProps, type QueueWrites, type Refused } from './QueueScreen';
 
 // The Queue screen in each state §1.3 lists, at phone (390) and desktop (1440),
 // every value the simulated wearer's served answer:
@@ -39,9 +39,14 @@ import { QueueScreen, type QueueScreenProps } from './QueueScreen';
 // - Every store that serves a watched change offers no Focus on any card.
 // Two desktop plays: selecting a row opens it; Snooze shows the bar, and Undo
 // puts the item back.
+// - Live writes (#495, #610): one the engine refuses holds "Not saved" until
+//   Retry saves it, and of two snoozes, the second refused, the first stays
+//   snoozed while the second is back.
 const meta: Meta<typeof QueueScreen> = {
   title: 'Screens/Queue',
   component: QueueScreen,
+  // The live writes' fake and its Queue, which the drill-down's stories share.
+  excludeStories: ['heldWrites', 'LiveQueue'],
 };
 export default meta;
 
@@ -470,6 +475,66 @@ export const SnoozedDrillDownDesktop: Story = {
   },
 };
 
+// The live adapter's Queue writes as the stories play them (#610): one at a
+// time in the order made, the subjects in flight and the refused writes held as
+// the adapter holds them. Each kind fails on its first call unless `sends`
+// gives it another; `saved` hears each write that saves, before it resolves, as
+// the adapter reads the engine again first; `redraw` hears each start and
+// settle, as App redraws. It neither drops a refusal answered 404 nor ignores
+// a Retry pressed while one is in flight; the adapter's own tests cover both.
+type Sends = Partial<Record<Refused['kind'], (subject: string, lever?: string) => Promise<unknown>>>;
+const TAKES_OUT: readonly Refused['kind'][] = ['snooze', 'restore', 'done'];
+export function heldWrites(sends: Sends = {}, redraw = () => {}, saved = (_write: Refused) => {}): QueueWrites {
+  const send = { snooze: failsOnce(undefined), restore: failsOnce(undefined), pin: failsOnce(undefined),
+    done: failsOnce(undefined), undoDone: failsOnce(undefined), ...sends };
+  const inFlight = new Set<string>();
+  let refused: Refused[] = [];
+  let tail = Promise.resolve();
+  const same = (a: Refused) => (b: Refused) => a.kind === b.kind && a.subject === b.subject && a.lever === b.lever;
+  const write = (made: Refused) => {
+    if (TAKES_OUT.includes(made.kind)) inFlight.add(made.subject);
+    redraw();
+    const run = tail.then(async () => {
+      try {
+        await send[made.kind](made.subject, made.lever);
+        refused = refused.filter((r) => !same(made)(r));
+        saved(made);
+      } catch (error) {
+        if (!refused.some(same(made))) refused = [...refused, made];
+        throw error;
+      } finally {
+        inFlight.delete(made.subject);
+        redraw();
+      }
+    });
+    tail = run.catch(() => undefined);
+    return run;
+  };
+  return {
+    snooze: (subject) => write({ kind: 'snooze', subject }),
+    restore: (subject) => write({ kind: 'restore', subject }),
+    pin: (subject, lever) => write({ kind: 'pin', subject, ...(lever ? { lever } : {}) }),
+    done: (subject) => write({ kind: 'done', subject }),
+    undoDone: (subject) => write({ kind: 'undoDone', subject }),
+    held: () => ({ inFlight: new Set(inFlight), refused }),
+    retry: () => Promise.all(refused.map((r) => write(r).then(() => r, () => null)))
+      .then((sent) => sent.filter((r): r is Refused => r !== null)),
+  };
+}
+/** The Queue over `heldWrites`, redrawn as each write starts and settles, and
+ *  switched to `after.store` once a snooze of `after.subject` saves. */
+export function LiveQueue({ sends, after, ...props }: QueueScreenProps & {
+  sends?: Sends; after?: { subject: string; store: QueueStore };
+}) {
+  const [, setVersion] = useState(0);
+  const [store, setStore] = useState(props.store);
+  const [writes] = useState(() => heldWrites(sends, () => setVersion((n) => n + 1), (write) => {
+    if (after && write.kind === 'snooze' && write.subject === after.subject) setStore(after.store);
+  }));
+  // The item opened first is the first store's; the store served after the snooze no longer ranks it.
+  return <QueueScreen {...props} store={store} open={store === props.store ? props.open : undefined} writes={writes} />;
+}
+
 // Live (#495): a Snooze the engine does not save puts the item back with
 // "Not saved", and Retry saves it.
 const liveSnoozePlay: Story['play'] = async ({ canvasElement }) => {
@@ -481,26 +546,57 @@ const liveSnoozePlay: Story['play'] = async ({ canvasElement }) => {
   await userEvent.click(canvas.getByRole('button', { name: 'Retry' }));
   await waitFor(() => expect(canvas.queryByText(/Not saved/)).toBeNull());
 };
-const liveWrites = (): QueueScreenProps['writes'] => ({
-  snooze: failsOnce(undefined), restore: failsOnce(undefined), pin: failsOnce(undefined),
-  done: failsOnce(undefined), undoDone: failsOnce(undefined),
+const live = (layout: 'phone' | 'desktop', args: Omit<QueueScreenProps, 'layout'>, play: Story['play']): Story => ({
+  ...story(layout, args), render: (props) => <LiveQueue {...props} />, play,
 });
-export const LiveSnoozeNotSavedPhone: Story = { ...story('phone', { store: 'wearer', writes: liveWrites() }), play: liveSnoozePlay };
-export const LiveSnoozeNotSavedDesktop: Story = { ...story('desktop', { store: 'wearer', writes: liveWrites() }), play: liveSnoozePlay };
+export const LiveSnoozeNotSavedPhone = live('phone', { store: 'wearer' }, liveSnoozePlay);
+export const LiveSnoozeNotSavedDesktop = live('desktop', { store: 'wearer' }, liveSnoozePlay);
 // The same through a row's swipe: the row has left when the write fails, and
 // comes back at rest with Not saved; Retry saves it.
-export const SwipeNotSavedPhone: Story = {
-  ...story('phone', { store: 'wearer', writes: liveWrites() }),
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    const row = () => rowTitled(canvasElement, ranking('wearer')[1].data.title);
-    await swipe(row()!, -240, 16, 'slow');
-    await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent(/Not saved/), { timeout: 2000 });
-    await atRest(canvasElement, row);
-    await userEvent.click(canvas.getByRole('button', { name: 'Retry' }));
-    await waitFor(() => expect(canvas.queryByText(/Not saved/)).toBeNull());
-  },
+export const SwipeNotSavedPhone = live('phone', { store: 'wearer' }, async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  const row = () => rowTitled(canvasElement, ranking('wearer')[1].data.title);
+  await swipe(row()!, -240, 16, 'slow');
+  await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent(/Not saved/), { timeout: 2000 });
+  await atRest(canvasElement, row);
+  await userEvent.click(canvas.getByRole('button', { name: 'Retry' }));
+  await waitFor(() => expect(canvas.queryByText(/Not saved/)).toBeNull());
+});
+
+// Two snoozes, the second refused (#610): the pinned store's person snoozes the
+// open item, which saves, so the screen shows the store served after it; then
+// the next item, which the engine refuses the first time. The first stays
+// snoozed, the second is back under "Not saved", and Retry saves it.
+const firstSnoozed = fixtures.snooze.subject;
+/** A snooze the engine refuses the first time it is sent for `refused`, and saves otherwise. */
+const refusesOnce = (refused: string) => {
+  const refuse = failsOnce(undefined);
+  return async (subject: string) => { if (subject === refused) await refuse(); };
 };
+const refusedSnooze = ranking('wearer-pinned-snoozed')[0];
+const titled = (canvas: ReturnType<typeof within>, title: string) =>
+  canvas.queryAllByRole('heading', { level: 2, name: new RegExp(title) });
+const twoSnoozesPlay: Story['play'] = async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  await userEvent.click(canvas.getByRole('button', { name: 'Snooze' }));
+  await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent(snoozedBar));
+  await expect(titled(canvas, refusedSnooze.data.title)).toHaveLength(1);
+  await userEvent.click(canvas.getByRole('button', { name: 'Snooze' }));
+  await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent(/Not saved/));
+  await expect(canvas.queryByRole('button', { name: new RegExp(fixtures.snooze.title) })).toBeNull();
+  await expect(titled(canvas, fixtures.snooze.title)).toHaveLength(0);
+  await expect(titled(canvas, refusedSnooze.data.title)).toHaveLength(1);
+  await userEvent.click(canvas.getByRole('button', { name: 'Retry' }));
+  await waitFor(() => expect(canvas.queryByText(/Not saved/)).toBeNull());
+};
+const twoSnoozes = (layout: 'phone' | 'desktop'): Story => ({
+  ...story(layout, { store: 'wearer-pinned', open: firstSnoozed }),
+  render: (props) => <LiveQueue {...props} after={{ subject: firstSnoozed, store: 'wearer-pinned-snoozed' }}
+    sends={{ snooze: refusesOnce(refusedSnooze.subject) }} />,
+  play: twoSnoozesPlay,
+});
+export const TwoSnoozesSecondRefusedPhone = twoSnoozes('phone');
+export const TwoSnoozesSecondRefusedDesktop = twoSnoozes('desktop');
 
 // Done (#518), a Setting card's primary: a fresh wearer presses Done on the
 // basal card. The screen shows the Queue the engine served after it (the card
@@ -559,8 +655,34 @@ const liveDonePlay: Story['play'] = async ({ canvasElement }) => {
   await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent('Waiting for pump'));
 };
 const LIVE_DONE = { store: 'wearer-before-done', open: 'setting:basal_rate' } as QueueScreenProps;
-export const LiveDoneNotSavedPhone: Story = { ...story('phone', { ...LIVE_DONE, writes: liveWrites() }), play: liveDonePlay };
-export const LiveDoneNotSavedDesktop: Story = { ...story('desktop', { ...LIVE_DONE, writes: liveWrites() }), play: liveDonePlay };
+export const LiveDoneNotSavedPhone = live('phone', LIVE_DONE, liveDonePlay);
+export const LiveDoneNotSavedDesktop = live('desktop', LIVE_DONE, liveDonePlay);
+
+// Retry's bar is its own (#610): a snooze refused, then a Done that saves under
+// "Not saved", then Retry saves the snooze: the bar leaves, since Retry saved no
+// Done or Focus, and the earlier Done's bar is not drawn.
+const RETRIED = 'pattern:lows_after_meals';
+const retryOwnBarPlay: Story['play'] = async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  await userEvent.click(canvas.getByRole('button', { name: 'Snooze' }));
+  await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent(/Not saved/));
+  // Phone: the Basal card, opened while the snooze was in flight, closes back into its row first.
+  await userEvent.click(await canvas.findByRole('button', { name: /^Setting Basal/ }));
+  await userEvent.click(canvas.getByRole('button', { name: 'Done' }));
+  await waitFor(() => expect(basalCard(canvas)).toBeInTheDocument());
+  await expect(canvas.getByRole('status')).toHaveTextContent(/Not saved/);
+  await userEvent.click(canvas.getByRole('button', { name: 'Retry' }));
+  await waitFor(() => expect(canvas.queryByText(/Not saved/)).toBeNull());
+  await expect(canvas.queryByText('Waiting for pump')).toBeNull();
+  await waitFor(() => expect(canvas.queryByRole('status')).toBeNull());
+};
+const retryOwnBar = (layout: 'phone' | 'desktop'): Story => ({
+  ...story(layout, { store: 'wearer-before-done', open: RETRIED }),
+  render: (props) => <LiveQueue {...props} sends={{ snooze: refusesOnce(RETRIED), done: async () => undefined }} />,
+  play: retryOwnBarPlay,
+});
+export const RetryOwnBarPhone = retryOwnBar('phone');
+export const RetryOwnBarDesktop = retryOwnBar('desktop');
 
 // A ranking holding candidates the Queue cannot draw (a correction factor,
 // which no Queue row draws, an I:C Setting with no admitted row, a Pattern the
@@ -608,7 +730,7 @@ const livePinPlay: Story['play'] = async ({ canvasElement }) => {
   await waitFor(() => expect(card.querySelector('.ui-pcard__action [data-state="focus"]')).not.toBeNull());
   await expect(within(card).queryByRole('button', { name: 'Focus' })).toBeNull();
 };
-const pinInFlight = (): QueueScreenProps['writes'] => ({ ...liveWrites()!, pin: () => new Promise<void>(() => {}) });
+const pinInFlight = (): QueueScreenProps['writes'] => heldWrites({ pin: () => new Promise<void>(() => {}) });
 export const LiveHabitPinPhone: Story = {
   ...story('phone', { ...HABIT_OPEN, writes: pinInFlight() }), play: livePinPlay,
 };
@@ -622,7 +744,7 @@ export const LiveHabitPinDesktop: Story = {
 const HABIT_FOCUS = {
   store: fixtures.states.habit_episodes.store, open: fixtures.states.habit_episodes.subject,
 } as QueueScreenProps;
-const focusSaved = (): QueueScreenProps['writes'] => ({ ...liveWrites()!, pin: async () => undefined });
+const focusSaved = (): QueueScreenProps['writes'] => heldWrites({ pin: async () => undefined });
 const focusStartedPlay: Story['play'] = async ({ canvasElement, args }) => {
   const canvas = within(canvasElement);
   const card = () => canvasElement.querySelector('.ui-pcard') as HTMLElement;

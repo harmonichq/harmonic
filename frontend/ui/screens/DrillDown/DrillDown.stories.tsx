@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
-import { failsOnce } from '../../flaky';
 import { causes, focusable, pattern, patternStore } from '../../queue-model';
 import { ServedAfter } from '../../served-variants';
 import { expectTitlePrinted } from '../../title-check';
 import { QueueScreen, type QueueScreenProps } from '../Queue/QueueScreen';
+import { heldWrites, LiveQueue } from '../Queue/QueueScreen.stories';
 
 // The drill-down (drill-down.md, ADR 594): the shipped Queue screen opened on a
 // multi-cause Pattern's causes, from the stores the fixture generator
@@ -174,10 +174,10 @@ export const Unavailable: Story = unavailable('phone');
 export const UnavailableDesktop: Story = unavailable('desktop');
 
 /** A cause's Focus shows its pill at once; not saved, the card is back with
- *  Focus, and the bar reads Not saved with Retry. Retry then saves it. */
-const failOnce = () => opened('drill_down', 'phone', { writes: {
-  snooze: failsOnce(undefined), restore: failsOnce(undefined), pin: failsOnce(undefined),
-  done: failsOnce(undefined), undoDone: failsOnce(undefined) } });
+ *  Focus, and the bar reads Not saved with Retry. Retry then saves it, and the
+ *  bar reads Focus started (#610). The writes are the live adapter's, each
+ *  failing on its first call. */
+const failOnce = (): Story => ({ ...opened('drill_down', 'phone'), render: (props) => <LiveQueue {...props} /> });
 const notSaved: Story['play'] = async ({ canvasElement }) => {
   const canvas = within(canvasElement);
   const first = cards(canvasElement)[0];
@@ -199,30 +199,27 @@ export const NotSavedRetry: Story = {
 /** A cause's Focus, saved: its pill at once, then the bar "Focus started", whose
  *  Changes opens that tab, over what the engine serves after the write (the
  *  store with that Focus): the cause's pill, and no Focus on any card. */
-const started = (layout: 'phone' | 'desktop'): Story => ({
-  ...opened('drill_down', layout, {
-    writes: {
-      snooze: async () => undefined, restore: async () => undefined, done: async () => undefined,
-      undoDone: async () => undefined, pin: fn(async () => undefined),
+const started = (layout: 'phone' | 'desktop'): Story => {
+  const pin = fn(async () => undefined);
+  return {
+    ...opened('drill_down', layout, { writes: heldWrites({ pin }), nav: { onSelect: fn() } }),
+    render: (args) => <ServedAfter {...args} focused={patternStore('drill_down_pinned').store} />,
+    play: async ({ canvasElement, args }) => {
+      const canvas = within(canvasElement);
+      const { causes: expected } = served(args);
+      const pinned = causes(patternStore('drill_down_pinned').store, patternStore('drill_down_pinned').pattern);
+      await expect(pinned.find((c) => c.pinned)!.lever).toBe(expected[0].lever);
+      await userEvent.click(within(cards(canvasElement)[0]).getByRole('button', { name: 'Focus' }));
+      await waitFor(() => expect(pin).toHaveBeenCalledWith(args.open, expected[0].lever));
+      await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent('Focus started'));
+      const pills = cards(canvasElement).map((card) => card.querySelector('.ui-pcard__head [data-state="focus"]') !== null);
+      await expect(pills).toEqual(pinned.map((c) => c.pinned));
+      await expect(canvas.queryByRole('button', { name: 'Focus' })).toBeNull();
+      await userEvent.click(within(canvas.getByRole('status')).getByRole('button', { name: 'Changes' }));
+      await expect(args.nav!.onSelect).toHaveBeenCalledWith('changes');
     },
-    nav: { onSelect: fn() },
-  }),
-  render: (args) => <ServedAfter {...args} focused={patternStore('drill_down_pinned').store} />,
-  play: async ({ canvasElement, args }) => {
-    const canvas = within(canvasElement);
-    const { causes: expected } = served(args);
-    const pinned = causes(patternStore('drill_down_pinned').store, patternStore('drill_down_pinned').pattern);
-    await expect(pinned.find((c) => c.pinned)!.lever).toBe(expected[0].lever);
-    await userEvent.click(within(cards(canvasElement)[0]).getByRole('button', { name: 'Focus' }));
-    await expect(args.writes!.pin).toHaveBeenCalledWith(args.open, expected[0].lever);
-    await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent('Focus started'));
-    const pills = cards(canvasElement).map((card) => card.querySelector('.ui-pcard__head [data-state="focus"]') !== null);
-    await expect(pills).toEqual(pinned.map((c) => c.pinned));
-    await expect(canvas.queryByRole('button', { name: 'Focus' })).toBeNull();
-    await userEvent.click(within(canvas.getByRole('status')).getByRole('button', { name: 'Changes' }));
-    await expect(args.nav!.onSelect).toHaveBeenCalledWith('changes');
-  },
-});
+  };
+};
 export const FocusStarted: Story = started('phone');
 export const FocusStartedDesktop: Story = started('desktop');
 

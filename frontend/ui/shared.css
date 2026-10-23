@@ -197,14 +197,29 @@
   [data-motion] .ui-advance { translate: calc(var(--ui-motion-shift) * var(--ui-motion-move)) 0; opacity: 0; }
 }
 
-/* A swipe settles: the row returns to rest or to its reveal. The added
+/* A swipe eases back: the row returns to rest or to its reveal. The added
    millisecond keeps the settle an event under reduced motion, when it is
    otherwise instant, so the reveal is taken away once the row covers it. */
 .ui-swipe-settle {
   touch-action: pan-y;
-  transition: translate calc(var(--ui-motion-standard) * var(--ui-motion-move) + 1ms) var(--ui-ease-standard);
+  transition: translate calc(var(--ui-motion-emphasized) * var(--ui-motion-move) + 1ms) var(--ui-ease-standard);
 }
 .ui-swipe--dragging .ui-swipe-settle { transition: none; user-select: none; }
+/* A swipe that leaves (useSwipe's exit, ADR 613): the row slides off to the
+   left, speeding up as it goes, then its height closes so what is below rises
+   into its place. Under reduced motion it fades where the finger left it, and
+   its height closes at once. Outside a gated screen it goes at once. */
+[data-closing] > .ui-swipe-settle { transition: none; }
+[data-motion] [data-closing] > .ui-swipe-settle {
+  transition:
+    translate calc(var(--ui-motion-standard) * var(--ui-motion-move)) var(--ui-ease-accelerate),
+    opacity var(--ui-motion-fast) linear;
+}
+[data-swipe-leaving] { overflow: hidden; interpolate-size: allow-keywords; }
+[data-swipe-leaving='close'] { height: 0; }
+[data-motion] [data-swipe-leaving] {
+  transition: height calc(var(--ui-motion-emphasized) * var(--ui-motion-move)) var(--ui-ease-standard);
+}
 
 /* Closing (usePresence): what leaves takes [data-closing] and plays its entry
    in reverse, on the standard duration and easing, then goes. Nothing it

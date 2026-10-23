@@ -14,8 +14,10 @@
 // accent (and "Recorded" for a screen reader), and the optional grams field
 // opens focused beside Next. Mid-swipe,
 // the card slides aside over the Not sure reveal: on the phone it follows the
-// finger, and released past half the reveal it answers Not sure, as the text
-// action does; short of half it settles back. The "n / N" count belongs to
+// finger by a Queue row's rule (useSwipe, ADR 613), the reveal filling once a
+// release would commit; released past half the card's width, or on a flick,
+// it answers Not sure at once, as the text action does, and the next prompt
+// comes in; otherwise it eases back. The "n / N" count belongs to
 // the Prompts screen's header, not to this card.
 import { useState } from 'react';
 import type { PromptData, PromptKind } from '../../day-model';
@@ -112,7 +114,7 @@ export function PromptCard({
   // Yes records at once; the card then holds the grams typed until Next.
   const [recorded, setRecorded] = useState(initiallyRecorded);
   const [grams, setGrams] = useState('');
-  const swipe = useSwipe(REVEAL, swiping, () => onAnswer?.('not-sure'));
+  const swipe = useSwipe(REVEAL, { held: swiping, onCommit: () => onAnswer?.('not-sure') });
   const kind = KIND[data.kind];
   const tone = kind.tone(data.bg.value);
   const answers = ANSWERS[data.kind];
@@ -158,9 +160,13 @@ export function PromptCard({
   );
   if (layout !== 'phone') return card;
   return (
-    <div className={`ui-prompt-swipe${swipe.revealed ? ' ui-prompt-swipe--revealed' : ''}${swipe.open ? ' ui-prompt-swipe--open' : ''}${swipe.dragging ? ' ui-swipe--dragging' : ''}`}
+    <div className={`ui-prompt-swipe${swipe.revealed ? ' ui-prompt-swipe--revealed' : ''}${swipe.open ? ' ui-prompt-swipe--open' : ''}${swipe.filled ? ' ui-prompt-swipe--filled' : ''}${swipe.dragging ? ' ui-swipe--dragging' : ''}`}
       {...(recorded ? {} : swipe.bind)}>
-      {swipe.revealed && <span className="ui-prompt-swipe__reveal" aria-hidden="true">Not sure</span>}
+      {swipe.revealed && (
+        <span className="ui-prompt-swipe__reveal" aria-hidden="true">
+          <span className="ui-prompt-swipe__action">Not sure</span>
+        </span>
+      )}
       {card}
     </div>
   );

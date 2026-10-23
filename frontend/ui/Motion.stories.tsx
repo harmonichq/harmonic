@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { expect, waitFor, within } from 'storybook/test';
 import { fixtures, sourced } from './fixtures';
 import { swipe } from './gesture';
 import { Button } from './components/Button/Button';
@@ -83,9 +84,15 @@ const MOTIONS = {
     run: async (stage) => {
       const row = () => [...stage.querySelectorAll<HTMLElement>('.ui-queue__list .ui-qrow')]
         .find((each) => each.textContent?.includes(fixtures.snooze.title))!;
-      await swipe(row(), -30, 8);
-      await pause(700);
-      await swipe(row(), -64);
+      // A slow drag short of half the row eases back; a slow drag past half
+      // fills the reveal, leaves and snoozes; Undo; then a flick snoozes it.
+      await swipe(row(), -120, 16, 'slow');
+      await pause(900);
+      await swipe(row(), -240, 16, 'slow');
+      await pause(1400);
+      control(stage, 'Undo').click();
+      await pause(900);
+      await swipe(row(), -120, 4, 'flick');
       await pause(1400);
       control(stage, 'Undo').click();
     },
@@ -165,7 +172,9 @@ function Stage({ initial, picker = false, reducedFirst = false }: { initial: Nam
   useEffect(() => {
     if (take === 0) return;
     // Two frames: the screen has drawn and opened its motion gate.
-    void frame().then(frame).then(() => motion.run(stage.current!));
+    // A replay that has run to its end marks the stage, for a play to wait on.
+    void frame().then(frame).then(() => motion.run(stage.current!))
+      .then(() => stage.current?.setAttribute('data-replayed', ''));
   }, [take]);
   return (
     <>
@@ -207,7 +216,17 @@ export const Sheet: Story = { ...story('sheet'), name: 'Sheet' };
 export const Popover: Story = { ...story('popover'), name: 'Popover' };
 export const DrillDown: Story = { ...story('drillDown'), name: 'Drill-down' };
 export const Expand: Story = { ...story('expand'), name: 'Expand' };
-export const SnoozeSwipe: Story = { ...story('swipe'), name: 'Snooze swipe' };
+// The gate runs the replay: Replay, the bar, and the replay to its last Undo.
+export const SnoozeSwipe: Story = {
+  ...story('swipe'),
+  name: 'Snooze swipe',
+  play: async ({ canvasElement }) => {
+    within(document.body).getByRole('button', { name: 'Replay' }).click();
+    await waitFor(() => expect(within(canvasElement).getByRole('status')).toBeInTheDocument(), { timeout: 5000 });
+    await waitFor(() => expect(canvasElement.querySelector('[data-replayed]')).not.toBeNull(), { timeout: 10000 });
+    await expect(within(canvasElement).queryByRole('status')).toBeNull();
+  },
+};
 export const TransientBar: Story = { ...story('bar'), name: 'Transient bar' };
 export const Month: Story = { ...story('month'), name: 'Month' };
 export const NextPrompt: Story = { ...story('nextPrompt'), name: 'Next prompt' };

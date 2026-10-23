@@ -14,8 +14,10 @@
 // and the chevron stays on the title line.
 //
 // Phone: a full-width row under a rule, with a ▾ to expand; mid-swipe slides
-// it aside over the Snooze reveal, under the finger: released past half the
-// reveal it snoozes the row (onSnooze), short of half it settles back. Desktop: a list row that selects into the
+// it aside over the Snooze reveal, under the finger (useSwipe, ADR 613): the
+// reveal fills once a release would snooze; released past half the row's
+// width, or on a flick, the row slides off and closes up and then snoozes
+// (onSnooze), and otherwise it eases back. Desktop: a list row that selects into the
 // detail pane, marked by the surface and a bar at its leading edge.
 //
 // Snoozed (the Snoozed list): the same row, read-only — no chevron, no swipe,
@@ -47,7 +49,7 @@ export type QueueRowProps =
       /** Phone only: the row held mid-swipe over its Snooze reveal. */
       swiping?: boolean;
       onSelect?: () => void;
-      /** Phone: a swipe released past half the reveal snoozes the row. */
+      /** Phone: a swipe that commits snoozes the row, once it has left. */
       onSnooze?: () => void;
       /** A snoozed row: its served Until date, and Restore. */
       snoozed?: { until: Sourced<string>; onRestore?: () => void };
@@ -84,7 +86,9 @@ function Meta(props: Extract<QueueRowProps, { kind: string }>) {
 
 export function QueueRow(props: QueueRowProps) {
   const layout = props.layout ?? 'phone';
-  const swipe = useSwipe(REVEAL, !props.loading && Boolean(props.swiping), props.loading ? undefined : props.onSnooze);
+  const swipe = useSwipe(REVEAL, {
+    held: !props.loading && Boolean(props.swiping), onCommit: props.loading ? undefined : props.onSnooze, leaves: true,
+  });
   if (props.loading) {
     return (
       <div className={`ui-qrow ui-qrow--${layout} ui-qrow--loading`} aria-busy="true">
@@ -138,12 +142,14 @@ export function QueueRow(props: QueueRowProps) {
   );
   if (layout !== 'phone') return row;
   return (
-    <div className={`ui-qrow-swipe${swipe.revealed ? ' ui-qrow-swipe--revealed' : ''}${swipe.open ? ' ui-qrow-swipe--open' : ''}${swipe.dragging ? ' ui-swipe--dragging' : ''}`}
-      {...swipe.bind}>
+    <div className={`ui-qrow-swipe${swipe.revealed ? ' ui-qrow-swipe--revealed' : ''}${swipe.open ? ' ui-qrow-swipe--open' : ''}${swipe.filled ? ' ui-qrow-swipe--filled' : ''}${swipe.dragging ? ' ui-swipe--dragging' : ''}`}
+      {...swipe.bind} {...swipe.exit}>
       {swipe.revealed && (
         <span className="ui-qrow-swipe__reveal" aria-hidden="true">
-          <Icon name="snooze" />
-          <span>Snooze</span>
+          <span className="ui-qrow-swipe__action">
+            <Icon name="snooze" />
+            <span>Snooze</span>
+          </span>
         </span>
       )}
       {row}

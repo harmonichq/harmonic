@@ -8,15 +8,15 @@
 
 - [ ] 1.1 Live-adapter test: two snoozes fired unawaited against a fake that refuses a reused generation both save, each with a distinct generation (fails on today's code)
 - [ ] 1.2 Live-adapter test: `held().inFlight` names a snooze's subject until it settles; a refused snooze is in `held().refused` until `retry()` saves it; a refusal answered 404 on Retry is dropped
-- [ ] 1.3 Live-adapter test: a Queue write resolves with no Trial roster read; afterwards Changes is not landed, in the page and after a memory refresh, and reading it reads the roster
+- [ ] 1.3 Live-adapter test: a Queue write resolves with no Trial roster read; afterwards Changes is not landed, in the page and after a memory refresh, and reading it reads the roster; a Changes read in flight when the write starts lands without assigning its answer or marking Changes landed
 - [ ] 1.4 Live-adapter test: a Prompt answer resolves after the Prompts, reads no day, and drops every visited day's answer but `shownDay()`'s
-- [ ] 1.5 Queue stories, phone and desktop, on the existing stores: a wrapper renders `wearer-pinned` and switches to `wearer-pinned-snoozed` when a snooze of `fixtures.snooze.subject` saves; a second ranked item's snooze is refused on its first call; the play asserts the first item gone, the second back, the bar "Not saved", and after Retry that the bar leaves. The fake `writes` implement `held` and `retry` in the story file
+- [ ] 1.5 Queue stories, phone and desktop, on the existing stores: a wrapper renders `wearer-pinned` and switches to `wearer-pinned-snoozed` when a snooze of `fixtures.snooze.subject` saves; a second ranked item's snooze is refused on its first call; the play asserts the first item gone, the second back, the bar "Not saved", and after Retry that the bar leaves. The fake `writes` implement `held` and `retry` in the story file, and the wrapper redraws whenever a fake write starts or settles, as App does
 
 ## 2. Live adapter (`frontend/ui/app/live.js`)
 
 - [ ] 2.1 Queue writes run one at a time in the order made, each on a guidance (and Focus list) read made after the write before it was answered
 - [ ] 2.2 `held()` and `retry()` as in section 0; a refusal leaves on save or on a 404
-- [ ] 2.3 A Queue write forgets the roster, deletes `answers.changes.wearer` and drops 'changes' from the landed tabs before remembering, re-reads only the Queue's own answers with the held roster, and resolves
+- [ ] 2.3 A Queue write forgets the roster, deletes `answers.changes.wearer` and drops 'changes' from the landed tabs before remembering, re-reads only the Queue's own answers with the held roster, and resolves. The adapter counts Queue writes; a `changes()` read notes the count when it starts and, if a Queue write ran since, its landing neither assigns `answers.changes.wearer` nor marks Changes landed, so Changes stays loading until a read started after the write lands
 - [ ] 2.4 `shownDay()`; a Prompt answer forgets the Prompts and every visited day, deletes every visited day's answer but `shownDay()`'s, re-reads the Prompts and resolves
 
 ## 3. App and screens

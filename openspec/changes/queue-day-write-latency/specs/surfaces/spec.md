@@ -65,6 +65,13 @@ after the write lands, after a reload too.
 - **WHEN** the person then opens Changes, in the same page or after a reload
 - **THEN** Changes draws its loading state, reads the roster, and draws it
 
+#### Scenario: A Changes read in flight across a Queue write
+
+- **GIVEN** Changes' read is in flight
+- **WHEN** the person returns to the Queue and presses Done before it lands
+- **THEN** that read is not drawn or remembered when it lands, and Changes
+  draws its loading state until a read started after the Done lands
+
 ### Requirement: A Prompt answer moves the Day badge when the Prompts land
 
 A Prompt answer SHALL resolve once the Prompts are read again, so the Day badge

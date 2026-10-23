@@ -1,0 +1,48 @@
+## 0. Base
+
+- [ ] 0.1 Per ui-craft `revise` §1, render the before shots from this branch's base: Storybook `Foundations/Motion` → Snooze swipe (frames mid-drag and just after release), `Screens/Queue` SwipeSnoozeUndoPhone and `Screens/Day` PromptSwipePhone, at 390x844
+
+## 1. The hook (`frontend/ui/motion.ts`, ADR 613)
+
+- [ ] 1.1 Axis lock at 10 px: across first makes the press a swipe; down first leaves it to the page for the rest of the press
+- [ ] 1.2 Tracking one to one to the reveal, resistance past it at the fraction the mock settles; never right of rest
+- [ ] 1.3 One would-commit predicate (half the element's width of finger travel, or a leftward velocity over the last 100 ms above 500 px/s past the reveal's start), read both for the reveal's fill while dragging and at release
+- [ ] 1.4 The row's exit: hold the element, slide it off, close its height, then call the action; `[data-closing]` and `aria-hidden` while it leaves; the action at once where nothing transitions; presses ignored while it leaves; the hook back at rest when the same row is drawn again (Undo, a failed write)
+- [ ] 1.5 The Prompt's caller keeps no exit: its action at release, as today
+- [ ] 1.6 Update the file's header comment for the new behaviour, in its idiom
+
+## 2. Tokens and CSS
+
+- [ ] 2.1 `frontend/ui/tokens.css`: `--ui-ease-accelerate: cubic-bezier(.3, 0, 1, 1)` beside the two easings
+- [ ] 2.2 `frontend/ui/shared.css` `.ui-swipe-settle`: the ease-back on `--ui-motion-emphasized`; the slide-off and close-up, each multiplied by `--ui-motion-move` so reduced motion fades and closes at once
+- [ ] 2.3 `QueueRow.css` and `PromptCard.css`: the reveal's filled state (`--primary` at 18%, icon and label in the accent, over the fast duration)
+
+## 3. Callers
+
+- [ ] 3.1 `QueueRow.tsx` and `PromptCard.tsx` take the hook's new return (the fill, the leaving state) with no other change to what they print
+
+## 4. The story driver and the stories
+
+- [ ] 4.1 `frontend/ui/gesture.ts`: `swipe` keeps its signature and takes an optional pace, so a play can drag slowly or flick, and a vertical-first variant for the scroll case
+- [ ] 4.2 `Foundations/Motion` → Snooze swipe (`frontend/ui/Motion.stories.tsx`): replays a short drag that eases back, a slow drag past half, Undo, and a flick; the Reduced motion story's picker reaches it
+- [ ] 4.3 `Screens/Queue` SwipeSnoozeUndoPhone: drags past half (not 64 px); asserts the reveal filled before release, no bar until the row has gone, Undo restores the row
+- [ ] 4.4 `Screens/Queue`: SwipeFlickPhone (a flick short of half snoozes), SwipeScrollPhone (vertical first: nothing moves, no reveal), SwipeNotSavedPhone (a snooze write that fails once: the row back at rest, Not saved + Retry), SwipeReducedPhone (`[data-motion-reduce]`: the row's translate is 0 on every frame of the commit)
+- [ ] 4.5 `Screens/Day` PromptSwipePhone: drags past half the card's width; a short drag eases back without recording
+- [ ] 4.6 `npm run test:ui` clean for every story above; `UI_STORY=<id part>` while iterating
+
+## 5. The amendment (`docs/design/recommendations-redesign.md`)
+
+Quote only words Connor wrote on #612, on this change's pull request, or that the coordinating session relays to this one as his verbatim words; otherwise cite "#612, 2026-10-23" without quotation marks. Never edit an earlier dated amendment.
+
+- [ ] 5.1 §2.5, one amendment dated 2026-10-23 with four parts: (1) the smoother swipe as ADR 613 sets it, with the resistance fraction approved in the replay; (2) an open Pattern, Setting or habit card swipes to Snooze as a row does, sized for the card, and the phone has no Snooze text action (desktop keeps it, with S), recorded as the operator's decision after the conflict with §1.4's "a swipe is a shortcut, never the only way" and WCAG 2.5.7 was raised, superseding the 2026-10-13 "Snooze has a visible control on the phone"; (3) on the phone the open card's chevron closes it to its row, leaving nothing open, and tapping the row reopens it, the closed state the screen's alone and gone on a tab change; (4) a horizontal swipe on the Day body steps to the previous or next day with data, the skeleton while it loads, across month boundaries through the day navigator, the screen's edges left to the platform, and the month drop-down the visible equivalent on both layouts
+- [ ] 5.2 §1.4: the row-swipe row rewritten for 5.1 (1); new rows for 5.1 (2), (3) and (4) with their desktop equivalents; the closing paragraph names the phone's Snooze as the one swipe with no visible equivalent, citing the amendment
+- [ ] 5.3 §1.3: Queue gains "lead card closed (nothing open)" and "a card mid-swipe"; Day gains "stepping to the next or previous day (skeleton)"
+- [ ] 5.4 §2.1: `--ui-ease-accelerate`
+- [ ] 5.5 §4.2: QueueRow (the filled reveal; leaving), PromptCard (the filled reveal), PatternCard, SettingCard and HabitCard (phone: the swipe, no Snooze text action; the chevron a control), each as 5.1 states it
+- [ ] 5.6 The status list at the top: a line for this amendment, built by #614, written once Connor says "locked", quoting him
+- [ ] 5.7 The active change's surfaces spec (`openspec/changes/recommendations-redesign/specs/surfaces/spec.md`) is not edited here: #614 changes its Snooze sentence when it builds
+
+## 6. Verify and evidence
+
+- [ ] 6.1 Run each complete suite of the pull-request gate once, on the commit that will be pushed
+- [ ] 6.2 Attach to the pull request: before/after frames for 0.1's stories; a screen recording or frame strip of the Snooze swipe replay (cancel, slow commit, flick, Undo) and of it under reduced motion; the precheck output; the base SHA. Ask Connor to replay `Foundations/Motion` → Snooze swipe and say "locked"; 5.6 and the resistance value in 5.1 land after his word, in the same pull request

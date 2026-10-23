@@ -197,7 +197,8 @@
   [data-motion] .ui-advance { translate: calc(var(--ui-motion-shift) * var(--ui-motion-move)) 0; opacity: 0; }
 }
 
-/* A swipe eases back: the row returns to rest or to its reveal. The added
+/* A swipe eases back: the row returns to rest or to its reveal, and the Day's
+   track, which the swipe's step form moves (ADR 619), to rest. The added
    millisecond keeps the settle an event under reduced motion, when it is
    otherwise instant, so the reveal is taken away once the row covers it. */
 .ui-swipe-settle {

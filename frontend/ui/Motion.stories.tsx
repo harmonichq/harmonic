@@ -273,10 +273,29 @@ export const DaySwipe: Story = {
   beforeEach: () => dayMonths.cleanup,
   play: async ({ canvasElement }) => {
     const day = () => canvasElement.querySelector('.ui-header__day')!.textContent;
+    // Every frame, the header's day and how far the track sits from rest: once
+    // a step names its day, the day is drawn at rest, never sliding in again.
+    const frames: { day: string | null; off: number }[] = [];
+    let sampling = true;
+    const sample = () => {
+      const track = canvasElement.querySelector('.ui-dayscreen__track');
+      const body = canvasElement.querySelector('.ui-dayscreen__body');
+      if (track && body) {
+        const off = track.getBoundingClientRect().left - body.getBoundingClientRect().left
+          - (parseFloat(getComputedStyle(track).marginLeft) || 0);
+        frames.push({ day: day(), off });
+      }
+      if (sampling) requestAnimationFrame(sample);
+    };
+    requestAnimationFrame(sample);
     within(document.body).getByRole('button', { name: 'Replay' }).click();
     await waitFor(() => expect(day()).toContain('23 Apr'), { timeout: 10000 });
     await waitFor(() => expect(canvasElement.querySelector('[data-replayed]')).not.toBeNull(), { timeout: 10000 });
     await expect(day()).toContain('25 May');
+    sampling = false;
+    const offRest = frames.flatMap((frame, i) => (i > 0 && frame.day !== frames[i - 1].day
+      ? frames.slice(i, i + 6).filter((after) => Math.abs(after.off) >= 0.5).map((after) => `${after.day} ${after.off}`) : []));
+    await expect(offRest).toEqual([]);
   },
 };
 export const TransientBar: Story = { ...story('bar'), name: 'Transient bar' };

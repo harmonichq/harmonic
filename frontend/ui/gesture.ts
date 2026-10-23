@@ -46,13 +46,13 @@ export async function swipe(target: HTMLElement, dx: number, steps = 12, pace: P
 
 /** A slow swipe held at its end: the finger stays down, for a story that shows
  *  the row mid-gesture. */
-export async function hold(target: HTMLElement, dx: number, steps = 12, from?: number) {
-  await drag(target, dx, steps, 'slow', from);
+export async function hold(target: HTMLElement, dx: number, steps = 12) {
+  await drag(target, dx, steps, 'slow');
 }
 
 /** A press that moves 12 px down first, as a scroll does, then `dx` across. */
-export async function scrollThenSwipe(target: HTMLElement, dx: number, steps = 12, from?: number) {
-  const at = point(target, from);
+export async function scrollThenSwipe(target: HTMLElement, dx: number, steps = 12) {
+  const at = point(target);
   target.dispatchEvent(new PointerEvent('pointerdown', at(0)));
   for (let i = 1; i <= 4; i += 1) {
     await pause(12 / 4 / SLOW * 1000);

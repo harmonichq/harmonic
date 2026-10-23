@@ -496,6 +496,19 @@ const showsDay = async (canvasElement: HTMLElement, iso: string) => {
     await expect(track(canvasElement)!.querySelector('.ui-skeleton')).not.toBeNull();
   }
 };
+/** The track's offset on every frame from the one the header first names `iso`
+ *  until 600 ms on: after a step the day is already where it rests, so none is off rest. */
+const afterStep = (canvasElement: HTMLElement, iso: string) => new Promise<number[]>((done) => {
+  const frames: number[] = [];
+  let since: number | null = null;
+  const sample = (now: number) => {
+    if (since === null && headerDay(within(canvasElement)).textContent?.includes(printed(iso))) since = now;
+    if (since !== null) frames.push(offset(canvasElement));
+    if (since !== null && now - since > 600) done(frames);
+    else requestAnimationFrame(sample);
+  };
+  requestAnimationFrame(sample);
+});
 const atRest = (canvasElement: HTMLElement) => waitFor(() => expect(Math.abs(offset(canvasElement))).toBeLessThan(0.5));
 /** Nothing moves and the header still names `iso`. */
 const unmoved = async (canvasElement: HTMLElement, iso: string, gesture: () => Promise<void>) => {
@@ -514,8 +527,10 @@ export const SwipeNextPhone: Story = {
     await expect(offset(canvasElement)).toBeCloseTo(-240, 0);
     const coming = canvasElement.querySelector('.ui-dayscreen__neighbour');
     await expect(coming?.querySelector(`[data-source^="day.days.${latest}.timeline.insulin_totals"]`)).not.toBeNull();
+    const stepped = afterStep(canvasElement, latest);
     lift(body(canvasElement), -240);
     await showsDay(canvasElement, latest);
+    await expect((await stepped).filter((at) => Math.abs(at) >= 0.5)).toEqual([]);
     await atRest(canvasElement);
     await expect(canvasElement.querySelector('.ui-dayscreen__neighbour')).toBeNull();
   },
@@ -525,8 +540,10 @@ export const SwipeNextPhone: Story = {
 export const SwipePreviousPhone: Story = {
   ...story('phone', DEFAULT),
   play: async ({ canvasElement }) => {
+    const stepped = afterStep(canvasElement, '2025-05-24');
     await swipe(body(canvasElement), 240, 16);
     await showsDay(canvasElement, '2025-05-24');
+    await expect((await stepped).filter((at) => Math.abs(at) >= 0.5)).toEqual([]);
   },
 };
 // Across a month inside the served weeks: 1 May steps back to 30 April.
@@ -657,7 +674,7 @@ export const SwipeDesktop: Story = {
   },
 };
 
-export const PromptRetryPhone: Story ={ ...story('phone', { ...PROMPTS, failing: true }), play: notSavedPlay };
+export const PromptRetryPhone: Story = { ...story('phone', { ...PROMPTS, failing: true }), play: notSavedPlay };
 export const PromptRetryDesktop: Story = { ...story('desktop', { ...PROMPTS, failing: true }), play: notSavedPlay };
 
 // Desktop: the month pane and the day pane each hold all of their content.

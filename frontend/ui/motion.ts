@@ -162,6 +162,8 @@ export function useSwipe(reveal: number, { held = false, onCommit, leaves = fals
   commit.current = onCommit;
   // The step form: sliding a step in, or easing back, the way it was drawn off rest.
   const [moving, setMoving] = useState<{ way: Way; steps: boolean; element: HTMLElement } | null>(null);
+  // Just stepped: the neighbour, now the day, is drawn at rest with no transition.
+  const [landed, setLanded] = useState(false);
   const stepper = useRef(step);
   stepper.current = step;
 
@@ -210,9 +212,16 @@ export function useSwipe(reveal: number, { held = false, onCommit, leaves = fals
     const { element, way, steps } = moving;
     return afterMoving((target) => target !== element && element.contains(target), () => {
       setMoving(null);
+      setLanded(steps);
       if (steps) stepper.current?.onStep(way);
     });
   }, [moving]);
+  useLayoutEffect(() => {
+    if (!landed) return;
+    // Style the day at rest untransitioned, so the ease-back restored after it starts nothing.
+    document.body.getBoundingClientRect();
+    setLanded(false);
+  }, [landed]);
 
   const release = (event: PointerEvent<HTMLElement>) => {
     const g = gesture.current;
@@ -242,7 +251,9 @@ export function useSwipe(reveal: number, { held = false, onCommit, leaves = fals
   const bind = {
     onPointerDown: (event: PointerEvent<HTMLElement>) => {
       gesture.current = null;
-      if (leaving || moving) return;
+      // Presses wait while a step slides; one made while the element eases back takes it from there.
+      if (leaving || moving?.steps) return;
+      if (moving) setMoving(null);
       if (step) {
         // The screen's edges (its root, which the motion gate marks) are the platform's.
         const screen = (event.currentTarget.closest('[data-motion]') ?? document.documentElement).getBoundingClientRect();
@@ -317,6 +328,7 @@ export function useSwipe(reveal: number, { held = false, onCommit, leaves = fals
       translate: `calc(${-moving.way} * 100% * var(--ui-motion-move)) 0`,
       transition: 'translate calc(var(--ui-motion-standard) * var(--ui-motion-move)) var(--ui-ease-standard)',
     }
+    : landed ? { transition: 'none' }
     : dragged === null ? undefined : { translate: `${dragged}px 0` };
 
   return {

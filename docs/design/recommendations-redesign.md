@@ -69,6 +69,11 @@ Status: **exploring** (#481).
   across the second; the Queue without a queued ISF. Revised on the locked
   Overview and Queue screens. The operator: "Go for it. Locked"
   (2026-10-20).
+- **Phone gestures locked 2026-10-23** (#612, #613, §2.5): Storybook
+  `Foundations/Motion` → Snooze swipe at commit `63020278`: the smoother row
+  swipe, with its resistance of 0.3 past the reveal, and the amendment's open
+  card swipe, closing card and Day swipe, to be built by #614 on the locked
+  Queue and Day screens. The operator: "locked looks good." (2026-10-23).
 
 This document is the durable record of the redesign. Sections 1–3 are what the
 build will be checked against once they are approved. The appendix keeps the
@@ -111,13 +116,13 @@ Each row lists a screen's states. Labels only; no state uses prose.
 
 | Screen | Default | Empty | Loading | Error | Other states |
 |---|---|---|---|---|---|
-| Queue | Ranked cards, top card expanded | "0 patterns" label | Card skeletons | Unavailable + Retry | A card expanded; mid-swipe; just snoozed (bar "Snoozed until <date>" + Undo, §2.5 2026-10-20); just focused (bar "Focus started" + Changes, §2.5 2026-10-20); just Done (bar "Waiting for pump" + Undo, §2.5); a Setting Not on pump (§2.5); a Habit open, and pinned (§2.5, 2026-10-19); Snoozed footer when N > 0 |
+| Queue | Ranked cards, top card expanded | "0 patterns" label | Card skeletons | Unavailable + Retry | A card expanded; lead card closed (nothing open) (§2.5, 2026-10-23); mid-swipe; a card mid-swipe (§2.5, 2026-10-23); just snoozed (bar "Snoozed until <date>" + Undo, §2.5 2026-10-20); just focused (bar "Focus started" + Changes, §2.5 2026-10-20); just Done (bar "Waiting for pump" + Undo, §2.5); a Setting Not on pump (§2.5); a Habit open, and pinned (§2.5, 2026-10-19); Snoozed footer when N > 0 |
 | Queue · Snoozed | Each snoozed item as its Queue row, plus "Until <date>" + Restore | Not reachable (the footer is hidden at 0) | — | Unavailable + Retry | Restored (row leaves) |
 | Queue · setting detail | current → estimate, range, n, chart | — | Chart skeleton | Unavailable | — (no queued ISF, §2.5 2026-10-20 #564) |
 | Changes | The current Trial (head, trace, ranges, Mean/GMI/CV, Basal vs Pump profile) or Focus, then the Previous row with its count | "No active change" label; no Previous row at 0 | Skeleton | Unavailable + Retry | Maturing, every module as its data forms, each glucose module with its Readings, each Δ green or red by its direction (§2.5, 2026-10-19, colour shows direction); first hours (an empty after: Meals after 0, each after blank) (§2.5, 2026-10-19); Matured (result pill); a carb ratio Trial (Meals before / after; its trace meal by meal under three meals); a whole-profile switch (each setting it moved); **End** (Focus: anytime; Trial: once matured) → confirm sheet → ended; Waiting for pump rows after a Done, between the current change and Previous (§2.5) |
 | Changes · Previous | Every previous change, newest first, no cutoff: setting and block, date, before → after per setting, the result where one was saved | Not reachable (the row is hidden at 0) | — | Unavailable + Retry | — |
 | Overview | 14 d selected; one scrolling page, the summary (window switch, date span, In range, metrics, glucose profile) its first screenful, the basal estimate below, then Meal size (§2.5, 2026-10-19; 2026-10-20 #564) | "No data" label per window, in the basal estimate when none is served, and in Meal size when no meal is counted | Skeleton; a window not yet read shows its profile's and the basal estimate's skeletons; Meal size its skeleton until read | Unavailable + Retry | 30 d / 90 d selected; a previous period without data (the span alone, no changes); Meal size with a size of one meal, or of none ("–"), or with no At 3 h ("–"), and an At 3 h read from fewer than its size's meals ("n of N") (§2.5, 2026-10-20 #602) |
-| Day | Latest day with data | "No data" for a day without readings | Chart skeleton | Unavailable + Retry | Month dropped down from the header's day; desktop: the selected week as a ribbon; the Lows row when its count > 0, and under it the Rises row when its count > 0 (§2.5, 2026-10-14 Rises) |
+| Day | Latest day with data | "No data" for a day without readings | Chart skeleton | Unavailable + Retry | Stepping to the next or previous day (skeleton) (§2.5, 2026-10-23); month dropped down from the header's day; desktop: the selected week as a ribbon; the Lows row when its count > 0, and under it the Rises row when its count > 0 (§2.5, 2026-10-14 Rises) |
 | Day · Prompts | One prompt of the row's kind, a Low or a Rise, "n / N" among that kind, titled Lows or Rises | Not reachable (the row is hidden at 0) | — | Not saved + Retry | Yes → grams field and keyboard; mid-swipe Not sure; a Rise: Yes · No and Not sure, no False low |
 | Day · Log carbs | Grams field focused, Time = now | — | Saving | Not saved + Retry | Time edited |
 | Settings | Three rows with inline status, and the Token field (§2.5) | — | Skeleton + Token field (§2.5) | Unavailable + Retry + Token field (§2.5) | Sync OK (no badge) / Failed (badge) |
@@ -141,8 +146,11 @@ Each row lists a screen's states. Labels only; no state uses prose.
 | Touch (phone, tablet) | Desktop |
 |---|---|
 | Tap a Queue card to expand it in place | Click or ↑/↓ to select in the list; the detail shows in the right pane |
-| Swipe a Queue row: it follows the finger, and released past half its Snooze reveal it snoozes, as the Snooze text action beneath Focus does (a Setting card: at its foot), with the same bar and Undo; short of half it settles back | The same Snooze text action; shortcut S |
-| Swipe a Prompt: released past half its Not sure reveal it records Not sure and moves to the next, as the Not sure text action beneath its answers does; short of half it settles back | A last button, **Not sure** (a Low's fourth, a Rise's third) |
+| Swipe a Queue row: it follows the finger once it has moved 10 px across (down first is the page's scroll), resisted past its Snooze reveal, which fills with the accent's tint once a release would snooze; released past half the row's width, or on a leftward flick past the reveal, the row slides off and closes up, then it snoozes, with the bar and Undo; otherwise it eases back (§2.5, 2026-10-23) | The Snooze text action on the open card; shortcut S |
+| Swipe an open Pattern, Setting or habit card to Snooze, as a row swipes; the phone has no Snooze text action (§2.5, 2026-10-23) | The Snooze text action beneath Focus or Done; shortcut S |
+| Tap an open card's chevron to close it to its row, leaving nothing open; tap the row to open it again (§2.5, 2026-10-23) | Click or ↑/↓ to select; the detail pane always shows the selected item |
+| Swipe a Prompt, by a Queue row's rule: released past half the card's width, or on a flick, it records Not sure and moves to the next, as the Not sure text action beneath its answers does; otherwise it eases back (§2.5, 2026-10-23) | A last button, **Not sure** (a Low's fourth, a Rise's third) |
+| Swipe the Day body left or right to step to the next or previous day with data, its skeleton while it loads, across months; the screen's edges stay the platform's (§2.5, 2026-10-23) | The month drop-down, and the selected week's ribbon |
 | Tap the day in the Day header to drop the month down, its weeks as gapless ribbons | The same drop-down, a popover under the day; the selected week stays in view as a ribbon |
 | Pick a day in the month (it closes); the scrim closes it unchanged | Pick a day in the month or the week in view; Escape closes it unchanged |
 | Bottom sheet for Log carbs, on the system keyboard | Popover anchored to "+ Log carbs" |
@@ -152,8 +160,10 @@ Each row lists a screen's states. Labels only; no state uses prose.
 
 Desktop has no hover-revealed actions, and every action has a visible control.
 Every touch gesture has a visible equivalent on the phone as well: a swipe is a
-shortcut, never the only way (Snooze is also a text action on the open
-card). Back from a drill-down is the "‹ Parent" control in the screen header;
+shortcut, never the only way, with one exception, the phone's Snooze, which a
+swipe alone reaches (§2.5, 2026-10-23: the operator's decision, kept after
+this rule and WCAG 2.5.7 were raised). Day's swipe has the month drop-down.
+Back from a drill-down is the "‹ Parent" control in the screen header;
 the system's own edge-swipe back is left to the platform, never overridden.
 
 ### 1.5 Glossary (every user-facing noun and verb)
@@ -1372,6 +1382,59 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
     for A becoming like a full-size thing that we get when we drill in"). The
     engine serves no such curve yet.
 
+- **2026-10-23 — the phone's gestures (#612, #613).** Four decisions the
+  operator took on 2026-10-23 (#612). The first is mocked as the
+  `Foundations/Motion` → Snooze swipe story for him to replay before anything
+  else changes; #614 builds the other three against this page. §1.3, §1.4 and
+  §4.2 follow.
+  1. **A smoother swipe** (ADR 613), one hook and one rule for a Queue row's
+     Snooze and a Prompt's Not sure. A press becomes a swipe once it has
+     moved 10 px and more across than down; a press that moves down first is
+     the page's scroll for the rest of it, and never swipes. The row then
+     follows the finger one to one up to its reveal, and past it with
+     resistance: it moves 0.3 of the finger's further travel, the fraction
+     the operator approved in the replay. It is never drawn right of rest. A
+     release commits when the finger has travelled half the row's width, or
+     is moving left faster than 500 px/s over its last 100 ms having
+     travelled the reveal's full width; otherwise the row eases back over the
+     emphasized duration on the standard easing. When the system takes the
+     gesture (a pointer cancel) the row always eases back. This replaces the
+     2026-10-13 motion amendment's rule of half the reveal. While a release
+     would commit, the reveal is filled with the accent's tint (`--primary` at
+     18%, its icon and label in the accent, the tab bar's indicator, §2.2),
+     over the fast duration; it empties if the finger comes back. On a commit
+     a Queue row leaves before it acts: it slides off to the left over the
+     standard duration on a new accelerating easing, then its height closes
+     over the emphasized duration on the standard easing so the rows below
+     rise into its place, and only then is it snoozed and the bar rises. A
+     Prompt records Not sure at release and keeps its exit, the next prompt
+     coming in. The easing is `--ui-ease-accelerate`,
+     `cubic-bezier(.3, 0, 1, 1)` (Material 3's standard-accelerate), which
+     never overshoots: the 2026-10-13 motion amendment's two easings become
+     three, and no duration is added. Under reduced motion nothing travels
+     after release: a commit fades the row out where the finger left it over
+     the fast duration and closes its height at once; an ease-back is
+     instant.
+  2. **An open card swipes to Snooze, and the phone has no Snooze text
+     action.** An open Pattern, Setting or habit card swipes to Snooze as a
+     row does, by the same rule, its reveal sized for the card. On the phone
+     the Snooze text action beneath Focus or Done goes; desktop keeps it, with
+     its shortcut S. The conflict was raised with the operator: §1.4's rule
+     that a swipe is a shortcut, never the only way, and WCAG 2.5.7 (Dragging
+     Movements), which asks for a single-pointer alternative to a drag. He
+     kept the decision, so on the phone Snooze is reached only by a swipe.
+     This supersedes, on the phone, the 2026-10-13 amendment headed "Snooze
+     has a visible control on the phone".
+  3. **The open card closes to its row.** On the phone the open card's
+     chevron is a control: it closes the card to its row, leaving nothing
+     open, and tapping the row opens it again. Closed is the screen's own
+     state, not a preference: a tab change opens the top card again.
+  4. **Day steps by a horizontal swipe.** A horizontal swipe on the Day body
+     steps to the previous or the next day with data, its
+     skeleton while that day loads, across month boundaries through the day
+     navigator. The screen's edges are left to the platform's own gestures.
+     The month drop-down is the visible equivalent on both layouts.
+
 - **2026-10-23 — the phone trace legend holds one row, and the card is
   titled Climb by meal size (#611).** During a maturing carb ratio Trial, the
   meal trace's After key dropped alone onto a third row at 320 px, under
@@ -1513,7 +1576,9 @@ unless noted. Loading is a skeleton of the component's own shape.
    the good way (§2.5, 2026-10-19). The row is two lines with or without it,
    and the chevron sits on the title line (§2.5, 2026-10-14).
    - States: default (multi-cause, no cause named); selected (desktop);
-     mid-swipe (snooze reveal); single cause (the same row; the no-cause
+     mid-swipe (snooze reveal); the reveal filled with the accent's tint
+     while a release would snooze; leaving (sliding off, then closing up,
+     before it snoozes) (§2.5, 2026-10-23); single cause (the same row; the no-cause
      state is retired with the overnight Pattern, ADR 499);
      with impact, high (Peak) or
      low (Nadir); without impact (no trailing value); habit (the Pattern
@@ -1544,8 +1609,11 @@ unless noted. Loading is a skeleton of the component's own shape.
      watched; multi-cause (no Focus, the chart a drill-down row with a
      trailing "›", drill-down.md); multi-cause pinned ("Focus" over the
      watched cause's served title, §2.2 Caption + value pair); loading.
-   - Header row: the title and (phone) the collapse chevron. Snooze is a
-     text action centred beneath Focus (or the Focus pill), 16 px below it.
+   - Header row: the title and (phone) the collapse chevron, a control that
+     closes the card to its row (§2.5, 2026-10-23). Snooze is a text action
+     centred beneath Focus (or the Focus pill), 16 px below it, on desktop
+     only; on the phone the card swipes to Snooze as a row does, sized for
+     the card (§2.5, 2026-10-23).
    - Fields: `outcome_patterns[].k, n, wide`; the count sentence (count,
      denominator, noun); the case file's `traces` (the chart, and the impact
      line: each cohort's highest or lowest served median at or after minute 0).
@@ -1557,7 +1625,9 @@ unless noted. Loading is a skeleton of the component's own shape.
     2026-10-20), drawn only while the served admission allows one. No
     Uncertain (the engine serves none for a habit) and no impact line. Pinned,
     the Focus pill takes Focus's place; Snooze is the text action centred 16 px
-    beneath either.
+    beneath either on desktop. On the phone the card swipes to Snooze as a row
+    does, with no Snooze text action, and its chevron closes it to its row
+    (§2.5, 2026-10-23).
     - States: episodes drawn (eight or fewer); median and band (more than
       eight); pinned; no Focus while a change is watched; loading.
     - Fields: `guidance.candidates[subject=habit:<lever>].title`; the habit's
@@ -1591,7 +1661,9 @@ unless noted. Loading is a skeleton of the component's own shape.
       Trial's served block (#506), whether or not it starts where the Trial
       starts; Not on pump (the StatePill on the title line, after the block).
     - Done: full width at the card's foot, where Focus sits on a PatternCard.
-      Snooze: a text action centred 16 px beneath Done.
+      Snooze: a text action centred 16 px beneath Done, on desktop only; on
+      the phone the card swipes to Snooze as a row does, sized for the card,
+      and its chevron closes it to its row (§2.5, 2026-10-23).
     - Fields: `guidance.candidates[].acknowledgment.state` (`not_on_pump`).
     - Fields: `analyze.basal[slot].current, recommended, estimate.value,
       estimate.lo, hi, days, evidence.night_roster[].delivered_rate`;
@@ -1789,10 +1861,11 @@ unless noted. Loading is a skeleton of the component's own shape.
     line with the nadir ringed, Yes · No · False low; a Rise shows
     "▲ Rise · <date time> · <mg/dL>", its peak's, over the 180 line with the
     peak ringed, Yes · No. On phone Not sure is a text action centred beneath
-    them, as Snooze sits beneath Focus (the swipe is its shortcut).
+    them (the swipe is its shortcut, by a Queue row's rule, §2.5 2026-10-23).
     - States: unanswered; Yes recorded (a checkmark on Yes, labelled "Recorded"
       for screen readers only, plus the optional grams field); mid-swipe (Not
-      sure); each a Low or a Rise.
+      sure); the reveal filled with the accent's tint while a release would
+      record Not sure (§2.5, 2026-10-23); each a Low or a Rise.
     - Fields: `prompts[].detector, anchor_t, key_t, key_bg, cgm`; answers
       posted to `/api/prompts/answer` with `detector` and `anchor_t`; grams via
       `PATCH /api/carbs/{id}`.

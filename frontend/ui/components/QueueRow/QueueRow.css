@@ -123,21 +123,34 @@
 .ui-qrow--loading .ui-qrow__body { display: flex; flex-direction: column; gap: 10px; }
 
 /* Mid-swipe: the row slides left over the Snooze reveal, which is drawn only
-   while the row is off its rest. */
+   while the row is off its rest. The reveal lies under the whole row, so it
+   shows from the row's trailing edge to the right edge however far the row
+   goes, its icon and label in its right-hand 88 px column. Once a release
+   would commit it fills with the accent's tint, the tab bar's indicator
+   (§2.2), over the fast duration, at once under reduced motion. */
 .ui-qrow-swipe--revealed { position: relative; overflow: hidden; }
 .ui-qrow-swipe__reveal {
   position: absolute;
-  top: 1px;
-  right: 0;
-  bottom: 0;
+  inset: 1px 0 0;
+  display: flex;
+  justify-content: flex-end;
+  background: var(--wk-surface-rail);
+  color: var(--wk-ink);
+  font: var(--ui-weight-strong) var(--ui-type-caption) / 1 var(--ui-font);
+  transition:
+    background-color calc(var(--ui-motion-fast) * var(--ui-motion-move)) var(--ui-ease-standard),
+    color calc(var(--ui-motion-fast) * var(--ui-motion-move)) var(--ui-ease-standard);
+}
+.ui-qrow-swipe__action {
   width: 88px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 4px;
-  background: var(--wk-surface-rail);
-  color: var(--wk-ink);
-  font: var(--ui-weight-strong) var(--ui-type-caption) / 1 var(--ui-font);
+}
+.ui-qrow-swipe--filled .ui-qrow-swipe__reveal {
+  background: color-mix(in srgb, var(--primary) 18%, transparent);
+  color: var(--primary);
 }
 .ui-qrow-swipe--open .ui-qrow { translate: -88px 0; }

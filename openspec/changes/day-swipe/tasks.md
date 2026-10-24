@@ -48,5 +48,5 @@ Quote only words Connor wrote on #612, #614, #619 or this change's pull request,
 
 ## 7. Verify and evidence
 
-- [ ] 7.1 Run each complete suite of the pull-request gate once, on the commit that will be pushed
-- [ ] 7.2 Attach to the pull request: before/after frames for 0.1's stories; a screen recording or frame strip of the Day swipe replay and of it under reduced motion; the precheck output; the base SHA. Ask Connor to replay `Foundations/Motion` → Day swipe and say "locked"; 6.5 and the approved values in 1.6 and 6.1 land after his word, in the same pull request
+- [x] 7.1 Run each complete suite of the pull-request gate once, on the commit that will be pushed
+- [x] 7.2 Attach to the pull request: before/after frames for 0.1's stories; a screen recording or frame strip of the Day swipe replay and of it under reduced motion; the precheck output; the base SHA. Ask Connor to replay `Foundations/Motion` → Day swipe and say "locked"; 6.5 and the approved values in 1.6 and 6.1 land after his word, in the same pull request

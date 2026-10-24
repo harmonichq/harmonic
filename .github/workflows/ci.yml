@@ -247,11 +247,12 @@ jobs:
         run: >-
           uv run python scripts/smoke_app.py --then
           node --test frontend/ui/app/live.contract.test.mjs frontend/app.browser.test.mjs
-      # Named case stores for what the showcase does not hold: a queued
-      # correction factor, an active basal Trial in Changes, Day findings of
-      # five kinds, a queued carb ratio, a Pattern served as its habit whose
-      # count its habit's own count would understate, and a maturing carb ratio
-      # Trial retained by an earlier release (#554).
+      # Named case stores for what the showcase does not hold, in run order: an
+      # active basal Trial in Changes, a maturing carb ratio Trial retained by an
+      # earlier release (#554), Day findings of five kinds, a queued carb ratio,
+      # a Pattern served as its habit whose count its habit's own count would
+      # understate, a standalone habit's card pinned into a Focus and ended, and
+      # a Pattern that keeps its row with two causes.
       - name: Contract-test the live adapter on active Trials, Day findings, a queued I:C, a collapsed Pattern and a two-cause Pattern
         run: |
           uv run python scripts/smoke_app.py --case c3-trial --then node --test frontend/ui/app/live.contract.test.mjs

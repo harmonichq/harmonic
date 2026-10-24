@@ -21,7 +21,10 @@ import { PatternCard } from './PatternCard';
 //   end of the magnitude line.
 // - Empty: a trace chart with nothing to draw says "No data" (a served-shape
 //   variant: the history the generator builds always has readings).
-// Phone at 390, desktop at the detail pane's 720 reading width.
+// Phone at 390, desktop at the detail pane's 720 reading width. The Queue
+// decides which Snooze a layout gets (ADR 614): a phone story passes no Snooze,
+// the card's swipe being the screen's, and presses the chevron that closes the
+// card to its row; a desktop story passes Snooze and draws no chevron.
 const meta = {
   title: 'PatternCard',
   component: PatternCard,
@@ -41,28 +44,51 @@ const drawn = (traces: number, bands: number): Story['play'] => async ({ canvasE
   await expect(canvasElement.querySelector('.ui-chart__typical .ui-chart__series-median')).not.toBeNull();
 };
 
+type Called = { onCollapse: ReturnType<typeof fn>; onSnooze: ReturnType<typeof fn> };
+
+/** Phone: no Snooze text action, and the chevron, an icon button named by the
+ *  card's title and expanded, closes the card (`then` runs first). */
+const phone = (then?: Story['play']): Story['play'] => async (context) => {
+  await then?.(context);
+  const { args, canvasElement } = context;
+  const canvas = within(canvasElement);
+  await expect(canvas.queryByRole('button', { name: 'Snooze' })).toBeNull();
+  const chevron = canvas.getByRole('button', { expanded: true });
+  await expect(chevron.dataset.role).toBe('icon');
+  await expect(chevron.getAttribute('aria-labelledby')).toBe(canvas.getByRole('heading', { level: 2 }).id);
+  await userEvent.click(chevron);
+  await expect((args as unknown as Called).onCollapse).toHaveBeenCalledOnce();
+};
+/** Desktop: the Snooze text action, and no chevron. */
+const desktop = (then?: Story['play']): Story['play'] => async (context) => {
+  await then?.(context);
+  const canvas = within(context.canvasElement);
+  await expect(canvas.getByRole('button', { name: 'Snooze' })).toBeInTheDocument();
+  await expect(canvas.queryByRole('button', { expanded: true })).toBeNull();
+};
+
 const episodes = patternState('traces_episodes');
 const band = patternState('traces_band');
 
 export const Episodes: Story = {
-  args: { data: episodes },
-  play: drawn(episodes.traces!.episodes!.length, 0),
+  args: { data: episodes, onCollapse: fn() },
+  play: phone(drawn(episodes.traces!.episodes!.length, 0)),
 };
-export const EpisodesDesktop: Story = { args: { data: episodes, collapsible: false }, parameters: DESKTOP };
-export const Band: Story = { args: { data: band }, play: drawn(0, 1) };
-export const BandDesktop: Story = { args: { data: band, collapsible: false }, parameters: DESKTOP };
-export const Uncertain: Story = { args: { data: patternState('uncertain') } };
+export const EpisodesDesktop: Story = { args: { data: episodes, onSnooze: fn() }, parameters: DESKTOP, play: desktop() };
+export const Band: Story = { args: { data: band, onCollapse: fn() }, play: phone(drawn(0, 1)) };
+export const BandDesktop: Story = { args: { data: band, onSnooze: fn() }, parameters: DESKTOP, play: desktop() };
+export const Uncertain: Story = { args: { data: patternState('uncertain'), onCollapse: fn() }, play: phone() };
 
 /** The served admission decides whether Focus is drawn: never a story's flag. */
 const served = (state: 'focusable' | 'pinned' | 'drill_down' | 'drill_down_pinned') => ({
   data: patternState(state), focusable: focusable(patternStore(state).store),
 });
 export const Focus: Story = {
-  args: { ...served('focusable'), onPin: fn(), onSnooze: fn() },
-  play: async ({ args, canvasElement }) => {
+  args: { ...served('focusable'), onPin: fn(), onCollapse: fn() },
+  play: phone(async ({ args, canvasElement }) => {
     await userEvent.click(within(canvasElement).getByRole('button', { name: 'Focus' }));
     await expect((args as unknown as { onPin: ReturnType<typeof fn> }).onPin).toHaveBeenCalledOnce();
-  },
+  }),
 };
 
 /** Pinned on a multi-cause Pattern: "Focus" over its watched cause's served
@@ -73,33 +99,37 @@ const pair = (cause: string): Story['play'] => async ({ canvasElement }) => {
   await expect(within(canvasElement).queryByRole('button', { name: 'Focus' })).toBeNull();
 };
 export const Pinned: Story = {
-  args: served('pinned'), play: pair(patternState('pinned').focusedCause!),
+  args: { ...served('pinned'), onCollapse: fn() }, play: phone(pair(patternState('pinned').focusedCause!)),
 };
 
-/** Multi-cause: no Focus, though one could start; the chart opens the drill-down. */
+/** Multi-cause: no Focus, though one could start; the chart opens the drill-down.
+ *  The chart is named by the card's title, as the phone's chevron is, so it is
+ *  reached by its element. */
+const multiCause: Story['play'] = async ({ args, canvasElement }) => {
+  const canvas = within(canvasElement);
+  await expect(focusable(patternStore('drill_down').store)).toBe(true);
+  await expect(canvas.queryByRole('button', { name: 'Focus' })).toBeNull();
+  const chart = canvasElement.querySelector<HTMLElement>('.ui-pcard__open')!;
+  await expect(chart).toBe(canvas.getAllByRole('button', { name: patternState('drill_down').title })
+    .find((button) => !button.hasAttribute('aria-expanded')));
+  await expect(chart.textContent!.endsWith('›')).toBe(true);
+  await userEvent.click(chart);
+  await expect((args as unknown as { onOpen: ReturnType<typeof fn> }).onOpen).toHaveBeenCalledOnce();
+};
 export const MultiCause: Story = {
-  args: { ...served('drill_down'), onOpen: fn(), onSnooze: fn() },
-  play: async ({ args, canvasElement }) => {
-    const canvas = within(canvasElement);
-    await expect(focusable(patternStore('drill_down').store)).toBe(true);
-    await expect(canvas.queryByRole('button', { name: 'Focus' })).toBeNull();
-    const chart = canvas.getByRole('button', { name: patternState('drill_down').title });
-    await expect(chart.textContent!.endsWith('›')).toBe(true);
-    await userEvent.click(chart);
-    await expect((args as unknown as { onOpen: ReturnType<typeof fn> }).onOpen).toHaveBeenCalledOnce();
-  },
+  args: { ...served('drill_down'), onOpen: fn(), onCollapse: fn() }, play: phone(multiCause),
 };
 export const MultiCauseDesktop: Story = {
-  args: { ...served('drill_down'), onOpen: fn(), onSnooze: fn(), collapsible: false }, parameters: DESKTOP,
+  args: { ...served('drill_down'), onOpen: fn(), onSnooze: fn() }, parameters: DESKTOP, play: desktop(multiCause),
 };
 export const MultiCausePinned: Story = {
-  args: { ...served('drill_down_pinned'), onSnooze: fn() }, play: pair('Late bolus'),
+  args: { ...served('drill_down_pinned'), onCollapse: fn() }, play: phone(pair('Late bolus')),
 };
 export const Empty: Story = {
-  args: { data: pattern(QUEUE_TRACES_EMPTY, fixtures.states.traces_episodes.pattern) },
-  play: async ({ canvasElement }) => {
+  args: { data: pattern(QUEUE_TRACES_EMPTY, fixtures.states.traces_episodes.pattern), onCollapse: fn() },
+  play: phone(async ({ canvasElement }) => {
     await expect(canvasElement.querySelector('.ui-chart__none')!.textContent).toBe('No data');
     await expect(canvasElement.querySelector('svg.ui-chart__svg')).toBeNull();
-  },
+  }),
 };
 export const Loading: Story = { args: { loading: true } };

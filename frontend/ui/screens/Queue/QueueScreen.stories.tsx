@@ -28,6 +28,10 @@ import { QueueScreen, type QueueScreenProps, type QueueWrites, type Refused } fr
 //   still state; and its swipe played through (ADR 613): a short drag, a slow
 //   drag past half, a flick, a scroll, a cancel, a row the snooze does not
 //   take, a write that fails, and reduced motion.
+// - The phone's open card (§2.5, 2026-10-23; ADR 614): it swipes to Snooze as
+//   a row does and draws no Snooze text action; held mid-swipe; a short drag
+//   that eases back; a drag begun on Done that presses nothing; its chevron
+//   closing it to its row, and the screen opening with nothing open.
 // - Done (#518): a fresh wearer's basal card Done and undone, and the same card
 //   back Not on pump after an unchanged sync.
 // - A standalone habit (ADR 528): open in the wearer's Queue beside its
@@ -37,8 +41,8 @@ import { QueueScreen, type QueueScreenProps, type QueueWrites, type Refused } fr
 // - A multi-cause Pattern (ADR 594): no Focus, the "›" on its chart, which opens
 //   its drill-down; and pinned on a cause, "Focus" over that cause's title.
 // - Every store that serves a watched change offers no Focus on any card.
-// Two desktop plays: selecting a row opens it; Snooze shows the bar, and Undo
-// puts the item back.
+// Two desktop plays: selecting a row opens it; Snooze, the text action, shows
+// the bar, and Undo puts the item back.
 // - Live writes (#495, #610): one the engine refuses holds "Not saved" until
 //   Retry saves it, and of two snoozes, the second refused, the first stays
 //   snoozed while the second is back.
@@ -232,21 +236,6 @@ export const SnoozeUndoDesktop: Story = {
   },
 };
 
-// Phone snooze has a visible control as well as the swipe: the play presses
-// the open card's Snooze text action beneath Focus, sees the bar, and undoes it.
-export const SnoozeUndoPhone: Story = {
-  args: { layout: 'phone', store: 'wearer-pinned', open: fixtures.snooze.subject, snooze },
-  parameters: { frame: FRAMES.phone },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await expectNoFocus(canvasElement, 'wearer-pinned');
-    await userEvent.click(canvas.getByRole('button', { name: 'Snooze' }));
-    await expect(canvas.getByRole('status')).toHaveTextContent(snoozedBar);
-    await userEvent.click(canvas.getByRole('button', { name: 'Undo' }));
-    await expect(canvas.queryByRole('status')).toBeNull();
-  },
-};
-
 // The swipe is Snooze's shortcut on a phone row (ADR 613). A slow drag short
 // of half the row's width never fills the reveal and eases back; a slow drag
 // past half fills it before the finger lifts, and the row slides off and
@@ -260,10 +249,15 @@ const rowTitled = (canvasElement: HTMLElement, title: string) =>
   [...canvasElement.querySelectorAll<HTMLElement>('.ui-queue__list .ui-qrow')]
     .find((each) => each.textContent?.includes(title)) ?? null;
 const swipedRow = (canvasElement: HTMLElement) => rowTitled(canvasElement, fixtures.snooze.title);
-/** The row's reveal filled: marked so, and drawn in the accent. */
+/** The phone's open card (a Pattern's, a habit's or a Setting's), drawn or leaving. */
+const openCard = (canvasElement: HTMLElement) =>
+  canvasElement.querySelector<HTMLElement>('.ui-queue__open :is(.ui-pcard, .ui-scard)');
+/** The swipe a row or an open card moves in (SnoozeSwipe). */
+const swipeOf = (moving: HTMLElement) => moving.closest<HTMLElement>('.ui-qrow-swipe')!;
+/** The reveal filled: marked so, and drawn in the accent. */
 const filled = (row: HTMLElement) => {
-  const reveal = row.parentElement!.querySelector<HTMLElement>('.ui-qrow-swipe__reveal');
-  if (!row.parentElement!.classList.contains('ui-qrow-swipe--filled') || !reveal) return false;
+  const reveal = swipeOf(row).querySelector<HTMLElement>('.ui-qrow-swipe__reveal');
+  if (!swipeOf(row).classList.contains('ui-qrow-swipe--filled') || !reveal) return false;
   const probe = document.createElement('i');
   probe.style.color = 'var(--primary)';
   reveal.append(probe);
@@ -281,7 +275,7 @@ const filledAtRelease = (row: HTMLElement) => {
  *  class change of the row's swipe lands. */
 const everFilled = (row: HTMLElement) => {
   let seen = false;
-  const swipe = row.parentElement!;
+  const swipe = swipeOf(row);
   const watch = new MutationObserver((changes) => {
     seen ||= swipe.classList.contains('ui-qrow-swipe--filled')
       || changes.some((change) => change.oldValue?.includes('ui-qrow-swipe--filled'));
@@ -318,16 +312,18 @@ const atRest = (canvasElement: HTMLElement, row: () => HTMLElement | null) => wa
   expect(row()!.closest('[data-closing]')).toBeNull();
 }, { timeout: 2000 });
 
-/** A swipe that snoozes: the row leaves, and the bar rises only once it has gone. */
-const snoozedBySwipe = async (canvasElement: HTMLElement, pace: 'slow' | 'flick') => {
+/** A swipe that snoozes: the row (or the open card) leaves, and the bar rises
+ *  only once it has gone. */
+const snoozedBySwipe = async (canvasElement: HTMLElement, pace: 'slow' | 'flick',
+  moving: () => HTMLElement | null = () => swipedRow(canvasElement)) => {
   const canvas = within(canvasElement);
-  const row = swipedRow(canvasElement)!;
+  const row = moving()!;
   const atRelease = filledAtRelease(row);
   await (pace === 'slow' ? swipe(row, -240, 16, 'slow') : swipe(row, -120, 4, 'flick'));
   if (pace === 'slow') await expect(atRelease()).toBe(true);
   const frames = await eachFrame(() => ({
     bar: canvas.queryByRole('status') !== null,
-    drawn: swipedRow(canvasElement) !== null,
+    drawn: moving() !== null,
     leaving: canvasElement.querySelector('.ui-qrow-swipe[data-closing]') !== null,
   }), (seen) => seen.bar);
   await expect(frames.some((each) => each.leaving)).toBe(true);
@@ -429,12 +425,141 @@ export const SwipeReducedPhone: Story = {
     const frames = await eachFrame(() => ({
       bar: canvas.queryByRole('status') !== null,
       left: row.isConnected ? row.getBoundingClientRect().left : null,
-      opacity: row.isConnected ? Number(getComputedStyle(row).opacity) : null,
+      opacity: row.isConnected ? Number(getComputedStyle(row.closest('.ui-swipe-settle')!).opacity) : null,
     }), (seen) => seen.bar);
     await expect(left).not.toBeNull();
     await expect(frames.every((each) => each.left === null || each.left === left)).toBe(true);
     await expect(frames.some((each) => each.opacity !== null && each.opacity < 1)).toBe(true);
     await expect(canvas.getByRole('status')).toHaveTextContent(snoozedBar);
+  },
+};
+
+// The phone's open card swipes to Snooze as a row does, and draws no Snooze
+// text action (§2.5, 2026-10-23; ADR 614). A slow drag past half fills its
+// reveal before the finger lifts; the card slides off and closes up before the
+// bar rises; Undo puts it back, open.
+const snoozedCard = (canvasElement: HTMLElement) => {
+  const card = openCard(canvasElement);
+  return card?.querySelector('h2')?.textContent === fixtures.snooze.title ? card : null;
+};
+export const SnoozeUndoPhone: Story = {
+  args: { layout: 'phone', store: 'wearer-pinned', open: fixtures.snooze.subject, snooze },
+  parameters: { frame: FRAMES.phone },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expectNoFocus(canvasElement, 'wearer-pinned');
+    await expect(canvas.queryByRole('button', { name: 'Snooze' })).toBeNull();
+    await expect(snoozedCard(canvasElement)).not.toBeNull();
+    await snoozedBySwipe(canvasElement, 'slow', () => snoozedCard(canvasElement));
+    await userEvent.click(canvas.getByRole('button', { name: 'Undo' }));
+    await expect(canvas.queryByRole('status')).toBeNull();
+    await atRest(canvasElement, () => snoozedCard(canvasElement));
+  },
+};
+
+// A row tapped while the swiped card is still leaving opens its own card, and
+// the card that left is still snoozed once its exit ends: the bar, with Undo,
+// and the item gone from the list.
+export const CardSwipeThenRowTapPhone: Story = {
+  args: { layout: 'phone', store: 'wearer-pinned', open: fixtures.snooze.subject, snooze },
+  parameters: { frame: FRAMES.phone },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const tapped = ranking('wearer-pinned').find((item) => item.subject !== fixtures.snooze.subject
+      && ranking('wearer-pinned-snoozed').some((after) => after.subject === item.subject))!;
+    await swipe(snoozedCard(canvasElement)!, -240, 16, 'slow');
+    await expect(canvasElement.querySelector('.ui-qrow-swipe[data-closing]')).not.toBeNull();
+    await userEvent.click(rowTitled(canvasElement, tapped.data.title)!);
+    await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent(snoozedBar), { timeout: 3000 });
+    await expect(within(canvas.getByRole('status')).getByRole('button', { name: 'Undo' })).toBeInTheDocument();
+    await expect(rowTitled(canvasElement, fixtures.snooze.title)).toBeNull();
+    await expect(snoozedCard(canvasElement)).toBeNull();
+    await expect(canvas.getByRole('heading', { level: 2, name: new RegExp(tapped.data.title) })).toBeInTheDocument();
+  },
+};
+
+// The open card held mid-swipe over its reveal, which runs the card's height.
+export const CardMidSwipePhone: Story = {
+  args: { layout: 'phone', store: 'wearer', swiping: ranking('wearer')[0].subject },
+  parameters: { frame: FRAMES.phone },
+  play: async ({ canvasElement }) => {
+    const card = openCard(canvasElement)!;
+    const reveal = swipeOf(card).querySelector<HTMLElement>('.ui-qrow-swipe__reveal')!;
+    await waitFor(() => expect(card.getBoundingClientRect().left).toBe(restLeft(canvasElement) - 88));
+    await expect(reveal.getBoundingClientRect().height).toBe(card.getBoundingClientRect().height);
+    await expect(reveal.textContent).toBe('Snooze');
+  },
+};
+
+// A short drag on the open card eases back: the reveal never fills, and
+// nothing is snoozed.
+export const CardSwipeCancelPhone: Story = {
+  args: { layout: 'phone', store: 'wearer-pinned', open: fixtures.snooze.subject, snooze },
+  parameters: { frame: FRAMES.phone },
+  play: async ({ canvasElement }) => {
+    const card = () => snoozedCard(canvasElement);
+    const filledEver = everFilled(card()!);
+    await swipe(card()!, -120, 16, 'slow');
+    await atRest(canvasElement, card);
+    await expect(filledEver()).toBe(false);
+    await expect(within(canvasElement).queryByRole('status')).toBeNull();
+  },
+};
+
+// A drag begun on Done, short of the rule, presses nothing and snoozes
+// nothing: the click the finger's lift makes is the swipe's. A tap on Done then
+// presses it.
+export const CardSwipeOverDonePhone: Story = {
+  args: {
+    layout: 'phone', store: 'wearer-before-done', open: 'setting:basal_rate',
+    done: { subject: 'setting:basal_rate', after: 'wearer-done' },
+  },
+  parameters: { frame: FRAMES.phone },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const card = () => openCard(canvasElement);
+    const done = within(card()!).getByRole('button', { name: 'Done' });
+    await swipe(done, -120, 16, 'slow');
+    done.click();
+    await atRest(canvasElement, card);
+    await expect(canvas.queryByRole('status')).toBeNull();
+    await expect(within(card()!).getByRole('heading', { level: 2 })).toHaveTextContent(/^Basal/);
+    await userEvent.click(within(card()!).getByRole('button', { name: 'Done' }));
+    await expect(canvas.getByRole('status')).toHaveTextContent('Waiting for pump');
+  },
+};
+
+// The open card's chevron, named by its title, closes it to its row: no card is
+// open and every row is collapsed. A row's tap opens its card.
+export const CollapsePhone: Story = {
+  args: { layout: 'phone', store: 'wearer' },
+  parameters: { frame: FRAMES.phone },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const [top, next] = ranking('wearer');
+    const card = openCard(canvasElement)!;
+    const chevron = within(card).getByRole('button', { expanded: true });
+    await expect(chevron.getAttribute('aria-labelledby')).toBe(within(card).getByRole('heading', { level: 2 }).id);
+    await userEvent.click(chevron);
+    await waitFor(() => expect(canvasElement.querySelector('.ui-queue__open')).toBeNull());
+    await expect(canvas.queryByRole('heading', { level: 2 })).toBeNull();
+    const rows = canvas.getAllByRole('button', { expanded: false });
+    await expect(rows).toHaveLength(ranking('wearer').length);
+    await expect(canvas.queryByRole('button', { expanded: true })).toBeNull();
+    await expect(rows.some((row) => row.textContent!.includes(top.data.title))).toBe(true);
+    await userEvent.click(rows.find((row) => row.textContent!.includes(next.data.title))!);
+    await expect(canvas.getByRole('heading', { level: 2, name: new RegExp(next.data.title) })).toBeInTheDocument();
+  },
+};
+
+// Closed: the screen opens with nothing open, every item a row.
+export const ClosedPhone: Story = {
+  args: { layout: 'phone', store: 'wearer', closed: true },
+  parameters: { frame: FRAMES.phone },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvasElement.querySelector('.ui-queue__open')).toBeNull();
+    await expect(canvas.getAllByRole('button', { expanded: false })).toHaveLength(ranking('wearer').length);
   },
 };
 
@@ -535,22 +660,39 @@ export function LiveQueue({ sends, after, ...props }: QueueScreenProps & {
   return <QueueScreen {...props} store={store} open={store === props.store ? props.open : undefined} writes={writes} />;
 }
 
+/** Snooze the open item: on desktop its text action; on the phone, which has
+ *  none, a swipe of its card past half, once the card has left (ADR 614). */
+const snoozeOpen = async (canvasElement: HTMLElement, layout: 'phone' | 'desktop') => {
+  const canvas = within(canvasElement);
+  if (layout === 'desktop') {
+    await userEvent.click(canvas.getByRole('button', { name: 'Snooze' }));
+    return;
+  }
+  await expect(canvas.queryByRole('button', { name: 'Snooze' })).toBeNull();
+  const left = everLeft(canvasElement);
+  await swipe(openCard(canvasElement)!, -240, 16, 'slow');
+  await waitFor(() => expect(canvasElement.querySelector('.ui-qrow-swipe[data-closing]')).toBeNull(), { timeout: 2000 });
+  await expect(left()).toBe(true);
+};
+
 // Live (#495): a Snooze the engine does not save puts the item back with
-// "Not saved", and Retry saves it.
-const liveSnoozePlay: Story['play'] = async ({ canvasElement }) => {
+// "Not saved", and Retry saves it. On the phone the card is swiped: once the
+// refused write is held it is back, open at rest.
+const liveSnoozePlay = (layout: 'phone' | 'desktop'): Story['play'] => async ({ canvasElement }) => {
   const canvas = within(canvasElement);
   const title = ranking('wearer')[0].data.title;
-  await userEvent.click(canvas.getByRole('button', { name: 'Snooze' }));
+  await snoozeOpen(canvasElement, layout);
   await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent(/Not saved/));
   await expect(canvas.getByRole('heading', { level: 2, name: new RegExp(title) })).toBeInTheDocument();
+  if (layout === 'phone') await atRest(canvasElement, () => openCard(canvasElement));
   await userEvent.click(canvas.getByRole('button', { name: 'Retry' }));
   await waitFor(() => expect(canvas.queryByText(/Not saved/)).toBeNull());
 };
 const live = (layout: 'phone' | 'desktop', args: Omit<QueueScreenProps, 'layout'>, play: Story['play']): Story => ({
   ...story(layout, args), render: (props) => <LiveQueue {...props} />, play,
 });
-export const LiveSnoozeNotSavedPhone = live('phone', { store: 'wearer' }, liveSnoozePlay);
-export const LiveSnoozeNotSavedDesktop = live('desktop', { store: 'wearer' }, liveSnoozePlay);
+export const LiveSnoozeNotSavedPhone = live('phone', { store: 'wearer' }, liveSnoozePlay('phone'));
+export const LiveSnoozeNotSavedDesktop = live('desktop', { store: 'wearer' }, liveSnoozePlay('desktop'));
 // The same through a row's swipe: the row has left when the write fails, and
 // comes back at rest with Not saved; Retry saves it.
 export const SwipeNotSavedPhone = live('phone', { store: 'wearer' }, async ({ canvasElement }) => {
@@ -576,12 +718,12 @@ const refusesOnce = (refused: string) => {
 const refusedSnooze = ranking('wearer-pinned-snoozed')[0];
 const titled = (canvas: ReturnType<typeof within>, title: string) =>
   canvas.queryAllByRole('heading', { level: 2, name: new RegExp(title) });
-const twoSnoozesPlay: Story['play'] = async ({ canvasElement }) => {
+const twoSnoozesPlay = (layout: 'phone' | 'desktop'): Story['play'] => async ({ canvasElement }) => {
   const canvas = within(canvasElement);
-  await userEvent.click(canvas.getByRole('button', { name: 'Snooze' }));
+  await snoozeOpen(canvasElement, layout);
   await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent(snoozedBar));
   await expect(titled(canvas, refusedSnooze.data.title)).toHaveLength(1);
-  await userEvent.click(canvas.getByRole('button', { name: 'Snooze' }));
+  await snoozeOpen(canvasElement, layout);
   await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent(/Not saved/));
   await expect(canvas.queryByRole('button', { name: new RegExp(fixtures.snooze.title) })).toBeNull();
   await expect(titled(canvas, fixtures.snooze.title)).toHaveLength(0);
@@ -593,7 +735,7 @@ const twoSnoozes = (layout: 'phone' | 'desktop'): Story => ({
   ...story(layout, { store: 'wearer-pinned', open: firstSnoozed }),
   render: (props) => <LiveQueue {...props} after={{ subject: firstSnoozed, store: 'wearer-pinned-snoozed' }}
     sends={{ snooze: refusesOnce(refusedSnooze.subject) }} />,
-  play: twoSnoozesPlay,
+  play: twoSnoozesPlay(layout),
 });
 export const TwoSnoozesSecondRefusedPhone = twoSnoozes('phone');
 export const TwoSnoozesSecondRefusedDesktop = twoSnoozes('desktop');
@@ -601,7 +743,8 @@ export const TwoSnoozesSecondRefusedDesktop = twoSnoozes('desktop');
 // Done (#518), a Setting card's primary: a fresh wearer presses Done on the
 // basal card. The screen shows the Queue the engine served after it (the card
 // is gone), the bar reads "Waiting for pump", and Undo (the bar's, or ⌘Z on
-// desktop) puts the card back. Snooze stays the text action beneath Done.
+// desktop) puts the card back. On desktop Snooze stays the text action beneath
+// Done; the phone's card has none (its Snooze is the swipe, ADR 614).
 const done: QueueScreenProps['done'] = { subject: 'setting:basal_rate', after: 'wearer-done' };
 const DONE = { store: 'wearer-before-done', open: 'setting:basal_rate', done } as QueueScreenProps;
 const basalCard = (canvas: ReturnType<typeof within>) => canvas.queryByRole('heading', { level: 2, name: /^Basal/ });
@@ -609,8 +752,12 @@ const doneUndoPlay = (undo: 'click' | 'shortcut'): Story['play'] => async ({ can
   const canvas = within(canvasElement);
   await expect(ranking('wearer-done').some((item) => item.subject === 'setting:basal_rate')).toBe(false);
   const card = within(canvasElement.querySelector('.ui-scard') as HTMLElement);
-  const [doneButton, snoozeButton] = [card.getByRole('button', { name: 'Done' }), card.getByRole('button', { name: 'Snooze' })];
-  await expect(doneButton.getBoundingClientRect().bottom).toBeLessThan(snoozeButton.getBoundingClientRect().top);
+  const doneButton = card.getByRole('button', { name: 'Done' });
+  if (undo === 'click') await expect(card.queryByRole('button', { name: 'Snooze' })).toBeNull();
+  else {
+    await expect(doneButton.getBoundingClientRect().bottom)
+      .toBeLessThan(card.getByRole('button', { name: 'Snooze' }).getBoundingClientRect().top);
+  }
   // Desktop lists the basal row beside its open card; the phone opens the card in the row's place.
   const basalRow = () => canvas.queryByRole('button', { name: /^Setting Basal/ });
   await expect(basalRow() !== null).toBe(undo === 'shortcut');
@@ -662,9 +809,9 @@ export const LiveDoneNotSavedDesktop = live('desktop', LIVE_DONE, liveDonePlay);
 // "Not saved", then Retry saves the snooze: the bar leaves, since Retry saved no
 // Done or Focus, and the earlier Done's bar is not drawn.
 const RETRIED = 'pattern:lows_after_meals';
-const retryOwnBarPlay: Story['play'] = async ({ canvasElement }) => {
+const retryOwnBarPlay = (layout: 'phone' | 'desktop'): Story['play'] => async ({ canvasElement }) => {
   const canvas = within(canvasElement);
-  await userEvent.click(canvas.getByRole('button', { name: 'Snooze' }));
+  await snoozeOpen(canvasElement, layout);
   await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent(/Not saved/));
   // Phone: the Basal card, opened while the snooze was in flight, closes back into its row first.
   await userEvent.click(await canvas.findByRole('button', { name: /^Setting Basal/ }));
@@ -679,7 +826,7 @@ const retryOwnBarPlay: Story['play'] = async ({ canvasElement }) => {
 const retryOwnBar = (layout: 'phone' | 'desktop'): Story => ({
   ...story(layout, { store: 'wearer-before-done', open: RETRIED }),
   render: (props) => <LiveQueue {...props} sends={{ snooze: refusesOnce(RETRIED), done: async () => undefined }} />,
-  play: retryOwnBarPlay,
+  play: retryOwnBarPlay(layout),
 });
 export const RetryOwnBarPhone = retryOwnBar('phone');
 export const RetryOwnBarDesktop = retryOwnBar('desktop');
@@ -700,8 +847,9 @@ export const UndrawableDesktop: Story = { ...story('desktop', { store: QUEUE_UND
 
 // A standalone habit (ADR 528), open: its row is a Pattern's with the Habit
 // glyph, and its card the PatternCard, the chart's episodes named Habit, with
-// Focus and Snooze beneath. Pinned, the Focus pill takes Focus's place, and the
-// watched Focus leaves no card offering another.
+// Focus and, on desktop, Snooze beneath (the phone's Snooze is the card's swipe).
+// Pinned, the Focus pill takes Focus's place, and the watched Focus leaves no
+// card offering another.
 const HABIT_OPEN = { store: fixtures.states.habit_band.store, open: fixtures.states.habit_band.subject } as QueueScreenProps;
 const HABIT_PINNED = {
   store: fixtures.states.habit_pinned.store, open: fixtures.states.habit_pinned.subject,
@@ -714,7 +862,7 @@ const habitPlay = (layout: 'phone' | 'desktop', pinned: boolean): Story['play'] 
   await expect(within(card).queryByRole('button', { name: 'Focus' }) === null).toBe(pinned);
   await expect(card.querySelector('.ui-pcard__action [data-state="focus"]') !== null).toBe(pinned);
   if (pinned) await expectNoFocus(canvasElement, HABIT_PINNED.store);
-  await expect(within(card).getByRole('button', { name: 'Snooze' })).toBeInTheDocument();
+  await expect(within(card).queryByRole('button', { name: 'Snooze' }) !== null).toBe(layout === 'desktop');
   // Desktop lists the habit's row beside the open card, its glyph named Habit.
   if (layout === 'desktop') await expect(canvas.getByRole('img', { name: 'Habit' })).toBeInTheDocument();
 };
@@ -767,38 +915,40 @@ export const FocusStartedDesktop: Story = focusStarted('desktop');
 
 // A multi-cause Pattern (drill-down.md, ADR 594): its open card has no Focus;
 // its chart is a drill-down row marked only with "›", named by the card's
-// title, and opens the drill-down, "‹ Queue" over the Pattern's title.
+// title (as the phone's chevron is, so it is reached by its element), and opens
+// the drill-down, "‹ Queue" over the Pattern's title.
 const MULTI = patternStore('drill_down');
 const MULTI_PINNED = patternStore('drill_down_pinned');
 /** The card as the Queue draws it: no Focus though one could start, the chart a
- *  drill-down row marked "›", Snooze beneath. */
-const multiCauseCard = async (canvasElement: HTMLElement) => {
+ *  drill-down row marked "›", and Snooze beneath on desktop only. */
+const multiCauseCard = async (canvasElement: HTMLElement, layout: 'phone' | 'desktop') => {
   const card = canvasElement.querySelector('.ui-pcard') as HTMLElement;
   const title = card.querySelector('h2')!.textContent!;
   await expect(focusable(MULTI.store)).toBe(true);
   await expect(within(card).queryByRole('button', { name: 'Focus' })).toBeNull();
-  const chart = within(card).getByRole('button', { name: title });
+  const chart = card.querySelector<HTMLElement>('.ui-pcard__chart')!;
+  await expect(within(card).getAllByRole('button', { name: title })).toContain(chart);
   await expect(chart.dataset.role).toBe('row');
   await expect(chart.querySelector('.ui-pcard__more')!.textContent).toBe('›');
-  await expect(within(card).getByRole('button', { name: 'Snooze' })).toBeInTheDocument();
+  await expect(within(card).queryByRole('button', { name: 'Snooze' }) !== null).toBe(layout === 'desktop');
   return { title, chart };
 };
 const MULTI_OPEN = { store: MULTI.store, open: `pattern:${MULTI.pattern}` } as QueueScreenProps;
 export const MultiCauseOpenPhone: Story = {
-  ...story('phone', MULTI_OPEN), play: async ({ canvasElement }) => { await multiCauseCard(canvasElement); },
+  ...story('phone', MULTI_OPEN), play: async ({ canvasElement }) => { await multiCauseCard(canvasElement, 'phone'); },
 };
 export const MultiCauseOpenDesktop: Story = {
-  ...story('desktop', MULTI_OPEN), play: async ({ canvasElement }) => { await multiCauseCard(canvasElement); },
+  ...story('desktop', MULTI_OPEN), play: async ({ canvasElement }) => { await multiCauseCard(canvasElement, 'desktop'); },
 };
 // Its chart opens the drill-down, each cause with its own Focus.
-const multiCauseOpensPlay: Story['play'] = async ({ canvasElement }) => {
-  const { title, chart } = await multiCauseCard(canvasElement);
+const multiCauseOpensPlay = (layout: 'phone' | 'desktop'): Story['play'] => async ({ canvasElement }) => {
+  const { title, chart } = await multiCauseCard(canvasElement, layout);
   await userEvent.click(chart);
   await expectTitlePrinted(canvasElement, title);
   await expect(within(canvasElement).getAllByRole('button', { name: 'Focus' }).length).toBeGreaterThan(1);
 };
-export const MultiCauseOpensPhone: Story = { ...story('phone', MULTI_OPEN), play: multiCauseOpensPlay };
-export const MultiCauseOpensDesktop: Story = { ...story('desktop', MULTI_OPEN), play: multiCauseOpensPlay };
+export const MultiCauseOpensPhone: Story = { ...story('phone', MULTI_OPEN), play: multiCauseOpensPlay('phone') };
+export const MultiCauseOpensDesktop: Story = { ...story('desktop', MULTI_OPEN), play: multiCauseOpensPlay('desktop') };
 // Pinned on its Late bolus cause: the button's place holds "Focus" over the
 // cause's served title, and no card offers Focus.
 const multiCausePinnedPlay: Story['play'] = async ({ canvasElement }) => {

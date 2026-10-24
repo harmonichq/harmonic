@@ -212,6 +212,22 @@ export function monthSpan(): { first: string; last: string } {
     : { first: navigator().month, last: navigator().month };
 }
 
+/** The day with readings nearest `iso` in `way`'s direction (1 later, -1
+ *  earlier), across every day the navigator serves: the Overview's month with
+ *  its padding, then each month the Day screen read. Off the served days, the
+ *  month to read first when it lies in the data's span; null when none does. */
+export function adjacentDay(iso: string, way: -1 | 1): string | { read: string } | null {
+  for (let at = shift(iso, way); ; at = shift(at, way)) {
+    const served = servedDay(at);
+    if (!served) {
+      const month = at.slice(0, 7);
+      const { first, last } = monthSpan();
+      return month >= first && month <= last ? { read: month } : null;
+    }
+    if (served.found.has_data) return at;
+  }
+}
+
 /** A month as weeks, Monday first; the navigator's week of padding on each
  *  side fills the first and last rows. */
 export function monthWeeks(month: string): string[][] {

@@ -7,6 +7,7 @@ import { swipe } from './gesture';
 import { Button } from './components/Button/Button';
 import { DayScreen } from './screens/Day/DayScreen';
 import { ranking } from './queue-model';
+import { monthReader } from './served-variants';
 import { QueueScreen } from './screens/Queue/QueueScreen';
 
 // The library's motion (tokens.css, motion.ts), one story per motion, each on
@@ -35,6 +36,16 @@ type Motion = { name: string; frame: Frame; screen: () => ReactNode; run: (stage
 /** An item of the pinned store's Queue other than the one a swipe snoozes, open first. */
 const otherThanSnoozed = ranking('wearer-pinned').find((item) => item.subject !== fixtures.snooze.subject)!.subject;
 const snooze = { subject: fixtures.snooze.subject, after: 'wearer-pinned-snoozed', until: sourced<string>('snooze.decided_at', 'until') } as const;
+
+/** The Day swipe's months: March and April are read as the screen reaches them. */
+const dayMonths = monthReader();
+const dayBody = (stage: HTMLElement) => stage.querySelector<HTMLElement>('.ui-dayscreen__body')!;
+/** `ms`, and at least until the last swipe has come to rest: its neighbour is
+ *  drawn until its slide or ease-back has ended, and presses wait until then. */
+async function rested(stage: HTMLElement, ms: number) {
+  const still = async () => { while (stage.querySelector('.ui-dayscreen__neighbour')) await frame(); };
+  await Promise.all([pause(ms), still()]);
+}
 
 const MOTIONS = {
   sheet: {
@@ -95,6 +106,39 @@ const MOTIONS = {
       await swipe(row(), -120, 4, 'flick');
       await pause(1400);
       control(stage, 'Undo').click();
+    },
+  },
+  daySwipe: {
+    name: 'Day swipe',
+    frame: PHONE,
+    screen: () => <DayScreen layout="phone" store="wearer" day="2025-05-01" readMonth={dayMonths.readMonth} />,
+    run: async (stage) => {
+      // Each replay reads April again.
+      dayMonths.cleanup();
+      // On 1 May: a slow drag short of half eases back; a slow swipe left
+      // steps to 2 May; a flick right steps back, and another crosses into
+      // 30 April; flicks step back to 24 April, the served weeks' first day,
+      // which reads April; a slow swipe right steps to 23 April, out of them.
+      // Then, through the month, 25 May, the latest day: a swipe left is resisted.
+      await swipe(dayBody(stage), -120, 16, 'slow');
+      await rested(stage, 450);
+      await swipe(dayBody(stage), -200, 16, 'slow');
+      // Eight flicks: 2 May to 1 May, 30 April, and on to 24 April.
+      for (let flick = 0; flick < 8; flick += 1) {
+        await rested(stage, 350);
+        await swipe(dayBody(stage), 80, 4, 'flick');
+      }
+      await rested(stage, 450);
+      await swipe(dayBody(stage), 200, 16, 'slow');
+      await rested(stage, 450);
+      stage.querySelector<HTMLElement>('.ui-header__day')!.click();
+      await pause(350);
+      control(stage, 'Next').click();
+      await pause(350);
+      control(stage, 'Sun 25 May').click();
+      await pause(450);
+      await swipe(dayBody(stage), -200, 16, 'slow');
+      await pause(400);
     },
   },
   bar: {
@@ -226,6 +270,39 @@ const replays: Story['play'] = async ({ canvasElement }) => {
   await expect(within(canvasElement).queryByRole('status')).toBeNull();
 };
 export const SnoozeSwipe: Story = { ...story('swipe'), name: 'Snooze swipe', play: replays };
+// The gate runs the replay: Replay, and the replay to its resisted swipe on
+// the latest day, every step taken on the way.
+export const DaySwipe: Story = {
+  ...story('daySwipe'),
+  name: 'Day swipe',
+  beforeEach: () => dayMonths.cleanup,
+  play: async ({ canvasElement }) => {
+    const day = () => canvasElement.querySelector('.ui-header__day')!.textContent;
+    // Every frame, the header's day and how far the track sits from rest: once
+    // a step names its day, the day is drawn at rest, never sliding in again.
+    const frames: { day: string | null; off: number }[] = [];
+    let sampling = true;
+    const sample = () => {
+      const track = canvasElement.querySelector('.ui-dayscreen__track');
+      const body = canvasElement.querySelector('.ui-dayscreen__body');
+      if (track && body) {
+        const off = track.getBoundingClientRect().left - body.getBoundingClientRect().left
+          - (parseFloat(getComputedStyle(track).marginLeft) || 0);
+        frames.push({ day: day(), off });
+      }
+      if (sampling) requestAnimationFrame(sample);
+    };
+    requestAnimationFrame(sample);
+    within(document.body).getByRole('button', { name: 'Replay' }).click();
+    await waitFor(() => expect(day()).toContain('23 Apr'), { timeout: 10000 });
+    await waitFor(() => expect(canvasElement.querySelector('[data-replayed]')).not.toBeNull(), { timeout: 10000 });
+    await expect(day()).toContain('25 May');
+    sampling = false;
+    const offRest = frames.flatMap((frame, i) => (i > 0 && frame.day !== frames[i - 1].day
+      ? frames.slice(i, i + 6).filter((after) => Math.abs(after.off) >= 0.5).map((after) => `${after.day} ${after.off}`) : []));
+    await expect(offRest).toEqual([]);
+  },
+};
 export const TransientBar: Story = { ...story('bar'), name: 'Transient bar', play: replays };
 export const Month: Story = { ...story('month'), name: 'Month' };
 export const NextPrompt: Story = { ...story('nextPrompt'), name: 'Next prompt' };

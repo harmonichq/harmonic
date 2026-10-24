@@ -17,6 +17,18 @@
 // Above the Prompts row (on desktop, beside it), the day's insulin as its
 // InsulinBar; none on a day that serves none.
 //
+// Phone: swiping the day sideways steps to the adjacent day with readings
+// (§2.5, 2026-10-23, Day swipe; ADR 619), by the one swipe's step form: the day
+// follows the finger with that day beside it, its insulin bar and chart (or the
+// chart's skeleton) beside the same Prompts rows, and past half the width, or
+// on a flick, it slides in and is the day; otherwise it eases back. Where no
+// day with readings lies that way, it is resisted. A day the served weeks do
+// not hold is reached through its month, read as the day before it opens
+// (`readMonth`); until that lands, or if it cannot be read, that way is
+// resisted. Only on the day itself, when neither the month nor Log carbs is
+// open: not on the Prompts, whose card swipes for Not sure, nor on desktop.
+// The month stays the visible way to change day.
+//
 // Unanswered Prompts show as one row per kind, "▼ Lows" and their count, and
 // under it "▲ Rises" and theirs (#529), each hidden at none; the NavBar's Day
 // badge counts both. Each drills down (§2.2) to its own Prompts under "‹ Day",
@@ -54,12 +66,12 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { Sourced } from '../../answers';
 import {
-  PROMPT_STEPS, afterAnswer, dayChartOf, dayDate, insulinBar, latestDay, livePromptPlace, loggedGrams, loggedTime,
+  PROMPT_STEPS, adjacentDay, afterAnswer, dayChartOf, dayDate, insulinBar, latestDay, livePromptPlace, loggedGrams, loggedTime,
   monthBy, monthName, monthServed, monthSpan, monthWeeks, promptOf, promptPlace, promptsOfKind, unanswered, weekOf,
   type PromptData, type PromptKind, type PromptStore,
 } from '../../day-model';
 import { day as navigatorDay } from '../../overview-model';
-import { useMotionGate, usePresence } from '../../motion';
+import { useMotionGate, usePresence, useSwipe, type Way } from '../../motion';
 import { Num } from '../../Num';
 import { Button } from '../../components/Button/Button';
 import { DayChart } from '../../components/DayChart/DayChart';
@@ -215,7 +227,8 @@ function Day({
   const [monthShown, setShown] = useState(selected.slice(0, 7));
   const shownRef = useRef(monthShown);
   const [monthRead, setMonthRead] = useState<'loading' | 'unavailable' | null>(null);
-  const [, redraw] = useState(0);
+  // Each month read in, for what reads the navigator again.
+  const [reads, redraw] = useState(0);
   const [view, setView] = useState(initialView);
   // The Prompts of one kind, one served store per answer given: the store
   // now, the one the card is drawn from (before its Yes, while recorded) and
@@ -447,11 +460,34 @@ function Day({
             <LogCarbsEntry layout="desktop" align="end" open={carbs !== null} {...entryProps}
               onToggle={() => (carbs === null ? setCarbs('empty') : closeCarbs())} />} />;
 
-  const chart = dayChartOf(selected);
-  const dayContent = (
+  // Phone: the step to the adjacent day with readings, and the month read
+  // ahead, once a day, for a way whose next day lies in a month not yet read.
+  const adjacent = (way: Way) => {
+    const at = adjacentDay(selected, way);
+    return typeof at === 'string' ? at : null;
+  };
+  const swipe = useSwipe(0, { step: { can: (way) => adjacent(way) !== null, onStep: (way) => setSelected(adjacent(way)!) } });
+  const swipes = layout === 'phone' && view === 'day' && (state === 'ready' || state === 'stale') && !month && carbs === null;
+  const readAhead = useRef({ day: '', months: new Set<string>() });
+  useEffect(() => {
+    if (!readMonth || layout !== 'phone') return;
+    if (readAhead.current.day !== selected) readAhead.current = { day: selected, months: new Set() };
+    for (const way of [-1, 1] as const) {
+      const at = adjacentDay(selected, way);
+      if (!at || typeof at === 'string' || readAhead.current.months.has(at.read)) continue;
+      readAhead.current.months.add(at.read);
+      // One that cannot be read leaves that way resisted until the day changes.
+      readMonth(at.read).then(() => redraw((n) => n + 1), () => {});
+    }
+  }, [selected, reads, readMonth, layout]);
+  const neighbour = swipe.peek && swipes ? adjacent(swipe.peek) : null;
+
+  const dayContent = (iso: string) => {
+    const chart = dayChartOf(iso);
+    return (
     <>
       <div className={`ui-dayscreen__summary ui-dayscreen__summary--${layout}`}>
-        <InsulinBar data={insulinBar(selected)} loading={state === 'loading' || !chart} />
+        <InsulinBar data={insulinBar(iso)} loading={state === 'loading' || !chart} />
         {badge.value > 0 && (
           <ListGroup>
             {counts.low.value > 0 && (
@@ -469,7 +505,8 @@ function Day({
         ? <span className="ui-skeleton ui-dayscreen__skeleton" aria-hidden="true" />
         : <DayChart data={chart} layout={layout} />}
     </>
-  );
+    );
+  };
 
   const prompt = () => {
     const card = writes ? liveCard : promptOf(kind, 0, cardStore);
@@ -506,8 +543,20 @@ function Day({
           {dropped.value && <Month layout="phone" {...monthProps} exit={dropped.exit} />}
         </div>
         <main className="ui-dayscreen__main" data-scroll="page" data-push={push}>
-          <div key={`${view}-body`} className="ui-dayscreen__body ui-push">
-            {state !== 'unavailable' && (view === 'prompts' ? prompt() : dayContent)}
+          <div key={`${view}-body`} {...(swipes ? swipe.bind : {})}
+            className={`ui-dayscreen__body ui-push${view === 'day' ? ' ui-dayscreen__body--steps' : ''}${swipe.dragging ? ' ui-swipe--dragging' : ''}`}>
+            {state !== 'unavailable' && (view === 'prompts' ? prompt() : (
+              // The swipe moves the track, never the body, whose drill-down is its own.
+              <div className="ui-dayscreen__track ui-swipe-settle" style={swipe.style}>
+                {dayContent(selected)}
+                {neighbour && (
+                  <div className={`ui-dayscreen__neighbour ui-dayscreen__neighbour--${swipe.peek === 1 ? 'next' : 'previous'}`}
+                    aria-hidden="true" {...{ inert: '' }}>
+                    {dayContent(neighbour)}
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         </main>
         {bar}
@@ -535,7 +584,7 @@ function Day({
             {view === 'prompts' ? prompt() : (
               <>
                 {week(selected) && <DayRibbon days={week(selected)!} selected={selected} onSelect={select} />}
-                {dayContent}
+                {dayContent(selected)}
               </>
             )}
           </div>

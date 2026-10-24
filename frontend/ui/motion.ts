@@ -118,8 +118,8 @@ const RESISTANCE = 0.3;
 const FLICK = 500;
 const FLICK_WINDOW = 100;
 /** The step form: how near either edge of the screen a press is the platform's,
- *  and how far a flick travels to step, in px. Defaults set at #619's triage,
- *  until the operator approves values in the Day swipe replay. */
+ *  and how far a flick travels to step, in px: the values the operator approved in
+ *  the Day swipe replay (§2.5, 2026-10-24; ADR 619). */
 const EDGE = 24;
 const STEP_FLICK_MIN = 48;
 

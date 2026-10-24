@@ -10,7 +10,7 @@
 - [x] 1.4 `EDGE`: a press within it of the Day screen root's left or right edge never becomes a step swipe
 - [x] 1.5 The commit: element and neighbour travel to rest, then `onStep(way)` with the hook at rest in the same update; presses ignored while it slides; under `--ui-motion-move: 0` the step is at once and the ease-back instant
 - [x] 1.6 Update the file's header comment for the step form, in its idiom
-  - `EDGE` and `STEP_FLICK_MIN` keep their defaults (24 px, 48 px) until Connor approves values in the replay; the approved values are written here and in 6.1 after his "locked".
+  - `EDGE = 24` and `STEP_FLICK_MIN = 48` in `frontend/ui/motion.ts`, approved by Connor as built ("lock it", 2026-10-24).
 
 ## 2. The adjacent day (`frontend/ui/day-model.ts`, ADR 619)
 
@@ -43,7 +43,7 @@ Quote only words Connor wrote on #612, #614, #619 or this change's pull request,
 - [x] 6.2 §1.4: the Day-swipe row rewritten for 6.1, citing it
 - [x] 6.3 §1.3: the Day row's "stepping to the next or previous day (skeleton)" gains "mid-swipe, the adjacent day beside it", citing 6.1
 - [x] 6.4 §4.2: DayChart (17) gains its mid-swipe state (the next or previous day beside it, or its skeleton), citing 6.1
-- [ ] 6.5 The status list at the top: a line for this amendment, written once Connor says "locked", quoting him
+- [x] 6.5 The status list at the top: a line for this amendment, written once Connor says "locked", quoting him
 - [x] 6.6 `openspec/changes/recommendations-redesign/` is not edited here
 
 ## 7. Verify and evidence

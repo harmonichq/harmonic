@@ -74,6 +74,11 @@ Status: **exploring** (#481).
   swipe, with its resistance of 0.3 past the reveal, and the amendment's open
   card swipe, closing card and Day swipe, to be built by #614 on the locked
   Queue and Day screens. The operator: "locked looks good." (2026-10-23).
+- **Day swipe locked 2026-10-24** (#619, §2.5): Storybook
+  `Foundations/Motion` → Day swipe at commit `ea3115ad`: the phone Day body
+  following the finger with the adjacent day with data beside it, its edge
+  band of 24 px and a flick's 48 px as built, on the locked Day screen. The
+  operator: "lock it" (2026-10-24).
 
 This document is the durable record of the redesign. Sections 1–3 are what the
 build will be checked against once they are approved. The appendix keeps the
@@ -1465,8 +1470,8 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
      than 500 px/s over its last 100 ms having travelled at least 48 px, and
      a day with data lay that way when the press became a swipe; a finger
      moving back against its travel never steps, and a pointer cancel always
-     eases back. 48 px is the default set at triage, standing in for the
-     reveal a row's flick needs; the replay may change it.
+     eases back. 48 px stands in for the reveal a row's flick needs; the
+     operator approved it as built in the replay (2026-10-24).
   3. **Where no further day exists,** the body is resisted from rest: it
      moves 0.3 of the finger's travel, the row's fraction, and eases back.
      Beyond the served weeks the next month is read ahead as each day opens,
@@ -1475,7 +1480,7 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
      and Retry.
   4. **The screen's edges.** A press that starts within 24 px of either edge
      of the screen is the platform's (its back gesture), and never swipes.
-     24 px is the default set at triage; the replay may change it.
+     The operator approved 24 px as built in the replay (2026-10-24).
   5. **Motion.** On a step the day and the one beside it slide together
      until it is at rest, over the standard duration on the standard easing,
      which never overshoots; then it is the day, the header naming it. An

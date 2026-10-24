@@ -7,8 +7,7 @@ window's daily averages of delivered insulin: the daily dose, basal and bolus
 units each with its share, boluses per day with manual and Control-IQ counts
 and shares, carbs per day from bolus carbs and the manual carb log, bolus units
 and share by type (Food, Correction, Override, Control-IQ) and by delivery
-method (Standard, Extended, Quick, Control-IQ), and the site change's count and
-mean days between changes. The three windows SHALL be one fixed result keyed by
+method (Standard, Extended, Quick, Control-IQ). The three windows SHALL be one fixed result keyed by
 the recorded-data revision, warmed by the roster, computed in one pass, each
 read serving its own window. Every average SHALL divide by the window's days
 that hold any delivery, served as `data_days`. Each bolus SHALL count in exactly
@@ -33,12 +32,6 @@ and null figures. Any other `days` SHALL be refused with 400.
 - **GIVEN** a bolus with no provenance code beside a Standard one
 - **WHEN** the read is asked
 - **THEN** the bolus units and count include both, Standard holds only the second, and the method shares sum below one
-
-#### Scenario: The site change's cadence
-
-- **GIVEN** three site changes six, then four days apart inside the window
-- **WHEN** the read is asked
-- **THEN** `site_change.count` is 3 and `every_days` is 5
 
 #### Scenario: A write answers the predecessor, a restart computes nothing
 

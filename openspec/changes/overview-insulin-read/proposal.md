@@ -7,9 +7,10 @@ time-in-ranges bar, the glucose profile, the basal estimate and Meal size, each
 over the selected 14, 30 or 90 days. It says nothing about insulin, though the
 store holds every fact: delivered basal every five minutes, each bolus with its
 units, carbs, provenance code, override flag and food/correction split, the
-manual carb log, and the pump's site changes. Connor asked (#631) for the three
+manual carb log. Connor asked (#631) for two of the
 cards Tandem Source draws below its day chart — Insulin summary, Bolus review and
-Load activity — on Harmonic's Overview. The lock amendment (#633) and the
+on Harmonic's Overview ("I don't need site change data, just the
+other stuff", 2026-10-24). The lock amendment (#633) and the
 Overview's revision (#634) need the figures served first, because the Storybook
 prechecks trace every printed number to a served field and the frontend derives
 none.
@@ -23,31 +24,27 @@ none.
   Each window serves the Insulin summary (daily dose, basal and bolus with units
   and share, boluses per day with manual and Control-IQ counts and shares,
   carbs per day), the Bolus review (units and share by type and by delivery
-  method) and Load activity (the site change's cadence). Every share is its own
+  method). Every share is its own
   served field. The window's denominator is its days that hold any delivery.
 - **The partition rules are the engine's, recorded as ADRs.** Control-IQ's own
   boluses by their provenance code; Override by the pump's override flag;
   Food and Correction from the requested split, a bolus with no split going
   whole by whether it carried carbs; the delivery method by the code, a bolus
-  with no code counted in the totals and in no method row. One Load activity
-  row, the site change, because the pump's three fills are stored as one event
-  (the coordinating session's Q1 A, 2026-10-24).
+  with no code counted in the totals and in no method row.
 - **The library fixtures carry the answer.** `scripts/gen_ui_fixtures.py` adds
   the read for the wearer, its first days and the unsynced store under
   `overview`, with a store-state guard like Meal size's, and the synthetic
   wearer stamps a few existing boluses Extended and Quick, their delivery
   unchanged, so no method row is empty on the wearer.
 - **The committed QA showcase is untouched.** Its 34 user boluses carry no
-  provenance code and it logs no site change; the contract test (#634) asserts
+  provenance code; the contract test (#634) asserts
   that served state as it is.
 
 ## Not in this change
 
 - Any component, story, lock amendment or screen (#633), the live adapter, the
   app's client and the contract test (#634).
-- The mapper's one event type for the three fills; a per-fill kind is a
-  separate decision Connor may raise at #633's structure gate.
-- Any change to the QA showcase, its cases or their expectations.
+- Load activity (site changes): Connor dropped it from #631 on 2026-10-24.
 
 ## Risk contract
 
@@ -66,7 +63,7 @@ none.
 - **Evidence owed:** a backend test building a store of N days of known events
   and asserting each card's figures as literals per window (manual and
   Control-IQ boluses, an override, an extended and a quick bolus, a bolus with
-  no split, a codeless bolus, manual carbs, three site changes, a delivery
+  no split, a codeless bolus, manual carbs, a delivery
   before the window); the Overview-instant tests extended to the new read (a
   write answers its predecessor, a restart computes nothing, the worker's
   order); the fixtures' store-state guard; both generators' `--check` green.

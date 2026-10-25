@@ -614,9 +614,10 @@ export const SnoozedDrillDownDesktop: Story = {
 // saves, before it resolves, as the adapter reads the engine again first;
 // `redraw` hears each start and settle, as App redraws. It leaves out what the
 // adapter's own tests (live.test.js) cover: a refusal dropped when Retry is
-// answered 404 or when a newer write on its subject was made after it, an Undo
-// not sent when what it undoes was refused, a Retry's re-sends counting as no
-// newer write, and a Retry pressed while one is in flight sending nothing more.
+// answered 404, or when its own Undo was made after it (and kept after any
+// other later write), that Undo not sent, a Retry's re-sends counting as no
+// later write, a Retry pressed while one is in flight sending nothing more, and
+// a restored Pattern's case file kept through the Queue's re-reads.
 type Sends = Partial<Record<Refused['kind'], (subject: string, lever?: string) => Promise<unknown>>>;
 const pad = (n: number) => String(n).padStart(2, '0');
 /** Now on the browser's wall clock, as the adapter stamps a write (`YYYY-MM-DD HH:MM:SS`). */

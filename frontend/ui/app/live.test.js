@@ -373,7 +373,7 @@ test('a Retry\'s re-sends are no newer write: a Done refused again stays held, a
   assert.equal(withdrawn.length, 1, 'the Undo of a saved Done withdraws it');
 });
 
-test('a Focus refused after a newer write on its subject is not held (ADR 629)', async () => {
+test('only a write\'s own Undo cancels its refusal: a Focus refused after a Snooze on its subject stays held (ADR 629)', async () => {
   const fake = fakeClient();
   const pin = byHand();
   fake.client.pinFocus = pin.send;
@@ -385,7 +385,38 @@ test('a Focus refused after a newer write on its subject is not held (ADR 629)',
   pin.refuse(409);
   await assert.rejects(pinning);
   await snoozing;
-  assert.deepEqual(live.queueWrites.held().refused, [], 'the snooze made after it is the person\'s intent');
+  assert.deepEqual(live.queueWrites.held().refused, [{ kind: 'pin', subject: 'pattern:p0' }],
+    'a Snooze does not undo a Focus, so its refusal shows "Not saved" with Retry');
+});
+
+test('an Undo pressed while its snooze is unanswered keeps the Pattern\'s case file through the snooze\'s re-read (ADR 629)', async () => {
+  const served = history();
+  const fake = fakeClient(served);
+  const snooze = byHand();
+  const restore = byHand();
+  fake.client.setGuidancePreference = (...args) => {
+    const sent = snooze.send(...args);
+    served.candidates[0].preference = { set_aside: true };
+    return sent;
+  };
+  fake.client.restoreGuidancePreference = restore.send;
+  const live = createLive({ client: fake.client, glossary: [] });
+  await live.readTab('queue');
+  assert.ok(live.answers.queue.wearer.cases.p0, 'a ranked Pattern\'s case file is read with the Queue');
+  const snoozing = live.queueWrites.snooze('pattern:p0');
+  const undoing = live.queueWrites.restore('pattern:p0');
+  await landed();
+  snooze.answer();
+  await snoozing;
+  const drawable = () => Boolean(live.answers.queue.wearer.cases.p0) || live.queueWrites.held().reading.has('pattern:p0');
+  assert.equal(live.queueWrites.held().inFlight.get('pattern:p0').kind, 'restore');
+  assert.ok(drawable(), 'the Pattern the held Restore draws back keeps its case file, or has its read in flight');
+  for (let i = 0; i < 5; i += 1) await landed();
+  assert.ok(drawable(), 'and keeps it until the Restore is answered');
+  served.candidates[0].preference = { set_aside: false };
+  restore.answer();
+  await undoing;
+  assert.ok(live.answers.queue.wearer.cases.p0);
 });
 
 test('a Restore on a snoozed Pattern reads its case file before the write is answered (ADR 629)', async () => {

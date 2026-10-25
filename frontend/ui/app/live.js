@@ -288,13 +288,19 @@ export function createLive({ client, glossary, memory = null,
     // or not, prints the count its case file serves.
     const ranked = guided.candidates
       .filter((c) => c.kind === 'pattern' && c.admitted && !c.preference.set_aside).map((c) => c.subject);
+    const files = await cases([...ranked, ...habits]);
+    // A Pattern a held Restore draws back keeps the case file the Queue holds for it (ADR 629).
+    const kept = answers.queue.wearer.cases ?? {};
+    const restored = [...inFlight]
+      .filter(([subject, write]) => write.kind === 'restore' && subject.startsWith('pattern:'))
+      .map(([subject]) => subject.replace(/^pattern:/, '')).filter((key) => kept[key]);
     answers.queue.wearer = {
       findings: { outcome_patterns: served.outcome_patterns, rows },
       guidance: answers.queue.wearer.guidance,
       analyze: { basal: stagedSlots(analysis.basal), ic_blocks: icBlocks(analysis.ic_blocks) },
       trials: roster,
       focus: focused,
-      cases: await cases([...ranked, ...habits]),
+      cases: { ...Object.fromEntries(restored.map((key) => [key, kept[key]])), ...files },
     };
   });
 
@@ -548,8 +554,8 @@ export function createLive({ client, glossary, memory = null,
       identities.delete(intent);
     },
   };
-  /** The writes an Undo of their own reverses: a Restore undoes a Snooze, and an Undo of a Done a Done. */
-  const UNDOES = { restore: 'snooze', undoDone: 'done' };
+  /** Each write's own Undo: a Restore undoes a Snooze, and an Undo of a Done a Done. */
+  const UNDONE_BY = { snooze: 'restore', done: 'undoDone' };
 
   // The Queue's writes (#610), sent one at a time in the order made, so each reads the guidance its write
   // before it left behind and none spends another's generation. The writes in flight and the refused ones
@@ -563,11 +569,18 @@ export function createLive({ client, glossary, memory = null,
   let refused = [];
   let retrying = null;
   // How many writes the person made on each subject, and each one's kind by its number (`subject n`); a
-  // Retry's re-send is none of them. The Undo made right after a refused Snooze or Done has nothing left to
-  // undo, so that one write, by its number, is not sent (ADR 629).
+  // Retry's re-send is none of them. The Undo the person made after a refused Snooze or Done has nothing left
+  // to undo, so that one write, by its number, is not sent (ADR 629).
   const madeOn = new Map();
   const kinds = new Map();
   const unsent = new Set();
+  /** The number (`subject n`) of the first write's own Undo the person made after `write`, its `nth`, if any. */
+  function undoneBy(write, nth) {
+    for (let n = nth + 1; n <= madeOn.get(write.subject); n += 1) {
+      if (kinds.get(`${write.subject} ${n}`) === UNDONE_BY[write.kind]) return `${write.subject} ${n}`;
+    }
+    return null;
+  }
   // The case file of each Pattern a Restore puts back in the Queue, while it is read (ADR 629).
   const reading = new Map();
   /** Read a restored Pattern's case file beside its write, unless the Queue already holds it. */
@@ -610,12 +623,12 @@ export function createLive({ client, glossary, memory = null,
         if (resent || !unsent.delete(`${write.subject} ${nth}`)) await SENDS[write.kind](write.subject, write.lever);
         refused = refused.filter((r) => !same(write)(r));
       } catch (error) {
-        // A refusal is held until it saves, or until Retry finds its subject no longer served. One the person
-        // made a newer write on the subject after is not held: the newest write is the person's intent.
-        const superseded = madeOn.get(write.subject) > nth;
-        const next = `${write.subject} ${nth + 1}`;
-        if (superseded && UNDOES[kinds.get(next)] === write.kind) unsent.add(next);
-        if (superseded || (retried && error?.status === 404)) refused = refused.filter((r) => !same(write)(r));
+        // A refusal is held until it saves, or until Retry finds its subject no longer served. A Snooze or a
+        // Done whose own Undo the person made after it is not held, and that Undo is not sent; any other later
+        // write, a Snooze after a Focus among them, leaves the refusal held (ADR 629).
+        const undo = undoneBy(write, nth);
+        if (undo) unsent.add(undo);
+        if (undo || (retried && error?.status === 404)) refused = refused.filter((r) => !same(write)(r));
         else if (!retried) refused = [...refused, write];
         throw error;
       } finally {

@@ -22,8 +22,8 @@
 - [x] 3.1 `held()` as in section 0: each write enters `inFlight` (or `focus`, for a Pin) with its kind, its `at` (`now()`) and any lever when it is made; an older write's settle removes only its own entry
 - [x] 3.2 Superseded writes (ADR 629 point 7): a per-subject count of writes made; a refusal is not held when a newer write on its subject was made after it; a Restore or an Undo of a Done is not sent when its subject's earlier Snooze or Done was refused
 
-- [ ] 3.3 Lock 2 (#628 Q5 A, ADR 629 point 7): only a write's own Undo cancels its refusal; a refused Focus stays held whatever follows. Live-adapter test, red first: Focus then Snooze on one subject, the Focus refused and the snooze saved, leaves the Focus in `refused`
-- [ ] 3.4 Lock 2 (ADR 629 point 9): the restored Pattern's case file survives the Queue's re-reads while its Restore is held, and an Undo of a still-unanswered snooze draws the skeleton, never a card without its chart. Live-adapter test, red first: snooze a Pattern, press Undo before the snooze is answered, answer the snooze; the Pattern's case file is still in `answers.queue.wearer.cases` (or its read is in `held().reading`) until the Restore is answered
+- [x] 3.3 Lock 2 (#628 Q5 A, ADR 629 point 7): only a write's own Undo cancels its refusal; a refused Focus stays held whatever follows. Live-adapter test, red first: Focus then Snooze on one subject, the Focus refused and the snooze saved, leaves the Focus in `refused`
+- [x] 3.4 Lock 2 (ADR 629 point 9): the restored Pattern's case file survives the Queue's re-reads while its Restore is held, and an Undo of a still-unanswered snooze draws the skeleton, never a card without its chart. Live-adapter test, red first: snooze a Pattern, press Undo before the snooze is answered, answer the snooze; the Pattern's case file is still in `answers.queue.wearer.cases` (or its read is in `held().reading`) until the Restore is answered
 
 ## 4. The screen and stories
 

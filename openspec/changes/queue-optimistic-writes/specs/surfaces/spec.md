@@ -12,7 +12,9 @@ card out of the Queue and raise "Waiting for pump" with Undo. An Undo of a
 Done SHALL return the card to the Queue. A Focus SHALL draw its card pinned,
 raise "Focus started" with Changes, and draw no Focus on any other card. The
 live adapter SHALL hold each write in flight with its kind and the time it was
-made. The Queue model SHALL draw a held write by setting the served fields that
+made. A restored Pattern's card SHALL draw the whole-card skeleton while its
+case file, read when the Restore is made, is in flight, and its row SHALL draw
+as served. The Queue model SHALL draw a held write by setting the served fields that
 write writes and applying the one Queue order rule. It SHALL NOT derive an
 item's rank or its admission. When the engine answers, the Queue SHALL draw
 its served answer. A refused write SHALL return its item to the served state
@@ -93,8 +95,10 @@ as refused. While any refused write is held, the transient bar SHALL read "Not
 saved" with Retry, outranking every other bar the Queue shows. Retry SHALL send
 every held refused write again, in order, each on a fresh guidance read. A held
 refusal SHALL be dropped when its write saves, or when the engine answers that
-its subject is no longer served (404). A refused write SHALL NOT be held when
-the person made a newer write on the same subject after it. A Restore, or an
+its subject is no longer served (404). A refused Snooze SHALL NOT be held
+when the person made a Restore on its subject after it, nor a refused Done when
+the person made its Undo after it; any other later write SHALL leave a refusal
+held. A Retry's re-send SHALL NOT count as a later write. A Restore, or an
 Undo of a Done, whose subject's earlier Snooze or Done was refused SHALL NOT be
 sent, since there is nothing left to undo. The writes in flight and the
 refused ones SHALL be kept by the live adapter, not the screen, so an item
@@ -138,3 +142,10 @@ refusal keeps its bar, across a tab change.
   Queue as served, and no "Not saved" bar shows
 - **AND** a Done refused after its Undo was pressed likewise leaves no refusal
   and no "Waiting for pump"
+
+#### Scenario: A refused Focus outlives a later Snooze
+
+- **GIVEN** on desktop, a Focus in flight on a Pattern card, and the person has
+  pressed its Snooze
+- **WHEN** the engine refuses the Focus and saves the snooze
+- **THEN** the item is in Snoozed and the bar reads "Not saved" with Retry

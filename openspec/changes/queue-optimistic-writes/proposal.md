@@ -54,6 +54,8 @@ are #630.
   and time from the moment it is made, that the newest write per subject
   is reported while an older one settles, and that a held Focus survives a
   later snooze on its subject; a live-adapter test that a write refused after
-  the person undid it holds no refusal and sends no undo; a Queue story per write kind whose
+  the person undid it holds no refusal and sends no undo, and that a Focus
+  refused after a later Snooze stays held; a live-adapter test that a restored
+  Pattern's case file is read at once and kept until its Restore is answered; a Queue story per write kind whose
   fake answers late, asserting the drawn state before the answer and the same
   state after it; the existing refused-write stories still passing.

@@ -51,19 +51,32 @@ Snoozed count does not move until the answer lands.
    (Accepted failure).
 7. A write can now be made on an item while an earlier one on it is in flight
    (Undo, or Restore from the Snoozed list, while a snooze or a Done is still
-   unanswered). The newest write is the person's intent. A refused write is not
-   held as refused when a newer write was made on its subject after it. A
+   unanswered). A write's own Undo is the person's intent: a refused Snooze is
+   not held as refused when a Restore was made on its subject after it, nor a
+   refused Done when an Undo of it was made after it (#628 Q5 A). Any other
+   later write leaves a refusal held: a refused Focus shows "Not saved" with
+   Retry whatever follows it, since a Snooze does not undo a Focus. A
    Restore or an Undo of a Done is not sent when its subject's earlier Snooze
    or Done was refused: the engine answers a restore of an unsnoozed subject 200
    and does nothing (`api.py` `restore_guidance_preference_endpoint`), and an
    Undo of an unsaved Done has no acknowledgment to withdraw. So Retry never
    re-sends a write the person has since undone. Each subject keeps a count of
-   writes made, which the adapter compares when a write is answered.
+   the writes the person made, which the adapter compares when a write is
+   answered; a Retry's re-send is not a write the person made, so it never
+   counts as newer.
 8. A held count (the Snoozed count, the "N patterns" count) keeps its served
    formula and adds or takes away the held writes as a whole-number literal,
    which the provenance grammar admits after a field (`provenance.js`). Its
    source therefore names both the served field and the held change. A held
    Until's source names the held write (point 4).
+9. A restored Pattern's card needs its case file, which the Queue reads only
+   for ranked Patterns (`live.js` `queue()`). When a Restore (or the Undo of a
+   snooze) is made on a Pattern, the adapter reads that Pattern's case file at
+   once, beside the write, and holds the read in `held().reading` until it
+   lands; the Queue's re-reads keep the case file of every Pattern a held
+   Restore draws back. While the read is in flight the card draws the locked
+   whole-card skeleton, never Unavailable and never a card without its chart;
+   its row draws as served throughout (#628 Q3 A, Q4 A).
 
 **Consequences.** One order rule serves both the adapter and the model. A
 held write never changes what the engine is asked: Retry, the write order and

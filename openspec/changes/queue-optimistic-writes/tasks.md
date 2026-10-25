@@ -1,6 +1,6 @@
 ## 0. Interface (settled at triage)
 
-- `QueueWrites.held()` (`QueueScreen.tsx`) returns `{ inFlight: ReadonlyMap<string, Held>; focus: { subject: string; lever?: string } | null; refused: readonly Refused[] }`, where `Held = { kind: Exclude<Refused['kind'], 'pin'>; at: string }`, keyed by subject, the newest such write made for that subject, and `focus` is the Focus in flight (ADR 629 point 1). `Refused` and `retry` are unchanged. The live adapter's `queueWrites` and the stories' `heldWrites` fake both implement it.
+- `QueueWrites.held()` (`QueueScreen.tsx`) returns `Held & { refused: readonly Refused[]; reading: ReadonlyMap<string, Promise<void>> }`. `Held = { inFlight: ReadonlyMap<string, HeldWrite>; focus: { subject: string; lever?: string } | null }` and `HeldWrite = { kind: Exclude<Refused['kind'], 'pin'>; at: string }` are exported once, from `queue-model.ts`. `inFlight` is keyed by subject, the newest such write made for that subject; `focus` is the Focus in flight (ADR 629 point 1); `reading` holds each restored Pattern's case-file read until it lands (point 9). `Refused` and `retry` are unchanged. The live adapter's `queueWrites` and the stories' `heldWrites` fake both implement it. (Amended in lock 2.)
 - The Queue order rule (admitted, not snoozed, not waiting for the pump) is exported from one plain-JS module, `frontend/ui/queue-order.js`, imported by `live.js`'s guidance composition and by `queue-model.ts`. `scripts/gen_ui_fixtures.py` keeps its Python copy.
 - `ranking`, `snoozed`, `snoozedCount`, `queuedCount` and `focusable` (`queue-model.ts`) take an optional held map and draw it as ADR 629 point 3 says. Without one they are unchanged. A held snooze's Until is `{ value: at, source: <names the held write>, format: 'until' }`; a held count keeps its served formula plus or minus a literal (ADR 629 point 8).
 - App needs no change: it already redraws as a Queue write starts and settles.
@@ -21,6 +21,9 @@
 
 - [x] 3.1 `held()` as in section 0: each write enters `inFlight` (or `focus`, for a Pin) with its kind, its `at` (`now()`) and any lever when it is made; an older write's settle removes only its own entry
 - [x] 3.2 Superseded writes (ADR 629 point 7): a per-subject count of writes made; a refusal is not held when a newer write on its subject was made after it; a Restore or an Undo of a Done is not sent when its subject's earlier Snooze or Done was refused
+
+- [ ] 3.3 Lock 2 (#628 Q5 A, ADR 629 point 7): only a write's own Undo cancels its refusal; a refused Focus stays held whatever follows. Live-adapter test, red first: Focus then Snooze on one subject, the Focus refused and the snooze saved, leaves the Focus in `refused`
+- [ ] 3.4 Lock 2 (ADR 629 point 9): the restored Pattern's case file survives the Queue's re-reads while its Restore is held, and an Undo of a still-unanswered snooze draws the skeleton, never a card without its chart. Live-adapter test, red first: snooze a Pattern, press Undo before the snooze is answered, answer the snooze; the Pattern's case file is still in `answers.queue.wearer.cases` (or its read is in `held().reading`) until the Restore is answered
 
 ## 4. The screen and stories
 

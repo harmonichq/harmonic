@@ -25,7 +25,7 @@
 - [x] 3.3 Lock 2 (#628 Q5 A, ADR 629 point 7): only a write's own Undo cancels its refusal; a refused Focus stays held whatever follows. Live-adapter test, red first: Focus then Snooze on one subject, the Focus refused and the snooze saved, leaves the Focus in `refused`
 - [x] 3.4 Lock 2 (ADR 629 point 9): the restored Pattern's case file survives the Queue's re-reads while its Restore is held, and an Undo of a still-unanswered snooze draws the skeleton, never a card without its chart. Live-adapter test, red first: snooze a Pattern, press Undo before the snooze is answered, answer the snooze; the Pattern's case file is still in `answers.queue.wearer.cases` (or its read is in `held().reading`) until the Restore is answered
 
-- [ ] 3.5 Lock 3 (#628 Q5 A clarified, ADR 629 point 7): the Undo pairs cancel each other's refusals both ways (a Snooze after a refused Restore, a Done after a refused Undo); a Done made after its refused Undo is not sent, a Snooze after a refused Restore is. Live-adapter test, red first: a Restore refused after a Snooze on its subject was made leaves `refused` empty and the snooze sent; a Done made after its refused Undo leaves `refused` empty and calls `recordDone` no second time
+- [x] 3.5 Lock 3 (#628 Q5 A clarified, ADR 629 point 7): the Undo pairs cancel each other's refusals both ways (a Snooze after a refused Restore, a Done after a refused Undo); a Done made after its refused Undo is not sent, a Snooze after a refused Restore is. Live-adapter test, red first: a Restore refused after a Snooze on its subject was made leaves `refused` empty and the snooze sent; a Done made after its refused Undo leaves `refused` empty and calls `recordDone` no second time
 
 ## 4. The screen and stories
 

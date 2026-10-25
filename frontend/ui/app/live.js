@@ -554,8 +554,8 @@ export function createLive({ client, glossary, memory = null,
       identities.delete(intent);
     },
   };
-  /** Each write's own Undo: a Restore undoes a Snooze, and an Undo of a Done a Done. */
-  const UNDONE_BY = { snooze: 'restore', done: 'undoDone' };
+  /** Each write's own Undo, both ways: a Restore and a Snooze undo each other, and a Done and its Undo. */
+  const UNDONE_BY = { snooze: 'restore', restore: 'snooze', done: 'undoDone', undoDone: 'done' };
 
   // The Queue's writes (#610), sent one at a time in the order made, so each reads the guidance its write
   // before it left behind and none spends another's generation. The writes in flight and the refused ones
@@ -569,8 +569,10 @@ export function createLive({ client, glossary, memory = null,
   let refused = [];
   let retrying = null;
   // How many writes the person made on each subject, and each one's kind by its number (`subject n`); a
-  // Retry's re-send is none of them. The Undo the person made after a refused Snooze or Done has nothing left
-  // to undo, so that one write, by its number, is not sent (ADR 629).
+  // Retry's re-send is none of them. The write that undoes a refused one is not sent, by its number, when
+  // the engine would do nothing with it or refuse it: a Restore or an Undo after a refused Snooze or Done,
+  // and a Done after a refused Undo, which the engine still holds. A Snooze after a refused Restore is sent,
+  // so the engine stamps its decision time (ADR 629).
   const madeOn = new Map();
   const kinds = new Map();
   const unsent = new Set();
@@ -623,11 +625,11 @@ export function createLive({ client, glossary, memory = null,
         if (resent || !unsent.delete(`${write.subject} ${nth}`)) await SENDS[write.kind](write.subject, write.lever);
         refused = refused.filter((r) => !same(write)(r));
       } catch (error) {
-        // A refusal is held until it saves, or until Retry finds its subject no longer served. A Snooze or a
-        // Done whose own Undo the person made after it is not held, and that Undo is not sent; any other later
-        // write, a Snooze after a Focus among them, leaves the refusal held (ADR 629).
+        // A refusal is held until it saves, or until Retry finds its subject no longer served. A write whose
+        // own Undo the person made after it is not held; any other later write, a Snooze after a Focus among
+        // them, leaves the refusal held (ADR 629).
         const undo = undoneBy(write, nth);
-        if (undo) unsent.add(undo);
+        if (undo && write.kind !== 'restore') unsent.add(undo);
         if (undo || (retried && error?.status === 404)) refused = refused.filter((r) => !same(write)(r));
         else if (!retried) refused = [...refused, write];
         throw error;

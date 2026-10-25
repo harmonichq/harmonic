@@ -389,6 +389,39 @@ test('only a write\'s own Undo cancels its refusal: a Focus refused after a Snoo
     'a Snooze does not undo a Focus, so its refusal shows "Not saved" with Retry');
 });
 
+test('the Undo pairs cancel refusals both ways: a Snooze after a refused Restore is sent, a Done after a refused Undo is not (ADR 629)', async () => {
+  const fake = fakeClient();
+  const restore = byHand();
+  fake.client.restoreGuidancePreference = restore.send;
+  const snoozed = [];
+  fake.client.setGuidancePreference = (subject) => { snoozed.push(subject); return Promise.resolve({}); };
+  const live = createLive({ client: fake.client, glossary: [] });
+  await live.readTab('queue');
+  // A Restore from the Snoozed list, and the item snoozed again before the engine answers.
+  const restoring = live.queueWrites.restore('pattern:p5');
+  const snoozing = live.queueWrites.snooze('pattern:p5');
+  await landed();
+  restore.refuse(409);
+  await assert.rejects(restoring);
+  assert.deepEqual(live.queueWrites.held().refused, [], 'the Snooze made after it undoes the refused Restore');
+  await snoozing;
+  assert.deepEqual(snoozed, ['pattern:p5'], 'and is sent, so the engine stamps its decision time');
+  // A Done, its Undo refused, and Done pressed again: the engine still holds the Done, so it is not sent again.
+  const done = [];
+  fake.client.recordDone = (body) => { done.push(body); return Promise.resolve({}); };
+  fake.client.withdrawDone = () => Promise.reject(refusal(409));
+  fake.client.fetchGuidance = () => Promise.resolve({ analysis_generation: 'g1', input_revision: 7,
+    candidates: history().candidates.map((c) => (c.subject === 'pattern:p0'
+      ? { ...c, acknowledgment: { state: 'waiting', applied_at: '2026-01-02 00:00:00' } } : c)) });
+  await live.queueWrites.done('pattern:p0');
+  const undoing = live.queueWrites.undoDone('pattern:p0');
+  const again = live.queueWrites.done('pattern:p0');
+  await assert.rejects(undoing);
+  await again;
+  assert.deepEqual(live.queueWrites.held().refused, [], 'the Done made after it undoes the refused Undo');
+  assert.equal(done.length, 1, 'and is not sent a second time');
+});
+
 test('an Undo pressed while its snooze is unanswered keeps the Pattern\'s case file through the snooze\'s re-read (ADR 629)', async () => {
   const served = history();
   const fake = fakeClient(served);

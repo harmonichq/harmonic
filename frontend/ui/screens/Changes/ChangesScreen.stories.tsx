@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { fixtures } from '../../fixtures';
@@ -7,6 +8,7 @@ import { failsOnce } from '../../flaky';
 import { expectTabBarEnds } from '../../tabbar-check';
 import { expectAtPaneTop, expectHeaderEmpty, expectTitlePrinted } from '../../title-check';
 import { CHANGES_UNNAMED } from '../../served-variants';
+import type { ChangesStore } from '../../changes-model';
 import { ChangesScreen, type ChangesScreenProps } from './ChangesScreen';
 
 // The Changes screen in each state §1.3 lists (§2.5 2026-10-14, the Changes
@@ -41,7 +43,9 @@ import { ChangesScreen, type ChangesScreenProps } from './ChangesScreen';
 //   Stale, the last answers under Unavailable, on the screen and on Previous.
 // Plays: End → End ends the Trial and shows what the engine served after it;
 // End → Cancel leaves the Focus as it was; Previous opens its list and ‹
-// Changes comes back.
+// Changes comes back. Live, an End the engine answers late draws the ended
+// screen at once, the ended change's Previous row without its result until the
+// engine saves it (ADR 630), and one it refuses puts the change back.
 const meta: Meta<typeof ChangesScreen> = {
   title: 'Screens/Changes',
   component: ChangesScreen,
@@ -298,3 +302,97 @@ const unnamedPlay: Story['play'] = async ({ canvasElement }) => {
 };
 export const UnnamedTrialPhone: Story = { ...story('phone', { store: CHANGES_UNNAMED }), play: unnamedPlay };
 export const UnnamedTrialDesktop: Story = { ...story('desktop', { store: CHANGES_UNNAMED }), play: unnamedPlay };
+
+// End draws the screen the engine will serve after it the moment it is
+// confirmed (ADR 630). Each fake answers only when the play releases it, and
+// every play releases it before it ends, so the story check reads served fields.
+/** An engine that answers each End only once the play releases it: saved, or refused. */
+const answersLate = () => {
+  const waiting: ((saved: boolean) => void)[] = [];
+  return {
+    send: async () => {
+      if (!(await new Promise<boolean>((answer) => { waiting.push(answer); }))) throw new Error('not saved');
+    },
+    release: async (saved = true) => {
+      waiting.shift()!(saved);
+      await new Promise((done) => { setTimeout(done); });
+    },
+    reset: () => { waiting.length = 0; },
+  };
+};
+type Late = ReturnType<typeof answersLate>;
+
+/** The Changes screen over the engine's late End: once it saves, the store
+ *  served after it (`after`), as the live adapter reads the engine again before
+ *  a write resolves. */
+function LiveChanges({ after, ...props }: ChangesScreenProps & { after?: ChangesStore }) {
+  const [store, setStore] = useState(props.store);
+  const writes = {
+    end: async () => {
+      await props.writes!.end();
+      if (after) setStore(after);
+    },
+  };
+  return <ChangesScreen {...props} store={store} writes={writes} />;
+}
+const lateStory = (layout: 'phone' | 'desktop', store: ChangesStore, after: ChangesStore | undefined,
+  play: (late: Late) => Story['play']): Story => {
+  const late = answersLate();
+  return {
+    ...story(layout, { store, writes: { end: late.send } }),
+    render: (props) => <LiveChanges {...props} after={after} />,
+    beforeEach: () => late.reset(),
+    play: play(late),
+  };
+};
+const confirmEnd = async (canvas: ReturnType<typeof within>) => {
+  await userEvent.click(canvas.getByRole('button', { name: 'End' }));
+  await userEvent.click(within(canvas.getByRole('dialog', { name: 'End' })).getByRole('button', { name: 'End' }));
+};
+/** The Previous list's rows, each its text and whether it carries a result pill. */
+const previousRows = (canvasElement: HTMLElement) => [...canvasElement.querySelectorAll('.ui-changes__previous')]
+  .map((label) => ({ text: label.textContent, result: label.closest('.ui-row')!.querySelector('.ui-pill') !== null }));
+const openPrevious = (canvas: ReturnType<typeof within>, count: number) =>
+  userEvent.click(canvas.getByRole('button', { name: new RegExp(`Previous\\s*${count}`) }));
+
+// An active Trial's End: "No active change" and Previous one more at once; in
+// Previous, the ended Trial's row with its date and before → after and no
+// result; once the engine saves it, the same row with the result End saved.
+const lateEndPlay = (late: Late): Story['play'] => async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  await expect(canvas.queryByRole('button', { name: /Previous/ })).toBeNull();
+  await confirmEnd(canvas);
+  await expect(canvas.getByText('No active change')).toBeInTheDocument();
+  await openPrevious(canvas, 1);
+  const held = previousRows(canvasElement);
+  await expect(held).toHaveLength(1);
+  await expect(held[0].result).toBe(false);
+  await expect(canvasElement.querySelector('.ui-changes__previous .ui-moves')).not.toBeNull();
+  await late.release();
+  await waitFor(() => expect(previousRows(canvasElement)).toEqual([{ text: held[0].text, result: true }]));
+};
+export const LateEndTrialPhone = lateStory('phone', 'wearer', 'wearer-ended', lateEndPlay);
+export const LateEndTrialDesktop = lateStory('desktop', 'wearer', 'wearer-ended', lateEndPlay);
+
+// An active Focus's End: the same held screen, its Previous row the Focus with
+// no result; the engine then refuses it, and the Focus is back with "Not saved".
+const lateFocusEndPlay = (late: Late): Story['play'] => async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  await expect(canvas.queryByRole('button', { name: /Previous/ })).toBeNull();
+  await confirmEnd(canvas);
+  await expect(canvas.getByText('No active change')).toBeInTheDocument();
+  await openPrevious(canvas, 1);
+  const [row] = previousRows(canvasElement);
+  await expect(previousRows(canvasElement)).toHaveLength(1);
+  await expect(row.text).toContain(fixtures.changes['wearer-focus'].focuses[0].title);
+  await expect(row.result).toBe(false);
+  const header = canvas.getByRole('heading', { level: 1, name: 'Previous' }).closest('header') as HTMLElement;
+  await userEvent.click(within(header).getByRole('button', { name: 'Changes' }));
+  await late.release(false);
+  await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent(/Not saved/));
+  await expect(canvas.queryByText('No active change')).toBeNull();
+  await expect(canvas.getByRole('button', { name: 'End' })).toBeInTheDocument();
+  await expect(canvas.queryByRole('button', { name: /Previous/ })).toBeNull();
+};
+export const LateEndFocusPhone = lateStory('phone', 'wearer-focus', undefined, lateFocusEndPlay);
+export const LateEndFocusDesktop = lateStory('desktop', 'wearer-focus', undefined, lateFocusEndPlay);

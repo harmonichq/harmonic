@@ -1,14 +1,16 @@
+import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, userEvent, waitFor, within } from 'storybook/test';
 import { fixtures } from '../../fixtures';
 import { formatValue } from '../../provenance.js';
-import { dayDate, loggedGrams } from '../../day-model';
+import { dayDate, loggedGrams, type PromptData, type PromptStore } from '../../day-model';
 import { hold, scrollThenSwipe, swipe } from '../../gesture';
 import { failsOnce } from '../../flaky';
 import { expectTabBarEnds } from '../../tabbar-check';
 import { expectTitlePrinted, expectTitleUnprinted } from '../../title-check';
-import { WithoutReadings, monthReader } from '../../served-variants';
-import { DayScreen, type DayScreenProps } from './DayScreen';
+import { BeforeFirstLog, WithoutReadings, monthReader } from '../../served-variants';
+import type { Answer } from '../../components/PromptCard/PromptCard';
+import { DayScreen, type DayScreenProps, type DayWrites } from './DayScreen';
 
 // The Day screen in each state §1.3 lists for Day, Day · Prompts and Day · Log
 // carbs, at phone (390) and desktop (1440), every value the simulated wearer's
@@ -28,14 +30,15 @@ import { DayScreen, type DayScreenProps } from './DayScreen';
 //   phone mid-swipe over Not sure, the shortcut for the Not sure text action
 //   beneath the answers (desktop's fourth answer is in every desktop Prompts
 //   story); Not saved, the bar with Retry.
-// - Log carbs: open, filled, saving, not saved, Time edited.
+// - Log carbs: open, filled, Time edited.
 // - Rises (#529): the wearer with two lunches never bolused for, its Rises row
 //   under its Lows row; its Rises, "1 / 2", a Rise's Yes recorded, and on the
 //   phone mid-swipe over Not sure; No rises, once both are answered, its Lows
 //   row alone.
 // Plays per size: picking another day from the dropped-down month, and on
 // desktop from the week in view;
-// Log carbs saved, closed with Escape, and retried after a failed save; the
+// Log carbs saved, closed with Escape, and retried from the bar after a failed
+// save, and live, drawn on its day before the engine answers or refused; the
 // Prompts walked through (Yes, Recorded, Next, the second, ‹ Day); a Yes not
 // saved, then retried; Not sure on the phone; the Rises walked through (No,
 // "2 / 2", Yes, Next, back to Day with its Lows row alone), and live, a Rise's
@@ -181,10 +184,6 @@ export const LogCarbsPhone = story('phone', { ...DEFAULT, logCarbs: 'empty' });
 export const LogCarbsDesktop = story('desktop', { ...DEFAULT, logCarbs: 'empty' });
 export const LogCarbsFilledPhone = story('phone', { ...DEFAULT, logCarbs: 'filled' });
 export const LogCarbsFilledDesktop = story('desktop', { ...DEFAULT, logCarbs: 'filled' });
-export const LogCarbsSavingPhone = story('phone', { ...DEFAULT, logCarbs: 'saving' });
-export const LogCarbsSavingDesktop = story('desktop', { ...DEFAULT, logCarbs: 'saving' });
-export const LogCarbsNotSavedPhone = story('phone', { ...DEFAULT, logCarbs: 'not_saved' });
-export const LogCarbsNotSavedDesktop = story('desktop', { ...DEFAULT, logCarbs: 'not_saved' });
 export const LogCarbsTimeEditedPhone = story('phone', { ...DEFAULT, logCarbs: 'filled', timeEdited: true });
 export const LogCarbsTimeEditedDesktop = story('desktop', { ...DEFAULT, logCarbs: 'filled', timeEdited: true });
 
@@ -278,7 +277,7 @@ const openCarbs = async (canvas: ReturnType<typeof within>) => {
   return within(canvas.getByRole('dialog', { name: 'Log carbs' }));
 };
 
-// Log carbs: type an amount the wearer logged, Save (busy), and it closes.
+// Log carbs: type an amount the wearer logged, Save, and it closes at once.
 const savePlay: Story['play'] = async ({ canvasElement }) => {
   const canvas = within(canvasElement);
   const entry = await openCarbs(canvas);
@@ -286,8 +285,7 @@ const savePlay: Story['play'] = async ({ canvasElement }) => {
   await expect(save).toBeDisabled();
   await userEvent.type(entry.getByRole('textbox', { name: 'Carbs' }), typed);
   await userEvent.click(save);
-  await expect(save).toHaveAttribute('aria-busy', 'true');
-  await waitFor(() => expect(canvas.queryByRole('dialog')).toBeNull());
+  await expect(canvas.queryByRole('dialog')).toBeNull();
 };
 export const LogCarbsSavePhone: Story = { ...story('phone', DEFAULT), play: savePlay };
 export const LogCarbsSaveDesktop: Story = { ...story('desktop', DEFAULT), play: savePlay };
@@ -303,16 +301,17 @@ const escapePlay: Story['play'] = async ({ canvasElement }) => {
 export const LogCarbsEscapePhone: Story = { ...story('phone', DEFAULT), play: escapePlay };
 export const LogCarbsEscapeDesktop: Story = { ...story('desktop', DEFAULT), play: escapePlay };
 
-// A save that fails keeps the entry, Not saved, with Retry; Retry saves it.
+// A save that fails closes the entry all the same, and the bar reads Not
+// saved, with Retry; Retry saves it.
 const retryCarbsPlay: Story['play'] = async ({ canvasElement }) => {
   const canvas = within(canvasElement);
   const entry = await openCarbs(canvas);
   await userEvent.type(entry.getByRole('textbox', { name: 'Carbs' }), typed);
   await userEvent.click(entry.getByRole('button', { name: 'Save' }));
-  await waitFor(() => expect(entry.getByRole('button', { name: 'Retry' })).toBeInTheDocument());
-  await expect(entry.getByText('Not saved')).toBeInTheDocument();
-  await userEvent.click(entry.getByRole('button', { name: 'Retry' }));
-  await waitFor(() => expect(canvas.queryByRole('dialog')).toBeNull());
+  await expect(canvas.queryByRole('dialog')).toBeNull();
+  await expect(canvas.getByRole('status')).toHaveTextContent('Not saved');
+  await userEvent.click(within(canvas.getByRole('status')).getByRole('button', { name: 'Retry' }));
+  await waitFor(() => expect(canvas.queryByRole('status')).toBeNull());
 };
 export const LogCarbsRetryPhone: Story = { ...story('phone', { ...DEFAULT, failing: true }), play: retryCarbsPlay };
 export const LogCarbsRetryDesktop: Story = { ...story('desktop', { ...DEFAULT, failing: true }), play: retryCarbsPlay };
@@ -729,6 +728,193 @@ const liveRisePlay: Story['play'] = async ({ canvasElement }) => {
 };
 export const LiveRiseAnswerPhone: Story = { ...story('phone', { ...RISES, writes: liveRises() }), play: liveRisePlay };
 export const LiveRiseAnswerDesktop: Story = { ...story('desktop', { ...RISES, writes: liveRises() }), play: liveRisePlay };
+
+// A write draws its written state the moment it is made, before the engine
+// answers (ADR 630). Each fake answers only when the play releases it, and every
+// play releases it before it ends, so the story check reads served fields.
+/** An engine that answers each call only once the play releases it, in turn: saved, or refused.
+ *  It records what each call was sent. Released, it resolves once every answer has run. */
+const answersLate = <A extends unknown[], R>(saved: R) => {
+  const sent: A[] = [];
+  const waiting: ((saved: boolean) => void)[] = [];
+  return {
+    sent,
+    send: async (...args: A): Promise<R> => {
+      sent.push(args);
+      if (!(await new Promise<boolean>((answer) => { waiting.push(answer); }))) throw new Error('not saved');
+      return saved;
+    },
+    release: async (saves = true) => {
+      waiting.shift()!(saves);
+      await new Promise((done) => { setTimeout(done); });
+    },
+    reset: () => { sent.length = 0; waiting.length = 0; },
+  };
+};
+type Late = { sent: readonly unknown[]; release: (saves?: boolean) => Promise<void> };
+
+/** The Day screen over the engine's late answers: once a Prompt answer saves,
+ *  the Prompts store served after it (`after`), as the live adapter reads the
+ *  engine again before a write resolves; and, with `unlogged`, the logged-carbs
+ *  day served without its entry until a Log carbs save saves, then as generated. */
+function LiveDay({ after, unlogged = false, ...props }: DayScreenProps & { after?: PromptStore; unlogged?: boolean }) {
+  const [store, setStore] = useState(props.store);
+  const [logged, setLogged] = useState(!unlogged);
+  const writes: DayWrites = {
+    ...props.writes!,
+    answer: async (prompt, given) => {
+      const saved = await props.writes!.answer(prompt, given);
+      if (after) setStore(after);
+      return saved;
+    },
+    logCarbs: async (grams, time) => {
+      await props.writes!.logCarbs(grams, time);
+      setLogged(true);
+    },
+  };
+  return <BeforeFirstLog unlogged={!logged}><DayScreen {...props} store={store} writes={writes} /></BeforeFirstLog>;
+}
+const liveStory = (layout: 'phone' | 'desktop', args: Omit<DayScreenProps, 'layout'>,
+  extra: { after?: PromptStore; unlogged?: boolean }, lates: { reset: () => void }[], play: Story['play']): Story => ({
+  ...story(layout, args),
+  render: (props) => <LiveDay {...props} {...extra} />,
+  beforeEach: () => { for (const late of lates) late.reset(); },
+  play,
+});
+/** The Day badge's count, as the selected tab prints it. */
+const badgeCount = (canvasElement: HTMLElement) =>
+  Number(canvasElement.querySelector('[aria-current="page"] .ui-badge')?.textContent ?? 0);
+const lowsCount = (canvasElement: HTMLElement) => {
+  const row = promptRows(canvasElement).find((r) => r.startsWith('Lows'));
+  return row ? Number(row.slice(5)) : 0;
+};
+const backToDay = (canvas: ReturnType<typeof within>, title = 'Lows') =>
+  userEvent.click(within(canvas.getByRole('heading', { level: 1, name: title }).closest('header') as HTMLElement)
+    .getByRole('button', { name: 'Day' }));
+
+/** Live writes whose answers are `answer`'s, every other write saved at once. */
+const answering = (answer: DayWrites['answer']): DayWrites => ({
+  answer, grams: async () => undefined, logCarbs: async () => undefined,
+});
+
+// A Prompt answer: the Day badge and the Lows count are one less at once, the
+// card moves on, and once the engine saves it (the Prompts read after it) both
+// read the same.
+const lateAnswerPlay = (late: Late): Story['play'] => async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  const before = { badge: badgeCount(canvasElement), lows: lowsCount(canvasElement) };
+  await expect(before).toEqual({ badge: 2, lows: 2 });
+  await userEvent.click(canvas.getByRole('button', { name: /Lows/ }));
+  await userEvent.click(canvas.getByRole('button', { name: 'No' }));
+  await expect(place(canvas)).toHaveTextContent('2 / 2');
+  await expect(badgeCount(canvasElement)).toBe(1);
+  await backToDay(canvas);
+  await expect({ badge: badgeCount(canvasElement), lows: lowsCount(canvasElement) }).toEqual({ badge: 1, lows: 1 });
+  await late.release();
+  await expect({ badge: badgeCount(canvasElement), lows: lowsCount(canvasElement) }).toEqual({ badge: 1, lows: 1 });
+  await expect(late.sent).toHaveLength(1);
+};
+const lateAnswer = (layout: 'phone' | 'desktop'): Story => {
+  const late = answersLate<[PromptData, Answer], { carbEntryId: number | null }>({ carbEntryId: null });
+  return liveStory(layout, { store: 'wearer-pending', writes: answering(late.send) }, { after: 'wearer' }, [late],
+    lateAnswerPlay(late));
+};
+export const LateAnswerPhone = lateAnswer('phone');
+export const LateAnswerDesktop = lateAnswer('desktop');
+
+// A Yes: the badge is one less while its write is in flight, and stays one
+// less, not two, once it saves with the card still open for its grams.
+const lateYesPlay = (late: Late): Story['play'] => async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  await userEvent.click(canvas.getByRole('button', { name: /Lows/ }));
+  await userEvent.click(canvas.getByRole('button', { name: 'Yes' }));
+  await expect(canvas.getByRole('button', { name: /Yes/, pressed: true })).toBeInTheDocument();
+  await expect(badgeCount(canvasElement)).toBe(1);
+  await late.release();
+  await expect(canvas.getByRole('button', { name: /Yes/, pressed: true })).toBeInTheDocument();
+  await expect(badgeCount(canvasElement)).toBe(1);
+};
+const lateYes = (layout: 'phone' | 'desktop'): Story => {
+  const late = answersLate<[PromptData, Answer], { carbEntryId: number | null }>({ carbEntryId: null });
+  return liveStory(layout, { store: 'wearer-pending', writes: answering(late.send) }, { after: 'wearer' }, [late],
+    lateYesPlay(late));
+};
+export const LateYesPhone = lateYes('phone');
+export const LateYesDesktop = lateYes('desktop');
+
+// Log carbs, on the logged-carbs day as served before its entry was logged,
+// the story's clock at that entry's time: Save of its grams closes the entry
+// and draws its mark at once; once the engine saves it (the day served with
+// the entry), the mark reads the same.
+const LOGGED = (fixtures.day.days as Record<string, { carbs: { carb_entries: { t: string; grams: number }[] } }>)[withCarbs]
+  .carbs.carb_entries[0];
+const LOG_CLOCK = LOGGED.t.slice(0, 16);
+const LOG_TIME = LOGGED.t.slice(11, 16);
+const LOG_GRAMS = formatValue(LOGGED.grams, 'round');
+/** The day's logged-carbs rows, each its time, its grams and whether they are a held entry's. */
+const loggedRows = (canvasElement: HTMLElement) => [...canvasElement.querySelectorAll('.ui-daychart__event')]
+  .flatMap((row) => {
+    const grams = row.querySelector<HTMLElement>('.ui-daychart__grams [data-source]');
+    const source = grams?.dataset.source ?? '';
+    return source.includes('carb_entries') || source.startsWith('held.')
+      ? [{ time: row.querySelector('.ui-daychart__time')!.textContent, grams: grams!.textContent, held: source.startsWith('held.') }]
+      : [];
+  });
+const saveCarbs = async (canvas: ReturnType<typeof within>) => {
+  const entry = await openCarbs(canvas);
+  await userEvent.type(entry.getByRole('textbox', { name: 'Carbs' }), LOG_GRAMS);
+  await userEvent.click(entry.getByRole('button', { name: 'Save' }));
+};
+const lateLogPlay = (late: Late): Story['play'] => async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  await expect(loggedRows(canvasElement)).toEqual([]);
+  await saveCarbs(canvas);
+  await expect(canvas.queryByRole('dialog', { name: 'Log carbs' })).toBeNull();
+  await expect(loggedRows(canvasElement)).toEqual([{ time: LOG_TIME, grams: LOG_GRAMS, held: true }]);
+  await expect(late.sent).toEqual([[LOGGED.grams, LOG_TIME]]);
+  await late.release();
+  await expect(loggedRows(canvasElement)).toEqual([{ time: LOG_TIME, grams: LOG_GRAMS, held: false }]);
+};
+type LateLog = Late & { send: DayWrites['logCarbs']; reset: () => void };
+const logStory = (layout: 'phone' | 'desktop', late: LateLog, play: Story['play']) => liveStory(layout, {
+  store: 'wearer', day: withCarbs, now: () => LOG_CLOCK,
+  writes: { answer: async () => ({ carbEntryId: null }), grams: async () => undefined, logCarbs: late.send },
+}, { unlogged: true }, [late], play);
+const lateLog = (layout: 'phone' | 'desktop') => {
+  const late = answersLate<[number, string | undefined], void>(undefined);
+  return logStory(layout, late, lateLogPlay(late));
+};
+export const LateLogCarbsPhone = lateLog('phone');
+export const LateLogCarbsDesktop = lateLog('desktop');
+
+// A save the engine refuses: the mark leaves and the bar on Day reads "Not
+// saved"; a Prompt answer made meanwhile leaves the bar up; Retry sends the same
+// grams and time, draws the mark again, and saves.
+const refusedLogPlay = (late: Late): Story['play'] => async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  await saveCarbs(canvas);
+  await expect(loggedRows(canvasElement)).toEqual([{ time: LOG_TIME, grams: LOG_GRAMS, held: true }]);
+  await late.release(false);
+  await expect(loggedRows(canvasElement)).toEqual([]);
+  await expect(canvas.getByRole('status')).toHaveTextContent(/Not saved/);
+  await userEvent.click(canvas.getByRole('button', { name: /Lows/ }));
+  await userEvent.click(canvas.getByRole('button', { name: 'No' }));
+  await waitFor(() => expect(canvas.getByRole('button', { name: 'No' })).toBeInTheDocument());
+  await backToDay(canvas);
+  await expect(canvas.getByRole('status')).toHaveTextContent(/Not saved/);
+  await userEvent.click(within(canvas.getByRole('status')).getByRole('button', { name: 'Retry' }));
+  await expect(late.sent).toEqual([[LOGGED.grams, LOG_TIME], [LOGGED.grams, LOG_TIME]]);
+  await expect(loggedRows(canvasElement)).toEqual([{ time: LOG_TIME, grams: LOG_GRAMS, held: true }]);
+  await late.release();
+  await waitFor(() => expect(canvas.queryByRole('status')).toBeNull());
+  await expect(loggedRows(canvasElement)).toEqual([{ time: LOG_TIME, grams: LOG_GRAMS, held: false }]);
+};
+const refusedLog = (layout: 'phone' | 'desktop') => {
+  const late = answersLate<[number, string | undefined], void>(undefined);
+  return logStory(layout, late, refusedLogPlay(late));
+};
+export const LateLogCarbsRefusedPhone = refusedLog('phone');
+export const LateLogCarbsRefusedDesktop = refusedLog('desktop');
 
 // Live (#495): Log carbs' Time row opens the system picker, and Save logs the
 // carbs at the time picked.

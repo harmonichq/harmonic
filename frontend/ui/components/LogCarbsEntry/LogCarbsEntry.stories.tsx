@@ -6,11 +6,9 @@ import { loggedGrams, loggedTime } from '../../day-model';
 import { LogCarbsEntry, type LogCarbsState } from './LogCarbsEntry';
 
 // One story per state (§4.2 LogCarbsEntry) on the phone's bottom sheet: empty,
-// filled, saving, not saved and Time edited; and the desktop popover under its
-// trigger, filled. A filled amount, and an edited time, are one entry the
-// simulated wearer logged. Two flows run
-// as play functions: typing that amount and saving (Save goes busy), and
-// retrying a save that failed.
+// filled and Time edited; and the desktop popover under its trigger, filled. A
+// filled amount, and an edited time, are one entry the simulated wearer logged.
+// One flow runs as a play function: typing that amount and saving.
 const meta = {
   title: 'LogCarbsEntry',
   component: LogCarbsEntry,
@@ -24,8 +22,6 @@ const sheet = (state: LogCarbsState): Story => ({ args: { state, grams: loggedGr
 
 export const Empty = sheet('empty');
 export const Filled = sheet('filled');
-export const Saving = sheet('saving');
-export const NotSaved = sheet('not_saved');
 export const TimeEdited: Story = { args: { state: 'filled', grams: loggedGrams(), time: loggedTime() } };
 export const Desktop: Story = {
   args: { state: 'filled', grams: loggedGrams(), layout: 'desktop' },
@@ -34,13 +30,12 @@ export const Desktop: Story = {
 
 const typed = formatValue(loggedGrams().value, loggedGrams().format);
 
-/** The sheet as a screen drives it: typing fills it, Save or Retry saves. */
+/** The sheet as a screen drives it: typing fills it, Save saves. */
 function Flow({ initial, onSave }: { initial: LogCarbsState; onSave: () => void }) {
   const [state, setState] = useState<LogCarbsState>(initial);
   return (
     <LogCarbsEntry state={state} grams={loggedGrams()}
-      onGramsChange={(text) => setState(text ? 'filled' : 'empty')}
-      onSave={() => { onSave(); setState('saving'); }} />
+      onGramsChange={(text) => setState(text ? 'filled' : 'empty')} onSave={onSave} />
   );
 }
 
@@ -55,17 +50,5 @@ export const TypeAndSave: Story = {
     await expect(save).toBeEnabled();
     await userEvent.click(save);
     await expect(args.onSave).toHaveBeenCalledOnce();
-    await expect(save).toHaveAttribute('aria-busy', 'true');
-  },
-};
-
-export const RetryAfterNotSaved: Story = {
-  args: { state: 'not_saved', onSave: fn() },
-  render: (args) => <Flow initial="not_saved" onSave={args.onSave!} />,
-  play: async ({ args, canvasElement }) => {
-    const retry = within(canvasElement).getByRole('button', { name: 'Retry' });
-    await userEvent.click(retry);
-    await expect(args.onSave).toHaveBeenCalledOnce();
-    await expect(retry).toHaveAttribute('aria-busy', 'true');
   },
 };

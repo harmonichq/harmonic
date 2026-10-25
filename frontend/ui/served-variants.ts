@@ -13,6 +13,8 @@
 //   candidate of a kind the app does not know.
 // - A Pattern whose trace chart is served with nothing to draw (ADR 523).
 // - A day navigator with no readings, as a store before its first sync serves it.
+// - The logged-carbs day before its first entry was logged, which a Log carbs
+//   story's save then logs (`BeforeFirstLog`).
 // - A Queue screen as the engine serves it after a story's write or read: the
 //   store read after a saved Focus, or a read state that changes once the screen
 //   has opened (`ServedAfter`).
@@ -86,6 +88,26 @@ const noControlIq = (() => {
 })();
 add('days', 'latest-no-control-iq', noControlIq);
 export const DAY_NO_CONTROL_IQ = 'latest-no-control-iq';
+
+/** The day the stories show with logged carbs, as served before its first entry
+ *  was logged: its first carb entry left out. */
+const LOGGED_DAY = fixtures.day.states.with_carbs as keyof typeof fixtures.day.days;
+const loggedDay = fixtures.day.days[LOGGED_DAY];
+const beforeFirstLog = (() => {
+  const day = clone(loggedDay);
+  day.carbs.carb_entries.splice(0, 1);
+  return day;
+})();
+
+/** Draw `children` with the logged-carbs day served before its first entry was
+ *  logged while `unlogged`, and as generated otherwise; put back as generated
+ *  when it is no longer drawn. */
+export function BeforeFirstLog({ unlogged, children }: { unlogged: boolean; children: ReactNode }) {
+  const days = answers.day.days as Record<string, unknown>;
+  days[LOGGED_DAY] = unlogged ? beforeFirstLog : loggedDay;
+  useEffect(() => () => { days[LOGGED_DAY] = loggedDay; }, [days]);
+  return children;
+}
 
 /** The navigator before the first sync: every served day, none with readings. */
 const unsynced = (() => {

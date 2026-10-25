@@ -9,29 +9,29 @@
 
 ## 1. The lock (the mock and the amendment)
 
-- [ ] 1.1 `docs/design/recommendations-redesign.md`: a dated §2.5 entry (2026-10-25, #630) recording #628 Q6 A and Q7 A and the badge moving at once; §1.3 Day · Log carbs (Loading "—"; Error "Not saved + Retry", in the bar); §1.3 Changes · Previous (other states: the change just ended, without its result until End is saved); §4.2 item 19 LogCarbsEntry (States: empty; filled). The header's lock line is added only after the operator says "locked" on the pull request (task 5.2)
-- [ ] 1.2 The mock: the stories of tasks 2.2 to 2.4 are the states the operator replays
+- [x] 1.1 `docs/design/recommendations-redesign.md`: a dated §2.5 entry (2026-10-25, #630) recording #628 Q6 A and Q7 A and the badge moving at once; §1.3 Day · Log carbs (Loading "—"; Error "Not saved + Retry", in the bar); §1.3 Changes · Previous (other states: the change just ended, without its result until End is saved); §4.2 item 19 LogCarbsEntry (States: empty; filled). The header's lock line is added only after the operator says "locked" on the pull request (task 5.2)
+- [x] 1.2 The mock: the stories of tasks 2.2 to 2.4 are the states the operator replays
 
 ## 2. Tests first (stories, each fake released before its play ends)
 
-- [ ] 2.1 Day stories, phone and desktop: a Prompt answer whose fake answers late; before release the Day badge and the kind's count are one less, after release (the wrapper serves the Prompts store after that answer) the same. And a Yes: the badge is one less while its write is in flight and stays so, not two less, once it settles with the card still open for grams
-- [ ] 2.2 Day stories, phone and desktop, on a stories-only `with_carbs` variant without its first entry (`served-variants.ts`), the story clock at that entry's time (ADR 630 point 5): Log carbs Save of its grams whose fake answers late; before release the entry is closed and its mark is drawn at that time with those grams; after release (the wrapper shows the `with_carbs` day) the same. And a refused save: the mark leaves, the bar reads "Not saved" on the Day view, a Prompt answer made meanwhile leaves the bar up, and Retry sends the same grams and `HH:MM` (the fake records them) and then saves
-- [ ] 2.3 Changes stories, phone and desktop. On `wearer` (an active Trial): End whose fake answers late (a story wrapper switches the store when the fake answers); before release "No active change" and the Previous count one more, and in Previous the ended row with its date and before → after and no result pill; after release, `wearer-ended`, with the row's pill. On `wearer-focus` (an active Focus; no store serves it ended): End held, the same held state with the ended Focus's row and no pill; the fake then refuses, and the active Focus is back with "Not saved"
-- [ ] 2.4 The existing Changes not-saved story still reverts to the active change with "Not saved" and Retry
-- [ ] 2.5 `LogCarbsEntry.stories.tsx`: drop the Saving and Not saved stories and Save's busy play; `DayScreen.stories.tsx`: drop `LogCarbsSaving*` and `LogCarbsNotSaved*`, and make the Save play assert the entry closes at once
+- [x] 2.1 Day stories, phone and desktop: a Prompt answer whose fake answers late; before release the Day badge and the kind's count are one less, after release (the wrapper serves the Prompts store after that answer) the same. And a Yes: the badge is one less while its write is in flight and stays so, not two less, once it settles with the card still open for grams
+- [x] 2.2 Day stories, phone and desktop, on a stories-only `with_carbs` variant without its first entry (`served-variants.ts`), the story clock at that entry's time (ADR 630 point 5): Log carbs Save of its grams whose fake answers late; before release the entry is closed and its mark is drawn at that time with those grams; after release (the wrapper shows the `with_carbs` day) the same. And a refused save: the mark leaves, the bar reads "Not saved" on the Day view, a Prompt answer made meanwhile leaves the bar up, and Retry sends the same grams and `HH:MM` (the fake records them) and then saves
+- [x] 2.3 Changes stories, phone and desktop. On `wearer` (an active Trial): End whose fake answers late (a story wrapper switches the store when the fake answers); before release "No active change" and the Previous count one more, and in Previous the ended row with its date and before → after and no result pill; after release, `wearer-ended`, with the row's pill. On `wearer-focus` (an active Focus; no store serves it ended): End held, the same held state with the ended Focus's row and no pill; the fake then refuses, and the active Focus is back with "Not saved"
+- [x] 2.4 The existing Changes not-saved story still reverts to the active change with "Not saved" and Retry
+- [x] 2.5 `LogCarbsEntry.stories.tsx`: drop the Saving and Not saved stories and Save's busy play; `DayScreen.stories.tsx`: drop `LogCarbsSaving*` and `LogCarbsNotSaved*`, and make the Save play assert the entry closes at once
 
 ## 3. Models
 
-- [ ] 3.0 `served-variants.ts`: the stories-only `with_carbs` variant without its first logged entry
+- [x] 3.0 `served-variants.ts`: the stories-only `with_carbs` variant without its first logged entry
 
-- [ ] 3.1 `day-model.ts`: `unanswered` with held answers; `dayChartOf` with held entries
-- [ ] 3.2 `changes-model.ts`: `change`, `previousCount`, `previousChanges` with `ended`
+- [x] 3.1 `day-model.ts`: `unanswered` with held answers; `dayChartOf` with held entries
+- [x] 3.2 `changes-model.ts`: `change`, `previousCount`, `previousChanges` with `ended`
 
 ## 4. Screens and component
 
-- [ ] 4.1 `DayScreen.tsx`: pass the in-flight answers to the badge and counts; the `now` prop; Save reads the clock, passes `HH:MM`, closes the entry, holds it and draws it; a refusal drops it and holds its own Retry, apart from the Prompts', on the Day view's bar; remove the Log carbs `saving` and `not_saved` handling
-- [ ] 4.2 `ChangesScreen.tsx`: confirming End holds `ending` until the write resolves or is refused
-- [ ] 4.3 `LogCarbsEntry.tsx` (and its CSS if it styles them): remove the `saving` and `not_saved` states
+- [x] 4.1 `DayScreen.tsx`: pass the in-flight answers to the badge and counts; the `now` prop; Save reads the clock, passes `HH:MM`, closes the entry, holds it and draws it; a refusal drops it and holds its own Retry, apart from the Prompts', on the Day view's bar; remove the Log carbs `saving` and `not_saved` handling
+- [x] 4.2 `ChangesScreen.tsx`: confirming End holds `ending` until the write resolves or is refused
+- [x] 4.3 `LogCarbsEntry.tsx` (and its CSS if it styles them): remove the `saving` and `not_saved` states
 
 ## 5. Gate and lock
 

@@ -4,9 +4,9 @@
 // not hit by accident. No certainty control and no presets: a typed amount
 // posts with certainty "exact".
 //
-// Empty: Save waits for an amount. Saving: Save is busy and the field holds.
-// Not saved: the amount stays, the failure is a ⚠ label, and the primary
-// becomes Retry (§1.2).
+// Empty: Save waits for an amount. Save closes it at once: a save the engine
+// refuses is the transient bar's "Not saved", never the entry's (§2.5,
+// 2026-10-25).
 //
 // Time edited: the row shows the time chosen instead of Now. Pressing the row
 // opens the system's own time picker (a native time input beside it), on phone
@@ -25,7 +25,7 @@ import '../../shared.css';
 import { usePresence } from '../../motion';
 import './LogCarbsEntry.css';
 
-export type LogCarbsState = 'empty' | 'filled' | 'saving' | 'not_saved';
+export type LogCarbsState = 'empty' | 'filled';
 
 export type LogCarbsEntryProps = {
   state: LogCarbsState;
@@ -46,7 +46,6 @@ export type LogCarbsEntryProps = {
   align?: 'start' | 'end';
   /** The typed digits, on each change. */
   onGramsChange?: (text: string) => void;
-  /** Save, or Retry after a failed save. */
   onSave?: () => void;
 };
 
@@ -65,18 +64,15 @@ function pick(input: RefObject<HTMLInputElement | null>) {
 }
 
 function Entry({ state, grams, time, chosen, onTimeChange, onGramsChange, onSave }: EntryProps) {
-  const failed = state === 'not_saved';
   const picker = useRef<HTMLInputElement>(null);
   return (
     <>
       <h2 className="ui-logcarbs__title">Log carbs</h2>
       <div className="ui-logcarbs__field">
-        <GramsField value={state === 'empty' ? null : grams} focused={state !== 'saving'} disabled={state === 'saving'}
-          onChange={onGramsChange} />
+        <GramsField value={state === 'empty' ? null : grams} focused onChange={onGramsChange} />
       </div>
       <div className="ui-logcarbs__time-row">
-        <button type="button" className="ui-logcarbs__time" data-role="row" disabled={state === 'saving'}
-          onClick={() => pick(picker)}>
+        <button type="button" className="ui-logcarbs__time" data-role="row" onClick={() => pick(picker)}>
           <span>Time</span>
           <span className="ui-logcarbs__value">
             {chosen ?? (time ? <Num value={time} /> : 'Now')}
@@ -84,13 +80,11 @@ function Entry({ state, grams, time, chosen, onTimeChange, onGramsChange, onSave
           </span>
         </button>
         <input ref={picker} className="ui-logcarbs__picker" type="time" aria-label="Time" tabIndex={-1}
-          value={chosen ?? ''} disabled={state === 'saving'}
+          value={chosen ?? ''}
           onChange={(event) => { if (event.currentTarget.value) onTimeChange?.(event.currentTarget.value); }} />
       </div>
       <div className="ui-logcarbs__foot">
-        {failed && <p className="ui-logcarbs__failed"><span aria-hidden="true">⚠</span> Not saved</p>}
-        <Button kind="primary" label={failed ? 'Retry' : 'Save'} disabled={state === 'empty'} busy={state === 'saving'}
-          onClick={onSave} />
+        <Button kind="primary" label="Save" disabled={state === 'empty'} onClick={onSave} />
       </div>
     </>
   );

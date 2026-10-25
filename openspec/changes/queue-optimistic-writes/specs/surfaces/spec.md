@@ -95,10 +95,11 @@ as refused. While any refused write is held, the transient bar SHALL read "Not
 saved" with Retry, outranking every other bar the Queue shows. Retry SHALL send
 every held refused write again, in order, each on a fresh guidance read. A held
 refusal SHALL be dropped when its write saves, or when the engine answers that
-its subject is no longer served (404). A refused Snooze SHALL NOT be held
-when the person made a Restore on its subject after it, nor a refused Done when
-the person made its Undo after it; any other later write SHALL leave a refusal
-held. A Retry's re-send SHALL NOT count as a later write. A Restore, or an
+its subject is no longer served (404). A refused write SHALL NOT be held
+when the person made its own Undo on its subject after it: a Restore for a
+Snooze and a Snooze for a Restore, an Undo for a Done and a Done for an Undo.
+A Done made after its refused Undo SHALL NOT be sent. Any other later write
+SHALL leave a refusal held. A Retry's re-send SHALL NOT count as a later write. A Restore, or an
 Undo of a Done, whose subject's earlier Snooze or Done was refused SHALL NOT be
 sent, since there is nothing left to undo. The writes in flight and the
 refused ones SHALL be kept by the live adapter, not the screen, so an item
@@ -149,3 +150,10 @@ refusal keeps its bar, across a tab change.
   pressed its Snooze
 - **WHEN** the engine refuses the Focus and saves the snooze
 - **THEN** the item is in Snoozed and the bar reads "Not saved" with Retry
+
+#### Scenario: A Snooze after a refused Restore cancels its refusal
+
+- **GIVEN** a Restore in flight, and the person has snoozed the item again
+- **WHEN** the engine refuses the Restore and saves the snooze
+- **THEN** the item is in Snoozed, no refusal is held, and Retry never
+  restores it

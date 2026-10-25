@@ -51,10 +51,16 @@ Snoozed count does not move until the answer lands.
    (Accepted failure).
 7. A write can now be made on an item while an earlier one on it is in flight
    (Undo, or Restore from the Snoozed list, while a snooze or a Done is still
-   unanswered). A write's own Undo is the person's intent: a refused Snooze is
-   not held as refused when a Restore was made on its subject after it, nor a
-   refused Done when an Undo of it was made after it (#628 Q5 A). Any other
-   later write leaves a refusal held: a refused Focus shows "Not saved" with
+   unanswered). A write's own Undo is the person's intent, and the pairs undo
+   each other both ways: a refused Snooze is not held as refused when a
+   Restore was made on its subject after it, nor a refused Restore when a
+   Snooze was; a refused Done is not held when its Undo was made after it, nor
+   a refused Undo when a Done was (#628 Q5 A, clarified in lock 3). A Snooze
+   made after a refused Restore is still sent: the engine re-stamps its
+   decision time, so the served Until matches the drawn one. A Done made after
+   a refused Undo is not sent: the engine still holds the Done and refuses a
+   second one on a card waiting for the pump (`api.py` `ineligible_source`).
+   Any other later write leaves a refusal held: a refused Focus shows "Not saved" with
    Retry whatever follows it, since a Snooze does not undo a Focus. A
    Restore or an Undo of a Done is not sent when its subject's earlier Snooze
    or Done was refused: the engine answers a restore of an unsnoozed subject 200

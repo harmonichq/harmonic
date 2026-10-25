@@ -42,6 +42,7 @@ from .explore_exposures import build_exposures
 from .explore_time_of_day import DATA_DAYS as TIME_OF_DAY_DAYS
 from .explore_time_of_day import DEFAULT_DATA_DAYS as TIME_OF_DAY_DEFAULT_DAYS
 from .explore_time_of_day import build_time_of_day_windows
+from .insulin_summary import build_insulin_windows
 from .meal_size import build_meal_size_windows
 from .events import CarbEntry, parse_t
 from . import findings_projection as findings_projection_module
@@ -91,7 +92,7 @@ _WARMING: "contextvars.ContextVar[bool]" = contextvars.ContextVar("warming", def
 
 # The fixed results that cost seconds, not tens of seconds, lightest first: the warm
 # pass and the reads waiting on a predecessor's replacement both take them first.
-_LIGHTEST = ("explore-time-of-day", "meal-size", "outcomes")
+_LIGHTEST = ("explore-time-of-day", "meal-size", "insulin", "outcomes")
 
 
 def _crossed_by_a_write(error) -> bool:
@@ -174,7 +175,7 @@ def _analysis_payload(result) -> dict:
 # and are deliberately absent.
 _RECORDED_DATA_RESULTS = frozenset((
     "analyze", "scenarios", "exposures", "explore-time-of-day", "meal-size",
-    "findings-history-snapshot", "outcomes", "day-navigator", "model-view",
+    "insulin", "findings-history-snapshot", "outcomes", "day-navigator", "model-view",
     "timeline", "catalog",
 ))
 
@@ -941,6 +942,19 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             raise HTTPException(status_code=400,
                                 detail=f"days must be one of {list(TIME_OF_DAY_DAYS)}")
         return fixed_response(fixed(("meal-size",), "meal-size-v3", build_meal_size_windows),
+                              lambda windows: windows[str(days)])
+
+    @app.get("/api/explore/insulin")
+    def explore_insulin_endpoint(days: int = TIME_OF_DAY_DEFAULT_DAYS,
+                                 _: None = Depends(require_token)) -> dict:
+        """The Overview's insulin figures (#632, ADR 632): daily dose, boluses and
+        carbs per day, and the bolus units by type and by delivery method, over the
+        last 14, 30 or 90 days. It reads only recorded data, and its three windows
+        are one fixed result, read in one pass; each read serves its own window."""
+        if days not in TIME_OF_DAY_DAYS:
+            raise HTTPException(status_code=400,
+                                detail=f"days must be one of {list(TIME_OF_DAY_DAYS)}")
+        return fixed_response(fixed(("insulin",), "insulin-v1", build_insulin_windows),
                               lambda windows: windows[str(days)])
 
     @app.get("/api/explore/exposures")
@@ -1903,6 +1917,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             # windows) and its outcomes.
             ("explore-time-of-day", lambda: explore_time_of_day_endpoint(days=TIME_OF_DAY_DEFAULT_DAYS)),
             ("meal-size", lambda: explore_meal_size_endpoint(days=TIME_OF_DAY_DEFAULT_DAYS)),
+            ("insulin", lambda: explore_insulin_endpoint(days=TIME_OF_DAY_DEFAULT_DAYS)),
             *((f"outcomes-{days}", lambda days=days: outcomes_endpoint(window=days))
               for days in TIME_OF_DAY_DAYS),
             # The snapshot's first input, warmed as its own shape.

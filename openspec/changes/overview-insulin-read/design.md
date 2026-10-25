@@ -13,11 +13,15 @@ takes `days` in `DATA_DAYS` (400 otherwise), reads `fixed(("insulin",),
 added to `_RECORDED_DATA_RESULTS` (the builder reads only `cgm_readings`,
 `basal_events`, `bolus_events` and `carb_entries`), to
 `_LIGHTEST` after `"meal-size"`, and to the warm roster after Meal size's entry.
+The roster leads the app by one slice: the app reads the endpoint only once
+#634 lands, so the roster's docstring and AGENTS.md's roster paragraphs, which
+name what the five tabs read, are updated in #634, not here.
 
 ## ADR 632 — The shape
 
 ```
-window: { start, end, data_days } | null
+window: { start, end, data_days } | null     # data_days: the window's length, as the profile's
+delivery_days                                  # the days inside it with any basal or bolus row
 daily_dose: { units }
 basal: { units, share }          bolus: { units, share }
 boluses: { count, manual: { count, share }, control_iq: { count, share } }
@@ -26,7 +30,7 @@ by_type:   { food, correction, override, control_iq }   each { units, share }
 by_method: { standard, extended, quick, control_iq }     each { units, share }
 ```
 
-Every figure is a daily average over `data_days`, served unrounded; the card's
+Every figure is a daily average over `delivery_days`, served unrounded; the card's
 format rounds it. A share is the part over its total as a fraction (the
 `share` format prints it as a whole percent). `by_type` shares are over the
 bolus units; `by_method` shares likewise, so a store with codeless boluses
@@ -34,29 +38,37 @@ serves method shares that do not reach 100 %.
 
 ## ADR 632 — The denominator is the window's days with any delivery
 
-`data_days` counts the pump-local days inside the window that hold at least one
-basal or bolus row. A window a sync has not reached, or a pump off the body,
-does not dilute the average. It is the number the Overview already prints
-beside its profile, so the cards and the profile name one population.
+`delivery_days` counts the pump-local days inside the window that hold at least
+one basal or bolus row. A window a sync has not reached, or a pump off the body,
+does not dilute the average. It is its own field: `window.data_days` keeps the
+meaning the profile and Meal size give it, the window's length, so the sibling
+reads never serve one name with two meanings. A window with no delivery serves
+`delivery_days` 0 and every average null.
 
 ## ADR 632 — Basal units are delivered rate times duration
 
 Basal units per day are the sum over the window's `basal_events` of
 `basal_rate × duration_mins / 60`, the delivered rate (`commandedRate`), never
 the programmed one, over `data_days`. A row with a null rate or duration adds
-nothing. Bolus units are the sum of `insulin` over the window's completed
-boluses with a positive `insulin`.
+nothing. Bolus units are the sum of `insulin` over the window's boluses whose
+`completion` is `"Completed"` or null (the meals' and carb-ratio convention,
+`meals.py`) with a positive `insulin`; a bolus of another completion is not
+counted anywhere. Carbs per day are the window's bolus `carbs` plus the grams
+of its `carb_entries`; an entry of unknown grams (`grams` null, certainty
+`unknown`) adds nothing.
 
 ## ADR 632 — The type partition
 
-Each bolus's units go to exactly one row of `by_type`, in this order:
-Control-IQ when `BolusEvent.is_automatic_bolus` is true (codes 3 and 6);
-otherwise Override when `user_override` is 1; otherwise, when both
-`food_insulin` and `correction_insulin` are served, `food_insulin` to Food and
-`correction_insulin` to Correction (the requested split; the delivered total
-is what the card's shares are over, so a bolus whose split exceeds its delivery
-is scaled to it); otherwise the whole bolus to Food when it carried carbs and
-to Correction when it did not. The coordinating session set these as the
+Every unit of a bolus goes to exactly one row of `by_type`, so the four rows
+sum to the bolus units, in this order: the whole bolus to Control-IQ when
+`BolusEvent.is_automatic_bolus` is true (codes 3 and 6); otherwise the whole
+bolus to Override when `user_override` is 1; otherwise, when `food_insulin` and
+`correction_insulin` are both served and sum above zero, the delivered units
+split between Food and Correction in the requested proportion,
+`food / (food + correction)` to Food and the rest to Correction, whatever the
+requested total's relation to the delivery; otherwise (no split, or a split
+summing to zero, as a Quick bolus that skipped the calculator) the whole bolus
+to Food when it carried carbs and to Correction when it did not. The coordinating session set these as the
 triage defaults on 2026-10-24.
 
 ## ADR 632 — The method partition
@@ -69,8 +81,10 @@ no method row. Manual and Control-IQ counts in `boluses` read
 ## ADR 632 — The wearer gains Extended and Quick, the showcase nothing
 
 `scripts/ui_patient.py` stamps, on a fixed rule over the day index, one planned
-meal bolus a week as Extended (`bolus_options` 1, `extended` 1) and one user
-correction a week as Quick (`bolus_options` 2), delivery and glucose unchanged,
+meal bolus a week that is not an override (never a "short" one, which the
+Extended code would drop from the override classifier and `override_gap`) as
+Extended (`bolus_options` 1, `extended` 1) and one user correction a week as
+Quick (`bolus_options` 2), delivery and glucose unchanged,
 so the wearer serves every method row. The fixtures regenerate; every existing
 store-state guard in `gen_ui_fixtures.py` must stay green, and a story store
 that loses a state is fixed by choosing other days, never by relaxing a guard.

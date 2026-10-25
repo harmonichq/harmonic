@@ -10,9 +10,11 @@ and share by type (Food, Correction, Override, Control-IQ) and by delivery
 method (Standard, Extended, Quick, Control-IQ). The three windows SHALL be one fixed result keyed by
 the recorded-data revision, warmed by the roster, computed in one pass, each
 read serving its own window. Every average SHALL divide by the window's days
-that hold any delivery, served as `data_days`. Each bolus SHALL count in exactly
-one type row and at most one method row, a bolus with no provenance code
-counting in the totals only. A store with no readings SHALL serve a null window
+that hold any delivery, served as `delivery_days` beside the window's length.
+Every unit of a bolus SHALL count in exactly one type row, a bolus with a
+requested food and correction split dividing its delivered units in that
+proportion, and each bolus SHALL count in at most one method row, a bolus with
+no provenance code counting in the totals only. A store with no readings SHALL serve a null window
 and null figures. Any other `days` SHALL be refused with 400.
 
 #### Scenario: Each window's figures are its own
@@ -25,7 +27,7 @@ and null figures. Any other `days` SHALL be refused with 400.
 
 - **GIVEN** a Control-IQ automatic bolus, an overridden meal bolus, a meal bolus with a food and correction split, a meal bolus with no split, and a correction with no split
 - **WHEN** the read is asked
-- **THEN** Control-IQ holds the first, Override the second, Food the third's food part and the fourth, Correction the third's correction part and the fifth, and the four type rows' units sum to the bolus units
+- **THEN** Control-IQ holds the first, Override the second, Food the third's delivered units in its food proportion and the fourth, Correction the rest of the third and the fifth, and the four type rows' units sum to the bolus units
 
 #### Scenario: A codeless bolus is in the totals only
 

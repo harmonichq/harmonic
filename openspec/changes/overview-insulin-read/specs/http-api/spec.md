@@ -11,9 +11,10 @@ method (Standard, Extended, Quick, Control-IQ). The three windows SHALL be one f
 the recorded-data revision, warmed by the roster, computed in one pass, each
 read serving its own window. Every average SHALL divide by the window's days
 that hold any delivery, served as `delivery_days` beside the window's length.
-Every unit of a bolus SHALL count in exactly one type row, a bolus with a
-requested food and correction split dividing its delivered units in that
-proportion, and each bolus SHALL count in at most one method row, a bolus with
+Every unit of a bolus SHALL count in exactly one type row, a user bolus that
+is not overridden being split as the Day screen splits it, and basal plus the
+bolus units SHALL equal the Day screens' total over the same days; every bolus
+with delivered insulin SHALL count, whatever its completion; and each bolus SHALL count in at most one method row, a bolus with
 no provenance code counting in the totals only. A store with no readings SHALL serve a null window
 and null figures. Any other `days` SHALL be refused with 400.
 
@@ -40,3 +41,9 @@ and null figures. Any other `days` SHALL be refused with 400.
 - **GIVEN** the read served at every window
 - **WHEN** a carb entry is written, and later the server restarts
 - **THEN** the next read at each window answers at once with `input_data_age` until the worker has recomputed it, and after the restart every window answers from the derived-results file without computing
+
+#### Scenario: A bolus cut short counts what it delivered
+
+- **GIVEN** a meal bolus that requested 4 U and was terminated after delivering 2.5 U
+- **WHEN** the read is asked
+- **THEN** its 2.5 U are in the bolus units and in Food, as the Day screen's total for that day counts them

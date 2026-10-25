@@ -29,7 +29,8 @@ none.
   delivery, served as `delivery_days` beside the window's length.
 - **The partition rules are the engine's, recorded as ADRs.** Control-IQ's own
   boluses by their provenance code; Override by the pump's override flag;
-  Food and Correction from the requested split, a bolus with no split going
+  Food and Correction by the Day screen's own split (ADR 492, reused, so the
+  Overview and Day count one population), a bolus with no split going
   whole by whether it carried carbs; the delivery method by the code, a bolus
   with no code counted in the totals and in no method row.
 - **The library fixtures carry the answer.** `scripts/gen_ui_fixtures.py` adds
@@ -65,7 +66,7 @@ none.
 - **Unsupported:** a basal row with no duration or rate (it contributes no
   units); a window with no delivery (every figure null, `delivery_days` 0).
 - **Evidence owed:** a backend test building a store of N days of known events
-  and asserting each card's figures as literals per window (manual and Control-IQ boluses, an override, an extended and a quick bolus, a bolus with no split, a bolus whose split is below its delivery, a bolus whose split sums to zero, a bolus with a negative correction part, a codeless bolus, a null-completion bolus, a bolus of another completion, manual carbs with one entry of unknown grams, a delivery before the window opens, a window day with no delivery); the Overview-instant tests extended to the new read (a
+  and asserting each card's figures as literals per window (manual and Control-IQ boluses, an override, an extended and a quick bolus, a bolus with no split, a bolus whose split is below its delivery, a bolus whose split sums to zero, a bolus with a negative correction part, a codeless bolus, a null-completion bolus, a bolus cut short (another completion, delivered units counted), a basal row running into the window from before it, manual carbs with one entry of unknown grams, a delivery before the window opens, a window day with no delivery); the Overview-instant tests extended to the new read (a
   write answers its predecessor, a restart computes nothing, the worker's
   order); the follow-up-read record extended to the new read (AGENTS.md's condition
   for `_RECORDED_DATA_RESULTS`); the fixtures' store-state guard; both

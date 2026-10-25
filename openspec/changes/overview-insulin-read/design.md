@@ -45,40 +45,45 @@ meaning the profile and Meal size give it, the window's length, so the sibling
 reads never serve one name with two meanings. A window with no delivery serves
 `delivery_days` 0 and every average null.
 
-## ADR 632 — Basal units are delivered rate times duration
+## ADR 632 — The units are the Day screen's split, with Override carved out
 
-Basal units per day are the sum over the window's `basal_events` of
-`basal_rate × duration_mins / 60`, the delivered rate (`commandedRate`), never
-the programmed one, over `delivery_days`. A row with a null rate or duration adds
-nothing. Bolus units are the sum of `insulin` over the window's boluses whose
-`completion` is `"Completed"` or null (the meals' and carb-ratio convention,
-`meals.py`) with a positive `insulin`; a bolus of another completion is not
-counted anywhere. Carbs per day are the window's bolus `carbs` plus the grams
-of its `carb_entries`; an entry of unknown grams (`grams` null, certainty
-`unknown`) adds nothing.
+Amended 2026-10-25 (lock 2) after code review: a second implementation of the
+Day screen's split (ADR 492, `timeline.insulin_totals`) counted a different
+population, so the Overview's daily dose could disagree with the Day screens
+over the same days. The coordinating session approved reusing the Day screen's
+split under Connor's delegation.
 
-## ADR 632 — The type partition
+Each window's units come from `timeline.insulin_totals` over `[window start,
+end)`, the one owner of what a window's delivered insulin is:
 
-Every unit of a bolus goes to exactly one row of `by_type`, so the four rows
-sum to the bolus units, in this order: the whole bolus to Control-IQ when
-`BolusEvent.is_automatic_bolus` is true (codes 3 and 6); otherwise the whole
-bolus to Override when `user_override` is 1; otherwise, when `food_insulin` and
-`correction_insulin` are both served, both at or above zero and summing above
-zero (a correction the calculator subtracted below target is negative in the
-feed and would print a row below zero), the delivered units
-split between Food and Correction in the requested proportion,
-`food / (food + correction)` to Food and the rest to Correction, whatever the
-requested total's relation to the delivery; otherwise (no split, a split summing to zero as a Quick bolus that skipped the
-calculator, or a negative part) the whole bolus
-to Food when it carried carbs and to Correction when it did not. The coordinating session set these as the
-triage defaults on 2026-10-24.
+- **Basal** is the delivered rate over the part of each row inside the window,
+  never the programmed rate. The builder reads basal from a day before the
+  widest window opens, so a row that starts before a window and runs into it
+  counts its inside part.
+- **Boluses** are every bolus in the window with delivered insulin, whatever its
+  completion: a bolus cut short counts the units it delivered.
+- **Control-IQ** is a bolus `BolusEvent.is_automatic_bolus` tags automatic.
+- **Override** is a user bolus with `user_override` 1, its delivered units whole.
+  It is the one category the Day screen lacks, so the overridden boluses are
+  summed here and left out of the boluses handed to `insulin_totals`; every
+  other user bolus is split there.
+- **Food and Correction** are `insulin_totals`' meal and correction: the
+  requested food and correction sizes, each clamped at zero, divide the
+  delivered units in that proportion; with no positive split, a bolus with carbs
+  is all Food and one without is all Correction.
+
+So the four type rows sum to the bolus units, and basal plus the bolus units is
+the Day screens' total over the same days. Carbs per day are the counted
+boluses' `carbs` plus the grams of the window's `carb_entries`; an entry of
+unknown grams (`grams` null, certainty `unknown`) adds nothing.
 
 ## ADR 632 — The method partition
 
 `by_method` reads `bolus_options`: 0 Standard, 1 Extended, 2 Quick, 3 and 6
 Control-IQ. Every other code, and a null one, counts in the bolus total and in
 no method row. Manual and Control-IQ counts in `boluses` read
-`is_automatic_bolus`: true is Control-IQ, anything else manual.
+`is_automatic_bolus`: true is Control-IQ, anything else manual. Both count the
+same boluses the units do: every bolus in the window with delivered insulin.
 
 ## ADR 632 — The wearer gains Extended and Quick, the showcase nothing
 

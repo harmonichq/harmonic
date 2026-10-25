@@ -1,9 +1,9 @@
 ## 1. The builder (`ciq_autotune/insulin_summary.py`, ADR 632)
 
 - [x] 1.1 `build_insulin_windows(store, *, windows=DATA_DAYS)`: the window rule and the null window for a store with no readings, as `meal_size.build_meal_size_windows`
-- [x] 1.2 `window.data_days` (the length) and `delivery_days`, basal units, bolus units and count (the completion convention), carbs (bolus carbs plus `carb_entries` grams, unknown grams adding nothing) per window
-- [x] 1.3 The type partition (proportional split, zero-split fall-through) and the method partition, and the manual / Control-IQ counts, each with its share as its own field
-- [x] 1.4 The module docstring in the idiom of `meal_size.py`: what is read, the rules, "a report, never a Queue item"
+- [ ] 1.2 `window.data_days` (the length) and `delivery_days`, basal and bolus units from `timeline.insulin_totals` (ADR 632 amended: basal clipped to the window, every bolus with delivered insulin), bolus count over the same boluses, carbs (bolus carbs plus `carb_entries` grams, unknown grams adding nothing) per window
+- [ ] 1.3 The type rows from `insulin_totals`' meal, correction and Control-IQ over the non-override boluses, Override the overridden user boluses whole; the method partition, and the manual / Control-IQ counts, each with its share as its own field
+- [ ] 1.4 The module docstring in the idiom of `meal_size.py`: what is read, the rules, "a report, never a Queue item"
 
 ## 2. The read (`ciq_autotune/api.py`)
 
@@ -12,7 +12,7 @@
 
 ## 3. Tests
 
-- [x] 3.1 `tests/test_insulin_summary.py`: a manufactured store of known events (a flat history, basal at known rates, manual and Control-IQ boluses, an override, an extended and a quick bolus, a bolus with no split, a bolus whose split is below its delivery, a bolus whose split sums to zero, a bolus with a negative correction part, a codeless bolus, a null-completion bolus, a bolus of another completion, manual carbs with one entry of unknown grams, a delivery before the window opens, a window day with no delivery), each served figure a literal off the recipe per window, the null window on an empty store, and the 400
+- [ ] 3.1 `tests/test_insulin_summary.py`: a manufactured store of known events (a flat history, basal at known rates, manual and Control-IQ boluses, an override, an extended and a quick bolus, a bolus with no split, a bolus whose split is below its delivery, a bolus whose split sums to zero, a bolus with a negative correction part, a codeless bolus, a null-completion bolus, a bolus cut short (another completion, its delivered units counted), a basal row running into the window from before it, manual carbs with one entry of unknown grams, a delivery before the window opens, a window day with no delivery), each served figure a literal off the recipe per window, the null window on an empty store, and the 400
 - [x] 3.2 `tests/test_api.py` `OverviewInstantTest`: the read in `_OVERVIEW`, in the restart test's counted builders, and in the worker-order test after Meal size
 - [x] 3.3 `tests/test_guidance_api.py`: `("/api/explore/insulin", {"days": 14})` in the `recorded` tuple of `test_every_result_a_follow_up_write_keeps_reads_no_follow_up_state` (the transitive proof AGENTS.md requires for `_RECORDED_DATA_RESULTS`), and the follow-up-write test counts the new builder once beside Meal size's
 
@@ -26,3 +26,4 @@
 ## 5. Records
 
 - [ ] 5.1 The pull request body in the app's terms: what the Overview will be able to show, why the showcase is untouched, what to check
+- [ ] 5.2 Lock 2 (2026-10-25): the module reads `timeline.insulin_totals` and keeps no second split or basal sum; the module docstring names ADR 492; the redundant zero-day check in a share is gone

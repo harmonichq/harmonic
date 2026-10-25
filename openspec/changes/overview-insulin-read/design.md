@@ -38,8 +38,11 @@ serves method shares that do not reach 100 %.
 
 ## ADR 632 — The denominator is the window's days with any delivery
 
-`delivery_days` counts the pump-local days inside the window that hold at least
-one basal or bolus row. A window a sync has not reached, or a pump off the body,
+`delivery_days` counts the pump-local days inside the window that hold
+delivery: a day any part of a basal row's span inside the window falls on, or
+the day of a delivered bolus. A row crossing midnight counts on both days,
+inside a window or at its edge, so a day counts the same in every window that
+holds it (amended 2026-10-25, lock 3). A window a sync has not reached, or a pump off the body,
 does not dilute the average. It is its own field: `window.data_days` keeps the
 meaning the profile and Meal size give it, the window's length, so the sibling
 reads never serve one name with two meanings. A window with no delivery serves
@@ -57,9 +60,11 @@ Each window's units come from `timeline.insulin_totals` over `[window start,
 end)`, the one owner of what a window's delivered insulin is:
 
 - **Basal** is the delivered rate over the part of each row inside the window,
-  never the programmed rate. The builder reads basal from a day before the
-  widest window opens, so a row that starts before a window and runs into it
-  counts its inside part.
+  never the programmed rate. Each window reads basal from the mapper's cap on a
+  row's duration (`_BASAL_GAP_CAP_MIN`, ten minutes) before it opens, exactly as
+  the Day screen's read does (`timeline.py`), so a row that starts before a
+  window counts its inside part and the two screens agree on any stored row,
+  a longer one included (amended 2026-10-25, lock 3).
 - **Boluses** are every bolus in the window with delivered insulin, whatever its
   completion: a bolus cut short counts the units it delivered.
 - **Control-IQ** is a bolus `BolusEvent.is_automatic_bolus` tags automatic.

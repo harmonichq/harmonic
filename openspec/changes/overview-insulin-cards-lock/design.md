@@ -90,8 +90,12 @@ zero and `bolus.units` 0 at 30 d. No value is hand-written.
 words reach the allowlist through the generator's §2.5 Overview label list
 (`OVERVIEW_LABELS`), not §1.5: the shipped Settings Glossary page renders §1.5
 and lists only terms the app prints, so new terms would show there before any
-screen prints them. The amendment names the §1.5 rows #634 adds with the cards
-on the Overview: Override (a bolus you changed from the pump's suggestion,
+screen prints them. The amendment admits Override, Manual, Standard, Extended,
+Quick and Bolus to the two library cards ahead of their §1.5 rows, until #634
+adds those rows with the cards on the Overview (the precedent: `MARK_FIELDS` and
+`STATE_LABELS`, allowlisted "not yet in glossary §1.5"), so §1.5's rule that no
+other domain term appears in the UI holds for every shipped screen. The rows
+#634 adds: Bolus (insulin given at once, by you or by Control-IQ), Override (a bolus you changed from the pump's suggestion,
 counted whole on the Bolus review, apart from Meal and Correction), Manual (a
 bolus you gave, not Control-IQ), and Standard, Extended and Quick (how a bolus
 was delivered).

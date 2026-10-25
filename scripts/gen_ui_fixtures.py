@@ -38,7 +38,8 @@ Two committed outputs, one generator, one ``--check``:
   showcase case, whose meals are all 40 g or more.
   ``/api/explore/insulin`` (#632) for each window, as served, is held for the
   wearer (every bolus type and delivery method), its first days (fewer days with
-  delivery) and the unsynced store (no window).
+  delivery), ``wearer-no-bolus`` (the wearer's history with its boluses left
+  out, so no bolus units; ADR 633) and the unsynced store (no window).
 
   ``changes`` holds the Changes components' answers by store (the admission,
   every Trial on the roster, the Focus records with their served titles). The
@@ -233,7 +234,15 @@ QUEUE_LABELS = ("patterns", "started")
 WEEKDAYS = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
 # The Overview's date line names its comparison once: "vs previous 14 d"
 # (§2.5, 2026-10-14). "Previous" is already a plain interface word below.
-OVERVIEW_LABELS = ("vs",)
+# The Insulin summary and Bolus review cards' titles, headings and rows, and
+# their carbs in "g" (§2.5, 2026-10-25, ADR 633): admitted to the two library
+# cards ahead of the §1.5 rows #634 adds for Food, Bolus, Manual, Override,
+# Standard, Extended and Quick when the cards reach the Overview; not yet in
+# glossary §1.5.
+OVERVIEW_LABELS = ("vs", "Insulin summary", "Average daily insulin", "Basal", "Bolus",
+                   "Average daily boluses", "Manual", "Control-IQ", "Average daily carbs", "g",
+                   "Bolus review (daily average)", "Type", "Food", "Correction", "Override",
+                   "Delivery method", "Standard", "Extended", "Quick")
 CARB_RATIO_CASE = "basal-and-carb-ratio-lower"
 # A standalone habit (ADR 528): the QA case whose two rises its missed-meal habit
 # claims, and the wearer's lunch never bolused for on every weekday (the wearer's
@@ -564,6 +573,14 @@ def fixtures() -> dict:
         with Store.open(str(unsynced)):
             pass
         unsynced_client = _serve(unsynced)
+        # The insulin cards' window with no boluses (ADR 633): the wearer's
+        # history with its boluses left out, everything else kept.
+        no_bolus = scratch / "wearer-no-bolus.sqlite"
+        with Store.open(str(no_bolus)) as store:
+            ui_patient.materialize(store, trial=False, boluses=False)
+            reconcile_ingested_follow_up(store)
+        overview["wearer-no-bolus"] = {"insulin": _insulins(_serve(no_bolus))}
+
         overview["wearer-unsynced"] = {"outcomes": _outcomes(unsynced_client),
                                        "meal_size": _meal_sizes(unsynced_client),
                                        "insulin": _insulins(unsynced_client),
@@ -809,15 +826,19 @@ def _insulin(client: TestClient, days: int) -> dict:
 def _require_insulin(overview: dict) -> None:
     """Fail unless each insulin store still serves its state: the wearer every type
     and method row above zero at 90 days, its first days fewer days with delivery
-    than the wearer at 14, and the unsynced store no window."""
+    than the wearer at 14, the no-bolus store days with delivery and no bolus
+    units at 30, and the unsynced store no window."""
     wearer = overview["wearer"]["insulin"]
     rows = {f"{group}.{row}": part["units"] for group in ("by_type", "by_method")
             for row, part in wearer["90"][group].items()}
     first, full = (overview[store]["insulin"]["14"]["delivery_days"]
                    for store in ("wearer-first-days", "wearer"))
+    no_bolus = overview["wearer-no-bolus"]["insulin"]["30"]
     if (not all(units and units > 0 for units in rows.values()) or first >= full
+            or not no_bolus["delivery_days"] or no_bolus["bolus"]["units"] != 0
             or overview["wearer-unsynced"]["insulin"]["90"]["window"] is not None):
-        raise SystemExit(f"the insulin stores no longer serve their states: {rows} {first} {full}")
+        raise SystemExit(f"the insulin stores no longer serve their states: {rows} {first} {full} "
+                         f"{no_bolus['delivery_days']} {no_bolus['bolus']['units']}")
 
 
 def _day_navigator(client: TestClient) -> dict:

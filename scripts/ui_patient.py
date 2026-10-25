@@ -566,7 +566,7 @@ def simulate(*, trial: bool, trial_basal: float = TRIAL_BASAL, profile=PROFILE, 
 
 
 def materialize(store, *, trial: bool, days: int = DAYS, trial_basal: float = TRIAL_BASAL,
-                profile=PROFILE, changes=None, unbolused=(), dropouts=()) -> History:
+                profile=PROFILE, changes=None, unbolused=(), dropouts=(), boluses: bool = True) -> History:
     """Ingest the simulated history into ``store`` as a Tandem Source pull would:
     the profile read at the start (and again after each change the pull reaches),
     then CGM, basal, bolus and pump events. ``days`` stops the pull at the end of
@@ -576,7 +576,8 @@ def materialize(store, *, trial: bool, days: int = DAYS, trial_basal: float = TR
     it stands that day, and names the running one. On each day in ``dropouts``
     the sensor reads nothing in the half hour before that day's first carb
     bolus in the 11:00 block (#575), so a carb ratio Trial's trace has no start
-    to align that lunch at and leaves it off."""
+    to align that lunch at and leaves it off. ``boluses=False`` ingests no bolus
+    row, the rest of the history unchanged (#633): a window with no boluses."""
     changes = _changes(trial, trial_basal, profile, changes)
     history = simulate(trial=trial, profile=profile, changes=changes, unbolused=unbolused)
     for day in dropouts:
@@ -588,7 +589,7 @@ def materialize(store, *, trial: bool, days: int = DAYS, trial_basal: float = TR
     cut = _stamp(START + timedelta(days=days))
     history.cgm = [row for row in history.cgm if row["EventDateTime"] < cut]
     history.basal = [row for row in history.basal if row["time"] < cut]
-    history.bolus = [row for row in history.bolus if row["request_time"] < cut]
+    history.bolus = [row for row in history.bolus if boluses and row["request_time"] < cut]
     history.pump = [row for row in history.pump if row["time"] < cut]
     history.treated_lows = [low for low in history.treated_lows if _stamp(low[0]) < cut]
     profiles = {1: profile}

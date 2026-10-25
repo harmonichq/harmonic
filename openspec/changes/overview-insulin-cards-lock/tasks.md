@@ -5,9 +5,9 @@
 
 ## 2. The fixtures
 
-- [ ] 2.0 `scripts/ui_patient.py`: `materialize(..., boluses: bool = True)`; with False no bolus row is ingested; every existing store byte-identical (the `--check` proves it)
-- [ ] 2.1 `scripts/gen_ui_fixtures.py`: the `wearer-no-bolus` store (ADR 633) under `overview` with its insulin answer; `_require_insulin` extended; the cards' label words in the generator's Overview label list
-- [ ] 2.2 Regenerate `frontend/ui/__fixtures__/ui-fixtures.json` and `ui-allowlist.json`; `uv run python scripts/gen_ui_fixtures.py --check` green; every existing `_require_*` guard green
+- [x] 2.0 `scripts/ui_patient.py`: `materialize(..., boluses: bool = True)`; with False no bolus row is ingested; every existing store byte-identical (the `--check` proves it)
+- [x] 2.1 `scripts/gen_ui_fixtures.py`: the `wearer-no-bolus` store (ADR 633) under `overview` with its insulin answer; `_require_insulin` extended; the cards' label words in the generator's Overview label list
+- [x] 2.2 Regenerate `frontend/ui/__fixtures__/ui-fixtures.json` and `ui-allowlist.json`; `uv run python scripts/gen_ui_fixtures.py --check` green; every existing `_require_*` guard green
 
 ## 3. The components
 

@@ -18,23 +18,28 @@ pull request. #634 then puts the locked cards on the Overview.
 
 ## What changes
 
-- **The structure, in the lock doc.** A dated §2.5 amendment for the two cards;
-  §1.1's Overview row and §1.3's Overview row name them and their states;
-  §1.5 gains the terms the cards print that it lacks; §4.2 gains entry 28,
-  InsulinSummaryCard, and entry 29, BolusReviewCard, each naming the served
-  fields it prints. The amendment quotes only words Connor wrote or the
+- **The structure, in the lock doc.** A dated §2.5 amendment for the two cards,
+  which also names the §1.5 rows #634 adds when the cards reach the Overview
+  (the shipped Glossary page lists only terms the app prints, so they cannot
+  land before then); §4.2 gains entry 29, InsulinSummaryCard, and entry 30,
+  BolusReviewCard, each naming the served fields it prints. §1.1 and §1.3, the
+  Overview's rows, change with the screen in #634. The amendment quotes only words Connor wrote or the
   coordinating session relays as his.
 - **Two library components with their stories,** `InsulinSummaryCard` and
   `BolusReviewCard` under `frontend/ui/components/`, each read through one new
   selector in `frontend/ui/overview-model.ts` from the served answer, every
-  number a `Sourced` value. States: populated; the first days; a window whose
-  boluses are none (Bolus review's rows at 0 U with no share); no data; not yet
-  read. Phone at 390 and desktop at half the Overview's row.
+  number a `Sourced` value. States: populated; a window whose boluses are none
+  (Bolus review's rows at 0 U with no share); no data; not yet read. Phone at
+  390 and desktop at half the Overview's row.
 - **One fixture store more, from the generator.** A synthetic wearer's history
   with its boluses left out, so "a window with no boluses" is served, not
-  hand-written; the allowlist gains the cards' words through the generator's
-  label lists and the glossary.
-- **Nothing on the Overview screen moves** (#634), and nothing in the engine.
+  hand-written. `scripts/ui_patient.py`'s `materialize` gains a keyword that
+  leaves boluses out, its default leaving every existing store byte-identical.
+  The allowlist gains the cards' words through the generator's Overview label
+  list.
+- **No shipped screen moves.** Not the Overview (#634), not the Settings
+  Glossary page (its rows come from §1.5, which this change leaves alone), and
+  nothing in the engine.
 
 ## Not in this change
 
@@ -51,18 +56,17 @@ pull request. #634 then puts the locked cards on the Overview.
   control on either card (the Overview carries nothing to act on); a card that
   prints a number for a window the engine served as null, or a share where the
   engine served none; a committed fixture or story value written from real
-  data, or the screenshot's values anywhere; the amendment recording a decision
+  data, or the screenshot's values anywhere; a change to any shipped screen,
+  the Settings Glossary page included; the amendment recording a decision
   Connor did not make or a quotation he did not give; a change to the Overview
   screen or the engine.
 - **Must recover:** nothing automatic; a wrong card is a revision before
   "locked".
-- **Accepted failure:** the mock's defaults (Meal for the row Tandem calls
-  Food, one decimal on daily counts and units, the two cards side by side on
-  desktop) may be changed at the replay; each change is a revision round on
+- **Accepted failure:** the mock's defaults (ADR 633's five) may be changed at the replay; each change is a revision round on
   this pull request, at most three (ui-craft).
 - **Unsupported:** a window switch on the card itself (the Overview's switch
   drives it, in #634); hover or tap detail on a row.
 - **Evidence owed:** story plays for every state on both frames, through the
-  prechecks; the rendered stories attached to the pull request for the replay;
+  prechecks; the ui-craft cold critique over the renders, its findings fixed; the rendered stories attached to the pull request for the replay;
   the amendment text; the fixture generator's guard for the new store; the
   full pull-request gate once on the pushed commit.

@@ -1,14 +1,14 @@
 ## ADDED Requirements
 
-### Requirement: The Overview shows an Insulin summary and a Bolus review for its window
+### Requirement: The insulin cards print only the served insulin answer
 
-The Overview SHALL show two cards for the window it is switched to: an Insulin
-summary (the average daily dose with its basal and bolus parts, the average
-daily boluses with their manual and Control-IQ parts, the average daily carbs)
-and a Bolus review (bolus units and share by type and by delivery method, as a
-daily average). Every number a card prints SHALL be a field the engine served
-for that window, and a card SHALL print no share where the engine served none.
-A window with no delivery SHALL show "No data". Neither card SHALL carry a
+The component library's Insulin summary card SHALL print, for one window of
+the served insulin answer, the average daily insulin with its basal and bolus
+parts, the average daily boluses with their manual and Control-IQ parts, and
+the average daily carbs; its Bolus review card SHALL print bolus units and
+share by type and by delivery method. Every number either card prints SHALL be
+a field of that answer, and a card SHALL print no share where the answer serves
+none. A window with no delivery SHALL show "No data". Neither card SHALL carry a
 control.
 
 #### Scenario: A populated window

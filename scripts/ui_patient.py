@@ -38,8 +38,10 @@ The person: twelve weeks on a Tandem pump with Control-IQ and a CGM.
   low-carb. Most boluses are on time, with carb counts that scatter and run a
   little low; some are late, some undercount, a few are forgotten until the
   high alert and a few are overridden short, and small snacks often go
-  unbolused. Highs are corrected through the calculator, and now and then
-  corrected again on top of insulin still acting. Lows are treated with fast
+  unbolused. One meal bolus a week, on its third day and never a short one, is
+  Extended (#632). Highs are corrected through the calculator, the week's first
+  correction with Quick, and now and then corrected again on top of insulin
+  still acting. Lows are treated with fast
   carbs, a little later when asleep, sometimes too many. Exercise three
   evenings a week, with a temp basal, and a more insulin-sensitive night
   after it.
@@ -367,6 +369,7 @@ def simulate(*, trial: bool, trial_basal: float = TRIAL_BASAL, profile=PROFILE, 
     stacked_pending = None
     low_episode = False
     treat_at = None
+    extended_days, quick_weeks = set(), set()  # the weekly Extended and Quick (#632)
 
     def pump_profile(day: int):
         return _segments_on(day, profile, changes)
@@ -377,8 +380,11 @@ def simulate(*, trial: bool, trial_basal: float = TRIAL_BASAL, profile=PROFILE, 
         if insulin <= 0:
             return
         seq["bolus"] += 1
+        extended = option == 1  # timed by its start, which is its request (Store.upsert_bolus)
         history.bolus.append({
             "seq_num": seq["bolus"], "request_time": _stamp(START + timedelta(minutes=step * STEP)),
+            "extended_bolus": "1" if extended else "0",
+            "bolex_start_time": _stamp(START + timedelta(minutes=step * STEP)) if extended else None,
             "description": "Bolus", "completion": "Completed",
             "insulin": insulin, "requested_insulin": round(requested, 2),
             "carbs": carbs_g, "bg": round(bg_read) if bg_read else None,
@@ -481,8 +487,11 @@ def simulate(*, trial: bool, trial_basal: float = TRIAL_BASAL, profile=PROFILE, 
             correction = max(0.0, (seen - segment[4]) / segment[2] - bolus_iob[step])
             calculated = food + correction
             given = calculated * (0.6 + 0.15 * roll) if behaviour == "short" else calculated
+            extended = behaviour != "short" and day % 7 == 2 and day not in extended_days
+            if extended:
+                extended_days.add(day)
             bolus(step, insulin=given, requested=given, carbs_g=entered, bg_read=seen,
-                  food=food, correction=correction, option=0,
+                  food=food, correction=correction, option=1 if extended else 0,
                   override=1 if behaviour == "short" else 0, segment=segment)
             last_user_bolus = step
 
@@ -491,8 +500,11 @@ def simulate(*, trial: bool, trial_basal: float = TRIAL_BASAL, profile=PROFILE, 
                 and step - last_user_bolus >= 24 and rng.random() < 0.12):
             correction = (cgm - segment[4]) / segment[2] - bolus_iob[step]
             if correction >= 0.4:
+                quick = day // 7 not in quick_weeks
+                quick_weeks.add(day // 7)
                 bolus(step, insulin=correction, requested=correction, carbs_g=None, bg_read=cgm,
-                      food=0.0, correction=correction, option=0, override=0, segment=segment)
+                      food=0.0, correction=correction, option=2 if quick else 0, override=0,
+                      segment=segment)
                 last_user_bolus = last_correction = step
                 if rng.random() < 0.3:
                     stacked_pending = step + rng.randint(9, 15)

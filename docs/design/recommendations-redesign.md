@@ -1493,6 +1493,65 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
      swipe, and not on desktop. One day per swipe. The month drop-down stays
      the visible equivalent.
 
+- **2026-10-25 — Insulin summary and Bolus review for the Overview (#631,
+  #633).** *Pending the operator's replay; not locked.* The operator asked
+  (#631) for two of the cards Tandem Source draws below its day chart: an
+  Insulin summary and a Bolus review, which he named "Bolus review (daily
+  average)". Site changes are not among them; the operator, 2026-10-24: "I
+  don't need site change data, just the other stuff." The engine serves every
+  figure as `/api/explore/insulin?days=N` for the Overview's 14, 30 and 90
+  days (#632, ADR 632). The two cards are built in the component library on
+  the served fixtures as the mock (`InsulinSummaryCard`, `BolusReviewCard`)
+  for the operator to replay; #634 puts them on the Overview once he locks
+  them, and §1.1 and §1.3 follow then.
+  - **Insulin summary.** Three blocks, each a headline row and its parts:
+    "Average daily insulin" in U, with Basal and Bolus beneath it; "Average
+    daily boluses", a count, with Manual and Control-IQ beneath it; "Average
+    daily carbs" in g. A part prints its share and its units or count.
+  - **Bolus review**, titled "Bolus review (daily average)" on one line: the
+    parenthesis is the title's, not a caption (§2.3 ban 1). Two blocks under
+    their headings: Type (Food, Correction, Override, Control-IQ) and Delivery
+    method (Standard, Extended, Quick, Control-IQ), each row its share and its
+    units.
+  - **Rows** are label, share, value in three columns. A headline value takes
+    the metric size, a part the body size, all in neutral ink: none of these
+    figures is judged better or worse, so neither card carries colour. Neither
+    card prints its window, which the Overview's switch and date span already
+    name, and neither carries a control. Nothing to act on.
+  - **States.** Populated. A window with no boluses: Bolus at 0.0 U with its
+    share, the boluses block at 0.0 with "–" for each share, and every Bolus
+    review row at 0.0 U with "–" for its share; the engine serves a share as
+    null when its total is zero, and a card never computes one. No data (the
+    window null, or no day with delivery): "No data" under the title, as Meal
+    size does. Not yet read: the card's skeleton. Any value the engine serves
+    as null prints "–".
+  - **Defaults, pending the replay** (ADR 633), each one the operator may
+    change:
+    1. The type row is **Food**, as Tandem Source names it, not Day's Meal: an
+       overridden bolus counts whole under Override, so Food and Correction
+       here leave those boluses out where Day's Meal and Correction include
+       them. Correction keeps its §1.5 name.
+    2. **Precision.** Units and daily counts to one decimal, carbs to a whole
+       gram, shares to a whole percent.
+    3. **Placement.** Below Meal size: on desktop the two cards side by side
+       in one row of the Overview's cards, at one height; on the phone
+       stacked, Insulin summary first.
+    4. **Units.** Insulin prints as "U", as Day prints it.
+    5. **"Average daily insulin"**, after §1.5's Insulin, rather than Tandem
+       Source's "Average daily dose".
+  - **Words.** Food, Bolus, Manual, Override, Standard, Extended and Quick are
+    admitted to the two library cards ahead of their §1.5 rows, as the chart's
+    mark fields and "No data" were: the shipped Glossary page lists only the
+    terms the app prints, so their rows land with #634, when the cards reach
+    the Overview, and until then no shipped screen prints them. The rows #634
+    adds to §1.5: **Bolus**, insulin given at once, by you or by Control-IQ;
+    **Override**, a bolus you changed from the pump's suggestion, counted
+    whole on the Bolus review, apart from Food and Correction; **Food**, the
+    carbs part of a bolus on the Bolus review, overridden boluses left out;
+    **Manual**, a bolus you gave, not Control-IQ; and **Standard**,
+    **Extended** and **Quick**, how a bolus was delivered.
+  §4.2 InsulinSummaryCard and BolusReviewCard follow.
+
 ### 2.6 Deferred (not cut)
 Not built in the current screens. The engine still serves what each needs, and
 nothing is removed from the engine or the fixtures for them.
@@ -1515,7 +1574,8 @@ nothing is removed from the engine or the fixtures for them.
 Twenty-seven components (the TraceChart replaced the CauseWaffle and the
 BasalCard joined, §2.5 2026-10-14; the HabitCard joined, drawn by the
 PatternCard's component, §2.5 2026-10-19; the MealSizeCard joined, §2.5
-2026-10-19). Screens are composed only from these. Every state listed
+2026-10-19; the InsulinSummaryCard and the BolusReviewCard join, §2.5
+2026-10-25, pending the replay). Screens are composed only from these. Every state listed
 gets a Storybook story in step 3. "Fields" are the only served data a component
 may display; derived values name their formula in the provenance table.
 
@@ -1808,6 +1868,38 @@ unless noted. Loading is a skeleton of the component's own shape.
       read from `/api/explore/meal-size?days=N`.
     - Desktop: the Overview's full width, the row after the BasalCard, at its
       height (every row of the cards one height).
+29. **InsulinSummaryCard** (§2.5, 2026-10-25, pending the replay): the
+    selected window's insulin as daily averages, titled "Insulin summary".
+    Three blocks, each a headline row at metric size and its parts at body
+    size, every row label, share, value: "Average daily insulin" in U, with
+    Basal and Bolus; "Average daily boluses", with Manual and Control-IQ;
+    "Average daily carbs" in g. Neutral ink only. Nothing to act on.
+    - States: populated; no boluses in the window (Bolus 0.0 U with its share,
+      the boluses 0.0 with "–" for each share); no data ("No data"); not yet
+      read (its skeleton). A null value prints "–".
+    - Fields: `insulin.window, delivery_days`, `daily_dose.units`,
+      `basal.units, share`, `bolus.units, share`, `boluses.count`,
+      `boluses.manual.count, share`, `boluses.control_iq.count, share`,
+      `carbs.grams`, read from `/api/explore/insulin?days=N`.
+    - Desktop: below Meal size, half the Overview's row beside the
+      BolusReviewCard, at its height.
+    - Phone: below Meal size, before the BolusReviewCard.
+30. **BolusReviewCard** (§2.5, 2026-10-25, pending the replay): the selected
+    window's bolus units as daily averages, titled "Bolus review (daily
+    average)" on one line. Two blocks under their headings, every row label,
+    share, value in U at body size: Type (Food, Correction, Override,
+    Control-IQ) and Delivery method (Standard, Extended, Quick, Control-IQ).
+    Neutral ink only. Nothing to act on.
+    - States: populated; no boluses in the window (every row 0.0 U, "–" for
+      its share); no data ("No data"); not yet read (its skeleton). A null
+      value prints "–".
+    - Fields: `insulin.window, delivery_days`; `by_type.food, correction,
+      override, control_iq` and `by_method.standard, extended, quick,
+      control_iq`, each `units, share`, read from
+      `/api/explore/insulin?days=N`.
+    - Desktop: below Meal size, half the Overview's row beside the
+      InsulinSummaryCard, at its height.
+    - Phone: below the InsulinSummaryCard.
 
 **Changes**
 

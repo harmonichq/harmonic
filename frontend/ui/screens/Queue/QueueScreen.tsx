@@ -80,7 +80,7 @@ import { sourced } from '../../answers';
 import { useMotionGate, usePresence } from '../../motion';
 import { Num } from '../../Num';
 import {
-  causes, focusable, pattern, queuedCount, ranking, snoozed, snoozedCount, type QueueItem, type QueueStore,
+  causes, focusable, pattern, queuedCount, ranking, snoozed, snoozedCount, type Held, type QueueItem, type QueueStore,
 } from '../../queue-model';
 import { ListGroup, ListRow } from '../../components/ListRow/ListRow';
 import { NavBar, type NavHooks } from '../../components/NavBar/NavBar';
@@ -140,9 +140,6 @@ export type DrillDownHooks = {
 /** A refused Queue write, held until it saves (#610). */
 export type Refused = { kind: 'snooze' | 'restore' | 'done' | 'undoDone' | 'pin'; subject: string; lever?: string };
 
-/** A Queue write in flight, with the time it was made (ADR 629). */
-export type Held = { kind: Exclude<Refused['kind'], 'pin'>; at: string };
-
 /** Each resolves once the engine's answers are read again, and rejects when the write was not saved. */
 export type QueueWrites = {
   snooze: (subject: string) => Promise<void>;
@@ -151,10 +148,9 @@ export type QueueWrites = {
   pin: (subject: string, lever?: string) => Promise<void>;
   done: (subject: string) => Promise<void>;
   undoDone: (subject: string) => Promise<void>;
-  /** The newest write in flight on each subject, the Focus in flight, and the refused writes (ADR 629). */
-  held: () => {
-    inFlight: ReadonlyMap<string, Held>; focus: { subject: string; lever?: string } | null; refused: readonly Refused[];
-  };
+  /** The newest write in flight on each subject, the Focus in flight, the refused writes, and each restored
+   *  Pattern's case file while it is read, settling once it lands (ADR 629). */
+  held: () => Held & { refused: readonly Refused[]; reading: ReadonlyMap<string, Promise<void>> };
   /** Send every refused write again; it resolves with those that saved. */
   retry: () => Promise<readonly Refused[]>;
 };
@@ -181,8 +177,9 @@ function Row({ item, layout, selected, swiping, onSelect, onSnooze, until, onRes
 
 /** The open item's card. `focusable` is the served admission; `onOpen` opens a
  *  multi-cause Pattern's drill-down. `actions` are what the live app adds:
- *  Focus, and a matured Trial's link to Changes. */
-type CardActions = { onPin?: () => void; onChanges?: () => void };
+ *  Focus, a matured Trial's link to Changes, and, while a restored Pattern's
+ *  case file is read, the card's skeleton in its place (ADR 629). */
+type CardActions = { onPin?: () => void; onChanges?: () => void; reading?: boolean };
 
 /** The screen decides which Snooze a layout gets (ADR 614): desktop passes
  *  `onSnooze`, its text action; the phone passes `onCollapse`, its chevron, and
@@ -191,6 +188,7 @@ function Card({ item, focusable, onOpen, onSnooze, onCollapse, onDone, actions =
   item: QueueItem; focusable: boolean; onOpen: () => void; onSnooze?: () => void; onCollapse?: () => void;
   onDone: () => void; actions?: CardActions;
 }) {
+  if (actions.reading) return <PatternCard loading />;
   return item.kind === 'setting'
     ? <SettingCard data={item.data} onDone={onDone} onSnooze={onSnooze} onCollapse={onCollapse}
         onChanges={actions.onChanges} />
@@ -230,7 +228,7 @@ type Bar = { kind: 'story' } | { kind: 'story_done' } | { kind: 'snoozed'; subje
 const STORY_BAR: Bar = { kind: 'story' };
 const STORY_DONE_BAR: Bar = { kind: 'story_done' };
 const NOT_SAVED_BAR: Bar = { kind: 'not_saved' };
-const NONE_HELD: ReturnType<QueueWrites['held']> = { inFlight: new Map(), focus: null, refused: [] };
+const NONE_HELD: ReturnType<QueueWrites['held']> = { inFlight: new Map(), focus: null, refused: [], reading: new Map() };
 
 export function QueueScreen({
   layout, store, state = 'ready', open, view: viewProp = 'queue', returnTo, swiping, closed: closedAtMount = false,
@@ -330,7 +328,16 @@ export function QueueScreen({
   const actions = (item: QueueItem): CardActions | undefined => writes && {
     onPin: () => livePin(item.subject),
     onChanges: changes,
+    reading: held.reading.has(item.subject),
   };
+  // A restored Pattern's case file, once it lands, draws its card in full.
+  const [, caseFileLanded] = useState(0);
+  const readingKeys = [...held.reading.keys()].join(' ');
+  useEffect(() => {
+    let mounted = true;
+    held.reading.forEach((read) => read.then(() => { if (mounted) caseFileLanded((n) => n + 1); }));
+    return () => { mounted = false; };
+  }, [readingKeys]);
 
   // What was open before a snooze, which Undo opens again.
   const [before, setBefore] = useState<string>();

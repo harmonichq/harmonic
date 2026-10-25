@@ -5,11 +5,11 @@ import { fixtures, sourced } from '../../fixtures';
 import { scrollThenSwipe, swipe } from '../../gesture';
 import { expectTabBarEnds } from '../../tabbar-check';
 import { expectAtPaneTop, expectHeaderEmpty, expectTitlePrinted } from '../../title-check';
-import { focusable, patternStore, ranking, snoozed, snoozedCount, type QueueStore } from '../../queue-model';
+import { focusable, patternStore, ranking, snoozed, snoozedCount, type HeldWrite, type QueueStore } from '../../queue-model';
 import { formatValue } from '../../provenance.js';
 import { failsOnce } from '../../flaky';
 import { QUEUE_UNDRAWABLE, ServedAfter } from '../../served-variants';
-import { QueueScreen, type Held, type QueueScreenProps, type QueueWrites, type Refused } from './QueueScreen';
+import { QueueScreen, type QueueScreenProps, type QueueWrites, type Refused } from './QueueScreen';
 
 // The Queue screen in each state §1.3 lists, at phone (390) and desktop (1440),
 // every value the simulated wearer's served answer:
@@ -608,23 +608,27 @@ export const SnoozedDrillDownDesktop: Story = {
 // The live adapter's Queue writes as the stories play them (#610): one at a
 // time in the order made, the writes in flight and the refused ones held as the
 // adapter holds them: the newest on each subject with its kind and the time it
-// was made, which `at` stamps, and a Focus apart (ADR 629). Each kind fails on
-// its first call unless `sends` gives it another; `saved` hears each write that
+// was made, which `at` stamps, and a Focus apart (ADR 629); with `caseFile`, a
+// restored Pattern's case file is read while it runs. Each kind fails on its
+// first call unless `sends` gives it another; `saved` hears each write that
 // saves, before it resolves, as the adapter reads the engine again first;
-// `redraw` hears each start and settle, as App redraws. It neither drops a
-// refusal answered 404, nor one the person undid, nor ignores a Retry pressed
-// while one is in flight; the adapter's own tests cover them.
+// `redraw` hears each start and settle, as App redraws. It leaves out what the
+// adapter's own tests (live.test.js) cover: a refusal dropped when Retry is
+// answered 404 or when a newer write on its subject was made after it, an Undo
+// not sent when what it undoes was refused, a Retry's re-sends counting as no
+// newer write, and a Retry pressed while one is in flight sending nothing more.
 type Sends = Partial<Record<Refused['kind'], (subject: string, lever?: string) => Promise<unknown>>>;
 const pad = (n: number) => String(n).padStart(2, '0');
 /** Now on the browser's wall clock, as the adapter stamps a write (`YYYY-MM-DD HH:MM:SS`). */
 const wallClock = (d = new Date()) =>
   `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 export function heldWrites(sends: Sends = {}, redraw = () => {}, saved = (_write: Refused) => {},
-  at = (_write: Refused) => wallClock()): QueueWrites {
+  at = (_write: Refused) => wallClock(), caseFile?: () => Promise<void>): QueueWrites {
   const send = { snooze: failsOnce(undefined), restore: failsOnce(undefined), pin: failsOnce(undefined),
     done: failsOnce(undefined), undoDone: failsOnce(undefined), ...sends };
-  const inFlight = new Map<string, Held>();
+  const inFlight = new Map<string, HeldWrite>();
   let focus: ReturnType<QueueWrites['held']>['focus'] = null;
+  const reading = new Map<string, Promise<void>>();
   let refused: Refused[] = [];
   let tail = Promise.resolve();
   const same = (a: Refused) => (b: Refused) => a.kind === b.kind && a.subject === b.subject && a.lever === b.lever;
@@ -633,6 +637,9 @@ export function heldWrites(sends: Sends = {}, redraw = () => {}, saved = (_write
     const held = made.kind === 'pin' ? null : { kind: made.kind, at: at(made) };
     if (pinned) focus = pinned;
     if (held) inFlight.set(made.subject, held);
+    if (caseFile && made.kind === 'restore' && made.subject.startsWith('pattern:')) {
+      reading.set(made.subject, caseFile().finally(() => { reading.delete(made.subject); redraw(); }));
+    }
     redraw();
     const run = tail.then(async () => {
       try {
@@ -657,21 +664,22 @@ export function heldWrites(sends: Sends = {}, redraw = () => {}, saved = (_write
     pin: (subject, lever) => write({ kind: 'pin', subject, ...(lever ? { lever } : {}) }),
     done: (subject) => write({ kind: 'done', subject }),
     undoDone: (subject) => write({ kind: 'undoDone', subject }),
-    held: () => ({ inFlight: new Map(inFlight), focus, refused }),
+    held: () => ({ inFlight: new Map(inFlight), focus, refused, reading: new Map(reading) }),
     retry: () => Promise.all(refused.map((r) => write(r).then(() => r, () => null)))
       .then((sent) => sent.filter((r): r is Refused => r !== null)),
   };
 }
 /** The Queue over `heldWrites`, redrawn as each write starts and settles, and
  *  switched to `after.store` once `after.kind` of `after.subject` saves. */
-export function LiveQueue({ sends, after, at, ...props }: QueueScreenProps & {
+export function LiveQueue({ sends, after, at, caseFile, ...props }: QueueScreenProps & {
   sends?: Sends; after?: { kind: Refused['kind']; subject: string; store: QueueStore }; at?: (write: Refused) => string;
+  caseFile?: () => Promise<void>;
 }) {
   const [, setVersion] = useState(0);
   const [store, setStore] = useState(props.store);
   const [writes] = useState(() => heldWrites(sends, () => setVersion((n) => n + 1), (write) => {
     if (after && write.kind === after.kind && write.subject === after.subject) setStore(after.store);
-  }, at));
+  }, at, caseFile));
   // The item opened first is the first store's; the store served after the write may no longer rank it.
   return <QueueScreen {...props} store={store} open={store === props.store ? props.open : undefined} writes={writes} />;
 }
@@ -1077,7 +1085,9 @@ export const LateSnoozeDesktop = lateSnooze('desktop');
 
 // Restore: the row leaves the Snoozed list, the count is one less, and the item
 // is back in the Queue at its served place, before and after the engine saves it.
-const lateRestorePlay = (late: Late): Story['play'] => async ({ canvasElement }) => {
+// Opened while its case file is read, its card is the card's skeleton, then the
+// card in full once the file lands.
+const lateRestorePlay = (layout: 'phone' | 'desktop', late: Late, file: Late): Story['play'] => async ({ canvasElement }) => {
   const canvas = within(canvasElement);
   const { title } = fixtures.snooze;
   await expect(snoozedCount('wearer-pinned').value).toBe(snoozedCount(SNOOZED_AFTER).value - 1);
@@ -1091,16 +1101,25 @@ const lateRestorePlay = (late: Late): Story['play'] => async ({ canvasElement })
   await expect(rowTitled(canvasElement, title)).toBeNull();
   await backToQueue(canvas);
   await drawnRestored();
+  await userEvent.click(layout === 'phone' ? rowTitled(canvasElement, title)!
+    : canvas.getByRole('button', { name: new RegExp(title) }));
+  await expect(canvasElement.querySelector('.ui-pcard--loading')).not.toBeNull();
+  await expect(titled(canvas, title)).toHaveLength(0);
+  await file.release();
+  await waitFor(() => expect(titled(canvas, title)).toHaveLength(1));
+  await expect(canvasElement.querySelector('.ui-pcard--loading')).toBeNull();
   await late.release();
   await drawnRestored();
+  await expect(titled(canvas, title)).toHaveLength(1);
 };
 const lateRestore = (layout: 'phone' | 'desktop'): Story => {
   const late = answersLate();
+  const file = answersLate();
   return {
     ...story(layout, { store: SNOOZED_AFTER, view: 'snoozed' }),
-    render: (props) => <LiveQueue {...props} sends={{ restore: late.send }}
+    render: (props) => <LiveQueue {...props} sends={{ restore: late.send }} caseFile={file.send}
       after={{ kind: 'restore', subject: fixtures.snooze.subject, store: 'wearer-pinned' }} />,
-    play: lateRestorePlay(late),
+    play: lateRestorePlay(layout, late, file),
   };
 };
 export const LateRestorePhone = lateRestore('phone');

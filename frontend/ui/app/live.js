@@ -246,8 +246,9 @@ export function createLive({ client, glossary, memory = null,
   });
 
   /** gen_ui_fixtures._cases: each subject's case file, by its key (a Pattern's, or a habit's lever): a
-   *  Pattern's is its own subject, a habit's its finding (ADR 528). */
-  async function cases(subjects) {
+   *  Pattern's is its own subject, a habit's its finding (ADR 528). `note` hears the earlier answer among them,
+   *  if any. */
+  async function cases(subjects, note = (earlier) => served('queue', earlier)) {
     if (subjects.length === 0) return {};
     const preparation = await client.fetchDiagnoseFindingCasePreparation();
     // The case files, like the Queue's other reads, can be an earlier answer (#581).
@@ -266,7 +267,7 @@ export function createLive({ client, glossary, memory = null,
       earlier.push(answer);
       out[key] = caseFile(subject, answer);
     }));
-    served('queue', earlier.find((answer) => answer?.input_data_age));
+    note(earlier.find((answer) => answer?.input_data_age));
     return out;
   }
 
@@ -561,10 +562,25 @@ export function createLive({ client, glossary, memory = null,
   let focusing = null;
   let refused = [];
   let retrying = null;
-  // How many writes (a Focus aside) were made on each subject, and the subjects whose refused Snooze or Done
-  // a newer write made after it undid: that Undo has nothing left to undo, so it is not sent (ADR 629).
+  // How many writes the person made on each subject, and each one's kind by its number (`subject n`); a
+  // Retry's re-send is none of them. The Undo made right after a refused Snooze or Done has nothing left to
+  // undo, so that one write, by its number, is not sent (ADR 629).
   const madeOn = new Map();
-  const undone = new Set();
+  const kinds = new Map();
+  const unsent = new Set();
+  // The case file of each Pattern a Restore puts back in the Queue, while it is read (ADR 629).
+  const reading = new Map();
+  /** Read a restored Pattern's case file beside its write, unless the Queue already holds it. */
+  function readCaseFile(subject) {
+    const key = subject.replace(/^pattern:/, '');
+    if (reading.has(subject) || answers.queue.wearer.cases?.[key]) return;
+    reading.set(subject, cases([subject], (earlier) => { if (earlier) behindReads.add('queue'); })
+      .then((files) => {
+        answers.queue.wearer.cases = { ...answers.queue.wearer.cases, ...files };
+        remember();
+      }, () => undefined)
+      .finally(() => reading.delete(subject)));
+  }
   const same = (a) => (b) => a.kind === b.kind && a.subject === b.subject && a.lever === b.lever;
   const dropChanges = () => {
     forget('changes', 'trials');
@@ -572,31 +588,33 @@ export function createLive({ client, glossary, memory = null,
     landed.delete('changes');
     fromMemory.delete('changes');
   };
-  function queueWrite(write) {
+  /** Make `write`, or, `resent`, send a refused one again for Retry. */
+  function queueWrite(write, resent = false) {
     queueWritesMade += 1;
     const pin = write.kind === 'pin';
     const held = pin ? { subject: write.subject, ...(write.lever ? { lever: write.lever } : {}) }
       : { kind: write.kind, at: now() };
-    const nth = pin ? 0 : (madeOn.get(write.subject) ?? 0) + 1;
-    if (pin) focusing = held;
-    else {
-      inFlight.set(write.subject, held);
+    const nth = (madeOn.get(write.subject) ?? 0) + (resent ? 0 : 1);
+    if (!resent) {
       madeOn.set(write.subject, nth);
+      kinds.set(`${write.subject} ${nth}`, write.kind);
     }
+    if (pin) focusing = held;
+    else inFlight.set(write.subject, held);
+    if (write.kind === 'restore' && write.subject.startsWith('pattern:')) readCaseFile(write.subject);
     dropChanges();
     remember();
     const run = queueTail.then(async () => {
       const retried = refused.some(same(write));
       try {
-        if (!(write.kind in UNDOES && undone.delete(write.subject))) {
-          await SENDS[write.kind](write.subject, write.lever);
-        }
+        if (resent || !unsent.delete(`${write.subject} ${nth}`)) await SENDS[write.kind](write.subject, write.lever);
         refused = refused.filter((r) => !same(write)(r));
       } catch (error) {
         // A refusal is held until it saves, or until Retry finds its subject no longer served. One the person
         // made a newer write on the subject after is not held: the newest write is the person's intent.
-        const superseded = !pin && madeOn.get(write.subject) > nth;
-        if (superseded && Object.values(UNDOES).includes(write.kind)) undone.add(write.subject);
+        const superseded = madeOn.get(write.subject) > nth;
+        const next = `${write.subject} ${nth + 1}`;
+        if (superseded && UNDOES[kinds.get(next)] === write.kind) unsent.add(next);
         if (superseded || (retried && error?.status === 404)) refused = refused.filter((r) => !same(write)(r));
         else if (!retried) refused = [...refused, write];
         throw error;
@@ -619,12 +637,13 @@ export function createLive({ client, glossary, memory = null,
     undoDone: (subject) => queueWrite({ kind: 'undoDone', subject }),
     pin: (subject, lever) => queueWrite({ kind: 'pin', subject, ...(lever ? { lever } : {}) }),
     /** The newest write in flight on each subject, with its kind and when it was made; the Focus in flight;
-     *  and the refused writes, in the order made (ADR 629). */
-    held: () => ({ inFlight: new Map(inFlight), focus: focusing, refused }),
+     *  the refused writes, in the order made; and each restored Pattern's case file while it is read, which
+     *  settles once it lands (ADR 629). */
+    held: () => ({ inFlight: new Map(inFlight), focus: focusing, refused, reading: new Map(reading) }),
     /** Send every refused write again, in order; it resolves, once each is answered, with those that saved.
      *  A Retry pressed while one is in flight sends nothing more, and resolves with it. */
     retry: () => {
-      retrying ??= Promise.all(refused.map((write) => queueWrite(write).then(() => write, () => null)))
+      retrying ??= Promise.all(refused.map((write) => queueWrite(write, true).then(() => write, () => null)))
         .then((sent) => sent.filter(Boolean)).finally(() => { retrying = null; });
       return retrying;
     },

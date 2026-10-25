@@ -213,7 +213,7 @@ test('the adapter holds a Queue write in flight, and a refused one until Retry s
   assert.equal(live.queueWrites.held().refused.length, 1, 'held until it saves');
   answer.resolve({});
   assert.deepEqual(await retried, [{ kind: 'snooze', subject: 'pattern:p0' }], 'Retry names the writes it saved');
-  assert.deepEqual(live.queueWrites.held(), { inFlight: new Map(), focus: null, refused: [] }, 'saved, it leaves');
+  assert.deepEqual(live.queueWrites.held(), { inFlight: new Map(), focus: null, refused: [], reading: new Map() }, 'saved, it leaves');
   // A refusal whose subject the engine no longer serves is dropped when Retry is answered 404.
   const second = live.queueWrites.snooze('pattern:p1');
   await landed();
@@ -301,7 +301,7 @@ test('a Focus in flight is held apart, and a later write on its subject leaves i
   await landed();
   pin.answer();
   await Promise.all([pinning, snoozing]);
-  assert.deepEqual(live.queueWrites.held(), { inFlight: new Map(), focus: null, refused: [] });
+  assert.deepEqual(live.queueWrites.held(), { inFlight: new Map(), focus: null, refused: [], reading: new Map() });
 });
 
 test('a write refused after the person undid it holds no refusal, and its Undo is not sent (ADR 629)', async () => {
@@ -336,6 +336,74 @@ test('a write refused after the person undid it holds no refusal, and its Undo i
   snooze.refuse(409);
   await assert.rejects(alone);
   assert.deepEqual(live.queueWrites.held().refused, [{ kind: 'snooze', subject: 'pattern:p2' }]);
+});
+
+test('a Retry\'s re-sends are no newer write: a Done refused again stays held, and a later Undo is sent (ADR 629)', async () => {
+  const fake = fakeClient();
+  const subject = 'pattern:p0';
+  let saving = false;
+  let candidates = history().candidates;
+  fake.client.fetchGuidance = (...args) => {
+    fake.calls.push({ name: 'guidance', args });
+    return Promise.resolve({ analysis_generation: 'g1', input_revision: 7, candidates });
+  };
+  fake.client.recordDone = () => {
+    if (!saving) return Promise.reject(refusal(409));
+    candidates = candidates.map((c) => (c.subject === subject
+      ? { ...c, acknowledgment: { state: 'waiting', applied_at: '2026-01-02 00:00:00' } } : c));
+    return Promise.resolve({});
+  };
+  fake.client.setGuidancePreference = () => Promise.reject(refusal(409));
+  const withdrawn = [];
+  fake.client.withdrawDone = (body) => { withdrawn.push(body); return Promise.resolve({}); };
+  const live = createLive({ client: fake.client, glossary: [] });
+  await live.readTab('queue');
+  // A Done refused, then a Snooze on the same card refused: both are held.
+  await assert.rejects(live.queueWrites.done(subject));
+  await assert.rejects(live.queueWrites.snooze(subject));
+  const both = [{ kind: 'done', subject }, { kind: 'snooze', subject }];
+  assert.deepEqual(live.queueWrites.held().refused, both);
+  // Retry sends both again and the engine refuses both: Retry made no newer write, so both stay held.
+  assert.deepEqual(await live.queueWrites.retry(), []);
+  assert.deepEqual(live.queueWrites.held().refused, both);
+  // A Done that then saves, and its Undo: the Undo is sent.
+  saving = true;
+  await live.queueWrites.done(subject);
+  await live.queueWrites.undoDone(subject);
+  assert.equal(withdrawn.length, 1, 'the Undo of a saved Done withdraws it');
+});
+
+test('a Focus refused after a newer write on its subject is not held (ADR 629)', async () => {
+  const fake = fakeClient();
+  const pin = byHand();
+  fake.client.pinFocus = pin.send;
+  const live = createLive({ client: fake.client, glossary: [] });
+  await live.readTab('queue');
+  const pinning = live.queueWrites.pin('pattern:p0');
+  const snoozing = live.queueWrites.snooze('pattern:p0');
+  await landed();
+  pin.refuse(409);
+  await assert.rejects(pinning);
+  await snoozing;
+  assert.deepEqual(live.queueWrites.held().refused, [], 'the snooze made after it is the person\'s intent');
+});
+
+test('a Restore on a snoozed Pattern reads its case file before the write is answered (ADR 629)', async () => {
+  const fake = fakeClient();
+  const restore = byHand();
+  fake.client.restoreGuidancePreference = restore.send;
+  const live = createLive({ client: fake.client, glossary: [] });
+  await live.readTab('queue');
+  const files = fake.count('case');
+  assert.equal(live.answers.queue.wearer.cases.p5, undefined, 'a snoozed Pattern\'s case file is not read with the Queue');
+  const restoring = live.queueWrites.restore('pattern:p5');
+  assert.ok(live.queueWrites.held().reading.has('pattern:p5'), 'its case file is read from the moment it is made');
+  await landed();
+  assert.equal(fake.count('case'), files + 1, 'read before the engine answers the Restore');
+  assert.ok(live.answers.queue.wearer.cases.p5, 'and held once read');
+  assert.equal(live.queueWrites.held().reading.size, 0);
+  restore.answer();
+  await restoring;
 });
 
 test('a Queue write reads no Trial roster, and leaves Changes to read its own after it (#610)', async () => {

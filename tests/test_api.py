@@ -887,7 +887,8 @@ class OverviewInstantTest(unittest.TestCase):
         [("/api/outcomes", {"window": days}) for days in _DAYS]
         + [("/api/explore/time-of-day", {"days": days}) for days in _DAYS]
         + [("/api/analyze", {"window": days}) for days in _DAYS]
-        + [("/api/explore/meal-size", {"days": days}) for days in _DAYS])
+        + [("/api/explore/meal-size", {"days": days}) for days in _DAYS]
+        + [("/api/explore/insulin", {"days": days}) for days in _DAYS])
 
     def setUp(self):
         self.tmp = tempfile.NamedTemporaryFile(suffix=".db")
@@ -906,7 +907,8 @@ class OverviewInstantTest(unittest.TestCase):
         return create_app(db_path=self.tmp.name, token=None, enable_fetch_loop=False)
 
     def test_after_a_write_every_window_answers_at_once_from_its_predecessor(self):
-        """Each window's profile and Meal size is served, labeled, while each is computed once."""
+        """Each window's profile, Meal size and insulin is served, labeled, while each is
+        computed once."""
         import ciq_autotune.api as api_mod
         app = self._app()
         # No warm roster: only the reads ask for their results to be computed again.
@@ -922,7 +924,7 @@ class OverviewInstantTest(unittest.TestCase):
                 self.assertTrue(release.wait(5))
             return real(store, **kwargs)
 
-        paths = ("/api/explore/time-of-day", "/api/explore/meal-size")
+        paths = ("/api/explore/time-of-day", "/api/explore/meal-size", "/api/explore/insulin")
 
         def read(client, path, days):
             return client.get(path, params={"days": days})
@@ -943,7 +945,7 @@ class OverviewInstantTest(unittest.TestCase):
                                        for days in self._DAYS}
                             served.update({(path, days): future.result(timeout=3)
                                            for days, future in futures.items()})
-                            # The worker is computing the profiles, so Meal size waits behind them.
+                            # The worker is computing the profiles, so the rest wait behind them.
                             self.assertTrue(entered.wait(3), "the warm worker computes the new profile")
                     finally:
                         release.set()
@@ -963,7 +965,8 @@ class OverviewInstantTest(unittest.TestCase):
         self.assertEqual(len(builds), 2, "one profile compute before the write, one after it")
 
     def test_the_worker_computes_the_lightest_waiting_result_first(self):
-        """A Meal size a read waits on is computed before an analysis asked for earlier."""
+        """A Meal size and insulin a read waits on are computed before an analysis asked for
+        earlier."""
         import ciq_autotune.api as api_mod
         app = self._app()
         app.state.recompute_roster = lambda: ()
@@ -972,6 +975,7 @@ class OverviewInstantTest(unittest.TestCase):
         real_profile = api_mod.build_time_of_day_windows
         real_analyze = api_mod.analyze
         real_meal = api_mod.build_meal_size_windows
+        real_insulin = api_mod.build_insulin_windows
 
         profiles = []
 
@@ -991,13 +995,19 @@ class OverviewInstantTest(unittest.TestCase):
             order.append("meal-size")
             return real_meal(store, **kwargs)
 
+        def insulin(store, **kwargs):
+            order.append("insulin")
+            return real_insulin(store, **kwargs)
+
         with patch.object(api_mod, "build_time_of_day_windows", side_effect=profile), \
              patch.object(api_mod, "analyze", side_effect=analysis), \
-             patch.object(api_mod, "build_meal_size_windows", side_effect=meal):
+             patch.object(api_mod, "build_meal_size_windows", side_effect=meal), \
+             patch.object(api_mod, "build_insulin_windows", side_effect=insulin):
             with TestClient(app) as client:
                 reads = (("/api/explore/time-of-day", {"days": 14}),
                          ("/api/analyze", {"window": 14}),
-                         ("/api/explore/meal-size", {"days": 14}))
+                         ("/api/explore/meal-size", {"days": 14}),
+                         ("/api/explore/insulin", {"days": 14}))
                 for path, params in reads:
                     self.assertEqual(client.get(path, params=params).status_code, 200)
                 order.clear()
@@ -1016,10 +1026,10 @@ class OverviewInstantTest(unittest.TestCase):
                           for path, params in reads):
                     self.assertLess(time.monotonic(), deadline, "the new results never landed")
                     time.sleep(0.05)
-        self.assertEqual(order, ["profile", "meal-size", "analyze"])
+        self.assertEqual(order, ["profile", "meal-size", "insulin", "analyze"])
 
     def test_a_restart_answers_every_window_without_computing(self):
-        """Outcomes, profiles, analyses and Meal size at every window survive a restart."""
+        """Outcomes, profiles, analyses, Meal size and insulin at every window survive a restart."""
         first = TestClient(self._app())
         served = {}
         for path, params in self._OVERVIEW:
@@ -1035,7 +1045,8 @@ class OverviewInstantTest(unittest.TestCase):
              patch.object(outcomes_mod, "summarize_outcomes", counting(outcomes_mod.summarize_outcomes)), \
              patch.object(api_mod, "build_time_of_day_windows",
                           counting(api_mod.build_time_of_day_windows)), \
-             patch.object(api_mod, "build_meal_size_windows", counting(api_mod.build_meal_size_windows)):
+             patch.object(api_mod, "build_meal_size_windows", counting(api_mod.build_meal_size_windows)), \
+             patch.object(api_mod, "build_insulin_windows", counting(api_mod.build_insulin_windows)):
             restarted = TestClient(self._app())
             for path, params in self._OVERVIEW:
                 response = restarted.get(path, params=params)
@@ -1045,7 +1056,7 @@ class OverviewInstantTest(unittest.TestCase):
 
     def test_the_warm_pass_starts_with_the_overviews_lighter_reads(self):
         labels = [label for label, _ in self._app().state.recompute_roster()]
-        self.assertEqual(labels[:5], ["explore-time-of-day", "meal-size",
+        self.assertEqual(labels[:6], ["explore-time-of-day", "meal-size", "insulin",
                                       "outcomes-14", "outcomes-30", "outcomes-90"])
         for days in self._DAYS:
             self.assertIn("analyze" if days == 30 else f"analyze-{days}", labels)

@@ -1,20 +1,20 @@
 ## 1. The builder (`ciq_autotune/insulin_summary.py`, ADR 632)
 
-- [ ] 1.1 `build_insulin_windows(store, *, windows=DATA_DAYS)`: the window rule and the null window for a store with no readings, as `meal_size.build_meal_size_windows`
-- [ ] 1.2 `window.data_days` (the length) and `delivery_days`, basal units, bolus units and count (the completion convention), carbs (bolus carbs plus `carb_entries` grams, unknown grams adding nothing) per window
-- [ ] 1.3 The type partition (proportional split, zero-split fall-through) and the method partition, and the manual / Control-IQ counts, each with its share as its own field
-- [ ] 1.4 The module docstring in the idiom of `meal_size.py`: what is read, the rules, "a report, never a Queue item"
+- [x] 1.1 `build_insulin_windows(store, *, windows=DATA_DAYS)`: the window rule and the null window for a store with no readings, as `meal_size.build_meal_size_windows`
+- [x] 1.2 `window.data_days` (the length) and `delivery_days`, basal units, bolus units and count (the completion convention), carbs (bolus carbs plus `carb_entries` grams, unknown grams adding nothing) per window
+- [x] 1.3 The type partition (proportional split, zero-split fall-through) and the method partition, and the manual / Control-IQ counts, each with its share as its own field
+- [x] 1.4 The module docstring in the idiom of `meal_size.py`: what is read, the rules, "a report, never a Queue item"
 
 ## 2. The read (`ciq_autotune/api.py`)
 
-- [ ] 2.1 `/api/explore/insulin?days=N` through `fixed(("insulin",), "insulin-v1", build_insulin_windows)`, projecting the window; 400 off `TIME_OF_DAY_DAYS`
-- [ ] 2.2 `"insulin"` in `_RECORDED_DATA_RESULTS` and `_LIGHTEST`, and its roster entry after Meal size's; the roster docstring and AGENTS.md's roster paragraphs are #634's (ADR 632)
+- [x] 2.1 `/api/explore/insulin?days=N` through `fixed(("insulin",), "insulin-v1", build_insulin_windows)`, projecting the window; 400 off `TIME_OF_DAY_DAYS`
+- [x] 2.2 `"insulin"` in `_RECORDED_DATA_RESULTS` and `_LIGHTEST`, and its roster entry after Meal size's; the roster docstring and AGENTS.md's roster paragraphs are #634's (ADR 632)
 
 ## 3. Tests
 
-- [ ] 3.1 `tests/test_insulin_summary.py`: a manufactured store of known events (a flat history, basal at known rates, manual and Control-IQ boluses, an override, an extended and a quick bolus, a bolus with no split, a bolus whose split is below its delivery, a bolus whose split sums to zero, a bolus with a negative correction part, a codeless bolus, a null-completion bolus, a bolus of another completion, manual carbs with one entry of unknown grams, a delivery before the window opens, a window day with no delivery), each served figure a literal off the recipe per window, the null window on an empty store, and the 400
-- [ ] 3.2 `tests/test_api.py` `OverviewInstantTest`: the read in `_OVERVIEW`, in the restart test's counted builders, and in the worker-order test after Meal size
-- [ ] 3.3 `tests/test_guidance_api.py`: `("/api/explore/insulin", {"days": 14})` in the `recorded` tuple of `test_every_result_a_follow_up_write_keeps_reads_no_follow_up_state` (the transitive proof AGENTS.md requires for `_RECORDED_DATA_RESULTS`), and the follow-up-write test counts the new builder once beside Meal size's
+- [x] 3.1 `tests/test_insulin_summary.py`: a manufactured store of known events (a flat history, basal at known rates, manual and Control-IQ boluses, an override, an extended and a quick bolus, a bolus with no split, a bolus whose split is below its delivery, a bolus whose split sums to zero, a bolus with a negative correction part, a codeless bolus, a null-completion bolus, a bolus of another completion, manual carbs with one entry of unknown grams, a delivery before the window opens, a window day with no delivery), each served figure a literal off the recipe per window, the null window on an empty store, and the 400
+- [x] 3.2 `tests/test_api.py` `OverviewInstantTest`: the read in `_OVERVIEW`, in the restart test's counted builders, and in the worker-order test after Meal size
+- [x] 3.3 `tests/test_guidance_api.py`: `("/api/explore/insulin", {"days": 14})` in the `recorded` tuple of `test_every_result_a_follow_up_write_keeps_reads_no_follow_up_state` (the transitive proof AGENTS.md requires for `_RECORDED_DATA_RESULTS`), and the follow-up-write test counts the new builder once beside Meal size's
 
 ## 4. The fixtures
 

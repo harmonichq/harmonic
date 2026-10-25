@@ -8,6 +8,7 @@
 // answers in from the live API.
 import { answers, sourced, type Sourced } from './answers';
 import { delta, type Change } from './direction';
+import { queued } from './queue-order.js';
 import { PARAMETER_FORMATS, PARAMETER_NAMES } from './settings-model';
 
 export type QueueStore = keyof typeof answers.queue;
@@ -133,9 +134,16 @@ function counterOf(name: QueueStore, key: string) {
   };
 }
 
-/** A Focus can start now: the served admission every Focus button follows (ADR 594). */
-export const focusable = (name: QueueStore): boolean =>
-  store(name).focus.admission.focus_pin.available;
+/** A Queue write in flight, as the live adapter holds it (ADR 629): its kind and the browser's wall-clock
+ *  time it was made (`YYYY-MM-DD HH:MM:SS`). */
+export type HeldWrite = { kind: 'snooze' | 'restore' | 'done' | 'undoDone'; at: string };
+
+/** The writes in flight the Queue draws: the newest on each subject, and the Focus in flight, apart. */
+export type Held = { inFlight: ReadonlyMap<string, HeldWrite>; focus: { subject: string; lever?: string } | null };
+
+/** A Focus can start now: the served admission every Focus button follows (ADR 594), and no Focus in flight. */
+export const focusable = (name: QueueStore, held?: Held): boolean =>
+  !held?.focus && store(name).focus.admission.focus_pin.available;
 
 const activeFocus = (name: QueueStore, key: string) =>
   store(name).focus.focuses.find((f) => f.status === 'active' && f.pattern_key === key);
@@ -434,34 +442,70 @@ function item(name: QueueStore, candidate: Candidate): QueueItem | null {
 
 const drawn = <T>(value: T | null): value is T => value !== null;
 
+/** A candidate as its held write will leave it (ADR 629): the served fields that write writes — a Snooze sets
+ *  it snoozed at the time it was made, a Restore not snoozed, a Done its acknowledgment waiting for the pump,
+ *  an Undo of a Done none — and the one order rule. Its priority and its admission stay as served. */
+function written(candidate: Candidate, write: HeldWrite | undefined): Candidate {
+  if (!write) return candidate;
+  const fields = write.kind === 'snooze' ? { set_aside: true, decided_at: write.at }
+    : write.kind === 'restore' ? { set_aside: false }
+      : { acknowledgment: write.kind === 'done' ? { ...(candidate.acknowledgment ?? {}), state: 'waiting' } : null };
+  const next = { ...candidate, ...fields } as Candidate;
+  return { ...next, queued: queued(next) };
+}
+
+/** The served candidates, each as its held write will leave it. */
+const candidates = (name: QueueStore, held?: Held) =>
+  store(name).guidance.candidates.map((c) => written(c, held?.inFlight.get(c.subject)));
+
 /** The Queue's order (the brief's Queue section): the candidates the engine
  *  admitted and the person has not snoozed, by priority, highest first, an
- *  exact tie broken by subject as the engine breaks it. */
-export function ranking(name: QueueStore): QueueItem[] {
-  return store(name).guidance.candidates
+ *  exact tie broken by subject as the engine breaks it. A held write draws as
+ *  it will leave its candidate, and a held Focus draws its own card pinned. */
+export function ranking(name: QueueStore, held?: Held): QueueItem[] {
+  const focus = held?.focus;
+  return candidates(name, held)
     .filter((c) => c.queued)
     .sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0) || a.subject.localeCompare(b.subject))
-    .map((c) => item(name, c)).filter(drawn);
+    .map((c) => item(name, c)).filter(drawn)
+    .map((i) => (i.kind !== 'setting' && focus && !focus.lever && focus.subject === i.subject
+      ? { ...i, data: { ...i.data, pinned: true } } : i));
+}
+
+/** A served count moved by the held writes: the candidates they put in `field`, less those they take out,
+ *  added to its formula as a whole number (ADR 629), so its source names the served field and the held change. */
+function heldCount(name: QueueStore, served: string, field: 'queued' | 'set_aside', held?: Held) {
+  const moved = held ? store(name).guidance.candidates.reduce((n, c) => {
+    const write = held.inFlight.get(c.subject);
+    return write ? n + Number(written(c, write)[field]) - Number(c[field]) : n;
+  }, 0) : 0;
+  return sourced<number>(moved > 0 ? `${served} + ${moved}` : moved < 0 ? `${served} − ${-moved}` : served);
 }
 
 /** How many the Queue holds, and how many are snoozed, as served counts that
  *  leave out the correction factor: it is no Queue row (§2.5, 2026-10-20), so
  *  one the engine still queues, or one set aside before #564, is not counted. */
-export const queuedCount = (name: QueueStore) => sourced<number>(
-  `queue.${name}.guidance.candidates[queued=true].length − queue.${name}.guidance.candidates[queued=true][subject=setting:isf].length`);
-export const snoozedCount = (name: QueueStore) => sourced<number>(
-  `queue.${name}.guidance.candidates[set_aside=true].length − queue.${name}.guidance.candidates[set_aside=true][subject=setting:isf].length`);
+export const queuedCount = (name: QueueStore, held?: Held) => heldCount(name,
+  `queue.${name}.guidance.candidates[queued=true].length − queue.${name}.guidance.candidates[queued=true][subject=setting:isf].length`,
+  'queued', held);
+export const snoozedCount = (name: QueueStore, held?: Held) => heldCount(name,
+  `queue.${name}.guidance.candidates[set_aside=true].length − queue.${name}.guidance.candidates[set_aside=true][subject=setting:isf].length`,
+  'set_aside', held);
 
 export type SnoozedItem = QueueItem & { until: Sourced<string> };
 
 /** The Snoozed list: each snoozed candidate as its Queue row reads it, until
- *  fourteen days after the engine's served decision time. */
-export function snoozed(name: QueueStore): SnoozedItem[] {
-  return store(name).guidance.candidates.filter((c) => c.set_aside).flatMap((c) => {
+ *  fourteen days after the engine's served decision time, or, for a snooze in
+ *  flight, after the time it was made, its source naming that held write (ADR 629). */
+export function snoozed(name: QueueStore, held?: Held): SnoozedItem[] {
+  return candidates(name, held).filter((c) => c.set_aside).flatMap((c) => {
     const drawable = item(name, c);
+    const write = held?.inFlight.get(c.subject);
     return drawable ? [{
       ...drawable,
-      until: sourced<string>(`queue.${name}.guidance.candidates[subject=${c.subject}].0.decided_at`, 'until'),
+      until: write?.kind === 'snooze'
+        ? { value: write.at, source: `held.inFlight[${c.subject}].at`, format: 'until' as const }
+        : sourced<string>(`queue.${name}.guidance.candidates[subject=${c.subject}].0.decided_at`, 'until'),
     }] : [];
   });
 }

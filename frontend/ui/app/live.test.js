@@ -201,19 +201,19 @@ test('the adapter holds a Queue write in flight, and a refused one until Retry s
   const live = createLive({ client: fake.client, glossary: [] });
   await live.readTab('queue');
   const first = live.queueWrites.snooze('pattern:p0');
-  assert.deepEqual([...live.queueWrites.held().inFlight], ['pattern:p0'], 'in flight from the moment it is made');
+  assert.deepEqual([...live.queueWrites.held().inFlight.keys()], ['pattern:p0'], 'in flight from the moment it is made');
   await landed();
   answer.reject(refusal(409));
   await assert.rejects(first);
-  assert.deepEqual(live.queueWrites.held().inFlight, new Set());
+  assert.equal(live.queueWrites.held().inFlight.size, 0);
   assert.deepEqual(live.queueWrites.held().refused, [{ kind: 'snooze', subject: 'pattern:p0' }]);
   const retried = live.queueWrites.retry();
   await landed();
-  assert.deepEqual([...live.queueWrites.held().inFlight], ['pattern:p0'], 'Retry sends it again');
+  assert.deepEqual([...live.queueWrites.held().inFlight.keys()], ['pattern:p0'], 'Retry sends it again');
   assert.equal(live.queueWrites.held().refused.length, 1, 'held until it saves');
   answer.resolve({});
   assert.deepEqual(await retried, [{ kind: 'snooze', subject: 'pattern:p0' }], 'Retry names the writes it saved');
-  assert.deepEqual(live.queueWrites.held(), { inFlight: new Set(), refused: [] }, 'saved, it leaves');
+  assert.deepEqual(live.queueWrites.held(), { inFlight: new Map(), focus: null, refused: [] }, 'saved, it leaves');
   // A refusal whose subject the engine no longer serves is dropped when Retry is answered 404.
   const second = live.queueWrites.snooze('pattern:p1');
   await landed();
@@ -225,6 +225,117 @@ test('the adapter holds a Queue write in flight, and a refused one until Retry s
   answer.reject(refusal(404));
   assert.deepEqual(await gone, [], 'a write the engine no longer serves is not saved');
   assert.deepEqual(live.queueWrites.held().refused, []);
+});
+
+/** A fake request the test answers by hand: `calls` hears each, `answer` and `refuse` settle the last. */
+function byHand() {
+  const calls = [];
+  let pending;
+  const send = (...args) => {
+    calls.push(args);
+    return new Promise((resolve, reject) => { pending = { resolve, reject }; });
+  };
+  return { send, calls, answer: () => pending.resolve({}), refuse: (status) => pending.reject(refusal(status)) };
+}
+/** The guidance read, stalled when `stall()` is called until `release()`. */
+function stallable(fake) {
+  const read = fake.client.fetchGuidance;
+  let gate = null;
+  fake.client.fetchGuidance = (...args) => (gate ? gate.then(() => read(...args)) : read(...args));
+  let open;
+  return {
+    stall: () => { gate = new Promise((resolve) => { open = resolve; }); },
+    release: () => { gate = null; open(); },
+  };
+}
+const WALL_CLOCK = /^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d$/;
+
+test('a Queue write is held with its kind and the time it was made, the newest per subject, until the Queue is read again (ADR 629)', async () => {
+  const fake = fakeClient();
+  const snooze = byHand();
+  const restore = byHand();
+  fake.client.setGuidancePreference = snooze.send;
+  fake.client.restoreGuidancePreference = restore.send;
+  const guidance = stallable(fake);
+  const live = createLive({ client: fake.client, glossary: [] });
+  await live.readTab('queue');
+  const snoozing = live.queueWrites.snooze('pattern:p0');
+  const snoozed = live.queueWrites.held().inFlight.get?.('pattern:p0');
+  assert.equal(snoozed?.kind, 'snooze', 'a snooze is held with its kind from the moment it is made');
+  assert.match(snoozed.at, WALL_CLOCK, 'and the wall-clock time it was made');
+  // A Restore pressed on its row while the snooze is unanswered is the newest write, and is reported instead.
+  const restoring = live.queueWrites.restore('pattern:p0');
+  assert.equal(live.queueWrites.held().inFlight.get('pattern:p0').kind, 'restore');
+  await landed();
+  guidance.stall();
+  snooze.answer();
+  await landed();
+  assert.equal(live.queueWrites.held().inFlight.get('pattern:p0').kind, 'restore', 'the snooze answered');
+  guidance.release();
+  await snoozing;
+  assert.equal(live.queueWrites.held().inFlight.get('pattern:p0').kind, 'restore',
+    'the older write settling leaves the newer one reported');
+  await landed();
+  guidance.stall();
+  restore.answer();
+  await landed();
+  assert.equal(live.queueWrites.held().inFlight.size, 1, 'held until the Queue is read again');
+  guidance.release();
+  await restoring;
+  assert.equal(live.queueWrites.held().inFlight.size, 0);
+  assert.deepEqual(restore.calls, [['pattern:p0']]);
+});
+
+test('a Focus in flight is held apart, and a later write on its subject leaves it held (ADR 629)', async () => {
+  const fake = fakeClient();
+  const pin = byHand();
+  fake.client.pinFocus = pin.send;
+  const live = createLive({ client: fake.client, glossary: [] });
+  await live.readTab('queue');
+  const pinning = live.queueWrites.pin('pattern:p1');
+  assert.deepEqual(live.queueWrites.held().focus, { subject: 'pattern:p1' });
+  assert.equal(live.queueWrites.held().inFlight.size, 0, 'a Focus is no write in the subjects\' map');
+  const snoozing = live.queueWrites.snooze('pattern:p1');
+  assert.deepEqual(live.queueWrites.held().focus, { subject: 'pattern:p1' }, 'a later snooze leaves it held');
+  assert.equal(live.queueWrites.held().inFlight.get('pattern:p1').kind, 'snooze');
+  await landed();
+  pin.answer();
+  await Promise.all([pinning, snoozing]);
+  assert.deepEqual(live.queueWrites.held(), { inFlight: new Map(), focus: null, refused: [] });
+});
+
+test('a write refused after the person undid it holds no refusal, and its Undo is not sent (ADR 629)', async () => {
+  const fake = fakeClient();
+  const snooze = byHand();
+  const restore = byHand();
+  fake.client.setGuidancePreference = snooze.send;
+  fake.client.restoreGuidancePreference = restore.send;
+  const withdrawn = [];
+  fake.client.recordDone = () => Promise.reject(refusal(409));
+  fake.client.withdrawDone = (body) => { withdrawn.push(body); return Promise.resolve({}); };
+  const live = createLive({ client: fake.client, glossary: [] });
+  await live.readTab('queue');
+  const snoozing = live.queueWrites.snooze('pattern:p0');
+  const undoing = live.queueWrites.restore('pattern:p0');
+  await landed();
+  snooze.refuse(409);
+  await assert.rejects(snoozing);
+  assert.deepEqual(live.queueWrites.held().refused, [], 'the snooze the person undid is not held');
+  await undoing;
+  assert.deepEqual(restore.calls, [], 'and its restore is not sent');
+  // A Done refused after its Undo was pressed likewise leaves nothing, and sends no withdrawal.
+  const doing = live.queueWrites.done('pattern:p1');
+  const undoingDone = live.queueWrites.undoDone('pattern:p1');
+  await assert.rejects(doing);
+  await undoingDone;
+  assert.deepEqual(live.queueWrites.held().refused, []);
+  assert.deepEqual(withdrawn, []);
+  // A snooze refused with no newer write on its subject is held as before (#610).
+  const alone = live.queueWrites.snooze('pattern:p2');
+  await landed();
+  snooze.refuse(409);
+  await assert.rejects(alone);
+  assert.deepEqual(live.queueWrites.held().refused, [{ kind: 'snooze', subject: 'pattern:p2' }]);
 });
 
 test('a Queue write reads no Trial roster, and leaves Changes to read its own after it (#610)', async () => {

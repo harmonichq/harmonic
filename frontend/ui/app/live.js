@@ -41,6 +41,7 @@
 // answers again, a few times with a growing pause, until each is current.
 //
 // Plain JS, with its client injected, so node --test drives it with a fake.
+import { queued } from '../queue-order.js';
 
 /** The account rows never print the address (lock, Settings: "never show a real email"). */
 const MASK = '••••••••';
@@ -182,18 +183,20 @@ export function createLive({ client, glossary, memory = null,
 
   // --- The answers, each read once ------------------------------------------
 
-  /** gen_ui_fixtures._queue_store's candidate: preference and decision flattened, and the Queue's order rule:
-   *  admitted, not snoozed, and not waiting for the pump after a Done (#518). */
+  /** gen_ui_fixtures._queue_store's candidate: preference and decision flattened, and the Queue's order rule
+   *  (queue-order.js). */
   const guidance = () => once('guidance', async () => {
     const answer = served('guidance', await client.fetchGuidance());
     answers.queue.wearer.guidance = {
-      candidates: answer.candidates.map((c) => ({
-        ...c,
-        set_aside: c.preference.set_aside,
-        decided_at: c.decision?.decided_at ?? null,
-        acknowledgment: c.acknowledgment ?? null,
-        queued: c.admitted && !c.preference.set_aside && c.acknowledgment?.state !== 'waiting',
-      })),
+      candidates: answer.candidates.map((c) => {
+        const flat = {
+          ...c,
+          set_aside: c.preference.set_aside,
+          decided_at: c.decision?.decided_at ?? null,
+          acknowledgment: c.acknowledgment ?? null,
+        };
+        return { ...flat, queued: queued(flat) };
+      }),
     };
     return answer;
   });
@@ -544,17 +547,24 @@ export function createLive({ client, glossary, memory = null,
       identities.delete(intent);
     },
   };
-  /** The writes that take their item out of its list while in flight; a Focus shows its pill instead. */
-  const TAKES_OUT = new Set(['snooze', 'restore', 'done']);
+  /** The writes an Undo of their own reverses: a Restore undoes a Snooze, and an Undo of a Done a Done. */
+  const UNDOES = { restore: 'snooze', undoDone: 'done' };
 
   // The Queue's writes (#610), sent one at a time in the order made, so each reads the guidance its write
-  // before it left behind and none spends another's generation. The subjects in flight and the refused writes
+  // before it left behind and none spends another's generation. The writes in flight and the refused ones
   // are held here, not by the screen, so a tab change neither brings back an item in flight nor loses a
-  // refusal. A Queue write never reads the roster or Changes' detail (ADR 610): it drops Changes' answer,
-  // and Changes reads its own when next shown.
-  const inFlight = new Set();
+  // refusal. A write in flight is held from the moment it is made with its kind and the time it was made,
+  // the newest per subject, so the Queue draws the store as it will leave it (ADR 629); a Focus is held
+  // apart, so a later write on its subject never hides it. A Queue write never reads the roster or Changes'
+  // detail (ADR 610): it drops Changes' answer, and Changes reads its own when next shown.
+  const inFlight = new Map();
+  let focusing = null;
   let refused = [];
   let retrying = null;
+  // How many writes (a Focus aside) were made on each subject, and the subjects whose refused Snooze or Done
+  // a newer write made after it undid: that Undo has nothing left to undo, so it is not sent (ADR 629).
+  const madeOn = new Map();
+  const undone = new Set();
   const same = (a) => (b) => a.kind === b.kind && a.subject === b.subject && a.lever === b.lever;
   const dropChanges = () => {
     forget('changes', 'trials');
@@ -564,18 +574,30 @@ export function createLive({ client, glossary, memory = null,
   };
   function queueWrite(write) {
     queueWritesMade += 1;
-    const takesOut = TAKES_OUT.has(write.kind);
-    if (takesOut) inFlight.add(write.subject);
+    const pin = write.kind === 'pin';
+    const held = pin ? { subject: write.subject, ...(write.lever ? { lever: write.lever } : {}) }
+      : { kind: write.kind, at: now() };
+    const nth = pin ? 0 : (madeOn.get(write.subject) ?? 0) + 1;
+    if (pin) focusing = held;
+    else {
+      inFlight.set(write.subject, held);
+      madeOn.set(write.subject, nth);
+    }
     dropChanges();
     remember();
     const run = queueTail.then(async () => {
       const retried = refused.some(same(write));
       try {
-        await SENDS[write.kind](write.subject, write.lever);
+        if (!(write.kind in UNDOES && undone.delete(write.subject))) {
+          await SENDS[write.kind](write.subject, write.lever);
+        }
         refused = refused.filter((r) => !same(write)(r));
       } catch (error) {
-        // A refusal is held until it saves, or until Retry finds its subject no longer served.
-        if (retried && error?.status === 404) refused = refused.filter((r) => !same(write)(r));
+        // A refusal is held until it saves, or until Retry finds its subject no longer served. One the person
+        // made a newer write on the subject after is not held: the newest write is the person's intent.
+        const superseded = !pin && madeOn.get(write.subject) > nth;
+        if (superseded && Object.values(UNDOES).includes(write.kind)) undone.add(write.subject);
+        if (superseded || (retried && error?.status === 404)) refused = refused.filter((r) => !same(write)(r));
         else if (!retried) refused = [...refused, write];
         throw error;
       } finally {
@@ -583,7 +605,8 @@ export function createLive({ client, glossary, memory = null,
         const roster = answers.queue.wearer.trials;
         forget(...FOLLOW_UP);
         await queue(roster).then(() => remember(), () => undefined);
-        if (takesOut) inFlight.delete(write.subject);
+        if (pin && focusing === held) focusing = null;
+        if (!pin && inFlight.get(write.subject) === held) inFlight.delete(write.subject);
       }
     });
     queueTail = run.catch(() => undefined);
@@ -595,8 +618,9 @@ export function createLive({ client, glossary, memory = null,
     done: (subject) => queueWrite({ kind: 'done', subject }),
     undoDone: (subject) => queueWrite({ kind: 'undoDone', subject }),
     pin: (subject, lever) => queueWrite({ kind: 'pin', subject, ...(lever ? { lever } : {}) }),
-    /** The subjects a write in flight takes out of their list, and the refused writes, in the order made. */
-    held: () => ({ inFlight: new Set(inFlight), refused }),
+    /** The newest write in flight on each subject, with its kind and when it was made; the Focus in flight;
+     *  and the refused writes, in the order made (ADR 629). */
+    held: () => ({ inFlight: new Map(inFlight), focus: focusing, refused }),
     /** Send every refused write again, in order; it resolves, once each is answered, with those that saved.
      *  A Retry pressed while one is in flight sends nothing more, and resolves with it. */
     retry: () => {

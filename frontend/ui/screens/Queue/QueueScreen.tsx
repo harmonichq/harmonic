@@ -48,24 +48,28 @@
 // Queue, its Snoozed count, and the bar's date (the decision time plus the
 // fourteen days of a snooze). Undo shows the store as it was.
 //
-// Live (`writes`, #495): Snooze — the text action and S on desktop, or a row's
-// or the open card's full swipe on the phone — and Restore take the item out of their list at once; Focus shows
-// the Focus pill at once on the card pressed (a cause's Focus names its lever),
-// then the bar "Focus started" with Changes, which opens that tab. Each write
-// resolves once the engine's answers are read again, so what the screen then
-// shows is what the engine served: the snooze bar dates from the served
-// decision time, and Undo restores the item.
+// Live (`writes`, #495): each write draws the store as it will leave it the
+// moment it is made (ADR 629). Snooze — the text action and S on desktop, or a
+// row's or the open card's full swipe on the phone — puts the item in Snoozed,
+// one more in its count, and raises "Snoozed until <date>" with Undo, the date
+// fourteen days after the write was made; Restore, or that Undo, puts it back
+// in the Queue at its served priority; Focus shows the Focus pill on the card
+// pressed (a cause's Focus names its lever), offers no other Focus, and raises
+// "Focus started" with Changes, which opens that tab. Each write resolves once
+// the engine's answers are read again, and the screen then draws what the
+// engine served, which is what it drew: the snooze bar then dates from the
+// served decision time.
 // A write that fails puts the item back as it was, with "Not saved" and Retry
 // in the bar, which outranks every other bar until Retry saves it or the engine
 // no longer serves its item. Once Retry leaves nothing refused, the bar is the
 // own bar of the last Done or Focus that Retry saved, as on a first save, and
 // otherwise none. The writes in flight and the refused ones are the
 // live adapter's (`held`, #610), so a tab change keeps both; the screen keeps
-// neither.
+// neither, and draws a write in flight through the Queue model.
 //
 // Done (#518) is a Setting card's primary, where Focus sits on a Pattern card:
 // it takes the card out of the Queue at once and the bar reads "Waiting for
-// pump" with Undo (⌘Z on desktop), which puts it back. Snooze stays the text
+// pump" with Undo (⌘Z on desktop), which puts it back at once. Snooze stays the text
 // action beneath it on desktop, and the card's swipe on the phone. A card the
 // engine serves back after a sync found the setting unchanged carries the Not
 // on pump pill, on its row and its card. In a story, Done shows the `done.after`
@@ -136,6 +140,9 @@ export type DrillDownHooks = {
 /** A refused Queue write, held until it saves (#610). */
 export type Refused = { kind: 'snooze' | 'restore' | 'done' | 'undoDone' | 'pin'; subject: string; lever?: string };
 
+/** A Queue write in flight, with the time it was made (ADR 629). */
+export type Held = { kind: Exclude<Refused['kind'], 'pin'>; at: string };
+
 /** Each resolves once the engine's answers are read again, and rejects when the write was not saved. */
 export type QueueWrites = {
   snooze: (subject: string) => Promise<void>;
@@ -144,8 +151,10 @@ export type QueueWrites = {
   pin: (subject: string, lever?: string) => Promise<void>;
   done: (subject: string) => Promise<void>;
   undoDone: (subject: string) => Promise<void>;
-  /** The subjects a write in flight takes out of their list, and the refused writes. */
-  held: () => { inFlight: ReadonlySet<string>; refused: readonly Refused[] };
+  /** The newest write in flight on each subject, the Focus in flight, and the refused writes (ADR 629). */
+  held: () => {
+    inFlight: ReadonlyMap<string, Held>; focus: { subject: string; lever?: string } | null; refused: readonly Refused[];
+  };
   /** Send every refused write again; it resolves with those that saved. */
   retry: () => Promise<readonly Refused[]>;
 };
@@ -172,9 +181,8 @@ function Row({ item, layout, selected, swiping, onSelect, onSnooze, until, onRes
 
 /** The open item's card. `focusable` is the served admission; `onOpen` opens a
  *  multi-cause Pattern's drill-down. `actions` are what the live app adds:
- *  Focus, the Focus pill while its write is in flight, and a matured Trial's
- *  link to Changes. */
-type CardActions = { onPin?: () => void; pinned?: boolean; onChanges?: () => void };
+ *  Focus, and a matured Trial's link to Changes. */
+type CardActions = { onPin?: () => void; onChanges?: () => void };
 
 /** The screen decides which Snooze a layout gets (ADR 614): desktop passes
  *  `onSnooze`, its text action; the phone passes `onCollapse`, its chevron, and
@@ -186,7 +194,7 @@ function Card({ item, focusable, onOpen, onSnooze, onCollapse, onDone, actions =
   return item.kind === 'setting'
     ? <SettingCard data={item.data} onDone={onDone} onSnooze={onSnooze} onCollapse={onCollapse}
         onChanges={actions.onChanges} />
-    : <PatternCard data={actions.pinned ? { ...item.data, pinned: true } : item.data} onSnooze={onSnooze}
+    : <PatternCard data={item.data} onSnooze={onSnooze}
         onCollapse={onCollapse} onPin={actions.onPin} focusable={focusable} onOpen={onOpen} />;
 }
 
@@ -222,7 +230,7 @@ type Bar = { kind: 'story' } | { kind: 'story_done' } | { kind: 'snoozed'; subje
 const STORY_BAR: Bar = { kind: 'story' };
 const STORY_DONE_BAR: Bar = { kind: 'story_done' };
 const NOT_SAVED_BAR: Bar = { kind: 'not_saved' };
-const NONE_HELD: ReturnType<QueueWrites['held']> = { inFlight: new Set(), refused: [] };
+const NONE_HELD: ReturnType<QueueWrites['held']> = { inFlight: new Map(), focus: null, refused: [] };
 
 export function QueueScreen({
   layout, store, state = 'ready', open, view: viewProp = 'queue', returnTo, swiping, closed: closedAtMount = false,
@@ -240,12 +248,15 @@ export function QueueScreen({
   const root = useMotionGate<HTMLDivElement>();
   const shown = snoozedNow && snooze ? snooze.after : doneNow && done ? done.after : store;
   const ready = state === 'ready' || state === 'stale';
+  // Live: the adapter's writes in flight and refused, and the Focus in flight (its
+  // subject and any cause's lever), drawn by the Queue model.
+  const held = writes?.held() ?? NONE_HELD;
   // The Pattern a drill-down was opened on, with its title and how many causes
   // it served then, which its skeleton draws while it waits. One the Queue no
   // longer ranks (a drill-down returned to from history, the answers moved under
   // it) keeps only its subject, and the Queue shows instead.
   const opening = (subject?: string) => {
-    const ranked = ready && subject ? ranking(shown).some((i) => i.subject === subject) : false;
+    const ranked = ready && subject ? ranking(shown, held).some((i) => i.subject === subject) : false;
     const key = subject?.replace(/^pattern:/, '');
     return key ? { subject: subject!, title: ranked ? pattern(shown, key).title : '',
       causes: ranked ? causes(shown, key).length : 0 } : undefined;
@@ -267,13 +278,8 @@ export function QueueScreen({
   const returned = useRef(() => setView('queue'));
   useEffect(() => router?.onReturn(() => returned.current()), [router]);
   const push = view === 'queue' ? 'back' : 'forward';
-  // Live: the adapter's writes in flight and refused, the Focus in flight (its
-  // subject and any cause's lever), and the live bar.
-  const held = writes?.held() ?? NONE_HELD;
-  const hidden = held.inFlight;
-  const [pinning, setPinning] = useState<string>();
   const [liveBar, setLiveBar] = useState<Bar | null>(null);
-  const items = ready ? ranking(shown).filter((i) => !hidden.has(i.subject)) : [];
+  const items = ready ? ranking(shown, held) : [];
   // The item a story opens must be in the Queue it opens on.
   if (open && ready && !justSnoozed && !ranking(store).some((i) => i.subject === open)) {
     throw new Error(`${store} serves no ${open} in its Queue`);
@@ -285,27 +291,31 @@ export function QueueScreen({
     if (view === 'causes') leave();
     setSelected(subject);
   };
-  const snoozedTotal = ready ? snoozedCount(shown) : null;
+  const snoozedTotal = ready ? snoozedCount(shown, held) : null;
 
-  // A refused write is the adapter's to hold, and its bar outranks this one.
-  const unsaved = () => setLiveBar(null);
-  const liveSnooze = (subject: string) => {
-    setLiveBar(null);
-    writes!.snooze(subject).then(() => setLiveBar({ kind: 'snoozed', subject }), unsaved);
+  // Each write's bar rises as it is made (ADR 629). A refused write is the adapter's to hold, and its bar
+  // outranks this one; a refusal clears the write's own bar, and an Undo's refusal has none.
+  const raise = (bar: Bar, written: Promise<void>) => {
+    setLiveBar(bar);
+    written.catch(() => setLiveBar((now) => (now === bar ? null : now)));
   };
+  const ignored = () => undefined;
+  const liveSnooze = (subject: string) => raise({ kind: 'snoozed', subject }, writes!.snooze(subject));
   const liveRestore = (subject: string) => {
     setLiveBar(null);
-    writes!.restore(subject).catch(unsaved);
+    writes!.restore(subject).catch(ignored);
   };
+  /** Undo moves the item back and clears the bar at once. */
   const liveUndo = (subject: string) => {
-    writes!.restore(subject).then(() => { setLiveBar(null); setSelected(subject); }, unsaved);
-  };
-  const liveDone = (subject: string) => {
     setLiveBar(null);
-    writes!.done(subject).then(() => setLiveBar({ kind: 'waiting', subject }), unsaved);
+    setSelected(subject);
+    writes!.restore(subject).catch(ignored);
   };
+  const liveDone = (subject: string) => raise({ kind: 'waiting', subject }, writes!.done(subject));
   const liveUndoDone = (subject: string) => {
-    writes!.undoDone(subject).then(() => { setLiveBar(null); setSelected(subject); }, unsaved);
+    setLiveBar(null);
+    setSelected(subject);
+    writes!.undoDone(subject).catch(ignored);
   };
   /** Retry: once nothing refused is held, the bar of the last Done or Focus it saved, else none (#610). */
   const liveRetry = () => {
@@ -315,17 +325,10 @@ export function QueueScreen({
       setLiveBar(last?.kind === 'done' ? { kind: 'waiting', subject: last.subject } : last ? { kind: 'focused' } : null);
     });
   };
-  const pinKey = (subject: string, lever?: string) => (lever ? `${subject} ${lever}` : subject);
-  const livePin = (subject: string, lever?: string) => {
-    setPinning(pinKey(subject, lever));
-    setLiveBar(null);
-    writes!.pin(subject, lever).then(() => setLiveBar({ kind: 'focused' }), unsaved)
-      .finally(() => setPinning(undefined));
-  };
+  const livePin = (subject: string, lever?: string) => raise({ kind: 'focused' }, writes!.pin(subject, lever));
   const changes = nav?.onSelect && (() => nav.onSelect!('changes'));
   const actions = (item: QueueItem): CardActions | undefined => writes && {
     onPin: () => livePin(item.subject),
-    pinned: pinning === item.subject,
     onChanges: changes,
   };
 
@@ -402,8 +405,9 @@ export function QueueScreen({
     ? Array.from({ length: drill?.causes ?? 0 }, (_, i) => <PatternCard key={i} loading />)
     : drilled && causes(shown, drilled.subject.replace(/^pattern:/, '')).map((cause) => (
       <PatternCard key={cause.subject} pin="secondary"
-        data={pinning === pinKey(drilled.subject, cause.lever) ? { ...cause, pinned: true } : cause}
-        focusable={focusable(shown) && cause.pinnable}
+        data={held.focus?.subject === drilled.subject && held.focus.lever === cause.lever
+          ? { ...cause, pinned: true } : cause}
+        focusable={focusable(shown, held) && cause.pinnable}
         onPin={writes && (() => livePin(drilled.subject, cause.lever))} />
     ));
 
@@ -416,14 +420,14 @@ export function QueueScreen({
   const list = state === 'loading'
     ? [0, 1, 2, 3].map((i) => <QueueRow key={i} loading layout={layout} />)
     : view === 'snoozed'
-      ? (ready ? snoozed(shown) : []).filter((s) => !hidden.has(s.subject)).map((s) => (
+      ? (ready ? snoozed(shown, held) : []).map((s) => (
           <Row key={s.subject} item={s} layout={layout} until={s.until}
             onRestore={writes && (() => liveRestore(s.subject))} />))
       : items.length === 0 && ready
-        ? <p className="ui-queue__empty"><Num value={queuedCount(shown)} /> patterns</p>
+        ? <p className="ui-queue__empty"><Num value={queuedCount(shown, held)} /> patterns</p>
         : items.map((item) => (layout === 'phone'
           ? <PhoneItem key={item.subject} item={item} open={!closed && item.subject === current?.subject}
-              grows={item.subject === expanded} swiping={item.subject === swiping} focusable={focusable(shown)}
+              grows={item.subject === expanded} swiping={item.subject === swiping} focusable={focusable(shown, held)}
               onOpen={() => go('causes', item.subject)}
               onSelect={() => { setClosed(false); setSelected(item.subject); setExpanded(item.subject); }}
               onSnooze={() => doSnooze(item.subject)} onCollapse={() => setClosed(true)}
@@ -433,7 +437,7 @@ export function QueueScreen({
 
   const shownBar = barShown.value;
   const liveUntil = shownBar?.kind === 'snoozed' && ready
-    ? snoozed(shown).find((s) => s.subject === shownBar.subject)?.until : undefined;
+    ? snoozed(shown, held).find((s) => s.subject === shownBar.subject)?.until : undefined;
   const barContent = shownBar?.kind === 'not_saved'
     ? <TransientBar kind="not_saved" onRetry={liveRetry} layout={layout} />
     : shownBar?.kind === 'focused'
@@ -491,7 +495,7 @@ export function QueueScreen({
             {state === 'loading' && <div className="ui-queue__detail"><PatternCard loading /></div>}
             {ready && current && (
               <div key="detail" className="ui-queue__detail ui-push">
-                <Card item={current} focusable={focusable(shown)} onOpen={() => go('causes', current.subject)}
+                <Card item={current} focusable={focusable(shown, held)} onOpen={() => go('causes', current.subject)}
                   onSnooze={() => doSnooze()} onDone={() => doDone(current.subject)} actions={actions(current)} />
               </div>
             )}

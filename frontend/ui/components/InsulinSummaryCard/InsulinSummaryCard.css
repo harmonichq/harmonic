@@ -1,0 +1,53 @@
+/* The Setting card's surface, title, "No data" and skeleton (SettingCard.css);
+   only the rows are here, which the BolusReviewCard shares (ADR 633). */
+
+/* One grid for the card: label, share and value, aligned like a table with no
+   cells; a rule across the card opens each block after the first. */
+.ui-insulin-rows {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content max-content;
+  column-gap: 20px;
+  align-items: baseline;
+  margin-top: 12px;
+}
+.ui-insulin-rows__row { display: contents; }
+.ui-insulin-rows__row > * { padding-top: 6px; }
+.ui-insulin-rows__rule {
+  grid-column: 1 / -1;
+  margin-top: 12px;
+  padding-top: 6px;
+  border-top: 1px solid var(--wk-rule);
+}
+
+.ui-insulin-rows__label {
+  min-width: 0;
+  color: var(--wk-ink-body);
+  font-size: var(--ui-type-body);
+  line-height: 22px;
+}
+.ui-insulin-rows__share,
+.ui-insulin-rows__value {
+  font-size: var(--ui-type-body);
+  line-height: 22px;
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.ui-insulin-rows__share { color: var(--wk-ink-meta); }
+.ui-insulin-rows__value { color: var(--wk-ink); }
+.ui-insulin-rows__unit { color: var(--wk-ink-meta); font-size: var(--ui-type-label); }
+
+/* A block's headline: its label strong and across the share column, its value
+   at the metric size. */
+.ui-insulin-rows__row--headline .ui-insulin-rows__label {
+  grid-column: span 2;
+  color: var(--wk-ink);
+  font-weight: var(--ui-weight-strong);
+}
+.ui-insulin-rows__row--headline .ui-insulin-rows__value {
+  font-size: var(--ui-type-title);
+  font-weight: var(--ui-weight-strong);
+  line-height: 28px;
+  letter-spacing: -.01em;
+}
+.ui-insulin-rows__row--headline .ui-insulin-rows__unit { font-weight: var(--ui-weight-regular); letter-spacing: 0; }

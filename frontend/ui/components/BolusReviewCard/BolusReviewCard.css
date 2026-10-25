@@ -1,0 +1,11 @@
+/* The Insulin summary's rows (InsulinSummaryCard.css) in the Setting card's
+   frame; only the block headings are the Bolus review's own (ADR 633). */
+
+/* Type and Delivery method, each over its block, across all three columns. */
+.ui-insulin-rows__heading {
+  grid-column: 1 / -1;
+  color: var(--wk-ink);
+  font-size: var(--ui-type-body);
+  font-weight: var(--ui-weight-strong);
+  line-height: 22px;
+}

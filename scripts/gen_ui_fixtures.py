@@ -36,6 +36,9 @@ Two committed outputs, one generator, one ``--check``:
   is served for the wearer (a meal in every size), its first days (one meal at
   60 g+), the unsynced store (no window), and ``showcase``, the QA catalog's
   showcase case, whose meals are all 40 g or more.
+  ``/api/explore/insulin`` (#632) for each window, as served, is held for the
+  wearer (every bolus type and delivery method), its first days (fewer days with
+  delivery) and the unsynced store (no window).
 
   ``changes`` holds the Changes components' answers by store (the admission,
   every Trial on the roster, the Focus records with their served titles). The
@@ -426,6 +429,7 @@ def fixtures() -> dict:
             "time_of_day": _profiles(client),
             "analyze": _windows(client),
             "meal_size": _meal_sizes(client),
+            "insulin": _insulins(client),
             "day_navigator": _day_navigator(client),
         }}
         day = _days(client, overview["wearer"]["day_navigator"])
@@ -459,7 +463,8 @@ def fixtures() -> dict:
 
         first_days_database, first_days = _wearer(scratch, "wearer-first-days", trial=False, days=FIRST_DAYS)
         overview["wearer-first-days"] = {"time_of_day": _profiles(first_days),
-                                         "meal_size": _meal_sizes(first_days)}
+                                         "meal_size": _meal_sizes(first_days),
+                                         "insulin": _insulins(first_days)}
         changes["wearer-first-days"] = _changes_store(first_days)
         # Everything the first days admit, snoozed: an empty Queue whose
         # Snoozed list holds them all (§1.3 Queue empty, Queue · Snoozed).
@@ -561,8 +566,10 @@ def fixtures() -> dict:
         unsynced_client = _serve(unsynced)
         overview["wearer-unsynced"] = {"outcomes": _outcomes(unsynced_client),
                                        "meal_size": _meal_sizes(unsynced_client),
+                                       "insulin": _insulins(unsynced_client),
                                        "guidance": {"disposition": _get(unsynced_client, "/api/guidance")["disposition"]}}
         _require_meal_sizes(overview)
+        _require_insulin(overview)
         settings["pump_settings"]["wearer-unsynced"] = _pump_settings(unsynced_client)
     return {
         "_generated_by": GENERATED_BY,
@@ -782,6 +789,35 @@ def _require_meal_sizes(overview: dict) -> None:
     if (min(wearer) == 0 or first[-1] != 1 or 0 not in showcase or not any(showcase)
             or overview["wearer-unsynced"]["meal_size"]["90"]["window"] is not None):
         raise SystemExit(f"the Meal size stores no longer serve their states: {wearer} {first} {showcase}")
+
+
+def _insulins(client: TestClient) -> dict:
+    """The insulin figures for each window the Overview switches between (#632)."""
+    return {str(w): _insulin(client, w) for w in WINDOWS}
+
+
+_INSULIN_FIELDS = ("window", "delivery_days", "daily_dose", "basal", "bolus", "boluses", "carbs",
+                   "by_type", "by_method")
+
+
+def _insulin(client: TestClient, days: int) -> dict:
+    """``/api/explore/insulin``, trimmed to the shape ADR 632 serves."""
+    answer = _get(client, "/api/explore/insulin", days=days)
+    return {field: answer[field] for field in _INSULIN_FIELDS}
+
+
+def _require_insulin(overview: dict) -> None:
+    """Fail unless each insulin store still serves its state: the wearer every type
+    and method row above zero at 90 days, its first days fewer days with delivery
+    than the wearer at 14, and the unsynced store no window."""
+    wearer = overview["wearer"]["insulin"]
+    rows = {f"{group}.{row}": part["units"] for group in ("by_type", "by_method")
+            for row, part in wearer["90"][group].items()}
+    first, full = (overview[store]["insulin"]["14"]["delivery_days"]
+                   for store in ("wearer-first-days", "wearer"))
+    if (not all(units and units > 0 for units in rows.values()) or first >= full
+            or overview["wearer-unsynced"]["insulin"]["90"]["window"] is not None):
+        raise SystemExit(f"the insulin stores no longer serve their states: {rows} {first} {full}")
 
 
 def _day_navigator(client: TestClient) -> dict:

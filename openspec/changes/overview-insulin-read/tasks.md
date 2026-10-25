@@ -18,10 +18,10 @@
 
 ## 4. The fixtures
 
-- [ ] 4.1 `scripts/ui_patient.py`: the Extended and Quick stamps on a fixed day rule (ADR 632), delivery unchanged
-- [ ] 4.2 `scripts/gen_ui_fixtures.py`: `_insulin(client)` for each window, trimmed to the shape ADR 632 serves, under `overview` for `wearer`, `wearer-first-days` and `wearer-unsynced`; `_require_insulin` fails unless the wearer serves every type and method row above zero at 90 days, the first days fewer `delivery_days` than the wearer's at 14 days, and the unsynced store a null window; the module docstring names the read
-- [ ] 4.3 Regenerate `frontend/ui/__fixtures__/ui-fixtures.json` and `ui-allowlist.json`; `uv run python scripts/gen_ui_fixtures.py --check` green; every existing `_require_*` guard green without change
-- [ ] 4.4 `uv run python scripts/gen_qa_e2e_db.py --check` green with no change under `mockups/` or `scripts/qa_e2e_cases.py`
+- [x] 4.1 `scripts/ui_patient.py`: the Extended and Quick stamps on a fixed day rule (ADR 632), delivery unchanged
+- [x] 4.2 `scripts/gen_ui_fixtures.py`: `_insulin(client)` for each window, trimmed to the shape ADR 632 serves, under `overview` for `wearer`, `wearer-first-days` and `wearer-unsynced`; `_require_insulin` fails unless the wearer serves every type and method row above zero at 90 days, the first days fewer `delivery_days` than the wearer's at 14 days, and the unsynced store a null window; the module docstring names the read
+- [x] 4.3 Regenerate `frontend/ui/__fixtures__/ui-fixtures.json` and `ui-allowlist.json`; `uv run python scripts/gen_ui_fixtures.py --check` green; every existing `_require_*` guard green without change
+- [x] 4.4 `uv run python scripts/gen_qa_e2e_db.py --check` green with no change under `mockups/` or `scripts/qa_e2e_cases.py`
 
 ## 5. Records
 

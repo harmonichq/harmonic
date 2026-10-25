@@ -7,27 +7,24 @@ cards and the ones above them read one population.
 
 **The denominator.** Every figure is a daily average over ``delivery_days``, the
 window's days holding any basal or bolus row, so a day a sync has not reached, or
-a pump off the body, does not dilute it. ``window.data_days`` stays the window's
+a pump off the body, does not dilute it. A basal row reaching in from before the
+window holds the window's first day. ``window.data_days`` stays the window's
 length, as the profile serves it.
 
-**What is read.** Basal is the delivered rate times its duration, never the
-programmed rate; a row with no rate or no duration adds nothing. A bolus counts
-when it completed (``"Completed"``, or no completion recorded, the meals'
-convention) with insulin delivered; any other bolus counts nowhere. Carbs are the
-counted boluses' carbs and the manual carb log's grams; an entry of unknown grams
-adds nothing.
-
-**The type rows.** Every unit of a bolus lands in exactly one, so they sum to the
-bolus units: Control-IQ's own boluses (its provenance codes) whole to Control-IQ;
-else an overridden bolus whole to Override; else, with a requested split at or
-above zero on both parts and above zero in all, the delivered units divided
-between Food and Correction in that proportion; else the whole bolus to Food when
-it carried carbs and to Correction when it did not.
+**The units.** The Day screen's own (:func:`~.timeline.insulin_totals`, ADR 492),
+over the whole window, so the daily dose here is the Day screens' total over the
+same days: basal at the delivered rate over the part of each row inside the
+window, and every bolus in it with delivered insulin, whatever its completion, so
+a bolus cut short counts what it delivered. Its Control-IQ, meal and correction
+are the Control-IQ, Food and Correction rows. Override, the one row the Day screen
+lacks, is the overridden user boluses whole, kept out of what it splits, so the
+four rows sum to the bolus units. Carbs are the same boluses' carbs and the manual
+carb log's grams; an entry of unknown grams adds nothing.
 
 **The method rows.** By the provenance code: Standard, Extended, Quick and
 Control-IQ. A bolus with any other code, or none, counts in the totals and in no
 method row, so the method shares can fall short of one. Manual and Control-IQ
-counts read the same codes; a bolus without Control-IQ's is manual.
+counts read the same boluses; a bolus Control-IQ did not give is manual.
 
 Every share is the part over its total, served as its own field. Nothing here
 judges a setting or a habit: it is a report, never a Queue item.
@@ -39,55 +36,64 @@ from datetime import datetime, time, timedelta
 
 from .events import format_t
 from .explore_time_of_day import DATA_DAYS
+from .timeline import insulin_totals
 
-TYPES = ("food", "correction", "override", "control_iq")
 METHODS = ("standard", "extended", "quick", "control_iq")
 #: The method row each provenance code delivers through.
 _METHOD_BY_CODE = {0: "standard", 1: "extended", 2: "quick", 3: "control_iq", 6: "control_iq"}
+_NOTHING = dict.fromkeys(("basal", "meal", "correction", "control_iq_bolus", "total"), 0.0)
 
 
 def build_insulin_windows(store, *, windows: tuple = DATA_DAYS) -> dict:
     """Each window's insulin figures, keyed by its days as text.
 
     Every window ends at the same instant, so the rows of the widest are read once
-    and each window keeps those that start inside it."""
+    (basal from a day earlier, so a row running into a window counts its inside
+    part) and each window keeps those that reach inside it."""
     history = store.cgm_readings()
     if not history:
-        return {str(days): _window(None, set(), [], [], []) for days in windows}
+        return {str(days): _window(None, _NOTHING, set(), [], []) for days in windows}
     latest = max(reading.t for reading in history)
     end = datetime.combine(latest.date() + timedelta(days=1), time.min)
-    start, stop = format_t(end - timedelta(days=max(windows))), format_t(end)
-    basal = store.basal_events(start, stop)
-    boluses = store.bolus_events(start, stop)
-    entries = store.carb_entries(start, stop)
-
-    def inside(rows, days):
-        opens = end - timedelta(days=days)
-        return [row for row in rows if row.t >= opens]
+    widest = end - timedelta(days=max(windows))
+    basal = store.basal_events(format_t(widest - timedelta(days=1)), format_t(end))
+    boluses = store.bolus_events(format_t(widest), format_t(end))
+    entries = store.carb_entries(format_t(widest), format_t(end))
 
     result = {}
     for days in windows:
-        window_basal, window_boluses = inside(basal, days), inside(boluses, days)
-        delivered = {row.t.date() for row in (*window_basal, *window_boluses)}
+        opens = end - timedelta(days=days)
+        reaching = [row for row in basal if row.t >= opens or (
+            row.duration_mins and row.t + timedelta(minutes=row.duration_mins) > opens)]
+        inside = [b for b in boluses if b.t >= opens]
+        counted = [b for b in inside if b.insulin is not None and b.insulin > 0]
+        totals = insulin_totals(reaching, [b for b in counted if not _overridden(b)],
+                                opens, end, None)
         result[str(days)] = _window(
-            {"start": format_t(end - timedelta(days=days)), "end": stop, "data_days": days},
-            delivered, window_basal, window_boluses, inside(entries, days))
+            {"start": format_t(opens), "end": format_t(end), "data_days": days},
+            totals or _NOTHING,
+            {max(row.t, opens).date() for row in reaching} | {b.t.date() for b in inside},
+            counted, [e for e in entries if e.t >= opens])
     return result
 
 
-def _window(window, delivered: set, basal, boluses, entries) -> dict:
-    counted = [b for b in boluses
-               if b.completion in ("Completed", None) and b.insulin is not None and b.insulin > 0]
-    basal_units = sum(row.basal_rate * row.duration_mins / 60 for row in basal
-                      if row.basal_rate is not None and row.duration_mins is not None)
-    by_type, by_method = dict.fromkeys(TYPES, 0.0), dict.fromkeys(METHODS, 0.0)
+def _overridden(bolus) -> bool:
+    """A user bolus whose calculated size the person changed (Override)."""
+    return bolus.user_override == 1 and bolus.is_automatic_bolus is not True
+
+
+def _window(window, totals: dict, delivered: set, counted: list, entries) -> dict:
+    """One window's figures, from its Day-screen totals and its counted boluses."""
+    override = sum(b.insulin for b in counted if _overridden(b))
+    by_type = {"food": totals["meal"], "correction": totals["correction"],
+               "override": override, "control_iq": totals["control_iq_bolus"]}
+    bolus_units = sum(by_type.values())
+    dose = totals["total"] + override
+    by_method = dict.fromkeys(METHODS, 0.0)
     for bolus in counted:
-        for row, units in _type_parts(bolus):
-            by_type[row] += units
         method = _METHOD_BY_CODE.get(bolus.bolus_options)
         if method is not None:
             by_method[method] += bolus.insulin
-    bolus_units = sum(b.insulin for b in counted)
     automatic = sum(1 for b in counted if b.is_automatic_bolus is True)
     carbs = (sum(b.carbs for b in counted if b.carbs is not None)
              + sum(e.grams for e in entries if e.grams is not None))
@@ -98,7 +104,7 @@ def _window(window, delivered: set, basal, boluses, entries) -> dict:
         return total / days if days else None
 
     def share(part, total):
-        return part / total if days and total else None
+        return part / total if total else None
 
     def part(units, total):
         return {"units": daily(units), "share": share(units, total)}
@@ -106,9 +112,9 @@ def _window(window, delivered: set, basal, boluses, entries) -> dict:
     return {
         "window": window,
         "delivery_days": days,
-        "daily_dose": {"units": daily(basal_units + bolus_units)},
-        "basal": part(basal_units, basal_units + bolus_units),
-        "bolus": part(bolus_units, basal_units + bolus_units),
+        "daily_dose": {"units": daily(dose)},
+        "basal": part(totals["basal"], dose),
+        "bolus": part(bolus_units, dose),
         "boluses": {
             "count": daily(len(counted)),
             "manual": {"count": daily(len(counted) - automatic),
@@ -119,18 +125,3 @@ def _window(window, delivered: set, basal, boluses, entries) -> dict:
         "by_type": {row: part(units, bolus_units) for row, units in by_type.items()},
         "by_method": {row: part(units, bolus_units) for row, units in by_method.items()},
     }
-
-
-def _type_parts(bolus):
-    """The type rows one bolus's delivered units land in, every unit in one."""
-    if bolus.is_automatic_bolus is True:
-        return (("control_iq", bolus.insulin),)
-    if bolus.user_override == 1:
-        return (("override", bolus.insulin),)
-    food, correction = bolus.food_insulin, bolus.correction_insulin
-    if food is not None and correction is not None and food >= 0 and correction >= 0 \
-            and food + correction > 0:
-        food_share = food / (food + correction)
-        return (("food", bolus.insulin * food_share),
-                ("correction", bolus.insulin * (1 - food_share)))
-    return (("food" if bolus.carbs else "correction", bolus.insulin),)

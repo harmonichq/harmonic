@@ -39,9 +39,11 @@ def _cgm_rows():
 
 
 def _basal_rows():
-    """An hour-long row every hour of every history day but 1 Apr; one 5 U row on
-    5 Jan, before every window opens; and on 5 Apr a row with no rate and one with
-    no duration, which add nothing."""
+    """An hour-long row every hour of every history day but 1 Apr, except that 26
+    Mar's last hour is 55 minutes and a ten-minute row (the feed's longest) running
+    five minutes into 27 Mar, whose first row is the 55 minutes from 00:05; one 5 U
+    row on 5 Jan, before every window opens; and on 5 Apr a row with no rate and
+    one with no duration, which add nothing."""
     rows = []
 
     def row(t, rate, duration=60.0):
@@ -53,7 +55,14 @@ def _basal_rows():
         date = _FIRST_DAY + timedelta(days=day)
         if date != _NO_DELIVERY:
             for hour in range(24):
-                row(date + timedelta(hours=hour), 1.5 if date >= _RAISED else 1.0)
+                t, rate = date + timedelta(hours=hour), 1.5 if date >= _RAISED else 1.0
+                if t == _RAISED - timedelta(hours=1):
+                    row(t, rate, 55.0)
+                    row(t + timedelta(minutes=55), rate, 10.0)
+                elif t == _RAISED:
+                    row(t + timedelta(minutes=5), rate, 55.0)
+                else:
+                    row(t, rate)
     row(datetime(2026, 4, 5, 12, 30), None)
     row(datetime(2026, 4, 5, 12, 40), 2.0, None)
     return rows
@@ -69,7 +78,8 @@ def _bolus(t, insulin, *, carbs=None, option=0, override=0, food=None, correctio
 
 
 _BOLUSES = (
-    # Before every window opens: counted nowhere.
+    # Before every window opens: counted nowhere. Every other bolus with delivered
+    # insulin counts, whatever its completion (ADR 492).
     _bolus(datetime(2026, 1, 5, 12), 10.0, carbs=100, food=10.0, correction=0.0),
     # Inside the 30 and 90 days only: 6 U Standard, all Food, 60 g.
     _bolus(datetime(2026, 3, 15, 12), 6.0, carbs=60, food=6.0, correction=0.0),
@@ -88,14 +98,14 @@ _BOLUSES = (
     _bolus(datetime(2026, 4, 5, 16), 1.5),
     # A split (1.5 + 0.5) below its 3 U delivery: 2.25 U Food, 0.75 U Correction, 30 g.
     _bolus(datetime(2026, 4, 6, 12), 3.0, carbs=30, food=1.5, correction=0.5),
-    # A negative correction part, with carbs: the whole 2 U to Food, 25 g.
+    # A negative correction part, clamped at zero: the whole 2 U to Food, 25 g.
     _bolus(datetime(2026, 4, 7, 12), 2.0, carbs=25, food=2.5, correction=-0.5),
     # No provenance code, no split, no carbs: 1 U to Correction, manual, no method row.
     _bolus(datetime(2026, 4, 7, 20), 1.0, option=None),
     # A null completion counts: 2 U Standard, Food, 20 g.
     _bolus(datetime(2026, 4, 8, 12), 2.0, carbs=20, food=2.0, correction=0.0, completion=None),
-    # Another completion counts nowhere.
-    _bolus(datetime(2026, 4, 9, 12), 5.0, carbs=60, food=5.0, correction=0.0,
+    # Cut short at 2 U of its 3 + 1 split: 1.5 U Food, 0.5 U Correction, Standard, 30 g.
+    _bolus(datetime(2026, 4, 9, 12), 2.0, carbs=30, food=3.0, correction=1.0,
            completion="Terminated"),
 )
 
@@ -153,12 +163,17 @@ def _rounded(value):
     return value
 
 
-# The ten boluses inside every window: Control-IQ 1.0 + 0.5; Override 3; Food
-# 4 + 2 + 2.25 + 2 + 2; Correction 1.5 + 0.75 + 1; Standard 3 + 1.5 + 3 + 2 + 2,
-# Extended 4, Quick 2, and the codeless 1 U in no method row. Their carbs:
-# 40 + 50 + 20 + 30 + 25 + 20 = 185 g, and 30 g logged by hand.
-_RECENT = dict(boluses=10, control_iq_count=2, food=12.25, correction=3.25, override=3.0,
-               control_iq=1.5, standard=11.5, extended=4.0, quick=2.0)
+# The eleven boluses inside every window: Control-IQ 1.0 + 0.5; Override 3; Food
+# 4 + 2 + 2.25 + 2 + 2 + 1.5; Correction 1.5 + 0.75 + 1 + 0.5; Standard
+# 3 + 1.5 + 3 + 2 + 2 + 2, Extended 4, Quick 2, and the codeless 1 U in no method
+# row. Their carbs: 40 + 50 + 20 + 30 + 25 + 20 + 30 = 215 g, and 30 g logged by hand.
+_RECENT = dict(boluses=11, control_iq_count=2, food=13.75, correction=3.75, override=3.0,
+               control_iq=1.5, standard=13.5, extended=4.0, quick=2.0)
+# 27 Mar to 9 Apr less 1 Apr: 13 days at 1.5 U/h, less the five minutes 27 Mar's
+# own first row does not cover (35.875 U that day). 26 Mar's last row adds its
+# five minutes inside 27 Mar (1/12 U) to whichever window holds them.
+_RECENT_BASAL = 12 * 36.0 + 35.875
+_SPILL = 1.0 * 5 / 60
 
 
 @unittest.skipUnless(_HAS_FASTAPI, "api extra not installed")
@@ -188,26 +203,39 @@ class InsulinReadTest(unittest.TestCase):
 
     def test_fourteen_days_average_over_the_days_with_delivery(self):
         self._seed()
-        # 27 Mar to 9 Apr less 1 Apr: 13 days of 24 h at 1.5 U/h.
         self.assertEqual(self._body(days=14), _rounded(_expected(
             start=datetime(2026, 3, 27), data_days=14, delivery_days=13,
-            basal=13 * 36.0, carbs=185 + 30, **_RECENT)))
+            basal=_RECENT_BASAL + _SPILL, carbs=215 + 30, **_RECENT)))
+
+    def test_the_daily_dose_is_the_day_screens_total_over_the_same_days(self):
+        """ADR 632: basal plus bolus units over the window is what the Day screen's
+        own read serves as its total over those days (ADR 492)."""
+        self._seed()
+        body = self.client.get("/api/explore/insulin", params={"days": 14}).json()
+        day = self.client.get("/api/timeline", params={"start": "2026-03-27T00:00:00",
+                                                         "end": "2026-04-10T00:00:00"})
+        self.assertEqual(day.status_code, 200, day.text)
+        total = day.json()["insulin_totals"]["total"]
+        self.assertAlmostEqual(body["daily_dose"]["units"] * body["delivery_days"], total)
+        self.assertAlmostEqual((body["basal"]["units"] + body["bolus"]["units"])
+                               * body["delivery_days"], total)
 
     def test_thirty_days_add_the_earlier_bolus_and_carb_entry(self):
         self._seed()
-        # 11 to 26 Mar at 1.0 U/h (16 days of 24 U) and the 13 days above.
+        # 11 to 26 Mar at 1.0 U/h (16 days of 24 U, and 26 Mar's last row whole)
+        # and the 13 days above.
         self.assertEqual(self._body(days=30), _rounded(_expected(
             start=datetime(2026, 3, 11), data_days=30, delivery_days=29,
-            basal=16 * 24.0 + 13 * 36.0, carbs=185 + 30 + 60 + 10,
-            **{**_RECENT, "boluses": 11, "food": 12.25 + 6.0, "standard": 11.5 + 6.0})))
+            basal=16 * 24.0 + _SPILL + _RECENT_BASAL, carbs=215 + 30 + 60 + 10,
+            **{**_RECENT, "boluses": 12, "food": 13.75 + 6.0, "standard": 13.5 + 6.0})))
 
     def test_ninety_days_leave_out_what_came_before_them(self):
         self._seed()
         # 1 to 26 Mar at 1.0 U/h (26 days) and the 13 days above; 5 Jan is outside.
         self.assertEqual(self._body(days=90), _rounded(_expected(
             start=datetime(2026, 1, 10), data_days=90, delivery_days=39,
-            basal=26 * 24.0 + 13 * 36.0, carbs=185 + 30 + 60 + 10,
-            **{**_RECENT, "boluses": 11, "food": 12.25 + 6.0, "standard": 11.5 + 6.0})))
+            basal=26 * 24.0 + _SPILL + _RECENT_BASAL, carbs=215 + 30 + 60 + 10,
+            **{**_RECENT, "boluses": 12, "food": 13.75 + 6.0, "standard": 13.5 + 6.0})))
 
     def test_a_store_with_no_readings_serves_a_null_window(self):
         nothing = {"units": None, "share": None}

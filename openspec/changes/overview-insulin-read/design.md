@@ -49,7 +49,7 @@ reads never serve one name with two meanings. A window with no delivery serves
 
 Basal units per day are the sum over the window's `basal_events` of
 `basal_rate × duration_mins / 60`, the delivered rate (`commandedRate`), never
-the programmed one, over `data_days`. A row with a null rate or duration adds
+the programmed one, over `delivery_days`. A row with a null rate or duration adds
 nothing. Bolus units are the sum of `insulin` over the window's boluses whose
 `completion` is `"Completed"` or null (the meals' and carb-ratio convention,
 `meals.py`) with a positive `insulin`; a bolus of another completion is not
@@ -63,11 +63,13 @@ Every unit of a bolus goes to exactly one row of `by_type`, so the four rows
 sum to the bolus units, in this order: the whole bolus to Control-IQ when
 `BolusEvent.is_automatic_bolus` is true (codes 3 and 6); otherwise the whole
 bolus to Override when `user_override` is 1; otherwise, when `food_insulin` and
-`correction_insulin` are both served and sum above zero, the delivered units
+`correction_insulin` are both served, both at or above zero and summing above
+zero (a correction the calculator subtracted below target is negative in the
+feed and would print a row below zero), the delivered units
 split between Food and Correction in the requested proportion,
 `food / (food + correction)` to Food and the rest to Correction, whatever the
-requested total's relation to the delivery; otherwise (no split, or a split
-summing to zero, as a Quick bolus that skipped the calculator) the whole bolus
+requested total's relation to the delivery; otherwise (no split, a split summing to zero as a Quick bolus that skipped the
+calculator, or a negative part) the whole bolus
 to Food when it carried carbs and to Correction when it did not. The coordinating session set these as the
 triage defaults on 2026-10-24.
 

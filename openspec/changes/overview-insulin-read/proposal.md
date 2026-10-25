@@ -63,14 +63,9 @@ none.
   its method rows short of its bolus total (the codeless boluses are in the
   totals only), which is the honest reading of such a store.
 - **Unsupported:** a basal row with no duration or rate (it contributes no
-  units); a window with no delivery (every figure null, the window served with
-  zero data days).
+  units); a window with no delivery (every figure null, `delivery_days` 0).
 - **Evidence owed:** a backend test building a store of N days of known events
-  and asserting each card's figures as literals per window (manual and
-  Control-IQ boluses, an override, an extended and a quick bolus, a bolus with
-  no split, a bolus whose split is below its delivery, a bolus whose split sums
-  to zero, a codeless bolus, a null-completion bolus, manual carbs with one entry
-  of unknown grams, a delivery before the window); the Overview-instant tests extended to the new read (a
+  and asserting each card's figures as literals per window (manual and Control-IQ boluses, an override, an extended and a quick bolus, a bolus with no split, a bolus whose split is below its delivery, a bolus whose split sums to zero, a bolus with a negative correction part, a codeless bolus, a null-completion bolus, a bolus of another completion, manual carbs with one entry of unknown grams, a delivery before the window opens, a window day with no delivery); the Overview-instant tests extended to the new read (a
   write answers its predecessor, a restart computes nothing, the worker's
   order); the follow-up-read record extended to the new read (AGENTS.md's condition
   for `_RECORDED_DATA_RESULTS`); the fixtures' store-state guard; both

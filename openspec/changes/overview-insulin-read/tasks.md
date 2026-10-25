@@ -12,7 +12,7 @@
 
 ## 3. Tests
 
-- [ ] 3.1 `tests/test_insulin_summary.py`: a manufactured store of known events (a flat history, basal at known rates, manual and Control-IQ boluses, an override, an extended and a quick bolus, a bolus with no split, a bolus whose split is below its delivery, a bolus whose split sums to zero, a codeless bolus, a bolus of another completion, manual carbs with one entry of unknown grams, a delivery before the window opens, a window day with no delivery), each served figure a literal off the recipe per window, the null window on an empty store, and the 400
+- [ ] 3.1 `tests/test_insulin_summary.py`: a manufactured store of known events (a flat history, basal at known rates, manual and Control-IQ boluses, an override, an extended and a quick bolus, a bolus with no split, a bolus whose split is below its delivery, a bolus whose split sums to zero, a bolus with a negative correction part, a codeless bolus, a null-completion bolus, a bolus of another completion, manual carbs with one entry of unknown grams, a delivery before the window opens, a window day with no delivery), each served figure a literal off the recipe per window, the null window on an empty store, and the 400
 - [ ] 3.2 `tests/test_api.py` `OverviewInstantTest`: the read in `_OVERVIEW`, in the restart test's counted builders, and in the worker-order test after Meal size
 - [ ] 3.3 `tests/test_guidance_api.py`: `("/api/explore/insulin", {"days": 14})` in the `recorded` tuple of `test_every_result_a_follow_up_write_keeps_reads_no_follow_up_state` (the transitive proof AGENTS.md requires for `_RECORDED_DATA_RESULTS`), and the follow-up-write test counts the new builder once beside Meal size's
 

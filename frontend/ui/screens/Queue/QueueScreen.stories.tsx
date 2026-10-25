@@ -5,7 +5,8 @@ import { fixtures, sourced } from '../../fixtures';
 import { scrollThenSwipe, swipe } from '../../gesture';
 import { expectTabBarEnds } from '../../tabbar-check';
 import { expectAtPaneTop, expectHeaderEmpty, expectTitlePrinted } from '../../title-check';
-import { focusable, patternStore, ranking, snoozed, type QueueStore } from '../../queue-model';
+import { focusable, patternStore, ranking, snoozed, snoozedCount, type HeldWrite, type QueueStore } from '../../queue-model';
+import { formatValue } from '../../provenance.js';
 import { failsOnce } from '../../flaky';
 import { QUEUE_UNDRAWABLE, ServedAfter } from '../../served-variants';
 import { QueueScreen, type QueueScreenProps, type QueueWrites, type Refused } from './QueueScreen';
@@ -46,6 +47,10 @@ import { QueueScreen, type QueueScreenProps, type QueueWrites, type Refused } fr
 // - Live writes (#495, #610): one the engine refuses holds "Not saved" until
 //   Retry saves it, and of two snoozes, the second refused, the first stays
 //   snoozed while the second is back.
+// - Live writes the engine answers late (ADR 629): a Snooze, a Restore, a Done
+//   undone and a Focus each draw their written state before the answer and
+//   the same after it; a snooze refused late is in Snoozed until the refusal,
+//   then back with "Not saved".
 const meta: Meta<typeof QueueScreen> = {
   title: 'Screens/Queue',
   component: QueueScreen,
@@ -601,23 +606,42 @@ export const SnoozedDrillDownDesktop: Story = {
 };
 
 // The live adapter's Queue writes as the stories play them (#610): one at a
-// time in the order made, the subjects in flight and the refused writes held as
-// the adapter holds them. Each kind fails on its first call unless `sends`
-// gives it another; `saved` hears each write that saves, before it resolves, as
-// the adapter reads the engine again first; `redraw` hears each start and
-// settle, as App redraws. It neither drops a refusal answered 404 nor ignores
-// a Retry pressed while one is in flight; the adapter's own tests cover both.
+// time in the order made, the writes in flight and the refused ones held as the
+// adapter holds them: the newest on each subject with its kind and the time it
+// was made, which `at` stamps, and a Focus apart (ADR 629); with `caseFile`, a
+// restored Pattern's case file is read while it runs. Each kind fails on its
+// first call unless `sends` gives it another; `saved` hears each write that
+// saves, before it resolves, as the adapter reads the engine again first;
+// `redraw` hears each start and settle, as App redraws. It leaves out what the
+// adapter's own tests (live.test.js) cover: a refusal dropped when Retry is
+// answered 404, or when its own Undo was made after it, the Undo pairs both
+// ways (and kept after any other later write), which of those Undos is sent, a
+// Retry's re-sends counting as no later write, a Retry pressed while one is in
+// flight sending nothing more, and a restored Pattern's case file kept through
+// the Queue's re-reads.
 type Sends = Partial<Record<Refused['kind'], (subject: string, lever?: string) => Promise<unknown>>>;
-const TAKES_OUT: readonly Refused['kind'][] = ['snooze', 'restore', 'done'];
-export function heldWrites(sends: Sends = {}, redraw = () => {}, saved = (_write: Refused) => {}): QueueWrites {
+const pad = (n: number) => String(n).padStart(2, '0');
+/** Now on the browser's wall clock, as the adapter stamps a write (`YYYY-MM-DD HH:MM:SS`). */
+const wallClock = (d = new Date()) =>
+  `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+export function heldWrites(sends: Sends = {}, redraw = () => {}, saved = (_write: Refused) => {},
+  at = (_write: Refused) => wallClock(), caseFile?: () => Promise<void>): QueueWrites {
   const send = { snooze: failsOnce(undefined), restore: failsOnce(undefined), pin: failsOnce(undefined),
     done: failsOnce(undefined), undoDone: failsOnce(undefined), ...sends };
-  const inFlight = new Set<string>();
+  const inFlight = new Map<string, HeldWrite>();
+  let focus: ReturnType<QueueWrites['held']>['focus'] = null;
+  const reading = new Map<string, Promise<void>>();
   let refused: Refused[] = [];
   let tail = Promise.resolve();
   const same = (a: Refused) => (b: Refused) => a.kind === b.kind && a.subject === b.subject && a.lever === b.lever;
   const write = (made: Refused) => {
-    if (TAKES_OUT.includes(made.kind)) inFlight.add(made.subject);
+    const pinned = made.kind === 'pin' ? { subject: made.subject, ...(made.lever ? { lever: made.lever } : {}) } : null;
+    const held = made.kind === 'pin' ? null : { kind: made.kind, at: at(made) };
+    if (pinned) focus = pinned;
+    if (held) inFlight.set(made.subject, held);
+    if (caseFile && made.kind === 'restore' && made.subject.startsWith('pattern:')) {
+      reading.set(made.subject, caseFile().finally(() => { reading.delete(made.subject); redraw(); }));
+    }
     redraw();
     const run = tail.then(async () => {
       try {
@@ -628,7 +652,8 @@ export function heldWrites(sends: Sends = {}, redraw = () => {}, saved = (_write
         if (!refused.some(same(made))) refused = [...refused, made];
         throw error;
       } finally {
-        inFlight.delete(made.subject);
+        if (pinned && focus === pinned) focus = null;
+        if (held && inFlight.get(made.subject) === held) inFlight.delete(made.subject);
         redraw();
       }
     });
@@ -641,22 +666,23 @@ export function heldWrites(sends: Sends = {}, redraw = () => {}, saved = (_write
     pin: (subject, lever) => write({ kind: 'pin', subject, ...(lever ? { lever } : {}) }),
     done: (subject) => write({ kind: 'done', subject }),
     undoDone: (subject) => write({ kind: 'undoDone', subject }),
-    held: () => ({ inFlight: new Set(inFlight), refused }),
+    held: () => ({ inFlight: new Map(inFlight), focus, refused, reading: new Map(reading) }),
     retry: () => Promise.all(refused.map((r) => write(r).then(() => r, () => null)))
       .then((sent) => sent.filter((r): r is Refused => r !== null)),
   };
 }
 /** The Queue over `heldWrites`, redrawn as each write starts and settles, and
- *  switched to `after.store` once a snooze of `after.subject` saves. */
-export function LiveQueue({ sends, after, ...props }: QueueScreenProps & {
-  sends?: Sends; after?: { subject: string; store: QueueStore };
+ *  switched to `after.store` once `after.kind` of `after.subject` saves. */
+export function LiveQueue({ sends, after, at, caseFile, ...props }: QueueScreenProps & {
+  sends?: Sends; after?: { kind: Refused['kind']; subject: string; store: QueueStore }; at?: (write: Refused) => string;
+  caseFile?: () => Promise<void>;
 }) {
   const [, setVersion] = useState(0);
   const [store, setStore] = useState(props.store);
   const [writes] = useState(() => heldWrites(sends, () => setVersion((n) => n + 1), (write) => {
-    if (after && write.kind === 'snooze' && write.subject === after.subject) setStore(after.store);
-  }));
-  // The item opened first is the first store's; the store served after the snooze no longer ranks it.
+    if (after && write.kind === after.kind && write.subject === after.subject) setStore(after.store);
+  }, at, caseFile));
+  // The item opened first is the first store's; the store served after the write may no longer rank it.
   return <QueueScreen {...props} store={store} open={store === props.store ? props.open : undefined} writes={writes} />;
 }
 
@@ -733,7 +759,7 @@ const twoSnoozesPlay = (layout: 'phone' | 'desktop'): Story['play'] => async ({ 
 };
 const twoSnoozes = (layout: 'phone' | 'desktop'): Story => ({
   ...story(layout, { store: 'wearer-pinned', open: firstSnoozed }),
-  render: (props) => <LiveQueue {...props} after={{ subject: firstSnoozed, store: 'wearer-pinned-snoozed' }}
+  render: (props) => <LiveQueue {...props} after={{ kind: 'snooze', subject: firstSnoozed, store: 'wearer-pinned-snoozed' }}
     sends={{ snooze: refusesOnce(refusedSnooze.subject) }} />,
   play: twoSnoozesPlay(layout),
 });
@@ -981,3 +1007,205 @@ const settingPlay = (title: string, units: string): Story['play'] => async ({ ca
 };
 export const IcSettingPhone: Story = { ...story('phone', { store: IC_STORE, open: 'setting:carb_ratio' }), play: settingPlay('I:C', 'g/U') };
 export const IcSettingDesktop: Story = { ...story('desktop', { store: IC_STORE, open: 'setting:carb_ratio' }), play: settingPlay('I:C', 'g/U') };
+
+// A write draws its written state the moment it is made, before the engine
+// answers (ADR 629). Each fake answers only when the play releases it, and every
+// play releases it before it ends, so the story check reads served fields. A
+// snooze is stamped with the decision time the store it switches to serves,
+// standing in for a browser clock on that day.
+/** An engine that answers each write only once the play releases it: saved, or refused. Released, it
+ *  resolves once every answer has run. */
+const answersLate = () => {
+  let answer!: (saved: boolean) => void;
+  const answered = new Promise<boolean>((resolve) => { answer = resolve; });
+  return {
+    send: async () => { if (!(await answered)) throw new Error('not saved'); },
+    release: async (saved = true) => {
+      answer(saved);
+      await new Promise((done) => { setTimeout(done); });
+    },
+  };
+};
+type Late = ReturnType<typeof answersLate>;
+/** Whether the bar's date, or a Snoozed row's Until, is read from a held write rather than a served field. */
+const fromHeld = (element: Element) => element.querySelector('[data-format="until"]')!.getAttribute('data-source')!
+  .startsWith('held.');
+const footerCount = (canvas: ReturnType<typeof within>) =>
+  Number(canvas.getByRole('button', { name: /Snoozed/ }).textContent!.replace(/\D/g, ''));
+const openSnoozed = (canvas: ReturnType<typeof within>) =>
+  userEvent.click(canvas.getByRole('button', { name: /Snoozed/ }));
+const backToQueue = (canvas: ReturnType<typeof within>) =>
+  userEvent.click(within(back(canvas)).getByRole('button', { name: 'Queue' }));
+const ITEM = '.ui-qrow, .ui-pcard, .ui-scard';
+/** The Queue's items in the order drawn, each by its text, its footer left out. */
+const drawnOrder = (canvasElement: HTMLElement) =>
+  [...canvasElement.querySelector('.ui-queue__list')!.children]
+    .filter((child) => child.matches(ITEM) || child.querySelector(ITEM))
+    .map((child) => child.textContent ?? '');
+
+// Snooze: the item leaves the Queue, the Snoozed count is one more, its row is
+// in the Snoozed list with its Until, and the bar reads "Snoozed until <date>";
+// once the engine saves it, all read as they did.
+const SNOOZED_AFTER = 'wearer-pinned-snoozed' as const;
+const lateSnoozePlay = (layout: 'phone' | 'desktop', late: Late): Story['play'] => async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  const { title, subject } = fixtures.snooze;
+  const count = snoozedCount(SNOOZED_AFTER).value;
+  await expect(count).toBe(snoozedCount('wearer-pinned').value + 1);
+  const date = formatValue(snoozed(SNOOZED_AFTER).find((s) => s.subject === subject)!.until.value, 'until');
+  const drawnSnoozed = async () => {
+    await expect(canvas.getByRole('status')).toHaveTextContent(`Snoozed until ${date}`);
+    await expect(titled(canvas, title)).toHaveLength(0);
+    await expect(canvas.queryByRole('button', { name: new RegExp(title) })).toBeNull();
+    await expect(footerCount(canvas)).toBe(count);
+    await openSnoozed(canvas);
+    await expect(rowTitled(canvasElement, title)!.querySelector('.ui-qrow__until')!.textContent).toBe(`Until ${date}`);
+  };
+  await snoozeOpen(canvasElement, layout);
+  await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent(`Snoozed until ${date}`));
+  await expect(fromHeld(canvas.getByRole('status'))).toBe(true);
+  await drawnSnoozed();
+  await expect(fromHeld(rowTitled(canvasElement, title)!)).toBe(true);
+  await late.release();
+  await waitFor(() => expect(fromHeld(canvas.getByRole('status'))).toBe(false));
+  await expect(fromHeld(rowTitled(canvasElement, title)!)).toBe(false);
+  await backToQueue(canvas);
+  await drawnSnoozed();
+  await backToQueue(canvas);
+};
+const lateSnooze = (layout: 'phone' | 'desktop'): Story => {
+  const late = answersLate();
+  return {
+    ...story(layout, { store: 'wearer-pinned', open: fixtures.snooze.subject }),
+    render: (props) => <LiveQueue {...props} sends={{ snooze: late.send }} at={() => fixtures.snooze.decided_at}
+      after={{ kind: 'snooze', subject: fixtures.snooze.subject, store: SNOOZED_AFTER }} />,
+    play: lateSnoozePlay(layout, late),
+  };
+};
+export const LateSnoozePhone = lateSnooze('phone');
+export const LateSnoozeDesktop = lateSnooze('desktop');
+
+// Restore: the row leaves the Snoozed list, the count is one less, and the item
+// is back in the Queue at its served place, before and after the engine saves it.
+// Opened while its case file is read, its card is the card's skeleton, then the
+// card in full once the file lands.
+const lateRestorePlay = (layout: 'phone' | 'desktop', late: Late, file: Late): Story['play'] => async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  const { title } = fixtures.snooze;
+  await expect(snoozedCount('wearer-pinned').value).toBe(snoozedCount(SNOOZED_AFTER).value - 1);
+  await expect(snoozedCount('wearer-pinned').value).toBe(0);
+  const place = ranking('wearer-pinned').findIndex((item) => item.data.title === title);
+  const drawnRestored = async () => {
+    await expect(canvas.queryByRole('button', { name: /Snoozed/ })).toBeNull();
+    await expect(drawnOrder(canvasElement).findIndex((text) => text.includes(title))).toBe(place);
+  };
+  await userEvent.click(within(rowTitled(canvasElement, title)!).getByRole('button', { name: 'Restore' }));
+  await expect(rowTitled(canvasElement, title)).toBeNull();
+  await backToQueue(canvas);
+  await drawnRestored();
+  await userEvent.click(layout === 'phone' ? rowTitled(canvasElement, title)!
+    : canvas.getByRole('button', { name: new RegExp(title) }));
+  await expect(canvasElement.querySelector('.ui-pcard--loading')).not.toBeNull();
+  await expect(titled(canvas, title)).toHaveLength(0);
+  await file.release();
+  await waitFor(() => expect(titled(canvas, title)).toHaveLength(1));
+  await expect(canvasElement.querySelector('.ui-pcard--loading')).toBeNull();
+  await late.release();
+  await drawnRestored();
+  await expect(titled(canvas, title)).toHaveLength(1);
+};
+const lateRestore = (layout: 'phone' | 'desktop'): Story => {
+  const late = answersLate();
+  const file = answersLate();
+  return {
+    ...story(layout, { store: SNOOZED_AFTER, view: 'snoozed' }),
+    render: (props) => <LiveQueue {...props} sends={{ restore: late.send }} caseFile={file.send}
+      after={{ kind: 'restore', subject: fixtures.snooze.subject, store: 'wearer-pinned' }} />,
+    play: lateRestorePlay(layout, late, file),
+  };
+};
+export const LateRestorePhone = lateRestore('phone');
+export const LateRestoreDesktop = lateRestore('desktop');
+
+// Done, then Undo before the engine answers: the card leaves and the bar reads
+// "Waiting for pump"; Undo puts the card back and the bar leaves, before and
+// after the engine answers both.
+const lateDoneUndoPlay = (late: Late): Story['play'] => async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  await userEvent.click(within(canvasElement.querySelector('.ui-scard') as HTMLElement).getByRole('button', { name: 'Done' }));
+  await expect(canvas.getByRole('status')).toHaveTextContent('Waiting for pump');
+  await expect(basalCard(canvas)).toBeNull();
+  await userEvent.click(within(canvas.getByRole('status')).getByRole('button', { name: 'Undo' }));
+  await waitFor(() => expect(canvas.queryByRole('status')).toBeNull());
+  await expect(basalCard(canvas)).toBeInTheDocument();
+  await late.release();
+  await expect(canvas.queryByRole('status')).toBeNull();
+  await expect(basalCard(canvas)).toBeInTheDocument();
+};
+const lateDoneUndo = (layout: 'phone' | 'desktop'): Story => {
+  const late = answersLate();
+  return {
+    ...story(layout, LIVE_DONE),
+    render: (props) => <LiveQueue {...props} sends={{ done: late.send, undoDone: late.send }} />,
+    play: lateDoneUndoPlay(late),
+  };
+};
+export const LateDoneUndoPhone = lateDoneUndo('phone');
+export const LateDoneUndoDesktop = lateDoneUndo('desktop');
+
+// Focus: the card carries the Focus pill, the bar reads "Focus started" with
+// Changes, and no card offers Focus, before and after the engine saves it.
+const lateFocusPlay = (late: Late): Story['play'] => async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  const card = () => canvasElement.querySelector('.ui-pcard') as HTMLElement;
+  const drawnFocused = async () => {
+    await expect(card().querySelector('.ui-pcard__action [data-state="focus"]')).not.toBeNull();
+    await expect(canvas.getByRole('status')).toHaveTextContent('Focus started');
+    await expect(within(canvas.getByRole('status')).getByRole('button', { name: 'Changes' })).toBeInTheDocument();
+    await expect(canvas.queryByRole('button', { name: 'Focus' })).toBeNull();
+  };
+  await userEvent.click(within(card()).getByRole('button', { name: 'Focus' }));
+  await drawnFocused();
+  await late.release();
+  await drawnFocused();
+  await expectNoFocus(canvasElement, HABIT_PINNED.store);
+};
+const lateFocus = (layout: 'phone' | 'desktop'): Story => {
+  const late = answersLate();
+  return {
+    ...story(layout, HABIT_FOCUS),
+    render: (props) => <LiveQueue {...props} sends={{ pin: late.send }}
+      after={{ kind: 'pin', subject: HABIT_FOCUS.open!, store: HABIT_PINNED.store }} />,
+    play: lateFocusPlay(late),
+  };
+};
+export const LateFocusPhone = lateFocus('phone');
+export const LateFocusDesktop = lateFocus('desktop');
+
+// A snooze the engine refuses late: until the refusal its row is in Snoozed;
+// after it the row is gone, the item is back in the Queue, and the bar reads
+// "Not saved".
+const lateRefusedPlay = (layout: 'phone' | 'desktop', late: Late): Story['play'] => async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  const { title } = fixtures.snooze;
+  await snoozeOpen(canvasElement, layout);
+  await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent(snoozedBar));
+  await openSnoozed(canvas);
+  await expect(rowTitled(canvasElement, title)).not.toBeNull();
+  await late.release(false);
+  await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent(/Not saved/));
+  await expect(rowTitled(canvasElement, title)).toBeNull();
+  await backToQueue(canvas);
+  await expect(drawnOrder(canvasElement).some((text) => text.includes(title))).toBe(true);
+  await expect(canvas.getByRole('status')).toHaveTextContent(/Not saved/);
+};
+const lateRefused = (layout: 'phone' | 'desktop'): Story => {
+  const late = answersLate();
+  return {
+    ...story(layout, { store: 'wearer-pinned', open: fixtures.snooze.subject }),
+    render: (props) => <LiveQueue {...props} sends={{ snooze: late.send }} />,
+    play: lateRefusedPlay(layout, late),
+  };
+};
+export const LateSnoozeRefusedPhone = lateRefused('phone');
+export const LateSnoozeRefusedDesktop = lateRefused('desktop');

@@ -4,7 +4,8 @@
 
 Log carbs' Save SHALL close the entry and draw its mark on its day at once.
 A refused save SHALL remove the mark, and the transient bar SHALL read "Not
-saved" with Retry, which sends the same grams and time again. The entry SHALL
+saved" with Retry, which sends the same grams and time again; a Prompt
+answer SHALL NOT clear that bar. The entry SHALL
 have no Saving or Not saved state of its own. Confirming End SHALL draw at
 once the screen the engine will serve after End: no active change, the
 Previous count one more, and in the Previous list the ended change's row with

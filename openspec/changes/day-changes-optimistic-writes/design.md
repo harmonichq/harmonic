@@ -17,22 +17,34 @@ the served answer.
 1. These writes stay held on their screen, as Day's answers are today. The
    adapter is unchanged, and so is App. A held write is cleared when its
    write resolves (the re-read has landed) or is refused.
-2. **Day badge and counts.** `unanswered` (`day-model.ts`) takes the screen's
-   held answers and keeps the served count's formula less their number as a
+2. **Day badge and counts.** `unanswered` (`day-model.ts`) takes the number
+   of the screen's answers whose write is still in flight: the `pending`
+   answers and a Yes until its write settles. A Yes card held open for its
+   grams after its write settled is not counted again, since the served
+   Prompts already leave it out. It keeps the served count's formula less their number as a
    whole-number literal, which the provenance grammar admits (as ADR 629 point
    8). Day's own NavBar badge and the Lows and Rises rows read it. Other
    tabs' badges read the served Prompts (Accepted failure).
-3. **Log carbs.** Save closes the entry and holds `{ grams, t }` on the Day
-   screen. `t` is the time the entry is logged at, which the screen already
-   computes for the write. `dayChartOf` takes the held entries for the day
-   and draws each as a logged-carbs mark whose time and grams are `Sourced`
-   values naming the held entry. The story check never ends on one (each
-   story releases its fake). A refusal drops the held entry and raises the
-   Day TransientBar's "Not saved" with Retry. Retry sends the same grams and
-   time, and draws the entry held again. `LogCarbsEntry` loses its `saving`
+3. **Log carbs.** At Save the Day screen reads its clock once. That is the
+   browser's clock, or, in the stories, a `now` prop giving
+   `YYYY-MM-DD HH:MM`. The screen always passes the write the entry's time as
+   `HH:MM`: the time picked in the Time row, or the clock's. Today the screen
+   passes no time when the Time row is untouched, and the adapter stamps its
+   own (`live.js` `logCarbs`). The screen holds `{ grams, t }`, where `t` is
+   the clock's date with that time, on the Day screen. `dayChartOf` takes the
+   held entries for the day and draws each as a logged-carbs mark. Its time
+   and grams are literal `Sourced` values (`{ value, source }`, not
+   `sourced()`, which resolves its path against the served answers) whose
+   source names the held entry. The story check never ends on one, because
+   each story releases its fake first. A refusal drops the held entry and
+   holds the refusal apart from the Prompts' Retry: the Day view's
+   TransientBar reads "Not saved" with Retry, and a Prompt answer does not
+   clear it. Retry sends the same grams and `HH:MM` again, and draws the
+   entry held again. `LogCarbsEntry` loses its `saving`
    and `not_saved` states, and the screen loses its Log carbs states of the
    same names.
-4. **End.** Confirming End holds `ended` on the Changes screen. The Changes
+4. **End.** Confirming End holds `ending` on the Changes screen (the screen's
+   `ended` already names the stories' simulated End). The Changes
    model's selectors (`change`, `previousCount`, `previousChanges`, `waiting`
    unchanged) take it and read the served store as if its admission named no
    active change:
@@ -41,11 +53,20 @@ the served answer.
    - `previousChanges` lists the ended Trial, or the ended Focus, from its
      served record.
 
-   Its result is read only from a saved ending, and the active record has
-   none, so the row draws no result pill until the engine's answer carries
+   An active Focus has no `ending`, so the held reading lists it from its
+   served record with no result. Its result is read only from a saved
+   ending, and the active record has none, so the row draws no result pill until the engine's answer carries
    one. The model derives no verdict. A refusal drops `ended`, and the
    existing "Not saved" with Retry stays.
-5. **The lock.** A dated §2.5 entry records the Log carbs and End states. The
+5. **Stories that answer late.** Each such story's wrapper switches the
+   screen's served store when its fake answers, as #629's `LiveQueue` does.
+   - Day answer: the Prompts store served after that answer.
+   - Log carbs: a stories-only variant of the `with_carbs` day without its
+     first logged entry (`served-variants.ts`), with the story clock at that
+     entry's time and its grams typed. On release the story shows the
+     `with_carbs` day itself, so the served mark matches the held one.
+   - End: `wearer` → `wearer-ended`.
+6. **The lock.** A dated §2.5 entry records the Log carbs and End states. The
    §1.3 rows for Day · Log carbs (Loading "—"; Error "Not saved + Retry" in
    the bar) and Changes · Previous (the change just ended, without its result
    until saved) follow, and so does §4.2 LogCarbsEntry (States: empty;

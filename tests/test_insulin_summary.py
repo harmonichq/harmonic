@@ -39,11 +39,13 @@ def _cgm_rows():
 
 
 def _basal_rows():
-    """An hour-long row every hour of every history day but 1 Apr, except that 26
-    Mar's last hour is 55 minutes and a ten-minute row (the feed's longest) running
-    five minutes into 27 Mar, whose first row is the 55 minutes from 00:05; one 5 U
-    row on 5 Jan, before every window opens; and on 5 Apr a row with no rate and
-    one with no duration, which add nothing."""
+    """An hour-long row every hour of every history day but 1 Apr and 27 Mar, the
+    day the 14 days open on; 26 Mar's last hour is 45 minutes and then two rows
+    crossing into 27 Mar, the only delivery 27 Mar holds: 30 minutes from 23:45,
+    longer than the feed's longest row (the store does not refuse one), and the
+    feed's longest, ten minutes from 23:55. One 5 U row on 5 Jan, before every
+    window opens; and on 5 Apr a row with no rate and one with no duration, which
+    add nothing."""
     rows = []
 
     def row(t, rate, duration=60.0):
@@ -53,14 +55,13 @@ def _basal_rows():
     row(datetime(2026, 1, 5, 12), 5.0)
     for day in range(_DAYS):
         date = _FIRST_DAY + timedelta(days=day)
-        if date != _NO_DELIVERY:
+        if date not in (_NO_DELIVERY, _RAISED):
             for hour in range(24):
                 t, rate = date + timedelta(hours=hour), 1.5 if date >= _RAISED else 1.0
                 if t == _RAISED - timedelta(hours=1):
-                    row(t, rate, 55.0)
+                    row(t, rate, 45.0)
+                    row(t + timedelta(minutes=45), rate, 30.0)
                     row(t + timedelta(minutes=55), rate, 10.0)
-                elif t == _RAISED:
-                    row(t + timedelta(minutes=5), rate, 55.0)
                 else:
                     row(t, rate)
     row(datetime(2026, 4, 5, 12, 30), None)
@@ -169,11 +170,11 @@ def _rounded(value):
 # row. Their carbs: 40 + 50 + 20 + 30 + 25 + 20 + 30 = 215 g, and 30 g logged by hand.
 _RECENT = dict(boluses=11, control_iq_count=2, food=13.75, correction=3.75, override=3.0,
                control_iq=1.5, standard=13.5, extended=4.0, quick=2.0)
-# 27 Mar to 9 Apr less 1 Apr: 13 days at 1.5 U/h, less the five minutes 27 Mar's
-# own first row does not cover (35.875 U that day). 26 Mar's last row adds its
-# five minutes inside 27 Mar (1/12 U) to whichever window holds them.
-_RECENT_BASAL = 12 * 36.0 + 35.875
-_SPILL = 1.0 * 5 / 60
+# 28 Mar to 9 Apr less 1 Apr: 12 days at 1.5 U/h.
+_RECENT_BASAL = 12 * 36.0
+# 26 Mar at 1.0 U/h: 23 hours, 45 minutes, and the two crossing rows whole when a
+# window holds both days: 30 and 10 minutes.
+_LAST_EARLY_DAY = 23 + 45 / 60 + 30 / 60 + 10 / 60
 
 
 @unittest.skipUnless(_HAS_FASTAPI, "api extra not installed")
@@ -203,9 +204,21 @@ class InsulinReadTest(unittest.TestCase):
 
     def test_fourteen_days_average_over_the_days_with_delivery(self):
         self._seed()
+        # 27 Mar holds the ten-minute row's five minutes after midnight (1/12 U);
+        # the 30-minute row starts further back than the Day screen reads, so
+        # neither screen counts it here.
         self.assertEqual(self._body(days=14), _rounded(_expected(
             start=datetime(2026, 3, 27), data_days=14, delivery_days=13,
-            basal=_RECENT_BASAL + _SPILL, carbs=215 + 30, **_RECENT)))
+            basal=_RECENT_BASAL + 5 / 60, carbs=215 + 30, **_RECENT)))
+
+    def test_a_row_crossing_midnight_counts_its_second_day_in_every_window(self):
+        """27 Mar's only delivery is rows that start on 26 Mar: it is a day with
+        delivery in the 14 days, which open on it, and in the 30, which hold both."""
+        self._seed()
+        # 14 days: 27 Mar and the 12 from 28 Mar less 1 Apr. 30 days: 11 to 26 Mar
+        # (16), 27 Mar, and the same 12.
+        self.assertEqual(self._body(days=14)["delivery_days"], 13)
+        self.assertEqual(self._body(days=30)["delivery_days"], 29)
 
     def test_the_daily_dose_is_the_day_screens_total_over_the_same_days(self):
         """ADR 632: basal plus bolus units over the window is what the Day screen's
@@ -222,19 +235,20 @@ class InsulinReadTest(unittest.TestCase):
 
     def test_thirty_days_add_the_earlier_bolus_and_carb_entry(self):
         self._seed()
-        # 11 to 26 Mar at 1.0 U/h (16 days of 24 U, and 26 Mar's last row whole)
-        # and the 13 days above.
+        # 11 to 25 Mar at 1.0 U/h (15 days of 24 U), 26 Mar's rows whole, and the
+        # 12 days above.
         self.assertEqual(self._body(days=30), _rounded(_expected(
             start=datetime(2026, 3, 11), data_days=30, delivery_days=29,
-            basal=16 * 24.0 + _SPILL + _RECENT_BASAL, carbs=215 + 30 + 60 + 10,
+            basal=15 * 24.0 + _LAST_EARLY_DAY + _RECENT_BASAL, carbs=215 + 30 + 60 + 10,
             **{**_RECENT, "boluses": 12, "food": 13.75 + 6.0, "standard": 13.5 + 6.0})))
 
     def test_ninety_days_leave_out_what_came_before_them(self):
         self._seed()
-        # 1 to 26 Mar at 1.0 U/h (26 days) and the 13 days above; 5 Jan is outside.
+        # 1 to 25 Mar at 1.0 U/h (25 days), 26 Mar's rows whole, and the 12 days
+        # above; 5 Jan is outside.
         self.assertEqual(self._body(days=90), _rounded(_expected(
             start=datetime(2026, 1, 10), data_days=90, delivery_days=39,
-            basal=26 * 24.0 + _SPILL + _RECENT_BASAL, carbs=215 + 30 + 60 + 10,
+            basal=25 * 24.0 + _LAST_EARLY_DAY + _RECENT_BASAL, carbs=215 + 30 + 60 + 10,
             **{**_RECENT, "boluses": 12, "food": 13.75 + 6.0, "standard": 13.5 + 6.0})))
 
     def test_a_store_with_no_readings_serves_a_null_window(self):

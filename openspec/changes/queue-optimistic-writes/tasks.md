@@ -33,4 +33,4 @@
 
 ## 5. Gate
 
-- [ ] 5.1 `node --test 'frontend/**/*.test.js'`, `npm run test:ui`, and the app job's contract tests and browser smoke pass on the pushed commit
+- [x] 5.1 `node --test 'frontend/**/*.test.js'`, `npm run test:ui`, and the app job's contract tests and browser smoke pass on the pushed commit

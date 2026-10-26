@@ -26,4 +26,4 @@
 
 ## 5. After
 
-- [ ] 5.1 After shots of the same stories and served views as 0.1, attached to the pull request beside the before shots, with each must-survive line of task 2.1 mapped to the render or play that shows it
+- [x] 5.1 After shots of the same stories and served views as 0.1, attached to the pull request beside the before shots, with each must-survive line of task 2.1 mapped to the render or play that shows it

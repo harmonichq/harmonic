@@ -42,5 +42,5 @@
 
 ## 5. Gate and lock
 
-- [ ] 5.1 The Verification command passes once on the pushed commit
+- [x] 5.1 The Verification command passes once on the pushed commit
 - [ ] 5.2 After the operator's "locked" on the pull request: the header's lock line quoting it (in revise)

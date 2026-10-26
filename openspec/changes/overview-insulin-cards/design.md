@@ -36,3 +36,12 @@ lists them.
 The warm roster has held the insulin read since #632 (ADR 632). With the app now
 reading it, the roster's docstring and AGENTS.md's roster and fixed-result
 paragraphs name it beside Meal size; the roster itself does not change.
+
+## ADR 634 — The must-survive list changes by amendment
+
+The #564 amendment's Overview list said every row of the cards is one height;
+the insulin row is not. The 2026-10-26 amendment restates the Overview's list,
+superseding #564's, as task 2.1 gives it, and the pull request maps each line to
+the render or play that shows it (ui-craft revise). Settings · Glossary is a
+locked screen too: it gains the seven §1.5 rows, so its stories are before and
+after shots.

@@ -79,6 +79,13 @@ Status: **exploring** (#481).
   following the finger with the adjacent day with data beside it, its edge
   band of 24 px and a flick's 48 px as built, on the locked Day screen. The
   operator: "lock it" (2026-10-24).
+- **Insulin summary and Bolus review locked 2026-10-26** (#631, #633, §2.5):
+  Storybook `InsulinSummaryCard` and `BolusReviewCard` at commit `a32b2f7a`,
+  locked as built with the five defaults (Food, one decimal, side by side
+  below Meal size, U, Average daily insulin), to be put on the locked Overview
+  by #634. The operator, handing the gate to the coordinating session that
+  locked them: "No input from me please, do everything unattended."
+  (2026-10-26).
 
 This document is the durable record of the redesign. Sections 1–3 are what the
 build will be checked against once they are approved. The appendix keeps the
@@ -1494,7 +1501,7 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
      the visible equivalent.
 
 - **2026-10-25 — Insulin summary and Bolus review for the Overview (#631,
-  #633).** *Pending the operator's replay; not locked.* The operator asked
+  #633).** *Locked 2026-10-26 as built (see the header).* The operator asked
   (#631) for two of the cards Tandem Source draws below its day chart: an
   Insulin summary and a Bolus review, the latter by the title his request
   named, Tandem Source's own: "Bolus review (daily average)". Site changes are not among them; the operator, 2026-10-24: "I
@@ -1502,8 +1509,8 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   figure as `/api/explore/insulin?days=N` for the Overview's 14, 30 and 90
   days (#632, ADR 632). The two cards are built in the component library on
   the served fixtures as the mock (`InsulinSummaryCard`, `BolusReviewCard`)
-  for the operator to replay; #634 puts them on the Overview once he locks
-  them, and §1.1 and §1.3 follow then.
+  and were locked as built on 2026-10-26 (see the header); #634 puts them on
+  the Overview, and §1.1 and §1.3 follow then.
   - **Insulin summary.** Three blocks, each a headline row and its parts:
     "Average daily insulin" in U, with Basal and Bolus beneath it; "Average
     daily boluses", a count, with Manual and Control-IQ beneath it; "Average
@@ -1525,8 +1532,7 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
     window null, or no day with delivery): "No data" under the title, as Meal
     size does. Not yet read: the card's skeleton, its own rows in bars at
     their populated height. Any value the engine serves as null prints "–".
-  - **Defaults, pending the replay** (ADR 633), each one the operator may
-    change:
+  - **Defaults, locked as built** (ADR 633):
     1. The type row is **Food**, as Tandem Source names it, not Day's Meal: an
        overridden bolus counts whole under Override, so Food and Correction
        here leave those boluses out where Day's Meal and Correction include
@@ -1576,7 +1582,7 @@ BasalCard joined, §2.5 2026-10-14; the Delta joined, §2.5 2026-10-13 and
 2026-10-19; the HabitCard joined, drawn by the PatternCard's component, §2.5
 2026-10-19; the MealSizeCard joined, §2.5 2026-10-19; the IsfCard retired,
 §2.5 2026-10-20 #564; the InsulinSummaryCard and the BolusReviewCard join,
-§2.5 2026-10-25, pending the replay). Screens are composed only from these. Every state listed
+§2.5 2026-10-25, locked 2026-10-26). Screens are composed only from these. Every state listed
 gets a Storybook story in step 3. "Fields" are the only served data a component
 may display; derived values name their formula in the provenance table.
 
@@ -1869,7 +1875,7 @@ unless noted. Loading is a skeleton of the component's own shape.
       read from `/api/explore/meal-size?days=N`.
     - Desktop: the Overview's full width, the row after the BasalCard, at its
       height (every row of the cards one height).
-29. **InsulinSummaryCard** (§2.5, 2026-10-25, pending the replay): the
+29. **InsulinSummaryCard** (§2.5, 2026-10-25, locked 2026-10-26): the
     selected window's insulin as daily averages, titled "Insulin summary".
     Three blocks, each a headline row with its value at the §4.1 title size
     (22 px, as MetricFigure's value) and its parts at body size, every row label, share, value: "Average daily insulin" in U, with
@@ -1885,7 +1891,7 @@ unless noted. Loading is a skeleton of the component's own shape.
     - Desktop: below Meal size, half the Overview's row beside the
       BolusReviewCard, at its height.
     - Phone: below Meal size, before the BolusReviewCard.
-30. **BolusReviewCard** (§2.5, 2026-10-25, pending the replay): the selected
+30. **BolusReviewCard** (§2.5, 2026-10-25, locked 2026-10-26): the selected
     window's bolus units as daily averages, titled "Bolus review (daily
     average)" on one line, the title the operator's request named (Tandem
     Source's own). Two blocks under their headings, every row label,

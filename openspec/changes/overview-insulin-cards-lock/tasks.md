@@ -19,5 +19,5 @@
 
 ## 4. The replay
 
-- [ ] 4.1 Render every story at both frames and attach the renders to the pull request, which names the five triage defaults and asks Connor to replay and say "locked"
-- [ ] 4.2 After "locked" (in revise): the header's locked line quoting him, and any default he changed, applied and re-rendered
+- [x] 4.1 Render every story at both frames and attach the renders to the pull request, which names the five triage defaults and asks Connor to replay and say "locked"
+- [x] 4.2 After "locked" (in revise): the header's locked line quoting him, and any default he changed, applied and re-rendered

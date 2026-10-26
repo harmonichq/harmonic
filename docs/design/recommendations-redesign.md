@@ -79,6 +79,14 @@ Status: **exploring** (#481).
   following the finger with the adjacent day with data beside it, its edge
   band of 24 px and a flick's 48 px as built, on the locked Day screen. The
   operator: "lock it" (2026-10-24).
+- **Day and Changes writes locked 2026-10-26** (#630, §2.5): Storybook
+  `Screens/Day` → Late Answer, Late Yes, Late Log Carbs and Late Log Carbs
+  Refused, and `Screens/Changes` → Late End Trial, Late End Focus and Late End
+  Refused In Previous, at commit `d101d7aa`: the Day badge and counts moving
+  as a Prompt is answered, Log carbs closing on Save with its refusal in the
+  bar, and End drawing the ended screen with the ended row's result only once
+  saved, on the locked Day and Changes screens. The operator: "locked: merge
+  #639" (2026-10-26).
 
 This document is the durable record of the redesign. Sections 1–3 are what the
 build will be checked against once they are approved. The appendix keeps the

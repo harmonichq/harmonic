@@ -134,7 +134,7 @@ prose-exempt scripts/public_scan_config.txt dose-ratio | the generated baseline 
 # which prints the full delta first. Never edit it by hand: the digest is
 # checked at parse time and a hand edit fails the config closed.
 # BEGIN dose-ratio baseline
-dose-ratio-baseline 224 524dc0796bc705c3062047f47d88242dcf77d86af248458314a0abaa686ad17f
+dose-ratio-baseline 225 eff89b1dbc07b8c2fece1d2afc583b06f25c5c90afdb8f17d241359b1dff7d5c
 dose-ratio-ack CONTEXT.md:100 | 0.5 U
 dose-ratio-ack CONTEXT.md:549 | 0.2 U
 dose-ratio-ack CONTEXT.md:78 | 1 U : 36 mg/dL
@@ -212,6 +212,7 @@ dose-ratio-ack openspec/specs/surfaces/spec.md:3244 | 1 U : 30.0 mg/dL
 dose-ratio-ack openspec/specs/surfaces/spec.md:3251 | 4.8 g/U
 dose-ratio-ack openspec/specs/surfaces/spec.md:3259 | 1 U
 dose-ratio-ack openspec/specs/surfaces/spec.md:3580 | 0.60 U
+dose-ratio-ack openspec/specs/surfaces/spec.md:4781 | 0.0 U
 dose-ratio-ack scripts/gen_chart_builder_fixtures.py:152 | 0.04 U
 dose-ratio-ack scripts/qa_e2e_cases.py:1608 | 0.5 U
 dose-ratio-ack scripts/ui_patient.py:109 | 1.80 U

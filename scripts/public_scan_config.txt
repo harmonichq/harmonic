@@ -134,7 +134,7 @@ prose-exempt scripts/public_scan_config.txt dose-ratio | the generated baseline 
 # which prints the full delta first. Never edit it by hand: the digest is
 # checked at parse time and a hand edit fails the config closed.
 # BEGIN dose-ratio baseline
-dose-ratio-baseline 224 524dc0796bc705c3062047f47d88242dcf77d86af248458314a0abaa686ad17f
+dose-ratio-baseline 225 7cb906c64ebce2f1ab337b702449ae12d0a8b1edeabda65c0099feeb4ba52ceb
 dose-ratio-ack CONTEXT.md:100 | 0.5 U
 dose-ratio-ack CONTEXT.md:549 | 0.2 U
 dose-ratio-ack CONTEXT.md:78 | 1 U : 36 mg/dL
@@ -175,6 +175,7 @@ dose-ratio-ack frontend/__fixtures__/findings-projection.json:4858 | 4.3 g/U
 dose-ratio-ack frontend/__fixtures__/findings-projection.json:5214 | 1.00 U
 dose-ratio-ack frontend/__fixtures__/findings-projection.json:5379 | 4.3 g/U
 dose-ratio-ack frontend/__fixtures__/findings-projection.json:5805 | 4.3 g/U
+dose-ratio-ack frontend/ui/app/live.contract.test.mjs:112 | 0.0 U
 dose-ratio-ack frontend/ui/components/BolusReviewCard/BolusReviewCard.stories.tsx:104 | 0.0 U
 dose-ratio-ack frontend/ui/components/BolusReviewCard/BolusReviewCard.stories.tsx:14 | 0.0 U
 dose-ratio-ack frontend/ui/components/BolusReviewCard/BolusReviewCard.stories.tsx:98 | 0.0 U

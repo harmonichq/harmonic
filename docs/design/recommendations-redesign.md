@@ -1632,7 +1632,10 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
       Snooze, and the Snoozed list's Restore (`Screens/Queue`);
     - a correction-factor Trial on Changes, with its before → after and its
       result pill (`Screens/Changes`).
-  §1.1, §1.3, §1.5 and §4.2 InsulinSummaryCard and BolusReviewCard follow.
+  §1.1, §1.3, §1.5 and §4.2 InsulinSummaryCard and BolusReviewCard follow;
+  §4.2 BasalCard's and MealSizeCard's "the height every row of the cards
+  shares" and "every row of the cards one height" now read as the basal
+  estimate's and Meal size's rows, the insulin row sized to its own content.
 
 ### 2.6 Deferred (not cut)
 Not built in the current screens. The engine still serves what each needs, and

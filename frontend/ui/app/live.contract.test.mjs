@@ -110,7 +110,7 @@ const EXPECTED = {
       // then its units or count to one decimal; the headlines' daily insulin and
       // boluses to one decimal and carbs to a whole gram. The showcase's boluses
       // carry no delivery method, so Standard, Extended and Quick read 0.0 U
-      // (ADR 632), and 90 d holds 30 days with delivery.
+      // (ADR 632).
       insulin: {
         14: {
           summary: { insulin: '21.0', basal: ['68', '14.3'], bolus: ['32', '6.7'], boluses: '3.3',

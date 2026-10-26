@@ -233,6 +233,13 @@ the system's own edge-swipe back is left to the platform, never overridden.
 | **Meal** | noun | A bolus for carbs, or the carbs part of a bolus. |
 | **Correction** | noun | A bolus you gave to bring glucose down, or the correction part of a meal bolus. |
 | **Control-IQ** | noun | The pump's automatic boluses, as the day's insulin counts them. |
+| **Bolus** | noun | Insulin given at once, by you or by Control-IQ. |
+| **Override** | noun | A bolus you changed from the pump's suggestion, counted whole on the Bolus review, apart from Food and Correction. |
+| **Food** | noun | The carbs part of a bolus on the Bolus review, overridden boluses left out. |
+| **Manual** | noun | A bolus you gave, not Control-IQ. |
+| **Standard** | noun | How a bolus was delivered. |
+| **Extended** | noun | How a bolus was delivered. |
+| **Quick** | noun | How a bolus was delivered. |
 
 Any domain term not in this table may not appear in the UI. Plain interface
 words (labels, verbs, units, dates) are exempt; see the 2026-10-13 amendment

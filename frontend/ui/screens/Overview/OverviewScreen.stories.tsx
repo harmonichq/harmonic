@@ -13,12 +13,15 @@ import { OverviewScreen, type OverviewScreenProps } from './OverviewScreen';
 // - No data: the unsynced store, which serves every metric as null.
 // - Loading, and Unavailable; Stale, the last answers under Unavailable.
 // Plays per size: choosing 30 d shows that window's metrics, profile, basal
-// estimate and Meal size; each window's date line and changes name the period
-// before it, or none; and the page scrolls as one, the summary first, the basal
-// estimate below (ADR 523), then the Meal size card (ADR 501). On desktop each
-// card spans a row of its own, every row one height; on the phone they keep
-// their proportions (§2.5, 2026-10-20 #564). At 90 d the basal card marks the
-// slots the engine stages a move for.
+// estimate, Meal size and insulin cards; each window's date line and changes
+// name the period before it, or none; and the page scrolls as one, the summary
+// first, the basal estimate below (ADR 523), then the Meal size card (ADR 501),
+// then the Insulin summary and the Bolus review (ADR 634). On desktop the basal
+// estimate and Meal size each span a row of its own, both rows one height, and
+// the two insulin cards share the row after them, one height with each other
+// and as tall as the taller one's content; on the phone they keep their
+// proportions, in that order (§2.5, 2026-10-20 #564; 2026-10-26 #634). At 90 d
+// the basal card marks the slots the engine stages a move for.
 const meta: Meta<typeof OverviewScreen> = {
   title: 'Screens/Overview',
   component: OverviewScreen,
@@ -77,10 +80,11 @@ export const Window90Phone: Story = { ...story('phone', { store: 'wearer', windo
 export const Window90Desktop: Story = {
   ...story('desktop', { store: 'wearer', window: '90' }), play: comparesWith('90', false),
 };
-/** No readings: every card says No data, the basal estimate and Meal size. */
+/** No readings: every card says No data, the basal estimate, Meal size and the two insulin cards. */
 const noData: Story['play'] = async ({ canvasElement }) => {
-  const cards = [...canvasElement.querySelectorAll('.ui-overview__estimates > .ui-scard')];
-  await expect(cards.map((card) => card.querySelector('.ui-scard__none')?.textContent)).toEqual(['No data', 'No data']);
+  const cards = [...canvasElement.querySelectorAll('.ui-overview__estimates > .ui-scard, .ui-overview__insulin > .ui-scard')];
+  await expect(cards.map((card) => card.querySelector('.ui-scard__none')?.textContent))
+    .toEqual(['No data', 'No data', 'No data', 'No data']);
 };
 export const NoDataPhone: Story = { ...story('phone', { store: 'wearer-unsynced' }), play: noData };
 export const NoDataDesktop: Story = { ...story('desktop', { store: 'wearer-unsynced' }), play: noData };
@@ -99,8 +103,8 @@ export const StalePhone: Story = { ...story('phone', { store: 'wearer', state: '
 export const StaleDesktop: Story = { ...story('desktop', { store: 'wearer', state: 'stale' }), play: stale };
 
 /** The page scrolls as one: the summary fills the first screen (the profile
- *  ends inside it), the basal estimate and Meal size follow, and scrolled to the
- *  end the last of them is in view. */
+ *  ends inside it), the basal estimate, Meal size and the insulin cards follow,
+ *  and scrolled to the end the last of them, the Bolus review, is in view. */
 const scrolled: Story['play'] = async ({ canvasElement }) => {
   const page = canvasElement.querySelector<HTMLElement>('[data-scroll="page"]')!;
   const top = page.getBoundingClientRect();
@@ -108,7 +112,9 @@ const scrolled: Story['play'] = async ({ canvasElement }) => {
   await expect(profile.bottom).toBeLessThanOrEqual(top.bottom);
   page.scrollTop = page.scrollHeight;
   await new Promise(requestAnimationFrame);
-  const card = canvasElement.querySelector('.ui-overview__estimates > :last-child')!.getBoundingClientRect();
+  const cards = canvasElement.querySelectorAll('.ui-scard');
+  await expect(cards[cards.length - 1].classList.contains('ui-bolus-review')).toBe(true);
+  const card = cards[cards.length - 1].getBoundingClientRect();
   await expect(card.top).toBeGreaterThanOrEqual(top.top);
   await expect(card.bottom).toBeLessThanOrEqual(top.bottom);
 };
@@ -124,7 +130,10 @@ const contentHeight = (card: Element) =>
 /** On desktop the basal estimate spans the first row of the cards and the Meal
  *  size card the second, so no row is half empty, and both are one height,
  *  which the basal estimate sets: the Meal size card's content fits inside it
- *  (#559; §2.5, 2026-10-20 #564). */
+ *  (#559; §2.5, 2026-10-20 #564). The insulin cards share the row after them,
+ *  side by side, one height with each other and as tall as the taller one's
+ *  content, so it stretches neither them nor the rows above (§2.5, 2026-10-26
+ *  #634). */
 const oneHeight: Story['play'] = async ({ canvasElement }) => {
   const grid = canvasElement.querySelector('.ui-overview__estimates')!;
   const cards = [...grid.querySelectorAll(':scope > .ui-scard')];
@@ -136,16 +145,37 @@ const oneHeight: Story['play'] = async ({ canvasElement }) => {
   await expect(meals.top).toBeGreaterThan(basal.bottom);
   await expect(Math.abs(basal.height - meals.height)).toBeLessThan(0.5);
   await expect(contentHeight(cards[1])).toBeLessThanOrEqual(contentHeight(cards[0]) + 0.5);
+  const row = canvasElement.querySelector('.ui-overview__insulin')!;
+  const insulin = [...row.querySelectorAll(':scope > .ui-scard')];
+  await expect(insulin.map((card) => card.className)).toEqual([
+    'ui-scard ui-insulin-summary', 'ui-scard ui-bolus-review']);
+  const [summary, review] = insulin.map((card) => card.getBoundingClientRect());
+  await expect(summary.top).toBeGreaterThan(meals.bottom);
+  await expect(Math.abs(summary.top - review.top)).toBeLessThan(0.5);
+  await expect(review.left).toBeGreaterThan(summary.right);
+  await expect(Math.abs(summary.width - review.width)).toBeLessThan(0.5);
+  await expect(Math.abs(summary.height - review.height)).toBeLessThan(0.5);
+  await expect(summary.height).toBeLessThanOrEqual(Math.max(...insulin.map(contentHeight)) + 0.5);
 };
-/** #559: on the phone the Meal size card keeps the basal estimate's proportions. */
+/** #559: on the phone the Meal size card keeps the basal estimate's proportions;
+ *  the Insulin summary and the Bolus review follow it, in that order, each card
+ *  under the one before (#634). */
 const inProportion: Story['play'] = async ({ canvasElement }) => {
   const [basal, meals] = [...canvasElement.querySelectorAll('.ui-overview__estimates > .ui-scard')];
   await expect(meals.getBoundingClientRect().height).toBeLessThanOrEqual(basal.getBoundingClientRect().height * 1.4);
+  const cards = [...canvasElement.querySelectorAll('.ui-scard')];
+  await expect(cards.slice(1).map((card) => card.className)).toEqual([
+    'ui-scard ui-meal-size', 'ui-scard ui-insulin-summary', 'ui-scard ui-bolus-review']);
+  const boxes = cards.map((card) => card.getBoundingClientRect());
+  for (let i = 1; i < boxes.length; i += 1) {
+    await expect(boxes[i].top).toBeGreaterThan(boxes[i - 1].bottom);
+    await expect(Math.abs(boxes[i].width - boxes[0].width)).toBeLessThan(0.5);
+  }
 };
 export const EstimatesDesktop: Story = { ...story('desktop', { store: 'wearer' }), play: oneHeight };
 export const EstimatesPhone: Story = { ...story('phone', { store: 'wearer' }), play: inProportion };
 
-/** Choosing 30 d shows that window's metrics, glucose profile, basal estimate and Meal size. */
+/** Choosing 30 d shows that window's metrics, glucose profile, basal estimate, Meal size and insulin cards. */
 const choose30: Story['play'] = async ({ canvasElement }) => {
   const canvas = within(canvasElement);
   const at = (path: string) => canvasElement.querySelector(`[data-source^="${path}"]`);
@@ -155,6 +185,7 @@ const choose30: Story['play'] = async ({ canvasElement }) => {
   const basal14 = basal();
   await expect(at('overview.wearer.time_of_day.14.')).not.toBeNull();
   await expect(at('overview.wearer.meal_size.14.')).not.toBeNull();
+  await expect(at('overview.wearer.insulin.14.')).not.toBeNull();
   await userEvent.click(canvas.getByRole('button', { name: '30 d' }));
   await expect(canvas.getByRole('button', { name: '30 d' })).toHaveAttribute('aria-pressed', 'true');
   await expect(canvasElement.querySelector('[data-source="outcomes.30.metrics.tir"]')).not.toBeNull();
@@ -166,6 +197,9 @@ const choose30: Story['play'] = async ({ canvasElement }) => {
   // The Meal size card follows the window, as the basal estimate does (#565).
   await expect(at('overview.wearer.meal_size.30.')).not.toBeNull();
   await expect(at('overview.wearer.meal_size.14.')).toBeNull();
+  // The insulin cards follow it too (#634).
+  await expect(at('overview.wearer.insulin.30.')).not.toBeNull();
+  await expect(at('overview.wearer.insulin.14.')).toBeNull();
 };
 
 export const ChooseWindowPhone: Story = { ...story('phone', { store: 'wearer' }), play: choose30 };

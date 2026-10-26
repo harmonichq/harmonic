@@ -17666,6 +17666,11 @@
     },
     {
       "kind": "noun",
+      "meaning": "Insulin given at once, by you or by Control-IQ.",
+      "term": "Bolus"
+    },
+    {
+      "kind": "noun",
       "meaning": "A Trial or a Focus. One is active at a time.",
       "term": "Change"
     },
@@ -17701,8 +17706,18 @@
     },
     {
       "kind": "noun",
+      "meaning": "How a bolus was delivered.",
+      "term": "Extended"
+    },
+    {
+      "kind": "noun",
       "meaning": "A Pattern's habit, or a Habit, you chose to watch for adherence and outcome.",
       "term": "Focus"
+    },
+    {
+      "kind": "noun",
+      "meaning": "The carbs part of a bolus on the Bolus review, overridden boluses left out.",
+      "term": "Food"
     },
     {
       "kind": "noun",
@@ -17740,6 +17755,11 @@
       "term": "Log carbs"
     },
     {
+      "kind": "noun",
+      "meaning": "A bolus you gave, not Control-IQ.",
+      "term": "Manual"
+    },
+    {
       "kind": "state",
       "meaning": "A change still collecting its 14 days of after data.",
       "term": "Maturing"
@@ -17766,6 +17786,11 @@
     },
     {
       "kind": "noun",
+      "meaning": "A bolus you changed from the pump's suggestion, counted whole on the Bolus review, apart from Food and Correction.",
+      "term": "Override"
+    },
+    {
+      "kind": "noun",
       "meaning": "A recurring glucose outcome the engine detected, such as highs after meals.",
       "term": "Pattern"
     },
@@ -17788,6 +17813,11 @@
       "kind": "noun",
       "meaning": "The ranked list of recommendations.",
       "term": "Queue"
+    },
+    {
+      "kind": "noun",
+      "meaning": "How a bolus was delivered.",
+      "term": "Quick"
     },
     {
       "kind": "noun",
@@ -17823,6 +17853,11 @@
       "kind": "verb",
       "meaning": "Remove from the Queue for 14 days. It returns early if the evidence changes.",
       "term": "Snooze"
+    },
+    {
+      "kind": "noun",
+      "meaning": "How a bolus was delivered.",
+      "term": "Standard"
     },
     {
       "kind": "noun",

@@ -8,6 +8,11 @@
 // A store is one entry of `answers.changes`: its admission names the active
 // change; its trials hold every Trial on the roster, the active one with its
 // retained comparison; its focuses hold the Focus records.
+//
+// `ending`: the screen has confirmed End and the engine has not answered yet
+// (ADR 630). The store is read as if its admission named no active change, so
+// the change just ended is a previous one; its result is read only from a saved
+// ending, which the active record does not have.
 import { answers, sourced, type Sourced } from './answers';
 import { delta, type Change } from './direction';
 import { PARAMETER_FORMATS, PARAMETER_NAMES, PARAMETER_UNITS } from './settings-model';
@@ -352,9 +357,15 @@ function adherence(path: string, unit: string): NonNullable<FocusData['adherence
   return { before, after, unit, delta: delta(before, after, 'habit') };
 }
 
-/** The active change: its Trial or Focus, or none. */
-export function change(name: ChangesStore): ChangeData {
+/** The store's admission, or, while End is in flight, one naming no active change. */
+const admitted = (name: ChangesStore, ending: boolean) => {
   const { admission } = answers.changes[name];
+  return ending ? { ...admission, active_id: null, active_kind: null } : admission;
+};
+
+/** The active change: its Trial or Focus, or none. */
+export function change(name: ChangesStore, ending = false): ChangeData {
+  const admission = admitted(name, ending);
   if (admission.active_kind === 'focus') {
     const focus = focusesOf(name).find((f) => f.id === admission.active_id)!;
     const path = `changes.${name}.focuses[id=${focus.id}].0`;
@@ -421,26 +432,29 @@ export function waiting(name: ChangesStore): WaitingRow[] {
 
 /** How many previous changes there are: every Trial and Focus the store holds
  *  (the active Focus and the ended ones), less the active change. */
-export function previousCount(name: ChangesStore): Sourced<number> {
+export function previousCount(name: ChangesStore, ending = false): Sourced<number> {
   const root = `changes.${name}`;
-  const active = answers.changes[name].admission.active_id === null ? '' : ' − 1';
+  const active = admitted(name, ending).active_id === null ? '' : ' − 1';
   return sourced(`${root}.trials.length + ${root}.focuses.length${active}`);
 }
 
 /** Every change but the active one, newest first: each Trial on the roster and
- *  each ended Focus. All of them; the list has no cutoff. */
-export function previousChanges(name: ChangesStore): PreviousRow[] {
+ *  each ended Focus, and while End is in flight the Focus it ends. All of them;
+ *  the list has no cutoff. */
+export function previousChanges(name: ChangesStore, ending = false): PreviousRow[] {
   const { admission } = answers.changes[name];
+  const activeId = admitted(name, ending).active_id;
   const root = `changes.${name}`;
-  const trials = trialsOf(name).filter((t) => t.id !== admission.active_id).map((trial): PreviousRow => {
+  const trials = trialsOf(name).filter((t) => t.id !== activeId).map((trial): PreviousRow => {
     const path = `${root}.trials[id=${trial.id}].0`;
     const saved = trial.ending.assessment?.outcomes.find((r) => trial.target_metrics.includes(r.key));
     return { id: trial.id, title: nameOf(trial.parameter), block: blockOf(path, trial), moves: moves(path, trial),
       date: sourced(`${path}.changed_at`, 'date'), result: RESULTS[saved?.assessment?.state ?? ''] ?? null };
   });
-  const focuses = focusesOf(name).filter((f) => f.ending).map((focus): PreviousRow => {
+  const ended = (f: FocusRow) => f.ending || (ending && admission.active_kind === 'focus' && f.id === admission.active_id);
+  const focuses = focusesOf(name).filter(ended).map((focus): PreviousRow => {
     const path = `${root}.focuses[id=${focus.id}].0`;
-    const state = focus.ending!.assessment.adherence?.assessment.state;
+    const state = focus.ending?.assessment.adherence?.assessment.state;
     return { id: `focus-${focus.id}`, title: focus.title, block: null, moves: [],
       date: sourced(`${path}.pinned_at`, 'date'), result: RESULTS[state ?? ''] ?? null };
   });

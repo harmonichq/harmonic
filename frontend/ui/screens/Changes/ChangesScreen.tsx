@@ -28,8 +28,11 @@
 // end: the `after` store, where the ended change is now a previous one.
 //
 // Live (`writes`, #495): End asks the engine to end the active change once
-// confirmed, and the screen then shows what it served after; an End that fails
-// leaves the change as it was, with "Not saved" and Retry in the bar.
+// confirmed, and the screen draws at once what the engine will serve after it
+// (ADR 630): no active change, and the change just ended a previous one, with
+// no result until the engine's answer carries the one End saved. An End that
+// fails puts the change back as it was, with "Not saved" and Retry in the bar,
+// and leaves Previous for Changes when no previous change is served.
 //
 // Phone: the header stays put while the page scrolls under it, above the tab
 // bar. Desktop: the rail and one pane up to a reading width; the pane scrolls
@@ -149,11 +152,13 @@ export function ChangesScreen({
   const [asking, setAsking] = useState(confirming);
   const [view, setView] = useState<View>(initialView);
   const [notSaved, setNotSaved] = useState(false);
+  // Live: End confirmed, until its write resolves or is refused.
+  const [ending, setEnding] = useState(false);
   const root = useMotionGate<HTMLDivElement>();
   const shown = ended && end ? end.after : store;
   const ready = state === 'ready' || state === 'stale';
-  const active: ChangeData = ready ? change(shown) : { kind: 'none' };
-  const count = ready ? previousCount(shown) : null;
+  const active: ChangeData = ready ? change(shown, ending) : { kind: 'none' };
+  const count = ready ? previousCount(shown, ending) : null;
   const pending = ready ? waiting(shown) : [];
   // The confirmation stays while it closes, and keeps the change it asked about.
   const asked = usePresence(asking && ready);
@@ -163,7 +168,14 @@ export function ChangesScreen({
 
   const liveEnd = () => {
     setNotSaved(false);
-    writes?.end().catch(() => setNotSaved(true));
+    if (!writes) return;
+    setEnding(true);
+    writes.end().then(() => setEnding(false), () => {
+      setEnding(false);
+      setNotSaved(true);
+      // Previous is never empty (§1.3): with no previous change served, back to Changes.
+      if (previousCount(shown).value === 0) setView('changes');
+    });
   };
   const doEnd = () => {
     setAsking(false);
@@ -205,7 +217,7 @@ export function ChangesScreen({
     : ready && (previous
       ? (
         <ListGroup>
-          {previousChanges(shown).map((row) => <Previous key={row.id} row={row} />)}
+          {previousChanges(shown, ending).map((row) => <Previous key={row.id} row={row} />)}
         </ListGroup>
       )
       : (

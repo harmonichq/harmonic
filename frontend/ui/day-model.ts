@@ -78,8 +78,14 @@ export function dayChart(state: DayState): DayChartData {
   return dayChartOf(answers.day.states[state])!;
 }
 
-/** The chart of one served day; null for a day whose timeline is not served. */
-export function dayChartOf(iso: string): DayChartData | null {
+/** A Log carbs entry the screen holds while its save is in flight (ADR 630):
+ *  its grams and its whole time (`YYYY-MM-DD HH:MM`). */
+export type HeldCarbs = { grams: number; t: string };
+
+/** The chart of one served day; null for a day whose timeline is not served.
+ *  Each held entry for the day is drawn as logged carbs, its time and grams
+ *  read from the entry itself. */
+export function dayChartOf(iso: string, held: readonly HeldCarbs[] = []): DayChartData | null {
   const root = `day.days.${iso}`;
   const day = servedDays()[iso];
   if (!day) return null;
@@ -108,6 +114,9 @@ export function dayChartOf(iso: string): DayChartData | null {
     return { kind: 'carbs', minute: minuteOf(entry.t), time: sourced(`${path}.t`, 'time'),
       grams: sourced(`${path}.grams`, 'round') };
   });
+  const holding: DayEvent[] = held.map((entry, i) => ({ kind: 'carbs', minute: minuteOf(entry.t),
+    time: { value: entry.t, source: `held.carbs.${i}.t`, format: 'time' },
+    grams: { value: entry.grams, source: `held.carbs.${i}.grams`, format: 'round' } }));
   const sites: DayEvent[] = timeline.pump_events.flatMap((event, i) => event.event_type === SITE_CHANGE
     ? [{ kind: 'site' as const, minute: minuteOf(event.t), time: sourced<string>(`${root}.timeline.pump_events.${i}.t`, 'time') }]
     : []);
@@ -119,7 +128,7 @@ export function dayChartOf(iso: string): DayChartData | null {
     basal: timeline.basal.map((row) => ({ minute: minuteOf(row.t), duration: row.duration_mins,
       delivered: row.basal_rate, programmed: row.profile_basal_rate })),
     sleep: timeline.sleep_windows.map((w) => ({ from: clip(w.start), to: clip(w.end) })).filter((w) => w.to > w.from),
-    events: [...boluses, ...logged, ...sites, ...patterns].sort((a, b) => a.minute - b.minute),
+    events: [...boluses, ...logged, ...holding, ...sites, ...patterns].sort((a, b) => a.minute - b.minute),
   };
 }
 
@@ -262,9 +271,12 @@ const promptsPath = (store: PromptStore) => (store === 'wearer' ? 'prompts' : `d
 const promptsOf = (store: PromptStore) => (store === 'wearer' ? answers.prompts : answers.day.prompts[store]);
 const open = (kind?: PromptKind) => `${kind ? `[detector=${DETECTOR[kind]}]` : ''}[answer=null]`;
 
-/** The unanswered prompts of one kind: Day's Lows or Rises row. Of both: the Day badge. */
-export const unanswered = (store: PromptStore, kind?: PromptKind) =>
-  sourced<number>(`${promptsPath(store)}${open(kind)}.length`);
+/** The unanswered prompts of one kind: Day's Lows or Rises row. Of both: the Day badge.
+ *  Less `held`, the answers the screen has given whose write is still in flight (ADR 630). */
+export const unanswered = (store: PromptStore, kind?: PromptKind, held = 0): Sourced<number> => {
+  const served = sourced<number>(`${promptsPath(store)}${open(kind)}.length`);
+  return held ? { value: served.value - held, source: `${served.source} − ${held}` } : served;
+};
 
 /** The store once the first unanswered prompt of `kind` in `store` is answered. */
 export function afterAnswer(store: PromptStore, kind: PromptKind): PromptStore {

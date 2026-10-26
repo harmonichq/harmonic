@@ -1,7 +1,8 @@
 // The Overview screen (§1.1, §1.3), composed only from the library's
 // components: standard metrics over the selected window against the period of
 // the same length before it, its time-in-ranges bar, its glucose profile, the
-// basal estimate, and the Meal size card (#501). Nothing to act on.
+// basal estimate, the Meal size card (#501), and the Insulin summary and the
+// Bolus review (#634). Nothing to act on.
 //
 // The window control picks 14, 30 or 90 d (a window the served coverage falls
 // short of is disabled). The line under it is the window's date span and,
@@ -15,22 +16,27 @@
 // One scrolling page (§2.2 Scrolling, §2.5 2026-10-14): the summary — the
 // window switch and its date line, In range, the metrics and the profile — is
 // the first screenful, and the basal estimate follows it, then the Meal size
-// card (ADR 501), each card one height (§2.5, 2026-10-20 #564). Phone: one
-// column under the fixed header, above the tab bar, with a shorter profile plot
-// so the summary fits, each card under the one before. Desktop: the rail and
-// one pane, the metrics beside the profile, and beneath both each card across
-// a row of its own.
+// card (ADR 501), each card one height (§2.5, 2026-10-20 #564), then the
+// Insulin summary and the Bolus review (ADR 634). Phone: one column under the
+// fixed header, above the tab bar, with a shorter profile plot so the summary
+// fits, each card under the one before, Insulin summary then Bolus review.
+// Desktop: the rail and one pane, the metrics beside the profile, and beneath
+// both the basal estimate and Meal size each across a row of its own, then the
+// two insulin cards side by side in one row, as tall as the taller card's
+// content, never stretching the rows above it (§2.5, 2026-10-26 #634).
 //
-// The profile and the estimates are read per window: choosing a window
-// reports it (`onWindow`), and until its answers land each shows its skeleton.
-// The Meal size card follows the window as the estimates do (#565).
+// The profile and the cards are read per window: choosing a window reports it
+// (`onWindow`), and until its answers land each shows its skeleton. Meal size
+// and the insulin cards follow the window as the estimates do (#565, #634).
 import { useEffect, useState } from 'react';
 import { answers, sourced } from '../../answers';
 import {
-  basalEstimate, mealSize, metric, period, profile, tirBands, type MetricKey, type Window,
+  basalEstimate, bolusReview, insulinSummary, mealSize, metric, period, profile, tirBands, type MetricKey, type Window,
 } from '../../overview-model';
 import { BasalCard } from '../../components/BasalCard/BasalCard';
+import { BolusReviewCard } from '../../components/BolusReviewCard/BolusReviewCard';
 import { GlucoseProfile } from '../../components/GlucoseProfile/GlucoseProfile';
+import { InsulinSummaryCard } from '../../components/InsulinSummaryCard/InsulinSummaryCard';
 import { MealSizeCard } from '../../components/MealSizeCard/MealSizeCard';
 import { MetricFigure } from '../../components/MetricFigure/MetricFigure';
 import { NavBar, type NavHooks } from '../../components/NavBar/NavBar';
@@ -168,6 +174,13 @@ export function OverviewScreen({
       <MealSizeCard data={mealSize(store, window)} />
     </div>
   );
+  // A row of its own beside the estimates' grid, so its height is its own (ADR 634).
+  const insulin = (
+    <div className="ui-overview__insulin">
+      <InsulinSummaryCard data={insulinSummary(store, window)} />
+      <BolusReviewCard data={bolusReview(store, window)} />
+    </div>
+  );
 
   if (layout === 'phone') {
     return (
@@ -175,7 +188,7 @@ export function OverviewScreen({
         <div className="ui-overview__head">{header}</div>
         <main className="ui-overview__main" data-scroll="page">
           <div className="ui-overview__body">
-            {control}{metrics}{glucoseProfile}{estimates}
+            {control}{metrics}{glucoseProfile}{estimates}{insulin}
           </div>
         </main>
         <NavBar layout="tabbar" selected="overview" dayCount={dayCount()} {...nav} />
@@ -191,6 +204,7 @@ export function OverviewScreen({
           {control}
           <div className="ui-overview__columns">{metrics}{glucoseProfile}</div>
           {estimates}
+          {insulin}
         </div>
       </section>
     </div>

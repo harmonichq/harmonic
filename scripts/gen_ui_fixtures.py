@@ -237,14 +237,13 @@ WEEKDAYS = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
 # The Overview's date line names its comparison once: "vs previous 14 d"
 # (§2.5, 2026-10-14). "Previous" is already a plain interface word below.
 # The Insulin summary and Bolus review cards' titles, headings and rows, and
-# their carbs in "g" (§2.5, 2026-10-25, ADR 633): admitted to the two library
-# cards ahead of the §1.5 rows #634 adds for Food, Bolus, Manual, Override,
-# Standard, Extended and Quick when the cards reach the Overview; not yet in
-# glossary §1.5.
-OVERVIEW_LABELS = ("vs", "Insulin summary", "Average daily insulin", "Basal", "Bolus",
-                   "Average daily boluses", "Manual", "Control-IQ", "Average daily carbs", "g",
-                   "Bolus review (daily average)", "Type", "Food", "Correction", "Override",
-                   "Delivery method", "Standard", "Extended", "Quick")
+# their carbs in "g" (§2.5, 2026-10-25, ADR 633). Food, Bolus, Manual, Override,
+# Standard, Extended and Quick are §1.5's since the cards reached the Overview
+# (§2.5, 2026-10-26 #634); these are the plain interface words beside them.
+OVERVIEW_LABELS = ("vs", "Insulin summary", "Average daily insulin", "Basal",
+                   "Average daily boluses", "Control-IQ", "Average daily carbs", "g",
+                   "Bolus review (daily average)", "Type", "Correction",
+                   "Delivery method")
 CARB_RATIO_CASE = "basal-and-carb-ratio-lower"
 # A standalone habit (ADR 528): the QA case whose two rises its missed-meal habit
 # claims, and the wearer's lunch never bolused for on every weekday (the wearer's

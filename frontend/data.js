@@ -186,6 +186,10 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
    *  or 90) days, by size (#501, #565). */
   const fetchMealSize = (days) => api('/api/explore/meal-size?days=' + encodeURIComponent(days));
 
+  /** GET /api/explore/insulin — the Insulin summary and the Bolus review: the insulin, boluses and carbs of the
+   *  last `days` (14, 30 or 90) days as daily averages (#632, #634). */
+  const fetchInsulin = (days) => api('/api/explore/insulin?days=' + encodeURIComponent(days));
+
   /**
    * GET /api/day-navigator[?month=YYYY-MM] — each day of the month (the latest
    * with data when none is named), ± a week of pad: its lows, highs, in-range
@@ -245,7 +249,7 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
     fetchDiagnoseFindings, fetchAnalysis,
     fetchDiagnoseFindingCasePreparation, fetchDiagnoseFindingCase,
     fetchVerifyTrials, finishTrial, fetchFocuses, pinFocus, resolveFocus,
-    fetchOutcomes, fetchExploreTimeOfDay, fetchMealSize, fetchDayNavigator,
+    fetchOutcomes, fetchExploreTimeOfDay, fetchMealSize, fetchInsulin, fetchDayNavigator,
     fetchTimeline, fetchCarbs, fetchModelView, createCarb, updateCarb, fetchPrompts, answerPrompt,
   };
 }

@@ -33,6 +33,11 @@
    desktop the basal estimate across the first row and the Meal size card across
    the second, every row the same height (#559; §2.5, 2026-10-20 #564). */
 .ui-overview__estimates { display: grid; gap: 24px; margin-top: 24px; }
+/* The Insulin summary and the Bolus review: after Meal size, one column on the
+   phone; on desktop one row of two beside the estimates' grid, not in it, so
+   the row is as tall as its taller card's content and the two are one height,
+   while the rows above keep theirs (§2.5, 2026-10-26 #634). */
+.ui-overview__insulin { display: grid; gap: 24px; margin-top: 24px; }
 
 /* Desktop: the rail and one pane that scrolls as a whole; the metrics beside
    the profile, the cards beneath both. */
@@ -53,4 +58,8 @@
   grid-auto-rows: 1fr;
   align-items: stretch;
   margin-top: 40px;
+}
+.ui-overview--desktop .ui-overview__insulin {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
 }

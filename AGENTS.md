@@ -270,8 +270,8 @@ which bumps the cache and then starts the warm pass in the background. The
 hourly fetch invalidates through `run_fetch_loop`'s `on_write`, and `serve` also
 warms once at start (`warm_on_start`), so a restart is warm before its first
 fetch lands, or when that fetch commits nothing. The warm roster is exactly what
-the five tabs read, lightest screen first (the Overview's profiles, Meal size and
-outcomes lead); a new screen read belongs in it. A new write endpoint that does
+the five tabs read, lightest screen first (the Overview's profiles, Meal size, the
+insulin cards and outcomes lead); a new screen read belongs in it. A new write endpoint that does
 not invalidate leaves a stale cache.
 
 **After a write, a fixed read answers from its predecessor, labelled (ADR 566).**
@@ -283,8 +283,8 @@ never a second compute thread. A warm
 shape always computes, and with no worker running the first read computes. The app
 marks a screen drawn from such an answer `stale` and reads it again until it is
 current; never draw one as current. Every window the Overview switches between is
-a fixed result (outcomes, the live analysis, and the profiles and Meal size, each
-one result for all three windows), so a restart answers it from the
+a fixed result (outcomes, the live analysis, and the profiles, Meal size and the
+insulin cards, each one result for all three windows), so a restart answers it from the
 derived-results file. A deploy changes the source fingerprint, so after one everything is cold.
 
 **A read a landing sync crosses answers its predecessor too (ADR 579).** A sync

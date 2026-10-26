@@ -52,6 +52,7 @@ function fakeClient(served = history()) {
     fetchOutcomes: answer('outcomes', () => ({})),
     fetchExploreTimeOfDay: answer('time-of-day', () => ({})),
     fetchMealSize: answer('meal-size', () => ({ window: null, sizes: [] })),
+    fetchInsulin: answer('insulin', () => ({ window: null, delivery_days: 0 })),
     fetchDayNavigator: answer('navigator', (month) => ({ month: month ?? '2026-01', days: [] })),
     fetchCredentials: answer('credentials', () => ({ configured: false, email: null, region: null })),
     fetchPumpSettings: answer('pump', () => ({ configured: false })),
@@ -147,6 +148,7 @@ test('switching tabs back and forth reads nothing again', async () => {
   }
   assert.equal(fake.count('time-of-day'), 3, 'one profile per Overview window, Day\'s among them');
   assert.equal(fake.count('meal-size'), 3, 'one Meal size per Overview window');
+  assert.equal(fake.count('insulin'), 3, 'one insulin answer per Overview window');
   assert.equal(fake.count('trials', (c) => !detail(c)), 1);
 });
 
@@ -1192,6 +1194,47 @@ test('the Overview reads each window\'s Meal size once, the first window first, 
   await live.retryTab('overview');
   await new Promise((resolve) => { setImmediate(resolve); });
   const again = fake.calls.filter((c) => c.name === 'meal-size').slice(3).map((c) => c.args[0]);
+  assert.equal(again[0], 14, 'the Overview\'s Retry reads its first window first');
+  assert.deepEqual(again.sort((a, b) => a - b), [14, 30, 90], 'and every window again, once');
+});
+
+test('the Overview reads each window\'s insulin once, the first window first, trimmed to what the cards draw, and again on Retry and until current (#634)', async () => {
+  const fake = fakeClient();
+  const part = (units, share) => ({ units, share });
+  const figures = (days) => ({
+    window: { start: '2024-02-01 00:00:00', end: '2024-05-01 00:00:00', data_days: days },
+    delivery_days: days,
+    daily_dose: { units: 40 },
+    basal: part(18, 0.45),
+    bolus: part(22, 0.55),
+    boluses: { count: 6, manual: { count: 4, share: 0.67 }, control_iq: { count: 2, share: 0.33 } },
+    carbs: { grams: 150 },
+    by_type: { food: part(14, 0.64), correction: part(3, 0.14), override: part(2, 0.09), control_iq: part(3, 0.14) },
+    by_method: { standard: part(19, 0.86), extended: part(0, 0), quick: part(0, 0), control_iq: part(3, 0.14) },
+  });
+  let behind = true;
+  fake.client.fetchInsulin = (...args) => {
+    fake.calls.push({ name: 'insulin', args });
+    return Promise.resolve({ ...figures(args[0]), by_day: [{ date: '2024-04-30' }],
+      ...(args[0] === 14 && behind ? { input_data_age: { revision: 1, covers_to: '2026-01-01 00:00:00' } } : {}) });
+  };
+  const live = createLive({ client: fake.client, glossary: [], pause: () => Promise.resolve() });
+  await live.readTab('overview');
+  assert.equal(fake.calls.find((c) => c.name === 'insulin').args[0], 14, 'the first window first');
+  for (const window of ['30', '90', '14', '30']) await live.readWindow(window);
+  assert.deepEqual(fake.calls.filter((c) => c.name === 'insulin').map((c) => c.args[0]), [14, 30, 90],
+    'each window once');
+  assert.deepEqual(live.answers.overview.wearer.insulin['90'], figures(90), 'kept to the shape ADR 632 serves');
+  // An answer from before the last write marks the Overview, and is read again until current (#566).
+  assert.equal(live.behind('overview'), true, 'the 14 d insulin is an earlier answer');
+  behind = false;
+  await live.catchUp('overview');
+  assert.equal(live.behind('overview'), false, 'read again until current');
+  assert.deepEqual(fake.calls.filter((c) => c.name === 'insulin').map((c) => c.args[0]), [14, 30, 90, 14],
+    'only the window that was behind');
+  await live.retryTab('overview');
+  await new Promise((resolve) => { setImmediate(resolve); });
+  const again = fake.calls.filter((c) => c.name === 'insulin').slice(4).map((c) => c.args[0]);
   assert.equal(again[0], 14, 'the Overview\'s Retry reads its first window first');
   assert.deepEqual(again.sort((a, b) => a - b), [14, 30, 90], 'and every window again, once');
 });

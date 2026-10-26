@@ -101,6 +101,12 @@ const mealSizes = ({ window, horizon_hours, sizes }) => ({
   sizes,
 });
 
+/** gen_ui_fixtures._insulin: the Insulin summary's and the Bolus review's answer for one window, trimmed to the
+ *  shape ADR 632 serves (#634). */
+const insulinFigures = ({ window, delivery_days, daily_dose, basal, bolus, boluses, carbs, by_type, by_method }) => ({
+  window, delivery_days, daily_dose, basal, bolus, boluses, carbs, by_type, by_method,
+});
+
 /** The model-view trimmed to what the Day chart marks: the day's findings,
  *  each anchor's time, kind and glucose and the habits it counts toward
  *  (mirrors gen_ui_fixtures.model_view_marks). */
@@ -135,7 +141,7 @@ export function createLive({ client, glossary, memory = null,
     prompts: [],
     outcomes: {},
     queue: { wearer: { guidance: { candidates: [] } } },
-    overview: { wearer: { time_of_day: {}, analyze: {}, meal_size: {} } },
+    overview: { wearer: { time_of_day: {}, analyze: {}, meal_size: {}, insulin: {} } },
     changes: {},
     day: { states: {}, days: {}, prompts: {}, months: {} },
     settings: { credentials: {}, status: {}, pump_settings: {} },
@@ -237,8 +243,14 @@ export function createLive({ client, glossary, memory = null,
     answers.overview.wearer.meal_size[window] = mealSizes(served(`meal-size ${window}`,
       await client.fetchMealSize(Number(window))));
   });
-  /** What the Overview reads for a window it shows: its profile, its basal estimate and its Meal size. */
-  const overviewWindow = (window) => Promise.all([timeOfDay(window), basal(window), mealSize(window)]);
+  /** The Insulin summary and the Bolus review over one window, read when the Overview first shows it (#634). */
+  const insulin = (window) => once(`insulin ${window}`, async () => {
+    answers.overview.wearer.insulin[window] = insulinFigures(served(`insulin ${window}`,
+      await client.fetchInsulin(Number(window))));
+  });
+  /** What the Overview reads for a window it shows: its profile, its basal estimate, its Meal size and its
+   *  insulin cards. */
+  const overviewWindow = (window) => Promise.all([timeOfDay(window), basal(window), mealSize(window), insulin(window)]);
   const outcomes = () => once('outcomes', async () => {
     const windows = await Promise.all(WINDOWS.map((w) => client.fetchOutcomes(Number(w))));
     served('outcomes', windows.find((answer) => answer?.input_data_age));
@@ -414,7 +426,7 @@ export function createLive({ client, glossary, memory = null,
         .then(() => remember(), () => undefined);
     }),
       // The 30 d basal estimate is the Queue's analysis, so the Overview reads it again with its own.
-      keys: ['outcomes', 'analyze', ...WINDOWS.flatMap((w) => [`time-of-day ${w}`, `basal ${w}`, `meal-size ${w}`])] },
+      keys: ['outcomes', 'analyze', ...WINDOWS.flatMap((w) => [`time-of-day ${w}`, `basal ${w}`, `meal-size ${w}`, `insulin ${w}`])] },
     // Day reads the engine's one target range, which every window's profile serves; the Overview's first.
     day: { read: () => Promise.all([navigator(), timeOfDay(FIRST_WINDOW)]),
       keys: ['navigator', `time-of-day ${FIRST_WINDOW}`] },

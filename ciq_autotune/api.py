@@ -1885,8 +1885,8 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     def warm_roster():
         """What the app's five tabs read, lightest screen first (#522, #566).
 
-        The Overview's profiles, Meal size and outcomes first — a few seconds for
-        every window it switches between — then the Queue and Changes — the
+        The Overview's profiles, Meal size, insulin cards and outcomes first — a few
+        seconds for every window it switches between — then the Queue and Changes — the
         findings and guidance snapshot under them all, the analysis, the case
         files, the Trial roster — then the Overview's other two analyses, the
         heaviest shapes, then the Day screen's navigator and its latest two days.
@@ -1913,8 +1913,8 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
 
         return (
             # The Overview's lighter reads, at every window it switches between: its
-            # glucose profiles and its Meal size card (each one shape for all three
-            # windows) and its outcomes.
+            # glucose profiles, its Meal size card and its insulin cards (each one
+            # shape for all three windows) and its outcomes.
             ("explore-time-of-day", lambda: explore_time_of_day_endpoint(days=TIME_OF_DAY_DEFAULT_DAYS)),
             ("meal-size", lambda: explore_meal_size_endpoint(days=TIME_OF_DAY_DEFAULT_DAYS)),
             ("insulin", lambda: explore_insulin_endpoint(days=TIME_OF_DAY_DEFAULT_DAYS)),

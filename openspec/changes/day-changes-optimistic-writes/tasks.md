@@ -1,6 +1,8 @@
 ## 0. Interface (settled at triage)
 
-- No adapter, App or server change. Each write stays held on its screen (ADR 630 point 1) and clears when its write resolves or is refused.
+- No App or server change. Each write stays held on its screen (ADR 630 point 1) and clears when its write resolves or is refused.
+- `dayWrites.logCarbs(grams, t)` (`live.js`) takes the entry's whole time, `YYYY-MM-DD HH:MM`, and posts it as `YYYY-MM-DD HH:MM:00`; `DayWrites.logCarbs` in `DayScreen.tsx` follows (lock 2, ADR 630 point 3).
+- `GramsField` loses its `disabled` prop and its `:disabled` rule, which nothing passes once the entry has no Saving state (lock 2).
 - `unanswered(store, kind?, held?)` (`day-model.ts`) takes the number of answers whose write is in flight (ADR 630 point 2), and keeps the served formula less it as a literal.
 - `DayScreen` takes an optional `now?: () => string` (`YYYY-MM-DD HH:MM`), defaulting to the browser's clock; App passes none. Save always passes the write `HH:MM` (ADR 630 point 3).
 - `dayChartOf(iso, held?)` takes the Log carbs entries held for the day, `{ grams: number; t: string }[]`, and draws each as a logged-carbs mark with literal `Sourced` values naming the held entry (ADR 630 point 3).
@@ -32,6 +34,11 @@
 - [x] 4.1 `DayScreen.tsx`: pass the in-flight answers to the badge and counts; the `now` prop; Save reads the clock, passes `HH:MM`, closes the entry, holds it and draws it; a refusal drops it and holds its own Retry, apart from the Prompts', on the Day view's bar; remove the Log carbs `saving` and `not_saved` handling
 - [x] 4.2 `ChangesScreen.tsx`: confirming End holds `ending` until the write resolves or is refused
 - [x] 4.3 `LogCarbsEntry.tsx` (and its CSS if it styles them): remove the `saving` and `not_saved` states
+
+- [ ] 4.4 Lock 2: `live.js` `logCarbs(grams, t)` as in section 0, and its `live.test.js` test (a time on a given date is posted with that date, red first against the HH:MM form); the screen sends the held `t`, and Retry the same `t`
+- [ ] 4.5 Lock 2: a held carb mark and its served mark never draw together; the held entry is dropped in the update that draws the served day (a story asserts one mark at the entry's time after release)
+- [ ] 4.6 Lock 2: a refused End while Previous is open, with no previous change served, returns to Changes (a story, red first)
+- [ ] 4.7 Lock 2: `GramsField.tsx` and `GramsField.css` lose `disabled`
 
 ## 5. Gate and lock
 

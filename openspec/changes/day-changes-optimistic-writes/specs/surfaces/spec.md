@@ -30,7 +30,8 @@ or a count of its own.
 - **WHEN** the engine refuses it
 - **THEN** the mark leaves and the bar reads "Not saved" with Retry
 - **WHEN** the person presses Retry
-- **THEN** the same grams and time are sent again and the mark draws again
+- **THEN** the same grams and time, on the same date, are sent again and the
+  mark draws again
 
 #### Scenario: End draws the ended screen before the engine answers
 

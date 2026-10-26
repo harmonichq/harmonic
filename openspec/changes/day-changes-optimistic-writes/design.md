@@ -14,8 +14,9 @@ the served answer.
 
 **Decision.**
 
-1. These writes stay held on their screen, as Day's answers are today. The
-   adapter is unchanged, and so is App. A held write is cleared when its
+1. These writes stay held on their screen, as Day's answers are today. App is
+   unchanged; the adapter changes only in what Log carbs is sent (point 3).
+   A held write is cleared when its
    write resolves (the re-read has landed) or is refused.
 2. **Day badge and counts.** `unanswered` (`day-model.ts`) takes the number
    of the screen's answers whose write is still in flight: the `pending`
@@ -27,11 +28,15 @@ the served answer.
    tabs' badges read the served Prompts (Accepted failure).
 3. **Log carbs.** At Save the Day screen reads its clock once. That is the
    browser's clock, or, in the stories, a `now` prop giving
-   `YYYY-MM-DD HH:MM`. The screen always passes the write the entry's time as
-   `HH:MM`: the time picked in the Time row, or the clock's. Today the screen
-   passes no time when the Time row is untouched, and the adapter stamps its
-   own (`live.js` `logCarbs`). The screen holds `{ grams, t }`, where `t` is
-   the clock's date with that time, on the Day screen. `dayChartOf` takes the
+   `YYYY-MM-DD HH:MM`. It sends the write the entry's whole time, date and
+   time, as `YYYY-MM-DD HH:MM`: today's date at the time picked in the Time
+   row, or the clock's own. `live.js` `logCarbs(grams, t)` posts exactly that
+   time (lock 2). Before, it took only `HH:MM` and stamped the date when the
+   write ran, so a Retry after midnight logged the entry on the next day; and
+   with no time it stamped its own. The screen holds `{ grams, t }` on the Day
+   screen, and Retry sends that same `t`. A mark is drawn once: a held entry is
+   dropped in the same update that draws the served answer, never a render
+   later. `dayChartOf` takes the
    held entries for the day and draws each as a logged-carbs mark. Its time
    and grams are literal `Sourced` values (`{ value, source }`, not
    `sourced()`, which resolves its path against the served answers) whose
@@ -56,8 +61,10 @@ the served answer.
    An active Focus has no `ending`, so the held reading lists it from its
    served record with no result. Its result is read only from a saved
    ending, and the active record has none, so the row draws no result pill until the engine's answer carries
-   one. The model derives no verdict. A refusal drops `ended`, and the
-   existing "Not saved" with Retry stays.
+   one. The model derives no verdict. A refusal drops `ending`, and the
+   existing "Not saved" with Retry stays. A refusal while Previous is open
+   returns to Changes when the served store has no previous change, since the
+   lock has no empty Previous (§1.3: "Not reachable"; lock 2).
 5. **Stories that answer late.** Each such story's wrapper switches the
    screen's served store when its fake answers, as #629's `LiveQueue` does.
    - Day answer: the Prompts store served after that answer.

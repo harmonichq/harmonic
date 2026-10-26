@@ -6,7 +6,8 @@
 // answers sit under `overview.<store>`. The glucose profile and the basal
 // estimate are served per window, under `time_of_day.<window>` and
 // `analyze.<window>`; a window the live adapter has not read yet is absent.
-// The Meal size card is served per window too, under `meal_size.<window>` (#565).
+// The Meal size card is served per window too, under `meal_size.<window>` (#565),
+// and the insulin cards under `insulin.<window>` (#632, ADR 633).
 import { answers, sourced, type Format, type Sourced } from './answers';
 import { delta, type Change, type Metric } from './direction';
 import { PARAMETER_UNITS } from './settings-model';
@@ -272,6 +273,107 @@ export function mealSize(store: OverviewStore, window: Window): MealSizeData | '
         at3hMeals: sourced(`${at}.at_3h.count`),
       };
     }),
+  };
+}
+
+// --- InsulinSummaryCard and BolusReviewCard ------------------------------------
+
+/** One row's served figures: its units or count, and its share of the
+ *  headline's total. Either is null where the engine serves none (a share of
+ *  a zero total, ADR 632), and the card prints "–" for it. */
+export type InsulinRow = { value: Sourced<number> | null; share: Sourced<number> | null };
+
+export type InsulinSummaryData = {
+  /** Average daily insulin, U; Basal and Bolus its parts. */
+  insulin: Sourced<number> | null;
+  basal: InsulinRow;
+  bolus: InsulinRow;
+  /** Average daily boluses, a count; Manual and Control-IQ its parts. */
+  boluses: Sourced<number> | null;
+  manual: InsulinRow;
+  controlIq: InsulinRow;
+  /** Average daily carbs, g. */
+  carbs: Sourced<number> | null;
+};
+
+export type BolusType = 'food' | 'correction' | 'override' | 'control_iq';
+export type BolusMethod = 'standard' | 'extended' | 'quick' | 'control_iq';
+export type BolusReviewData = {
+  byType: (InsulinRow & { key: BolusType })[];
+  byMethod: (InsulinRow & { key: BolusMethod })[];
+};
+
+type InsulinPart = { units: number | null; share: number | null };
+type InsulinAnswer = {
+  window: { data_days: number } | null;
+  delivery_days: number;
+  daily_dose: { units: number | null };
+  basal: InsulinPart;
+  bolus: InsulinPart;
+  boluses: {
+    count: number | null;
+    manual: { count: number | null; share: number | null };
+    control_iq: { count: number | null; share: number | null };
+  };
+  carbs: { grams: number | null };
+  by_type: Record<BolusType, InsulinPart>;
+  by_method: Record<BolusMethod, InsulinPart>;
+};
+
+const BOLUS_TYPES: BolusType[] = ['food', 'correction', 'override', 'control_iq'];
+const BOLUS_METHODS: BolusMethod[] = ['standard', 'extended', 'quick', 'control_iq'];
+
+/** The served insulin answer over `window` and its field root: null when it
+ *  has not been read yet, 'none' when the window holds no day with delivery. */
+function insulinAnswer(store: OverviewStore, window: Window): { served: InsulinAnswer; root: string } | 'none' | null {
+  const served = (answers.overview[store] as { insulin?: Partial<Record<Window, InsulinAnswer>> })
+    .insulin?.[window];
+  if (!served) return null;
+  if (!served.window || served.delivery_days === 0) return 'none';
+  return { served, root: `overview.${store}.insulin.${window}` };
+}
+
+/** A served figure in its format, or null where the engine serves none. */
+const figure = (path: string, value: number | null, format: Format) =>
+  (value === null ? null : sourced<number>(path, format));
+
+/** A part at `at`: its units (or count) to one decimal, its share as a whole percent. */
+const part = (at: string, field: 'units' | 'count', served: Record<string, number | null>): InsulinRow => ({
+  value: figure(`${at}.${field}`, served[field], 'fixed1'),
+  share: figure(`${at}.share`, served.share, 'share'),
+});
+
+/** The Insulin summary over `window` (ADR 633): null when it has not been
+ *  read yet, 'none' when the window holds no day with delivery. */
+export function insulinSummary(store: OverviewStore, window: Window): InsulinSummaryData | 'none' | null {
+  const answer = insulinAnswer(store, window);
+  if (!answer || answer === 'none') return answer;
+  const { served, root } = answer;
+  return {
+    insulin: figure(`${root}.daily_dose.units`, served.daily_dose.units, 'fixed1'),
+    basal: part(`${root}.basal`, 'units', served.basal),
+    bolus: part(`${root}.bolus`, 'units', served.bolus),
+    boluses: figure(`${root}.boluses.count`, served.boluses.count, 'fixed1'),
+    manual: part(`${root}.boluses.manual`, 'count', served.boluses.manual),
+    controlIq: part(`${root}.boluses.control_iq`, 'count', served.boluses.control_iq),
+    carbs: figure(`${root}.carbs.grams`, served.carbs.grams, 'round'),
+  };
+}
+
+/** The Bolus review over `window` (ADR 633), each type and delivery method in
+ *  the card's order: null when it has not been read yet, 'none' when the
+ *  window holds no day with delivery. */
+export function bolusReview(store: OverviewStore, window: Window): BolusReviewData | 'none' | null {
+  const answer = insulinAnswer(store, window);
+  if (!answer || answer === 'none') return answer;
+  const { served, root } = answer;
+  return {
+    byType: BOLUS_TYPES.map((key) => ({
+      key, ...part(`${root}.by_type.${key}`, 'units', served.by_type[key]),
+    })),
+    byMethod: BOLUS_METHODS.map((key) => ({
+      key, ...part(`${root}.by_method.${key}`, 'units', served.by_method[key]),
+    })),
   };
 }
 

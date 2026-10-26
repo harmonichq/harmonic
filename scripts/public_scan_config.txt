@@ -134,7 +134,7 @@ prose-exempt scripts/public_scan_config.txt dose-ratio | the generated baseline 
 # which prints the full delta first. Never edit it by hand: the digest is
 # checked at parse time and a hand edit fails the config closed.
 # BEGIN dose-ratio baseline
-dose-ratio-baseline 219 58ed86ccd4cfbe5db3fcd237d7d004f66fc5d9dbba6bb709632b61f7271e7ff8
+dose-ratio-baseline 224 524dc0796bc705c3062047f47d88242dcf77d86af248458314a0abaa686ad17f
 dose-ratio-ack CONTEXT.md:100 | 0.5 U
 dose-ratio-ack CONTEXT.md:549 | 0.2 U
 dose-ratio-ack CONTEXT.md:78 | 1 U : 36 mg/dL
@@ -175,6 +175,11 @@ dose-ratio-ack frontend/__fixtures__/findings-projection.json:4858 | 4.3 g/U
 dose-ratio-ack frontend/__fixtures__/findings-projection.json:5214 | 1.00 U
 dose-ratio-ack frontend/__fixtures__/findings-projection.json:5379 | 4.3 g/U
 dose-ratio-ack frontend/__fixtures__/findings-projection.json:5805 | 4.3 g/U
+dose-ratio-ack frontend/ui/components/BolusReviewCard/BolusReviewCard.stories.tsx:104 | 0.0 U
+dose-ratio-ack frontend/ui/components/BolusReviewCard/BolusReviewCard.stories.tsx:14 | 0.0 U
+dose-ratio-ack frontend/ui/components/BolusReviewCard/BolusReviewCard.stories.tsx:98 | 0.0 U
+dose-ratio-ack frontend/ui/components/BolusReviewCard/BolusReviewCard.tsx:8 | 0.0 U
+dose-ratio-ack frontend/ui/components/InsulinSummaryCard/InsulinSummaryCard.stories.tsx:14 | 0.0 U
 dose-ratio-ack openspec/specs/behavioral-layer/spec.md:1125 | 4.5 U
 dose-ratio-ack openspec/specs/behavioral-layer/spec.md:1126 | 2 U
 dose-ratio-ack openspec/specs/behavioral-layer/spec.md:1129 | 6.5 U

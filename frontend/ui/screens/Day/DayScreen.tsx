@@ -43,9 +43,12 @@
 //
 // Log carbs: on phone a bottom sheet over the screen (on the system keyboard,
 // which the story does not draw), on desktop a popover under "+ Log carbs".
-// Save is its one primary; it saves, then closes; a failed save keeps the
-// entry with Retry. Its Time row opens the system time picker, and the time
-// picked is the time the carbs are logged at, today. Escape, or the scrim on phone, closes it unsaved.
+// Save is its one primary; it closes the entry at once (§2.5, 2026-10-25). Its
+// Time row opens the system time picker, and the time picked is the time the
+// carbs are logged at, today; untouched, it is the clock's when Save is
+// pressed. A save that fails shows "Not saved" with Retry in the Day view's
+// TransientBar, which a Prompt answer leaves up; Retry sends the same grams, on
+// the same date and time, again. Escape, or the scrim on phone, closes it unsaved.
 //
 // Phone: only the header stays put; everything under it scrolls as one page,
 // above the tab bar. Desktop: the rail and one pane, which scrolls as a whole
@@ -56,19 +59,22 @@
 // the right and back from the left, and each next prompt comes in from the
 // right.
 //
-// Live (`writes`, #495): each answer is optimistic. Yes keeps its card,
-// recorded, while the answer saves, and Next adds the grams typed to the
+// Live (`writes`, #495): each write is optimistic (ADR 630). Yes keeps its
+// card, recorded, while the answer saves, and Next adds the grams typed to the
 // entry Yes created; any other answer, the Not sure text action or the full
-// swipe moves on to the next prompt at once. Log carbs waits on its save, busy.
-// A write that fails puts the card back with "Not saved" and Retry; a failed
-// Log carbs keeps its entry with Retry. Every write resolves once the engine's
-// answers are read again. The day the person picks is read as it is picked.
+// swipe moves on to the next prompt at once. The Day badge and the Lows and
+// Rises counts leave out every answer still in flight. Log carbs holds its
+// entry, drawn on its day as logged carbs, until its save settles. A write that
+// fails puts the card back, or takes the entry's mark away, with "Not saved"
+// and Retry. Every write resolves once the engine's answers are read again, so
+// what the screen holds then gives way to what the engine served. The day the
+// person picks is read as it is picked.
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { Sourced } from '../../answers';
 import {
   PROMPT_STEPS, adjacentDay, afterAnswer, dayChartOf, dayDate, insulinBar, latestDay, livePromptPlace, loggedGrams, loggedTime,
   monthBy, monthName, monthServed, monthSpan, monthWeeks, promptOf, promptPlace, promptsOfKind, unanswered, weekOf,
-  type PromptData, type PromptKind, type PromptStore,
+  type HeldCarbs, type PromptData, type PromptKind, type PromptStore,
 } from '../../day-model';
 import { day as navigatorDay } from '../../overview-model';
 import { useMotionGate, usePresence, useSwipe, type Way } from '../../motion';
@@ -116,6 +122,8 @@ export type DayScreenProps = {
   notSaved?: boolean;
   /** The live engine's writes; without them the Prompts step through the served stores. */
   writes?: DayWrites;
+  /** The clock Log carbs' Save reads (`YYYY-MM-DD HH:MM`): the browser's, or a story's. */
+  now?: () => string;
   /** The day the screen shows, each time it changes: the live app reads it. */
   onDay?: (iso: string) => void;
   /** Read another month's weeks (`YYYY-MM`) into the answers; without it only the served month steps. */
@@ -131,12 +139,16 @@ export type DayWrites = {
   answer: (prompt: PromptData, answer: Answer) => Promise<{ carbEntryId: number | null }>;
   /** The grams typed after a Yes, onto the entry it created. */
   grams: (carbEntryId: number, grams: number) => Promise<void>;
-  /** Carbs eaten without a bolus, today at `time` (`HH:MM`), or now. */
-  logCarbs: (grams: number, time?: string) => Promise<void>;
+  /** Carbs eaten without a bolus, at `at`, the entry's whole time (`YYYY-MM-DD HH:MM`). */
+  logCarbs: (grams: number, at: string) => Promise<void>;
 };
 
-/** How long a save is shown busy before it settles. */
-const SAVE_MS = 600;
+const pad = (n: number) => String(n).padStart(2, '0');
+/** The browser's clock, `YYYY-MM-DD HH:MM`. */
+function browserNow() {
+  const d = new Date();
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
 
 /** The week holding a day, when the navigator serves all of it. */
 const week = (iso: string) => weekOf(iso)?.map(navigatorDay) ?? null;
@@ -219,7 +231,8 @@ export function DayScreen(props: DayScreenProps) {
 function Day({
   layout, store, state = 'ready', day, view: initialView = 'day', kind: initialKind = 'low', monthOpen = false,
   logCarbs, timeEdited = false,
-  recorded = false, swiping = false, failing = false, notSaved = false, writes, onDay, readMonth, nav, onRetry,
+  recorded = false, swiping = false, failing = false, notSaved = false, writes, now = browserNow, onDay, readMonth, nav,
+  onRetry,
 }: DayScreenProps) {
   const [selected, setSelected] = useState(day ?? latestDay());
   const [month, setMonth] = useState(monthOpen);
@@ -242,11 +255,9 @@ function Day({
   const [attempt, setAttempt] = useState(0);
   const [carbs, setCarbs] = useState<LogCarbsState | null>(logCarbs ?? null);
   const fails = useRef(failing);
-  const timer = useRef<number>();
   const headRef = useRef<HTMLDivElement>(null);
   const [anchor, setAnchor] = useState<number>();
   const root = useMotionGate<HTMLDivElement>();
-  useEffect(() => () => window.clearTimeout(timer.current), []);
   useEffect(() => { onDay?.(selected); }, [selected]);
 
   // Live: the prompts answered while their write is in flight, the Yes card
@@ -260,9 +271,20 @@ function Day({
   // The time picked in Log carbs' Time row, until the entry closes.
   const [chosen, setChosen] = useState<string>();
   const [retry, setRetry] = useState<{ again: () => void } | null>(null);
+  // Log carbs: each entry whose save is in flight, and a refused save's Retry,
+  // held apart from the Prompts' (ADR 630).
+  const [logging, setLogging] = useState<readonly HeldCarbs[]>([]);
+  const [carbsRetry, setCarbsRetry] = useState<{ again: () => void } | null>(null);
 
-  const badge = unanswered(current);
-  const counts = { low: unanswered(current, 'low'), rise: unanswered(current, 'rise') };
+  // Live, the badge and the counts are the engine's less the answers still in
+  // flight that it still serves unanswered (ADR 630).
+  const inFlight = (of: PromptKind) => (writes
+    ? promptsOfKind(of, store).filter((p) => pending.has(p.anchorT)).length : 0);
+  const shownStore = writes ? store : current;
+  const counts = {
+    low: unanswered(shownStore, 'low', inFlight('low')), rise: unanswered(shownStore, 'rise', inFlight('rise')),
+  };
+  const badge = unanswered(shownStore, undefined, inFlight('low') + inFlight('rise'));
   // Whether the stories serve the store after an answer of this kind.
   const steps = (at: PromptStore) => (PROMPT_STEPS[kind] as readonly PromptStore[]).includes(at);
   // Live, the engine's answers are the store the screen was given, read again after each write.
@@ -361,8 +383,11 @@ function Day({
       setHeld(prompt);
       // The card draws recorded from its first render.
       setAttempt((n) => n + 1);
+      // In flight until its write settles, even once Next has let the card go.
+      mark(prompt, true);
       heldEntry.current = writes!.answer(prompt, 'carbs').then((saved) => saved.carbEntryId);
-      heldEntry.current.catch(() => {
+      heldEntry.current.then(() => mark(prompt, false), () => {
+        mark(prompt, false);
         setHeld((now) => (now === prompt ? null : now));
         notSavedLive(() => liveAnswer(prompt, given))();
       });
@@ -389,22 +414,32 @@ function Day({
     if (visible.length === 0) setView('day');
   };
 
+  // Save reads the clock once: the entry's day, and its time unless one was picked.
   const save = () => {
-    setCarbs('saving');
-    if (writes) {
-      writes.logCarbs(Number(typed.current), chosen).then(() => setCarbs(null), () => setCarbs('not_saved'));
-      return;
-    }
-    timer.current = window.setTimeout(() => {
+    const at = now();
+    logEntry({ grams: Number(typed.current), t: `${at.slice(0, 10)} ${chosen ?? at.slice(11, 16)}` });
+    setCarbs(null);
+  };
+  // Retry sends the same entry, its date and time as Save held them.
+  const logEntry = (entry: HeldCarbs) => {
+    setCarbsRetry(null);
+    const again = { again: () => logEntry(entry) };
+    if (!writes) {
       if (fails.current) {
         fails.current = false;
-        setCarbs('not_saved');
-      } else {
-        setCarbs(null);
+        setCarbsRetry(again);
       }
-    }, SAVE_MS);
+      return;
+    }
+    setLogging((held) => [...held, entry]);
+    // Dropped as the write resolves, in the draw that brings the served day (ADR 630).
+    const drop = () => setLogging((held) => held.filter((e) => e !== entry));
+    writes.logCarbs(entry.grams, entry.t).then(drop, () => {
+      drop();
+      setCarbsRetry(again);
+    });
   };
-  const closeCarbs = () => setCarbs((now) => (now === 'saving' ? now : null));
+  const closeCarbs = () => setCarbs(null);
   useEffect(() => { if (carbs === null) setChosen(undefined); }, [carbs]);
 
   useEffect(() => {
@@ -483,7 +518,7 @@ function Day({
   const neighbour = swipe.peek && swipes ? adjacent(swipe.peek) : null;
 
   const dayContent = (iso: string) => {
-    const chart = dayChartOf(iso);
+    const chart = dayChartOf(iso, logging.filter((entry) => entry.t.startsWith(iso)));
     return (
     <>
       <div className={`ui-dayscreen__summary ui-dayscreen__summary--${layout}`}>
@@ -517,8 +552,9 @@ function Day({
     </div>
     );
   };
-  // What is open stays while it closes: the bar, the month, the sheet.
-  const barShown = usePresence(view === 'prompts' && (writes ? retry : failed));
+  // What is open stays while it closes: the bar, the month, the sheet. The bar
+  // is the Prompts' failed write on the Prompts, and a failed Log carbs on Day.
+  const barShown = usePresence(view === 'prompts' ? (writes ? retry : failed) : carbsRetry);
   const bar = barShown.value && (
     <div className="ui-dayscreen__bar" {...barShown.exit}>
       <TransientBar kind="not_saved" layout={layout}

@@ -832,17 +832,25 @@ test('a picked day reads what the engine counted on it once, kept to what the ch
   });
 });
 
-test('Log carbs posts the time picked, today, or now when none was', async () => {
+test('Log carbs posts the whole time it is given, on that date', async () => {
   const fake = fakeClient();
   const live = createLive({ client: fake.client, glossary: [] });
-  await live.dayWrites.logCarbs(30, '07:45');
-  await live.dayWrites.logCarbs(12);
-  const [picked, unpicked] = fake.calls.filter((c) => c.name === 'log').map((c) => c.args[0]);
-  assert.match(picked.t, /^\d{4}-\d{2}-\d{2} 07:45:00$/);
-  assert.deepEqual({ grams: picked.grams, certainty: picked.certainty, source: picked.source },
-    { grams: 30, certainty: 'exact', source: 'manual' });
-  assert.match(unpicked.t, /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
-  assert.equal(picked.t.slice(0, 10), unpicked.t.slice(0, 10));
+  // A Retry after midnight still logs the entry on the day it was saved for.
+  await live.dayWrites.logCarbs(30, '2025-05-14 23:59');
+  const [logged] = fake.calls.filter((c) => c.name === 'log').map((c) => c.args[0]);
+  assert.deepEqual({ t: logged.t, grams: logged.grams, certainty: logged.certainty, source: logged.source },
+    { t: '2025-05-14 23:59:00', grams: 30, certainty: 'exact', source: 'manual' });
+});
+
+test('Log carbs reads its entry\'s day again last, so the day lands as the write resolves', async () => {
+  const fake = fakeClient();
+  const live = createLive({ client: fake.client, glossary: [] });
+  await live.readDay('2025-05-14');
+  await live.readDay('2025-05-15');
+  const before = fake.calls.length;
+  await live.dayWrites.logCarbs(30, '2025-05-14 12:00');
+  const reread = fake.calls.slice(before).filter((c) => c.name === 'timeline').map((c) => c.args[0].start.slice(0, 10));
+  assert.deepEqual(reread, ['2025-05-15', '2025-05-14']);
 });
 
 test('a whole-profile Trial and a candidate of an unknown kind are read through, never dropped or fatal', async () => {

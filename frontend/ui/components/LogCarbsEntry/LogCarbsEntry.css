@@ -33,7 +33,6 @@
   font: var(--ui-weight-regular) var(--ui-type-body) / 1 var(--ui-font);
   cursor: pointer;
 }
-.ui-logcarbs__time:disabled { color: var(--wk-ink-meta); cursor: default; }
 /* The system picker the row opens: present, so showPicker can anchor it to
    the row, but drawn by the row, never by itself. */
 .ui-logcarbs__time-row { position: relative; display: flex; flex-direction: column; }
@@ -54,9 +53,3 @@
 
 /* Save sits apart from the row above it. */
 .ui-logcarbs__foot { display: flex; flex-direction: column; gap: 12px; margin-top: 32px; }
-.ui-logcarbs__failed {
-  margin: 0;
-  color: var(--danger);
-  font-size: var(--ui-type-label);
-  font-weight: var(--ui-weight-strong);
-}

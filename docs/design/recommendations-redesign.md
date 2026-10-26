@@ -79,6 +79,14 @@ Status: **exploring** (#481).
   following the finger with the adjacent day with data beside it, its edge
   band of 24 px and a flick's 48 px as built, on the locked Day screen. The
   operator: "lock it" (2026-10-24).
+- **Day and Changes writes locked 2026-10-26** (#630, §2.5): Storybook
+  `Screens/Day` → Late Answer, Late Yes, Late Log Carbs and Late Log Carbs
+  Refused, and `Screens/Changes` → Late End Trial, Late End Focus and Late End
+  Refused In Previous, at commit `d101d7aa`: the Day badge and counts moving
+  as a Prompt is answered, Log carbs closing on Save with its refusal in the
+  bar, and End drawing the ended screen with the ended row's result only once
+  saved, on the locked Day and Changes screens. The operator: "locked: merge
+  #639" (2026-10-26).
 
 This document is the durable record of the redesign. Sections 1–3 are what the
 build will be checked against once they are approved. The appendix keeps the
@@ -125,11 +133,11 @@ Each row lists a screen's states. Labels only; no state uses prose.
 | Queue · Snoozed | Each snoozed item as its Queue row, plus "Until <date>" + Restore | Not reachable (the footer is hidden at 0) | — | Unavailable + Retry | Restored (row leaves) |
 | Queue · setting detail | current → estimate, range, n, chart | — | Chart skeleton | Unavailable | — (no queued ISF, §2.5 2026-10-20 #564) |
 | Changes | The current Trial (head, trace, ranges, Mean/GMI/CV, Basal vs Pump profile) or Focus, then the Previous row with its count | "No active change" label; no Previous row at 0 | Skeleton | Unavailable + Retry | Maturing, every module as its data forms, each glucose module with its Readings, each Δ green or red by its direction (§2.5, 2026-10-19, colour shows direction); first hours (an empty after: Meals after 0, each after blank) (§2.5, 2026-10-19); Matured (result pill); a carb ratio Trial (Meals before / after; its trace meal by meal under three meals); a whole-profile switch (each setting it moved); **End** (Focus: anytime; Trial: once matured) → confirm sheet → ended; Waiting for pump rows after a Done, between the current change and Previous (§2.5) |
-| Changes · Previous | Every previous change, newest first, no cutoff: setting and block, date, before → after per setting, the result where one was saved | Not reachable (the row is hidden at 0) | — | Unavailable + Retry | — |
+| Changes · Previous | Every previous change, newest first, no cutoff: setting and block, date, before → after per setting, the result where one was saved | Not reachable (the row is hidden at 0) | — | Unavailable + Retry | The change just ended, without its result until End is saved (§2.5, 2026-10-25) |
 | Overview | 14 d selected; one scrolling page, the summary (window switch, date span, In range, metrics, glucose profile) its first screenful, the basal estimate below, then Meal size (§2.5, 2026-10-19; 2026-10-20 #564) | "No data" label per window, in the basal estimate when none is served, and in Meal size when no meal is counted | Skeleton; a window not yet read shows its profile's and the basal estimate's skeletons; Meal size its skeleton until read | Unavailable + Retry | 30 d / 90 d selected; a previous period without data (the span alone, no changes); Meal size with a size of one meal, or of none ("–"), or with no At 3 h ("–"), and an At 3 h read from fewer than its size's meals ("n of N") (§2.5, 2026-10-20 #602) |
 | Day | Latest day with data | "No data" for a day without readings | Chart skeleton | Unavailable + Retry | Stepping to the next or previous day (skeleton) (§2.5, 2026-10-23); mid-swipe, the adjacent day beside it (§2.5, 2026-10-23, the Day swipe follows the finger); month dropped down from the header's day; desktop: the selected week as a ribbon; the Lows row when its count > 0, and under it the Rises row when its count > 0 (§2.5, 2026-10-14 Rises) |
 | Day · Prompts | One prompt of the row's kind, a Low or a Rise, "n / N" among that kind, titled Lows or Rises | Not reachable (the row is hidden at 0) | — | Not saved + Retry | Yes → grams field and keyboard; mid-swipe Not sure; a Rise: Yes · No and Not sure, no False low |
-| Day · Log carbs | Grams field focused, Time = now | — | Saving | Not saved + Retry | Time edited |
+| Day · Log carbs | Grams field focused, Time = now | — | — | Not saved + Retry, in the bar (§2.5, 2026-10-25) | Time edited |
 | Settings | Three rows with inline status, and the Token field (§2.5) | — | Skeleton + Token field (§2.5) | Unavailable + Retry + Token field (§2.5) | Sync OK (no badge) / Failed (badge) |
 | Settings · Tandem Source | Sync rows + account rows | Account "Not set" + Update | — | — | Updating credentials |
 | Settings · Pump profile | The active profile's segments | "No profile" label | — | — | — |
@@ -1493,6 +1501,29 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
      swipe, and not on desktop. One day per swipe. The month drop-down stays
      the visible equivalent.
 
+- **2026-10-25 — Day's and Changes' writes draw their result at once
+  (#630).** The operator: "all interactivity should use optimistic actions"
+  (#628). His answers at #628's triage, on 2026-10-25, set what each write
+  draws before the engine answers, mocked as the Day and Changes stories whose
+  engine answers late for him to replay (ADR 630). The engine still decides:
+  its answer replaces what was drawn with no visible change, and a refusal
+  puts the served state back with "Not saved" and Retry in the bar (§1.2).
+  §1.3 and §4.2 follow.
+  1. **A Prompt answer moves the Day badge and the Lows and Rises counts at
+     once,** on the Day screen, by the answers still in flight. Another tab's
+     Day badge moves when the Prompts are read again.
+  2. **Log carbs closes on Save** (#628 Q6 A). The sheet on phone, or the
+     popover on desktop, closes, and the entry's mark is drawn on its day at
+     its time at once. A refused save takes the mark away, and the bar on Day
+     reads "Not saved" with Retry, which sends the same grams and time again;
+     a Prompt answer leaves that bar up. The entry loses its Saving and Not
+     saved states.
+  3. **End draws the ended screen at once** (#628 Q7 A). The active change
+     leaves, the screen draws what it will after End, and the Previous count
+     is one more. In Previous, the change just ended shows its date and
+     before → after at once, and its result only once the engine has saved
+     it: End reads its result afresh, so the active card's can differ.
+
 ### 2.6 Deferred (not cut)
 Not built in the current screens. The engine still serves what each needs, and
 nothing is removed from the engine or the fixtures for them.
@@ -1920,7 +1951,8 @@ unless noted. Loading is a skeleton of the component's own shape.
     - Desktop: a last button, Not sure, instead of the text action and the swipe.
 19. **LogCarbsEntry**: a grams field sized to 3 digits, Time (a tappable row,
     default now), and Save.
-    - States: empty; filled; saving; not saved.
+    - States: empty; filled (§2.5, 2026-10-25: Save closes it, and a refusal
+      is the bar's "Not saved").
     - Fields: posts `t, grams, certainty` to `/api/carbs`.
     - Desktop: a popover anchored to "+ Log carbs"; on phone, a bottom sheet
       on the system keyboard.

@@ -396,3 +396,20 @@ const lateFocusEndPlay = (late: Late): Story['play'] => async ({ canvasElement }
 };
 export const LateEndFocusPhone = lateStory('phone', 'wearer-focus', undefined, lateFocusEndPlay);
 export const LateEndFocusDesktop = lateStory('desktop', 'wearer-focus', undefined, lateFocusEndPlay);
+
+// A refusal while Previous is open, when the engine serves no previous change:
+// the list would be empty, which Previous never is (§1.3, not reachable), so the
+// screen returns to Changes, where the Trial is back with "Not saved".
+const refusedInPreviousPlay = (late: Late): Story['play'] => async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  await confirmEnd(canvas);
+  await openPrevious(canvas, 1);
+  await expectTitlePrinted(canvasElement, 'Previous');
+  await late.release(false);
+  await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent(/Not saved/));
+  await expect(canvas.queryByRole('heading', { level: 1, name: 'Previous' })).toBeNull();
+  await expect(canvasElement.querySelector('.ui-changes__previous')).toBeNull();
+  await expect(canvas.getByRole('button', { name: 'End' })).toBeInTheDocument();
+};
+export const LateEndRefusedInPreviousPhone = lateStory('phone', 'wearer', undefined, refusedInPreviousPlay);
+export const LateEndRefusedInPreviousDesktop = lateStory('desktop', 'wearer', undefined, refusedInPreviousPlay);

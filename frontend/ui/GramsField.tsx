@@ -7,12 +7,12 @@ import { formatValue } from './provenance.js';
 import './GramsField.css';
 
 export type GramsFieldProps = {
-  value?: Sourced<number> | null; focused?: boolean; disabled?: boolean;
+  value?: Sourced<number> | null; focused?: boolean;
   /** The typed digits, on each change. */
   onChange?: (text: string) => void;
 };
 
-export function GramsField({ value = null, focused = false, disabled = false, onChange }: GramsFieldProps) {
+export function GramsField({ value = null, focused = false, onChange }: GramsFieldProps) {
   return (
     <label className={focused ? 'ui-grams ui-grams--focused' : 'ui-grams'}>
       <input
@@ -21,7 +21,6 @@ export function GramsField({ value = null, focused = false, disabled = false, on
         pattern="[0-9]*"
         maxLength={3}
         aria-label="Carbs"
-        disabled={disabled}
         defaultValue={value ? formatValue(value.value, value.format) : ''}
         data-source={value?.source}
         data-format={value?.format}

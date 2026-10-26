@@ -47,8 +47,8 @@
 // Time row opens the system time picker, and the time picked is the time the
 // carbs are logged at, today; untouched, it is the clock's when Save is
 // pressed. A save that fails shows "Not saved" with Retry in the Day view's
-// TransientBar, which a Prompt answer leaves up; Retry sends the same grams and
-// time again. Escape, or the scrim on phone, closes it unsaved.
+// TransientBar, which a Prompt answer leaves up; Retry sends the same grams, on
+// the same date and time, again. Escape, or the scrim on phone, closes it unsaved.
 //
 // Phone: only the header stays put; everything under it scrolls as one page,
 // above the tab bar. Desktop: the rail and one pane, which scrolls as a whole
@@ -139,8 +139,8 @@ export type DayWrites = {
   answer: (prompt: PromptData, answer: Answer) => Promise<{ carbEntryId: number | null }>;
   /** The grams typed after a Yes, onto the entry it created. */
   grams: (carbEntryId: number, grams: number) => Promise<void>;
-  /** Carbs eaten without a bolus, today at `time` (`HH:MM`), or now. */
-  logCarbs: (grams: number, time?: string) => Promise<void>;
+  /** Carbs eaten without a bolus, at `at`, the entry's whole time (`YYYY-MM-DD HH:MM`). */
+  logCarbs: (grams: number, at: string) => Promise<void>;
 };
 
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -417,12 +417,13 @@ function Day({
   // Save reads the clock once: the entry's day, and its time unless one was picked.
   const save = () => {
     const at = now();
-    logEntry(Number(typed.current), at.slice(0, 10), chosen ?? at.slice(11, 16));
+    logEntry({ grams: Number(typed.current), t: `${at.slice(0, 10)} ${chosen ?? at.slice(11, 16)}` });
     setCarbs(null);
   };
-  const logEntry = (grams: number, date: string, time: string) => {
+  // Retry sends the same entry, its date and time as Save held them.
+  const logEntry = (entry: HeldCarbs) => {
     setCarbsRetry(null);
-    const again = { again: () => logEntry(grams, date, time) };
+    const again = { again: () => logEntry(entry) };
     if (!writes) {
       if (fails.current) {
         fails.current = false;
@@ -430,10 +431,10 @@ function Day({
       }
       return;
     }
-    const entry: HeldCarbs = { grams, t: `${date} ${time}:00` };
     setLogging((held) => [...held, entry]);
+    // Dropped as the write resolves, in the draw that brings the served day (ADR 630).
     const drop = () => setLogging((held) => held.filter((e) => e !== entry));
-    writes.logCarbs(grams, time).then(drop, () => {
+    writes.logCarbs(entry.grams, entry.t).then(drop, () => {
       drop();
       setCarbsRetry(again);
     });

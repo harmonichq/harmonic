@@ -35,10 +35,10 @@
 - [x] 4.2 `ChangesScreen.tsx`: confirming End holds `ending` until the write resolves or is refused
 - [x] 4.3 `LogCarbsEntry.tsx` (and its CSS if it styles them): remove the `saving` and `not_saved` states
 
-- [ ] 4.4 Lock 2: `live.js` `logCarbs(grams, t)` as in section 0, and its `live.test.js` test (a time on a given date is posted with that date, red first against the HH:MM form); the screen sends the held `t`, and Retry the same `t`
-- [ ] 4.5 Lock 2: a held carb mark and its served mark never draw together; the held entry is dropped in the update that draws the served day (a story asserts one mark at the entry's time after release)
-- [ ] 4.6 Lock 2: a refused End while Previous is open, with no previous change served, returns to Changes (a story, red first)
-- [ ] 4.7 Lock 2: `GramsField.tsx` and `GramsField.css` lose `disabled`
+- [x] 4.4 Lock 2: `live.js` `logCarbs(grams, t)` as in section 0, and its `live.test.js` test (a time on a given date is posted with that date, red first against the HH:MM form); the screen sends the held `t`, and Retry the same `t`
+- [x] 4.5 Lock 2: a held carb mark and its served mark never draw together; the held entry is dropped in the update that draws the served day (a story asserts one mark at the entry's time after release)
+- [x] 4.6 Lock 2: a refused End while Previous is open, with no previous change served, returns to Changes (a story, red first)
+- [x] 4.7 Lock 2: `GramsField.tsx` and `GramsField.css` lose `disabled`
 
 ## 5. Gate and lock
 

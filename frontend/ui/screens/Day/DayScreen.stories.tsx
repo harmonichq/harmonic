@@ -767,8 +767,8 @@ function LiveDay({ after, unlogged = false, ...props }: DayScreenProps & { after
       if (after) setStore(after);
       return saved;
     },
-    logCarbs: async (grams, time) => {
-      await props.writes!.logCarbs(grams, time);
+    logCarbs: async (grams, at) => {
+      await props.writes!.logCarbs(grams, at);
       setLogged(true);
     },
   };
@@ -860,6 +860,13 @@ const loggedRows = (canvasElement: HTMLElement) => [...canvasElement.querySelect
       ? [{ time: row.querySelector('.ui-daychart__time')!.textContent, grams: grams!.textContent, held: source.startsWith('held.') }]
       : [];
   });
+/** The most logged-carbs rows drawn at once, from now until the returned read. */
+const mostMarks = (canvasElement: HTMLElement) => {
+  let most = loggedRows(canvasElement).length;
+  const watch = new MutationObserver(() => { most = Math.max(most, loggedRows(canvasElement).length); });
+  watch.observe(canvasElement, { childList: true, subtree: true, characterData: true, attributes: true });
+  return () => { watch.disconnect(); return most; };
+};
 const saveCarbs = async (canvas: ReturnType<typeof within>) => {
   const entry = await openCarbs(canvas);
   await userEvent.type(entry.getByRole('textbox', { name: 'Carbs' }), LOG_GRAMS);
@@ -871,9 +878,12 @@ const lateLogPlay = (late: Late): Story['play'] => async ({ canvasElement }) => 
   await saveCarbs(canvas);
   await expect(canvas.queryByRole('dialog', { name: 'Log carbs' })).toBeNull();
   await expect(loggedRows(canvasElement)).toEqual([{ time: LOG_TIME, grams: LOG_GRAMS, held: true }]);
-  await expect(late.sent).toEqual([[LOGGED.grams, LOG_TIME]]);
+  await expect(late.sent).toEqual([[LOGGED.grams, LOG_CLOCK]]);
+  // The served mark replaces the held one in one draw: never both.
+  const most = mostMarks(canvasElement);
   await late.release();
   await expect(loggedRows(canvasElement)).toEqual([{ time: LOG_TIME, grams: LOG_GRAMS, held: false }]);
+  await expect(most()).toBe(1);
 };
 type LateLog = Late & { send: DayWrites['logCarbs']; reset: () => void };
 const logStory = (layout: 'phone' | 'desktop', late: LateLog, play: Story['play']) => liveStory(layout, {
@@ -903,7 +913,7 @@ const refusedLogPlay = (late: Late): Story['play'] => async ({ canvasElement }) 
   await backToDay(canvas);
   await expect(canvas.getByRole('status')).toHaveTextContent(/Not saved/);
   await userEvent.click(within(canvas.getByRole('status')).getByRole('button', { name: 'Retry' }));
-  await expect(late.sent).toEqual([[LOGGED.grams, LOG_TIME], [LOGGED.grams, LOG_TIME]]);
+  await expect(late.sent).toEqual([[LOGGED.grams, LOG_CLOCK], [LOGGED.grams, LOG_CLOCK]]);
   await expect(loggedRows(canvasElement)).toEqual([{ time: LOG_TIME, grams: LOG_GRAMS, held: true }]);
   await late.release();
   await waitFor(() => expect(canvas.queryByRole('status')).toBeNull());
@@ -917,12 +927,12 @@ export const LateLogCarbsRefusedPhone = refusedLog('phone');
 export const LateLogCarbsRefusedDesktop = refusedLog('desktop');
 
 // Live (#495): Log carbs' Time row opens the system picker, and Save logs the
-// carbs at the time picked.
+// carbs at the time picked, on the clock's day.
 const PICKED = '07:45';
-const logged: [number, string | undefined][] = [];
+const logged: [number, string][] = [];
 const liveLog = (): DayScreenProps['writes'] => ({
   answer: async () => ({ carbEntryId: null }), grams: async () => undefined,
-  logCarbs: async (grams, time) => { logged.push([grams, time]); },
+  logCarbs: async (grams, at) => { logged.push([grams, at]); },
 });
 const timeEditedPlay: Story['play'] = async ({ canvasElement }) => {
   const canvas = within(canvasElement);
@@ -934,10 +944,11 @@ const timeEditedPlay: Story['play'] = async ({ canvasElement }) => {
   await expect(entry.getByRole('button', { name: /Time/ })).toHaveTextContent(PICKED);
   await userEvent.click(entry.getByRole('button', { name: 'Save' }));
   await waitFor(() => expect(canvas.queryByRole('dialog', { name: 'Log carbs' })).toBeNull());
-  await expect(logged).toEqual([[30, PICKED]]);
+  await expect(logged).toEqual([[30, `${LOG_CLOCK.slice(0, 10)} ${PICKED}`]]);
 };
-export const LiveTimeEditedPhone: Story = { ...story('phone', { store: 'wearer', writes: liveLog() }), play: timeEditedPlay };
-export const LiveTimeEditedDesktop: Story = { ...story('desktop', { store: 'wearer', writes: liveLog() }), play: timeEditedPlay };
+const TIME_EDITED = { store: 'wearer', writes: liveLog(), now: () => LOG_CLOCK } as const;
+export const LiveTimeEditedPhone: Story = { ...story('phone', TIME_EDITED), play: timeEditedPlay };
+export const LiveTimeEditedDesktop: Story = { ...story('desktop', TIME_EDITED), play: timeEditedPlay };
 
 // Before the first sync the navigator serves no day with readings: Day opens
 // on the served month's last day up to today (its timeline, not served here,

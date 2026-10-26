@@ -21,5 +21,4 @@
   font-variant-numeric: tabular-nums;
   text-align: right;
 }
-.ui-grams__input:disabled { color: var(--wk-ink-meta); }
 .ui-grams__unit { color: var(--wk-ink-meta); font-size: var(--ui-type-body); }

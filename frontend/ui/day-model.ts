@@ -79,7 +79,7 @@ export function dayChart(state: DayState): DayChartData {
 }
 
 /** A Log carbs entry the screen holds while its save is in flight (ADR 630):
- *  its grams and its time on the day (`YYYY-MM-DD HH:MM:SS`). */
+ *  its grams and its whole time (`YYYY-MM-DD HH:MM`). */
 export type HeldCarbs = { grams: number; t: string };
 
 /** The chart of one served day; null for a day whose timeline is not served.

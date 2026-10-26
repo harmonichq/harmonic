@@ -31,7 +31,8 @@
 // confirmed, and the screen draws at once what the engine will serve after it
 // (ADR 630): no active change, and the change just ended a previous one, with
 // no result until the engine's answer carries the one End saved. An End that
-// fails puts the change back as it was, with "Not saved" and Retry in the bar.
+// fails puts the change back as it was, with "Not saved" and Retry in the bar,
+// and leaves Previous for Changes when no previous change is served.
 //
 // Phone: the header stays put while the page scrolls under it, above the tab
 // bar. Desktop: the rail and one pane up to a reading width; the pane scrolls
@@ -172,6 +173,8 @@ export function ChangesScreen({
     writes.end().then(() => setEnding(false), () => {
       setEnding(false);
       setNotSaved(true);
+      // Previous is never empty (§1.3): with no previous change served, back to Changes.
+      if (previousCount(shown).value === 0) setView('changes');
     });
   };
   const doEnd = () => {

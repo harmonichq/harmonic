@@ -698,12 +698,15 @@ export function createLive({ client, glossary, memory = null,
       await write(() => client.updateCarb(carbEntryId, { grams, certainty: 'exact' }),
         shownDays().map((iso) => `day ${iso}`), rereadDays);
     },
-    /** Today at `time` (`HH:MM`) when the person picked one, else now. */
-    logCarbs: async (grams, time) => {
-      const t = time ? `${now().slice(0, 10)} ${time}:00` : now();
-      const days = [...new Set([...shownDays(), t.slice(0, 10)])];
+    /** At `at`, the entry's whole time (`YYYY-MM-DD HH:MM`), as the Day screen held it. Its day is read
+     *  again last, so it lands as the write resolves and the screen drops the entry it held in that
+     *  same draw (ADR 630). */
+    logCarbs: async (grams, at) => {
+      const t = `${at}:00`;
+      const entryDay = t.slice(0, 10);
+      const others = shownDays().filter((iso) => iso !== entryDay);
       await write(() => client.createCarb({ t, grams, certainty: 'exact', source: 'manual' }),
-        days.map((iso) => `day ${iso}`), () => Promise.all(days.map(day)));
+        [...others, entryDay].map((iso) => `day ${iso}`), () => Promise.allSettled(others.map(day)).then(() => day(entryDay)));
     },
   };
 

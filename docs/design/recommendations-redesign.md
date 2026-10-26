@@ -1496,8 +1496,8 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
 - **2026-10-25 — Insulin summary and Bolus review for the Overview (#631,
   #633).** *Pending the operator's replay; not locked.* The operator asked
   (#631) for two of the cards Tandem Source draws below its day chart: an
-  Insulin summary and a Bolus review, which he named "Bolus review (daily
-  average)". Site changes are not among them; the operator, 2026-10-24: "I
+  Insulin summary and a Bolus review, the latter by the title his request
+  named, Tandem Source's own: "Bolus review (daily average)". Site changes are not among them; the operator, 2026-10-24: "I
   don't need site change data, just the other stuff." The engine serves every
   figure as `/api/explore/insulin?days=N` for the Overview's 14, 30 and 90
   days (#632, ADR 632). The two cards are built in the component library on
@@ -1508,14 +1508,14 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
     "Average daily insulin" in U, with Basal and Bolus beneath it; "Average
     daily boluses", a count, with Manual and Control-IQ beneath it; "Average
     daily carbs" in g. A part prints its share and its units or count.
-  - **Bolus review**, titled "Bolus review (daily average)" on one line: the
-    parenthesis is the title's, not a caption (§2.3 ban 1). Two blocks under
-    their headings: Type (Food, Correction, Override, Control-IQ) and Delivery
+  - **Bolus review**, titled "Bolus review (daily average)" on one line, the
+    title his request named (Tandem Source's own): the parenthesis is the
+    title's, not a caption (§2.3 ban 1). Two blocks under their headings: Type (Food, Correction, Override, Control-IQ) and Delivery
     method (Standard, Extended, Quick, Control-IQ), each row its share and its
     units.
   - **Rows** are label, share, value in three columns. A headline value takes
-    the metric size, a part the body size, all in neutral ink: none of these
-    figures is judged better or worse, so neither card carries colour. Neither
+    the title size (22 px, as MetricFigure's value), a part the body size, all
+    in neutral ink: none of these figures is judged better or worse, so neither card carries colour. Neither
     card prints its window, which the Overview's switch and date span already
     name, and neither carries a control. Nothing to act on.
   - **States.** Populated. A window with no boluses: Bolus at 0.0 U with its
@@ -1523,8 +1523,8 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
     review row at 0.0 U with "–" for its share; the engine serves a share as
     null when its total is zero, and a card never computes one. No data (the
     window null, or no day with delivery): "No data" under the title, as Meal
-    size does. Not yet read: the card's skeleton. Any value the engine serves
-    as null prints "–".
+    size does. Not yet read: the card's skeleton, its own rows in bars at
+    their populated height. Any value the engine serves as null prints "–".
   - **Defaults, pending the replay** (ADR 633), each one the operator may
     change:
     1. The type row is **Food**, as Tandem Source names it, not Day's Meal: an
@@ -1571,11 +1571,12 @@ nothing is removed from the engine or the fixtures for them.
 
 ## 4. Component inventory (approved 2026-10-12)
 
-Twenty-seven components (the TraceChart replaced the CauseWaffle and the
-BasalCard joined, §2.5 2026-10-14; the HabitCard joined, drawn by the
-PatternCard's component, §2.5 2026-10-19; the MealSizeCard joined, §2.5
-2026-10-19; the InsulinSummaryCard and the BolusReviewCard join, §2.5
-2026-10-25, pending the replay). Screens are composed only from these. Every state listed
+Twenty-nine components (the TraceChart replaced the CauseWaffle and the
+BasalCard joined, §2.5 2026-10-14; the Delta joined, §2.5 2026-10-13 and
+2026-10-19; the HabitCard joined, drawn by the PatternCard's component, §2.5
+2026-10-19; the MealSizeCard joined, §2.5 2026-10-19; the IsfCard retired,
+§2.5 2026-10-20 #564; the InsulinSummaryCard and the BolusReviewCard join,
+§2.5 2026-10-25, pending the replay). Screens are composed only from these. Every state listed
 gets a Storybook story in step 3. "Fields" are the only served data a component
 may display; derived values name their formula in the provenance table.
 
@@ -1870,8 +1871,8 @@ unless noted. Loading is a skeleton of the component's own shape.
       height (every row of the cards one height).
 29. **InsulinSummaryCard** (§2.5, 2026-10-25, pending the replay): the
     selected window's insulin as daily averages, titled "Insulin summary".
-    Three blocks, each a headline row at metric size and its parts at body
-    size, every row label, share, value: "Average daily insulin" in U, with
+    Three blocks, each a headline row with its value at the §4.1 title size
+    (22 px, as MetricFigure's value) and its parts at body size, every row label, share, value: "Average daily insulin" in U, with
     Basal and Bolus; "Average daily boluses", with Manual and Control-IQ;
     "Average daily carbs" in g. Neutral ink only. Nothing to act on.
     - States: populated; no boluses in the window (Bolus 0.0 U with its share,
@@ -1886,7 +1887,8 @@ unless noted. Loading is a skeleton of the component's own shape.
     - Phone: below Meal size, before the BolusReviewCard.
 30. **BolusReviewCard** (§2.5, 2026-10-25, pending the replay): the selected
     window's bolus units as daily averages, titled "Bolus review (daily
-    average)" on one line. Two blocks under their headings, every row label,
+    average)" on one line, the title the operator's request named (Tandem
+    Source's own). Two blocks under their headings, every row label,
     share, value in U at body size: Type (Food, Correction, Override,
     Control-IQ) and Delivery method (Standard, Extended, Quick, Control-IQ).
     Neutral ink only. Nothing to act on.

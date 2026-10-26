@@ -21,7 +21,9 @@ const METHODS: Record<BolusMethod, string> = {
 
 export function BolusReviewCard({ data }: { data: BolusReviewData | 'none' | null }) {
   return (
-    <InsulinCard title="Bolus review (daily average)" className="ui-bolus-review" data={data} lines={(d) => [
+    <InsulinCard title="Bolus review (daily average)" className="ui-bolus-review" data={data} shape={[
+      'heading', 'part', 'part', 'part', 'part', 'heading', 'part', 'part', 'part', 'part',
+    ]} lines={(d) => [
       { kind: 'heading', label: 'Type' },
       ...d.byType.map((row) => ({ kind: 'part' as const, label: TYPES[row.key], row, unit: 'U' })),
       { kind: 'heading', label: 'Delivery method' },

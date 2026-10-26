@@ -7,7 +7,8 @@
 // ink: none of these figures is judged better or worse. A share or value the
 // engine serves as null prints "–"; the card computes nothing. Like the other
 // Overview cards it never prints its window. A window with no day of delivery
-// says "No data"; one not read yet is the card's skeleton. Nothing to act on.
+// says "No data"; one not read yet is its skeleton, in its own rows' shape.
+// Nothing to act on.
 //
 // `InsulinCard`, the frame and its rows, is the BolusReviewCard's too.
 import { Fragment } from 'react';
@@ -62,16 +63,43 @@ function InsulinRows({ lines }: { lines: InsulinLine[] }) {
   );
 }
 
-/** The card's frame: its title, then its skeleton, "No data" or its rows. */
-export function InsulinCard<T extends object>({ title, className, data, lines }: {
-  title: string; className: string; data: T | 'none' | null; lines: (data: T) => InsulinLine[];
+/** The card's rows while it loads, in its own shape: the same grid, rules and
+ *  row heights, each cell a bar where its text will be. */
+function SkeletonRows({ shape }: { shape: InsulinLine['kind'][] }) {
+  const bar = (kind: string) => <span className={`ui-skeleton ui-insulin-rows__bar ui-insulin-rows__bar--${kind}`} />;
+  return (
+    <div className="ui-insulin-rows" aria-hidden="true">
+      {shape.map((kind, i) => (
+        <Fragment key={i}>
+          {i > 0 && kind !== 'part' && <div className="ui-insulin-rows__rule" />}
+          {kind === 'heading' ? (
+            <div className="ui-insulin-rows__row">
+              <span className="ui-insulin-rows__heading">{bar('heading')}</span>
+            </div>
+          ) : (
+            <div className={`ui-insulin-rows__row${kind === 'headline' ? ' ui-insulin-rows__row--headline' : ''}`}>
+              <span className="ui-insulin-rows__label">{bar(kind)}</span>
+              {kind === 'part' && <span className="ui-insulin-rows__share">{bar('share')}</span>}
+              <span className="ui-insulin-rows__value">{bar('value')}</span>
+            </div>
+          )}
+        </Fragment>
+      ))}
+    </div>
+  );
+}
+
+/** The card's frame: its title, then its skeleton in `shape`, "No data" or its rows. */
+export function InsulinCard<T extends object>({ title, className, data, shape, lines }: {
+  title: string; className: string; data: T | 'none' | null;
+  shape: InsulinLine['kind'][]; lines: (data: T) => InsulinLine[];
 }) {
-  const heading = <h2 className="ui-scard__title">{title}</h2>;
+  const heading = <h2 className="ui-scard__title ui-scard__heading">{title}</h2>;
   if (data === null) {
     return (
       <section className={`ui-scard ${className}`} aria-busy="true">
         {heading}
-        <span className="ui-skeleton ui-scard__skeleton" aria-hidden="true" />
+        <SkeletonRows shape={shape} />
       </section>
     );
   }
@@ -83,7 +111,9 @@ export function InsulinCard<T extends object>({ title, className, data, lines }:
 
 export function InsulinSummaryCard({ data }: { data: InsulinSummaryData | 'none' | null }) {
   return (
-    <InsulinCard title="Insulin summary" className="ui-insulin-summary" data={data} lines={(d) => [
+    <InsulinCard title="Insulin summary" className="ui-insulin-summary" data={data} shape={[
+      'headline', 'part', 'part', 'headline', 'part', 'part', 'headline',
+    ]} lines={(d) => [
       { kind: 'headline', label: 'Average daily insulin', value: d.insulin, unit: 'U' },
       { kind: 'part', label: 'Basal', row: d.basal, unit: 'U' },
       { kind: 'part', label: 'Bolus', row: d.bolus, unit: 'U' },

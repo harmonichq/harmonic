@@ -33326,6 +33326,217 @@
         }
       }
     },
+    "wearer-no-delivery": {
+      "insulin": {
+        "14": {
+          "basal": {
+            "share": null,
+            "units": null
+          },
+          "bolus": {
+            "share": null,
+            "units": null
+          },
+          "boluses": {
+            "control_iq": {
+              "count": null,
+              "share": null
+            },
+            "count": null,
+            "manual": {
+              "count": null,
+              "share": null
+            }
+          },
+          "by_method": {
+            "control_iq": {
+              "share": null,
+              "units": null
+            },
+            "extended": {
+              "share": null,
+              "units": null
+            },
+            "quick": {
+              "share": null,
+              "units": null
+            },
+            "standard": {
+              "share": null,
+              "units": null
+            }
+          },
+          "by_type": {
+            "control_iq": {
+              "share": null,
+              "units": null
+            },
+            "correction": {
+              "share": null,
+              "units": null
+            },
+            "food": {
+              "share": null,
+              "units": null
+            },
+            "override": {
+              "share": null,
+              "units": null
+            }
+          },
+          "carbs": {
+            "grams": null
+          },
+          "daily_dose": {
+            "units": null
+          },
+          "delivery_days": 0,
+          "window": {
+            "data_days": 14,
+            "end": "2025-05-26 00:00:00",
+            "start": "2025-05-12 00:00:00"
+          }
+        },
+        "30": {
+          "basal": {
+            "share": null,
+            "units": null
+          },
+          "bolus": {
+            "share": null,
+            "units": null
+          },
+          "boluses": {
+            "control_iq": {
+              "count": null,
+              "share": null
+            },
+            "count": null,
+            "manual": {
+              "count": null,
+              "share": null
+            }
+          },
+          "by_method": {
+            "control_iq": {
+              "share": null,
+              "units": null
+            },
+            "extended": {
+              "share": null,
+              "units": null
+            },
+            "quick": {
+              "share": null,
+              "units": null
+            },
+            "standard": {
+              "share": null,
+              "units": null
+            }
+          },
+          "by_type": {
+            "control_iq": {
+              "share": null,
+              "units": null
+            },
+            "correction": {
+              "share": null,
+              "units": null
+            },
+            "food": {
+              "share": null,
+              "units": null
+            },
+            "override": {
+              "share": null,
+              "units": null
+            }
+          },
+          "carbs": {
+            "grams": null
+          },
+          "daily_dose": {
+            "units": null
+          },
+          "delivery_days": 0,
+          "window": {
+            "data_days": 30,
+            "end": "2025-05-26 00:00:00",
+            "start": "2025-04-26 00:00:00"
+          }
+        },
+        "90": {
+          "basal": {
+            "share": null,
+            "units": null
+          },
+          "bolus": {
+            "share": null,
+            "units": null
+          },
+          "boluses": {
+            "control_iq": {
+              "count": null,
+              "share": null
+            },
+            "count": null,
+            "manual": {
+              "count": null,
+              "share": null
+            }
+          },
+          "by_method": {
+            "control_iq": {
+              "share": null,
+              "units": null
+            },
+            "extended": {
+              "share": null,
+              "units": null
+            },
+            "quick": {
+              "share": null,
+              "units": null
+            },
+            "standard": {
+              "share": null,
+              "units": null
+            }
+          },
+          "by_type": {
+            "control_iq": {
+              "share": null,
+              "units": null
+            },
+            "correction": {
+              "share": null,
+              "units": null
+            },
+            "food": {
+              "share": null,
+              "units": null
+            },
+            "override": {
+              "share": null,
+              "units": null
+            }
+          },
+          "carbs": {
+            "grams": null
+          },
+          "daily_dose": {
+            "units": null
+          },
+          "delivery_days": 0,
+          "window": {
+            "data_days": 90,
+            "end": "2025-05-26 00:00:00",
+            "start": "2025-02-25 00:00:00"
+          }
+        }
+      }
+    },
     "wearer-pinned": {
       "outcomes": {
         "14": {

@@ -35,7 +35,8 @@
 }
 .ui-insulin-rows__share { color: var(--wk-ink-meta); }
 .ui-insulin-rows__value { color: var(--wk-ink); }
-.ui-insulin-rows__unit { color: var(--wk-ink-meta); font-size: var(--ui-type-label); }
+/* The unit inside its value's line, so a row with a unit is as tall as one without. */
+.ui-insulin-rows__unit { color: var(--wk-ink-meta); font-size: var(--ui-type-label); line-height: 1; }
 
 /* A block's headline: its label strong and across the share column, its value
    at the metric size. */
@@ -51,3 +52,12 @@
   letter-spacing: -.01em;
 }
 .ui-insulin-rows__row--headline .ui-insulin-rows__unit { font-weight: var(--ui-weight-regular); letter-spacing: 0; }
+
+/* While loading, a bar where each cell's text will be, on the row's own line
+   height, so the skeleton stands as tall as the rows that replace it. */
+.ui-insulin-rows__bar { display: inline-block; height: 12px; vertical-align: middle; }
+.ui-insulin-rows__bar--headline { width: 168px; height: 14px; }
+.ui-insulin-rows__bar--heading { width: 120px; height: 14px; }
+.ui-insulin-rows__bar--part { width: 88px; }
+.ui-insulin-rows__bar--share { width: 32px; }
+.ui-insulin-rows__bar--value { width: 52px; }

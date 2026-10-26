@@ -15,7 +15,7 @@
 - [x] 3.2 `frontend/ui/components/InsulinSummaryCard/` (tsx, css, stories) and `frontend/ui/components/BolusReviewCard/` (tsx, css, stories), in the library's idiom (MealSizeCard, BasalCard), tokens only from `frontend/ui/tokens.css`
 - [x] 3.3 Stories, each with a play, at 390 and at half the Overview's 1120 desktop row: Populated (wearer, 30 d), No boluses (wearer-no-bolus, 30 d), No data (wearer-unsynced), Loading; plays assert each printed number's source and that no share is printed where the engine served none
 - [x] 3.4 `npm run test:ui` clean for every new story (`UI_STORY=insulinsummarycard`, `UI_STORY=bolusreviewcard` while iterating)
-- [ ] 3.5 The ui-craft cold critique: a fresh read-only reviewer given only the lock doc (with this change's amendment) and the rendered stories, reporting violations of the lock, the design-rules bans and a persona walk; its confirmed findings fixed and the prechecks re-run before 4.1
+- [x] 3.5 The ui-craft cold critique: a fresh read-only reviewer given only the lock doc (with this change's amendment) and the rendered stories, reporting violations of the lock, the design-rules bans and a persona walk; its confirmed findings fixed and the prechecks re-run before 4.1
 
 ## 4. The replay
 

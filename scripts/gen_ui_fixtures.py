@@ -39,7 +39,9 @@ Two committed outputs, one generator, one ``--check``:
   ``/api/explore/insulin`` (#632) for each window, as served, is held for the
   wearer (every bolus type and delivery method), its first days (fewer days with
   delivery), ``wearer-no-bolus`` (the wearer's history with its boluses left
-  out, so no bolus units; ADR 633) and the unsynced store (no window).
+  out, so no bolus units; ADR 633), ``wearer-no-delivery`` (its boluses and
+  basal both left out: readings, but no day of delivery) and the unsynced store
+  (no window).
 
   ``changes`` holds the Changes components' answers by store (the admission,
   every Trial on the roster, the Focus records with their served titles). The
@@ -580,6 +582,12 @@ def fixtures() -> dict:
             ui_patient.materialize(store, trial=False, boluses=False)
             reconcile_ingested_follow_up(store)
         overview["wearer-no-bolus"] = {"insulin": _insulins(_serve(no_bolus))}
+        # A window with readings but no delivery: no bolus and no basal row.
+        no_delivery = scratch / "wearer-no-delivery.sqlite"
+        with Store.open(str(no_delivery)) as store:
+            ui_patient.materialize(store, trial=False, boluses=False, basal=False)
+            reconcile_ingested_follow_up(store)
+        overview["wearer-no-delivery"] = {"insulin": _insulins(_serve(no_delivery))}
 
         overview["wearer-unsynced"] = {"outcomes": _outcomes(unsynced_client),
                                        "meal_size": _meal_sizes(unsynced_client),
@@ -827,18 +835,22 @@ def _require_insulin(overview: dict) -> None:
     """Fail unless each insulin store still serves its state: the wearer every type
     and method row above zero at 90 days, its first days fewer days with delivery
     than the wearer at 14, the no-bolus store days with delivery and no bolus
-    units at 30, and the unsynced store no window."""
+    units at 30, the no-delivery store a window with no day of delivery at 14,
+    and the unsynced store no window."""
     wearer = overview["wearer"]["insulin"]
     rows = {f"{group}.{row}": part["units"] for group in ("by_type", "by_method")
             for row, part in wearer["90"][group].items()}
     first, full = (overview[store]["insulin"]["14"]["delivery_days"]
                    for store in ("wearer-first-days", "wearer"))
     no_bolus = overview["wearer-no-bolus"]["insulin"]["30"]
+    no_delivery = overview["wearer-no-delivery"]["insulin"]["14"]
     if (not all(units and units > 0 for units in rows.values()) or first >= full
             or not no_bolus["delivery_days"] or no_bolus["bolus"]["units"] != 0
+            or no_delivery["window"] is None or no_delivery["delivery_days"] != 0
             or overview["wearer-unsynced"]["insulin"]["90"]["window"] is not None):
         raise SystemExit(f"the insulin stores no longer serve their states: {rows} {first} {full} "
-                         f"{no_bolus['delivery_days']} {no_bolus['bolus']['units']}")
+                         f"{no_bolus['delivery_days']} {no_bolus['bolus']['units']} "
+                         f"{no_delivery['window']} {no_delivery['delivery_days']}")
 
 
 def _day_navigator(client: TestClient) -> dict:

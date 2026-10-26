@@ -1,4 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { flushSync } from 'react-dom';
+import { createRoot } from 'react-dom/client';
 import { expect } from 'storybook/test';
 import { answers, type Sourced } from '../../answers';
 import { insulinSummary, type OverviewStore } from '../../overview-model';
@@ -10,7 +12,10 @@ import { InsulinSummaryCard } from './InsulinSummaryCard';
 // - Populated: the simulated wearer at 30 d, every part served.
 // - No boluses: wearer-no-bolus at 30 d, the same history with its boluses
 //   left out: Bolus 0.0 U at 0%, the boluses 0.0 with no share.
-// - No data (the unsynced store) and not yet read (the skeleton).
+// - No delivery: wearer-no-delivery at 14 d, a window of readings with no
+//   day of delivery, which says "No data" as the unsynced store does.
+// - No data (the unsynced store) and not yet read (the skeleton in the
+//   card's own rows, as tall as the populated card).
 // Phone at 390; desktop at half the Overview's 1120 row, beside the
 // BolusReviewCard: (1120 − the cards' 24 px gap) ÷ 2 = 548 px of card in the
 // desktop frame's 32 px margins.
@@ -99,16 +104,36 @@ const none: Story['play'] = async ({ canvasElement }) => {
   await expect(canvasElement.querySelectorAll('[data-source]').length).toBe(0);
 };
 
-/** The skeleton under the title, and no number. */
+/** The card's height populated, at the width `card` has: the populated card
+ *  rendered beside it, out of sight, measured and removed. */
+async function populatedHeight(card: Element) {
+  const box = card.parentElement!.appendChild(document.createElement('div'));
+  box.style.cssText = `position: absolute; visibility: hidden; width: ${card.getBoundingClientRect().width}px`;
+  const root = createRoot(box);
+  flushSync(() => root.render(<InsulinSummaryCard data={populated} />));
+  await document.fonts.ready;
+  const height = box.firstElementChild!.getBoundingClientRect().height;
+  root.unmount();
+  box.remove();
+  return height;
+}
+
+/** The skeleton in the card's own rows, as tall as the populated card within a
+ *  few px, so nothing moves when the answer lands; no number. */
 const loading: Story['play'] = async ({ canvasElement }) => {
-  await expect(canvasElement.querySelector('.ui-insulin-summary')?.getAttribute('aria-busy')).toBe('true');
-  await expect(canvasElement.querySelectorAll('.ui-skeleton').length).toBe(1);
+  const card = canvasElement.querySelector('.ui-insulin-summary')!;
+  await expect(card.getAttribute('aria-busy')).toBe('true');
+  await expect(card.querySelectorAll('.ui-skeleton').length).toBeGreaterThan(1);
   await expect(canvasElement.querySelectorAll('[data-source]').length).toBe(0);
+  const skeleton = card.getBoundingClientRect().height;
+  await expect(Math.abs(skeleton - await populatedHeight(card))).toBeLessThanOrEqual(4);
 };
 
 const populated = insulinSummary('wearer', WINDOW);
 const noBoluses = insulinSummary('wearer-no-bolus', WINDOW);
 const noData = insulinSummary('wearer-unsynced', WINDOW);
+// Readings but no day of delivery (no bolus and no basal row): a window, and no data.
+const noDelivery = insulinSummary('wearer-no-delivery', '14');
 
 export const Populated: Story = { args: { data: populated }, play: printed('wearer') };
 export const PopulatedDesktop: Story = { args: { data: populated }, parameters: HALF, play: printed('wearer') };
@@ -118,5 +143,7 @@ export const NoBolusesDesktop: Story = {
 };
 export const NoData: Story = { args: { data: noData }, play: none };
 export const NoDataDesktop: Story = { args: { data: noData }, parameters: HALF, play: none };
+export const NoDelivery: Story = { args: { data: noDelivery }, play: none };
+export const NoDeliveryDesktop: Story = { args: { data: noDelivery }, parameters: HALF, play: none };
 export const Loading: Story = { args: { data: null }, play: loading };
 export const LoadingDesktop: Story = { args: { data: null }, parameters: HALF, play: loading };

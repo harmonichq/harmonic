@@ -20,9 +20,10 @@ span already name. Neither card carries a control: the Overview is a report.
   "Control-IQ", each its `share` and its `count`.
 - "Average daily carbs": `carbs.grams` with "g".
 
-**Bolus review**, its title one line, "Bolus review (daily average)", in
-Connor's own wording (#631); the parenthesis is the title's, not a caption
-(§2.3 ban 1). Two blocks under their headings:
+**Bolus review**, its title one line, "Bolus review (daily average)", the
+title Connor's request named (#631), which is Tandem Source's own; the
+parenthesis is the title's, not a caption (§2.3 ban 1). Two blocks under their
+headings:
 
 - "Type": "Food", "Correction", "Override", "Control-IQ" from `by_type`, each
   its `share` and `units` with "U".
@@ -30,8 +31,8 @@ Connor's own wording (#631); the parenthesis is the title's, not a caption
   `by_method`, each its `share` and `units`.
 
 Rows are label, share, value in three columns; the headline values take the
-§2.2 metric size, the parts the body size, in neutral ink with no colour, since
-none of these figures is judged good or bad.
+§4.1 title size (22 px, as MetricFigure's value), the parts the body size, in
+neutral ink with no colour, since none of these figures is judged good or bad.
 
 ## ADR 633 — Triage defaults the replay may change
 

@@ -104,6 +104,30 @@ const EXPECTED = {
           [40, 60, 31, 0.4, 11.8, 7, 5, 6, 31],
           [60, null, 1, 153, 153, 153, 120, 96, 1],
         ] },
+      },
+      // The Insulin summary and the Bolus review at the window shown (ADR 634),
+      // every figure as the cards print it: each row its share in whole percent,
+      // then its units or count to one decimal; the headlines' daily insulin and
+      // boluses to one decimal and carbs to a whole gram. The showcase's boluses
+      // carry no delivery method, so Standard, Extended and Quick read 0.0 U
+      // (ADR 632), and 90 d holds 30 days with delivery.
+      insulin: {
+        14: {
+          summary: { insulin: '21.0', basal: ['68', '14.3'], bolus: ['32', '6.7'], boluses: '3.3',
+            manual: ['39', '1.3'], controlIq: ['61', '2.0'], carbs: '55' },
+          byType: [['food', '83', '5.6'], ['correction', '7', '0.5'], ['override', '0', '0.0'],
+            ['control_iq', '10', '0.7']],
+          byMethod: [['standard', '0', '0.0'], ['extended', '0', '0.0'], ['quick', '0', '0.0'],
+            ['control_iq', '10', '0.7']],
+        },
+        90: {
+          summary: { insulin: '20.0', basal: ['71', '14.3'], bolus: ['29', '5.7'], boluses: '3.1',
+            manual: ['36', '1.1'], controlIq: ['64', '2.0'], carbs: '51' },
+          byType: [['food', '84', '4.8'], ['correction', '4', '0.2'], ['override', '0', '0.0'],
+            ['control_iq', '12', '0.7']],
+          byMethod: [['standard', '0', '0.0'], ['extended', '0', '0.0'], ['quick', '0', '0.0'],
+            ['control_iq', '12', '0.7']],
+        },
       } },
     day: { latest: '2024-06-30', insulin: 19.56, firstLowBg: 48,
       // The Day swipe's adjacent days (ADR 619): none after the latest. The served
@@ -272,6 +296,7 @@ test(`the live adapter serves each tab's model from the ${CASE} store`, async (t
   const overview = await import('../overview-model.ts');
   const day = await import('../day-model.ts');
   const settings = await import('../settings-model.ts');
+  const { formatValue } = await import('../provenance.js');
 
   const client = makeDeps({ fetch });
   const live = createLive({ client, glossary: [] });
@@ -510,6 +535,8 @@ test(`the live adapter serves each tab's model from the ${CASE} store`, async (t
     }, expected.overview.basal);
     const printed = (value) => (value === null ? null : Math.round(value));
     const tenth = (value) => (value === null ? null : Math.round(value * 10) / 10);
+    /** A served figure as its card prints it, "–" where the engine serves none. */
+    const print = (figure) => (figure === null ? '–' : formatValue(figure.value, figure.format));
     for (const window of ['14', '90']) {
       await live.readWindow(window);
       const meals = values(overview.mealSize('wearer', window));
@@ -518,6 +545,19 @@ test(`the live adapter serves each tab's model from the ${CASE} store`, async (t
         rows: meals.rows.map((row) => [row.from, row.to, row.meals, tenth(row.p10), tenth(row.p90),
           printed(row.median), printed(row.toPeak), printed(row.at3h), row.at3hMeals]),
       }, expected.overview.mealSize[window], `Meal size at ${window} d`);
+      const summary = overview.insulinSummary('wearer', window);
+      const part = (row) => [print(row.share), print(row.value)];
+      assert.deepEqual({
+        insulin: print(summary.insulin), basal: part(summary.basal), bolus: part(summary.bolus),
+        boluses: print(summary.boluses), manual: part(summary.manual), controlIq: part(summary.controlIq),
+        carbs: print(summary.carbs),
+      }, expected.overview.insulin[window].summary, `Insulin summary at ${window} d`);
+      const review = overview.bolusReview('wearer', window);
+      assert.deepEqual({
+        byType: review.byType.map((row) => [row.key, ...part(row)]),
+        byMethod: review.byMethod.map((row) => [row.key, ...part(row)]),
+      }, { byType: expected.overview.insulin[window].byType, byMethod: expected.overview.insulin[window].byMethod },
+      `Bolus review at ${window} d`);
     }
   });
 

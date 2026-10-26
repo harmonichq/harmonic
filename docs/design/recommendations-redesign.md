@@ -107,7 +107,7 @@ consolidated brief from the first exploration (2026-10-12) as decision history.
 |---|---|---|
 | **Queue** | The ranked recommendations, from Patterns, Habits and Settings, and the Snoozed list. | No logging, no status, no counters. |
 | **Changes** | The current watched change (one Trial or one Focus) with what a Trial did to glucose in its block, and Previous: every earlier change (§2.5, 2026-10-14). | Nothing to act on but End. |
-| **Overview** | Standard metrics over 14, 30 or 90 days against the period of the same length before, the selected window's time-in-ranges bar and glucose profile, the basal estimate, and Meal size (§2.5, 2026-10-19; 2026-10-20 #564). | No Queue items and nothing to act on. |
+| **Overview** | Standard metrics over 14, 30 or 90 days against the period of the same length before, the selected window's time-in-ranges bar and glucose profile, the basal estimate, Meal size, and the Insulin summary and Bolus review (§2.5, 2026-10-19; 2026-10-20 #564; 2026-10-26 #634). | No Queue items and nothing to act on. |
 | **Day** | One day's glucose, insulin and carbs, the day navigator, carb logging and Prompts: Lows and Rises. | No aggregates beyond that day. |
 | **Settings** | Tandem Source (sync and account), Pump profile and the Glossary. | No preferences the engine doesn't have. |
 
@@ -141,7 +141,7 @@ Each row lists a screen's states. Labels only; no state uses prose.
 | Queue · setting detail | current → estimate, range, n, chart | — | Chart skeleton | Unavailable | — (no queued ISF, §2.5 2026-10-20 #564) |
 | Changes | The current Trial (head, trace, ranges, Mean/GMI/CV, Basal vs Pump profile) or Focus, then the Previous row with its count | "No active change" label; no Previous row at 0 | Skeleton | Unavailable + Retry | Maturing, every module as its data forms, each glucose module with its Readings, each Δ green or red by its direction (§2.5, 2026-10-19, colour shows direction); first hours (an empty after: Meals after 0, each after blank) (§2.5, 2026-10-19); Matured (result pill); a carb ratio Trial (Meals before / after; its trace meal by meal under three meals); a whole-profile switch (each setting it moved); **End** (Focus: anytime; Trial: once matured) → confirm sheet → ended; Waiting for pump rows after a Done, between the current change and Previous (§2.5) |
 | Changes · Previous | Every previous change, newest first, no cutoff: setting and block, date, before → after per setting, the result where one was saved | Not reachable (the row is hidden at 0) | — | Unavailable + Retry | The change just ended, without its result until End is saved (§2.5, 2026-10-25) |
-| Overview | 14 d selected; one scrolling page, the summary (window switch, date span, In range, metrics, glucose profile) its first screenful, the basal estimate below, then Meal size (§2.5, 2026-10-19; 2026-10-20 #564) | "No data" label per window, in the basal estimate when none is served, and in Meal size when no meal is counted | Skeleton; a window not yet read shows its profile's and the basal estimate's skeletons; Meal size its skeleton until read | Unavailable + Retry | 30 d / 90 d selected; a previous period without data (the span alone, no changes); Meal size with a size of one meal, or of none ("–"), or with no At 3 h ("–"), and an At 3 h read from fewer than its size's meals ("n of N") (§2.5, 2026-10-20 #602) |
+| Overview | 14 d selected; one scrolling page, the summary (window switch, date span, In range, metrics, glucose profile) its first screenful, the basal estimate below, then Meal size, then the Insulin summary and Bolus review, populated (§2.5, 2026-10-19; 2026-10-20 #564; 2026-10-26 #634) | "No data" label per window, in the basal estimate when none is served, in Meal size when no meal is counted, and in the Insulin summary and Bolus review when the window holds no day with delivery | Skeleton; a window not yet read shows its profile's and the basal estimate's skeletons; Meal size, the Insulin summary and the Bolus review their skeletons until read | Unavailable + Retry | 30 d / 90 d selected; a previous period without data (the span alone, no changes); Meal size with a size of one meal, or of none ("–"), or with no At 3 h ("–"), and an At 3 h read from fewer than its size's meals ("n of N") (§2.5, 2026-10-20 #602) |
 | Day | Latest day with data | "No data" for a day without readings | Chart skeleton | Unavailable + Retry | Stepping to the next or previous day (skeleton) (§2.5, 2026-10-23); mid-swipe, the adjacent day beside it (§2.5, 2026-10-23, the Day swipe follows the finger); month dropped down from the header's day; desktop: the selected week as a ribbon; the Lows row when its count > 0, and under it the Rises row when its count > 0 (§2.5, 2026-10-14 Rises) |
 | Day · Prompts | One prompt of the row's kind, a Low or a Rise, "n / N" among that kind, titled Lows or Rises | Not reachable (the row is hidden at 0) | — | Not saved + Retry | Yes → grams field and keyboard; mid-swipe Not sure; a Rise: Yes · No and Not sure, no False low |
 | Day · Log carbs | Grams field focused, Time = now | — | — | Not saved + Retry, in the bar (§2.5, 2026-10-25) | Time edited |
@@ -1594,6 +1594,45 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
     **Manual**, a bolus you gave, not Control-IQ; and **Standard**,
     **Extended** and **Quick**, how a bolus was delivered.
   §4.2 InsulinSummaryCard and BolusReviewCard follow.
+- **2026-10-26 — the insulin cards on the Overview (#634).** The Insulin
+  summary and the Bolus review, locked as library components (see the
+  header), go on the Overview below Meal size, over the window it shows,
+  following its 14 / 30 / 90 d switch, read from the engine's insulin answer
+  for that window (ADR 634). The coordinating session settled their row on
+  2026-10-26 under the operator's delegation: "No input from me please, do
+  everything unattended." (relayed 2026-10-26).
+  - **The row.** On desktop the two cards share one row of the Overview's
+    cards, two columns, the row as tall as its taller card's content and
+    each card filling it. The equal-height rule (`grid-auto-rows: 1fr`,
+    2026-10-20 #564) stays on the basal estimate's and Meal size's rows, so
+    nothing above the insulin row stretches to it: the insulin row is the
+    one row of cards not at the shared height. On the phone they stack after
+    Meal size, Insulin summary first.
+  - **Words.** The seven words the 2026-10-25 amendment admitted ahead of
+    their rows, Bolus, Override, Food, Manual, Standard, Extended and Quick,
+    join §1.5 in that amendment's wording, and Settings · Glossary lists
+    them.
+  - **Must survive** (each shown in a render or a story's play), superseding
+    the 2026-10-20 #564 list:
+    - the 14 / 30 / 90 d switch moves the basal estimate, Meal size and the
+      insulin cards together (`Screens/Overview` choose 30);
+    - the basal estimate's and Meal size's rows one height, none half empty,
+      on desktop (`Screens/Overview` Estimates Desktop);
+    - the insulin row's two cards one height with each other, the row as
+      tall as its taller card's content (`Screens/Overview` Estimates
+      Desktop);
+    - the phone's one column in proportion, Meal size then Insulin summary
+      then Bolus review (`Screens/Overview` Estimates Phone);
+    - the basal estimate's and Meal size's states and the insulin cards' No
+      data and skeleton (`BasalCard`, `MealSizeCard`, `InsulinSummaryCard`,
+      `BolusReviewCard`, `Screens/Overview` No data);
+    - the Overview as one scrolling page, the summary its first screenful
+      (`Screens/Overview` Scrolled);
+    - the basal and carb ratio Setting cards with Done, Undo, Not on pump and
+      Snooze, and the Snoozed list's Restore (`Screens/Queue`);
+    - a correction-factor Trial on Changes, with its before → after and its
+      result pill (`Screens/Changes`).
+  §1.1, §1.3, §1.5 and §4.2 InsulinSummaryCard and BolusReviewCard follow.
 
 ### 2.6 Deferred (not cut)
 Not built in the current screens. The engine still serves what each needs, and
@@ -1926,7 +1965,9 @@ unless noted. Loading is a skeleton of the component's own shape.
       `boluses.manual.count, share`, `boluses.control_iq.count, share`,
       `carbs.grams`, read from `/api/explore/insulin?days=N`.
     - Desktop: below Meal size, half the Overview's row beside the
-      BolusReviewCard, at its height.
+      BolusReviewCard, at its height; the row is its own, as tall as the
+      taller card's content, and stretches no row above it (§2.5,
+      2026-10-26 #634).
     - Phone: below Meal size, before the BolusReviewCard.
 30. **BolusReviewCard** (§2.5, 2026-10-25, locked 2026-10-26): the selected
     window's bolus units as daily averages, titled "Bolus review (daily
@@ -1943,8 +1984,9 @@ unless noted. Loading is a skeleton of the component's own shape.
       control_iq`, each `units, share`, read from
       `/api/explore/insulin?days=N`.
     - Desktop: below Meal size, half the Overview's row beside the
-      InsulinSummaryCard, at its height.
-    - Phone: below the InsulinSummaryCard.
+      InsulinSummaryCard, at its height, in the row the InsulinSummaryCard
+      sets out (§2.5, 2026-10-26 #634).
+    - Phone: below the InsulinSummaryCard, the Overview's last card.
 
 **Changes**
 

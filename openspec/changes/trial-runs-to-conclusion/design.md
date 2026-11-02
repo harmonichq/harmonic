@@ -1,6 +1,6 @@
 # Design
 
-## ADR PENDING — A Trial short of its data days counts until its watch window ends
+## ADR 647 — A Trial short of its data days counts until its watch window ends
 
 **Context.** The maturing rule asked for 14 data days inside a period of 14 days. For
 a Trial whose target data lands on most days that holds. For a block-bound carb ratio

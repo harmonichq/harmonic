@@ -149,6 +149,7 @@ Each row lists a screen's states. Labels only; no state uses prose.
 | Settings · Tandem Source | Sync rows + account rows | Account "Not set" + Update | — | — | Updating credentials |
 | Settings · Pump profile | The active profile's segments | "No profile" label | — | — | — |
 | Settings · Glossary | Alphabetical terms | — | — | — | — |
+| Advisory notice | Glossary's Advisory term and meaning, + Understood; before any tab, until Understood in this browser (§2.5, 2026-11-02) | — | — | — | — |
 
 ### 1.3a Ending a change (decided 2026-10-12)
 - **End** is a compact secondary action on the active change. There is no note
@@ -190,6 +191,7 @@ the system's own edge-swipe back is left to the platform, never overridden.
 
 | Term | Kind | Meaning |
 |---|---|---|
+| **Advisory** | noun | Harmonic suggests pump settings from your own data. It never changes your pump and it is not medical advice. Review with your clinician before changing a setting; any change is your responsibility. |
 | **Queue** | noun | The ranked list of recommendations. |
 | **Pattern** | noun | A recurring glucose outcome the engine detected, such as highs after meals. |
 | **Habit** | noun | Something you do that the engine counts toward a glucose outcome, queued on its own when no Pattern holds it, such as a meal with no bolus. |
@@ -319,7 +321,8 @@ in §2.
 ### 2.3 Absolute bans
 1. **Microcopy:** any sentence, question, subtitle, caption, explanation,
    empty-state prose or tooltip sentence. The Glossary definitions are the only
-   exception.
+   exception, wherever they are shown: the Glossary and the Advisory notice
+   (§2.5, 2026-11-02).
 2. **Predictions** of any kind.
 3. **Invented labels, actions, advice, thresholds or targets.** Every domain
    term comes from §1.5; plain interface words are exempt (amendment
@@ -1637,6 +1640,18 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   shares" and "every row of the cards one height" now read as the basal
   estimate's and Meal size's rows, the insulin row sized to its own content.
 
+- **2026-11-02 — the Advisory notice on first open.** The app had dropped the
+  old UI's "Advisory only" footer, so nothing on screen said the numbers are
+  suggestions to review with a clinician. The operator: "I'm not sure if footer
+  is the best way of conveying this information, but some kind of advisory, I
+  guess, sure," choosing "First-open notice" over a line on each Setting card and
+  a permanent footer. Before any tab, the app shows §1.5's **Advisory** term and
+  its meaning, with one primary, Understood. Understood is remembered in this
+  browser; a browser that keeps nothing shows the notice on each load. The
+  sentence is §1.5's own text, so ban 1's Glossary exception covers it and the
+  word has one source; the Glossary lists it to read again. No tab reads the
+  engine until Understood. §1.3 and §4.2 follow.
+
 ### 2.6 Deferred (not cut)
 Not built in the current screens. The engine still serves what each needs, and
 nothing is removed from the engine or the fixtures for them.
@@ -2118,6 +2133,15 @@ unless noted. Loading is a skeleton of the component's own shape.
       control_iq_bolus, total` (ADR 492); `null` serves no bar.
     - Desktop: the same, the parts in one row, beside the Lows and Rises rows
       under the selected week.
+
+**The app**
+
+22. **AdvisoryNotice**: §1.5's Advisory term as a title, its meaning beneath,
+    and Understood, the one primary, centred on the canvas before any tab
+    (§2.5, 2026-11-02).
+    - States: default.
+    - Fields: §1.5's own text.
+    - Desktop: the same.
 
 **Settings**
 

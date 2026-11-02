@@ -311,7 +311,9 @@ BRAND = ("H", "Harmonic")
 SETTINGS_LABELS = ("State", "OK", "Failed", "Last success", "Last attempt", "Error", "Data",
                    "Email", "Region", "Password", "Token", "Set", "Not set", "Update", "Start", "Target",
                    "Max bolus", "DIA", "No profile", "Unavailable", "Snoozed", "Until",
-                   "Glossary")
+                   "Glossary",
+                   # The Advisory notice's one action (§2.5, 2026-11-02).
+                   "Understood")
 # The account the stories show as set: an invented address on a reserved
 # domain, posted through the API and masked before it is written anywhere.
 SYNTHETIC_EMAIL = "wearer@example.invalid"

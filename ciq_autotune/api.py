@@ -23,9 +23,11 @@ extra on a core-only install.
 from __future__ import annotations
 
 import contextvars
+import ipaddress
 import json
 import logging
 import re
+import secrets
 import sqlite3
 import threading
 import time
@@ -333,9 +335,12 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 # A worker that died is already reported; shutdown still completes.
                 logger.exception("The warm worker had stopped")
 
+    # A page load cannot carry the bearer token, so a server with a token
+    # publishes no generated interface rather than an ungated one; without the
+    # schema FastAPI registers none of its documentation routes.
     app = FastAPI(title="Harmonic", version="0.1.0",
                   summary="Local, advisory tuning for Tandem pumps using Control-IQ® technology.",
-                  openapi_url="/api/openapi.json", docs_url="/api/docs",
+                  openapi_url=None if token else "/api/openapi.json", docs_url="/api/docs",
                   redoc_url="/api/redoc",
                   swagger_ui_oauth2_redirect_url="/api/docs/oauth2-redirect",
                   lifespan=lifespan)
@@ -679,7 +684,10 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                      serve_stale=serve_stale)
 
     def require_token(authorization: str = Header(default="")) -> None:
-        if token and authorization != f"Bearer {token}":
+        # Bytes, because compare_digest refuses a str holding non-ASCII and the
+        # header is whatever the caller sent.
+        if token and not secrets.compare_digest(authorization.encode(),
+                                                 f"Bearer {token}".encode()):
             raise HTTPException(status_code=401, detail="missing or invalid bearer token")
 
     # #94: these file routes carry no `-> FileResponse` return annotation, and
@@ -2033,6 +2041,19 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     return app
 
 
+class OpenServeRefused(RuntimeError):
+    """``serve`` was asked to bind beyond loopback with no API token."""
+
+
+def _is_loopback(host: str) -> bool:
+    if host == "localhost":
+        return True
+    try:
+        return ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        return False
+
+
 def serve(host: str = DEFAULT_HOST, port: int = DEFAULT_PORT,
           db_path: Optional[str] = None, token: Optional[str] = None,
           enable_fetch_loop: Optional[bool] = None) -> None:
@@ -2040,9 +2061,21 @@ def serve(host: str = DEFAULT_HOST, port: int = DEFAULT_PORT,
 
     Pass ``enable_fetch_loop=False`` to skip the startup live-fetch (safe for
     scratch or synthetic DBs where Tandem credentials are not available).
+
+    Raises :class:`OpenServeRefused` for a non-loopback ``host`` with no token,
+    from the argument or the environment: everything the API serves is one
+    person's health record.
     """
+    configured = token if token is not None else resolve_runtime_configuration(
+        DEFAULT_DB, credentials.DEFAULT_KEY_PATH).api_token
+    if not configured and not _is_loopback(host):
+        raise OpenServeRefused(
+            f"error: refusing to serve on {host} with no API token. "
+            "Set HARMONIC_API_TOKEN or pass --token (any long random string), "
+            "or bind to 127.0.0.1.")
     import uvicorn
 
+    print(f"Serving Harmonic API on http://{host}:{port} (db: {db_path})")
     uvicorn.run(create_app(db_path=db_path, token=token,
                            enable_fetch_loop=enable_fetch_loop, warm_on_start=True),
                 host=host, port=port)

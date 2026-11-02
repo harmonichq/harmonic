@@ -38,7 +38,7 @@ RULES = (
                    re.compile(r'ArgumentParser\(prog="(?P<identifier>[^"]+)"')),
     IdentifierRule("ciq_autotune/cli.py", "CLI command examples",
                    re.compile(r'^\s*(?P<identifier>[a-z0-9-]+)\s+(?:fetch|basal|backtest|dia-sweep|report|outcomes)', re.MULTILINE)),
-    IdentifierRule("ciq_autotune/cli.py", "serve banner",
+    IdentifierRule("ciq_autotune/api.py", "serve banner",
                    re.compile(r'Serving\s+(?P<identifier>[A-Za-z0-9-]+)\s+API')),
     IdentifierRule("ciq_autotune/cli.py", "report extra package name",
                    re.compile(r'pip install (?P<identifier>[^\[\s]+)\[report\]')),

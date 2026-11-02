@@ -7,6 +7,7 @@
 # Raw `docker run` equivalent:
 #   docker run -d --name harmonic -p 8765:8765 \
 #     -e TIMEZONE_NAME=America/Phoenix \
+#     -e HARMONIC_API_TOKEN=<any long random string> \
 #     -v harmonic-data:/app/tconnect-data \
 #     ghcr.io/harmonichq/harmonic:latest
 # One-time migration for existing Compose installs: copy the project-prefixed
@@ -40,11 +41,10 @@ services:
       # immediately if this is unset.
       TIMEZONE_NAME: America/New_York
 
-      # --- RECOMMENDED ------------------------------------------------------
-      # Static bearer token gating the API. If unset the API is OPEN — fine on a
-      # loopback bind, but you are publishing port 8765 here, so set a token
-      # (any long random string) unless this host is truly private.
-      # HARMONIC_API_TOKEN: change-me-to-a-long-random-string
+      # Static bearer token gating the API (any long random string). This
+      # container binds beyond loopback, so the server refuses to start without
+      # it. Set it in your shell or in a .env beside this file.
+      HARMONIC_API_TOKEN: ${HARMONIC_API_TOKEN:?set HARMONIC_API_TOKEN to any long random string}
 
       # --- OPTIONAL ---------------------------------------------------------
       # Skip the startup live-fetch (no Tandem login). Use for a first run

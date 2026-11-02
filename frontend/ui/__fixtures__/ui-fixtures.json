@@ -17650,6 +17650,11 @@
   },
   "glossary": [
     {
+      "kind": "noun",
+      "meaning": "Harmonic suggests pump settings from your own data. It never changes your pump and it is not medical advice. Review with your clinician before changing a setting; any change is your responsibility.",
+      "term": "Advisory"
+    },
+    {
       "kind": "metric",
       "meaning": "Glucose 3 hours after a meal's bolus less the reading at the bolus, in mg/dL, for a meal no later meal began within those 3 hours.",
       "term": "At 3 h"

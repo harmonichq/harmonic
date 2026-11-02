@@ -1,0 +1,28 @@
+/* AdvisoryNotice (§4.2): the canvas ground, one column centred in the viewport. */
+.ui-advisory {
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  padding: 16px;
+  background: var(--wk-canvas);
+  font-family: var(--ui-font);
+}
+
+.ui-advisory__body {
+  display: grid;
+  gap: 24px;
+  width: min(100%, 440px);
+}
+
+.ui-advisory__term {
+  margin: 0 0 8px;
+  color: var(--wk-ink);
+  font: var(--ui-weight-strong) var(--ui-type-title) / 1.25 var(--ui-font);
+}
+
+.ui-advisory__meaning {
+  margin: 0;
+  color: var(--wk-ink-body);
+  font: var(--ui-weight-regular) var(--ui-type-body) / 1.45 var(--ui-font);
+}

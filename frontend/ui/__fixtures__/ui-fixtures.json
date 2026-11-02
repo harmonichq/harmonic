@@ -2407,6 +2407,98 @@
       ],
       "trials": [
         {
+          "after": 1.0,
+          "before": 1.4,
+          "block": [
+            120,
+            300
+          ],
+          "changed_at": "2025-04-28 00:00:00",
+          "ending": {
+            "assessment": {
+              "outcomes": [
+                {
+                  "after": 94.9,
+                  "assessment": {
+                    "state": "unclear"
+                  },
+                  "before": 94.7,
+                  "key": "tir",
+                  "unit": "%"
+                },
+                {
+                  "after": 2.0,
+                  "assessment": {
+                    "state": "unclear"
+                  },
+                  "before": 2.6,
+                  "key": "tbr",
+                  "unit": "%"
+                },
+                {
+                  "after": 3.1,
+                  "assessment": {
+                    "state": "unclear"
+                  },
+                  "before": 2.8,
+                  "key": "tar",
+                  "unit": "%"
+                },
+                {
+                  "after": 128.4,
+                  "assessment": {
+                    "state": "context"
+                  },
+                  "before": 118.6,
+                  "key": "mean",
+                  "unit": "mg/dL"
+                },
+                {
+                  "after": 6.4,
+                  "assessment": {
+                    "state": "context"
+                  },
+                  "before": 6.1,
+                  "key": "gmi",
+                  "unit": "%"
+                },
+                {
+                  "after": 25.8,
+                  "assessment": {
+                    "state": "context"
+                  },
+                  "before": 24.0,
+                  "key": "cv",
+                  "unit": "%"
+                },
+                {
+                  "after": 14.814814814814815,
+                  "assessment": {
+                    "state": "unclear"
+                  },
+                  "before": 18.51851851851852,
+                  "key": "nights_with_low",
+                  "unit": "%"
+                }
+              ]
+            },
+            "effective_at": "2025-05-26 01:00:00",
+            "kind": "user_finished"
+          },
+          "id": "basal_rate-02-00-20250428000000",
+          "maturing": {
+            "days_elapsed": 15,
+            "days_required": 14,
+            "gap_count": 0
+          },
+          "parameter": "basal_rate",
+          "slot": "02:00",
+          "state": "complete",
+          "target_metrics": [
+            "tbr"
+          ]
+        },
+        {
           "after": 6.8,
           "before": 8.5,
           "block": [
@@ -2505,107 +2597,15 @@
           },
           "id": "carb_ratio-11-00-20250414000000-840",
           "maturing": {
-            "days_elapsed": 13,
+            "days_elapsed": 14,
             "days_required": 14,
-            "gap_count": 2
+            "gap_count": 3
           },
           "parameter": "carb_ratio",
           "slot": "11:00",
-          "state": "maturing",
-          "target_metrics": [
-            "arc"
-          ]
-        },
-        {
-          "after": 1.0,
-          "before": 1.4,
-          "block": [
-            120,
-            300
-          ],
-          "changed_at": "2025-04-28 00:00:00",
-          "ending": {
-            "assessment": {
-              "outcomes": [
-                {
-                  "after": 94.9,
-                  "assessment": {
-                    "state": "unclear"
-                  },
-                  "before": 94.7,
-                  "key": "tir",
-                  "unit": "%"
-                },
-                {
-                  "after": 2.0,
-                  "assessment": {
-                    "state": "unclear"
-                  },
-                  "before": 2.6,
-                  "key": "tbr",
-                  "unit": "%"
-                },
-                {
-                  "after": 3.1,
-                  "assessment": {
-                    "state": "unclear"
-                  },
-                  "before": 2.8,
-                  "key": "tar",
-                  "unit": "%"
-                },
-                {
-                  "after": 128.4,
-                  "assessment": {
-                    "state": "context"
-                  },
-                  "before": 118.6,
-                  "key": "mean",
-                  "unit": "mg/dL"
-                },
-                {
-                  "after": 6.4,
-                  "assessment": {
-                    "state": "context"
-                  },
-                  "before": 6.1,
-                  "key": "gmi",
-                  "unit": "%"
-                },
-                {
-                  "after": 25.8,
-                  "assessment": {
-                    "state": "context"
-                  },
-                  "before": 24.0,
-                  "key": "cv",
-                  "unit": "%"
-                },
-                {
-                  "after": 14.814814814814815,
-                  "assessment": {
-                    "state": "unclear"
-                  },
-                  "before": 18.51851851851852,
-                  "key": "nights_with_low",
-                  "unit": "%"
-                }
-              ]
-            },
-            "effective_at": "2025-05-26 01:00:00",
-            "kind": "user_finished"
-          },
-          "id": "basal_rate-02-00-20250428000000",
-          "maturing": {
-            "days_elapsed": 15,
-            "days_required": 14,
-            "gap_count": 0
-          },
-          "parameter": "basal_rate",
-          "slot": "02:00",
           "state": "complete",
           "target_metrics": [
-            "tbr"
+            "arc"
           ]
         },
         {

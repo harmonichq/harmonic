@@ -59,14 +59,15 @@ _PROFILE_TARGET = ["tir", "arc"]
 # (#506), each measured across the block rather than at its starting slot.
 _BLOCK_SCOPED = ("carb_ratio", "basal_rate")
 
-# A Trial's maturing window is a fixed backend fact — 14 days of target-metric
+# A Trial's maturing requirement is a fixed backend fact — 14 days of target-metric
 # data-days — never a caller's trend or analysis window (#18): the dock and the
 # Trial roster (``/api/verify/trials``) that Changes reads must report the same
 # maturity for the same change no matter what window the surface was tiled at.
 TRIAL_WINDOW_DAYS = 14
 _MATURE_WINDOW = timedelta(days=TRIAL_WINDOW_DAYS)
 
-# A Trial stays foregrounded through its maturing and review windows.
+# A Trial stays foregrounded through its maturing and review windows, and a Trial
+# short of its data days keeps counting until this horizon (_trial_end).
 # Reconciliation records expiry at this horizon; comparison bounds are separate.
 _WATCH_MULT = 2
 _WATCH_HORIZON = timedelta(days=TRIAL_WINDOW_DAYS * _WATCH_MULT)
@@ -316,6 +317,24 @@ def _is_revert(regimes: List[Regime], mature_window: timedelta) -> bool:
         return False
     a, b, c = regimes[-3], regimes[-2], regimes[-1]
     return c.value == a.value and (c.start - b.start) <= mature_window
+
+
+def _trial_end(changed_at: datetime, now: datetime, data_times) -> datetime:
+    """The end of a Trial's period, which every count and evidence read shares.
+
+    A Trial whose data days fill on schedule runs its 14 days. One short of them
+    keeps counting through the day its last required day lands, whole so that day's
+    meals keep their arcs, and at the watch horizon stops with what it has, so a
+    sparse Trial runs to a conclusion.
+    """
+    horizon = changed_at + _WATCH_HORIZON
+    days = set()
+    for t in sorted(t for t in data_times if changed_at < t <= horizon):
+        days.add(t.date())
+        if len(days) == TRIAL_WINDOW_DAYS:
+            day_end = t.replace(hour=23, minute=59, second=59)
+            return min(now, horizon, max(day_end, changed_at + _MATURE_WINDOW))
+    return min(now, horizon)
 
 
 def _maturing(changed_at: datetime, now: datetime, window_days: int,
@@ -677,9 +696,9 @@ def _reviewable_trials(store, now, *, horizon_start=None):
         if cand.block is not None and target[0] == "arc":
             data_times = [t for t in data_times if _in_block(t, cand.block)]
         # Maturity accrues only from the same bounded Trial period displayed in
-        # the selected detail.  Later observations cannot complete an otherwise
+        # the selected detail.  Observations past it cannot complete an otherwise
         # empty Trial or make its ready-to-judge state imply unavailable evidence.
-        trial_end = min(now, start + mature_window)
+        trial_end = _trial_end(start, now, data_times)
         maturing = _maturing(start, trial_end, TRIAL_WINDOW_DAYS, data_times)
         trials.append(_ReviewTrial(
             view=TrialView(
@@ -693,6 +712,7 @@ def _reviewable_trials(store, now, *, horizon_start=None):
                 deliberate=_deliberate(cand.parameter, start, plan_history),
             ),
             gap_count=_data_gaps(start, trial_end, data_times),
+            period_end=trial_end,
             block=cand.block,
             members=list(cand.members) if cand.members else None,
         ))
@@ -885,6 +905,7 @@ class _ReviewTrial:
 
     view: TrialView
     gap_count: int
+    period_end: datetime
     # The captured wrap-aware arc when this is a block-bound I:C or basal Trial
     # (#581, #500, #506), and an I:C Trial's member starts; ``None`` for every
     # other Trial. Trial-owned identity read off the change's own two settings
@@ -1410,7 +1431,7 @@ def _review_detail(store, trial: _ReviewTrial, now: datetime) -> dict:
         },
         "trial_period": {
             "start": view.changed_at,
-            "end": min(now, changed_at + _MATURE_WINDOW).strftime(_DT_FMT),
+            "end": trial.period_end.strftime(_DT_FMT),
         },
         "focus": focus,
         "readiness": (
@@ -1423,7 +1444,7 @@ def _review_detail(store, trial: _ReviewTrial, now: datetime) -> dict:
                 "message": "This Trial is ready for a before-and-Trial read.",
             }
         ),
-        "evidence": _trial_evidence(store, view, changed_at, now,
+        "evidence": _trial_evidence(store, view, changed_at, trial.period_end,
                                     block=trial.block),
         "limits": _trial_limits(trial),
     })
@@ -1445,7 +1466,7 @@ def _review_detail(store, trial: _ReviewTrial, now: datetime) -> dict:
     return detail
 
 
-def _trial_evidence(store, view: TrialView, changed_at: datetime, now: datetime,
+def _trial_evidence(store, view: TrialView, changed_at: datetime, trial_end: datetime,
                     *, block: Optional[tuple] = None) -> List[dict]:
     """The selected Trial's period-aligned targets, guardrails, and rescue context.
 
@@ -1463,7 +1484,6 @@ def _trial_evidence(store, view: TrialView, changed_at: datetime, now: datetime,
     from .rescue_evidence import eligible_carb_entries
 
     before_start = changed_at - _MATURE_WINDOW
-    trial_end = min(now, changed_at + _MATURE_WINDOW)
     cgm = store.cgm_readings()
     bolus = store.bolus_events()
     carbs = store.carb_entries()
@@ -1557,12 +1577,11 @@ def _retained_trial(store, record, now, *, saved=None):
     if saved is None and _maybe_saved(record):
         saved = store_saved_blocks(store)
     block = retained_block(record, store.settings_snapshots(), saved)
-    end = min(now, start + _MATURE_WINDOW)
     # Store._select is half-open [start, end); _maturing/_data_gaps filter the
     # open-start, closed-end (changed_at, end]. Request [start, end + 1s) so the
     # store's exclusive end can't silently drop a reading landing exactly on end.
     read_start = start.strftime(_DT_FMT)
-    read_end = (end + timedelta(seconds=1)).strftime(_DT_FMT)
+    read_end = (min(now, start + _WATCH_HORIZON) + timedelta(seconds=1)).strftime(_DT_FMT)
     if target[0] == "arc":
         # Meals form over the whole bolus history, as the roster's do, so which
         # bolus opened a meal never depends on the change instant (ADR 470);
@@ -1571,11 +1590,12 @@ def _retained_trial(store, record, now, *, saved=None):
                  if block is None or _in_block(meal.t, block)]
     else:
         times = [r.t for r in store.cgm_readings(start=read_start, end=read_end)]
+    end = _trial_end(start, now, times)
     return _ReviewTrial(TrialView(parameter, record["changed_at"], target,
                                   _maturing(start, end, TRIAL_WINDOW_DAYS, times),
                                   slot=record["slot"], before=record["before"], after=record["after"],
                                   deliberate=record.get("reconciliation", {}).get("state") == "available"),
-                        _data_gaps(start, end, times), block, record.get("members"))
+                        _data_gaps(start, end, times), end, block, record.get("members"))
 
 
 # --- Done: a Setting card's acknowledgment, recorded as a Plan (ADR 518) -----

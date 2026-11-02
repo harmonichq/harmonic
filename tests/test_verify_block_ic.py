@@ -22,7 +22,7 @@ except ImportError:  # pragma: no cover
 from ciq_autotune.api import create_app
 from ciq_autotune.settings import ProfileSegment, ProfileSettings, PumpSettings
 from ciq_autotune.store import Store
-from ciq_autotune.watched_change import review_trials
+from ciq_autotune.watched_change import reconcile_follow_up, review_trials
 
 BASE = datetime(2026, 6, 1)
 SWITCH = datetime(2026, 6, 5, 9)
@@ -381,6 +381,60 @@ class BlockIcIdentityAndCohortTest(unittest.TestCase):
             self.assertEqual(block["maturing"]["days_elapsed"], 1)
             self.assertEqual(block["maturing"]["gap_count"], baseline_gap - 1)
             self.assertEqual(detail["meal_arcs"]["trial_period"]["n_meals"], 1)
+
+    def _seed_sparse_trial(self, meal_days):
+        old, new = _profile(1, _OLD_IC), _profile(2, _NEW_IC)
+        with Store.open(self.tmp.name) as store:
+            store.upsert_settings_snapshot("2026-06-04 09:00:00", PumpSettings(1, (old, new)))
+            store.upsert_settings_snapshot(
+                SWITCH.strftime("%Y-%m-%d %H:%M:%S"), PumpSettings(2, (old, new)))
+            _apply(store, "2026-06-04 08:00:00", _BLOCK, _MEMBERS, 5.0, 4.4)
+            _cgm_span(store, SWITCH - timedelta(days=14), SWITCH + timedelta(days=35))
+            _meals(store, [_meal_at(d, 13) for d in meal_days], 3000, carb_ratio=4.4)
+
+    def _selected_at(self, store, now):
+        roster = review_trials(store, now=now)
+        block = next(t for t in roster["trials"] if t["slot"] is not None)
+        return review_trials(store, now=now, selected=block["id"])["selected"]
+
+    def test_a_sparse_trial_keeps_counting_past_day_fourteen_until_its_fourteenth_day(self):
+        # Nine meal days inside the first fourteen, five more after them, then one
+        # meal past the fourteenth that belongs to no period.
+        self._seed_sparse_trial([*range(1, 10), *range(16, 21), 22])
+        with Store.open(self.tmp.name) as store:
+            at_day_fifteen = _meal_at(15, 13)
+            detail = self._selected_at(store, at_day_fifteen)
+            self.assertEqual(detail["state"], "maturing")
+            self.assertEqual(detail["maturing"]["days_elapsed"], 9)
+            self.assertEqual(detail["trial_period"]["end"],
+                             at_day_fifteen.strftime("%Y-%m-%d %H:%M:%S"))
+
+            detail = self._selected_at(store, _meal_at(19, 14))
+            self.assertEqual(detail["state"], "maturing")
+            self.assertEqual(detail["maturing"]["days_elapsed"], 13)
+
+            detail = self._selected_at(store, _meal_at(25, 13))
+            self.assertEqual(detail["state"], "complete")
+            self.assertEqual(detail["maturing"]["days_elapsed"], 14)
+            self.assertEqual(detail["trial_period"]["end"],
+                             _meal_at(20, 0).strftime("%Y-%m-%d 23:59:59"))
+            self.assertEqual(detail["meal_arcs"]["trial_period"]["n_meals"], 14)
+            arc = next(e for e in detail["evidence"] if e["key"] == "arc")
+            self.assertEqual(arc["trial"]["n_peak"], 14)
+
+    def test_a_trial_counts_nothing_past_its_watch_window(self):
+        # Offset 28 at 13:00 lands past the window's end (the switch was at 09:00
+        # on the block's own date, so it closes at 09:00 of offset 28).
+        self._seed_sparse_trial([*range(1, 10), 27, 28, 29])
+        with Store.open(self.tmp.name) as store:
+            recorded = _meal_at(2, 13)
+            with store.follow_up_transaction():
+                reconcile_follow_up(store, now=recorded, recorded_at=recorded)
+            detail = self._selected_at(store, _meal_at(30, 13))
+            self.assertEqual(detail["state"], "maturing")
+            self.assertEqual(detail["maturing"]["days_elapsed"], 10)
+            self.assertEqual(detail["trial_period"]["end"],
+                             (SWITCH + timedelta(days=28)).strftime("%Y-%m-%d %H:%M:%S"))
 
 
 if __name__ == "__main__":  # pragma: no cover

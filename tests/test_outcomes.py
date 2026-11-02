@@ -202,6 +202,16 @@ class _FakeStore:
         return []
 
 
+def _cadence(first, last, gap=None):
+    """Readings every 5 minutes from ``first`` to ``last``, none inside ``gap``."""
+    cgm, t = [], first
+    while t <= last:
+        if gap is None or not gap[0] <= t < gap[1]:
+            cgm.append(CgmReading(t, bg=120.0))
+        t += timedelta(minutes=5)
+    return cgm
+
+
 class SummarizeAndJsonTest(unittest.TestCase):
     def test_unstamped_meal_reduces_carb_undercount_clean_rate_attribution(self):
         bolus, cgm = dose_stamped_ic_fixture()
@@ -263,6 +273,42 @@ class SummarizeAndJsonTest(unittest.TestCase):
             t += timedelta(minutes=5)
         cov = summarize_outcomes(_FakeStore(cgm), window_days=14, now=now).coverage
         self.assertFalse(cov.consensus)
+
+    def test_sensor_gap_at_window_start_keeps_the_full_window(self):
+        # A history that reaches past the window covers all of it, however long
+        # after the window's start its first reading lands. The gap counts against
+        # CGM-active instead.
+        now = datetime(2026, 6, 20, 0, 0, 0)
+        for window in (14, 30, 90):
+            with self.subTest(window=window):
+                start = now - timedelta(days=window)
+                cgm = _cadence(now - timedelta(days=window + 5), now,
+                               gap=(start, start + timedelta(hours=2)))
+                cov = summarize_outcomes(_FakeStore(cgm), window_days=window, now=now).coverage
+                self.assertEqual(cov.days, window)
+                self.assertLess(cov.cgm_active, 100.0)
+
+    def test_sensor_gap_at_previous_period_start_keeps_the_full_period(self):
+        now = datetime(2026, 6, 20, 0, 0, 0)
+        before = now - timedelta(days=28)
+        cgm = _cadence(before - timedelta(days=5), now,
+                       gap=(before, before + timedelta(hours=2)))
+        previous = summarize_outcomes(_FakeStore(cgm), window_days=14, now=now).previous
+        self.assertEqual(previous.coverage.days, 14)
+
+    def test_history_shorter_than_the_window_stays_short(self):
+        now = datetime(2026, 6, 20, 0, 0, 0)
+        cgm = _cadence(now - timedelta(days=40), now)
+        for window, days in ((14, 14), (30, 30), (90, 40)):
+            with self.subTest(window=window):
+                summary = summarize_outcomes(_FakeStore(cgm), window_days=window, now=now)
+                self.assertEqual(summary.coverage.days, days)
+
+    def test_no_history_before_the_window_serves_an_empty_previous_period(self):
+        now = datetime(2026, 6, 20, 0, 0, 0)
+        cgm = _cadence(now - timedelta(days=10), now)
+        previous = summarize_outcomes(_FakeStore(cgm), window_days=14, now=now).previous
+        self.assertEqual(previous.coverage.days, 0.0)
 
     def test_now_defaults_to_latest_data_not_wallclock(self):
         # Old data, no ``now`` passed — must summarize its own tail, not empty

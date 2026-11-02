@@ -126,8 +126,8 @@ class GlycemicMetrics:
 class Coverage:
     """How much real data backs the panel, and whether it clears the consensus gate.
 
-    ``days`` is the actual span length (window end − first reading, clamped to the
-    selected window); ``cgm_active`` is observed-vs-expected 5-min readings over that
+    ``days`` is the actual span length (window end − the history's first reading,
+    clamped to the selected window); ``cgm_active`` is observed-vs-expected 5-min readings over that
     span (0–100 %). ``consensus`` is true only when the panel clears **both** the
     ≥14-day and ≥70%-coverage bars — otherwise the panel is computed over the real
     span and this labels the shortfall so a renderer shows "12 d @ 61%", not a fake
@@ -370,8 +370,10 @@ def compute_clean_rates(
 
 
 def _span_days(readings, start: datetime, end: datetime) -> float:
-    """The real data span (days) inside the window: from the first reading present to
-    ``end``, capped at the selected window. Empty data → 0 days."""
+    """The real data span (days) inside the window: from the first reading of the whole
+    ``readings`` history to ``end``, capped at the selected window, so a sensor gap at
+    the window's start counts against CGM-active, not the span. Empty data, or a history
+    that begins after ``end`` → 0 days."""
     times = [r.t for r in readings if getattr(r, "bg", None) is not None]
     if not times:
         return 0.0
@@ -418,7 +420,7 @@ def summarize_outcomes(
     w_basal = [e for e in basal if start <= e.t <= now]
 
     metrics = compute_metrics(w_cgm)
-    coverage = compute_coverage(w_cgm, span_days=_span_days(w_cgm, start, now))
+    coverage = compute_coverage(w_cgm, span_days=_span_days(cgm, start, now))
 
     # Each meal converts with its own dose-stamped ISF (ADR 563), as the scenario
     # engine's does.
@@ -439,7 +441,7 @@ def summarize_outcomes(
         span_start=min(p_times).strftime(fmt) if p_times else None,
         span_end=max(p_times).strftime(fmt) if p_times else None,
         metrics=compute_metrics(p_cgm),
-        coverage=compute_coverage(p_cgm, span_days=_span_days(p_cgm, before, start)),
+        coverage=compute_coverage(p_cgm, span_days=_span_days(cgm, before, start)),
     )
     return OutcomeSummary(
         schema_version=SCHEMA_VERSION,

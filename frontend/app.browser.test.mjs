@@ -50,6 +50,18 @@ test('each of the five tabs draws its screen', async (t) => {
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
 
+  await t.test('the Advisory notice opens the app once', async () => {
+    await page.goto(BASE);
+    const understood = page.getByRole('button', { name: 'Understood' });
+    await understood.waitFor({ state: 'visible', timeout: 30_000 });
+    assert.equal(await page.locator('.ui-qrow').count(), 0, 'a tab drew behind the notice');
+    await understood.click();
+    await page.locator('.ui-qrow').first().waitFor({ state: 'visible', timeout: 30_000 });
+    await page.reload();
+    await page.locator('.ui-qrow').first().waitFor({ state: 'visible', timeout: 30_000 });
+    assert.equal(await understood.count(), 0, 'the notice came back after Understood');
+  });
+
   for (const { tab, path, primary } of TABS) {
     await t.test(tab, async () => {
       await page.goto(`${BASE}${path}`);

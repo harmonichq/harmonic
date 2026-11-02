@@ -1,7 +1,7 @@
 import os
 import tempfile
 import unittest
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 from io import StringIO
 from pathlib import Path
 
@@ -118,6 +118,33 @@ class DbResolutionTest(unittest.TestCase):
             _, kwargs = create_app.call_args
         self.assertEqual(kwargs.get("db_path"), "/somewhere/else/mine.db")
         self.assertIn("/somewhere/else/mine.db", banner.getvalue())
+
+    def _serve(self, *flags):
+        """What ``serve`` answers with these flags, and whether it ever bound."""
+        from unittest.mock import patch
+
+        with patch("ciq_autotune.api.create_app"), patch("uvicorn.run") as run, \
+             redirect_stdout(StringIO()), redirect_stderr(StringIO()) as errors:
+            code = main(["serve", "--no-fetch", *flags])
+        return code, run.called, errors.getvalue()
+
+    def test_serve_refuses_to_bind_beyond_loopback_with_no_token(self):
+        for flags in (["--host", "0.0.0.0"], ["--host", "0.0.0.0", "--token", ""],
+                      ["--host", "::"], ["--host", "myhost.example"]):
+            code, bound, errors = self._serve(*flags)
+            self.assertEqual(code, 1, flags)
+            self.assertFalse(bound, flags)
+            self.assertIn("HARMONIC_API_TOKEN", errors, flags)
+
+    def test_serve_binds_beyond_loopback_with_a_token(self):
+        self.assertEqual(self._serve("--host", "0.0.0.0", "--token", "t")[:2], (0, True))
+        os.environ["HARMONIC_API_TOKEN"] = "from-the-environment"
+        self.addCleanup(os.environ.pop, "HARMONIC_API_TOKEN", None)
+        self.assertEqual(self._serve("--host", "0.0.0.0")[:2], (0, True))
+
+    def test_serve_binds_loopback_with_no_token(self):
+        for host in ("127.0.0.1", "::1", "localhost"):
+            self.assertEqual(self._serve("--host", host, "--token", "")[:2], (0, True), host)
 
 
 class FetchWindowTest(unittest.TestCase):

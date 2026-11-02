@@ -97,9 +97,10 @@ uv run harmonic fetch --days 120
 uv run harmonic analyze                 # human-readable text
 uv run harmonic analyze --json          # the AnalysisResult as JSON
 
-# 3. Serve the same result over HTTP and the web UI (localhost; set
-#    HARMONIC_API_TOKEN to gate it — the UI then expects that token pasted into
-#    its Settings page). Starts an hourly background fetch loop too.
+# 3. Serve the same result over HTTP and the web UI. A token is optional on
+#    localhost and required anywhere else (HARMONIC_API_TOKEN or --token); the UI
+#    then expects it pasted into its Settings page. Starts an hourly background
+#    fetch loop too.
 uv run harmonic serve                   # web UI at http://127.0.0.1:8765/
 uv run harmonic serve --host 0.0.0.0 --port 8765 --token secret
 
@@ -117,7 +118,8 @@ They are a small sample. The server registers roughly seventy routes, about half
 of them data endpoints — the Diagnose findings queue, event comparisons,
 scenarios, the Plan draft and its history, the Trial roster
 (`/api/verify/trials`), outcomes, the watched change, the carb log, prompts, focus, the timeline, the model view and more — and the rest the static files the UI loads. The complete list is
-browsable at `/api/docs` (FastAPI's Swagger UI) once `serve` is running.
+browsable at `/api/docs` (FastAPI's Swagger UI) on a server running without a
+token; a server with a token does not publish it.
 
 `fetch` is idempotent: re-pulling an overlapping window merges rather than
 duplicates, so you can run it repeatedly. Windows longer than 31 days are split
@@ -139,12 +141,14 @@ and the Fernet key together, and the entrypoint refuses to start without
 `TIMEZONE_NAME`.
 
 ```sh
-# Set your pump's timezone in docker-compose.yml (TIMEZONE_NAME), then:
+# Set your pump's timezone in docker-compose.yml (TIMEZONE_NAME), put
+# HARMONIC_API_TOKEN=<any long random string> in a .env beside it, then:
 docker compose up -d            # pull the published image + start in background
 docker compose logs -f          # watch startup / the hourly fetch loop
 ```
 
-The web UI is then at `http://localhost:8765/`. By default compose runs the
+The web UI is then at `http://localhost:8765/#token=<token>`, which the browser
+remembers after the first visit. By default compose runs the
 image CI publishes to `ghcr.io/harmonichq/harmonic:latest` on every merge
 to `main`, so updating is just `docker compose pull && docker compose up -d`. To
 build from a local checkout instead, uncomment `build: .` in the compose file.
@@ -162,12 +166,12 @@ it is unset (fail-fast beats a silent "data won't update").
   fetch loop records an error to `/api/status` and keeps serving until credentials
   exist — no restart needed.
 
-**The API is open unless you set a token.** `HARMONIC_API_TOKEN` gates all three
-dozen or so data endpoints — not just the handful listed above, but everything
-the UI reads: your glucose history, your insulin delivery, your pump settings
-and every suggestion derived from them. `docker-compose.yml` publishes port
-8765, so **set a token** unless the host is truly private — an unset token
-leaves all of it readable by anyone who can reach the port.
+**A token is required anywhere but localhost.** `HARMONIC_API_TOKEN` gates all
+three dozen or so data endpoints — not just the handful listed above, but
+everything the UI reads: your glucose history, your insulin delivery, your pump
+settings and every suggestion derived from them. The server refuses to start on
+a non-loopback address without one, and a container always binds one, so an
+existing install that never set a token must add it before updating.
 
 **One volume holds the DB and the encryption key together.**
 `tconnect-data/` (mounted as the `harmonic-data` named volume) contains both

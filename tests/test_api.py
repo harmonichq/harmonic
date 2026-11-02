@@ -1397,6 +1397,14 @@ class ApiAuthTest(unittest.TestCase):
         r = self.client.get("/api/analyze", headers={"Authorization": "Bearer s3cret"})
         self.assertEqual(r.status_code, 200)
 
+    def test_rejects_a_token_outside_ascii(self):
+        r = self.client.get("/api/analyze", headers={"Authorization": b"Bearer \xe9"})
+        self.assertEqual(r.status_code, 401)
+
+    def test_a_server_with_a_token_publishes_no_generated_interface(self):
+        for path in ("/api/openapi.json", "/api/docs", "/api/docs/oauth2-redirect", "/api/redoc"):
+            self.assertEqual(self.client.get(path).status_code, 404, path)
+
     def test_kb_article_is_token_gated(self):
         # #269: the KB markdown endpoint honors the same bearer gate as the rest.
         self.assertEqual(self.client.get("/api/kb/start-here").status_code, 401)

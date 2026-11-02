@@ -201,13 +201,16 @@ def _cmd_analyze(args) -> int:
 
 def _cmd_serve(args) -> int:
     try:
-        from .api import serve
+        from .api import OpenServeRefused, serve
     except RuntimeError as e:
         print(str(e), file=sys.stderr)
         return 1
-    print(f"Serving Harmonic API on http://{args.host}:{args.port} (db: {args.db})")
-    serve(host=args.host, port=args.port, db_path=args.db, token=args.token,
-          enable_fetch_loop=False if args.no_fetch else None)
+    try:
+        serve(host=args.host, port=args.port, db_path=args.db, token=args.token,
+              enable_fetch_loop=False if args.no_fetch else None)
+    except OpenServeRefused as e:
+        print(str(e), file=sys.stderr)
+        return 1
     return 0
 
 

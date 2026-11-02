@@ -803,10 +803,11 @@ deleted (for withdrawn), pending (for waiting), mismatch (for not on pump).
 A Trial's watch phase — the change is in effect but its **outcome delta is not yet
 trustworthy** because post-change data is still accruing ("your 07-06 change is still
 maturing, 6 of 14 days"). Gated on the **target metric's** data accrual (enough
-post-change days to fill the Trial's **fixed 14-day maturing window** — a backend
+post-change days to fill the Trial's **fixed 14 required days** — a backend
 fact no trend or analysis window a caller selects can move), not on model
-sufficiency. Maturity accrues only within the Trial's own bounded period (from the
-change through 14 days after it). The watch dock and Changes print the same served
+sufficiency. Maturity accrues only within the Trial's own period: 14 days after the
+change when its days are in by then, otherwise through the date its 14th day lands,
+otherwise to the end of its 28-day watch window. The watch dock and Changes print the same served
 count, the one the readiness rule compares with the 14 required; a clamp may
 shape Changes' progress bar, never a printed number. Distinct from
 **Settling** (#95), which is the *Diagnose/Review*-side state where the engine withholds

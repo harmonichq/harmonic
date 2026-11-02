@@ -12,6 +12,7 @@ except ImportError:  # pragma: no cover - the core package stays stdlib-only
 from ciq_autotune.api import create_app
 from ciq_autotune.settings import ProfileSegment, ProfileSettings, PumpSettings
 from ciq_autotune.store import Store
+from ciq_autotune.watched_change import reconcile_follow_up
 
 
 BASE = datetime(2026, 6, 1)
@@ -116,12 +117,15 @@ def _seed_maturing_block_ic_trial(path):
 
 
 def _seed_evidence_after_trial_period(path):
-    """A Trial whose only meals land after its own bounded 14-day period."""
+    """A Trial whose only meals land after its own 28-day watch window."""
     with Store.open(path) as store:
         store.upsert_settings_snapshot("2026-06-04 06:00:00", _block_ic_settings(1))
         store.upsert_settings_snapshot("2026-06-05 06:00:00", _block_ic_settings(2))
         _apply_ic_block(store, "2026-06-04 06:00:00",
                         block=(720, 900), members=[720], current=5.0, value=4.6)
+        recorded = datetime(2026, 6, 6)
+        with store.follow_up_transaction():
+            reconcile_follow_up(store, now=recorded, recorded_at=recorded)
         store.upsert_bolus([{
             "seq_num": day,
             "request_time": (BASE + timedelta(days=day - 1, hours=7)).strftime(
@@ -134,7 +138,7 @@ def _seed_evidence_after_trial_period(path):
             "completion": "Completed",
             "insulin": 4.0,
             "carbs": 40.0,
-        } for day in range(20, 27)])
+        } for day in range(34, 41)])
 
 
 def _seed_raw_candidates(path, *, revert=False):

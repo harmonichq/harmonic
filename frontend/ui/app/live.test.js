@@ -792,9 +792,9 @@ test('a Queue or Changes drawn from an answer served while a sync landed is mark
   assert.equal(fake.count('trials', detail), 2, 'the active Trial\'s detail, once again');
 });
 
-test('an answer that stays behind is read again while the page is visible, the last pause repeating, until current (#651)', async () => {
+test('an answer that stays behind is read again while the page is visible, the pause growing to a ceiling, until current (#651)', async () => {
   const fake = fakeClient();
-  let earlier = 10;
+  let earlier = 11;
   fake.client.fetchMealSize = (...args) => {
     fake.calls.push({ name: 'meal-size', args });
     return Promise.resolve({ window: null, sizes: [],
@@ -805,9 +805,46 @@ test('an answer that stays behind is read again while the page is visible, the l
   await live.readTab('overview');
   await Promise.all([live.catchUp('overview'), live.catchUp('overview')]);
   assert.equal(live.behind('overview'), false, 'read again until current, never given up on');
-  assert.deepEqual(pauses, [1000, 2000, 4000, 8000, 15000, 30000, 30000, 30000, 30000, 30000],
-    'the early pauses, then the last one again; one catch-up at a time');
-  assert.equal(fake.count('meal-size', (c) => c.args[0] === 14), 11);
+  assert.deepEqual(pauses, [1000, 2000, 4000, 8000, 15000, 30000, 60000, 120000, 240000, 300000, 300000],
+    'the early pauses, then doubling to five minutes, which repeats; one catch-up at a time');
+  assert.equal(fake.count('meal-size', (c) => c.args[0] === 14), 12);
+});
+
+test('a catch-up stops once its tab is no longer on screen, and goes on when asked for again (#651)', async () => {
+  const fake = fakeClient();
+  let earlier = 4;
+  fake.client.fetchMealSize = (...args) => {
+    fake.calls.push({ name: 'meal-size', args });
+    return Promise.resolve({ window: null, sizes: [],
+      ...(args[0] === 14 && earlier-- > 0 ? { input_data_age: { revision: 1, covers_to: '2026-01-01 00:00:00' } } : {}) });
+  };
+  let tab = 'overview';
+  const pauses = [];
+  const live = createLive({ client: fake.client, glossary: [],
+    pause: (ms) => { pauses.push(ms); if (pauses.length === 2) tab = 'queue'; return Promise.resolve(); } });
+  await live.readTab('overview');
+  await live.catchUp('overview', () => tab === 'overview');
+  assert.equal(live.behind('overview'), true, 'still marked');
+  assert.equal(fake.count('meal-size', (c) => c.args[0] === 14), 2, 'no read once the person left the tab');
+  tab = 'overview';
+  await live.catchUp('overview', () => tab === 'overview');
+  assert.equal(live.behind('overview'), false, 'back on it, read again until current');
+});
+
+test('a window whose read failed is no longer marked once a read of that window succeeds (#652)', async () => {
+  const fake = fakeClient();
+  let fail = 2;
+  fake.client.fetchInsulin = (window) => (window === 30 && fail-- > 0 ? Promise.reject(new Error('no answer'))
+    : Promise.resolve({ window: null, delivery_days: 0 }));
+  const live = createLive({ client: fake.client, glossary: [] });
+  await live.readTab('overview');
+  await new Promise((resolve) => { setImmediate(resolve); });
+  await assert.rejects(live.readWindow('30'));
+  assert.equal(live.stale('overview'), true);
+  await live.readWindow('14');
+  assert.equal(live.stale('overview'), false, 'the window on screen was read');
+  await live.readWindow('30');
+  assert.equal(live.stale('overview'), false, 'switching back reads the failed window again, and it lands');
 });
 
 test('a hidden page reads nothing again, and a catch-up asked for once it is visible again goes on (#651)', async () => {

@@ -38,12 +38,12 @@
 // while a sync is landing it answers the same way (#579): the Queue's findings,
 // guidance and Focus list, and the Trial roster with the active change's detail,
 // as well as the Overview's. `behind(tab)` says a tab drew such an answer, and `catchUp(tab)` reads those
-// answers again, with a growing pause and then the last one again, while the page is visible, until each is
-// current (#651). The Overview counts only what its selected window draws.
+// answers again, after a pause that grows to a ceiling, while the page is visible and the tab is on screen,
+// until each is current (#651). The Overview counts only what its selected window draws.
 //
-// A FAILED READ IS REMEMBERED (#652). A tab whose own read, or the Overview's window read, failed is
-// `stale(tab)` until a read of that tab begun after the failure, or its Retry, succeeds; `stale` is also
-// true while the tab is `behind`.
+// A FAILED READ IS REMEMBERED (#652). A tab whose own read failed, or the Overview whose selected window's
+// read failed, is `stale(tab)` until a read of the same thing begun after the failure, or the tab's Retry,
+// succeeds; `stale` is also true while the tab is `behind`.
 //
 // Plain JS, with its client injected, so node --test drives it with a fake.
 import { queued } from '../queue-order.js';
@@ -51,9 +51,12 @@ import { queued } from '../queue-order.js';
 /** The account rows never print the address (lock, Settings: "never show a real email"). */
 const MASK = '••••••••';
 const WINDOWS = ['14', '30', '90'];
-/** The pauses before each read again of an answer the engine served from before its last sync (#566); the
- *  last repeats until it is current (#651). */
+/** The pauses before each read again of an answer the engine served from before its last sync (#566); after
+ *  the last, each pause doubles, up to the ceiling, which repeats until it is current (#651, ADR 653). */
 const CATCH_UP_MS = [1000, 2000, 4000, 8000, 15000, 30000];
+const CATCH_UP_CEILING_MS = 300000;
+const catchUpPause = (n) => (n < CATCH_UP_MS.length ? CATCH_UP_MS[n]
+  : Math.min(CATCH_UP_MS.at(-1) * 2 ** (n - CATCH_UP_MS.length + 1), CATCH_UP_CEILING_MS));
 /** The Overview's first window, and the analysis window the engine answers by default. */
 const FIRST_WINDOW = '14';
 const DEFAULT_ANALYSIS = '30';
@@ -454,24 +457,30 @@ export function createLive({ client, glossary, memory = null,
       ...(shownWindow === DEFAULT_ANALYSIS ? ['analyze'] : [])]
     : TABS[tab].keys);
 
-  // The tabs whose read failed, each with the number of its last failure, so a read begun before it does
-  // not clear it (#652).
+  // What failed to be read, a tab or one Overview window (`window <w>`), each with the number of its last
+  // failure, so a read begun before that failure does not clear it (#652).
   let failures = 0;
   const failed = new Map();
-  const fail = (tab) => (error) => {
+  const fail = (what) => (error) => {
     failures += 1;
-    failed.set(tab, failures);
+    failed.set(what, failures);
     throw error;
   };
+  const clear = (what, since) => { if ((failed.get(what) ?? 0) <= since) failed.delete(what); };
 
   /** Read what `tab` shows, and the badges; whatever has landed already is not read again. Changes whose
    *  answer was dropped meanwhile is read again, never landed without one. */
   const readAll = (tab) => Promise.all([TABS[tab].read(), status(), prompts()])
     .then(() => (drawable(tab) ? remember(tab) : readAll(tab)));
-  /** `readAll`, remembering a failure, and clearing one it began after. */
+  /** `readAll`, remembering a failure, and clearing one it began after: the tab's, and the Overview's for
+   *  the window it read. */
   const readTab = (tab) => {
     const since = failures;
-    return readAll(tab).then(() => { if ((failed.get(tab) ?? 0) <= since) failed.delete(tab); }, fail(tab));
+    const first = shownWindow;
+    return readAll(tab).then(() => {
+      clear(tab, since);
+      if (tab === 'overview') clear(`window ${first}`, since);
+    }, fail(tab));
   };
 
   /** Retry: forget what `tab` shows, and the badges, and read them again. */
@@ -484,15 +493,16 @@ export function createLive({ client, glossary, memory = null,
   const behind = (tab) => drawnKeys(tab).some((key) => behindReads.has(key));
 
   /** Read again what `tab` draws from before the engine's last sync, and only that, after a pause that
-   *  grows and then repeats, until it is all current; it stops while the page is hidden, for a catch-up
-   *  asked for once it is visible again (#651). One catch-up per tab. */
+   *  grows to a ceiling, until it is all current. It stops while the page is hidden or `onScreen` says the
+   *  tab is no longer shown, for a catch-up asked for once it is again (#651). One catch-up per tab. */
   const catchingUp = new Map();
-  const catchUp = (tab) => {
+  const catchUp = (tab, onScreen = () => true) => {
+    const going = () => visible() && onScreen();
     if (!catchingUp.has(tab)) {
       catchingUp.set(tab, (async () => {
-        for (let n = 0; behind(tab) && visible(); n += 1) {
-          await pause(CATCH_UP_MS[Math.min(n, CATCH_UP_MS.length - 1)]);
-          if (!visible()) return;
+        for (let n = 0; behind(tab) && going(); n += 1) {
+          await pause(catchUpPause(n));
+          if (!going()) return;
           const keys = drawnKeys(tab).filter((key) => behindReads.has(key));
           // A tab's own composed read (the Queue's, Changes') is composed again from them.
           forget(...keys, tab);
@@ -783,13 +793,18 @@ export function createLive({ client, glossary, memory = null,
      *  is then the window on screen; a failure is the Overview's (#653). */
     readWindow: (window) => {
       shownWindow = window;
-      return remembering(overviewWindow)(window).catch(fail('overview'));
+      const since = failures;
+      return remembering(overviewWindow)(window).then((value) => {
+        clear(`window ${window}`, since);
+        return value;
+      }, fail(`window ${window}`));
     },
     /** Whether `tab` (or `settings <part>`) draws from an earlier visit's answers, not yet read again. */
     remembered: (tab) => fromMemory.has(tab),
     behind,
-    /** Whether `tab` draws an answer that is not current: one its failed read left, or one it is `behind` on. */
-    stale: (tab) => failed.has(tab) || behind(tab),
+    /** Whether `tab` draws an answer that is not current: one its failed read left (for the Overview, its
+     *  own or its selected window's), or one it is `behind` on. */
+    stale: (tab) => failed.has(tab) || (tab === 'overview' && failed.has(`window ${shownWindow}`)) || behind(tab),
     catchUp,
     /** Forget every answer, landed or remembered: a new token reads the app afresh. */
     reset: () => {

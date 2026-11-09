@@ -43,20 +43,22 @@ export function currentToken() {
   try { return typeof localStorage !== 'undefined' ? localStorage.getItem(TOKEN_KEY) : null; } catch { return null; }
 }
 
-/** How long a request may take, its body included, before it is given up as failed (ADR 653): twice the
- *  slowest honest read, a cold Overview arrival of about 150 s on the home host. */
-export const REQUEST_DEADLINE_MS = 300_000;
+/** How long a read may take, its body included, before it is given up as failed (ADR 653): twice the
+ *  slowest honest read, a cold Overview arrival of about 150 s on the home host. A write has none: it
+ *  waits for the current findings, never an earlier answer, and one given up on may still save. */
+export const READ_DEADLINE_MS = 300_000;
 
 /**
  * Build a bound API namespace whose transport can be replaced.
  *
- * @param {{ fetch?: Function, deadline?: number }} [deps={}] — the transport, and the request deadline in ms
+ * @param {{ fetch?: Function, deadline?: number }} [deps={}] — the transport, and the read deadline in ms
  */
-export function makeDeps({ fetch: _fetch = globalThis.fetch, deadline = REQUEST_DEADLINE_MS } = {}) {
+export function makeDeps({ fetch: _fetch = globalThis.fetch, deadline = READ_DEADLINE_MS } = {}) {
   /**
    * Internal transport: attaches the Bearer token from localStorage when
-   * present and unwraps the `detail` on non-2xx responses. A request with no
-   * whole answer by the deadline is cancelled and rejects (status null).
+   * present and unwraps the `detail` on non-2xx responses. A read (no
+   * `method`) with no whole answer by the deadline is cancelled and rejects
+   * (status null); a write waits for its answer.
    *
    * @param {string} url
    * @param {RequestInit} [opts]
@@ -66,6 +68,16 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch, deadline = REQUEST_
     const headers = Object.assign({}, opts && opts.headers);
     const token = currentToken();
     if (token) headers['Authorization'] = 'Bearer ' + token;
+    const answer = async (signal) => {
+      const res = await _fetch(url, Object.assign({}, opts, { headers }, signal ? { signal } : {}));
+      if (!res.ok) {
+        let detail = null;
+        try { detail = (await res.json()).detail ?? null; } catch (e) {}
+        throw new ApiTransportError(res.status, detail, res.statusText);
+      }
+      return res.json();
+    };
+    if (opts?.method) return answer();
     const cancel = new AbortController();
     let timer;
     const expired = new Promise((_, reject) => {
@@ -75,17 +87,8 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch, deadline = REQUEST_
         reject(error);
       }, deadline);
     });
-    const answer = async () => {
-      const res = await _fetch(url, Object.assign({}, opts, { headers, signal: cancel.signal }));
-      if (!res.ok) {
-        let detail = null;
-        try { detail = (await res.json()).detail ?? null; } catch (e) {}
-        throw new ApiTransportError(res.status, detail, res.statusText);
-      }
-      return res.json();
-    };
     try {
-      return await Promise.race([answer(), expired]);
+      return await Promise.race([answer(cancel.signal), expired]);
     } finally {
       clearTimeout(timer);
     }

@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, within } from 'storybook/test';
 import { expectDirections } from '../../direction-check';
+import { expectHoursApart } from '../../hours-check';
 import { expectTabBarEnds } from '../../tabbar-check';
 import { expectAtPaneTop, expectHeaderEmpty } from '../../title-check';
 import { OverviewScreen, type OverviewScreenProps } from './OverviewScreen';
@@ -12,6 +13,7 @@ import { OverviewScreen, type OverviewScreenProps } from './OverviewScreen';
 //   the 84-day history does not reach: the span alone, no changes.
 // - No data: the unsynced store, which serves every metric as null.
 // - Loading, and Unavailable; Stale, the last answers under Unavailable.
+// - Tablet: the default at 768 px, desktop's structure, the profile's hours apart.
 // Plays per size: choosing 30 d shows that window's metrics, profile, basal
 // estimate, Meal size and insulin cards; each window's date line and changes
 // name the period before it, or none; and the page scrolls as one, the summary
@@ -72,7 +74,21 @@ export const DefaultDesktop: Story = {
     await expectAtPaneTop(context.canvasElement.querySelector<HTMLElement>('.ui-overview__body')!);
   },
 };
-export const Window30Phone: Story = { ...story('phone', { store: 'wearer', window: '30' }), play: comparesWith('30', true) };
+// A 768 px tablet draws desktop's structure, the metrics beside the profile;
+// the metrics give the profile 260 px, and its hours read apart (#650).
+export const DefaultTablet768: Story = {
+  ...story('desktop', { store: 'wearer' }),
+  parameters: { frame: { width: 768, height: 1024, padding: 0 } },
+  play: async ({ canvasElement }) => {
+    const metrics = canvasElement.querySelector('.ui-overview__metrics')!.getBoundingClientRect();
+    const profile = canvasElement.querySelector('.ui-profile')!.getBoundingClientRect();
+    await expect(profile.left).toBeGreaterThan(metrics.right);
+    await expect(profile.top).toBeLessThan(metrics.bottom);
+    await expect(profile.width).toBeGreaterThanOrEqual(260);
+    await expectHoursApart(canvasElement);
+  },
+};
+export const Window30Phone: Story ={ ...story('phone', { store: 'wearer', window: '30' }), play: comparesWith('30', true) };
 export const Window30Desktop: Story = {
   ...story('desktop', { store: 'wearer', window: '30' }), play: comparesWith('30', true),
 };

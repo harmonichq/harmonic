@@ -7,6 +7,7 @@ import { dayDate, loggedGrams, type PromptData, type PromptStore } from '../../d
 import { hold, scrollThenSwipe, swipe } from '../../gesture';
 import { failsOnce } from '../../flaky';
 import { expectTabBarEnds } from '../../tabbar-check';
+import { PHONES, expectClearsInset, expectTappable, homeIndicator, motionEnded, tapCentre } from '../../tap-check';
 import { expectTitlePrinted, expectTitleUnprinted } from '../../title-check';
 import { BeforeFirstLog, WithoutReadings, monthReader } from '../../served-variants';
 import type { Answer } from '../../components/PromptCard/PromptCard';
@@ -213,6 +214,41 @@ const closeMonthPlay: Story['play'] = async ({ canvasElement }) => {
 };
 export const CloseMonthPhone: Story = { ...story('phone', DEFAULT), play: closeMonthPlay };
 export const CloseMonthDesktop: Story = { ...story('desktop', DEFAULT), play: closeMonthPlay };
+
+// The month draws over the tab bar, its badge included: where the month runs
+// over the bar, the point at the Day badge's centre is the month's (#648).
+const monthOverBarPlay: Story['play'] = async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  await userEvent.click(canvas.getByRole('button', { name: named(latest), expanded: false }));
+  const month = canvas.getByRole('dialog', { name: 'May' });
+  await motionEnded();
+  const badge = canvasElement.querySelector<HTMLElement>('.ui-nav .ui-badge')!;
+  const box = badge.getBoundingClientRect();
+  await expect(month.getBoundingClientRect().bottom).toBeGreaterThan(box.bottom);
+  await expect(month.contains(document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2))).toBe(true);
+};
+export const MonthOverTabBarPhone375x667: Story = {
+  ...story('phone', DEFAULT), parameters: { frame: PHONES.se }, play: monthOverBarPlay,
+};
+
+// The Log carbs sheet covers the tab bar: a tap at Save's centre saves, at each
+// phone size, and Save clears the home indicator (#648).
+const tapCarbsSavePlay: Story['play'] = async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  const entry = await openCarbs(canvas);
+  await userEvent.type(entry.getByRole('textbox', { name: 'Carbs' }), typed);
+  const save = entry.getByRole('button', { name: 'Save' });
+  await expectTappable(save);
+  await expectClearsInset(save);
+  await tapCentre(save);
+  await expect(canvas.queryByRole('dialog')).toBeNull();
+};
+const tapCarbsSave = (frame: (typeof PHONES)[keyof typeof PHONES]): Story => ({
+  ...story('phone', DEFAULT), parameters: { frame }, play: tapCarbsSavePlay,
+});
+export const TapLogCarbsSavePhone375x667: Story = tapCarbsSave(PHONES.se);
+export const TapLogCarbsSavePhone375x812: Story = { ...tapCarbsSave(PHONES.x), decorators: [homeIndicator] };
+export const TapLogCarbsSavePhone412x915: Story = tapCarbsSave(PHONES.pixel);
 
 // Desktop: the week in view picks a day too.
 export const PickInWeekDesktop: Story = {

@@ -3,6 +3,7 @@ import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { TOKEN_KEY } from '../../../data.js';
 import { failsOnce } from '../../flaky';
 import { expectTabBarEnds } from '../../tabbar-check';
+import { PHONES, expectClearsInset, expectTappable, homeIndicator, tapCentre } from '../../tap-check';
 import { expectAtPaneTop, expectHeaderEmpty, expectTitlePrinted } from '../../title-check';
 import { SettingsScreen, type SettingsScreenProps } from './SettingsScreen';
 
@@ -137,6 +138,28 @@ const updatePlay: Story['play'] = async ({ canvasElement }) => {
 };
 export const UpdateAccountPhone: Story = { ...story('phone', { ...NOT_SET, view: 'tandem' }), play: updatePlay };
 export const UpdateAccountDesktop: Story = { ...story('desktop', { ...NOT_SET, view: 'tandem' }), play: updatePlay };
+
+// The account sheet covers the tab bar: a tap at Save's centre saves what was
+// typed, at each phone size, and Save clears the home indicator (#648).
+const tapSavePlay: Story['play'] = async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  await userEvent.click(canvas.getByRole('button', { name: 'Update' }));
+  const form = within(canvas.getByRole('dialog', { name: 'Tandem Source' }));
+  await userEvent.type(form.getByLabelText('Email'), 'wearer@example.invalid');
+  await userEvent.type(form.getByLabelText('Password'), 'synthetic');
+  const save = form.getByRole('button', { name: 'Save' });
+  await expectTappable(save);
+  await expectClearsInset(save);
+  await tapCentre(save);
+  await waitFor(() => expect(canvas.queryByRole('dialog')).toBeNull());
+  await expect(canvas.getByText('Set')).toBeInTheDocument();
+};
+const tapSave = (frame: (typeof PHONES)[keyof typeof PHONES]): Story => ({
+  ...story('phone', { ...NOT_SET, view: 'tandem' }), parameters: { frame }, play: tapSavePlay,
+});
+export const TapSavePhone375x667: Story = tapSave(PHONES.se);
+export const TapSavePhone375x812: Story = { ...tapSave(PHONES.x), decorators: [homeIndicator] };
+export const TapSavePhone412x915: Story = tapSave(PHONES.pixel);
 
 // Escape closes the form unsaved.
 const escapePlay: Story['play'] = async ({ canvasElement }) => {

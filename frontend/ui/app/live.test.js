@@ -710,19 +710,44 @@ test('an answer the engine served from before its last sync marks its tab, and o
   const pauses = [];
   const live = createLive({ client: fake.client, glossary: [], pause: (ms) => { pauses.push(ms); return Promise.resolve(); } });
   await live.readTab('overview');
-  await live.readWindow('90');
+  await live.readWindow('14');
   assert.equal(live.behind('overview'), true, 'the 14 d profile is an earlier answer');
+  assert.equal(live.stale('overview'), true);
   assert.equal(live.behind('day'), true, 'and so is the Day screen\'s, which reads it');
   assert.equal(live.behind('queue'), false);
   const outcomes = fake.count('outcomes');
   await live.catchUp('overview');
   assert.equal(live.behind('overview'), false, 'read again until current');
+  assert.equal(live.stale('overview'), false, 'and the mark clears by itself');
   assert.equal(live.behind('day'), false);
   assert.deepEqual(pauses, [1000, 2000], 'a pause before each read again, growing');
   assert.equal(fake.count('time-of-day', (c) => c.args[0] === 14), 3);
   assert.equal(fake.count('time-of-day', (c) => c.args[0] !== 14), 2, 'the current windows are not read again');
   assert.equal(fake.count('outcomes'), outcomes, 'nor anything else the tab drew');
   assert.equal(live.answers.overview.wearer.time_of_day['14'].input_data_age, undefined);
+});
+
+test('the Overview counts only what its selected window draws as behind, and catches up only that (#651)', async () => {
+  const fake = fakeClient();
+  const age = { revision: 6, covers_to: '2026-01-01 00:00:00' };
+  let earlier = 1;
+  fake.client.fetchAnalysis = (...args) => {
+    fake.calls.push({ name: 'analyze', args });
+    return Promise.resolve({ basal: [], ic_blocks: [], ...(args[0] === 90 && earlier-- > 0 ? { input_data_age: age } : {}) });
+  };
+  const live = createLive({ client: fake.client, glossary: [], pause: () => Promise.resolve() });
+  await live.readTab('overview');
+  await live.readWindow('14');
+  await new Promise((resolve) => { setImmediate(resolve); });
+  assert.ok(live.answers.overview.wearer.analyze['90'], 'the 90 d window is read behind the first');
+  assert.equal(live.behind('overview'), false, 'an earlier 90 d answer is not on screen');
+  await live.catchUp('overview');
+  assert.equal(fake.count('analyze', (c) => c.args[0] === 90), 1, 'and is not read again while it is not');
+  await live.readWindow('90');
+  assert.equal(live.behind('overview'), true, 'once 90 d is selected, it is');
+  await live.catchUp('overview');
+  assert.equal(live.behind('overview'), false);
+  assert.equal(fake.count('analyze', (c) => c.args[0] === 90), 2);
 });
 
 test('a Queue drawn from an earlier case file is marked until its case files are current (#581)', async () => {
@@ -767,18 +792,95 @@ test('a Queue or Changes drawn from an answer served while a sync landed is mark
   assert.equal(fake.count('trials', detail), 2, 'the active Trial\'s detail, once again');
 });
 
-test('an answer that stays behind is read again a bounded number of times', async () => {
+test('an answer that stays behind is read again while the page is visible, the last pause repeating, until current (#651)', async () => {
   const fake = fakeClient();
+  let earlier = 10;
   fake.client.fetchMealSize = (...args) => {
     fake.calls.push({ name: 'meal-size', args });
     return Promise.resolve({ window: null, sizes: [],
-      ...(args[0] === 14 ? { input_data_age: { revision: 1, covers_to: '2026-01-01 00:00:00' } } : {}) });
+      ...(args[0] === 14 && earlier-- > 0 ? { input_data_age: { revision: 1, covers_to: '2026-01-01 00:00:00' } } : {}) });
   };
-  const live = createLive({ client: fake.client, glossary: [], pause: () => Promise.resolve() });
+  const pauses = [];
+  const live = createLive({ client: fake.client, glossary: [], pause: (ms) => { pauses.push(ms); return Promise.resolve(); } });
   await live.readTab('overview');
   await Promise.all([live.catchUp('overview'), live.catchUp('overview')]);
-  assert.equal(live.behind('overview'), true, 'still marked, never shown as current');
-  assert.equal(fake.count('meal-size', (c) => c.args[0] === 14), 7, 'six reads again, one catch-up at a time');
+  assert.equal(live.behind('overview'), false, 'read again until current, never given up on');
+  assert.deepEqual(pauses, [1000, 2000, 4000, 8000, 15000, 30000, 30000, 30000, 30000, 30000],
+    'the early pauses, then the last one again; one catch-up at a time');
+  assert.equal(fake.count('meal-size', (c) => c.args[0] === 14), 11);
+});
+
+test('a hidden page reads nothing again, and a catch-up asked for once it is visible again goes on (#651)', async () => {
+  const fake = fakeClient();
+  let earlier = 4;
+  fake.client.fetchMealSize = (...args) => {
+    fake.calls.push({ name: 'meal-size', args });
+    return Promise.resolve({ window: null, sizes: [],
+      ...(args[0] === 14 && earlier-- > 0 ? { input_data_age: { revision: 1, covers_to: '2026-01-01 00:00:00' } } : {}) });
+  };
+  let visible = true;
+  const pauses = [];
+  const live = createLive({ client: fake.client, glossary: [], visible: () => visible,
+    pause: (ms) => { pauses.push(ms); if (pauses.length === 2) visible = false; return Promise.resolve(); } });
+  await live.readTab('overview');
+  await live.catchUp('overview');
+  assert.equal(live.behind('overview'), true, 'still marked');
+  assert.equal(fake.count('meal-size', (c) => c.args[0] === 14), 2, 'the read due once the page was hidden was not made');
+  await live.catchUp('overview');
+  assert.equal(fake.count('meal-size', (c) => c.args[0] === 14), 2, 'nor any while it stays hidden');
+  visible = true;
+  await live.catchUp('overview');
+  assert.equal(live.behind('overview'), false, 'once visible, read again until current');
+});
+
+test('a failed read keeps its tab marked until that tab\'s own read or Retry succeeds, a window read landing meanwhile (#652)', async () => {
+  const fake = fakeClient();
+  let fail = 1;
+  const { fetchOutcomes } = fake.client;
+  fake.client.fetchOutcomes = (window) => (window === 30 && fail-- > 0
+    ? Promise.reject(new Error('refused')) : fetchOutcomes(window));
+  const live = createLive({ client: fake.client, glossary: [] });
+  await assert.rejects(live.readTab('overview'));
+  assert.equal(live.stale('overview'), true, 'the earlier metrics are not current');
+  await live.readWindow('14');
+  assert.equal(live.stale('overview'), true, 'a profile landing does not clear it');
+  await live.catchUp('overview');
+  assert.equal(live.stale('overview'), true, 'nor does a catch-up with nothing behind');
+  assert.equal(live.stale('queue'), false, 'the other tabs are not marked');
+  await live.retryTab('overview');
+  assert.equal(live.stale('overview'), false, 'Retry reads it again, and it is current');
+});
+
+test('a tab read that began before a failure does not clear it as it lands (#652)', async () => {
+  const fake = fakeClient();
+  let release;
+  const { fetchOutcomes } = fake.client;
+  fake.client.fetchOutcomes = (window) => (window === 14
+    ? new Promise((resolve) => { release = () => resolve(fetchOutcomes(window)); }) : fetchOutcomes(window));
+  fake.client.fetchInsulin = (window) => (window === 30 ? Promise.reject(new Error('refused'))
+    : Promise.resolve({ window: null, delivery_days: 0 }));
+  const live = createLive({ client: fake.client, glossary: [] });
+  const tab = live.readTab('overview');
+  await assert.rejects(live.readWindow('30'));
+  release();
+  await tab;
+  assert.equal(live.stale('overview'), true, 'the 30 d window failed after that read began');
+});
+
+test('a window read that fails marks its tab, and the tab\'s Retry reads the selected window first (#653)', async () => {
+  const fake = fakeClient();
+  let fail = 2;
+  fake.client.fetchInsulin = (window) => (window === 30 && fail-- > 0 ? Promise.reject(new Error('no answer'))
+    : Promise.resolve({ window: null, delivery_days: 0 }));
+  const live = createLive({ client: fake.client, glossary: [] });
+  await live.readTab('overview');
+  await new Promise((resolve) => { setImmediate(resolve); });
+  assert.equal(live.stale('overview'), false, 'a window read behind the first, not on screen, marks nothing');
+  await assert.rejects(live.readWindow('30'), 'the window switched to cannot be read');
+  assert.equal(live.stale('overview'), true, 'Unavailable with Retry, its earlier answers kept');
+  await live.retryTab('overview');
+  assert.equal(live.stale('overview'), false);
+  assert.ok(live.answers.overview.wearer.insulin['30'], 'Retry read the window on screen');
 });
 
 test('concurrent tabs share one request for an answer in flight', async () => {
@@ -1194,7 +1296,7 @@ test('the Overview reads each window\'s Meal size once, the first window first, 
   await live.retryTab('overview');
   await new Promise((resolve) => { setImmediate(resolve); });
   const again = fake.calls.filter((c) => c.name === 'meal-size').slice(3).map((c) => c.args[0]);
-  assert.equal(again[0], 14, 'the Overview\'s Retry reads its first window first');
+  assert.equal(again[0], 30, 'the Overview\'s Retry reads the window on screen first (#653)');
   assert.deepEqual(again.sort((a, b) => a - b), [14, 30, 90], 'and every window again, once');
 });
 
@@ -1221,11 +1323,11 @@ test('the Overview reads each window\'s insulin once, the first window first, tr
   const live = createLive({ client: fake.client, glossary: [], pause: () => Promise.resolve() });
   await live.readTab('overview');
   assert.equal(fake.calls.find((c) => c.name === 'insulin').args[0], 14, 'the first window first');
-  for (const window of ['30', '90', '14', '30']) await live.readWindow(window);
+  for (const window of ['30', '90', '30', '14']) await live.readWindow(window);
   assert.deepEqual(fake.calls.filter((c) => c.name === 'insulin').map((c) => c.args[0]), [14, 30, 90],
     'each window once');
   assert.deepEqual(live.answers.overview.wearer.insulin['90'], figures(90), 'kept to the shape ADR 632 serves');
-  // An answer from before the last write marks the Overview, and is read again until current (#566).
+  // An answer from before the last write marks the Overview on its window, and is read again until current (#566).
   assert.equal(live.behind('overview'), true, 'the 14 d insulin is an earlier answer');
   behind = false;
   await live.catchUp('overview');

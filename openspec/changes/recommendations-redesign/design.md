@@ -2344,3 +2344,73 @@ its own subject too, as the Queue reads it. The generated `wearer-not-on-pump`
 Queue changes in one Pattern's case-file trace. That store is read after a sync
 the app was not told of, and the held preparation from before that sync was
 served as current; it is now the sync's own. No other generated answer changes.
+
+## ADR 653 — The app keeps catching up while it is visible, remembers a failed read, and gives a request five minutes
+
+**Context.** The 2026-11-09 QA sweep (#651, #652, #653) read the app against a
+copy of a real store on the Mac (timings only) and the synthetic showcase:
+
+- After any recorded-data write, the Overview drew its labelled predecessors
+  (ADR 566, decision 5) and the adapter read them again six times, after pauses
+  of 1 to 30 s, about a minute in all, then stopped for good. Measured by polling
+  after a carb log, the engine's answers were current again only after 110 s
+  (14 d analysis), 162 s (30 d) and 247 s (90 d), the light reads after 19–24 s;
+  about three times that on the home host. The mark then stayed until Retry. It
+  also counted every window's answers, and the Queue's 30 d analysis, though the
+  screen draws one window.
+- The mark was the adapter's `behind` alone, so a failed re-read's mark was wiped
+  by the next read to land (a window's profile), and the earlier answers showed
+  as current with no Retry.
+- A window read that failed went only to a redraw, and the client had no request
+  deadline, so a failed or hung window read left its cards as skeletons forever.
+
+Every poll in those measurements answered at once, with its predecessor: the
+110–250 s is how long the engine takes to be current, not how long a request
+takes. The slowest single request in the same session was a cold 90 d analysis
+waiting behind the other cold reads, 51 s on the Mac; ADR 566 measured the
+thirteen cold Overview reads at 43–52 s, about 150 s on the host.
+
+**Decision.**
+
+1. *The catch-up goes on while the page is visible.* It keeps ADR 566's pauses
+   (1, 2, 4, 8, 15, 30 s) and then repeats the last, until every answer the tab
+   draws is current. A read again of a fixed result answers at once (its
+   predecessor or its current result), so one request each 30 s per answer still
+   behind is the whole cost. It reads nothing while the page is hidden; once the
+   page is shown again the tab's mark is settled and the catch-up asked for
+   again. The mark clears by itself once the answers are current.
+2. *The Overview counts what its selected window draws:* every window's outcomes
+   (the window control reads their coverage) and that window's profile, basal
+   estimate, Meal size and insulin cards, with the 30 d analysis only on 30 d. A
+   window switched to is settled again, so its own answers count then. The tab's
+   read and its Retry read the selected window first.
+3. *A failed read is remembered per tab* in the adapter (`stale`), beside
+   `behind`, never in place of it. The tab's own read, its Retry, and the
+   Overview's window read record a failure; only a read of that tab begun after
+   the failure, or its Retry, that succeeds clears it. A window read landing, or a
+   catch-up, does not.
+4. *Every request has a deadline of five minutes*, its body included, after which
+   it is cancelled and rejects; a read that rejects is Unavailable with Retry, its
+   earlier answers kept. Five minutes is twice the slowest honest read above on
+   the host. A labelled predecessor answers at once, so only a read with no
+   earlier answer (the first after a deploy, ADR 581) should ever approach it; a
+   Retry of one joins the compute already running for its key.
+
+**Rejected.** A shorter deadline sized to a warm read: after a deploy the first
+reads compute cold and would fail where they would have answered. A deadline at
+ADR 581's ten-minute start-fetch ceiling: that bounds the whole cold warm pass,
+not one read, and leaves a hung read a skeleton twice as long. Re-reading answers
+the selected window does not draw: they are read again when that window is
+selected, and a request for each costs the shared server its time. Reordering the
+server's warm roster: not needed once the app keeps catching up, and not changed
+here.
+
+**Dosing.** No analyzer, staging predicate, cap, floor or served value changes.
+What changes is how long the app keeps asking for a current answer, and that a
+failed read is never drawn as current.
+
+**Consequences.** `frontend/ui/app/live.test.js` covers decisions 1–3 and
+`frontend/data.test.js` decision 4; each failed first on main (the catch-up stopped
+after six reads, a 90 d answer marked a 14 d screen, no failure was remembered, and
+a hung request never settled). The word the title row draws for a labelled
+predecessor is unchanged.

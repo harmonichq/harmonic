@@ -147,3 +147,21 @@ test('saving a token where storage refuses access does not throw', () => {
   globalThis.localStorage = { setItem: () => { throw new Error('SecurityError'); } };
   try { assert.doesNotThrow(() => saveToken('synthetic-token')); } finally { globalThis.localStorage = prev; }
 });
+
+test('a request with no answer by its deadline rejects, and is cancelled (#653)', async () => {
+  let signal;
+  const fetch = (url, opts) => { signal = opts.signal; return new Promise(() => {}); };
+  const api = makeDeps({ fetch, deadline: 5 });
+  await assert.rejects(api.fetchInsulin(30), (error) => error instanceof ApiTransportError && error.status === null);
+  assert.equal(signal.aborted, true, 'the browser stops waiting for it too');
+});
+
+test('a body that never finishes arriving is held to the same deadline (#653)', async () => {
+  const fetch = async () => ({ ok: true, status: 200, json: () => new Promise(() => {}) });
+  await assert.rejects(makeDeps({ fetch, deadline: 5 }).fetchOutcomes(14), ApiTransportError);
+});
+
+test('an answer inside its deadline is the answer', async () => {
+  const { fetch } = fakeFetch({ window: 14 });
+  assert.deepEqual(await makeDeps({ fetch, deadline: 1000 }).fetchOutcomes(14), { window: 14 });
+});

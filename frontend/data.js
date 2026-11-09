@@ -43,15 +43,20 @@ export function currentToken() {
   try { return typeof localStorage !== 'undefined' ? localStorage.getItem(TOKEN_KEY) : null; } catch { return null; }
 }
 
+/** How long a request may take, its body included, before it is given up as failed (ADR 653): twice the
+ *  slowest honest read, a cold Overview arrival of about 150 s on the home host. */
+export const REQUEST_DEADLINE_MS = 300_000;
+
 /**
  * Build a bound API namespace whose transport can be replaced.
  *
- * @param {{ fetch?: Function }} [deps={}]
+ * @param {{ fetch?: Function, deadline?: number }} [deps={}] — the transport, and the request deadline in ms
  */
-export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
+export function makeDeps({ fetch: _fetch = globalThis.fetch, deadline = REQUEST_DEADLINE_MS } = {}) {
   /**
    * Internal transport: attaches the Bearer token from localStorage when
-   * present and unwraps the `detail` on non-2xx responses.
+   * present and unwraps the `detail` on non-2xx responses. A request with no
+   * whole answer by the deadline is cancelled and rejects (status null).
    *
    * @param {string} url
    * @param {RequestInit} [opts]
@@ -61,13 +66,29 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
     const headers = Object.assign({}, opts && opts.headers);
     const token = currentToken();
     if (token) headers['Authorization'] = 'Bearer ' + token;
-    const res = await _fetch(url, Object.assign({}, opts, { headers }));
-    if (!res.ok) {
-      let detail = null;
-      try { detail = (await res.json()).detail ?? null; } catch (e) {}
-      throw new ApiTransportError(res.status, detail, res.statusText);
+    const cancel = new AbortController();
+    let timer;
+    const expired = new Promise((_, reject) => {
+      timer = setTimeout(() => {
+        const error = new ApiTransportError(null, null, 'No answer within ' + deadline / 1000 + ' s');
+        cancel.abort(error);
+        reject(error);
+      }, deadline);
+    });
+    const answer = async () => {
+      const res = await _fetch(url, Object.assign({}, opts, { headers, signal: cancel.signal }));
+      if (!res.ok) {
+        let detail = null;
+        try { detail = (await res.json()).detail ?? null; } catch (e) {}
+        throw new ApiTransportError(res.status, detail, res.statusText);
+      }
+      return res.json();
+    };
+    try {
+      return await Promise.race([answer(), expired]);
+    } finally {
+      clearTimeout(timer);
     }
-    return res.json();
   }
 
   const send = (url, method, body) => api(url, body === undefined ? { method } : {

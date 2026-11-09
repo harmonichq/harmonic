@@ -103,11 +103,12 @@ export function App() {
   const redraw = useCallback(() => setVersion((n) => n + 1), []);
 
   // A tab drawn from an answer the engine served from before its last sync is
-  // marked stale, never shown as current, and read again until it is (#566).
+  // marked stale, never shown as current, and read again until it is (#566),
+  // and so is one whose read failed, until its own read or Retry lands (#652).
   // Only the tab's own read (`landed`) draws it; a later read only re-marks it.
   const settle = useCallback((which: Exclude<Tab, 'settings'>, landed = true) => {
     const mark = () => setReads((now) => (landed || shown(now[which])
-      ? { ...now, [which]: live.behind(which) ? 'stale' : 'ready' } : now));
+      ? { ...now, [which]: live.stale(which) ? 'stale' : 'ready' } : now));
     mark();
     if (live.behind(which)) live.catchUp(which).then(mark).finally(redraw);
   }, [redraw]);
@@ -139,6 +140,13 @@ export function App() {
     PARTS.forEach((which) => part(which));
     live.settings.badges().then(redraw, redraw);
   }, [tab, read, part, redraw]);
+  // A catch-up stops while the page is hidden; it goes on once it is shown again (#651).
+  useEffect(() => {
+    if (tab === 'settings') return undefined;
+    const shownAgain = () => { if (document.visibilityState === 'visible') settle(tab, false); };
+    document.addEventListener('visibilitychange', shownAgain);
+    return () => document.removeEventListener('visibilitychange', shownAgain);
+  }, [tab, settle]);
 
   const go = (item: NavItem) => {
     writeRoute(item);
@@ -186,7 +194,11 @@ export function App() {
         writes={{ end: drawn(changesWrites.end) }} />;
     case 'overview':
       return <OverviewScreen key={tab} layout={layout} store="wearer" state={state} nav={nav} onRetry={retry}
-        onWindow={(window) => { live.readWindow(window).then(() => settle('overview', false), redraw); }} />;
+        onWindow={(window) => {
+          // A window that cannot be read marks the screen stale, its earlier answers kept (#653).
+          const settled = () => { settle('overview', false); redraw(); };
+          live.readWindow(window).then(settled, settled);
+        }} />;
     case 'day':
       return <DayScreen key={tab} layout={layout} store="wearer" state={state} nav={nav} onRetry={retry}
         onDay={(iso) => { live.readDay(iso).then(redraw, redraw); }}

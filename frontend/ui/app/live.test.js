@@ -655,24 +655,52 @@ test('a burst of Prompt answers reads the Prompts again once, and the adapter ho
   // Answered row after row, each before the one before it is answered; the screen that made them may be gone.
   const made = lows.map((low) => live.dayWrites.answer(low, 'not-sure').then(() => 'saved', () => 'refused'));
   assert.equal(fake.count('answer'), 3, 'each answer is sent as it is made');
-  assert.deepEqual([...live.dayWrites.held().answering], lows.map((l) => l.anchorT), 'and held by the adapter');
+  const held = () => lows.map((low) => live.dayWrites.held().answering(low));
+  assert.deepEqual(held(), [true, true, true], 'and held by the adapter');
   pending[0].resolve({});
   await landed();
   assert.equal(fake.count('prompts'), 1, 'no Prompts read while answers are in flight');
-  assert.deepEqual([...live.dayWrites.held().answering], lows.map((l) => l.anchorT),
-    'a saved answer the engine has not yet served answered stays held');
+  assert.deepEqual(held(), [true, true, true], 'a saved answer the engine has not yet served answered stays held');
   pending[1].reject(refusal(500));
   pending[2].resolve({});
   assert.deepEqual(await Promise.all(made), ['saved', 'refused', 'saved']);
   assert.equal(fake.count('prompts'), 2, 'one Prompts read for the three answers');
-  assert.deepEqual(live.dayWrites.held(), { answering: new Set(), refused: [{ prompt: lows[1], answer: 'not-sure' }] },
+  assert.deepEqual(held(), [false, false, false]);
+  assert.deepEqual(live.dayWrites.held().refused, [{ prompt: lows[1], answer: 'not-sure' }],
     'the refused answer is held, with its prompt, until it is sent again');
   const again = live.dayWrites.answer(lows[1], 'not-sure');
   assert.deepEqual(live.dayWrites.held().refused, [], 'sending it again holds it in flight instead');
   pending[3].resolve({});
   await again;
   assert.equal(fake.count('prompts'), 3);
-  assert.deepEqual(live.dayWrites.held(), { answering: new Set(), refused: [] });
+  assert.deepEqual(held(), [false, false, false]);
+  assert.deepEqual(live.dayWrites.held().refused, []);
+});
+
+test('a low and a rise at one anchor are two Prompts, each held apart (#677)', async () => {
+  const fake = fakeClient();
+  const pending = [];
+  fake.client.answerPrompt = (body) => {
+    fake.calls.push({ name: 'answer', args: [body] });
+    return new Promise((resolve, reject) => { pending.push({ resolve, reject }); });
+  };
+  const live = createLive({ client: fake.client, glossary: [] });
+  await live.readTab('day');
+  const anchorT = '2026-01-05 03:00:00';
+  const low = { detector: 'low', anchorT };
+  const rise = { detector: 'missed-meal', anchorT };
+  const refused = live.dayWrites.answer(rise, 'no').catch(() => 'refused');
+  pending[0].reject(refusal(500));
+  assert.equal(await refused, 'refused');
+  const made = live.dayWrites.answer(low, 'not-sure');
+  assert.deepEqual(live.dayWrites.held().refused, [{ prompt: rise, answer: 'no' }],
+    'answering the low leaves the refused rise at its anchor held');
+  assert.equal(live.dayWrites.held().answering(low), true);
+  assert.equal(live.dayWrites.held().answering(rise), false, 'the rise is not held in flight by the low');
+  pending[1].resolve({});
+  await made;
+  assert.equal(live.dayWrites.held().answering(low), false);
+  assert.deepEqual(live.dayWrites.held().refused, [{ prompt: rise, answer: 'no' }]);
 });
 
 test('Done records the card\'s subject from the read it was made on, and a waiting Setting leaves the Queue for Changes', async () => {

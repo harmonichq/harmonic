@@ -8,8 +8,10 @@ are read again, when the counts are the served ones. The live adapter SHALL
 hold each answer from when it is made until a Prompts read begun after it was
 saved, and a refused answer, with its prompt, until it is sent again, so that
 leaving the Prompts or the tab loses none and a saved answer never reads as
-unanswered (ADR 677). Each answer SHALL be sent as it is made, so that one
-sent outlives the page. The Prompts SHALL be read again once no answer is in
+unanswered (ADR 677). An answer SHALL be held by its Prompt's identity, its
+detector and anchor, so that a low and a rise at one anchor are held apart.
+Each answer SHALL be sent as it is made, and the grams typed after a Yes as
+they are entered, so that one sent outlives the page. The Prompts SHALL be read again once no answer is in
 flight, once for every answer made meanwhile, and each of those answers SHALL
 resolve then. Another tab's Day badge SHALL move when the Prompts land. The
 live adapter SHALL hold the day on screen as the day it last read for the Day

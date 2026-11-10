@@ -98,8 +98,8 @@ test('each write sends its method and JSON body', async () => {
   ]);
   assert.deepEqual(body(calls[1]), { generation: 'g1', reason: null });
   assert.equal(calls[2].opts.body, undefined);
-  // A Prompt answer outlives the page that sent it (#677); no other write asks to.
-  assert.deepEqual(calls.map((c) => c.opts.keepalive ?? false), [false, false, false, false, false, false, false, false, true]);
+  // A Prompt answer, and the grams typed after its Yes, outlive the page that sent them (#677); no other write asks to.
+  assert.deepEqual(calls.map((c) => c.opts.keepalive ?? false), [false, false, false, false, false, false, false, true, true]);
   assert.equal(calls[4].opts.body, undefined);
   assert.deepEqual(body(calls[7]), { grams: 15, certainty: 'exact' });
   assert.equal(calls[0].opts.headers['Content-Type'], 'application/json');

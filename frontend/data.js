@@ -245,11 +245,12 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch, deadline = READ_DEA
 
   /**
    * PATCH /api/carbs/<id> — merge fields into one logged entry (a Prompt's
-   * grams, typed after its Yes).
+   * grams, typed after its Yes). Sent with keepalive, as the answer is, so
+   * grams typed just before the page goes are still saved (#677).
    * @param {number} entryId
    * @param {{ grams: number, certainty: string }} fields
    */
-  const updateCarb = (entryId, fields) => send('/api/carbs/' + encodeURIComponent(entryId), 'PATCH', fields);
+  const updateCarb = (entryId, fields) => send('/api/carbs/' + encodeURIComponent(entryId), 'PATCH', fields, { keepalive: true });
 
   /**
    * GET /api/model-view?date=YYYY-MM-DD — every moment the engine weighed on

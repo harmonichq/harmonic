@@ -160,8 +160,8 @@ export type DayWrites = {
   /** Answer one prompt; Yes resolves with the carb entry it created. */
   answer: (prompt: PromptData, answer: Answer) => Promise<{ carbEntryId: number | null }>;
   /** The answers the adapter holds (#677), so leaving the Prompts or the tab loses none: the prompts
-   *  answered and not yet served answered, by anchor, and the refused answers, in the order made. */
-  held: () => { answering: ReadonlySet<string>; refused: readonly { prompt: PromptData; answer: Answer }[] };
+   *  answered and not yet served answered, by the prompt's identity, and the refused answers, in the order made. */
+  held: () => { answering: (prompt: PromptData) => boolean; refused: readonly { prompt: PromptData; answer: Answer }[] };
   /** The grams typed after a Yes, onto the entry it created. */
   grams: (carbEntryId: number, grams: number) => Promise<void>;
   /** Carbs eaten without a bolus, at `at`, the entry's whole time (`YYYY-MM-DD HH:MM`). */
@@ -169,7 +169,7 @@ export type DayWrites = {
 };
 
 /** No answer held: the stories' Prompts, which step through the served stores. */
-const NONE_HELD: ReturnType<DayWrites['held']> = { answering: new Set(), refused: [] };
+const NONE_HELD: ReturnType<DayWrites['held']> = { answering: () => false, refused: [] };
 /** The bar's Retry for the refused answers the adapter holds, one value, so the bar keeps it. */
 const REFUSED_ANSWERS = { again: () => {} };
 
@@ -334,7 +334,7 @@ function Day({
   // Live, the badge and the counts are the engine's less the answers still in
   // flight that it still serves unanswered (ADR 630).
   const inFlight = (of: PromptKind) => (writes
-    ? promptsOfKind(of, store).filter((p) => pending.has(p.anchorT)).length : 0);
+    ? promptsOfKind(of, store).filter(pending).length : 0);
   const shownStore = writes ? store : current;
   const counts = {
     low: unanswered(shownStore, 'low', inFlight('low')), rise: unanswered(shownStore, 'rise', inFlight('rise')),
@@ -343,7 +343,7 @@ function Day({
   // Whether the stories serve the store after an answer of this kind.
   const steps = (at: PromptStore) => (PROMPT_STEPS[kind] as readonly PromptStore[]).includes(at);
   // Live, the engine's answers are the store the screen was given, read again after each write.
-  const visible = writes ? promptsOfKind(kind, store).filter((p) => !pending.has(p.anchorT) && p.anchorT !== held?.anchorT) : [];
+  const visible = writes ? promptsOfKind(kind, store).filter((p) => !pending(p) && p.anchorT !== held?.anchorT) : [];
   const liveCard = held ?? visible[0] ?? null;
   // The prompt the Prompts opened on; each one after it comes in as the next.
   const [entered, setEntered] = useState<string>(`${initialKind} ${store}`);
@@ -564,7 +564,7 @@ function Day({
     setKind(opening);
     setCardStore(current);
     setOpenedStore(current);
-    setEntered(writes ? promptsOfKind(opening, store).filter((p) => !pending.has(p.anchorT))[0]?.anchorT ?? ''
+    setEntered(writes ? promptsOfKind(opening, store).filter((p) => !pending(p))[0]?.anchorT ?? ''
       : `${opening} ${current}`);
     setOpened(counts[opening]);
     setView('prompts');

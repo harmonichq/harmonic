@@ -1316,9 +1316,10 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         except (KeyError, TypeError, ValueError) as e:
             raise HTTPException(status_code=400, detail=f"invalid carb entry: {e}")
 
-    # A carb or Prompt write reconciles the follow-up after its response, once for
-    # every write it finds owed (ADR 677): a burst of Prompt answers pays one
-    # whole-history reconcile, not one each inside its request.
+    # A carb or Prompt write reconciles the follow-up after its response, never
+    # inside its request and never two at once (ADR 677): a burst of Prompt answers
+    # pays one whole-history reconcile, plus one more for each pass a later write
+    # crosses.
     reconcile_owed = threading.Event()
     reconciling = threading.Lock()
 

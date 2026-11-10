@@ -12,13 +12,14 @@ answer came back.
 
 ## What changes
 
-- A carb or Prompt write reconciles the follow-up after its response, and a
-  burst of them pays one reconcile, not one each. The cache is still
-  invalidated by every answer, at once.
+- A carb or Prompt write reconciles the follow-up after its response, never
+  inside it and never two at once: a burst pays one reconcile, plus one more
+  for each that a later answer crosses. The cache is still invalidated by
+  every answer, at once.
 - The live adapter holds each Prompt answer from when it is made until the
   Prompts are served with it, and a refused one until it is sent again, so
-  leaving the list or the tab loses none, and an answer is sent so that it
-  outlives the page. The Prompts are read again once, after the last answer in
+  leaving the list or the tab loses none, and an answer and the grams after a
+  Yes are sent so that they outlive the page. The Prompts are read again once, after the last answer in
   flight.
 - Past the last prompt of its kind, the Lows or Rises return to Day at once,
   and they go back and forward through history as the other drill-downs do.

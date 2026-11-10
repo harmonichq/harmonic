@@ -24,9 +24,13 @@ while each answer kept the engine's answer behind; they are bounded, and stay.
    task of the request, not in it. One lock serializes those reconciles: a
    write whose task finds one running marks one owed and returns, and the
    running one reconciles again once it is done. A burst of answers therefore
-   pays the reconcile once, plus once more for what committed during it. ADR
-   557's rule, that each writer reconciles what it committed, holds for the
-   burst: the last reconcile reads every answer in it.
+   pays the reconcile once, plus once more for each pass a later answer
+   crosses: none runs inside a request, and never two at once. Answers made
+   faster than a reconcile share passes; answers paced about one reconcile
+   apart (some 3 s on a long history) can still cost close to one pass each,
+   after their responses. ADR 557's rule, that each writer reconciles what it
+   committed, holds for the burst: the last reconcile reads every answer in
+   it.
 2. Each such reconcile is followed by `follow_up_written()`. Until it lands
    the frontier is behind, which every read already serves as
    "reconciliation required" (#557), as it was during the in-request
@@ -41,9 +45,11 @@ while each answer kept the engine's answer behind; they are bounded, and stay.
    a saved answer the engine has not yet served answered never reads as
    unanswered, and a refused one, with its prompt, until it is sent again.
    The Day screen reads them (`held`), and its bar shows a refusal, on the
-   Prompts or on Day, with Retry. Each answer is sent as it is made, never
-   queued behind another, with `keepalive`, so one already sent outlives the
-   page.
+   Prompts or on Day, with Retry. An answer is held by the Prompt's identity,
+   its detector and its anchor, so a low and a rise at one anchor are two.
+   Each answer is sent as it is made, never queued behind another, with
+   `keepalive`, as are the grams typed after a Yes, so one already sent
+   outlives the page.
 5. The Prompts are read again once no answer is in flight, once for every
    answer made meanwhile, and each answer resolves then. The day on screen is
    read again after them, once, as ADR 610 has it.
@@ -59,5 +65,6 @@ two revisions; `/api/prompts`, which stays an uncached read of the last week.
 
 **Consequences.** On the same copy, six answers sent together each saved in
 0.02 to 0.26 s and the burst in 1.9 s, and one at a time each in under 0.1 s.
-The whole-history reconcile still costs its seconds, after the answers, once
-for a burst; how to make it cheaper is ADR 667's open question, not this one.
+The whole-history reconcile still costs its seconds (about 3 s on a long
+history), now after the responses, once per pass as decision 1 bounds it; how
+to make it cheaper is ADR 667's open question, not this one.

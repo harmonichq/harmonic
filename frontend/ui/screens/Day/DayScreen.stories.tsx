@@ -885,21 +885,25 @@ export const FitsDesktop: Story = {
  *  answers it, and a refused one, with its prompt, until it is sent again. */
 const heldAnswers = (send: DayWrites['answer']): Pick<DayWrites, 'answer' | 'held'> => {
   const answering = new Set<string>();
+  const id = (prompt: PromptData) => `${prompt.detector} ${prompt.anchorT}`;
   let refused: ReturnType<DayWrites['held']>['refused'] = [];
   return {
     answer: async (prompt, given) => {
-      refused = refused.filter((r) => r.prompt.anchorT !== prompt.anchorT);
-      answering.add(prompt.anchorT);
+      refused = refused.filter((r) => id(r.prompt) !== id(prompt));
+      answering.add(id(prompt));
       try {
         return await send(prompt, given);
       } catch (error) {
         refused = [...refused, { prompt, answer: given }];
         throw error;
       } finally {
-        answering.delete(prompt.anchorT);
+        answering.delete(id(prompt));
       }
     },
-    held: () => ({ answering: new Set(answering), refused }),
+    held: () => {
+      const ids = new Set(answering);
+      return { answering: (prompt) => ids.has(id(prompt)), refused };
+    },
   };
 };
 

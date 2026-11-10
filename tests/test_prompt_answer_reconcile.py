@@ -8,6 +8,8 @@ reconcile now runs after the response, and a write that finds one running leaves
 its own to it, which reconciles once more when it is done (ADR 677).
 """
 
+import asyncio
+import json
 import shutil
 import tempfile
 import threading
@@ -29,6 +31,44 @@ SHOWCASE = (Path(__file__).resolve().parent.parent
 _BLOCKED_SECONDS = 10
 
 
+def post_marking_response(app, path, body, responded):
+    """POST straight into the ASGI app, setting `responded` as the response's last
+    byte is sent. Unlike TestClient, which returns only once the request's
+    background tasks are done, this shows when the answer is answered."""
+    payload = json.dumps(body).encode()
+    status = {}
+
+    async def run():
+        delivered = False
+
+        async def receive():
+            nonlocal delivered
+            if not delivered:
+                delivered = True
+                return {"type": "http.request", "body": payload, "more_body": False}
+            while not responded.is_set():
+                await asyncio.sleep(0.01)
+            return {"type": "http.disconnect"}
+
+        async def send(message):
+            if message["type"] == "http.response.start":
+                status["code"] = message["status"]
+            elif message["type"] == "http.response.body" and not message.get("more_body"):
+                responded.set()
+
+        await app({
+            "type": "http", "asgi": {"version": "3.0"}, "http_version": "1.1",
+            "method": "POST", "scheme": "http", "path": path, "raw_path": path.encode(),
+            "query_string": b"", "root_path": "", "client": ("testclient", 50000),
+            "server": ("testserver", 80),
+            "headers": [(b"content-type", b"application/json"),
+                        (b"content-length", str(len(payload)).encode())],
+        }, receive, send)
+
+    asyncio.run(run())
+    return status.get("code")
+
+
 class PromptAnswerReconcileTest(unittest.TestCase):
     def setUp(self):
         self.dir = tempfile.TemporaryDirectory()
@@ -41,9 +81,12 @@ class PromptAnswerReconcileTest(unittest.TestCase):
     def tearDown(self):
         self.dir.cleanup()
 
+    @staticmethod
+    def body(prompt):
+        return {"detector": prompt["detector"], "anchor_t": prompt["anchor_t"], "answer": "not-sure"}
+
     def answer(self, prompt):
-        return self.client.post("/api/prompts/answer", json={
-            "detector": prompt["detector"], "anchor_t": prompt["anchor_t"], "answer": "not-sure"})
+        return self.client.post("/api/prompts/answer", json=self.body(prompt))
 
     def test_answers_made_while_a_reconcile_runs_are_saved_at_once_and_reconciled_once(self):
         first, *burst = [p for p in self.client.get("/api/prompts").json() if p["answer"] is None][:3]
@@ -60,11 +103,16 @@ class PromptAnswerReconcileTest(unittest.TestCase):
                 release.wait(_BLOCKED_SECONDS)
             return reconcile(store)
 
-        responses = []
+        statuses, responded = [], threading.Event()
         with patch.object(watched_change, "reconcile_ingested_follow_up", slow_reconcile):
-            ahead = threading.Thread(target=lambda: responses.append(self.answer(first)))
+            ahead = threading.Thread(target=lambda: statuses.append(post_marking_response(
+                self.client.app, "/api/prompts/answer", self.body(first), responded)))
             ahead.start()
             self.assertTrue(running.wait(_BLOCKED_SECONDS))
+            # The first answer is answered while its reconcile is still held: the
+            # response does not wait for it.
+            answered_first = responded.wait(_BLOCKED_SECONDS / 2)
+            self.assertFalse(release.is_set())
             # A roster read while it reconciles answers the frontier as behind.
             during = self.client.get("/api/verify/trials").json()["admission"]
             started = time.monotonic()
@@ -73,9 +121,11 @@ class PromptAnswerReconcileTest(unittest.TestCase):
             release.set()
             ahead.join()
 
-        self.assertEqual([r.status_code for r in responses + later], [200, 200, 200])
+        self.assertTrue(answered_first, "the answer waited on its own reconcile")
+        self.assertEqual(statuses + [r.status_code for r in later], [200, 200, 200])
         self.assertLess(elapsed, _BLOCKED_SECONDS / 2, "an answer waited on another's reconcile")
-        # One reconcile for the first answer, and one more for the two made while it ran.
+        # Never two at once, and none inside a request: the first pass, and one more
+        # for the pass both later answers crossed. Only that first pass was crossed.
         self.assertEqual(len(calls), 2)
         answered = {p["anchor_t"]: p["answer"] for p in self.client.get("/api/prompts").json()}
         self.assertEqual([answered[p["anchor_t"]] for p in [first, *burst]], ["not-sure"] * 3)

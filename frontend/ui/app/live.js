@@ -416,12 +416,16 @@ export function createLive({ client, glossary, memory = null,
     date.setUTCDate(date.getUTCDate() + days);
     return date.toISOString().slice(0, 10);
   };
+  /** How far the store's wall clock runs ahead of UTC, as the carbs read with a day last served it
+   *  (#658, ADR 658); this browser's own zone's until a day lands. */
+  let wallClock = -new Date().getTimezoneOffset() * 60000;
   /** One day's timeline, the carbs logged by hand on it, and what the engine
    *  counted on it, read when the day is picked. */
   const day = (iso) => once(`day ${iso}`, async () => {
     const range = { start: `${iso}T00:00:00`, end: `${shift(iso, 1)}T00:00:00` };
-    const [timeline, carbs, modelView] = await Promise.all([
+    const [timeline, { now: served, ...carbs }, modelView] = await Promise.all([
       client.fetchTimeline(range), client.fetchCarbs(range), client.fetchModelView(iso)]);
+    wallClock = Date.parse(`${served.replace(' ', 'T')}Z`) - Date.now();
     answers.day.days[iso] = { timeline, carbs, model_view: modelViewMarks(modelView) };
   });
 
@@ -568,6 +572,8 @@ export function createLive({ client, glossary, memory = null,
   const both = () => Promise.all([queue(), changes()]);
   /** The day the Day screen last read, which a Prompt answer leaves for the app to read again (#610). */
   let onScreen;
+  /** The Day screen's day read in flight, which the next day it asks for waits on (#655). */
+  let dayTail = Promise.resolve();
   /** The days visited, which a carb write changes. */
   const shownDays = () => Object.keys(answers.day.days);
   const rereadDays = () => Promise.all(shownDays().map(day));
@@ -783,10 +789,20 @@ export function createLive({ client, glossary, memory = null,
     readTab,
     retryTab,
     settings,
-    /** One day, which is then the day on screen. */
-    readDay: remembering((iso) => { onScreen = iso; return day(iso); }),
+    /** One day, which is then the day on screen. A day not read yet waits for the one being read, and
+     *  is not read at all once another day is on screen (#655): stepping through days reads the day
+     *  landed on, never every day passed. A day read or being read answers at once. */
+    readDay: remembering((iso) => {
+      onScreen = iso;
+      if (reads.has(`day ${iso}`)) return day(iso);
+      const read = dayTail.then(() => (onScreen === iso ? day(iso) : undefined));
+      dayTail = read.catch(() => undefined);
+      return read;
+    }),
     /** The day on screen: the one `readDay` last read. */
     shownDay: () => onScreen,
+    /** Now on the store's wall clock (`YYYY-MM-DD HH:MM`), which Log carbs stamps an entry on (#658). */
+    dayNow: () => new Date(Date.now() + wallClock).toISOString().slice(0, 16).replace('T', ' '),
     /** The weeks of one month (`YYYY-MM`), read once; Retry is a second call after a failure. */
     readMonth: remembering(month),
     /** The Overview's profile, basal estimate, Meal size and insulin cards for the window it selected, which

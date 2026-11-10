@@ -141,6 +141,32 @@ const findingsPlay: Story['play'] = async ({ canvasElement }) => {
 export const FindingsPhone: Story = { ...story('phone', LOGGED_CARBS), play: findingsPlay };
 export const FindingsDesktop: Story = { ...story('desktop', LOGGED_CARBS), play: findingsPlay };
 
+// A day whose read fails (#654): Unavailable with Retry in the chart's place,
+// and no insulin bar. Retry reads the day again, and so does picking it again
+// from the month.
+const UNREAD = fixtures.overview.wearer.day_navigator.days
+  .filter((d) => d.has_data && d.iso.startsWith(latest.slice(0, 7)) && !(d.iso in fixtures.day.days)).at(-1)!.iso;
+const dayReads: string[] = [];
+const refusedDay: Story['play'] = async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  await waitFor(() => expect(canvas.getByText('Unavailable')).toBeInTheDocument());
+  await expect(dayReads).toEqual([UNREAD]);
+  await expect(canvasElement.querySelector('.ui-skeleton')).toBeNull();
+  await userEvent.click(canvas.getByRole('button', { name: 'Retry' }));
+  await waitFor(() => expect(dayReads).toEqual([UNREAD, UNREAD]));
+  await waitFor(() => expect(canvas.getByText('Unavailable')).toBeInTheDocument());
+  await userEvent.click(canvas.getByRole('button', { name: named(UNREAD), expanded: false }));
+  await userEvent.click(within(canvas.getByRole('dialog', { name: 'May' })).getByRole('button', { name: named(UNREAD) }));
+  await waitFor(() => expect(dayReads).toEqual([UNREAD, UNREAD, UNREAD]));
+};
+const dayUnavailable = (layout: 'phone' | 'desktop'): Story => ({
+  ...story(layout, { ...DEFAULT, day: UNREAD, onDay: async (iso) => { dayReads.push(iso); throw new Error('unavailable'); } }),
+  beforeEach: () => { dayReads.length = 0; },
+  play: refusedDay,
+});
+export const DayUnavailablePhone = dayUnavailable('phone');
+export const DayUnavailableDesktop = dayUnavailable('desktop');
+
 // Stale (§2.5, 2026-10-14): the last answers, kept on screen under Unavailable
 // and Retry, when reading them again failed.
 export const StalePhone = story('phone', { ...DEFAULT, state: 'stale' });
@@ -312,13 +338,23 @@ const openCarbs = async (canvas: ReturnType<typeof within>) => {
   return within(canvas.getByRole('dialog', { name: 'Log carbs' }));
 };
 
-// Log carbs: type an amount the wearer logged, Save, and it closes at once.
+// Log carbs: the grams field has the focus as it opens and takes digits only,
+// and Save waits for an amount above zero; type an amount the wearer logged,
+// Save, and it closes at once.
 const savePlay: Story['play'] = async ({ canvasElement }) => {
   const canvas = within(canvasElement);
   const entry = await openCarbs(canvas);
   const save = entry.getByRole('button', { name: 'Save' });
+  const field = entry.getByRole('textbox', { name: 'Carbs' });
   await expect(save).toBeDisabled();
-  await userEvent.type(entry.getByRole('textbox', { name: 'Carbs' }), typed);
+  await expect(field).toHaveFocus();
+  await userEvent.keyboard('ab');
+  await expect(field).toHaveValue('');
+  await userEvent.keyboard('0');
+  await expect(field).toHaveValue('0');
+  await expect(save).toBeDisabled();
+  await userEvent.clear(field);
+  await userEvent.type(field, typed);
   await userEvent.click(save);
   await expect(canvas.queryByRole('dialog')).toBeNull();
 };

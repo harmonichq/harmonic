@@ -172,6 +172,16 @@ class StampsOnThePumpClockTest(_ApiCase):
         self.assertEqual(created.status_code, 200, created.text)
         assert_near(self, created.json()["created_at"], pump_now())
 
+    def test_carb_log_serves_the_wall_clock(self):
+        """Log carbs stamps its entry on the clock the carb log serves (#658, ADR 658): an
+        entry made at it is kept at that pump date and time, not the process's."""
+        served = self.client.get("/api/carbs", headers=self.headers).json()["now"]
+        assert_near(self, served, pump_now())
+        created = self.client.post("/api/carbs", headers=self.headers, json={**_CARB, "t": served})
+        self.assertEqual(created.status_code, 200, created.text)
+        (listed,) = self.client.get("/api/carbs", headers=self.headers).json()["carb_entries"]
+        self.assertEqual(listed["t"], served)
+
     def test_prompt_answer(self):
         answered = self.client.post("/api/prompts/answer", headers=self.headers, json={
             "detector": "low", "anchor_t": "2024-05-01 12:00:00", "answer": "no"})

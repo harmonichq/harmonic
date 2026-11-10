@@ -13,7 +13,9 @@
 // phone, the scrim. On desktop the selected day's week also stays in view as
 // one ribbon under the header, following the selected day across months. The day is its DayChart, which carries its own
 // event list; a day without readings is the chart's "No data"; a day whose
-// timeline is not served yet is the chart's skeleton, as it shows while loading.
+// timeline is not served yet is the chart's skeleton, as it shows while loading;
+// a day whose read fails is Unavailable with Retry in the chart's place, no
+// insulin bar, until Retry, or picking that day again, reads it again.
 // Above the Prompts row (on desktop, beside it), the day's insulin as its
 // InsulinBar; none on a day that serves none.
 //
@@ -43,7 +45,9 @@
 //
 // Log carbs: on phone a bottom sheet over the screen (on the system keyboard,
 // which the story does not draw), on desktop a popover under "+ Log carbs".
-// Save is its one primary; it closes the entry at once (§2.5, 2026-10-25). Its
+// The grams field has the focus as the entry opens and takes digits only; Save
+// is its one primary, enabled for an amount above zero, and it closes the entry
+// at once (§2.5, 2026-10-25). Its
 // Time row opens the system time picker, and the time picked is the time the
 // carbs are logged at, today; untouched, it is the clock's when Save is
 // pressed. A save that fails shows "Not saved" with Retry in the Day view's
@@ -122,10 +126,12 @@ export type DayScreenProps = {
   notSaved?: boolean;
   /** The live engine's writes; without them the Prompts step through the served stores. */
   writes?: DayWrites;
-  /** The clock Log carbs' Save reads (`YYYY-MM-DD HH:MM`): the browser's, or a story's. */
+  /** The clock Log carbs' Save reads (`YYYY-MM-DD HH:MM`): live, the store's wall clock (#658);
+   *  otherwise the browser's, or a story's. */
   now?: () => string;
-  /** The day the screen shows, each time it changes: the live app reads it. */
-  onDay?: (iso: string) => void;
+  /** The day the screen shows, each time it changes, and again on its Retry: the live
+   *  app reads it, and rejects when it cannot be read. */
+  onDay?: (iso: string) => Promise<void>;
   /** Read another month's weeks (`YYYY-MM`) into the answers; without it only the served month steps. */
   readMonth?: (month: string) => Promise<void>;
   nav?: NavHooks;
@@ -258,7 +264,13 @@ function Day({
   const headRef = useRef<HTMLDivElement>(null);
   const [anchor, setAnchor] = useState<number>();
   const root = useMotionGate<HTMLDivElement>();
-  useEffect(() => { onDay?.(selected); }, [selected]);
+  // The day whose read failed, Unavailable until it is read again.
+  const [unread, setUnread] = useState<string | null>(null);
+  const readDay = (iso: string) => {
+    setUnread(null);
+    onDay?.(iso).catch(() => setUnread(iso));
+  };
+  useEffect(() => { readDay(selected); }, [selected]);
 
   // Live: the prompts answered while their write is in flight, the Yes card
   // held until Next with the entry its answer creates, the count the Prompts
@@ -295,7 +307,11 @@ function Day({
   const cardKey = writes ? liveCard?.anchorT ?? '' : `${kind} ${cardStore}`;
   const push = view === 'prompts' ? 'forward' : 'back';
 
-  const select = (iso: string) => { setSelected(iso); setMonth(false); };
+  const select = (iso: string) => {
+    if (iso === unread) readDay(iso);
+    setSelected(iso);
+    setMonth(false);
+  };
   const toggleMonth = () => {
     if (!month) {
       setShown(selected.slice(0, 7));
@@ -459,9 +475,10 @@ function Day({
     time: timeEdited ? loggedTime() : undefined,
     chosen,
     onTimeChange: setChosen,
+    // The field hands on digits only; Save waits for an amount above zero.
     onGramsChange: (text: string) => {
       typed.current = text;
-      setCarbs(text ? 'filled' : 'empty');
+      setCarbs(Number(text) > 0 ? 'filled' : 'empty');
     },
     onSave: save,
   };
@@ -522,7 +539,7 @@ function Day({
     return (
     <>
       <div className={`ui-dayscreen__summary ui-dayscreen__summary--${layout}`}>
-        <InsulinBar data={insulinBar(iso)} loading={state === 'loading' || !chart} />
+        <InsulinBar data={insulinBar(iso)} loading={state === 'loading' || (!chart && iso !== unread)} />
         {badge.value > 0 && (
           <ListGroup>
             {counts.low.value > 0 && (
@@ -536,7 +553,12 @@ function Day({
           </ListGroup>
         )}
       </div>
-      {state === 'loading' || !chart
+      {state !== 'loading' && !chart && iso === unread ? (
+        <div className="ui-dayscreen__day-unavailable">
+          <span>Unavailable</span>
+          <Button kind="text" label="Retry" onClick={() => readDay(iso)} />
+        </div>
+      ) : state === 'loading' || !chart
         ? <span className="ui-skeleton ui-dayscreen__skeleton" aria-hidden="true" />
         : <DayChart data={chart} layout={layout} />}
     </>

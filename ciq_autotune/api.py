@@ -1317,7 +1317,9 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         s = start.replace(tzinfo=None).strftime(fmt) if start else None
         e = end.replace(tzinfo=None).strftime(fmt) if end else None
         with Store.open(db_path) as store:
-            return {"carb_entries": store.list_carb_entries(s, e)}
+            # ``now`` is the store's wall clock (ADR 443), which Log carbs stamps an entry on
+            # whatever zone the browser runs in (ADR 658).
+            return {"carb_entries": store.list_carb_entries(s, e), "now": wall_clock_now().strftime(fmt)}
 
     @app.post("/api/carbs")
     def create_carb_endpoint(payload: dict = Body(...),

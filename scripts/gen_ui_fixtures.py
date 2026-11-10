@@ -70,11 +70,12 @@ Two committed outputs, one generator, one ``--check``:
   generator fails if any stops being served. ``wearer-worse`` also has its Queue
   answers in ``queue``.
 
-  ``day`` holds ``/api/timeline`` and ``/api/carbs`` for four of the wearer's
+  ``day`` holds ``/api/timeline`` and ``/api/carbs`` for five of the wearer's
   days, picked by rule: the latest day with readings, a site change and no
   logged carbs, the latest of the days with the most logged carbs, the first
-  day after the history ends, and the latest day with readings, with each
-  day's ``/api/model-view`` trimmed to what the Day chart marks: every
+  day after the history ends, and the latest day with readings, and one more
+  read after every other read of the wearer, an hour of whose readings the
+  store withholds (ADR 519), with each day's ``/api/model-view`` trimmed to what the Day chart marks: every
   episode's habit and every anchor's time, kind, state, glucose and matched
   verdicts. ``day.prompts``
   holds ``/api/prompts`` for the Day screen's Prompts: ``wearer-pending``, read
@@ -201,6 +202,9 @@ FAILED_LABEL = fetch_error_label(requests.exceptions.ConnectionError(FAILED_ERRO
 # a real wearer's manual carb log runs at.
 LOGGING_DAYS = 14
 UNLOGGED_LOWS = 2
+# The withheld day's second records: seconds after each reading, and mg/dL off it.
+WITHHELD_APART = 7
+WITHHELD_DISAGREE = 40
 # Day's Rises (#529): the wearer's lunches on these days of the last week,
 # never bolused for, which the engine asks about as possible meals.
 UNBOLUSED_LUNCHES = (79, 81)
@@ -450,6 +454,9 @@ def fixtures() -> dict:
         # and Day's Prompts row is gone.
         _answer_prompts(client, "carbs")
         day_prompts["wearer-answered"] = _get(client, "/api/prompts")
+        withheld, served_day = _withheld_day(database, client, overview["wearer"]["day_navigator"], day["states"])
+        day["states"]["withheld"] = withheld
+        day["days"][withheld] = served_day
         day_prompts.update(_rises(scratch))
         day["prompts"] = _require_prompts({**day_prompts, "wearer": prompts})
 
@@ -1117,31 +1124,53 @@ def _days(client: TestClient, navigator: dict) -> dict:
         "no_data": next(d["iso"] for d in navigator["days"] if not d["has_data"] and d["iso"] > with_data[-1]),
         "latest": with_data[-1],
     }
-    days = {}
-    for iso in sorted(set(picks.values())):
-        start = f"{iso}T00:00:00"
-        end = (datetime.fromisoformat(start) + timedelta(days=1)).isoformat()
-        timeline = _get(client, "/api/timeline", start=start, end=end)
-        carbs = _get(client, "/api/carbs", start=start, end=end)
-        model_view = _get(client, "/api/model-view", date=iso)
-        days[iso] = {
-            "timeline": {
-                "cgm": timeline["cgm"],
-                "boluses": [{field: b[field] for field in ("t", "insulin", "carbs")} for b in timeline["boluses"]],
-                "basal": [{field: b[field] for field in ("t", "duration_mins", "basal_rate", "profile_basal_rate")}
-                          for b in timeline["basal"]],
-                "pump_events": timeline["pump_events"],
-                "sleep_windows": timeline["sleep_windows"],
-                # The day's insulin split (ADR 492), as the InsulinBar draws it.
-                "insulin_totals": timeline["insulin_totals"] and {
-                    field: timeline["insulin_totals"][field]
-                    for field in ("basal", "meal", "correction", "control_iq_bolus", "total")},
-            },
-            "carbs": {"carb_entries": [{field: e[field] for field in ("id", "t", "grams", "certainty", "source")}
-                                       for e in carbs["carb_entries"]]},
-            "model_view": model_view_marks(model_view),
-        }
-    return {"states": picks, "days": days}
+    return {"states": picks, "days": {iso: _day(client, iso) for iso in sorted(set(picks.values()))}}
+
+
+def _day(client: TestClient, iso: str) -> dict:
+    """One day's timeline, logged carbs and trimmed model-view, as Day reads it."""
+    start = f"{iso}T00:00:00"
+    end = (datetime.fromisoformat(start) + timedelta(days=1)).isoformat()
+    timeline = _get(client, "/api/timeline", start=start, end=end)
+    carbs = _get(client, "/api/carbs", start=start, end=end)
+    model_view = _get(client, "/api/model-view", date=iso)
+    return {
+        "timeline": {
+            "cgm": timeline["cgm"],
+            "boluses": [{field: b[field] for field in ("t", "insulin", "carbs")} for b in timeline["boluses"]],
+            "basal": [{field: b[field] for field in ("t", "duration_mins", "basal_rate", "profile_basal_rate")}
+                      for b in timeline["basal"]],
+            "pump_events": timeline["pump_events"],
+            "sleep_windows": timeline["sleep_windows"],
+            # The day's insulin split (ADR 492), as the InsulinBar draws it.
+            "insulin_totals": timeline["insulin_totals"] and {
+                field: timeline["insulin_totals"][field]
+                for field in ("basal", "meal", "correction", "control_iq_bolus", "total")},
+        },
+        "carbs": {"carb_entries": [{field: e[field] for field in ("id", "t", "grams", "certainty", "source")}
+                                   for e in carbs["carb_entries"]]},
+        "model_view": model_view_marks(model_view),
+    }
+
+
+def _withheld_day(database: pathlib.Path, client: TestClient, navigator: dict, picks: dict) -> tuple[str, dict]:
+    """A day whose readings the store withholds for an hour (ADR 519): the
+    latest day with readings a fortnight before the last, which no other state
+    picked, given a second record a few seconds after each reading from 14:00
+    to 15:00 that disagrees with it. Written after every other read of the
+    wearer, so no other answer moves."""
+    with_data = [d["iso"] for d in navigator["days"] if d["has_data"]]
+    iso = next(iso for iso in reversed(with_data[:-LOGGING_DAYS]) if iso not in picks.values())
+    with Store.open(str(database)) as store:
+        readings = store.cgm_readings(f"{iso} 14:00:00", f"{iso} 15:00:00")
+        store.upsert_cgm([{"EventDateTime": (r.t + timedelta(seconds=WITHHELD_APART)).strftime("%Y-%m-%d %H:%M:%S"),
+                           "Readings (CGM / BGM)": r.bg + WITHHELD_DISAGREE, "Description": "EGV"}
+                          for r in readings])
+    day = _day(client, iso)
+    withheld = sum(1 for reading in day["timeline"]["cgm"] if reading["bg"] is None)
+    if withheld != len(readings) or not readings:
+        raise SystemExit(f"the withheld day {iso} serves {withheld} withheld readings, not {len(readings)}")
+    return iso, day
 
 
 def model_view_marks(model_view: dict) -> dict:

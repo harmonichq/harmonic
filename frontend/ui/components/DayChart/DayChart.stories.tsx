@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, within } from 'storybook/test';
-import { dayChart } from '../../day-model';
+import { dayChart, minuteOf } from '../../day-model';
+import { fixtures } from '../../fixtures';
 import { DayChart } from './DayChart';
 
 // One story per state (§4.2 DayChart), each a day of the simulated wearer
@@ -32,6 +33,14 @@ export const Default: Story = {
     const canvas = within(canvasElement);
     for (const key of ['Pattern', 'Basal', 'Pump profile', 'Suspend']) await expect(canvas.getByText(key)).toBeVisible();
     await expect(rows(canvasElement).filter((row) => row.includes('Meal · Carb undercount'))).toHaveLength(3);
+    // The basal scale's two labels each sit on the canvas, so no bar, hatch or profile line crosses them.
+    const canvasFill = getComputedStyle(canvasElement.querySelector('.ui-daychart__halo')!).fill;
+    const labels = [...canvasElement.querySelectorAll('[data-axis] .ui-daychart__scale')].filter((label) => /^[+−]/.test(label.textContent ?? ''));
+    await expect(labels).toHaveLength(2);
+    for (const label of labels) {
+      const plate = canvasElement.querySelector(`${label.getAttribute('filter')?.slice(4, -1)} feFlood`);
+      await expect(plate && getComputedStyle(plate).floodColor).toBe(canvasFill);
+    }
   },
 };
 export const WithLoggedCarbs: Story = {
@@ -45,6 +54,24 @@ export const WithLoggedCarbs: Story = {
     // Each finding's row has its Pattern glyph on the chart.
     const named = list.filter((row) => /Carb undercount|Late bolus|Meal over-delivery|Over-treated low/.test(row));
     await expect(canvasElement.querySelectorAll('.ui-daychart__chart .ui-daychart__mark--pattern')).toHaveLength(named.length);
+  },
+};
+// A day an hour of whose readings the store withholds, their records
+// disagreeing (ADR 519): the trace breaks there, as where readings stop, and
+// draws no withheld reading at all.
+export const Withheld: Story = {
+  args: { data: dayChart('withheld') },
+  play: async ({ canvasElement }) => {
+    const served = fixtures.day.days[fixtures.day.states.withheld as keyof typeof fixtures.day.days].timeline.cgm;
+    const withheld = served.filter((reading) => reading.bg === null).map((reading) => minuteOf(reading.t));
+    await expect(withheld.length).toBeGreaterThan(0);
+    const svg = canvasElement.querySelector<SVGSVGElement>('.ui-daychart__chart')!;
+    const x = (minute: number) => svg.width.baseVal.value * (minute / 1440);
+    const [from, to] = [x(Math.min(...withheld)), x(Math.max(...withheld))];
+    const vertices = [...svg.querySelectorAll('.ui-daychart__trace--in-range')]
+      .flatMap((line) => (line.getAttribute('points') ?? '').split(' ').map((point) => Number(point.split(',')[0])));
+    await expect(vertices.filter((at) => at >= from - 0.1 && at <= to + 0.1)).toEqual([]);
+    await expect(vertices.some((at) => at < from) && vertices.some((at) => at > to)).toBe(true);
   },
 };
 export const NoData: Story = {

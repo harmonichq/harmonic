@@ -116,8 +116,10 @@ generator emits instead of the showcase.
 - `frontend/app.browser.test.mjs` is the one browser smoke test: the built app
   opens each of its five tabs once at 1440×900, and each draws its primary
   content with no skeleton and no Unavailable. Its context sends
-  `Connection: close` (#507). It is not where behaviour is tested; the Storybook
-  suite and the contract tests are.
+  `Connection: close` (#507). It also holds the one check of the app's own
+  shell, which no story loads: on a 390×844 phone, Log carbs rises without the
+  document ever scrolling (ADR 682). It is not where behaviour is tested; the
+  Storybook suite and the contract tests are.
 
 Both run in CI's `app` job, hand-listed. They fail closed without a serve, and
 the browser smoke fails closed without a driver. Their files are deliberately

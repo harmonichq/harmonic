@@ -323,6 +323,19 @@ export const RoutedPreviousPhone: Story = {
   ...story('phone', { ...PREVIOUS, nav: { drillDown: historyRouter<ChangesDrillDown>() } }), play: routedPreviousPlay };
 export const RoutedPreviousDesktop: Story = {
   ...story('desktop', { ...PREVIOUS, nav: { drillDown: historyRouter<ChangesDrillDown>() } }), play: routedPreviousPlay };
+// Forward onto Previous when no previous change is served: Previous is not
+// reachable at 0 (§1.3), so it leaves through the router at once.
+export const ForwardPreviousEmpty: Story = {
+  ...story('phone', { ...MATURED, nav: { drillDown: historyRouter<ChangesDrillDown>(undefined, { view: 'previous' }) } }),
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.queryByRole('button', { name: /Previous/ })).toBeNull();
+    const router = args.nav!.drillDown as ReturnType<typeof historyRouter<ChangesDrillDown>>;
+    router.forward();
+    await waitFor(() => expect(router.close).toHaveBeenCalledOnce());
+    await expect(canvas.queryByRole('heading', { level: 1, name: 'Previous' })).toBeNull();
+  },
+};
 // A Back from another tab onto Previous's entry opens it as it was.
 export const ReturnedToPrevious: Story = {
   ...story('phone', { ...PREVIOUS, returnTo: { view: 'previous' }, nav: { drillDown: historyRouter<ChangesDrillDown>({ view: 'previous' }) } }),

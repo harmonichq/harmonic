@@ -109,7 +109,8 @@ function Fields({ enabled, onSave, children }: { enabled: boolean; onSave: () =>
   const onKeyDown = (event: KeyEvent<HTMLFormElement>) => {
     if (event.key !== 'Enter' || !(event.target instanceof HTMLInputElement) || event.nativeEvent.isComposing) return;
     event.preventDefault();
-    if (enabled) onSave();
+    // A held Enter repeats its keydown: it saves once.
+    if (enabled && !event.repeat) onSave();
   };
   return (
     <form className="ui-settings__fields" onKeyDown={onKeyDown} onSubmit={(event) => event.preventDefault()}>
@@ -322,11 +323,17 @@ function Settings({
   const failed = tandemSource(sync, shownAccount).failed === true;
 
   const [notSaved, setNotSaved] = useState<{ retry: () => void } | null>(null);
+  // Each save, so one that settles after its form was left changes nothing (#661).
+  const attempt = useRef(0);
   const save = (email: string, password: string) => {
     setForm('saving');
     setNotSaved(null);
     if (writes) {
-      writes.saveCredentials(email, password).then(() => setForm(null), () => {
+      const made = ++attempt.current;
+      writes.saveCredentials(email, password).then(() => {
+        if (made === attempt.current) setForm(null);
+      }, () => {
+        if (made !== attempt.current) return;
         setForm('open');
         setNotSaved({ retry: () => save(email, password) });
       });
@@ -347,7 +354,12 @@ function Settings({
     if (to !== 'root') router?.open({ view: to });
     setView(to);
   };
-  const returned = useRef(() => { setForm(null); setNotSaved(null); setView('root'); });
+  const returned = useRef(() => {
+    attempt.current += 1;
+    setForm(null);
+    setNotSaved(null);
+    setView('root');
+  });
   const leave = () => (router ? router.close() : returned.current());
   useEffect(() => router?.onReturn(() => returned.current()), [router]);
   useEffect(() => router?.onEnter((to) => setView(to.view)), [router]);

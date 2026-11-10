@@ -277,8 +277,12 @@ export function QueueScreen({
   const leave = () => (router ? router.close() : setView('queue'));
   const returned = useRef(() => setView('queue'));
   useEffect(() => router?.onReturn(() => returned.current()), [router]);
-  // A Forward onto a drill-down's entry reopens it as it was (#669).
+  // A Forward onto a drill-down's entry reopens it as it was (#669); onto Snoozed
+  // with nothing snoozed, which is not reachable (§1.3), it leaves through the
+  // router, as an unranked Pattern's does (below).
+  const snoozedCountNow = useRef<number | null>(null);
   const entered = useRef((to: DrillDown) => {
+    if (to.view === 'snoozed' && snoozedCountNow.current === 0) { router?.close(); return; }
     if (to.view === 'causes') setDrill({ subject: to.subject!, title: to.title ?? '', causes: to.causes ?? 0 });
     setView(to.view);
   });
@@ -298,6 +302,7 @@ export function QueueScreen({
     setSelected(subject);
   };
   const snoozedTotal = ready ? snoozedCount(shown, held) : null;
+  snoozedCountNow.current = snoozedTotal?.value ?? null;
 
   // Each write's bar rises as it is made (ADR 629). A refused write is the adapter's to hold, and its bar
   // outranks this one; a refusal clears the write's own bar, and an Undo's refusal has none.

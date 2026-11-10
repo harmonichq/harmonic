@@ -282,6 +282,22 @@ export const Forward: Story = {
   },
 };
 
+/** Forward onto Snoozed once nothing is snoozed (its last item restored since):
+ *  an empty Snoozed is not reachable (§1.3), so it leaves through the router at
+ *  once and the Queue stays. */
+export const ForwardSnoozedEmpty: Story = {
+  args: { layout: 'phone', store: RETURN.store, nav: { drillDown: router(undefined, { view: 'snoozed' }) } },
+  parameters: { frame: FRAMES.phone },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.queryByRole('button', { name: /^Snoozed/ })).toBeNull();
+    const drillDown = args.nav!.drillDown as ReturnType<typeof router>;
+    drillDown.forward();
+    await waitFor(() => expect(drillDown.close).toHaveBeenCalledOnce());
+    await expect(canvas.queryByRole('heading', { level: 1, name: 'Snoozed' })).toBeNull();
+  },
+};
+
 /** Returned to: a Back from Changes onto the drill-down's history entry opens
  *  it as it was; "‹ Queue" then goes Back through the router, whose return
  *  shows the Queue with the Pattern open. */

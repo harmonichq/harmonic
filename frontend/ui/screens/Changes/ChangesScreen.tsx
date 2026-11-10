@@ -165,9 +165,15 @@ export function ChangesScreen({
   };
   const leave = () => (router ? router.close() : setView('changes'));
   useEffect(() => router?.onReturn(() => setView('changes')), [router]);
-  useEffect(() => router?.onEnter((to) => setView(to.view)), [router]);
   const viewNow = useRef(view);
   viewNow.current = view;
+  // A Forward onto Previous reopens it (#669); with no previous change served,
+  // Previous is not reachable (§1.3), so it leaves through the router.
+  const previousNow = useRef<number | null>(null);
+  useEffect(() => router?.onEnter((to) => {
+    if (previousNow.current === 0) router.close();
+    else setView(to.view);
+  }), [router]);
   const [notSaved, setNotSaved] = useState(false);
   // Live: End confirmed, until its write resolves or is refused.
   const [ending, setEnding] = useState(false);
@@ -176,6 +182,7 @@ export function ChangesScreen({
   const ready = state === 'ready' || state === 'stale';
   const active: ChangeData = ready ? change(shown, ending) : { kind: 'none' };
   const count = ready ? previousCount(shown, ending) : null;
+  previousNow.current = count?.value ?? null;
   const pending = ready ? waiting(shown) : [];
   // The confirmation stays while it closes, and keeps the change it asked about.
   const asked = usePresence(asking && ready);

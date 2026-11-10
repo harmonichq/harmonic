@@ -385,7 +385,10 @@ function Settings({
   // The account form stays while it closes, as it last showed.
   const formShown = usePresence(form);
   const formOpen = Boolean(formShown.value) && !formShown.closing;
-  const formRef = useDialogFocus<HTMLElement>(formOpen, { modal: layout === 'phone' });
+  // The Not saved bar over the open form is in its Tab cycle (on phone it is
+  // inside the sheet's scrim; on desktop it is pinned to the pane).
+  const barRef = useRef<HTMLDivElement>(null);
+  const formRef = useDialogFocus<HTMLElement>(formOpen, { modal: layout === 'phone', part: barRef });
   const popover = layout === 'desktop' && formShown.value && (
     <section ref={formRef} className="ui-popover ui-popover--end ui-settings__form ui-settings__form--desktop" role="dialog"
       aria-label="Tandem Source" {...formShown.exit}>
@@ -404,7 +407,7 @@ function Settings({
   const barShown = usePresence(notSaved);
   // Over the open form, so the failure and its Retry stay in view (#661): on phone above the sheet.
   const bar = barShown.value && (
-    <div className="ui-settings__bar" {...barShown.exit}>
+    <div ref={barRef} className="ui-settings__bar" {...barShown.exit}>
       <TransientBar kind="not_saved" onRetry={barShown.value.retry} layout={layout} />
     </div>
   );

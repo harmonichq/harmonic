@@ -58,6 +58,21 @@ const SHOTS = join(ROOT, 'frontend/ui/__shots__');
 const FIXTURES = JSON.parse(readFileSync(join(ROOT, 'frontend/ui/__fixtures__/ui-fixtures.json'), 'utf8'));
 const ALLOWED = new Set(JSON.parse(readFileSync(join(ROOT, 'frontend/ui/__fixtures__/ui-allowlist.json'), 'utf8')).words);
 
+// Every gate probe the run must find built (frontend/ui/gate), so a probe
+// deleted, or the probes dropped from the Storybook build, fails the run
+// rather than leave a rule that can no longer be shown to fail; and the rules
+// each must show failing. (n) is read once, over the colour tokens, not per
+// story; its own test and the unit tests show it.
+const GATE_PROBES = ['sentence', 'word-not-allowed', 'wrong-height', 'two-primaries', 'number-unsourced',
+  'nested-scroll', 'tap-with-no-role', 'invisible-tab-stop', 'same-focused', 'pane-same-focused',
+  'time-field-same-focused', 'no-name', 'word-run-into-number', 'word-run-into-word', 'badge-in-name',
+  'image-hides-its-text', 'group-keeps-its-text', 'focusable-hidden', 'toggle-with-no-state', 'covered-still-named',
+  'positive-tabindex', 'reversed-row', 'under-target', 'hit-area-over-bar', 'buttons-under-bar', 'status-not-live',
+  'bar-label-not-live', 'dialog-keeps-no-focus', 'dialog-undeclared', 'reads-open-draws-nothing',
+  'modal-beside-a-control', 'popover-lets-tab-out', 'modal-lets-tab-out', 'covers-but-not-modal',
+  'trigger-gone-at-close'].map((name) => `gate-probes--${name}`);
+const PROBED_RULES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm'];
+
 const mode = process.argv[2];
 if (mode !== 'check' && mode !== 'shots') {
   console.error('usage: node scripts/ui-stories.mjs check|shots');
@@ -146,9 +161,13 @@ function inspect() {
 // every exposed graphic, marked data-a11y-graphic. A control is a native one,
 // anything with a role or a tabindex, or anything React gives a tap handler.
 // A story's held pseudo state (.sb-focused) is its picture, not the control's
-// own rest, so it is dropped first. A control an open dialog or its scrim
-// covers is not reached or tapped while it is open, so (g) and (l) skip it; one
-// beside the dialog, which still takes a tap, is checked as any other.
+// own rest, so it is dropped first. While a dialog is open Tab goes round
+// inside it (and the part drawn apart from it, [data-dialog-part]), so (g)
+// reads only what is in that cycle, and what is outside it is reached once it
+// closes, in the screen's other stories; a status's control is the exception,
+// since what a failure shows over an open dialog is for that dialog. A control
+// the dialog or its scrim covers is not tapped while it is open, so (l) skips
+// it; one beside the dialog, which still takes a tap, is checked as any other.
 function a11yRest({ exempt, statuses, statusSelector }) {
   for (const animation of document.getAnimations()) {
     if (Number.isFinite(animation.effect?.getComputedTiming().endTime)) animation.finish();
@@ -168,6 +187,8 @@ function a11yRest({ exempt, statuses, statusSelector }) {
   };
   window.__a11yStyle = (el) => [read(el), read(el, '::before'), read(el, '::after'),
     el.parentElement ? read(el.parentElement) : ''].join('#');
+  // A page the browser lets Tab scroll is a stop, and is judged for (h) as one.
+  for (const pane of shot.querySelectorAll('[data-scroll="page"]')) pane.__a11yRest = window.__a11yStyle(pane);
   const NATIVE = 'button, a[href], input:not([type="hidden"]), select, textarea, summary';
   const ROLES = new Set(['button', 'link', 'tab', 'checkbox', 'radio', 'switch', 'menuitem', 'menuitemcheckbox',
     'menuitemradio', 'option', 'slider', 'spinbutton', 'textbox', 'combobox', 'searchbox', 'treeitem']);
@@ -236,7 +257,10 @@ function a11yRest({ exempt, statuses, statusSelector }) {
     const group = el.parentElement?.closest('[role="group"], [role="radiogroup"], [role="tablist"]');
     const members = group ? found.filter((other) => group.contains(other) && roleOf(other) === role).length : 0;
     const skip = exempt.filter(({ selector }) => el.matches(selector)).flatMap(({ rules }) => rules);
-    if (dialog && !dialog.contains(el) && covered(el)) skip.push('g', 'l');
+    if (dialog && !dialog.contains(el) && !el.closest('[data-dialog-part]')) {
+      if (!el.closest('[aria-live]:not([aria-live="off"]), [role="status"], [role="alert"]')) skip.push('g');
+      if (covered(el)) skip.push('l');
+    }
     const tabindex = el.getAttribute('tabindex');
     return {
       label: label(el), role, handler: handler(el), focusable: el.tabIndex >= 0,
@@ -294,14 +318,24 @@ function a11yFocus() {
     if (Number.isFinite(animation.effect?.getComputedTiming().endTime)) animation.finish();
   }
   // A stop the rest pass did not collect has index -1: a pane the browser lets
-  // Tab scroll, or one drawn invisible, which is no visible control. A text
-  // field shows its focus by its caret.
+  // Tab scroll, or one drawn invisible, which is no visible control. A field
+  // that draws a caret shows its focus by it; a time or a date field does not.
   const index = el.dataset.a11y === undefined ? -1 : Number(el.dataset.a11y);
-  const caret = el.matches('input:not([type="checkbox"], [type="radio"], [type="range"], [type="button"], '
-    + '[type="submit"]):not([readonly]), textarea:not([readonly])') && getComputedStyle(el).caretColor !== 'rgba(0, 0, 0, 0)';
+  // Focus on a control an open dialog (or its scrim) is drawn over: a key
+  // would press what cannot be seen.
+  const dialog = [...document.querySelectorAll('[data-shot] [role="dialog"]')]
+    .find((d) => d.checkVisibility({ visibilityProperty: true, opacityProperty: true }));
+  const centre = el.getBoundingClientRect();
+  const [cx, cy] = [centre.x + centre.width / 2, centre.y + centre.height / 2];
+  const hit = dialog && !dialog.contains(el) && !el.closest('[data-dialog-part]')
+    && cx >= 0 && cy >= 0 && cx < innerWidth && cy < innerHeight ? document.elementFromPoint(cx, cy) : null;
+  const covered = Boolean(hit && !el.contains(hit) && (dialog.contains(hit) || hit.closest('.ui-scrim')));
+  const typed = el.tagName === 'TEXTAREA'
+    || (el.tagName === 'INPUT' && ['text', 'number', 'password', 'email', 'search', 'tel', 'url'].includes(el.type));
+  const caret = typed && !el.readOnly && getComputedStyle(el).caretColor !== 'rgba(0, 0, 0, 0)';
   const box = el.getBoundingClientRect();
   const visible = box.width > 0 && box.height > 0 && el.checkVisibility({ opacityProperty: true, visibilityProperty: true });
-  return { index, visible, label: el.getAttribute('aria-label') || el.textContent.trim().slice(0, 48) || el.tagName.toLowerCase(),
+  return { index, visible, covered, label: el.getAttribute('aria-label') || el.textContent.trim().slice(0, 48) || el.tagName.toLowerCase(),
     changed: caret || window.__a11yStyle(el) !== el.__a11yRest };
 }
 
@@ -378,15 +412,17 @@ const waitFor = (page, predicate, timeout) => page.waitForFunction(predicate, nu
   .then(() => true, () => false);
 
 // (k) on the dialog now open: focus is in it, and Tab and Shift+Tab, one more
-// time each than it has stops, never take focus out of it. Then Escape, and
-// (with a trigger) focus is back on the trigger. Whether it should be modal is
-// what the screen shows: `beside` counts the controls outside it a tap at their
-// centre still lands on (no scrim, nor the dialog, over them).
+// time each than its cycle has stops, never take focus out of it (nor onto a
+// control it covers), modal or not. Then Escape, and (with a trigger) focus is
+// back on the trigger. Whether it is marked modal is what the screen shows:
+// `beside` counts the controls outside it a tap at their centre still lands on
+// (no scrim, nor the dialog, over them).
 async function walkDialog(page, trigger, escape) {
   const inDialog = () => {
     const dialog = [...document.querySelectorAll('[data-shot] [role="dialog"]')]
       .find((d) => d.checkVisibility({ visibilityProperty: true }));
-    return Boolean(dialog?.contains(document.activeElement));
+    const active = document.activeElement;
+    return Boolean(dialog?.contains(active) || (dialog && active?.closest('[data-dialog-part]')));
   };
   const stops = await page.evaluate(() => {
     for (const animation of document.getAnimations()) {
@@ -405,20 +441,24 @@ async function walkDialog(page, trigger, escape) {
         return Boolean(hit && el.contains(hit));
       }).length;
     return { name: dialog.getAttribute('aria-label'), modal: dialog.getAttribute('aria-modal') === 'true', beside,
-      count: [...dialog.querySelectorAll('button, a[href], input, select, textarea, [tabindex]')]
+      count: [...document.querySelectorAll('[data-shot] [data-dialog-part]'), dialog]
+        .flatMap((region) => [...region.querySelectorAll('button, a[href], input, select, textarea, [tabindex]')])
         .filter((el) => el.tabIndex >= 0 && !el.matches(':disabled') && el.checkVisibility()).length };
   });
   const inside = await page.evaluate(inDialog);
   let trapped = true;
-  // A dialog that is not modal lets Tab out; it is walked for the rest.
-  for (const key of stops.modal ? ['Tab', 'Shift+Tab'] : []) {
+  const obscured = new Set();
+  for (const key of ['Tab', 'Shift+Tab']) {
     for (let i = 0; i <= stops.count; i += 1) {
       await page.keyboard.press(key);
       if (!await page.evaluate(inDialog)) trapped = false;
+      const step = await page.evaluate(a11yFocus);
+      if (step?.covered) obscured.add(step.label);
     }
   }
   const { name, modal, beside } = stops;
-  if (!escape) return { name, modal, beside, inside, trapped, closed: null, returned: null };
+  const walked = { name, modal, beside, inside, trapped, obscured: [...obscured] };
+  if (!escape) return { ...walked, closed: null, returned: null };
   // Escape from inside it, where a keyboard user is when they press it.
   if (!await page.evaluate(inDialog)) {
     await page.evaluate(() => [...document.querySelectorAll('[data-shot] [role="dialog"]')]
@@ -429,7 +469,7 @@ async function walkDialog(page, trigger, escape) {
   const closed = await waitFor(page, DIALOG_GONE, 3000);
   const returned = trigger === null ? null
     : await page.evaluate((index) => document.activeElement?.dataset.a11y === String(index), trigger);
-  return { name, modal, beside, inside, trapped, closed, returned };
+  return { ...walked, closed, returned };
 }
 
 // The walk, after the visual prechecks have read the story at rest. A
@@ -596,8 +636,9 @@ for (const [what, path] of [['the built Storybook (npm run build-storybook)', jo
 // UI_STORY narrows a run to the story ids containing it, for iterating on one
 // component; the full run leaves it unset.
 const only = process.env.UI_STORY;
-const stories = Object.values(JSON.parse(readFileSync(join(STATIC, 'index.json'), 'utf8')).entries)
-  .filter((entry) => entry.type === 'story' && (!only || entry.id.includes(only)));
+const indexed = Object.values(JSON.parse(readFileSync(join(STATIC, 'index.json'), 'utf8')).entries)
+  .filter((entry) => entry.type === 'story');
+const stories = indexed.filter((entry) => !only || entry.id.includes(only));
 if (stories.length === 0) {
   console.error('the built Storybook indexes no stories');
   process.exit(1);
@@ -673,7 +714,7 @@ async function render(page, id) {
 }
 
 if (mode === 'check') {
-  const run = { seen: new Set(), walked: new Set(), declared: new Set(), opened: new Set() };
+  const run = { seen: new Set(), walked: new Set(), declared: new Set(), opened: new Set(), probed: new Set() };
   test.after(async () => {
     await browser.close();
     server.close();
@@ -702,6 +743,7 @@ if (mode === 'check') {
         problems.push(...interactionProblems(await walkStory(page, story, run, owner)));
         if (gate) {
           assert.ok(story.title.startsWith('Gate/'), 'only a gate probe declares what the walk must find');
+          for (const line of gate.expect) run.probed.add(/^\((\w)\)/.exec(line)?.[1]);
           assert.deepEqual(problems.filter((line) => gate.rules.some((rule) => line.startsWith(`(${rule})`))), gate.expect);
         } else {
           assert.ok(!story.title.startsWith('Gate/'), 'a gate probe declares what the walk must find');
@@ -720,6 +762,17 @@ if (mode === 'check') {
     } finally {
       await page.close();
     }
+  });
+  // The probes are all built and none is unlisted, read from the whole
+  // index, so a narrowed run checks it too; and between them every rule is
+  // shown failing (a probe whose expected lines name it), once they have all run.
+  test('every gate probe is built, and none is unlisted', () => {
+    const built = indexed.filter((entry) => entry.title.startsWith('Gate/')).map((entry) => entry.id);
+    assert.deepEqual({ missing: GATE_PROBES.filter((id) => !built.includes(id)), unlisted: built.filter((id) => !GATE_PROBES.includes(id)) },
+      { missing: [], unlisted: [] });
+  });
+  test('every rule has a probe that fails', { skip: !GATE_PROBES.every((id) => stories.some((entry) => entry.id === id)) }, () => {
+    assert.deepEqual(PROBED_RULES.filter((rule) => !run.probed.has(rule)), []);
   });
   // A dialog drawn only in a story with no trigger (a component's own
   // picture) is walked from its trigger on a screen's story; a whole run

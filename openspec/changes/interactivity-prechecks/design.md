@@ -25,30 +25,45 @@ rules, and whether the criteria also become the `/ui-craft` standard.
      anything React gives a tap handler (click, double-click, mouse down or up)
      is a control; each needs a role and must be reached by Tab, which the walk
      presses from the top of the document until focus leaves the story. A Tab
-     stop that is no visible control (drawn at opacity 0, say) fails.
+     stop that is no visible control (drawn at opacity 0, say) fails. While a
+     dialog is open, Tab goes round inside it, so only its cycle is read: what
+     lies outside is reached once it closes, in the screen's other stories,
+     except a status's control, which belongs in the cycle.
    - *Visible focus*: each element Tab reaches is compared with its own rest
      (outline, shadow, background, borders, colour, its pseudo-elements and its
      parent); identical fails. A story's held pseudo state (`.sb-focused`) is
-     dropped first, so it cannot stand in for the control's own focus. A text
-     field shows its focus by its caret: the grams field's accent underline is
-     drawn by its `focused` prop, as the lock draws it, not by keyboard focus.
+     dropped first, so it cannot stand in for the control's own focus. A page
+     or pane the browser lets Tab scroll is a stop, judged as any: it shows the
+     `--ring` outline, drawn inside its edge. A field that draws a caret (text,
+     number, password, email, search, telephone, address, a text area) shows
+     its focus by it; a time or a date field does not, and must show it some
+     other way. The grams field's accent underline is drawn by its `focused`
+     prop, as the lock draws it, not by keyboard focus.
    - *Named*: every control, and every SVG, canvas or image not hidden from
      assistive technology, has an accessible name. The name reads as words: two
      pieces of the control's own text that the name reads with nothing between
      them fail (word and word, word and number), and no badge drawn on the
      control is inside it (a count or an alert is the control's description). A
      graphic drawn as an image (`role="img"`) hides no text of its own; a chart
-     that draws text is a named group, so its text stays readable. A tab, and a
+     that draws text is a named group, so its text stays readable, and a chart
+     part with no text of its own is hidden rather than named again (Meal size's
+     strips, whose values are its table's). A mark that is the chart's point is
+     named with what it marks where the component holds it: Basal's ▲ and ▼ by
+     their slot ("▲ 06:00–06:30"), the direction read as its mark, since the
+     glossary has no word for it. A tab, and a
      button among two or more in a group, exposes pressed, selected, checked or
      current; nothing focusable sits inside `aria-hidden`.
    - *Order*: no positive tabindex, and Tab never moves up a column or left along
      a line within one region (a scrolling pane, or what lies outside every pane).
    - *Escape and return*: every control that declares `aria-haspopup="dialog"` is
-     pressed with Enter; its dialog must take focus, close on Escape and hand
-     focus back to it. It is marked modal (`aria-modal`) exactly when nothing
-     beside it still takes a tap, read by hit-testing every control outside it,
-     and a modal one keeps focus through one more Tab and Shift+Tab than it has
-     stops. A dialog a story already shows is walked for its focus, trap and
+     pressed with Enter; its dialog must take focus, keep it through one more
+     Tab and Shift+Tab than its cycle has stops, close on Escape and hand focus
+     back to it. Focus never lands on a control an open dialog or its scrim is
+     drawn over, in the walk of the story or of the dialog. Containment and
+     modality are two rules: every dialog, sheet or popover, phone or desktop,
+     contains focus; it is marked modal (`aria-modal`) exactly when nothing
+     beside it still takes a tap, read by hit-testing every control outside it.
+     A dialog a story already shows is walked for its focus, trap and
      Escape, and, once Escape has closed it, from its trigger again, which
      proves the return. A trigger that reads open while it draws no dialog
      fails. A component story draws a trigger whose dialog its screen owns, so a
@@ -85,21 +100,40 @@ rules, and whether the criteria also become the `/ui-craft` standard.
    an unpainted hit area; the button is its own stacking context, so its hit
    area never stacks above anything the button does not (a bar pinned over it
    is over its hit area too). A dialog's focus contract is one hook
-   (`useDialogFocus`) every sheet and popover uses: focus in, focus kept when
-   what held it goes, focus back to the trigger on close, or, when closing took
-   the trigger away (a confirmed End), to the nearest heading still on the
-   page; a sheet over a scrim is modal and keeps Tab inside, and an anchored
-   desktop popover, beside a page that still takes taps, is not modal and lets
-   Tab out. A sheet whose scrim also shows something to press (Settings' Not
-   saved bar and its Retry, over the account form) is one dialog, the scrim, so
-   that Retry is inside the Tab cycle. Escape stays with each screen, which owns what closing means. A
-   trigger declares its dialog through the component it is drawn with.
+   (`useDialogFocus`) every sheet and popover uses: focus in, Tab and Shift+Tab
+   kept inside it while it is open, focus kept when what held it goes, focus
+   back to the trigger on close, or, when closing takes the trigger away (a
+   confirmed End takes its Trial's card), to the first heading shown in the
+   nearest of its surviving ancestors that holds one (on Changes, the pane's
+   "Changes"), whether the trigger goes before the cleanup or after it. A
+   sheet over a scrim is marked modal; an anchored desktop popover, beside a
+   page that still takes taps, is not marked modal, and still contains focus.
+   What a dialog shows apart from itself is in its cycle: on phone, Settings'
+   Not saved bar and its Retry over the account form are inside its scrim,
+   which is the dialog; on desktop that bar stays pinned to the pane, and the
+   hook takes it into the form's cycle as the dialog's part. The Day month's
+   cycle is its own: its name, ‹ and ›, its weeks (or Retry); the header's day
+   that opened it stays outside, and Escape closes the month and gives focus
+   back to it. Escape stays with each screen, which owns what closing means.
+   Pointer behaviour is unchanged: no backdrop is added, and a click outside
+   does what it did. A trigger declares its dialog through the component it is
+   drawn with.
+
+   **Decided by the coordinator, #676's second review (2026-11-10):**
+   containment and modality are separate. The first build of this ADR let a
+   non-modal desktop popover release Tab, and Tab from desktop Log carbs' Save
+   then reached the day buttons and the Lows row the popover was drawn over:
+   a keyboard user pressed what they could not see. The issue's own words ("any
+   open sheet or popover (role=dialog) closes on Escape, traps focus while open,
+   and returns focus to its trigger") stand: every dialog contains focus, and
+   `aria-modal` stays honest to what a tap can reach.
 6. **Exemptions are listed in the precheck's own allowlists, each with its
    reason** (`INTERACTION_EXEMPT`, `CONTRAST_EXEMPT`). There are five: a sheet's
    scrim, whose keyboard equivalent is Escape on its dialog, which the walk
-   proves; a control an open dialog or its scrim covers, which no tap and no Tab
-   reaches while it is open (skipped for reachable and target size only: its
-   name is still read, and a control beside the dialog is checked as any); a
+   proves; while a dialog is open, a control outside its cycle for reachable
+   (Tab goes round inside the dialog; a status's control is not exempt), and a
+   control it or its scrim covers for target size (no tap reaches it); its name
+   is still read, and a control beside the dialog is checked for its taps; a
    Prompt's answers in the Mid swipe stories, a finger's frame held still that
    the app never rests in; Day's "+ Log carbs" while the day loads, whose sheet
    opens once the day lands (which a loading story never does), and which reads
@@ -109,8 +143,12 @@ rules, and whether the criteria also become the `/ui-craft` standard.
    (`frontend/ui/gate/`, Storybook's `Gate/`): stories that draw one defect on
    purpose and name, in their `gate` parameter, the rules they probe and exactly
    what the walk must find. A probe passes when the walk finds exactly that, so
-   a rule that goes vacuous fails its probe. The probes are not screenshotted
-   and not part of the app.
+   a rule that goes vacuous fails its probe. The run holds the list of probes
+   it must find built, and fails when one is missing or one is built unlisted
+   (a probe deleted, or the probes dropped from the Storybook build); and each
+   rule from (a) to (m) must have a probe whose expected lines name it. (n) is
+   read once over the colour tokens, not per story, and its own test and unit
+   tests show it. The probes are not screenshotted and not part of the app.
 8. **Scope stays in this repository.** Whether these criteria also become the
    `/ui-craft` standard is the operator's to decide separately.
 
@@ -131,6 +169,11 @@ exempt with that reason, pending the operator.
 - Run together is judged on the control's own text pieces when its contents
   name it; an authored `aria-label` is judged only for a letter run into a
   digit.
+- Only a status's control outside an open dialog is required in its cycle; any
+  other control drawn beside an open dialog is reached by Tab once it closes,
+  and the walk reads that in the screen's stories where it is closed.
+- A chart mark's name is judged only for being present; Basal's direction is
+  read as its glyph, since the glossary has no word for raise or lower.
 
 **Alternatives.** axe-core for names and contrast (rejected above). Activating
 every control to discover undeclared dialog triggers: each press needs a fresh

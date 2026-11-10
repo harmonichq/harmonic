@@ -61,7 +61,9 @@ const Median = ({ value }: { value: MealSizeRow['median'] }) => (value ? <Num va
 
 /** One size's strip, over the axis's grid lines: its 10–90% a thin capped
  *  whisker in its colour, its Range a thick line over it, and its median a
- *  short ink tick on top (#570). No meal is drawn on its own. */
+ *  short ink tick on top (#570). No meal is drawn on its own.
+ *  It carries no text: its values are the table's, so it is hidden, and the
+ *  axis beneath, which carries the ticks, is the one group named Meal size. */
 function Strip({ row, scale, index }: { row: MealSizeRow; scale: Scale; index: number }) {
   const [box, width] = useWidth<HTMLDivElement>();
   const x = (value: number) => PAD + (width - 2 * PAD) * ((value - scale.first) / (scale.last - scale.first));
@@ -71,7 +73,7 @@ function Strip({ row, scale, index }: { row: MealSizeRow; scale: Scale; index: n
     <div ref={box} className="ui-meal-size__strip" data-size={index}>
       {width > 0 && (
         <svg width={width} height={STRIP} viewBox={`0 0 ${width} ${STRIP}`} className="ui-chart__svg"
-          role="group" aria-label="Meal size">
+          aria-hidden="true">
           {scale.values.map((value) => (
             <line key={value} x1={x(value)} x2={x(value)} y1={0} y2={STRIP}
               className={value === 0 ? 'ui-chart__zero' : 'ui-chart__grid'} />

@@ -13,6 +13,14 @@
   :root { --ui-device-inset-bottom: 0px; }
 }
 
+/* A page or pane the browser lets Tab scroll (no control in view to stop on)
+   shows its focus as a control does: the --ring outline, drawn inside its edge
+   so the pane's own bounds never clip it (#582). */
+[data-scroll='page']:focus-visible {
+  outline: 3px solid var(--ring);
+  outline-offset: -3px;
+}
+
 /* The caps caption the lock uses for a value's name: "Range", "Cause". */
 .ui-caption {
   color: var(--wk-ink-meta);

@@ -9,9 +9,12 @@ Tab stop is a visible control; each element Tab reaches looks different focused;
 every control and every exposed graphic has an accessible name that reads as
 words, and a tab or a button of a toggle group exposes its state; Tab has no
 positive tabindex and never runs back against reading order within a region; a
-sheet or popover is opened from a control that declares it, takes focus when it
-opens, closes on Escape and returns focus to its trigger, and is modal, keeping
-Tab inside, exactly when nothing beside it takes a tap; on a phone-width frame
+sheet or popover, phone or desktop, is opened from a control that declares it,
+takes focus when it opens, keeps Tab and Shift+Tab inside it while open, closes on
+Escape and returns focus to its trigger (or, when closing takes its trigger away,
+to the nearest heading still shown), and is marked modal exactly when nothing
+beside it takes a tap; focus never lands on a control an open dialog covers; a
+status's control shown with an open dialog is in its Tab cycle; on a phone-width frame
 every control takes a tap 44 px across through its centre, and at any width a
 control pinned over a scrolling page takes its own taps; a status the app raises
 on its own is in a live region. Once per run, every text ink SHALL hold 4.5:1 on every ground
@@ -43,3 +46,15 @@ states the reason.
 - **GIVEN** a gate probe story that draws one defect and names what the walk must find
 - **WHEN** the Storybook gate walks it and finds nothing
 - **THEN** the probe's test fails
+
+#### Scenario: A probe that is not built fails the run
+
+- **GIVEN** the run's list of gate probes, and a rule from (a) to (m)
+- **WHEN** a listed probe is missing from the built Storybook, or no probe expects a line for that rule
+- **THEN** the run fails
+
+#### Scenario: A desktop popover contains focus without being marked modal
+
+- **GIVEN** a desktop popover beside a page that still takes taps
+- **WHEN** the gate presses Tab and Shift+Tab one more time than it has stops
+- **THEN** focus never leaves it nor lands on a control it is drawn over, and it is not marked modal

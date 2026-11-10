@@ -18,10 +18,24 @@ const probe = (gate: Gate, render: () => JSX.Element, frame?: { width: number; h
   render, parameters: { gate, ...(frame ? { frame } : {}) },
 });
 const DESKTOP = { width: 1440, height: 900 };
-const Plain = (p: { label: string; onClick?: () => void; popup?: boolean; open?: boolean; style?: object }) => (
-  <button type="button" data-role="text" style={{ height: 44, ...p.style }} onClick={p.onClick}
+const Plain = (p: { label: string; onClick?: () => void; popup?: boolean; open?: boolean; style?: object; autoFocus?: boolean }) => (
+  <button type="button" data-role="text" style={{ height: 44, ...p.style }} onClick={p.onClick} autoFocus={p.autoFocus}
     aria-haspopup={p.popup ? 'dialog' : undefined} aria-expanded={p.popup ? Boolean(p.open) : undefined}>{p.label}</button>
 );
+
+// (a)–(f), the prechecks read at rest.
+export const Sentence = probe({ rules: ['a'], expect: ['(a) sentence or question: "Is this right?"'] },
+  () => <span>Is this right?</span>);
+export const WordNotAllowed = probe({ rules: ['b'], expect: ['(b) "Zorblax" is not in the glossary allowlist'] },
+  () => <span>Zorblax</span>);
+export const WrongHeight = probe({ rules: ['c'], expect: ['(c) text button "Pin" is 30px, not 32px'] },
+  () => <button type="button" data-role="text" style={{ height: 30 }}>Pin</button>);
+export const TwoPrimaries = probe({ rules: ['d'], expect: ['(d) 2 primary-filled controls'] },
+  () => <><Button kind="primary" label="Save" /><Button kind="primary" label="Done" /></>);
+export const NumberUnsourced = probe({ rules: ['e'], expect: ['(e) "42" names no fixture field'] },
+  () => <span>42</span>);
+export const NestedScroll = probe({ rules: ['f'], expect: ['(f) a nested scroll area: div.gate-scroll'] },
+  () => <div className="gate-scroll" style={{ height: 40, overflow: 'auto' }}><div style={{ height: 80 }} /></div>);
 
 // (g) reachable.
 export const TapWithNoRole = probe({ rules: ['g'], expect: ['(g) "Pin" responds to a tap but has no role'] },
@@ -32,6 +46,12 @@ export const InvisibleTabStop = probe({ rules: ['g'], expect: ['(g) Tab stops on
 // (h) visible focus.
 export const SameFocused = probe({ rules: ['h'], expect: ['(h) "Pin" looks the same focused'] },
   () => <Plain label="Pin" style={{ outline: 'none' }} />);
+/** A pane the browser lets Tab scroll is a stop like any other. */
+export const PaneSameFocused = probe({ rules: ['h'], expect: ['(h) "Glucose" looks the same focused'] },
+  () => <div data-scroll="page" style={{ height: 60, overflow: 'auto', outline: 'none' }}><div style={{ height: 200 }}>Glucose</div></div>);
+/** A time field draws no caret: its focus must show some other way. */
+export const TimeFieldSameFocused = probe({ rules: ['h'], expect: ['(h) "Time" looks the same focused'] },
+  () => <input type="time" aria-label="Time" style={{ outline: 'none' }} />);
 
 // (i) named.
 export const NoName = probe({ rules: ['i'], expect: ['(i) button "button" has no accessible name'] },
@@ -46,6 +66,11 @@ export const ImageHidesItsText = probe({ rules: ['i'], expect: ['(i) a graphic d
   () => <svg role="img" aria-label="Glucose" width="120" height="40"><text x="4" y="24">No data</text></svg>);
 export const GroupKeepsItsText = probe({ rules: ['i'], expect: [] },
   () => <svg role="group" aria-label="Glucose" width="120" height="40"><text x="4" y="24">No data</text></svg>);
+export const FocusableHidden = probe({ rules: ['i'], expect: ['(i) "Pin" is focusable inside aria-hidden'] },
+  () => <div aria-hidden="true"><Plain label="Pin" /></div>);
+export const ToggleWithNoState = probe({ rules: ['i'], expect: [
+  '(i) "Day" exposes no pressed or selected state', '(i) "Week" exposes no pressed or selected state',
+] }, () => <div role="group" aria-label="View" style={{ display: 'flex' }}><Plain label="Day" /><Plain label="Week" /></div>);
 export const CoveredStillNamed = probe({ rules: ['i'], expect: ['(i) button "button" has no accessible name'] },
   () => <CoveredByScrim />);
 
@@ -74,6 +99,7 @@ export const BarLabelNotLive = probe({ rules: ['m'], expect: ['(m) "Saved" is no
 // (k) Escape and return, walked as a screen walks them.
 export const DialogKeepsNoFocus = probe({ owner: true, rules: ['k'], expect: [
   '(k) dialog "End" from "End" does not take focus when it opens',
+  '(k) dialog "End" from "End" lets Tab leave it while open',
   '(k) dialog "End" from "End" does not close on Escape',
   '(k) dialog "End" from "End" does not give focus back to its trigger',
 ] }, () => <Unhooked popup />);
@@ -81,6 +107,7 @@ export const DialogUndeclared: Story = {
   ...probe({ owner: true, rules: ['k'], expect: [
     '(k) "End" opens dialog "End" but does not declare it (aria-haspopup)',
     '(k) dialog "End" does not take focus when it opens',
+    '(k) dialog "End" lets Tab leave it while open',
     '(k) dialog "End" does not close on Escape',
   ] }, () => <Unhooked popup={false} />),
   play: async ({ canvasElement }) => {
@@ -89,13 +116,28 @@ export const DialogUndeclared: Story = {
 };
 export const ReadsOpenDrawsNothing = probe({ owner: true, rules: ['k'], expect: ['(k) "End" reads open but draws no dialog'] },
   () => <NeverOpens />);
-/** A modal dialog with a control beside it that still takes a tap: that
- *  control is out of Tab's reach while it is open (#674's Not saved bar). */
+/** A modal dialog with a status's Retry beside it that still takes a tap:
+ *  that Retry is out of Tab's reach while it is open (#674's Not saved bar). */
 export const ModalBesideAControl = probe({ owner: true, rules: ['g', 'k'], expect: [
   '(g) "Retry" is not reached by Tab',
   '(k) dialog "End" is marked modal, but 1 control(s) beside it still take a tap',
   '(k) dialog "End" does not close on Escape',
 ] }, () => <ModalWithBar />);
+/** A popover that does not keep Tab in it, over a control (#676's second
+ *  review): Tab leaves it and lands on what it covers. */
+export const PopoverLetsTabOut = probe({ rules: ['k'], expect: [
+  '(k) dialog "End" lets Tab leave it while open',
+  '(k) focus lands on "Snooze", which an open dialog covers',
+] }, () => <Uncontained />);
+/** A dialog marked modal that does not keep Tab in it. */
+export const ModalLetsTabOut = probe({ rules: ['k'], expect: [
+  '(k) dialog "End" lets Tab leave it while open',
+  '(k) focus lands on "Snooze", which an open dialog covers',
+] }, () => <ModalUncontained />);
+/** A sheet over a scrim, which covers the whole screen, not marked modal. */
+export const CoversButNotModal = probe({ rules: ['k'], expect: [
+  '(k) dialog "End" covers the page but is not marked modal (aria-modal)',
+] }, () => <ScrimNotModal />);
 /** Closing took the trigger away (an End confirmed ends what it was drawn on):
  *  focus goes to the nearest heading that is still there, not the page. */
 export const TriggerGoneAtClose: Story = {
@@ -157,7 +199,7 @@ function NeverOpens() {
 function ModalWithBar() {
   const ref = useDialogFocus<HTMLElement>(true);
   return <>
-    <Plain label="Retry" />
+    <div role="status"><Plain label="Retry" /></div>
     <section ref={ref} role="dialog" aria-label="End"><Plain label="Cancel" /></section>
   </>;
 }
@@ -182,5 +224,41 @@ function EndsItself() {
         )}
       </article>}
     </section>
+  );
+}
+
+/** A popover drawn over Snooze, with Pin beside it, that leaves Tab alone. */
+function Uncontained() {
+  return (
+    <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+      <Plain label="Pin" />
+      <section role="dialog" aria-label="End"
+        style={{ position: 'absolute', top: 44, left: 0, width: 200, height: 88, background: 'var(--wk-surface)' }}>
+        <Plain label="Cancel" autoFocus />
+      </section>
+      <Plain label="Snooze" style={{ marginTop: 44 }} />
+    </div>
+  );
+}
+
+function ModalUncontained() {
+  return <>
+    <div className="ui-scrim" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.3)' }}>
+      <section role="dialog" aria-label="End" aria-modal="true" style={{ background: 'var(--wk-surface)', padding: 16 }}>
+        <Plain label="Cancel" autoFocus />
+      </section>
+    </div>
+    <Plain label="Snooze" />
+  </>;
+}
+
+function ScrimNotModal() {
+  const ref = useDialogFocus<HTMLElement>(true, { modal: false });
+  return (
+    <div className="ui-scrim" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.3)' }}>
+      <section ref={ref} role="dialog" aria-label="End" style={{ background: 'var(--wk-surface)', padding: 16 }}>
+        <Plain label="Cancel" />
+      </section>
+    </div>
   );
 }

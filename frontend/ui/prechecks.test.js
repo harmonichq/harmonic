@@ -231,12 +231,14 @@ test('(k) a dialog that keeps no focus, lets it out, ignores Escape or loses its
     '(k) dialog "End" from "End" does not close on Escape',
     '(k) dialog "End" from "End" does not give focus back to its trigger',
   ]);
-  // Modal exactly when nothing beside it takes a tap; only a modal one must keep Tab.
+  // Marked modal exactly when nothing beside it takes a tap; modal or not, it keeps Tab.
   assert.deepEqual(walked({ dialogs: [{ ...dialog, modal: false }] }),
     ['(k) dialog "End" from "End" covers the page but is not marked modal (aria-modal)']);
   assert.deepEqual(walked({ dialogs: [{ ...dialog, beside: 3 }] }),
     ['(k) dialog "End" from "End" is marked modal, but 3 control(s) beside it still take a tap']);
-  assert.deepEqual(walked({ dialogs: [{ ...dialog, modal: false, beside: 3, trapped: false }] }), []);
+  assert.deepEqual(walked({ dialogs: [{ ...dialog, modal: false, beside: 3 }] }), []);
+  assert.deepEqual(walked({ dialogs: [{ ...dialog, modal: false, beside: 3, trapped: false }] }),
+    ['(k) dialog "End" from "End" lets Tab leave it while open']);
   assert.deepEqual(walked({ dialogs: [{ name: '', trigger: 'End', opened: false }] }),
     ['(k) "End" declares a dialog that Enter does not open']);
   assert.deepEqual(walked({ dialogs: [{ name: '', trigger: 'End', opened: false, pending: true }] }),
@@ -245,6 +247,17 @@ test('(k) a dialog that keeps no focus, lets it out, ignores Escape or loses its
     ['(k) "End" opens dialog "End" but does not declare it (aria-haspopup)']);
   // Drawn with no trigger in its story, its Escape and return are walked where its trigger is.
   assert.deepEqual(walked({ dialogs: [{ ...dialog, trigger: null, closed: null, returned: null }] }), []);
+});
+
+test('(k) focus that lands on a control an open dialog covers fails, once per control', () => {
+  const dialog = walk.dialogs[0];
+  assert.deepEqual(walked({
+    sequence: [...walk.sequence, { index: 0, label: 'Snooze', changed: true, covered: true }],
+    dialogs: [{ ...dialog, obscured: ['Snooze', 'Lows'] }],
+  }).filter((line) => line.startsWith('(k)')), [
+    '(k) focus lands on "Snooze", which an open dialog covers',
+    '(k) focus lands on "Lows", which an open dialog covers',
+  ]);
 });
 
 test('(l) a phone control that misses a tap 22 px from its centre fails', () => {

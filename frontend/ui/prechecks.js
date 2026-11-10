@@ -89,8 +89,9 @@ export function precheckProblems({ texts: shown, names, buttons, primaries, scro
 //
 //   (g) reachable: everything that responds to a tap has a role and is
 //       reached by Tab, and every Tab stop is a visible control
-//   (h) visible focus: each element Tab reaches looks different focused (a
-//       text field's caret is its focus)
+//   (h) visible focus: each element Tab reaches, a page or pane the browser
+//       lets Tab scroll among them, looks different focused (the caret of a
+//       field that draws one is its focus; a time or date field draws none)
 //   (i) named: every control and every exposed graphic has an accessible
 //       name, read as words (no two pieces of its text run together, no badge
 //       inside it); a graphic drawn as an image hides no text of its own; a
@@ -100,9 +101,11 @@ export function precheckProblems({ texts: shown, names, buttons, primaries, scro
 //       order (up within a column, or leftward along a line) inside one
 //       region: a scrolling pane, or what lies outside every pane
 //   (k) Escape and return: a dialog is opened from a control that declares
-//       it, takes focus when it opens, closes on Escape and gives focus back to
-//       its trigger; it is marked modal exactly when nothing beside it takes a
-//       tap, and a modal one keeps Tab inside it
+//       it, takes focus when it opens, keeps Tab and Shift+Tab inside it while
+//       open (with the part drawn apart from it that belongs to its cycle),
+//       closes on Escape and gives focus back to its trigger; focus never lands
+//       on a control an open dialog covers; and it is marked modal (aria-modal)
+//       exactly when nothing beside it takes a tap
 //   (l) target size: on phone every control takes a tap 44 px across, through
 //       its centre both ways (the edge of the screen counts as part of it); at
 //       any width, a control pinned over a scrolling page (a bar, the tab bar)
@@ -122,9 +125,11 @@ export const INTERACTION_EXEMPT = [
     reason: 'the Mid swipe stories hold a finger\'s frame still (the story-only held swipe), its answers slid under the '
       + 'card\'s edge; in the app a Prompt never rests there, since a swipe that commits answers Not sure' },
 ];
-// Also skipped, in the walk itself: (g) and (l) for a control an open dialog
-// or its scrim covers, which no tap and no Tab reaches while it is open. Its
-// name is still read, and a control beside an open dialog is checked as any.
+// Also skipped, in the walk itself, while a dialog is open: (g) for a control
+// outside its Tab cycle, which Tab does not reach until it closes (unless it is
+// a status's, which belongs in the cycle), and (l) for one the dialog or its
+// scrim covers, which no tap reaches. Its name is still read, and a control
+// beside an open dialog is checked for (l) as any.
 
 /** Where the app writes a status (m) reads: the transient bar's label, and the
  *  words a status may be outside it. */
@@ -145,11 +150,11 @@ const at = (control) => `"${control.label}"`;
  *            pieces?: string[], state: boolean, needsState: boolean,
  *            rect: {x: number, y: number, w: number, h: number}, fixed: boolean, pane: number,
  *            misses?: string[], stolen?: string[]}[],
- *          sequence: {index: number, label: string, changed: boolean, visible?: boolean}[],
+ *          sequence: {index: number, label: string, changed: boolean, visible?: boolean, covered?: boolean}[],
  *          graphics: {label: string, name: string, hides?: string}[],
  *          statuses: {text: string, live: boolean}[],
  *          dialogs: {name: string, trigger: string|null, opened: boolean, pending?: boolean, inside: boolean,
- *            modal: boolean, beside: number, trapped: boolean, closed: boolean|null,
+ *            modal: boolean, beside: number, trapped: boolean, obscured?: string[], closed: boolean|null,
  *            returned: boolean|null}[],
  *          undeclared?: {name: string, opener: string}[]}} walk
  * @returns {string[]} one line per violation; empty when the story passes
@@ -185,7 +190,9 @@ export function interactionProblems({ controls, sequence, graphics, statuses, di
     }
     for (const thief of control.stolen ?? []) found.push(`(l) ${at(control)} loses a tap to "${thief}" scrolled under it`);
   });
+  const covers = new Set();
   for (const step of sequence) {
+    if (step.covered) covers.add(step.label);
     if (step.index < 0 && step.visible === false) found.push(`(g) Tab stops on "${step.label}", which is not a visible control`);
     else if (!step.changed) found.push(`(h) "${step.label}" looks the same focused`);
   }
@@ -210,7 +217,7 @@ export function interactionProblems({ controls, sequence, graphics, statuses, di
   for (const { name, opener } of undeclared) {
     found.push(`(k) "${opener}" opens dialog "${name}" but does not declare it (aria-haspopup)`);
   }
-  for (const { name, trigger, opened, pending, modal, beside, inside, trapped, closed, returned } of dialogs) {
+  for (const { name, trigger, opened, pending, modal, beside, inside, trapped, obscured = [], closed, returned } of dialogs) {
     const what = `dialog "${name}"${trigger ? ` from "${trigger}"` : ''}`;
     if (!opened) {
       found.push(pending ? `(k) "${trigger}" reads open but draws no dialog`
@@ -220,10 +227,12 @@ export function interactionProblems({ controls, sequence, graphics, statuses, di
     if (modal && beside > 0) found.push(`(k) ${what} is marked modal, but ${beside} control(s) beside it still take a tap`);
     if (!modal && beside === 0) found.push(`(k) ${what} covers the page but is not marked modal (aria-modal)`);
     if (!inside) found.push(`(k) ${what} does not take focus when it opens`);
-    if (modal && !trapped) found.push(`(k) ${what} lets Tab leave it while open`);
+    if (!trapped) found.push(`(k) ${what} lets Tab leave it while open`);
+    for (const label of obscured) covers.add(label);
     if (closed === false) found.push(`(k) ${what} does not close on Escape`);
     if (returned === false) found.push(`(k) ${what} does not give focus back to its trigger`);
   }
+  for (const label of covers) found.push(`(k) focus lands on "${label}", which an open dialog covers`);
   return found;
 }
 

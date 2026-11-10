@@ -262,7 +262,7 @@ export const LiveSaveNotSavedDesktop: Story = {
   ...story('desktop', { ...NOT_SET, view: 'tandem', writes: { saveCredentials: failsOnce(undefined) } }), play: liveSavePlay };
 
 // A failed save's "Not saved" and Retry are drawn over the open form (#661),
-// and go with it: Escape closes the form and the bar, and on desktop "‹ Settings"
+// in its Tab cycle, and go with it: Escape closes the form and the bar, and on desktop "‹ Settings"
 // leaves the page without it.
 const notSavedOnTopPlay = (layout: 'phone' | 'desktop'): Story['play'] => async ({ canvasElement }) => {
   const canvas = within(canvasElement);
@@ -275,6 +275,18 @@ const notSavedOnTopPlay = (layout: 'phone' | 'desktop'): Story['play'] => async 
     await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent(/Not saved/));
     await expect(canvas.getByRole('dialog', { name: 'Tandem Source' })).toBeInTheDocument();
     await expectTappable(canvas.getByRole('button', { name: 'Retry' }));
+    // Retry is in the form's Tab cycle, on desktop as on phone (#582): Tab
+    // from Email goes round the form and its bar, reaches it, and goes on round.
+    const retry = canvas.getByRole('button', { name: 'Retry' });
+    const cycle = [canvas.getByRole('dialog', { name: 'Tandem Source' }), canvas.getByRole('status')];
+    form.getByLabelText('Email').focus();
+    for (let i = 0; i < 8 && document.activeElement !== retry; i += 1) {
+      await userEvent.tab();
+      await expect(cycle.some((region) => region.contains(document.activeElement))).toBe(true);
+    }
+    await expect(retry).toHaveFocus();
+    await userEvent.tab();
+    await expect(cycle.some((region) => region.contains(document.activeElement))).toBe(true);
   };
   await fail();
   await userEvent.keyboard('{Escape}');

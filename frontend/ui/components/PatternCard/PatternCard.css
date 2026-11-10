@@ -36,6 +36,8 @@
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
+/* Its whole 44 px target over what its negative margins overlap (#582). */
+.ui-pcard__chevron { position: relative; }
 .ui-pcard__chevron:focus { outline: none; }
 .ui-pcard__chevron:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
 
@@ -107,8 +109,6 @@
 .ui-pcard__more { color: var(--wk-ink-meta); font-size: var(--ui-type-title); line-height: 1; }
 
 /* A cause card's head holds Focus beside its title: a 32 px outlined secondary
-   whose hit area reaches 44 px, a transparent extension around it, so the head
-   is 44 px in every state, the button absent or the pill in its place. */
+   whose hit area reaches 44 px (Button's own), so the head is 44 px in every
+   state, the button absent or the pill in its place. */
 .ui-pcard__slot { display: flex; flex: none; align-items: center; min-height: 44px; }
-.ui-pcard__slot .ui-button { position: relative; }
-.ui-pcard__slot .ui-button::after { content: ''; position: absolute; inset: -6px; }

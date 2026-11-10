@@ -7,8 +7,9 @@ profile and Glossary SHALL each open with one history entry at the tab's own
 address, marked with which drill-down it is (ADR 594, ADR 669). The drill-down's
 "‹ Parent" and the platform's Back SHALL both return to the tab's own screen; a
 Back from another tab onto the entry SHALL open that drill-down as it was; a
-Forward onto the entry SHALL open that drill-down again; and a reload SHALL land
-on the tab.
+Forward onto the entry SHALL open that drill-down again, unless it has nothing
+left to show, when it SHALL leave at once to the tab's own screen; and a reload
+SHALL land on the tab.
 
 #### Scenario: Back from Previous stays on Changes
 
@@ -27,3 +28,9 @@ on the tab.
 - **GIVEN** the Queue, after a Pattern's drill-down was left with Back
 - **WHEN** the person goes Forward
 - **THEN** that Pattern's drill-down shows again with its causes
+
+#### Scenario: Forward onto an emptied drill-down leaves it
+
+- **GIVEN** the Queue, after Snoozed was left with Back and its last item was restored
+- **WHEN** the person goes Forward
+- **THEN** the Queue shows its own screen, not an empty Snoozed

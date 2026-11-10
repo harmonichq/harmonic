@@ -428,7 +428,7 @@ const promptsPlay: Story['play'] = async ({ canvasElement }) => {
   await userEvent.click(canvas.getByRole('button', { name: /Yes/ }));
   const yes = canvas.getByRole('button', { name: /Yes/ });
   await expect(yes).toHaveAttribute('aria-pressed', 'true');
-  await expect(within(yes).getByText('Recorded')).toBeInTheDocument();
+  await expect(canvas.getByRole('status')).toHaveTextContent('Recorded');
   await userEvent.type(canvas.getByRole('textbox', { name: 'Carbs' }), typed);
   await userEvent.click(within(canvasElement.querySelector<HTMLElement>('.ui-prompt')!).getByRole('button', { name: 'Next' }));
   await expect(place(canvas)).toHaveTextContent('2 / 2');
@@ -447,10 +447,12 @@ export const PromptsFlowDesktop: Story = { ...story('desktop', { store: 'wearer-
 const notSavedPlay: Story['play'] = async ({ canvasElement }) => {
   const canvas = within(canvasElement);
   await userEvent.click(canvas.getByRole('button', { name: /Yes/ }));
-  await expect(canvas.getByRole('status')).toHaveTextContent('Not saved');
+  // The bar's status, beside the Prompt's own (its Recorded, #582).
+  const bar = () => canvas.queryAllByRole('status').find((region) => region.closest('.ui-dayscreen__bar')) ?? null;
+  await expect(bar()).toHaveTextContent('Not saved');
   await expect(canvas.getByRole('button', { name: /Yes/ })).toHaveAttribute('aria-pressed', 'false');
-  await userEvent.click(within(canvas.getByRole('status')).getByRole('button', { name: 'Retry' }));
-  await expect(canvas.queryByRole('status')).toBeNull();
+  await userEvent.click(within(bar()!).getByRole('button', { name: 'Retry' }));
+  await expect(bar()).toBeNull();
   await expect(canvas.getByRole('button', { name: /Yes/ })).toHaveAttribute('aria-pressed', 'true');
 };
 // Phone: Not sure, the text action beneath the answers, records it and moves
@@ -797,7 +799,7 @@ const liveAnswerPlay: Story['play'] = async ({ canvasElement }) => {
   const canvas = within(canvasElement);
   await userEvent.click(canvas.getByRole('button', { name: /Lows/ }));
   await userEvent.click(canvas.getByRole('button', { name: 'Yes' }));
-  await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent(/Not saved/));
+  await waitFor(() => expect(canvas.getByText(/Not saved/).closest('[role="status"]')).toBeInTheDocument());
   await expect(canvas.getByRole('button', { name: 'Yes', pressed: false })).toBeInTheDocument();
   await userEvent.click(canvas.getByRole('button', { name: 'Retry' }));
   await waitFor(() => expect(canvas.queryByText(/Not saved/)).toBeNull());

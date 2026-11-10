@@ -38,7 +38,8 @@ function BasalDayChart({ data }: { data: BasalDayData }) {
   return (
     <div ref={box} className="ui-chart">
       {width > 0 && (
-        <svg width={width} height={HEIGHT} viewBox={`0 0 ${width} ${HEIGHT}`} className="ui-chart__svg">
+        <svg width={width} height={HEIGHT} viewBox={`0 0 ${width} ${HEIGHT}`} className="ui-chart__svg"
+          role="group" aria-label="Basal">
           <g data-axis="">
             {scale.values.map((v, i) => (
               <g key={v}>

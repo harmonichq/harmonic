@@ -941,7 +941,7 @@ export const FocusStartedDesktop: Story = focusStarted('desktop');
 
 // A multi-cause Pattern (drill-down.md, ADR 594): its open card has no Focus;
 // its chart is a drill-down row marked only with "›", named by the card's
-// title (as the phone's chevron is, so it is reached by its element), and opens
+// title and "Glucose" (#582), and opens
 // the drill-down, "‹ Queue" over the Pattern's title.
 const MULTI = patternStore('drill_down');
 const MULTI_PINNED = patternStore('drill_down_pinned');
@@ -953,7 +953,7 @@ const multiCauseCard = async (canvasElement: HTMLElement, layout: 'phone' | 'des
   await expect(focusable(MULTI.store)).toBe(true);
   await expect(within(card).queryByRole('button', { name: 'Focus' })).toBeNull();
   const chart = card.querySelector<HTMLElement>('.ui-pcard__chart')!;
-  await expect(within(card).getAllByRole('button', { name: title })).toContain(chart);
+  await expect(within(card).getByRole('button', { name: `${title} · Glucose` })).toBe(chart);
   await expect(chart.dataset.role).toBe('row');
   await expect(chart.querySelector('.ui-pcard__more')!.textContent).toBe('›');
   await expect(within(card).queryByRole('button', { name: 'Snooze' }) !== null).toBe(layout === 'desktop');

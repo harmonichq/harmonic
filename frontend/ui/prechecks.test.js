@@ -2,7 +2,7 @@
 // passes. Synthetic inputs only.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { precheckProblems } from './prechecks.js';
+import { contrastProblems, contrastRatio, interactionProblems, precheckProblems } from './prechecks.js';
 
 const sources = {
   fixtures: { outcomes: { 14: { window_days: 14 } }, prompts: [{ answer: null }, { answer: 'yes' }],
@@ -140,4 +140,132 @@ test('(e) a share resolves over the values as printed', () => {
 test('a signed value prints its sign, a true minus and no stray space (#559)', async () => {
   const { formatValue } = await import('./provenance.js');
   assert.deepEqual([24.4, -6.2, 0, -0.4, 0.4].map((v) => formatValue(v, 'signed')), ['+24', '−6', '0', '0', '0']);
+});
+
+// The interactivity prechecks (#582): a clean walk passes, and each rule fires.
+const control = (label, more = {}) => ({
+  label, role: 'button', handler: true, focusable: true, tabindex: null, hidden: false, exempt: [], name: label,
+  state: false, needsState: false, rect: { x: 0, y: 0, w: 80, h: 44 }, fixed: false, pane: -1, misses: [], ...more,
+});
+const walk = {
+  controls: [control('Pin'), control('Snooze', { rect: { x: 100, y: 0, w: 80, h: 44 } }),
+    control('Queue', { rect: { x: 0, y: 60, w: 80, h: 44 } })],
+  sequence: [{ index: 0, label: 'Pin', changed: true }, { index: 1, label: 'Snooze', changed: true },
+    { index: 2, label: 'Queue', changed: true }],
+  graphics: [{ label: 'svg', name: 'Glucose' }],
+  statuses: [{ text: 'Not saved', live: true }],
+  dialogs: [{ name: 'End', trigger: 'End', opened: true, modal: true, beside: 0, inside: true, trapped: true,
+    closed: true, returned: true }],
+};
+const walked = (changes) => interactionProblems({ ...walk, ...changes });
+const withControl = (i, more) => walk.controls.map((c, j) => (j === i ? { ...c, ...more } : c));
+
+test('a clean keyboard walk passes', () => {
+  assert.deepEqual(walked({}), []);
+});
+
+test('(g) a tap target with no role, or one Tab never reaches, fails; an exemption skips it', () => {
+  assert.deepEqual(walked({ controls: withControl(2, { role: null, name: null }) }),
+    ['(g) "Queue" responds to a tap but has no role']);
+  assert.deepEqual(walked({ sequence: walk.sequence.slice(0, 2) }), ['(g) "Queue" is not reached by Tab']);
+  assert.deepEqual(walked({ sequence: walk.sequence.slice(0, 2), controls: withControl(2, { exempt: ['g'] }) }), []);
+  // A Tab stop that is no visible control (drawn at opacity 0, say) fails, whatever else it is.
+  assert.deepEqual(walked({ sequence: [...walk.sequence, { index: -1, label: 'Snooze', changed: true, visible: false }] }),
+    ['(g) Tab stops on "Snooze", which is not a visible control']);
+  // A visible stop that is no control (a pane the browser lets Tab scroll) is a stop like any.
+  assert.deepEqual(walked({ sequence: [...walk.sequence, { index: -1, label: 'Basal', changed: true, visible: true }] }), []);
+  // An exemption from (g) is no exemption from a name.
+  assert.deepEqual(walked({ controls: withControl(2, { exempt: ['g', 'l'], name: '' }) }), ['(i) button "Queue" has no accessible name']);
+});
+
+test('(h) a stop that looks the same focused fails', () => {
+  assert.deepEqual(walked({ sequence: [walk.sequence[0], { ...walk.sequence[1], changed: false }, walk.sequence[2]] }),
+    ['(h) "Snooze" looks the same focused']);
+});
+
+test('(i) an unnamed control or graphic, a toggle with no state, or focus inside aria-hidden fails', () => {
+  assert.deepEqual(walked({ controls: withControl(0, { name: '' }) }), ['(i) button "Pin" has no accessible name']);
+  assert.deepEqual(walked({ graphics: [{ label: 'svg.ui-trace', name: '' }] }),
+    ['(i) a graphic (svg.ui-trace) has no accessible name and is not aria-hidden']);
+  assert.deepEqual(walked({ controls: withControl(0, { needsState: true }) }), ['(i) "Pin" exposes no pressed or selected state']);
+  assert.deepEqual(walked({ controls: withControl(0, { needsState: true, state: true }) }), []);
+  assert.deepEqual(walked({ controls: withControl(0, { hidden: true }), sequence: walk.sequence.slice(1) }),
+    ['(i) "Pin" is focusable inside aria-hidden']);
+});
+
+test('(i) a name that runs text together, or carries its badge, fails', () => {
+  assert.deepEqual(walked({ controls: withControl(0, { name: 'Peak43 of 137' }) }), ['(i) "Peak43 of 137" runs text together']);
+  assert.deepEqual(walked({ controls: withControl(0, { name: '5 Day', badges: ['5'] }) }),
+    ['(i) "5 Day" carries its badge "5" in its name']);
+  assert.deepEqual(walked({ controls: withControl(0, { name: 'Day', badges: ['5'] }) }), []);
+  assert.deepEqual(walked({ controls: withControl(0, { name: 'Basal 04:00–07:30 · 1.80 U/h · mg/dL' }) }), []);
+  // Two pieces of text the name reads with nothing between them run together, words or not.
+  assert.deepEqual(walked({ controls: withControl(0, { name: 'GlucoseBasal', pieces: ['Glucose', 'Basal'] }) }),
+    ['(i) "GlucoseBasal" runs text together']);
+  assert.deepEqual(walked({ controls: withControl(0, { name: 'Glucose Basal', pieces: ['Glucose', 'Basal'] }) }), []);
+  assert.deepEqual(walked({ controls: withControl(0, { name: 'Snoozed until Mon', pieces: ['Snoozed until ', 'Mon'] }) }), []);
+});
+
+test('(i) a graphic drawn as an image that hides its own text fails', () => {
+  assert.deepEqual(walked({ graphics: [{ label: 'svg.ui-ribbon__chart', name: 'Time in range', hides: '82%' }] }),
+    ['(i) a graphic drawn as an image (svg.ui-ribbon__chart) hides its text "82%"']);
+});
+
+test('(j) a positive tabindex, or Tab running up a column or left along a line, fails', () => {
+  assert.deepEqual(walked({ controls: withControl(0, { tabindex: 2 }) }), ['(j) "Pin" has a positive tabindex (2)']);
+  const [pin, snooze, queue] = walk.sequence;
+  assert.deepEqual(walked({ sequence: [queue, pin, snooze] }), ['(j) Tab goes up from "Queue" to "Pin"']);
+  assert.deepEqual(walked({ sequence: [snooze, pin, queue] }), ['(j) Tab goes left from "Snooze" to "Pin"']);
+  // Up into the next column is reading order, and what is fixed in place is not read in the flow.
+  assert.deepEqual(walked({ controls: withControl(2, { rect: { x: 300, y: 60, w: 80, h: 44 } }), sequence: [queue, pin, snooze] }), []);
+  assert.deepEqual(walked({ controls: withControl(2, { fixed: true }), sequence: [queue, pin, snooze] }), []);
+  // A scrolling pane and what lies outside it are read region by region.
+  assert.deepEqual(walked({ controls: withControl(2, { pane: 0 }), sequence: [queue, pin, snooze] }), []);
+});
+
+test('(k) a dialog that keeps no focus, lets it out, ignores Escape or loses its trigger fails', () => {
+  const dialog = walk.dialogs[0];
+  assert.deepEqual(walked({ dialogs: [{ ...dialog, inside: false, trapped: false, closed: false, returned: false }] }), [
+    '(k) dialog "End" from "End" does not take focus when it opens',
+    '(k) dialog "End" from "End" lets Tab leave it while open',
+    '(k) dialog "End" from "End" does not close on Escape',
+    '(k) dialog "End" from "End" does not give focus back to its trigger',
+  ]);
+  // Modal exactly when nothing beside it takes a tap; only a modal one must keep Tab.
+  assert.deepEqual(walked({ dialogs: [{ ...dialog, modal: false }] }),
+    ['(k) dialog "End" from "End" covers the page but is not marked modal (aria-modal)']);
+  assert.deepEqual(walked({ dialogs: [{ ...dialog, beside: 3 }] }),
+    ['(k) dialog "End" from "End" is marked modal, but 3 control(s) beside it still take a tap']);
+  assert.deepEqual(walked({ dialogs: [{ ...dialog, modal: false, beside: 3, trapped: false }] }), []);
+  assert.deepEqual(walked({ dialogs: [{ name: '', trigger: 'End', opened: false }] }),
+    ['(k) "End" declares a dialog that Enter does not open']);
+  assert.deepEqual(walked({ dialogs: [{ name: '', trigger: 'End', opened: false, pending: true }] }),
+    ['(k) "End" reads open but draws no dialog']);
+  assert.deepEqual(walked({ undeclared: [{ name: 'End', opener: 'End' }] }),
+    ['(k) "End" opens dialog "End" but does not declare it (aria-haspopup)']);
+  // Drawn with no trigger in its story, its Escape and return are walked where its trigger is.
+  assert.deepEqual(walked({ dialogs: [{ ...dialog, trigger: null, closed: null, returned: null }] }), []);
+});
+
+test('(l) a phone control that misses a tap 22 px from its centre fails', () => {
+  assert.deepEqual(walked({ controls: withControl(1, { misses: ['above', 'below'] }) }),
+    ['(l) "Snooze" takes no tap 22 px above, below of its centre']);
+  assert.deepEqual(walked({ controls: withControl(1, { misses: ['above'], exempt: ['l'] }) }), []);
+});
+
+test('(l) a pinned control that loses a tap to one scrolled under it fails, at any width', () => {
+  assert.deepEqual(walked({ controls: withControl(1, { stolen: ['End'] }) }),
+    ['(l) "Snooze" loses a tap to "End" scrolled under it']);
+});
+
+test('(m) a status outside a live region fails', () => {
+  assert.deepEqual(walked({ statuses: [{ text: 'Recorded', live: false }] }), ['(m) "Recorded" is not in a live region']);
+});
+
+test('(n) a token pair under its ratio fails; the ratio is WCAG\'s', () => {
+  assert.equal(contrastRatio([0, 0, 0], [255, 255, 255]).toFixed(2), '21.00');
+  assert.equal(contrastRatio([118, 118, 118], [255, 255, 255]).toFixed(2), '4.54');
+  assert.deepEqual(contrastProblems([{ fg: '--a', bg: '--b', min: 4.5, rgb: { fg: [119, 119, 119], bg: [255, 255, 255] } }]),
+    ['(n) --a on --b is 4.48:1, under 4.5:1']);
+  assert.deepEqual(contrastProblems([{ fg: '--a', bg: '--b', min: 4.5, rgb: { fg: [118, 118, 118], bg: [255, 255, 255] } }]), []);
 });

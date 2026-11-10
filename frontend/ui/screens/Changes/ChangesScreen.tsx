@@ -46,6 +46,7 @@ import {
   type TrialData, type WaitingRow,
 } from '../../changes-model';
 import { sourced } from '../../answers';
+import { useDialogFocus } from '../../dialog';
 import { useMotionGate, usePresence } from '../../motion';
 import { Num } from '../../Num';
 import { Button } from '../../components/Button/Button';
@@ -187,6 +188,7 @@ export function ChangesScreen({
   // The confirmation stays while it closes, and keeps the change it asked about.
   const asked = usePresence(asking && ready);
   const askedAbout = useRef(active);
+  const confirmRef = useDialogFocus<HTMLElement>(Boolean(asked.value) && !asked.closing, { modal: layout === 'phone' });
   if (asking) askedAbout.current = active;
   const previous = view === 'previous' && ready;
 
@@ -226,7 +228,8 @@ export function ChangesScreen({
   const push = previous ? 'forward' : 'back';
 
   const popover = layout === 'desktop' && asked.value && (
-    <section className="ui-popover ui-popover--end ui-changes__confirm" role="dialog" aria-label="End" {...asked.exit}>
+    <section ref={confirmRef} className="ui-popover ui-popover--end ui-changes__confirm" role="dialog" aria-label="End"
+      {...asked.exit}>
       <Confirm data={askedAbout.current} onEnd={doEnd} onCancel={cancel} />
     </section>
   );
@@ -246,7 +249,7 @@ export function ChangesScreen({
       )
       : (
         <>
-          <ChangeCard data={active} onEnd={() => setAsking(true)} confirm={popover} />
+          <ChangeCard data={active} onEnd={() => setAsking(true)} confirm={popover} asking={Boolean(asked.value) && !asked.closing} />
           {active.kind === 'trial' && <Modules data={active} />}
           {pending.length > 0 && (
             <ListGroup caption="Waiting for pump">
@@ -278,9 +281,9 @@ export function ChangesScreen({
         {bar}
         <NavBar layout="tabbar" selected="changes" dayCount={dayCount()} {...nav} />
         {asked.value && (
-          <div className="ui-scrim ui-changes__scrim" onClick={cancel} {...asked.exit}>
-            <section className="ui-sheet ui-changes__confirm" role="dialog" aria-label="End"
-              onClick={(event) => event.stopPropagation()}>
+          <div className="ui-scrim ui-changes__scrim" onClick={(event) => { if (event.target === event.currentTarget) cancel(); }}
+            {...asked.exit}>
+            <section ref={confirmRef} className="ui-sheet ui-changes__confirm" role="dialog" aria-label="End">
               <span className="ui-sheet__grabber" aria-hidden="true" />
               <Confirm data={askedAbout.current} onEnd={doEnd} onCancel={cancel} />
             </section>

@@ -267,7 +267,7 @@ const backPlay = (layout: 'phone' | 'desktop'): Story['play'] => async ({ canvas
   await waitFor(() => expect(cards(canvasElement)).toHaveLength(0));
   await expect(queueCard()).toBe(title);
   if (layout === 'phone') return;
-  await userEvent.click(canvas.getByRole('button', { name: title }));
+  await userEvent.click(canvas.getByRole('button', { name: `${title} · Glucose` }));
   await expectTitlePrinted(canvasElement, title);
   await userEvent.keyboard('{Escape}');
   await waitFor(() => expect(cards(canvasElement)).toHaveLength(0));

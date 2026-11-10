@@ -70,7 +70,8 @@ function Strip({ row, scale, index }: { row: MealSizeRow; scale: Scale; index: n
   return (
     <div ref={box} className="ui-meal-size__strip" data-size={index}>
       {width > 0 && (
-        <svg width={width} height={STRIP} viewBox={`0 0 ${width} ${STRIP}`} className="ui-chart__svg">
+        <svg width={width} height={STRIP} viewBox={`0 0 ${width} ${STRIP}`} className="ui-chart__svg"
+          role="group" aria-label="Meal size">
           {scale.values.map((value) => (
             <line key={value} x1={x(value)} x2={x(value)} y1={0} y2={STRIP}
               className={value === 0 ? 'ui-chart__zero' : 'ui-chart__grid'} />
@@ -106,7 +107,8 @@ function Axis({ scale }: { scale: Scale }) {
   return (
     <div ref={box} className="ui-meal-size__axis">
       {width > 0 && (
-        <svg width={width} height={18} viewBox={`0 0 ${width} 18`} className="ui-chart__svg">
+        <svg width={width} height={18} viewBox={`0 0 ${width} 18`} className="ui-chart__svg"
+          role="group" aria-label="Meal size">
           <g data-axis="">
             {scale.values.map((value, i) => labelled.has(i) && (
               <text key={value} x={x(value)} y={13} className="ui-chart__tick"

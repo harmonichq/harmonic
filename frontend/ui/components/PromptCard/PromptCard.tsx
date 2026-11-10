@@ -79,7 +79,8 @@ function Sparkline({ data }: { data: PromptData }) {
   const tone = KIND[data.kind].tone(data.bg.value);
   return (
     <div ref={box} className="ui-chart">
-    {width > 0 && <svg width={width} height={HEIGHT + AXIS} viewBox={`0 0 ${width} ${HEIGHT + AXIS}`} className="ui-prompt__spark">
+    {width > 0 && <svg width={width} height={HEIGHT + AXIS} viewBox={`0 0 ${width} ${HEIGHT + AXIS}`} className="ui-prompt__spark"
+      role="group" aria-label="Glucose">
       <defs>
         {zones(data.low.value, data.high.value).map((zone) => (
           <clipPath key={zone.tone} id={`${id}-${zone.tone}`}>
@@ -140,11 +141,12 @@ export function PromptCard({
               }}>
               {selected && <span className="ui-prompt__check" aria-hidden="true">✓</span>}
               {answer}
-              {selected && <span className="ui-sr">Recorded</span>}
             </button>
           );
         })}
       </div>
+      {/* Announced as Yes records it: the region is there before its word (#582). */}
+      <span className="ui-sr" role="status">{recorded && 'Recorded'}</span>
       {layout === 'phone' && (
         <div className="ui-card-snooze">
           <Button kind="text" label="Not sure" onClick={() => onAnswer?.('not-sure')} />

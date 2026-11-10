@@ -58,7 +58,8 @@ export function DayRibbon({ days, selected, onSelect }: DayRibbonProps) {
   return (
     <div ref={box} className="ui-ribbon ui-chart">
       {width > 0 && (
-        <svg width={width} height={HEIGHT} viewBox={`0 0 ${width} ${HEIGHT}`} className="ui-ribbon__chart">
+        <svg width={width} height={HEIGHT} viewBox={`0 0 ${width} ${HEIGHT}`} className="ui-ribbon__chart"
+          role="group" aria-label="Time in range">
           <defs>
             {zones(LOW, HIGH).map((zone) => (
               <clipPath key={zone.tone} id={`${id}-${zone.tone}`}>

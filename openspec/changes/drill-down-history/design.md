@@ -11,7 +11,10 @@ drill-downs (Queue, Changes, Settings): `open` pushes the marked entry, `close`
 goes Back through it, `onReturn` reports a Back or Forward onto an unmarked
 entry, and `onEnter` reports the drill-down a Back or Forward onto one of that
 tab's own marked entries names. Each screen opens the named drill-down on
-`onEnter` as it opens one it was returned to from another tab. An entry another
+`onEnter` as it opens one it was returned to from another tab. A Forward onto
+a drill-down with nothing left to show (the Queue's Snoozed with nothing
+snoozed, Changes' Previous with no previous change) leaves it at once, back
+through the router, so the tab shows its own screen. An entry another
 tab marked is never entered by this tab's screen.
 
 **Consequences.** The app shell holds no routing logic of its own beyond

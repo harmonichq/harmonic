@@ -78,7 +78,8 @@ export function ChangeTrace({ data, block }: ChangeTraceProps) {
       </h3>
       <div ref={box} className="ui-chart">
         {width > 0 && (
-          <svg width={width} height={HEIGHT} viewBox={`0 0 ${width} ${HEIGHT}`} className="ui-trace__chart">
+          <svg width={width} height={HEIGHT} viewBox={`0 0 ${width} ${HEIGHT}`} className="ui-trace__chart"
+            role="group" aria-label="Glucose">
             <g data-axis="">
               <text x={0} y={TOP - 2} className="ui-trace__scale">mg/dL</text>
               {scale.map((bg) => (

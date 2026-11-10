@@ -39,7 +39,9 @@ import { StatePill } from '../StatePill/StatePill';
 import '../../shared.css';
 import './ChangeCard.css';
 
-type Ends = { onEnd?: () => void; confirm?: ReactNode };
+type Ends = { onEnd?: () => void; confirm?: ReactNode;
+  /** End's confirmation is open: End is the trigger of that sheet or popover. */
+  asking?: boolean };
 
 export type ChangeCardProps = { data: ChangeData } & Ends;
 
@@ -128,7 +130,7 @@ export function Moves({ moves, figure = false }: { moves: Move[]; figure?: boole
   );
 }
 
-function Trial({ data, onEnd, confirm }: { data: TrialData } & Ends) {
+function Trial({ data, onEnd, confirm, asking = false }: { data: TrialData } & Ends) {
   const figure = data.moves.length === 1;
   return (
     <section className="ui-change">
@@ -159,13 +161,13 @@ function Trial({ data, onEnd, confirm }: { data: TrialData } & Ends) {
         )}
       </dl>
       {data.canEnd && (
-        <div className="ui-change__end"><Button kind="secondary" label="End" onClick={onEnd} />{confirm}</div>
+        <div className="ui-change__end"><Button kind="secondary" label="End" dialog={{ open: asking }} onClick={onEnd} />{confirm}</div>
       )}
     </section>
   );
 }
 
-function Focus({ data, onEnd, confirm }: { data: FocusData } & Ends) {
+function Focus({ data, onEnd, confirm, asking = false }: { data: FocusData } & Ends) {
   return (
     <section className="ui-change">
       <div className="ui-change__head">
@@ -192,13 +194,13 @@ function Focus({ data, onEnd, confirm }: { data: FocusData } & Ends) {
           done={!data.maturing} />
       )}
       {!data.maturing && <Outcomes rows={data.outcomes} />}
-      <div className="ui-change__foot"><Button kind="secondary" label="End" onClick={onEnd} />{confirm}</div>
+      <div className="ui-change__foot"><Button kind="secondary" label="End" dialog={{ open: asking }} onClick={onEnd} />{confirm}</div>
     </section>
   );
 }
 
-export function ChangeCard({ data, onEnd, confirm }: ChangeCardProps) {
-  if (data.kind === 'trial') return <Trial data={data} onEnd={onEnd} confirm={confirm} />;
-  if (data.kind === 'focus') return <Focus data={data} onEnd={onEnd} confirm={confirm} />;
+export function ChangeCard({ data, onEnd, confirm, asking }: ChangeCardProps) {
+  if (data.kind === 'trial') return <Trial data={data} onEnd={onEnd} confirm={confirm} asking={asking} />;
+  if (data.kind === 'focus') return <Focus data={data} onEnd={onEnd} confirm={confirm} asking={asking} />;
   return <section className="ui-change ui-change--none"><span className="ui-change__none">No active change</span></section>;
 }

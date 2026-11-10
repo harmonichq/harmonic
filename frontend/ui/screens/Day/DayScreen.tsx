@@ -91,6 +91,7 @@ import { DayRibbon } from '../../components/DayRibbon/DayRibbon';
 import { InsulinBar } from '../../components/InsulinBar/InsulinBar';
 import { ListGroup, ListRow } from '../../components/ListRow/ListRow';
 import { LogCarbsEntry, type LogCarbsState } from '../../components/LogCarbsEntry/LogCarbsEntry';
+import { useDialogFocus } from '../../dialog';
 import { NavBar, type NavHooks } from '../../components/NavBar/NavBar';
 import { PromptCard, type Answer } from '../../components/PromptCard/PromptCard';
 import { ScreenHeader } from '../../components/ScreenHeader/ScreenHeader';
@@ -166,8 +167,10 @@ function Month({ layout, month, selected, onSelect, onStep, canStep, read, onRet
   /** Closing: what usePresence marks it with. */
   exit: object;
 }) {
+  // Not modal: the header's day, which closes it, and the page beside it take taps.
+  const dialog = useDialogFocus<HTMLElement>(!('data-closing' in exit), { modal: false });
   return (
-    <section className={layout === 'phone' ? 'ui-dayscreen__month ui-dayscreen__month--phone'
+    <section ref={dialog} className={layout === 'phone' ? 'ui-dayscreen__month ui-dayscreen__month--phone'
       : 'ui-popover ui-dayscreen__month ui-dayscreen__month--desktop'} style={{ left }}
       role="dialog" aria-label={monthName(month)} {...exit}>
       <div className="ui-dayscreen__month-head">
@@ -444,6 +447,8 @@ function Day({
     );
   };
   const entryOpen = carbs !== null;
+  // The phone sheet waits for the day; its trigger reads open once it shows (#582).
+  const sheetOpen = entryOpen && state !== 'loading' && state !== 'unavailable' && view === 'day';
   useEffect(() => { if (entryOpen) readStoreClock(); }, [entryOpen]);
 
   // Save reads the clock once: the entry's day, and its time unless one was picked.
@@ -526,7 +531,7 @@ function Day({
         : <ScreenHeader key={view} title={title} layout={layout} back={{ label: 'Day', onBack: () => setView('day') }} />
       : layout === 'phone'
         ? <ScreenHeader key={view} title="Day" day={dayControl} layout={layout} trailing="action" label="+ Log carbs"
-            onAction={() => setCarbs('empty')} />
+            dialog={{ open: sheetOpen }} onAction={() => setCarbs('empty')} />
         : <ScreenHeader key={view} title="Day" day={dayControl} layout={layout} trailing="control" control={
             <LogCarbsEntry layout="desktop" align="end" open={carbs !== null} {...entryProps}
               onToggle={() => (carbs === null ? setCarbs('empty') : closeCarbs())} />} />;
@@ -609,7 +614,7 @@ function Day({
   );
 
   const dropped = usePresence(month && state !== 'unavailable' && view === 'day');
-  const sheet = usePresence(carbs !== null && state !== 'loading' && state !== 'unavailable' && view === 'day' && carbs);
+  const sheet = usePresence(sheetOpen && carbs);
 
   if (layout === 'phone') {
     return (
@@ -639,9 +644,10 @@ function Day({
         {bar}
         <NavBar layout="tabbar" selected="day" dayCount={badge} {...nav} />
         {sheet.value && (
-          <div className="ui-scrim ui-dayscreen__scrim ui-dayscreen__scrim--sheet" onClick={closeCarbs} {...sheet.exit}>
-            <div onClick={(event) => event.stopPropagation()}>
-              <LogCarbsEntry layout="phone" {...entryProps} state={sheet.value} />
+          <div className="ui-scrim ui-dayscreen__scrim ui-dayscreen__scrim--sheet"
+            onClick={(event) => { if (event.target === event.currentTarget) closeCarbs(); }} {...sheet.exit}>
+            <div>
+              <LogCarbsEntry layout="phone" {...entryProps} state={sheet.value} open={!sheet.closing} />
             </div>
           </div>
         )}

@@ -5,12 +5,13 @@ import { fixtures } from '../../fixtures';
 import { expectDirections } from '../../direction-check';
 import { expectMetricsAligned } from '../../metrics-check';
 import { failsOnce } from '../../flaky';
+import { historyRouter } from '../../history-router';
 import { expectTabBarEnds } from '../../tabbar-check';
 import { PHONES, expectClearsInset, expectTappable, homeIndicator, tapCentre } from '../../tap-check';
 import { expectAtPaneTop, expectHeaderEmpty, expectTitlePrinted } from '../../title-check';
 import { CHANGES_UNNAMED } from '../../served-variants';
 import type { ChangesStore } from '../../changes-model';
-import { ChangesScreen, type ChangesScreenProps } from './ChangesScreen';
+import { ChangesScreen, type ChangesDrillDown, type ChangesScreenProps } from './ChangesScreen';
 
 // The Changes screen in each state §1.3 lists (§2.5 2026-10-14, the Changes
 // redesign), at phone (390) and desktop (1440), every value the simulated
@@ -297,6 +298,49 @@ const previousPlay: Story['play'] = async ({ canvasElement }) => {
 };
 export const OpenPreviousPhone: Story = { ...story('phone', PREVIOUS), play: previousPlay };
 export const OpenPreviousDesktop: Story = { ...story('desktop', PREVIOUS), play: previousPlay };
+
+// Through the app's router (ADR 594, #656, #669): Previous pushes its history
+// entry, "‹ Changes" goes Back through it, the platform's own Back returns to
+// Changes as it does, and Forward opens Previous again.
+const routedPreviousPlay: Story['play'] = async ({ canvasElement, args }) => {
+  const canvas = within(canvasElement);
+  const router = args.nav!.drillDown as ReturnType<typeof historyRouter<ChangesDrillDown>>;
+  await userEvent.click(canvas.getByRole('button', { name: /Previous\s*4/ }));
+  await expect(router.open).toHaveBeenCalledWith({ view: 'previous' });
+  await expectTitlePrinted(canvasElement, 'Previous');
+  const header = canvas.getByRole('heading', { level: 1, name: 'Previous' }).closest('header') as HTMLElement;
+  await userEvent.click(within(header).getByRole('button', { name: 'Changes' }));
+  await expect(router.close).toHaveBeenCalledOnce();
+  await expectHeaderEmpty(canvasElement, 'Changes');
+  router.forward();
+  await canvas.findByRole('heading', { level: 1, name: 'Previous' });
+  await expectTitlePrinted(canvasElement, 'Previous');
+  router.close();
+  await waitFor(() => expect(canvas.queryByRole('heading', { level: 1, name: 'Previous' })).toBeNull());
+  await expectHeaderEmpty(canvasElement, 'Changes');
+};
+export const RoutedPreviousPhone: Story = {
+  ...story('phone', { ...PREVIOUS, nav: { drillDown: historyRouter<ChangesDrillDown>() } }), play: routedPreviousPlay };
+export const RoutedPreviousDesktop: Story = {
+  ...story('desktop', { ...PREVIOUS, nav: { drillDown: historyRouter<ChangesDrillDown>() } }), play: routedPreviousPlay };
+// Forward onto Previous when no previous change is served: Previous is not
+// reachable at 0 (§1.3), so it leaves through the router at once.
+export const ForwardPreviousEmpty: Story = {
+  ...story('phone', { ...MATURED, nav: { drillDown: historyRouter<ChangesDrillDown>(undefined, { view: 'previous' }) } }),
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.queryByRole('button', { name: /Previous/ })).toBeNull();
+    const router = args.nav!.drillDown as ReturnType<typeof historyRouter<ChangesDrillDown>>;
+    router.forward();
+    await waitFor(() => expect(router.close).toHaveBeenCalledOnce());
+    await expect(canvas.queryByRole('heading', { level: 1, name: 'Previous' })).toBeNull();
+  },
+};
+// A Back from another tab onto Previous's entry opens it as it was.
+export const ReturnedToPrevious: Story = {
+  ...story('phone', { ...PREVIOUS, returnTo: { view: 'previous' }, nav: { drillDown: historyRouter<ChangesDrillDown>({ view: 'previous' }) } }),
+  play: async ({ canvasElement }) => { await expectTitlePrinted(canvasElement, 'Previous'); },
+};
 
 // Live (#495): an End the engine does not save leaves the change as it was,
 // with "Not saved", and Retry ends it.

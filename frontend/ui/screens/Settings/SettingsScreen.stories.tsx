@@ -1,11 +1,13 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
+import { expect, fireEvent, fn, userEvent, waitFor, within } from 'storybook/test';
 import { TOKEN_KEY } from '../../../data.js';
 import { failsOnce } from '../../flaky';
+import { historyRouter } from '../../history-router';
+import { pumpProfile } from '../../settings-model';
 import { expectTabBarEnds } from '../../tabbar-check';
 import { PHONES, expectClearsInset, expectTappable, homeIndicator, tapCentre } from '../../tap-check';
 import { expectAtPaneTop, expectHeaderEmpty, expectTitlePrinted } from '../../title-check';
-import { SettingsScreen, type SettingsScreenProps } from './SettingsScreen';
+import { SettingsScreen, type SettingsDrillDown, type SettingsScreenProps } from './SettingsScreen';
 
 // The Settings screen in each state §1.3 lists, at phone (390) and desktop
 // (1440), every value the simulated wearer's served answer:
@@ -119,6 +121,36 @@ const drillPlay: Story['play'] = async ({ canvasElement }) => {
 export const DrillDownPhone: Story = { ...story('phone', FAILED), play: drillPlay };
 export const DrillDownDesktop: Story = { ...story('desktop', FAILED), play: drillPlay };
 
+// Through the app's router (ADR 594, #656, #669): each drill-down pushes its
+// history entry, "‹ Settings" goes Back through it, the platform's own Back
+// returns to the root as it does, and Forward opens the drill-down again.
+const routedPlay: Story['play'] = async ({ canvasElement, args }) => {
+  const canvas = within(canvasElement);
+  const router = args.nav!.drillDown as ReturnType<typeof historyRouter<SettingsDrillDown>>;
+  const root = () => canvas.findByRole('heading', { level: 1, name: 'Settings' });
+  for (const [view, title] of [['tandem', 'Tandem Source'], ['profile', 'Pump profile'], ['glossary', 'Glossary']] as const) {
+    await userEvent.click(canvas.getByRole('button', { name: new RegExp(`^${title}`) }));
+    await expect(router.open).toHaveBeenLastCalledWith({ view });
+    await userEvent.click(back(canvas, title));
+    await expect(router.close).toHaveBeenCalled();
+    await root();
+    router.forward();
+    await canvas.findByRole('heading', { level: 1, name: title });
+    await expectTitlePrinted(canvasElement, title);
+    router.close();
+    await root();
+  }
+};
+export const RoutedDrillDownPhone: Story = {
+  ...story('phone', { ...SYNCED, nav: { drillDown: historyRouter<SettingsDrillDown>() } }), play: routedPlay };
+export const RoutedDrillDownDesktop: Story = {
+  ...story('desktop', { ...SYNCED, nav: { drillDown: historyRouter<SettingsDrillDown>() } }), play: routedPlay };
+// A Back from another tab onto a drill-down's entry opens it as it was.
+export const ReturnedToGlossary: Story = {
+  ...story('phone', { ...SYNCED, returnTo: { view: 'glossary' }, nav: { drillDown: historyRouter<SettingsDrillDown>({ view: 'glossary' }) } }),
+  play: async ({ canvasElement }) => { await expectTitlePrinted(canvasElement, 'Glossary'); },
+};
+
 // Update → the account form; Save waits for both fields, saves, then closes
 // with the account set.
 const updatePlay: Story['play'] = async ({ canvasElement }) => {
@@ -161,6 +193,43 @@ export const TapSavePhone375x667: Story = tapSave(PHONES.se);
 export const TapSavePhone375x812: Story = { ...tapSave(PHONES.x), decorators: [homeIndicator] };
 export const TapSavePhone412x915: Story = tapSave(PHONES.pixel);
 
+// Enter in a field saves the account once Save is enabled, and does nothing before (#664).
+const enterPlay: Story['play'] = async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  await userEvent.click(canvas.getByRole('button', { name: 'Update' }));
+  const form = within(canvas.getByRole('dialog', { name: 'Tandem Source' }));
+  const save = form.getByRole('button', { name: 'Save' });
+  await userEvent.type(form.getByLabelText('Email'), 'wearer@example.invalid{Enter}');
+  await expect(save).not.toHaveAttribute('aria-busy', 'true');
+  await userEvent.type(form.getByLabelText('Password'), 'synthetic{Enter}');
+  await expect(save).toHaveAttribute('aria-busy', 'true');
+  await waitFor(() => expect(canvas.queryByRole('dialog')).toBeNull());
+  await expect(canvas.getByText('Set')).toBeInTheDocument();
+};
+export const EnterSavesAccountPhone: Story = { ...story('phone', { ...NOT_SET, view: 'tandem' }), play: enterPlay };
+export const EnterSavesAccountDesktop: Story = { ...story('desktop', { ...NOT_SET, view: 'tandem' }), play: enterPlay };
+// Enter held down: the browser repeats its keydown with `repeat` set. Storybook's
+// bundled keyboard never sets it, so the hold is dispatched directly.
+const holdEnter = async (input: HTMLElement) => {
+  await fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+  for (let i = 0; i < 4; i += 1) await fireEvent.keyDown(input, { key: 'Enter', code: 'Enter', repeat: true });
+  await fireEvent.keyUp(input, { key: 'Enter', code: 'Enter' });
+};
+// Enter held down in the account form saves once (#664).
+export const EnterHeldSavesOnce: Story = {
+  ...story('phone', { ...NOT_SET, view: 'tandem', writes: { saveCredentials: fn(async () => undefined) } }),
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole('button', { name: 'Update' }));
+    const form = within(canvas.getByRole('dialog', { name: 'Tandem Source' }));
+    await userEvent.type(form.getByLabelText('Email'), 'wearer@example.invalid');
+    await userEvent.type(form.getByLabelText('Password'), 'synthetic');
+    await holdEnter(form.getByLabelText('Password'));
+    await waitFor(() => expect(canvas.queryByRole('dialog')).toBeNull());
+    await expect(args.writes!.saveCredentials).toHaveBeenCalledOnce();
+  },
+};
+
 // Escape closes the form unsaved.
 const escapePlay: Story['play'] = async ({ canvasElement }) => {
   const canvas = within(canvasElement);
@@ -192,6 +261,76 @@ export const LiveSaveNotSavedPhone: Story = {
 export const LiveSaveNotSavedDesktop: Story = {
   ...story('desktop', { ...NOT_SET, view: 'tandem', writes: { saveCredentials: failsOnce(undefined) } }), play: liveSavePlay };
 
+// A failed save's "Not saved" and Retry are drawn over the open form (#661),
+// and go with it: Escape closes the form and the bar, and on desktop "‹ Settings"
+// leaves the page without it.
+const notSavedOnTopPlay = (layout: 'phone' | 'desktop'): Story['play'] => async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  const fail = async () => {
+    await userEvent.click(canvas.getByRole('button', { name: 'Update' }));
+    const form = within(canvas.getByRole('dialog', { name: 'Tandem Source' }));
+    await userEvent.type(form.getByLabelText('Email'), 'wearer@example.invalid');
+    await userEvent.type(form.getByLabelText('Password'), 'synthetic');
+    await userEvent.click(form.getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent(/Not saved/));
+    await expect(canvas.getByRole('dialog', { name: 'Tandem Source' })).toBeInTheDocument();
+    await expectTappable(canvas.getByRole('button', { name: 'Retry' }));
+  };
+  await fail();
+  await userEvent.keyboard('{Escape}');
+  await waitFor(() => expect(canvas.queryByRole('status')).toBeNull());
+  if (layout === 'phone') return;
+  await fail();
+  await userEvent.click(back(canvas, 'Tandem Source'));
+  await waitFor(() => expect(canvas.queryByRole('status')).toBeNull());
+  await userEvent.click(canvas.getByRole('button', { name: /^Glossary/ }));
+  await expect(canvas.queryByRole('status')).toBeNull();
+};
+const failing = () => ({ saveCredentials: async () => { throw new Error('not saved'); } });
+export const NotSavedOverFormPhone: Story = {
+  ...story('phone', { ...NOT_SET, view: 'tandem', writes: failing() }), play: notSavedOnTopPlay('phone') };
+export const NotSavedOverFormDesktop: Story = {
+  ...story('desktop', { ...NOT_SET, view: 'tandem', writes: failing() }), play: notSavedOnTopPlay('desktop') };
+
+/** A save the play fails when it chooses. */
+const lateWrite = () => {
+  let fail = () => undefined as void;
+  return {
+    saveCredentials: () => new Promise<void>((_, reject) => { fail = () => reject(new Error('not saved')); }),
+    fail: () => fail(),
+  };
+};
+// A save that fails only after the form was left, by "‹ Settings" or the
+// platform's Back, belongs to nothing on screen (#661): no "Not saved" on the
+// root or the Glossary, and Tandem Source opens again without the form.
+const lateFailurePlay = (leave: 'header' | 'back'): Story['play'] => async ({ canvasElement, args }) => {
+  const canvas = within(canvasElement);
+  const write = args.writes as ReturnType<typeof lateWrite>;
+  await userEvent.click(canvas.getByRole('button', { name: /^Tandem Source/ }));
+  await userEvent.click(canvas.getByRole('button', { name: 'Update' }));
+  const form = within(canvas.getByRole('dialog', { name: 'Tandem Source' }));
+  await userEvent.type(form.getByLabelText('Email'), 'wearer@example.invalid');
+  await userEvent.type(form.getByLabelText('Password'), 'synthetic');
+  await userEvent.click(form.getByRole('button', { name: 'Save' }));
+  if (leave === 'header') await userEvent.click(back(canvas, 'Tandem Source'));
+  else (args.nav!.drillDown as ReturnType<typeof historyRouter<SettingsDrillDown>>).close();
+  await canvas.findByRole('heading', { level: 1, name: 'Settings' });
+  write.fail();
+  await new Promise((settled) => setTimeout(settled, 100));
+  await expect(canvas.queryByRole('status')).toBeNull();
+  await userEvent.click(canvas.getByRole('button', { name: /^Glossary/ }));
+  await expect(canvas.queryByRole('status')).toBeNull();
+  await userEvent.click(back(canvas, 'Glossary'));
+  await userEvent.click(canvas.getByRole('button', { name: /^Tandem Source/ }));
+  await expectTitlePrinted(canvasElement, 'Tandem Source');
+  await expect(canvas.queryByRole('dialog')).toBeNull();
+};
+export const NotSavedAfterLeavingPhone: Story = {
+  ...story('phone', { ...NOT_SET, writes: lateWrite(), nav: { drillDown: historyRouter<SettingsDrillDown>() } }),
+  play: lateFailurePlay('back') };
+export const NotSavedAfterLeavingDesktop: Story = {
+  ...story('desktop', { ...NOT_SET, writes: lateWrite() }), play: lateFailurePlay('header') };
+
 // Loading and Unavailable (§2.5, 2026-10-13), as every other screen has them.
 export const LoadingPhone = story('phone', { ...SYNCED, state: 'loading' });
 export const LoadingDesktop = story('desktop', { ...SYNCED, state: 'loading' });
@@ -201,6 +340,20 @@ export const UnavailableDesktop = story('desktop', { ...SYNCED, state: 'unavaila
 // and Retry, when reading them again failed.
 export const StalePhone = story('phone', { ...SYNCED, state: 'stale' });
 export const StaleDesktop = story('desktop', { ...SYNCED, state: 'stale' });
+// Stale parts keep their answers (#662): the Pump profile row its name, and
+// Tandem Source its account rows with Update, under Unavailable and Retry.
+const STALE_PARTS = { account: 'stale', pump: 'stale', onRetry: () => undefined } as const;
+const staleRowsPlay: Story['play'] = async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  await expect(canvas.getByRole('button', { name: /^Pump profile/ })).toHaveTextContent(pumpProfile('wearer')!.name);
+  await userEvent.click(canvas.getByRole('button', { name: /^Tandem Source/ }));
+  await expect(canvas.getByText('Email')).toBeInTheDocument();
+  await expect(canvas.getByText('Password')).toBeInTheDocument();
+  await expect(canvas.getByRole('button', { name: 'Update' })).toBeInTheDocument();
+  await expect(canvas.getByText('Unavailable')).toBeInTheDocument();
+};
+export const StalePartsPhone: Story = { ...story('phone', { ...SYNCED, parts: STALE_PARTS }), play: staleRowsPlay };
+export const StalePartsDesktop: Story = { ...story('desktop', { ...SYNCED, parts: STALE_PARTS }), play: staleRowsPlay };
 
 // Progressive loading: the sync status has landed, so the root's three rows
 // show; the pump profile and the account are still being read. Only those parts
@@ -264,3 +417,18 @@ export const TokenUnavailablePhone: Story = {
   ...story('phone', { ...SYNCED, state: 'unavailable', onToken: fn() }), play: tokenPlay };
 export const TokenUnavailableDesktop: Story = {
   ...story('desktop', { ...SYNCED, state: 'unavailable', onToken: fn() }), play: tokenPlay };
+// Enter in the Token field saves it once it holds a token (#664).
+const tokenEnterPlay: Story['play'] = async ({ canvasElement, args }) => {
+  const canvas = within(canvasElement);
+  localStorage.removeItem(TOKEN_KEY);
+  await userEvent.type(canvas.getByLabelText('Token'), '{Enter}');
+  await expect(args.onToken).not.toHaveBeenCalled();
+  await userEvent.type(canvas.getByLabelText('Token'), 'synthetic-token');
+  // Enter held down repeats its keydown; it saves once.
+  await holdEnter(canvas.getByLabelText('Token'));
+  await expect(localStorage.getItem(TOKEN_KEY)).toBe('synthetic-token');
+  await expect(args.onToken).toHaveBeenCalledOnce();
+  localStorage.removeItem(TOKEN_KEY);
+};
+export const TokenEnterPhone: Story = { ...story('phone', { ...SYNCED, onToken: fn() }), play: tokenEnterPlay };
+export const TokenEnterDesktop: Story = { ...story('desktop', { ...SYNCED, onToken: fn() }), play: tokenEnterPlay };

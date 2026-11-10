@@ -57,11 +57,14 @@ import { StatePill } from '../../components/StatePill/StatePill';
 import { NavBar, type NavHooks } from '../../components/NavBar/NavBar';
 import { ScreenHeader } from '../../components/ScreenHeader/ScreenHeader';
 import { TransientBar } from '../../components/TransientBar/TransientBar';
+import type { DrillDownHooks } from '../Queue/QueueScreen';
 import '../../shared.css';
 import './ChangesScreen.css';
 
 type Layout = 'phone' | 'desktop';
 type View = 'changes' | 'previous';
+/** The Previous drill-down, as the router's history entry marks it (ADR 594). */
+export type ChangesDrillDown = { view: 'previous' };
 
 export type ChangesScreenProps = {
   layout: Layout;
@@ -74,9 +77,11 @@ export type ChangesScreenProps = {
   confirming?: boolean;
   /** Start on the Previous list. */
   view?: View;
+  /** The drill-down a Back from another tab returned to (ADR 594): it opens as it was. */
+  returnTo?: ChangesDrillDown;
   /** The live engine's End: resolves once the answers are read again, rejects when not saved. */
   writes?: { end: () => Promise<void> };
-  nav?: NavHooks;
+  nav?: NavHooks & { drillDown?: DrillDownHooks<ChangesDrillDown> };
   /** Unavailable's Retry. */
   onRetry?: () => void;
 };
@@ -146,11 +151,29 @@ function Waiting({ row }: { row: WaitingRow }) {
 }
 
 export function ChangesScreen({
-  layout, store, state = 'ready', end, confirming = false, view: initialView = 'changes', writes, nav, onRetry,
+  layout, store, state = 'ready', end, confirming = false, view: initialView = 'changes', returnTo, writes, nav, onRetry,
 }: ChangesScreenProps) {
   const [ended, setEnded] = useState(false);
   const [asking, setAsking] = useState(confirming);
-  const [view, setView] = useState<View>(initialView);
+  const [view, setView] = useState<View>(returnTo?.view ?? initialView);
+  // Previous through the router's history entry (ADR 594), so the platform's Back returns from it
+  // as "‹ Changes" does; without the router it closes itself.
+  const router = nav?.drillDown;
+  const openPrevious = () => {
+    router?.open({ view: 'previous' });
+    setView('previous');
+  };
+  const leave = () => (router ? router.close() : setView('changes'));
+  useEffect(() => router?.onReturn(() => setView('changes')), [router]);
+  const viewNow = useRef(view);
+  viewNow.current = view;
+  // A Forward onto Previous reopens it (#669); with no previous change served,
+  // Previous is not reachable (§1.3), so it leaves through the router.
+  const previousNow = useRef<number | null>(null);
+  useEffect(() => router?.onEnter((to) => {
+    if (previousNow.current === 0) router.close();
+    else setView(to.view);
+  }), [router]);
   const [notSaved, setNotSaved] = useState(false);
   // Live: End confirmed, until its write resolves or is refused.
   const [ending, setEnding] = useState(false);
@@ -159,6 +182,7 @@ export function ChangesScreen({
   const ready = state === 'ready' || state === 'stale';
   const active: ChangeData = ready ? change(shown, ending) : { kind: 'none' };
   const count = ready ? previousCount(shown, ending) : null;
+  previousNow.current = count?.value ?? null;
   const pending = ready ? waiting(shown) : [];
   // The confirmation stays while it closes, and keeps the change it asked about.
   const asked = usePresence(asking && ready);
@@ -174,7 +198,7 @@ export function ChangesScreen({
       setEnding(false);
       setNotSaved(true);
       // Previous is never empty (§1.3): with no previous change served, back to Changes.
-      if (previousCount(shown).value === 0) setView('changes');
+      if (previousCount(shown).value === 0 && viewNow.current === 'previous') leave();
     });
   };
   const doEnd = () => {
@@ -196,7 +220,7 @@ export function ChangesScreen({
   const header = state === 'unavailable'
     ? <ScreenHeader title="Changes" layout={layout} {...unavailable} />
     : previous
-      ? <ScreenHeader key={view} title="Previous" layout={layout} back={{ label: 'Changes', onBack: () => setView('changes') }}
+      ? <ScreenHeader key={view} title="Previous" layout={layout} back={{ label: 'Changes', onBack: leave }}
           {...(state === 'stale' ? unavailable : {})} />
       : <ScreenHeader key={view} title="Changes" layout={layout} {...(state === 'stale' ? unavailable : {})} />;
   const push = previous ? 'forward' : 'back';
@@ -231,7 +255,7 @@ export function ChangesScreen({
           )}
           {count && count.value > 0 && (
             <ListGroup>
-              <ListRow label="Previous" value={<Num value={count} />} onOpen={() => setView('previous')} />
+              <ListRow label="Previous" value={<Num value={count} />} onOpen={openPrevious} />
             </ListGroup>
           )}
         </>

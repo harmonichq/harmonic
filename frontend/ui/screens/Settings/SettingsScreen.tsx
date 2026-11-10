@@ -50,7 +50,7 @@
 // Motion: each drill-down pushes in from the right and back from the left;
 // the account form's sheet rises, and its popover opens out of its arrow.
 import { useEffect, useRef, useState } from 'react';
-import type { ReactNode } from 'react';
+import type { KeyboardEvent as KeyEvent, ReactNode } from 'react';
 import { answers, sourced } from '../../answers';
 import { saveToken } from '../../../data.js';
 import { useMotionGate, usePresence } from '../../motion';
@@ -63,11 +63,14 @@ import { ListGroup, ListRow, ListRowDense } from '../../components/ListRow/ListR
 import { NavBar, type NavHooks } from '../../components/NavBar/NavBar';
 import { ScreenHeader } from '../../components/ScreenHeader/ScreenHeader';
 import { TransientBar } from '../../components/TransientBar/TransientBar';
+import type { DrillDownHooks } from '../Queue/QueueScreen';
 import '../../shared.css';
 import './SettingsScreen.css';
 
 type Layout = 'phone' | 'desktop';
 export type SettingsView = 'root' | 'tandem' | 'profile' | 'glossary';
+/** Which drill-down is open, as the router's history entry marks it (ADR 594). */
+export type SettingsDrillDown = { view: Exclude<SettingsView, 'root'> };
 type PumpStore = 'wearer' | 'wearer-unsynced';
 /** `stale`: an earlier read's answers, since reading them again failed (§2.5, 2026-10-14). */
 type Read = 'ready' | 'loading' | 'unavailable' | 'stale';
@@ -83,12 +86,14 @@ export type SettingsScreenProps = {
   pump?: PumpStore;
   /** The screen open first. */
   view?: SettingsView;
+  /** The drill-down a Back from another tab returned to (ADR 594): it opens as it was. */
+  returnTo?: SettingsDrillDown;
   /** Start with the account form open. */
   updating?: boolean;
   /** The live engine's account write: resolves once the answers are read again, rejects when not saved. */
   writes?: { saveCredentials: (email: string, password: string) => Promise<void> };
-  /** Where a tab goes; the Settings alert is this screen's own. */
-  nav?: Pick<NavHooks, 'onSelect'>;
+  /** Where a tab goes, and the router's drill-down entry; the Settings alert is this screen's own. */
+  nav?: Pick<NavHooks, 'onSelect'> & { drillDown?: DrillDownHooks<SettingsDrillDown> };
   /** The sync status, which the root's first row and the screen's frame wait on. */
   state?: Read;
   /** Where each part past the status is; every part is ready when absent. */
@@ -99,18 +104,35 @@ export type SettingsScreenProps = {
   onToken?: () => void;
 };
 
+/** A form's fields and its Save: Enter in a field saves, when Save is enabled (#664). */
+function Fields({ enabled, onSave, children }: { enabled: boolean; onSave: () => void; children: ReactNode }) {
+  const onKeyDown = (event: KeyEvent<HTMLFormElement>) => {
+    if (event.key !== 'Enter' || !(event.target instanceof HTMLInputElement) || event.nativeEvent.isComposing) return;
+    event.preventDefault();
+    // A held Enter repeats its keydown: it saves once.
+    if (enabled && !event.repeat) onSave();
+  };
+  return (
+    <form className="ui-settings__fields" onKeyDown={onKeyDown} onSubmit={(event) => event.preventDefault()}>
+      {children}
+    </form>
+  );
+}
+
 /** The API token the server was started with, and Save. */
 function TokenField({ onToken }: { onToken?: () => void }) {
   const [token, setToken] = useState('');
+  const save = () => { saveToken(token); onToken?.(); };
   return (
     <div className="ui-settings__token">
-      <ListGroup>
-        <ListRow label="Token" field={{ kind: 'password', onChange: setToken }} />
-      </ListGroup>
-      <div className="ui-settings__form-foot">
-        <Button kind="primary" label="Save" disabled={!token}
-          onClick={() => { saveToken(token); onToken?.(); }} />
-      </div>
+      <Fields enabled={Boolean(token)} onSave={save}>
+        <ListGroup>
+          <ListRow label="Token" field={{ kind: 'password', onChange: setToken }} />
+        </ListGroup>
+        <div className="ui-settings__form-foot">
+          <Button kind="primary" label="Save" disabled={!token} onClick={save} />
+        </div>
+      </Fields>
     </div>
   );
 }
@@ -181,7 +203,8 @@ function Root({ sync, pump, read, onOpen, onToken }: {
   sync: SyncState | null; pump: PumpStore; read: Read; onOpen: (view: SettingsView) => void; onToken?: () => void;
 }) {
   const source = tandemSource(sync, 'set');
-  const name = read === 'ready' ? pumpProfile(pump)?.name ?? 'No profile'
+  // Stale keeps the answers it read (§2.5, 2026-10-14).
+  const name = read === 'ready' || read === 'stale' ? pumpProfile(pump)?.name ?? 'No profile'
     : read === 'loading' ? <span className="ui-skeleton ui-settings__skeleton-value" aria-hidden="true" /> : undefined;
   return (
     <>
@@ -216,7 +239,7 @@ function TandemSource({ sync, account, read, form, onUpdate }: {
         </ListGroup>
       )}
       {read === 'loading' && <Pending rows={3} />}
-      {read === 'ready' && (
+      {(read === 'ready' || read === 'stale') && (
         <ListGroup>
           <ListRow label="Email" value={source.account.email ?? 'Not set'} />
           {source.account.region && <ListRow label="Region" value={source.account.region} />}
@@ -268,26 +291,28 @@ function Glossary() {
 function AccountForm({ saving, onSave }: { saving: boolean; onSave: (email: string, password: string) => void }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const save = () => onSave(email, password);
   return (
     <>
       <h2 className="ui-settings__form-title">Tandem Source</h2>
-      <ListGroup>
-        <ListRow label="Email" field={{ kind: 'email', onChange: setEmail, disabled: saving, focused: true }} />
-        <ListRow label="Password" field={{ kind: 'password', onChange: setPassword, disabled: saving }} />
-      </ListGroup>
-      <div className="ui-settings__form-foot">
-        <Button kind="primary" label="Save" disabled={!email || !password} busy={saving}
-          onClick={() => onSave(email, password)} />
-      </div>
+      <Fields enabled={Boolean(email && password) && !saving} onSave={save}>
+        <ListGroup>
+          <ListRow label="Email" field={{ kind: 'email', onChange: setEmail, disabled: saving, focused: true }} />
+          <ListRow label="Password" field={{ kind: 'password', onChange: setPassword, disabled: saving }} />
+        </ListGroup>
+        <div className="ui-settings__form-foot">
+          <Button kind="primary" label="Save" disabled={!email || !password} busy={saving} onClick={save} />
+        </div>
+      </Fields>
     </>
   );
 }
 
 function Settings({
-  layout, sync, account, pump = 'wearer', view: initialView = 'root', updating = false, writes, nav, onToken,
+  layout, sync, account, pump = 'wearer', view: initialView = 'root', returnTo, updating = false, writes, nav, onToken,
   parts = { account: 'ready', pump: 'ready', onRetry: () => undefined }, state, onRetry,
 }: SettingsScreenProps) {
-  const [view, setView] = useState<SettingsView>(initialView);
+  const [view, setView] = useState<SettingsView>(returnTo?.view ?? initialView);
   const root = useMotionGate<HTMLDivElement>();
   const push = view === 'root' ? 'back' : 'forward';
   const [form, setForm] = useState<'open' | 'saving' | null>(updating ? 'open' : null);
@@ -298,11 +323,17 @@ function Settings({
   const failed = tandemSource(sync, shownAccount).failed === true;
 
   const [notSaved, setNotSaved] = useState<{ retry: () => void } | null>(null);
+  // Each save, so one that settles after its form was left changes nothing (#661).
+  const attempt = useRef(0);
   const save = (email: string, password: string) => {
     setForm('saving');
     setNotSaved(null);
     if (writes) {
-      writes.saveCredentials(email, password).then(() => setForm(null), () => {
+      const made = ++attempt.current;
+      writes.saveCredentials(email, password).then(() => {
+        if (made === attempt.current) setForm(null);
+      }, () => {
+        if (made !== attempt.current) return;
         setForm('open');
         setNotSaved({ retry: () => save(email, password) });
       });
@@ -310,7 +341,28 @@ function Settings({
     }
     timer.current = window.setTimeout(() => { setForm(null); setSaved(true); }, SAVE_MS);
   };
-  const close = () => setForm((now) => (now === 'saving' ? now : null));
+  // A failed save's bar goes with its form: dismissed, or its page left (#661).
+  const close = () => {
+    setForm((now) => (now === 'saving' ? now : null));
+    setNotSaved(null);
+  };
+
+  // Each drill-down through the router's history entry (ADR 594), so the platform's Back returns
+  // from it as "‹ Settings" does; without the router a drill-down closes itself.
+  const router = nav?.drillDown;
+  const open = (to: SettingsView) => {
+    if (to !== 'root') router?.open({ view: to });
+    setView(to);
+  };
+  const returned = useRef(() => {
+    attempt.current += 1;
+    setForm(null);
+    setNotSaved(null);
+    setView('root');
+  });
+  const leave = () => (router ? router.close() : returned.current());
+  useEffect(() => router?.onReturn(() => returned.current()), [router]);
+  useEffect(() => router?.onEnter((to) => setView(to.view)), [router]);
 
   useEffect(() => {
     if (form === null) return undefined;
@@ -325,7 +377,7 @@ function Settings({
       ? <ScreenHeader key={view} title="Settings" trailing="unavailable" layout={layout} onRetry={onRetry} />
       : <ScreenHeader key={view} title="Settings" layout={layout} />
     : <ScreenHeader key={view} title={TITLES[view]} layout={layout}
-      back={{ label: 'Settings', onBack: () => { setForm(null); setView('root'); } }}
+      back={{ label: 'Settings', onBack: leave }}
       {...(ownPart && (parts[ownPart] === 'unavailable' || parts[ownPart] === 'stale')
         ? { trailing: 'unavailable' as const, onRetry: () => parts.onRetry(ownPart) } : {})} />;
 
@@ -339,7 +391,7 @@ function Settings({
   );
 
   const content = {
-    root: <Root sync={sync} pump={pump} read={parts.pump} onOpen={setView} onToken={onToken} />,
+    root: <Root sync={sync} pump={pump} read={parts.pump} onOpen={open} onToken={onToken} />,
     tandem: <TandemSource sync={sync} account={shownAccount} read={parts.account} form={popover}
       onUpdate={() => setForm('open')} />,
     profile: <PumpProfile pump={pump} read={parts.pump} />,
@@ -347,11 +399,13 @@ function Settings({
   }[view];
 
   const barShown = usePresence(notSaved);
+  // Over the open form, so the failure and its Retry stay in view (#661): on phone above the sheet.
   const bar = barShown.value && (
-    <div className="ui-settings__bar" {...barShown.exit}>
+    <div className="ui-settings__bar" onClick={(event) => event.stopPropagation()} {...barShown.exit}>
       <TransientBar kind="not_saved" onRetry={barShown.value.retry} layout={layout} />
     </div>
   );
+  const sheet = Boolean(formShown.value) && view === 'tandem';
 
   if (layout === 'phone') {
     return (
@@ -360,10 +414,11 @@ function Settings({
         <main className="ui-settings__main" data-scroll="page" data-push={push}>
           <div key={`${view}-body`} className="ui-settings__body ui-push">{content}</div>
         </main>
-        {bar}
+        {!sheet && bar}
         <NavBar layout="tabbar" selected="settings" dayCount={dayCount()} {...nav} syncFailed={failed} />
-        {formShown.value && view === 'tandem' && (
+        {sheet && (
           <div className="ui-scrim ui-settings__scrim" onClick={close} {...formShown.exit}>
+            {bar}
             <section className="ui-sheet ui-settings__form" role="dialog" aria-label="Tandem Source"
               onClick={(event) => event.stopPropagation()}>
               <span className="ui-sheet__grabber" aria-hidden="true" />

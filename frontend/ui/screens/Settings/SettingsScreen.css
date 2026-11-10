@@ -14,9 +14,12 @@
 /* A row's value not yet read: a short block where the name will be. */
 .ui-settings__skeleton-value { width: 96px; height: 18px; }
 
-/* A failed Save's bar: above the tab bar, or at the foot of the pane. */
+/* A failed Save's bar: above the tab bar, or the open sheet, or at the foot of
+   the pane over the open popover. */
 .ui-settings--phone .ui-settings__bar { padding: 0 16px 8px; }
-.ui-settings--desktop .ui-settings__bar { position: sticky; bottom: 0; max-width: 720px; padding-top: 24px; }
+.ui-settings--desktop .ui-settings__bar { position: sticky; bottom: 0; z-index: 2; max-width: 720px; padding-top: 24px; }
+/* A form's fields and Save, laid out as if the form were not there. */
+.ui-settings__fields { display: contents; }
 
 /* Desktop: the rail and one pane, up to a reading width. */
 .ui-settings--desktop { display: grid; grid-template-columns: auto 1fr; height: 100%; }

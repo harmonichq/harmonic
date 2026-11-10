@@ -147,6 +147,26 @@ def test_a_meal_pattern_is_drawn_from_its_bolus_against_its_comparison_meals():
     assert {point["median"] for point in traces["typical"]["points"]} == {120}
 
 
+def test_off_mark_readings_give_the_first_and_last_points_every_episode():
+    """Readings two or three minutes off the five-minute marks: the readings that
+    round to a chart's first and last points lie just outside its window, and
+    each of those points still draws from every episode, as its neighbours do."""
+    prepared = _meal_pattern(claimed=6, calm=3)
+    anchors = sorted({row.t for row in prepared.bolus})
+    prepared.cgm = tuple(
+        CgmReading(t=t + timedelta(minutes=minute + (2 if index % 2 else 3)), bg=180,
+                   type="EGV")
+        for index, t in enumerate(anchors) for minute in range(-60, 301, 5))
+
+    traces = _traces(prepared, "highs_after_meals")
+
+    points = traces["pattern"]["points"]
+    assert (points[0]["minute"], points[-1]["minute"]) == (-30, 240)
+    assert {point["n"] for point in points} == {6}
+    for episode in traces["pattern"]["episodes"]:
+        assert all(-30 <= point["minute"] <= 240 for point in episode)
+
+
 def test_more_than_eight_pattern_episodes_are_served_as_their_median_and_band():
     eight = _traces(_meal_pattern(claimed=8, calm=3), "highs_after_meals")
     nine = _traces(_meal_pattern(claimed=9, calm=3), "highs_after_meals")

@@ -445,7 +445,7 @@ def _trace_cohort(anchors, cgm, window, *, episodes):
     start = window[0]
     drawn = []
     for anchor in anchors:
-        trace = _comparison_trace(anchor.strftime(FMT), anchor, cgm, window)
+        trace = _comparison_trace(anchor.strftime(FMT), anchor, cgm, window, binned=True)
         if any(start <= point["minute"] <= start + _TRACE_LEAD_MIN
                for point in trace["trace"]["cgm"]):
             drawn.append(trace)
@@ -457,7 +457,8 @@ def _trace_cohort(anchors, cgm, window, *, episodes):
     }
     if episodes:
         cohort["episodes"] = ([[{"minute": point["minute"], "bg": point["bg"]}
-                                for point in trace["trace"]["cgm"]] for trace in drawn]
+                                for point in trace["trace"]["cgm"]
+                                if start <= point["minute"] <= window[1]] for trace in drawn]
                               if len(drawn) <= _TRACE_EPISODES else None)
     return cohort
 
@@ -864,10 +865,19 @@ def _trace(member, lever, cgm):
         for row in cgm if lo <= row.t <= hi and row.bg is not None]}}
 
 
-def _comparison_trace(occurrence_id, anchor, cgm, window):
+def _comparison_trace(occurrence_id, anchor, cgm, window, *, binned=False):
+    """One occurrence's readings in the window. A trace that is ``binned`` into
+    five-minute points also keeps the readings within half a point outside it,
+    which round to its first and last points, so those draw from every episode
+    as their neighbours do."""
     before, after = window
     lo = anchor + timedelta(minutes=before)
     hi = anchor + timedelta(minutes=after)
+    if binned:
+        # A half-way reading rounds to the later point (event_comparison), so the
+        # one half a point past the window's end is left out.
+        lo -= timedelta(minutes=2.5)
+        hi += timedelta(minutes=2.5) - timedelta(microseconds=1)
     return {"id": occurrence_id, "trace": {"cgm": [
         {"t": row.t.strftime(FMT),
          "minute": round((row.t - anchor).total_seconds() / 60, 1), "bg": row.bg}
@@ -962,11 +972,11 @@ def _event(lever, roster, claimed_ids, cgm, bolus, source_window_days, basal=())
     window = _comparison_window(lever, roster)
     policy = policy_for(lever)
     cohorts = _event_cohorts(lever, roster, claimed_ids, cgm, bolus, source_window_days, basal)
-    comparison_traces = [_comparison_trace(occurrence_id, t, cgm, window)
+    comparison_traces = [_comparison_trace(occurrence_id, t, cgm, window, binned=True)
                          for occurrence_id, t in cohorts.comparison]
-    matched_traces = [_comparison_trace(occurrence_id, t, cgm, window)
+    matched_traces = [_comparison_trace(occurrence_id, t, cgm, window, binned=True)
                       for occurrence_id, t in cohorts.matched]
-    near_traces = [_comparison_trace(occurrence_id, t, cgm, window)
+    near_traces = [_comparison_trace(occurrence_id, t, cgm, window, binned=True)
                    for occurrence_id, t in cohorts.near]
     matched_cohort = event_comparison.project_cohort("matched", matched_traces, window)
     near_cohort = event_comparison.project_cohort("nearly_matched", near_traces, window)

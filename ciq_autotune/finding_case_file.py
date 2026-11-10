@@ -866,10 +866,11 @@ def _trace(member, lever, cgm):
 
 
 def _comparison_trace(occurrence_id, anchor, cgm, window, *, binned=False):
-    """One occurrence's readings in the window. A trace that is ``binned`` into
-    five-minute points also keeps the readings within half a point outside it,
+    """One occurrence's readings in the window. A Pattern trace, ``binned`` into
+    five-minute points, also keeps the readings within half a point outside it,
     which round to its first and last points, so those draw from every episode
-    as their neighbours do."""
+    as their neighbours do (#668). The event comparison is not binned: its
+    counts, support and readiness read the window's own readings."""
     before, after = window
     lo = anchor + timedelta(minutes=before)
     hi = anchor + timedelta(minutes=after)
@@ -972,11 +973,11 @@ def _event(lever, roster, claimed_ids, cgm, bolus, source_window_days, basal=())
     window = _comparison_window(lever, roster)
     policy = policy_for(lever)
     cohorts = _event_cohorts(lever, roster, claimed_ids, cgm, bolus, source_window_days, basal)
-    comparison_traces = [_comparison_trace(occurrence_id, t, cgm, window, binned=True)
+    comparison_traces = [_comparison_trace(occurrence_id, t, cgm, window)
                          for occurrence_id, t in cohorts.comparison]
-    matched_traces = [_comparison_trace(occurrence_id, t, cgm, window, binned=True)
+    matched_traces = [_comparison_trace(occurrence_id, t, cgm, window)
                       for occurrence_id, t in cohorts.matched]
-    near_traces = [_comparison_trace(occurrence_id, t, cgm, window, binned=True)
+    near_traces = [_comparison_trace(occurrence_id, t, cgm, window)
                    for occurrence_id, t in cohorts.near]
     matched_cohort = event_comparison.project_cohort("matched", matched_traces, window)
     near_cohort = event_comparison.project_cohort("nearly_matched", near_traces, window)

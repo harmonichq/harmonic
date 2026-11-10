@@ -267,6 +267,115 @@ class GuidanceApiTest(unittest.TestCase):
         self.assertTrue(current(tmp))
         self.assertIsNone(client.get("/api/verify/trials").json()["admission"]["active_kind"])
 
+    def test_a_build_whose_reconcile_differs_reconciles_a_current_frontier_at_start(self):
+        """ADR 667: a frontier current at its revision but reconciled by an earlier
+        build is reconciled again at start, before any write can take the fast
+        path, so a Trial the new build finds reverted is never ended by the user."""
+        from ciq_autotune import watched_change
+        from ciq_autotune.api import create_app
+
+        tmp = tempfile.NamedTemporaryFile(suffix=".sqlite")
+        self.addCleanup(tmp.close)
+        with Store.open(tmp.name) as store:
+            materialize_case(store, next(case for case in QA_CASES if case.name == "c3-trial"))
+        with Store.open(tmp.name) as store:  # the earlier build's reconcile, as a sync leaves it
+            watched_change.reconcile_ingested_follow_up(store)
+            self.assertTrue(watched_change.frontier_current(store))
+            trial = store.follow_up_frontier()["trial_id"]
+            self.assertIsNone(store.follow_up_record("trial", trial)["ending"].get("kind"))
+            revision = store.input_data_revision()
+
+        def reverted_a_day_in(store, record, history=None):  # the new build's detector
+            return datetime.fromisoformat(record["changed_at"]) + timedelta(days=1)
+
+        with patch.object(watched_change, "_reversal_at", reverted_a_day_in):
+            with TestClient(create_app(db_path=tmp.name, token="", enable_fetch_loop=False)) as client:
+                roster = client.get("/api/verify/trials").json()
+                self.assertIsNone(roster["admission"]["active_kind"])
+                finished = client.post(f"/api/verify/trials/{trial}/finish", json={
+                    "request_id": "00000000-0000-4000-8000-000000000668",
+                    "input_revision": revision})
+        if finished.status_code == 200:  # write-once: the End answers the ending already stored
+            self.assertEqual(finished.json()["record"]["ending"]["kind"], "reverted")
+        with Store.open_readonly(tmp.name) as store:
+            self.assertEqual(store.follow_up_record("trial", trial)["ending"]["kind"], "reverted")
+
+    def test_reconciling_after_a_follow_up_write_over_a_reconciled_frontier_changes_nothing(self):
+        """ADR 667: after a snooze, a restore, a Done, its Undo, a Focus, its End and
+        a Trial's End over a reconciled frontier, reconciling again changes no
+        record, not the frontier and not the revision, and admits the same."""
+        import json
+        import sqlite3
+        from ciq_autotune import watched_change
+        from ciq_autotune.store import wall_clock_now
+
+        tables = ("follow_up_records", "follow_up_frontier", "focus", "plan_history",
+                  "input_data_revision", "guidance_preferences")
+
+        def reconcile_changes_nothing(tmp, step):
+            copy = tempfile.NamedTemporaryFile(suffix=".sqlite")
+            self.addCleanup(copy.close)
+            with contextlib.closing(sqlite3.connect(tmp.name)) as src, \
+                    contextlib.closing(sqlite3.connect(copy.name)) as dst:
+                src.backup(dst)
+
+            def dump():
+                with contextlib.closing(sqlite3.connect(copy.name)) as conn:
+                    return {t: sorted(conn.execute(f"SELECT * FROM {t}").fetchall()) for t in tables}
+
+            with Store.open(copy.name) as store:
+                self.assertTrue(watched_change.frontier_current(store), step)
+                served = watched_change.follow_up_admission(store, now=store.latest_data_instant())
+            before = dump()
+            with Store.open(copy.name) as store:
+                with store.follow_up_transaction():
+                    admission = watched_change.reconcile_follow_up(
+                        store, now=store.latest_data_instant(),
+                        recorded_at=wall_clock_now(after=store.latest_server_stamp()))
+            self.assertEqual(dump(), before, step)
+            self.assertEqual(json.dumps(admission, sort_keys=True, default=str),
+                             json.dumps(served, sort_keys=True, default=str), step)
+
+        def reconciled(name):
+            tmp, _app, client = self._case_client(name)
+            with Store.open(tmp.name) as store:
+                watched_change.reconcile_ingested_follow_up(store)
+            reconcile_changes_nothing(tmp, f"{name}: reconciled")
+            return tmp, client
+
+        def ok(response, tmp, step):
+            self.assertEqual(response.status_code, 200, f"{step}: {response.text}")
+            reconcile_changes_nothing(tmp, step)
+            return response.json()
+
+        tmp, client = reconciled("basal-and-carb-ratio-lower")
+        guidance = client.get("/api/guidance").json()
+        subject = "setting:basal_rate"
+        ok(client.put(f"/api/guidance/preferences/{subject}",
+                      json={"generation": guidance["analysis_generation"]}), tmp, "snooze")
+        ok(client.delete(f"/api/guidance/preferences/{subject}"), tmp, "restore")
+        guidance = client.get("/api/guidance").json()
+        done = ok(client.post("/api/plan/apply", json={
+            "request_id": "00000000-0000-4000-8000-000000000669",
+            "input_revision": guidance["input_revision"], "subject": subject,
+            "analysis_generation": guidance["analysis_generation"]}), tmp, "Done")
+        ok(client.post("/api/plan/history/withdraw", json={
+            "request_id": "00000000-0000-4000-8000-000000000670",
+            "input_revision": client.get("/api/focus").json()["input_revision"],
+            "applied_at": done["applied_at"]}), tmp, "Undo")
+
+        tmp, client = reconciled("pattern-meal-two-causes")
+        pinned = ok(client.post("/api/focus", json={
+            "pattern_key": "highs_after_meals", "outcome_window": WHOLE_DAY_OUTCOME_WINDOW}),
+            tmp, "Focus")
+        ok(client.post(f"/api/focus/{pinned['id']}/resolve"), tmp, "Focus End")
+
+        tmp, client = reconciled("c3-trial")
+        trials = client.get("/api/verify/trials").json()
+        ok(client.post(f"/api/verify/trials/{trials['admission']['active_id']}/finish", json={
+            "request_id": "00000000-0000-4000-8000-000000000671",
+            "input_revision": trials["input_revision"]}), tmp, "Trial End")
+
     def test_a_roster_read_during_an_end_answers_the_ended_trial(self):
         """#665: a reload while a Trial's End computes its ending assessment, before
         the End commits, waits for it and never shows the Trial as active again."""
@@ -311,6 +420,56 @@ class GuidanceApiTest(unittest.TestCase):
         self.assertIsNone(reload["admission"]["active_kind"])
         self.assertEqual(next(t for t in reload["trials"] if t["id"] == trial)["ending"]["kind"],
                          "user_finished")
+
+    def test_a_roster_read_is_not_held_behind_an_ends_history_read(self):
+        """#665: an End over a frontier left behind (a sync's write, its reconcile
+        still to come) reads the history first; a reload meanwhile answers
+        without waiting for that read, and the End still ends the Trial."""
+        import threading
+        import time
+        from unittest.mock import patch
+        from ciq_autotune import watched_change
+
+        tmp, _app, client = self._case_client("c3-trial")
+        with Store.open(tmp.name) as store:
+            watched_change.reconcile_ingested_follow_up(store)
+        trials = client.get("/api/verify/trials").json()
+        trial = trials["admission"]["active_id"]
+        with Store.open(tmp.name) as store:  # a write whose reconcile is still to come
+            store.save_guidance_preference(
+                "setting:isf", decided_at="2026-01-01 00:00:00", reason=None,
+                comparison_version="383:1", state={"kind": "setting"})
+            self.assertFalse(watched_change.frontier_current(store))
+            revision = store.input_data_revision()
+        real_read = watched_change.read_follow_up_history
+        reading, reloaded = threading.Event(), threading.Event()
+
+        def slow_read(*args, **kwargs):
+            reading.set()
+            reloaded.wait(5.0)  # the history read lasts until the reload has answered
+            return real_read(*args, **kwargs)
+
+        finished = {}
+
+        def end():
+            finished["response"] = client.post(f"/api/verify/trials/{trial}/finish", json={
+                "request_id": "00000000-0000-4000-8000-000000000672",
+                "input_revision": revision})
+
+        with patch.object(watched_change, "read_follow_up_history", slow_read):
+            ending = threading.Thread(target=end)
+            ending.start()
+            self.assertTrue(reading.wait(30.0), "the End never read the history")
+            started = time.monotonic()
+            reload = client.get("/api/verify/trials")
+            waited = time.monotonic() - started
+            reloaded.set()
+            ending.join(60.0)
+        self.assertEqual(reload.status_code, 200, reload.text)
+        self.assertLess(waited, 4.0, "the reload waited for the End's history read")
+        self.assertEqual(finished["response"].status_code, 200, finished["response"].text)
+        with Store.open_readonly(tmp.name) as store:
+            self.assertEqual(store.follow_up_record("trial", trial)["ending"]["kind"], "user_finished")
 
     def test_pattern_pin_rechecks_readiness_on_the_write_source(self):
         import ciq_autotune.guidance as guidance_module
@@ -700,47 +859,69 @@ class GuidanceApiTest(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 409)
 
+    def _competing_writer(self, path, write):
+        """Another writer that reserves the store, holds it while a request is
+        sent, then runs ``write`` and commits."""
+        import threading
+        import time
+        reserved = threading.Event()
+
+        def compete():
+            with Store.open(path) as other:
+                with other.follow_up_transaction():
+                    reserved.set()
+                    time.sleep(0.5)  # the request is sent while this writer holds the store
+                    write(other)
+        thread = threading.Thread(target=compete)
+        thread.start()
+        self.addCleanup(thread.join)
+        self.assertTrue(reserved.wait(5.0))
+        return thread
+
     def test_preference_put_rejects_a_write_crossing_revision_check_and_insert(self):
-        from ciq_autotune.api import create_app
-        tmp = tempfile.NamedTemporaryFile(suffix=".sqlite")
-        self.addCleanup(tmp.close)
-        _seed(tmp.name)
-        client = TestClient(create_app(
-            db_path=tmp.name, token="secret", enable_fetch_loop=False,
-        ))
-        headers = {"Authorization": "Bearer secret"}
-        current = client.get("/api/guidance", headers=headers).json()
-        subject = current["candidates"][0]["subject"]
-        real_save = Store.save_guidance_preference
-        real_transaction = Store.follow_up_transaction
-        competed = []
-
-        def instrumented_transaction(store, *args, **kwargs):
-            # Another writer commits after the guidance read and before this
-            # write reserves the writer, which then checks the revision under
-            # its own lock (ADR 667), so no write can cross check and insert.
-            if not competed:
-                with Store.open(tmp.name) as other:
-                    real_save(
-                        other, "setting:isf", decided_at="2026-01-01 00:00:00",
-                        reason=None, comparison_version="383:1",
-                        state={"kind": "setting"},
-                    )
-                competed.append(True)
-            return real_transaction(store, *args, **kwargs)
-
-        with patch.object(Store, "follow_up_transaction", instrumented_transaction):
-            response = client.put(
-                f"/api/guidance/preferences/{subject}", headers=headers,
-                json={"generation": current["analysis_generation"]},
-            )
-        self.assertEqual(competed, [True])
-        self.assertEqual(response.status_code, 409)
+        """A write that commits while a snooze waits for the store makes the
+        snooze's generation stale: it answers 409 and only the other write is
+        stored."""
+        from ciq_autotune import watched_change
+        tmp, _app, client = self._case_client("pattern-meal-two-causes")
         with Store.open(tmp.name) as store:
-            self.assertEqual(
-                [row["subject"] for row in store.guidance_preferences()],
-                ["setting:isf"],
-            )
+            watched_change.reconcile_ingested_follow_up(store)
+        current = client.get("/api/guidance").json()
+        subject = current["candidates"][0]["subject"]
+        self.assertNotEqual(subject, "setting:isf")
+        competitor = self._competing_writer(tmp.name, lambda other: other.save_guidance_preference(
+            "setting:isf", decided_at="2026-01-01 00:00:00", reason=None,
+            comparison_version="383:1", state={"kind": "setting"}))
+        response = client.put(f"/api/guidance/preferences/{subject}",
+                              json={"generation": current["analysis_generation"]})
+        competitor.join()
+        self.assertEqual(response.status_code, 409, response.text)
+        with Store.open_readonly(tmp.name) as store:
+            self.assertEqual([row["subject"] for row in store.guidance_preferences()],
+                             ["setting:isf"])
+
+    def test_a_restore_that_removes_nothing_changes_nothing_after_a_crossing_write(self):
+        """A restore of a card not set aside, sent while another write commits
+        and leaves its own reconcile to follow (as a sync's last window does),
+        leaves the store exactly as that write left it: it reconciles nothing on
+        that write's behalf, writes no frontier and advances no revision."""
+        from ciq_autotune import watched_change
+        tmp, _app, client = self._case_client("pattern-meal-two-causes")
+        with Store.open(tmp.name) as store:
+            watched_change.reconcile_ingested_follow_up(store)
+            sent_at = store.input_data_revision()
+        subject = client.get("/api/guidance").json()["candidates"][0]["subject"]
+        competitor = self._competing_writer(tmp.name, lambda other: other.save_guidance_preference(
+            "setting:isf", decided_at="2026-01-01 00:00:00", reason=None,
+            comparison_version="383:1", state={"kind": "setting"}))
+        response = client.delete(f"/api/guidance/preferences/{subject}")
+        competitor.join()
+        self.assertEqual(response.status_code, 200, response.text)
+        with Store.open_readonly(tmp.name) as store:
+            self.assertEqual(store.input_data_revision(), sent_at + 1)  # the other write's alone
+            self.assertEqual(store.follow_up_frontier()["reconciled_input_revision"], sent_at)
+            self.assertEqual([row["subject"] for row in store.guidance_preferences()],
+                             ["setting:isf"])
 
     def test_required_source_failure_is_explicit_for_read_and_set_aside(self):
         import ciq_autotune.api as api_mod

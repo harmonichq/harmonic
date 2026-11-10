@@ -252,12 +252,15 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 )
             except Exception:
                 logger.exception("Pattern subject migration remains pending")
-        # A prior local write can leave the frontier behind the durable input
-        # revision (for example, a carb-log write before #404). Recover through
-        # the existing transactional reconciler; GET handlers remain read-only
-        # and this does not invent a Focus admission.
-        frontier = store.follow_up_frontier()
-        if frontier and frontier["reconciled_input_revision"] != store.input_data_revision():
+        # Every start reconciles a recorded frontier through the existing
+        # transactional reconciler, before any request is served (ADR 667). A
+        # frontier current at the input revision was reconciled by whichever
+        # build last ran, and a write takes the fast path only over a frontier
+        # this build reconciled; a frontier left behind (a carb-log write before
+        # #404) recovers the same way. Over an unchanged build it changes
+        # nothing. GET handlers remain read-only and this invents no Focus
+        # admission.
+        if store.follow_up_frontier() is not None:
             from .watched_change import reconcile_ingested_follow_up
             reconcile_ingested_follow_up(store)
     if migrated_patterns:
@@ -1572,14 +1575,15 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 if saved is not None:
                     return saved
                 ended = terminal(store)
-            source = guidance_or_unavailable() if creation and ended is None else None
-            with follow_up_writing, Store.open(db_path) as store:
-                before = store.input_data_revision()
-                # The reconcile's history is read before the writer is reserved
-                # and stands if nothing commits first (#576). A frontier already
+                # The reconcile's history is read before the writer is reserved,
+                # and before a roster read is held behind this write (#665), and
+                # stands if nothing commits first (#576). A frontier already
                 # reconciled at this revision needs none (ADR 667).
                 history = (read_follow_up_history(store)
                            if reconcile and ended is None and not frontier_current(store) else None)
+            source = guidance_or_unavailable() if creation and ended is None else None
+            with follow_up_writing, Store.open(db_path) as store:
+                before = store.input_data_revision()
                 with store.follow_up_transaction():
                     # A write that does not reconcile carries a frontier that was
                     # current forward, since it changes nothing a reconcile reads,

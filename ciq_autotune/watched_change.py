@@ -2128,17 +2128,19 @@ def write_unreconciled_state(store, write):
 
     A frontier current before the write is carried to the revision after it, in
     the same transaction, as a lifecycle write that does not reconcile carries
-    one (#557); one already behind is reconciled after the write, as before.
-    Returns what ``write`` returns."""
-    before = store.input_data_revision()
+    one (#557); one already behind is reconciled after the write, as before. A
+    write that changes nothing (a restore of a card not set aside) touches
+    nothing else either. Returns what ``write`` returns."""
     with store.follow_up_transaction():
         current = frontier_current(store)
+        before = store.input_data_revision()  # under the writer: only this write moves it
         result = write()
-        if current and store.input_data_revision() != before:
+        changed = store.input_data_revision() != before
+        if current and changed:
             frontier = store.follow_up_frontier()
             store.advance_follow_up_frontier(frontier["trial_id"], frontier["detected_at"],
                                              reconciled_input_revision=store.input_data_revision())
-    if not current and store.input_data_revision() != before:
+    if changed and not current:
         reconcile_ingested_follow_up(store)
     return result
 

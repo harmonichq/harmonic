@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, userEvent, waitFor, within } from 'storybook/test';
 import { fixtures } from '../../fixtures';
@@ -6,12 +6,13 @@ import { formatValue } from '../../provenance.js';
 import { dayDate, loggedGrams, type PromptData, type PromptStore } from '../../day-model';
 import { hold, scrollThenSwipe, swipe } from '../../gesture';
 import { failsOnce } from '../../flaky';
+import { historyRouter } from '../../history-router';
 import { expectTabBarEnds } from '../../tabbar-check';
 import { PHONES, expectClearsInset, expectTappable, homeIndicator, motionEnded, tapCentre } from '../../tap-check';
 import { expectTitlePrinted, expectTitleUnprinted } from '../../title-check';
 import { BeforeFirstLog, WithoutReadings, monthReader } from '../../served-variants';
 import type { Answer } from '../../components/PromptCard/PromptCard';
-import { DayScreen, type DayScreenProps, type DayWrites } from './DayScreen';
+import { DayScreen, type DayDrillDown, type DayScreenProps, type DayWrites } from './DayScreen';
 
 // The Day screen in each state §1.3 lists for Day, Day · Prompts and Day · Log
 // carbs, at phone (390) and desktop (1440), every value the simulated wearer's
@@ -880,6 +881,28 @@ export const FitsDesktop: Story = {
   },
 };
 
+/** The live adapter's held answers (#677) over `send`: each held from when it is made until the engine
+ *  answers it, and a refused one, with its prompt, until it is sent again. */
+const heldAnswers = (send: DayWrites['answer']): Pick<DayWrites, 'answer' | 'held'> => {
+  const answering = new Set<string>();
+  let refused: ReturnType<DayWrites['held']>['refused'] = [];
+  return {
+    answer: async (prompt, given) => {
+      refused = refused.filter((r) => r.prompt.anchorT !== prompt.anchorT);
+      answering.add(prompt.anchorT);
+      try {
+        return await send(prompt, given);
+      } catch (error) {
+        refused = [...refused, { prompt, answer: given }];
+        throw error;
+      } finally {
+        answering.delete(prompt.anchorT);
+      }
+    },
+    held: () => ({ answering: new Set(answering), refused }),
+  };
+};
+
 // Live (#495): a Yes the engine does not save takes its check back, with
 // "Not saved", and Retry records it; then Next.
 const liveAnswerPlay: Story['play'] = async ({ canvasElement }) => {
@@ -893,7 +916,7 @@ const liveAnswerPlay: Story['play'] = async ({ canvasElement }) => {
   await expect(canvas.getByRole('button', { name: /Yes/, pressed: true })).toBeInTheDocument();
 };
 const liveDay = (): DayScreenProps['writes'] => ({
-  answer: failsOnce({ carbEntryId: null }), grams: failsOnce(undefined), logCarbs: failsOnce(undefined),
+  ...heldAnswers(failsOnce({ carbEntryId: null })), grams: failsOnce(undefined), logCarbs: failsOnce(undefined),
 });
 export const LiveAnswerNotSavedPhone: Story = { ...story('phone', { store: 'wearer', writes: liveDay() }), play: liveAnswerPlay };
 export const LiveAnswerNotSavedDesktop: Story = { ...story('desktop', { store: 'wearer', writes: liveDay() }), play: liveAnswerPlay };
@@ -902,7 +925,7 @@ export const LiveAnswerNotSavedDesktop: Story = { ...story('desktop', { store: '
 // Rises in served order, and the card moves on at once.
 const answered: [string, string, string][] = [];
 const liveRises = (): DayScreenProps['writes'] => ({
-  answer: async (prompt, given) => { answered.push([prompt.detector, prompt.anchorT, given]); return { carbEntryId: null }; },
+  ...heldAnswers(async (prompt, given) => { answered.push([prompt.detector, prompt.anchorT, given]); return { carbEntryId: null }; }),
   grams: async () => undefined, logCarbs: async () => undefined,
 });
 const liveRisePlay: Story['play'] = async ({ canvasElement }) => {
@@ -943,17 +966,24 @@ const answersLate = <A extends unknown[], R>(saved: R) => {
 type Late = { sent: readonly unknown[]; release: (saves?: boolean) => Promise<void> };
 
 /** The Day screen over the engine's late answers: once a Prompt answer saves,
- *  the Prompts store served after it (`after`), as the live adapter reads the
- *  engine again before a write resolves; and, with `unlogged`, the logged-carbs
- *  day served without its entry until a Log carbs save saves, then as generated. */
-function LiveDay({ after, unlogged = false, ...props }: DayScreenProps & { after?: PromptStore; unlogged?: boolean }) {
+ *  the Prompts store served after it (`after`, or the next of them for each
+ *  answer saved), as the live adapter reads the engine again before a write
+ *  resolves; and, with `unlogged`, the logged-carbs day served without its
+ *  entry until a Log carbs save saves, then as generated. */
+function LiveDay({ after, unlogged = false, ...props }: DayScreenProps & {
+  after?: PromptStore | readonly PromptStore[]; unlogged?: boolean;
+}) {
   const [store, setStore] = useState(props.store);
   const [logged, setLogged] = useState(!unlogged);
+  const saves = useRef(0);
+  const served = after === undefined ? [] : ([] as PromptStore[]).concat(after);
   const writes: DayWrites = {
     ...props.writes!,
     answer: async (prompt, given) => {
       const saved = await props.writes!.answer(prompt, given);
-      if (after) setStore(after);
+      const next = served[Math.min(saves.current, served.length - 1)];
+      saves.current += 1;
+      if (next) setStore(next);
       return saved;
     },
     logCarbs: async (grams, at) => {
@@ -964,7 +994,7 @@ function LiveDay({ after, unlogged = false, ...props }: DayScreenProps & { after
   return <BeforeFirstLog unlogged={!logged}><DayScreen {...props} store={store} writes={writes} /></BeforeFirstLog>;
 }
 const liveStory = (layout: 'phone' | 'desktop', args: Omit<DayScreenProps, 'layout'>,
-  extra: { after?: PromptStore; unlogged?: boolean }, lates: { reset: () => void }[], play: Story['play']): Story => ({
+  extra: { after?: PromptStore | readonly PromptStore[]; unlogged?: boolean }, lates: { reset: () => void }[], play: Story['play']): Story => ({
   ...story(layout, args),
   render: (props) => <LiveDay {...props} {...extra} />,
   beforeEach: () => { for (const late of lates) late.reset(); },
@@ -983,7 +1013,7 @@ const backToDay = (canvas: ReturnType<typeof within>, title = 'Lows') =>
 
 /** Live writes whose answers are `answer`'s, every other write saved at once. */
 const answering = (answer: DayWrites['answer']): DayWrites => ({
-  answer, grams: async () => undefined, logCarbs: async () => undefined,
+  ...heldAnswers(answer), grams: async () => undefined, logCarbs: async () => undefined,
 });
 
 // A Prompt answer: the Day badge and the Lows count are one less at once, the
@@ -1031,6 +1061,82 @@ const lateYes = (layout: 'phone' | 'desktop'): Story => {
 export const LateYesPhone = lateYes('phone');
 export const LateYesDesktop = lateYes('desktop');
 
+// Answered row after row while the engine has answered none (#677): Back out of
+// the Lows with the first in flight, and the Lows open on the other low, never
+// the one being saved; its answer, the last, returns to Day at once, with no
+// Lows row and no badge. Both were sent, one each. The engine saves the first
+// and refuses the second: its low is back in the count, and the bar on Day reads
+// "Not saved"; Retry sends it again, and once it saves the bar leaves.
+const answersOf = (late: Late) => late.sent.map((args) => (args as [PromptData, Answer])[0].anchorT);
+const counted = (canvasElement: HTMLElement) => ({ badge: badgeCount(canvasElement), lows: lowsCount(canvasElement) });
+const burstPlay = (late: Late): Story['play'] => async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  await userEvent.click(canvas.getByRole('button', { name: /Lows/ }));
+  await userEvent.click(canvas.getByRole('button', { name: 'No' }));
+  await expect(place(canvas)).toHaveTextContent('2 / 2');
+  await backToDay(canvas);
+  await expect(counted(canvasElement)).toEqual({ badge: 1, lows: 1 });
+  await userEvent.click(canvas.getByRole('button', { name: /Lows/ }));
+  await userEvent.click(canvas.getByRole('button', { name: 'No' }));
+  await waitFor(() => expect(canvas.queryByRole('heading', { level: 1, name: 'Lows' })).toBeNull());
+  await expect(counted(canvasElement)).toEqual({ badge: 0, lows: 0 });
+  await expect(new Set(answersOf(late)).size).toBe(2);
+  await late.release();
+  await expect(counted(canvasElement)).toEqual({ badge: 0, lows: 0 });
+  await late.release(false);
+  await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent(/Not saved/));
+  await expect(counted(canvasElement)).toEqual({ badge: 1, lows: 1 });
+  await userEvent.click(within(canvas.getByRole('status')).getByRole('button', { name: 'Retry' }));
+  await expect(answersOf(late)).toEqual([...answersOf(late).slice(0, 2), answersOf(late)[1]]);
+  await expect(counted(canvasElement)).toEqual({ badge: 0, lows: 0 });
+  await late.release();
+  await waitFor(() => expect(canvas.queryByRole('status')).toBeNull());
+  await expect(counted(canvasElement)).toEqual({ badge: 0, lows: 0 });
+};
+const burst = (layout: 'phone' | 'desktop'): Story => {
+  const late = answersLate<[PromptData, Answer], { carbEntryId: number | null }>({ carbEntryId: null });
+  return liveStory(layout, { store: 'wearer-pending', writes: answering(late.send) },
+    { after: ['wearer', 'wearer-answered'] }, [late], burstPlay(late));
+};
+export const AnswerBurstPhone = burst('phone');
+export const AnswerBurstDesktop = burst('desktop');
+
+// The Lows through the router's history entry (ADR 594): the platform's Back
+// returns to Day and Forward reopens them (#669); answering the last low leaves
+// them through the router (#677), as a Forward onto them with none left does.
+const routed = (at?: DayDrillDown, next?: DayDrillDown) => ({ drillDown: historyRouter<DayDrillDown>(at, next) });
+const routerOf = (args: DayScreenProps) => args.nav!.drillDown as ReturnType<typeof historyRouter<DayDrillDown>>;
+const routedLowsPlay: Story['play'] = async ({ canvasElement, args }) => {
+  const canvas = within(canvasElement);
+  const router = routerOf(args);
+  await userEvent.click(canvas.getByRole('button', { name: /Lows/ }));
+  await expect(router.open).toHaveBeenCalledWith({ view: 'prompts', kind: 'low' });
+  router.close();
+  await waitFor(() => expect(canvas.queryByRole('heading', { level: 1, name: 'Lows' })).toBeNull());
+  router.forward();
+  await canvas.findByRole('heading', { level: 1, name: 'Lows' });
+  await userEvent.click(canvas.getByRole('button', { name: 'No' }));
+  await userEvent.click(canvas.getByRole('button', { name: 'No' }));
+  await waitFor(() => expect(router.close).toHaveBeenCalledTimes(2));
+  await expect(canvas.queryByRole('heading', { level: 1, name: 'Lows' })).toBeNull();
+  await expect(counted(canvasElement)).toEqual({ badge: 0, lows: 0 });
+};
+const routedLows = (layout: 'phone' | 'desktop'): Story => liveStory(layout, {
+  store: 'wearer-pending', writes: answering(async () => ({ carbEntryId: null })), nav: routed(),
+}, { after: ['wearer', 'wearer-answered'] }, [], routedLowsPlay);
+export const RoutedLowsPhone = routedLows('phone');
+export const RoutedLowsDesktop = routedLows('desktop');
+export const ForwardLowsEmpty: Story = {
+  ...story('phone', { store: 'wearer-answered', writes: answering(async () => ({ carbEntryId: null })),
+    nav: routed(undefined, { view: 'prompts', kind: 'low' }) }),
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    routerOf(args).forward();
+    await waitFor(() => expect(routerOf(args).close).toHaveBeenCalledOnce());
+    await expect(canvas.queryByRole('heading', { level: 1, name: 'Lows' })).toBeNull();
+  },
+};
+
 // Log carbs, on the logged-carbs day as served before its entry was logged,
 // the story's clock at that entry's time: Save of its grams closes the entry
 // and draws its mark at once; once the engine saves it (the day served with
@@ -1077,7 +1183,7 @@ const lateLogPlay = (late: Late): Story['play'] => async ({ canvasElement }) => 
 type LateLog = Late & { send: DayWrites['logCarbs']; reset: () => void };
 const logStory = (layout: 'phone' | 'desktop', late: LateLog, play: Story['play']) => liveStory(layout, {
   store: 'wearer', day: withCarbs, now: () => LOG_CLOCK,
-  writes: { answer: async () => ({ carbEntryId: null }), grams: async () => undefined, logCarbs: late.send },
+  writes: { ...answering(async () => ({ carbEntryId: null })), logCarbs: late.send },
 }, { unlogged: true }, [late], play);
 const lateLog = (layout: 'phone' | 'desktop') => {
   const late = answersLate<[number, string | undefined], void>(undefined);
@@ -1098,8 +1204,8 @@ const refusedLogPlay = (late: Late): Story['play'] => async ({ canvasElement }) 
   await expect(canvas.getByRole('status')).toHaveTextContent(/Not saved/);
   await userEvent.click(canvas.getByRole('button', { name: /Lows/ }));
   await userEvent.click(canvas.getByRole('button', { name: 'No' }));
-  await waitFor(() => expect(canvas.getByRole('button', { name: 'No' })).toBeInTheDocument());
-  await backToDay(canvas);
+  // Its one low answered, the Lows return to Day by themselves (#677).
+  await waitFor(() => expect(canvas.queryByRole('heading', { level: 1, name: 'Lows' })).toBeNull());
   await expect(canvas.getByRole('status')).toHaveTextContent(/Not saved/);
   await userEvent.click(within(canvas.getByRole('status')).getByRole('button', { name: 'Retry' }));
   await expect(late.sent).toEqual([[LOGGED.grams, LOG_CLOCK], [LOGGED.grams, LOG_CLOCK]]);
@@ -1120,7 +1226,7 @@ export const LateLogCarbsRefusedDesktop = refusedLog('desktop');
 const PICKED = '07:45';
 const logged: [number, string][] = [];
 const liveLog = (): DayScreenProps['writes'] => ({
-  answer: async () => ({ carbEntryId: null }), grams: async () => undefined,
+  ...answering(async () => ({ carbEntryId: null })),
   logCarbs: async (grams, at) => { logged.push([grams, at]); },
 });
 const timeEditedPlay: Story['play'] = async ({ canvasElement }) => {

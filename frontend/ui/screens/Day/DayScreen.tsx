@@ -68,8 +68,12 @@
 // Live (`writes`, #495): each write is optimistic (ADR 630). Yes keeps its
 // card, recorded, while the answer saves, and Next adds the grams typed to the
 // entry Yes created; any other answer, the Not sure text action or the full
-// swipe moves on to the next prompt at once. The Day badge and the Lows and
-// Rises counts leave out every answer still in flight. Log carbs holds its
+// swipe moves on to the next prompt at once, and past the last, back to Day at
+// once. The answers in flight, and the refused ones, are the live adapter's
+// (#677), so leaving the Prompts or the tab loses none; the Prompts go back and
+// forward through the router's history entry (ADR 669). The Day badge and the
+// Lows and Rises counts leave out every answer still in flight, and a refused
+// one shows "Not saved" with Retry, on Day too. Log carbs holds its
 // entry, drawn on its day as logged carbs, until its save settles. A write that
 // fails puts the card back, or takes the entry's mark away, with "Not saved"
 // and Retry. Every write resolves once the engine's answers are read again, so
@@ -96,6 +100,7 @@ import { NavBar, type NavHooks } from '../../components/NavBar/NavBar';
 import { PromptCard, type Answer } from '../../components/PromptCard/PromptCard';
 import { ScreenHeader } from '../../components/ScreenHeader/ScreenHeader';
 import { TransientBar } from '../../components/TransientBar/TransientBar';
+import type { DrillDownHooks } from '../Queue/QueueScreen';
 import '../../shared.css';
 import './DayScreen.css';
 
@@ -140,20 +145,33 @@ export type DayScreenProps = {
   onDay?: (iso: string) => Promise<void>;
   /** Read another month's weeks (`YYYY-MM`) into the answers; without it only the served month steps. */
   readMonth?: (month: string) => Promise<void>;
-  nav?: NavHooks;
+  /** The Lows or Rises a Back from another tab landed on, opened as they were. */
+  returnTo?: DayDrillDown;
+  nav?: NavHooks & { drillDown?: DrillDownHooks<DayDrillDown> };
   /** Unavailable's Retry. */
   onRetry?: () => void;
 };
+
+/** The Prompts drill-down's history entry (ADR 594): the Lows or the Rises. */
+export type DayDrillDown = { view: 'prompts'; kind: PromptKind };
 
 /** Each resolves once the engine's answers are read again, and rejects when the write was not saved. */
 export type DayWrites = {
   /** Answer one prompt; Yes resolves with the carb entry it created. */
   answer: (prompt: PromptData, answer: Answer) => Promise<{ carbEntryId: number | null }>;
+  /** The answers the adapter holds (#677), so leaving the Prompts or the tab loses none: the prompts
+   *  answered and not yet served answered, by anchor, and the refused answers, in the order made. */
+  held: () => { answering: ReadonlySet<string>; refused: readonly { prompt: PromptData; answer: Answer }[] };
   /** The grams typed after a Yes, onto the entry it created. */
   grams: (carbEntryId: number, grams: number) => Promise<void>;
   /** Carbs eaten without a bolus, at `at`, the entry's whole time (`YYYY-MM-DD HH:MM`). */
   logCarbs: (grams: number, at: string) => Promise<void>;
 };
+
+/** No answer held: the stories' Prompts, which step through the served stores. */
+const NONE_HELD: ReturnType<DayWrites['held']> = { answering: new Set(), refused: [] };
+/** The bar's Retry for the refused answers the adapter holds, one value, so the bar keeps it. */
+const REFUSED_ANSWERS = { again: () => {} };
 
 /** The week holding a day, when the navigator serves all of it. */
 const week = (iso: string) => weekOf(iso)?.map(navigatorDay) ?? null;
@@ -259,7 +277,7 @@ function Day({
   layout, store, state = 'ready', day, view: initialView = 'day', kind: initialKind = 'low', monthOpen = false,
   logCarbs, timeEdited = false,
   recorded = false, swiping = false, failing = false, notSaved = false, writes, now, readClock, onDay, readMonth, nav,
-  onRetry,
+  onRetry, returnTo,
 }: DayScreenProps) {
   const [selected, setSelected] = useState(day ?? latestDay());
   const [month, setMonth] = useState(monthOpen);
@@ -293,10 +311,14 @@ function Day({
   };
   useEffect(() => { readDay(selected); }, [selected]);
 
-  // Live: the prompts answered while their write is in flight, the Yes card
-  // held until Next with the entry its answer creates, the count the Prompts
-  // opened with, the grams typed into Log carbs, and a failed write's Retry.
-  const [pending, setPending] = useState<ReadonlySet<string>>(new Set());
+  // Live: the Yes card held until Next with the entry its answer creates, the
+  // count the Prompts opened with, the grams typed into Log carbs, and a failed
+  // grams write's Retry. The answers in flight or not yet served answered, and
+  // the refused ones, are the adapter's (#677), so leaving loses none.
+  const answersHeld = writes?.held() ?? NONE_HELD;
+  const pending = answersHeld.answering;
+  // Drawn again as an answer is made, so its card moves on at once.
+  const [, answeredNow] = useState(0);
   const [held, setHeld] = useState<PromptData | null>(null);
   const heldEntry = useRef<Promise<number | null>>();
   const [opened, setOpened] = useState<Sourced<number>>();
@@ -372,10 +394,16 @@ function Day({
     if (control) setAnchor(control.offsetLeft - 12);
   }, [layout, selected, view]);
 
+  // The Prompts through the router's history entry (ADR 594), so the platform's Back returns to Day as
+  // "‹ Day" does; without the router they close themselves.
+  const router = nav?.drillDown;
+  const leave = () => (router ? router.close() : setView('day'));
+  useEffect(() => router?.onReturn(() => setView('day')), [router]);
+
   const advance = (at: PromptStore) => {
     setRecordedNow(false);
     setCardStore(at);
-    if (unanswered(at, kind).value === 0) setView('day');
+    if (unanswered(at, kind).value === 0) leave();
   };
   const answer = (given: Answer) => {
     if (writes) {
@@ -383,7 +411,7 @@ function Day({
       return;
     }
     if (!steps(current)) {
-      setView('day');
+      leave();
       return;
     }
     if (fails.current) {
@@ -409,32 +437,28 @@ function Day({
     setAttempt((n) => n + 1);
     setRetry({ again });
   };
-  const leaveWhenDone = () => { if (unanswered(store, kind).value === 0) setView('day'); };
-  const mark = (prompt: PromptData, on: boolean) => setPending((now) => {
-    const next = new Set(now);
-    if (on) next.add(prompt.anchorT); else next.delete(prompt.anchorT);
-    return next;
-  });
-  const liveAnswer = (prompt: PromptData, given: Answer) => {
+  // A refused answer's bar is the adapter's refusal: its card is back, unanswered, until Retry sends it.
+  const refusedAgain = () => setAttempt((n) => n + 1);
+  /** Send an answer; a Yes on the Prompts with no card held holds its card, recorded, for its grams. */
+  const liveAnswer = (prompt: PromptData, given: Answer, holds = true) => {
     setRetry(null);
-    if (given === 'carbs') {
+    if (given === 'carbs' && holds) {
       setHeld(prompt);
       // The card draws recorded from its first render.
       setAttempt((n) => n + 1);
-      // In flight until its write settles, even once Next has let the card go.
-      mark(prompt, true);
       heldEntry.current = writes!.answer(prompt, 'carbs').then((saved) => saved.carbEntryId);
-      heldEntry.current.then(() => mark(prompt, false), () => {
-        mark(prompt, false);
+      heldEntry.current.catch(() => {
         setHeld((now) => (now === prompt ? null : now));
-        notSavedLive(() => liveAnswer(prompt, given))();
+        refusedAgain();
       });
       return;
     }
-    mark(prompt, true);
-    writes!.answer(prompt, given).then(leaveWhenDone, notSavedLive(() => liveAnswer(prompt, given)))
-      .finally(() => mark(prompt, false));
+    writes!.answer(prompt, given).catch(refusedAgain);
+    answeredNow((n) => n + 1);
   };
+  /** Retry: every refused answer, sent again, in the order made. */
+  const retryAnswers = () => writes!.held().refused.forEach(({ prompt, answer: given }, n) =>
+    liveAnswer(prompt, given, n === 0 && view === 'prompts' && held === null));
   const liveGrams = (made: Promise<number | null>, grams: number) => {
     setRetry(null);
     made.then((id) => (id === null ? undefined : writes!.grams(id, grams)))
@@ -448,9 +472,16 @@ function Day({
     const made = heldEntry.current;
     setHeld(null);
     if (made && /^\d+$/.test(grams)) liveGrams(made, Number(grams));
-    // The Yes already left the unanswered count once its write was read back.
-    if (visible.length === 0) setView('day');
   };
+  // Past the last prompt of its kind the Prompts return to Day (§2.5, 2026-10-14 Rises), as its answer
+  // is drawn (ADR 630): live, once no card is left, a Yes's once Next lets it go; and at once when a Back
+  // onto them finds none (#677).
+  const leaving = useRef(false);
+  useEffect(() => {
+    if (!writes || view !== 'prompts' || liveCard || leaving.current) return;
+    leaving.current = true;
+    leave();
+  });
 
   // The clock Save reads: live, the store's, read afresh each time Log carbs
   // opens, and none while it is read or when it cannot be (ADR 658).
@@ -527,7 +558,9 @@ function Day({
     onRetryClock: readStoreClock,
   };
 
-  const openPrompts = (opening: PromptKind) => {
+  const openPrompts = (opening: PromptKind, push = true) => {
+    if (push) router?.open({ view: 'prompts', kind: opening });
+    leaving.current = false;
     setKind(opening);
     setCardStore(current);
     setOpenedStore(current);
@@ -536,6 +569,11 @@ function Day({
     setOpened(counts[opening]);
     setView('prompts');
   };
+  // A Forward onto the Prompts' entry reopens them (#669), as does a Back from another tab onto it.
+  const enter = useRef(openPrompts);
+  enter.current = openPrompts;
+  useEffect(() => router?.onEnter((to) => enter.current(to.kind, false)), [router]);
+  useLayoutEffect(() => { if (returnTo) enter.current(returnTo.kind, false); }, []);
   // "n / N": the served stores' difference, or live, the place among those the Prompts opened with.
   const place = view !== 'prompts' ? undefined : writes
     ? opened && livePromptPlace(opened, opened.value - visible.length + (held ? 0 : 1))
@@ -546,9 +584,9 @@ function Day({
     ? <ScreenHeader title="Day" trailing="unavailable" layout={layout} onRetry={onRetry} />
     : view === 'prompts'
       ? place
-        ? <ScreenHeader key={view} title={title} layout={layout} back={{ label: 'Day', onBack: () => setView('day') }}
+        ? <ScreenHeader key={view} title={title} layout={layout} back={{ label: 'Day', onBack: leave }}
             trailing="count" {...place} />
-        : <ScreenHeader key={view} title={title} layout={layout} back={{ label: 'Day', onBack: () => setView('day') }} />
+        : <ScreenHeader key={view} title={title} layout={layout} back={{ label: 'Day', onBack: leave }} />
       : layout === 'phone'
         ? <ScreenHeader key={view} title="Day" day={dayControl} layout={layout} trailing="action" label="+ Log carbs"
             dialog={{ open: sheetOpen }} onAction={() => setCarbs('empty')} />
@@ -619,13 +657,16 @@ function Day({
     );
   };
   // What is open stays while it closes: the bar, the month, the sheet. The bar
-  // is the Prompts' failed write on the Prompts, and a failed Log carbs on Day.
-  const barShown = usePresence(view === 'prompts' ? (writes ? retry : failed) : carbsRetry);
+  // is the Prompts' failed write on the Prompts, and a failed Log carbs on Day,
+  // else a refused answer there, as one given last before the Prompts left.
+  const refusedAnswers = writes && answersHeld.refused.length > 0 ? REFUSED_ANSWERS : null;
+  const barShown = usePresence(view === 'prompts' ? (writes ? retry ?? refusedAnswers : failed) : carbsRetry ?? refusedAnswers);
   const bar = barShown.value && (
     <div className="ui-dayscreen__bar" {...barShown.exit}>
       <TransientBar kind="not_saved" layout={layout}
         onRetry={() => {
           const shownRetry = barShown.value;
+          if (shownRetry === REFUSED_ANSWERS) { retryAnswers(); return; }
           if (shownRetry && typeof shownRetry === 'object') { shownRetry.again(); return; }
           fails.current = false;
           answer(barShown.value as Answer);

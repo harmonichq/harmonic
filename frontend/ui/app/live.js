@@ -226,7 +226,10 @@ export function createLive({ client, glossary, memory = null,
   const status = () => once('status', async () => { answers.status.ok = await client.fetchStatus(); });
   /** The Prompts the Day screen draws: its Lows and its Rises (#529), each trimmed to its card. */
   const prompts = () => once('prompts', async () => {
+    const asked = answerWrites;
     answers.prompts = (await client.fetchPrompts()).map(promptMarks);
+    // A saved answer this read began after is now served answered, so it is held no longer (#677).
+    answering.forEach((held, anchorT) => { if (held.saved !== null && held.saved <= asked) answering.delete(anchorT); });
   });
   const navigator = () => once('navigator', async () => {
     answers.overview.wearer.day_navigator = await client.fetchDayNavigator();
@@ -748,23 +751,61 @@ export function createLive({ client, glossary, memory = null,
     },
   };
 
+  // The Prompt answers (#677), held here, not by the screen, as the Queue's writes are (#610), so leaving the
+  // Prompts or the tab loses none: each is sent as it is made, and held by its prompt's anchor from then until
+  // a Prompts read begun after it saved, so a saved answer the engine still serves unanswered never comes
+  // back. A refused one is held, with its prompt, until it is sent again. Once no answer is in flight, the
+  // Prompts are read again, once for every answer made meanwhile, and each of them resolves: the day on
+  // screen stays drawn until the app reads it again, and the other days visited are read when next shown.
+  const answering = new Map();
+  let refusedAnswers = [];
+  let answerWrites = 0;
+  let answersOut = 0;
+  /** The answers in flight together, and the read of the Prompts once the last of them is answered. */
+  let burst = null;
+  const readAnswersBack = () => {
+    const days = shownDays();
+    forget('prompts', ...days.map((iso) => `day ${iso}`));
+    days.filter((iso) => iso !== onScreen).forEach((iso) => { delete answers.day.days[iso]; });
+    return prompts().then(() => remember(), () => undefined);
+  };
+
   const dayWrites = {
-    /** A Prompt answer resolves once the Prompts are read again, so the badge moves then (#610). It drops every
-     *  visited day: the one on screen stays drawn until the app reads it again, and the others are read when
-     *  next shown. */
-    answer: (prompt, answer) => {
-      const days = shownDays();
-      return write(async () => {
-        const saved = await client.answerPrompt({
+    /** A Prompt answer, which resolves, with the carb entry a Yes created, or rejects when it is refused, once
+     *  the Prompts are read again after every answer in flight with it, so the badge moves then (#610). */
+    answer: async (prompt, answer) => {
+      refusedAnswers = refusedAnswers.filter((r) => r.prompt.anchorT !== prompt.anchorT);
+      const held = { prompt, answer, saved: null };
+      answering.set(prompt.anchorT, held);
+      if (answersOut === 0) {
+        let settle;
+        burst = { read: new Promise((done) => { settle = done; }) };
+        burst.settle = settle;
+      }
+      const mine = burst;
+      answersOut += 1;
+      let saved;
+      let refusal;
+      try {
+        saved = await client.answerPrompt({
           detector: prompt.detector, anchor_t: prompt.anchorT, answer,
           ...(answer === 'carbs' ? { entry: { grams: null, certainty: 'unknown' } } : {}),
         });
-        return { carbEntryId: saved.carb_entry_id ?? null };
-      }, ['prompts', ...days.map((iso) => `day ${iso}`)], () => {
-        days.filter((iso) => iso !== onScreen).forEach((iso) => { delete answers.day.days[iso]; });
-        return prompts();
-      });
+        answerWrites += 1;
+        held.saved = answerWrites;
+      } catch (error) {
+        refusal = error;
+        if (answering.get(prompt.anchorT) === held) answering.delete(prompt.anchorT);
+        refusedAnswers = [...refusedAnswers, { prompt, answer }];
+      }
+      answersOut -= 1;
+      if (answersOut === 0) readAnswersBack().then(mine.settle);
+      await mine.read;
+      if (refusal) throw refusal;
+      return { carbEntryId: saved.carb_entry_id ?? null };
     },
+    /** The Prompts answered and not yet served answered, by anchor, and the refused answers, in the order made. */
+    held: () => ({ answering: new Set(answering.keys()), refused: refusedAnswers }),
     grams: async (carbEntryId, grams) => {
       await write(() => client.updateCarb(carbEntryId, { grams, certainty: 'exact' }),
         shownDays().map((iso) => `day ${iso}`), rereadDays);

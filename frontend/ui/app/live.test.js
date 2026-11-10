@@ -642,6 +642,39 @@ test('a Prompt answer resolves once the Prompts land, and reads no day (#610)', 
   assert.equal(fake.count('model-view'), views + 2, 'another visited day is read again when next shown');
 });
 
+test('a burst of Prompt answers reads the Prompts again once, and the adapter holds each until it is served (#677)', async () => {
+  const fake = fakeClient();
+  const pending = [];
+  fake.client.answerPrompt = (body) => {
+    fake.calls.push({ name: 'answer', args: [body] });
+    return new Promise((resolve, reject) => { pending.push({ resolve, reject }); });
+  };
+  const live = createLive({ client: fake.client, glossary: [] });
+  await live.readTab('day');
+  const lows = ['01:00', '02:00', '03:00'].map((at) => ({ detector: 'low', anchorT: `2026-01-05 ${at}:00` }));
+  // Answered row after row, each before the one before it is answered; the screen that made them may be gone.
+  const made = lows.map((low) => live.dayWrites.answer(low, 'not-sure').then(() => 'saved', () => 'refused'));
+  assert.equal(fake.count('answer'), 3, 'each answer is sent as it is made');
+  assert.deepEqual([...live.dayWrites.held().answering], lows.map((l) => l.anchorT), 'and held by the adapter');
+  pending[0].resolve({});
+  await landed();
+  assert.equal(fake.count('prompts'), 1, 'no Prompts read while answers are in flight');
+  assert.deepEqual([...live.dayWrites.held().answering], lows.map((l) => l.anchorT),
+    'a saved answer the engine has not yet served answered stays held');
+  pending[1].reject(refusal(500));
+  pending[2].resolve({});
+  assert.deepEqual(await Promise.all(made), ['saved', 'refused', 'saved']);
+  assert.equal(fake.count('prompts'), 2, 'one Prompts read for the three answers');
+  assert.deepEqual(live.dayWrites.held(), { answering: new Set(), refused: [{ prompt: lows[1], answer: 'not-sure' }] },
+    'the refused answer is held, with its prompt, until it is sent again');
+  const again = live.dayWrites.answer(lows[1], 'not-sure');
+  assert.deepEqual(live.dayWrites.held().refused, [], 'sending it again holds it in flight instead');
+  pending[3].resolve({});
+  await again;
+  assert.equal(fake.count('prompts'), 3);
+  assert.deepEqual(live.dayWrites.held(), { answering: new Set(), refused: [] });
+});
+
 test('Done records the card\'s subject from the read it was made on, and a waiting Setting leaves the Queue for Changes', async () => {
   const basal = { subject: 'setting:basal_rate', kind: 'setting', parameter: 'basal_rate', title: 'Basal', units: 'U/h',
     priority: 99, admitted: true, preference: { set_aside: false }, decision: null, acknowledgment: null };

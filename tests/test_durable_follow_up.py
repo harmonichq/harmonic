@@ -143,12 +143,14 @@ class DurableApiTest(unittest.TestCase):
         failing = TestClient(create_app(db_path=self.path, token="synthetic-token",
                                         enable_fetch_loop=False), raise_server_exceptions=False)
         before = failing.app.state.result_cache.version
+        # The reconcile runs after the response (ADR 677): the write it follows is
+        # saved and answered as saved, and the cache is invalidated all the same.
         with patch("ciq_autotune.watched_change.reconcile_ingested_follow_up",
                    side_effect=RuntimeError("manufactured reconcile failure")):
             response = failing.post("/api/carbs", headers=self.headers, json={
                 "t": "2026-09-11 12:00:00", "grams": 8, "certainty": "exact"})
-        self.assertEqual(response.status_code, 500, response.text)
-        self.assertEqual(failing.app.state.result_cache.version, before + 1)
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertGreater(failing.app.state.result_cache.version, before)
         with Store.open_readonly(self.path) as store:
             self.assertEqual(len(store.carb_entries()), 1)
 

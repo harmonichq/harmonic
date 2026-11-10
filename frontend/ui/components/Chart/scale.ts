@@ -28,15 +28,16 @@ export function niceTicks(min: number, max: number, most = 5, least = 3): { valu
 const TICK_GAP = 16;
 
 /** The ticks whose labels are drawn, given each label's [left, right] extent:
- *  left to right, each that clears the last one kept; then the last tick,
- *  displacing any kept label it would touch, since it always shows. */
-export function labelledTicks(extents: [number, number][]): Set<number> {
+ *  left to right, each that clears the last one kept by `gap`; then the last
+ *  tick, displacing any kept label it would touch, since it always shows. A
+ *  chart whose extents are measured rather than estimated may pass less. */
+export function labelledTicks(extents: [number, number][], gap = TICK_GAP): Set<number> {
   const kept: number[] = [];
   const last = extents.length - 1;
   for (let i = 0; i < last; i += 1) {
-    if (kept.length === 0 || extents[i][0] >= extents[kept[kept.length - 1]][1] + TICK_GAP) kept.push(i);
+    if (kept.length === 0 || extents[i][0] >= extents[kept[kept.length - 1]][1] + gap) kept.push(i);
   }
-  while (kept.length && extents[kept[kept.length - 1]][1] + TICK_GAP > extents[last][0]) kept.pop();
+  while (kept.length && extents[kept[kept.length - 1]][1] + gap > extents[last][0]) kept.pop();
   return new Set([...kept, last]);
 }
 

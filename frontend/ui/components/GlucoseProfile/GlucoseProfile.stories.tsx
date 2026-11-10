@@ -6,9 +6,10 @@ import { GlucoseProfile } from './GlucoseProfile';
 
 // §4.2 GlucoseProfile: the simulated wearer's last 30 days, and the same
 // wearer's first five days, which fall short of the profile's supported floor
-// (the engine's eight days) in every bin, so the card says "No data". Narrow:
-// a card too narrow for all five hours keeps those that clear each other, the
-// day's two ends among them (#650).
+// (the engine's eight days) in every bin, so the card says "No data". Phone
+// 320: the narrowest phone's card still draws all five hours apart. Narrow: a
+// card too narrow for all five keeps those that clear each other, the day's
+// two ends among them (#650).
 const meta = {
   title: 'GlucoseProfile',
   component: GlucoseProfile,
@@ -21,6 +22,13 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = { args: { data: profile('wearer', '14')! } };
 export const Window90: Story = { args: { data: profile('wearer', '90')! } };
 export const NoData: Story = { args: { data: profile('wearer-first-days', '14')! } };
+export const Phone320: Story = {
+  args: { data: profile('wearer', '14')! },
+  parameters: { frame: { width: 320 } },
+  play: async ({ canvasElement }) => {
+    await expect(await expectHoursApart(canvasElement)).toHaveLength(5);
+  },
+};
 export const Narrow: Story = {
   args: { data: profile('wearer', '14')! },
   parameters: { frame: { width: 240 } },

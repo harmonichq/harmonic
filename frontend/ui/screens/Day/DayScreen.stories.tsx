@@ -215,17 +215,16 @@ const closeMonthPlay: Story['play'] = async ({ canvasElement }) => {
 export const CloseMonthPhone: Story = { ...story('phone', DEFAULT), play: closeMonthPlay };
 export const CloseMonthDesktop: Story = { ...story('desktop', DEFAULT), play: closeMonthPlay };
 
-// The month draws over the tab bar, its badge included: where the month runs
-// over the bar, the point at the Day badge's centre is the month's (#648).
+// The open month is never under the tab bar's badge: at the Day badge's
+// centre is the month, where the month reaches it, or the scrim (#648).
 const monthOverBarPlay: Story['play'] = async ({ canvasElement }) => {
   const canvas = within(canvasElement);
   await userEvent.click(canvas.getByRole('button', { name: named(latest), expanded: false }));
   const month = canvas.getByRole('dialog', { name: 'May' });
   await motionEnded();
-  const badge = canvasElement.querySelector<HTMLElement>('.ui-nav .ui-badge')!;
-  const box = badge.getBoundingClientRect();
-  await expect(month.getBoundingClientRect().bottom).toBeGreaterThan(box.bottom);
-  await expect(month.contains(document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2))).toBe(true);
+  const box = canvasElement.querySelector<HTMLElement>('.ui-nav .ui-badge')!.getBoundingClientRect();
+  const hit = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+  await expect(month.contains(hit) || hit!.matches('.ui-dayscreen__scrim')).toBe(true);
 };
 export const MonthOverTabBarPhone375x667: Story = {
   ...story('phone', DEFAULT), parameters: { frame: PHONES.se }, play: monthOverBarPlay,

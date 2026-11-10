@@ -45,7 +45,10 @@ const TICK = SEVERE_HIGH;
 const DAY = 1440;
 /** The hours along the bottom; a narrow card keeps the ones that clear each other. */
 const HOURS = [0, 360, 720, 1080, DAY];
-const TICK_CHAR = 6.6;  // an 11 px Inter tick character, generously
+// An hour is five 11 px tabular characters, 31.5 px as drawn; measured, not
+// estimated, so 8 px between two labels is enough to read them apart (#650).
+const HOUR_CHAR = 6.3;
+const HOUR_GAP = 8;
 
 /** Consecutive supported bins, each run closed at midnight when it reaches it. */
 function runs(bins: ProfileBin[]): ProfileBin[][] {
@@ -94,9 +97,9 @@ export function GlucoseProfile({ data, plotHeight = PLOT_HEIGHT }: GlucoseProfil
   const hours = HOURS.map((minute) => formatValue(minute, 'clock'));
   const labelled = labelledTicks(HOURS.map((minute, i) => {
     const at = x(minute);
-    const span = hours[i].length * TICK_CHAR;
+    const span = hours[i].length * HOUR_CHAR;
     return i === 0 ? [at, at + span] : i === HOURS.length - 1 ? [at - span, at] : [at - span / 2, at + span / 2];
-  }));
+  }), HOUR_GAP);
   // The five zones, top down; the band is drawn in each zone it reaches.
   const zones = glucoseZones(data.low.value, data.high.value).reverse().map((zone) => ({
     ...zone,

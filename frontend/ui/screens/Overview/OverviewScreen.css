@@ -46,11 +46,12 @@
 .ui-overview--desktop .ui-header,
 .ui-overview--desktop .ui-overview__body { max-width: 1120px; }
 .ui-overview--desktop .ui-overview__control { max-width: 320px; }
-/* Below about 820 px the metrics give up to 80 px so the profile keeps the
-   260 px its hours read clearly at (#650). */
+/* Below about 860 px the metrics give up to 80 px to the profile, which keeps
+   300 px while they can: at 768 px it has 288 px, room for all five of its
+   hours (#650). */
 .ui-overview__columns {
   display: grid;
-  grid-template-columns: clamp(280px, 100% - 48px - 260px, 360px) minmax(0, 1fr);
+  grid-template-columns: clamp(280px, 100% - 48px - 300px, 360px) minmax(0, 1fr);
   gap: 48px;
   align-items: start;
 }

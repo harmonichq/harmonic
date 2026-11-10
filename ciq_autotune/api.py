@@ -252,12 +252,15 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 )
             except Exception:
                 logger.exception("Pattern subject migration remains pending")
-        # A prior local write can leave the frontier behind the durable input
-        # revision (for example, a carb-log write before #404). Recover through
-        # the existing transactional reconciler; GET handlers remain read-only
-        # and this does not invent a Focus admission.
-        frontier = store.follow_up_frontier()
-        if frontier and frontier["reconciled_input_revision"] != store.input_data_revision():
+        # Every start reconciles a recorded frontier through the existing
+        # transactional reconciler, before any request is served (ADR 667). A
+        # frontier current at the input revision was reconciled by whichever
+        # build last ran, and a write takes the fast path only over a frontier
+        # this build reconciled; a frontier left behind (a carb-log write before
+        # #404) recovers the same way. Over an unchanged build it changes
+        # nothing. GET handlers remain read-only and this invents no Focus
+        # admission.
+        if store.follow_up_frontier() is not None:
             from .watched_change import reconcile_ingested_follow_up
             reconcile_ingested_follow_up(store)
     if migrated_patterns:
@@ -890,6 +893,10 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         return fixed_response(fixed(("outcomes-trend",), "outcomes-trend-watched-change-v1",
                                     watched, reads_follow_up=True))
 
+    # Held by a Trial, Focus or Plan step from before its writer until its cache is
+    # invalidated, so a roster read made meanwhile answers the step (#665).
+    follow_up_writing = threading.Lock()
+
     @app.get("/api/verify/trials")
     def verify_trials_endpoint(selected: Optional[str] = None, kind: str = "trial",
                                assessment: str = "original",
@@ -916,6 +923,11 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         # predecessor (#579).
         execution = (json.dumps(comparison_execution(), sort_keys=True)
                      if assessment != "original" else None)
+        # A step still being written (an End assessing its Trial) is not yet
+        # committed, so a read made now would draw its change as still active: it
+        # waits for the step, then reads the roster that step left (#665).
+        with follow_up_writing:
+            pass
         try:
             return fixed_response(fixed(("verify-trials", kind, identity, assessment, execution),
                                         "verify-trials-v1", review, while_computing=False,
@@ -1005,7 +1017,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     @app.put("/api/guidance/preferences/{subject:path}")
     def set_guidance_preference_endpoint(subject: str, payload: dict = Body(...),
                                          _: None = Depends(require_token)) -> dict:
-        from .watched_change import reconcile_ingested_follow_up
+        from .watched_change import write_unreconciled_state
         generation, reason = payload.get("generation"), payload.get("reason")
         if not isinstance(generation, str):
             raise HTTPException(status_code=400, detail="generation is required")
@@ -1020,28 +1032,26 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         baseline = baseline_for(candidate)
         with Store.open(db_path) as store:
             try:
-                store.save_guidance_preference(
+                write_unreconciled_state(store, lambda: store.save_guidance_preference(
                     subject, decided_at=wall_clock_now().strftime("%Y-%m-%d %H:%M:%S"),
-                    reason=reason, expected_revision=current["input_revision"], **baseline)
+                    reason=reason, expected_revision=current["input_revision"], **baseline))
             except ValueError as error:
                 raise HTTPException(status_code=409, detail=str(error)) from error
-            reconcile_ingested_follow_up(store)
         follow_up_written()
         return {"subject": subject, "set_aside": True}
 
     @app.delete("/api/guidance/preferences/{subject:path}")
     def restore_guidance_preference_endpoint(subject: str,
                                              _: None = Depends(require_token)) -> dict:
-        from .watched_change import reconcile_ingested_follow_up
+        from .watched_change import write_unreconciled_state
         with Store.open(db_path) as store:
             stored = any(row["subject"] == subject
                          for row in store.guidance_preferences())
             if not stored and not is_preference_subject(subject):
                 raise HTTPException(status_code=404,
                                     detail="unknown guidance subject")
-            restored = store.restore_guidance_preference(subject)
-            if restored:
-                reconcile_ingested_follow_up(store)
+            restored = write_unreconciled_state(
+                store, lambda: store.restore_guidance_preference(subject))
         if restored:
             follow_up_written()
         return {"subject": subject, "set_aside": False}
@@ -1510,8 +1520,10 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     def lifecycle(operation, kind, identity, payload, *, durable, mutate, creation=False,
                   reconcile=True):
         from .store import FollowUpConflict, FocusAlreadyActive
+        from .watched_change import frontier_current
         if reconcile:
-            from .watched_change import read_follow_up_history, reconcile_follow_up
+            from .watched_change import (follow_up_admission, read_follow_up_history,
+                                         reconcile_follow_up)
 
         def retry(store):
             if not durable:
@@ -1563,19 +1575,21 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 if saved is not None:
                     return saved
                 ended = terminal(store)
+                # The reconcile's history is read before the writer is reserved,
+                # and before a roster read is held behind this write (#665), and
+                # stands if nothing commits first (#576). A frontier already
+                # reconciled at this revision needs none (ADR 667).
+                history = (read_follow_up_history(store)
+                           if reconcile and ended is None and not frontier_current(store) else None)
             source = guidance_or_unavailable() if creation and ended is None else None
-            with Store.open(db_path) as store:
+            with follow_up_writing, Store.open(db_path) as store:
                 before = store.input_data_revision()
-                # The reconcile's history is read before the writer is reserved
-                # and stands if nothing commits first (#576).
-                history = read_follow_up_history(store) if reconcile and ended is None else None
                 with store.follow_up_transaction():
                     # A write that does not reconcile carries a frontier that was
                     # current forward, since it changes nothing a reconcile reads,
                     # and leaves one that was behind for the next reconcile (#557).
-                    frontier = store.follow_up_frontier()
-                    carried = (not reconcile and frontier is not None
-                               and frontier["reconciled_input_revision"] == store.input_data_revision())
+                    current = frontier_current(store)
+                    carried = not reconcile and current
                     saved = retry(store)
                     if saved is not None:
                         return saved
@@ -1589,9 +1603,15 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                             raise FollowUpConflict("stale_source", store.input_data_revision())
                         now = store.latest_data_instant() or datetime.now()
                         recorded_at = wall_clock_now(after=store.latest_server_stamp())
-                        admission = (reconcile_follow_up(store, now=now, recorded_at=recorded_at,
-                                                         history=history)
-                                     if reconcile else None)
+                        # A reconcile over the state the frontier was reconciled at
+                        # changes nothing, so its admission is the committed one (ADR 667).
+                        if not reconcile:
+                            admission = None
+                        elif current:
+                            admission = follow_up_admission(store, now=now)
+                        else:
+                            admission = reconcile_follow_up(store, now=now, recorded_at=recorded_at,
+                                                            history=history)
                         record = mutate(store, admission, source, now, recorded_at)
                     # Saving a new retry receipt is itself a durable write. Reserve
                     # its revision before capturing the returned common verdict.
@@ -1611,8 +1631,8 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                         store.save_follow_up_request(payload["request_id"], operation=operation,
                                                      kind=kind, id=record["id"], result=result)
                 changed = store.input_data_revision() != before
-            if changed:
-                follow_up_written()
+                if changed:
+                    follow_up_written()
             return result
         except (FollowUpConflict, FocusAlreadyActive, sqlite3.IntegrityError) as error:
             with Store.open_queryonly(db_path) as store:
@@ -1732,7 +1752,10 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     def list_focus_endpoint(_: None = Depends(require_token)) -> dict:
         from .watched_change import focus_subject, pinnable_levers
         guidance = guidance_or_unavailable(serve_stale=True)
-        patterns = [row for row in guidance["candidates"] if _pinnable_pattern_members(row)]
+        # Each Pattern a Focus is admitted on, with the causes a Focus from it may
+        # watch: the pin's own admission, which the Queue draws every Focus from (ADR 666).
+        patterns = [(row, members) for row in guidance["candidates"]
+                    if (members := _pinnable_pattern_members(row))]
         # Pinnable Patterns read from the findings' predecessor carry its label (#579).
         age = {"input_data_age": guidance["input_data_age"]} if "input_data_age" in guidance else {}
         with Store.open_queryonly(db_path) as store:
@@ -1743,7 +1766,8 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                                 for record in store.follow_up_records("focus")],
                     "pinnable": sorted(pinnable_levers()),
                     "pinnable_patterns": [{"key": row["pattern_key"], "subject": row["subject"],
-                                           "readiness": row["readiness"]} for row in patterns],
+                                           "readiness": row["readiness"], "levers": members}
+                                          for row, members in patterns],
                     **follow_up_read(store), **age}
 
     @app.post("/api/focus")

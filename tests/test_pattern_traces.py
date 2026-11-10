@@ -103,11 +103,11 @@ def test_an_episode_missing_its_early_readings_is_left_off(correction_fold):
     assert len(traces["pattern"]["anchors"]) == 4
 
 
-def _meal_pattern(claimed, calm):
-    """Highs after meals over ``claimed`` claimed and ``calm`` unclaimed meals, six
-    hours apart, each with its own 5-minute series from an hour before to five after."""
+def _meal_pattern(claimed, calm, hours=6):
+    """Highs after meals over ``claimed`` claimed and ``calm`` unclaimed meals,
+    ``hours`` apart, each with its own 5-minute series from an hour before to five after."""
     first = _opportunity(Lever.CARB_UNDERCOUNT)
-    anchors = [first.anchor_t + timedelta(hours=6 * index) for index in range(claimed + calm)]
+    anchors = [first.anchor_t + timedelta(hours=hours * index) for index in range(claimed + calm)]
     states = ["claimed"] * claimed + ["calm"] * calm
     findings = _pattern_findings(
         "highs_after_meals", (Lever.CARB_UNDERCOUNT,), k=claimed, n=len(states),
@@ -145,6 +145,46 @@ def test_a_meal_pattern_is_drawn_from_its_bolus_against_its_comparison_meals():
     assert [len(episode) for episode in traces["pattern"]["episodes"]] == [55, 55, 55]
     assert {point["median"] for point in traces["pattern"]["points"]} == {180}
     assert {point["median"] for point in traces["typical"]["points"]} == {120}
+
+
+def test_off_mark_readings_give_the_first_and_last_points_every_episode():
+    """Readings two or three minutes off the five-minute marks: the readings that
+    round to a chart's first and last points lie just outside its window, and
+    each of those points still draws from every episode, as its neighbours do."""
+    prepared = _meal_pattern(claimed=6, calm=3)
+    anchors = sorted({row.t for row in prepared.bolus})
+    prepared.cgm = tuple(
+        CgmReading(t=t + timedelta(minutes=minute + (2 if index % 2 else 3)), bg=180,
+                   type="EGV")
+        for index, t in enumerate(anchors) for minute in range(-60, 301, 5))
+
+    traces = _traces(prepared, "highs_after_meals")
+
+    points = traces["pattern"]["points"]
+    assert (points[0]["minute"], points[-1]["minute"]) == (-30, 240)
+    assert {point["n"] for point in points} == {6}
+    for episode in traces["pattern"]["episodes"]:
+        assert all(-30 <= point["minute"] <= 240 for point in episode)
+
+
+def test_readings_just_outside_the_window_add_nothing_to_the_event_comparison():
+    """#668 widens only the Pattern trace's first and last points: readings two
+    minutes outside the event comparison's window are in no cohort, so its
+    counts and support are what the window's own readings give."""
+    from ciq_autotune.finding_case_file import policy_for
+
+    prepared = _meal_pattern(claimed=6, calm=3, hours=12)
+    before, after = policy_for(Lever.CARB_UNDERCOUNT).comparison_window
+    anchors = sorted({row.t for row in prepared.bolus})
+    prepared.cgm = tuple(CgmReading(t=t + timedelta(minutes=minute), bg=180, type="EGV")
+                         for t in anchors for minute in (before - 2, after + 2))
+
+    cohorts = prepared.case("pattern:highs_after_meals", "event", None)["projection"]["cohorts"]
+
+    assert [(c["name"], c["usable_count"], c["support"]) for c in cohorts] == [
+        ("Matched", 0, "withheld"), ("Nearly matched", 0, "withheld"),
+        ("Other meal opportunities", 0, "withheld")]
+    assert all(point["n"] == 0 for c in cohorts for point in c["points"])
 
 
 def test_more_than_eight_pattern_episodes_are_served_as_their_median_and_band():

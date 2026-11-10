@@ -80,10 +80,7 @@ export function TraceChart({ data, own = 'Pattern' }: {
               ))}
               <text x={0} y={10} className="ui-chart__caption">mg/dL</text>
               {REFERENCES.map((v) => (
-                <g key={v}>
-                  <line x1={LEFT} x2={right} y1={y(v)} y2={y(v)} className="ui-chart__ref" />
-                  <text x={right} y={y(v) - 4} textAnchor="end" className="ui-chart__tick">{v}</text>
-                </g>
+                <line key={v} x1={LEFT} x2={right} y1={y(v)} y2={y(v)} className="ui-chart__ref" />
               ))}
             </g>
             {start < 0 && <line x1={x(0)} x2={x(0)} y1={TOP} y2={AXIS} className="ui-chart__zero" />}
@@ -106,6 +103,10 @@ export function TraceChart({ data, own = 'Pattern' }: {
                 </g>
               ))}
               <text x={0} y={AXIS + 34} className="ui-chart__caption">Minutes</text>
+              {/* The 70 and 180 labels over the lines, on a halo, so no trace runs through one. */}
+              {REFERENCES.map((v) => (
+                <text key={v} x={right} y={y(v) - 4} textAnchor="end" className="ui-chart__tick ui-chart__ref-label">{v}</text>
+              ))}
             </g>
           </svg>
         )}

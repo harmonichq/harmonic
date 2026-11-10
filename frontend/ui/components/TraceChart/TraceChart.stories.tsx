@@ -41,12 +41,31 @@ const axesClear: Story['play'] = async ({ canvasElement }) => {
   }
 };
 
+/** The 70 and 180 labels are painted over every glucose line, each on a halo
+ *  of the card's surface, so no line runs through one. */
+const referencesClear: Story['play'] = async ({ canvasElement }) => {
+  const labels = [...canvasElement.querySelectorAll<SVGTextElement>('.ui-chart__ref-label')];
+  await expect(labels.map((label) => label.textContent)).toEqual(['70', '180']);
+  const series = [...canvasElement.querySelectorAll('.ui-chart__svg [class*="ui-chart__series-"]')];
+  await expect(series.length).toBeGreaterThan(0);
+  for (const label of labels) {
+    for (const line of series) {
+      await expect(Boolean(line.compareDocumentPosition(label) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
+    }
+    const style = getComputedStyle(label);
+    await expect(style.paintOrder.startsWith('stroke')).toBe(true);
+    await expect(parseFloat(style.strokeWidth)).toBeGreaterThan(0);
+    await expect(style.stroke).not.toBe('none');
+  }
+};
+
 export const Episodes: Story = {
   args: { data: episodes },
   play: async (context) => {
     const traces = context.canvasElement.querySelectorAll('.ui-chart__series-trace');
     await expect(traces.length).toBeGreaterThanOrEqual(episodes.episodes!.length);
     await axesClear(context);
+    await referencesClear(context);
   },
 };
 export const EpisodesDesktop: Story = { args: { data: episodes }, parameters: DESKTOP };
@@ -64,6 +83,7 @@ export const Band: Story = {
     await expect(context.canvasElement.querySelector('.ui-chart__zero')).not.toBeNull();
     await expect(context.canvasElement.querySelectorAll('.ui-chart__series-trace').length).toBe(0);
     await axesClear(context);
+    await referencesClear(context);
   },
 };
 export const BandDesktop: Story = { args: { data: band }, parameters: DESKTOP };

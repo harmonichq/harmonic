@@ -22,7 +22,8 @@
 .ui-chart__move { fill: var(--ui-estimate); }
 .ui-chart__svg .ui-chart__move { font-size: var(--ui-type-caption); }
 .ui-chart__current-label,
-.ui-chart__estimate-label {
+.ui-chart__estimate-label,
+.ui-chart__ref-label {
   /* A halo of the card's surface, so no mark line shows through a label. */
   stroke: var(--wk-surface);
   stroke-width: 5px;

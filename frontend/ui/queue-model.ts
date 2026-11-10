@@ -116,7 +116,7 @@ function patternRow(name: QueueStore, key: string) {
   return { outcome, member, rowId, row: s.findings.rows.find((r) => r.id === rowId) };
 }
 
-type ServedCause = { subject: string; title: string; count: number; pinnable: boolean };
+type ServedCause = { subject: string; title: string; count: number };
 type Counter = { count_sentences?: { noun: string }[] | null; cause_counts?: ServedCause[] | null };
 
 /** The object a Pattern's count and causes are served on, and its path: its own
@@ -141,9 +141,16 @@ export type HeldWrite = { kind: 'snooze' | 'restore' | 'done' | 'undoDone'; at: 
 /** The writes in flight the Queue draws: the newest on each subject, and the Focus in flight, apart. */
 export type Held = { inFlight: ReadonlyMap<string, HeldWrite>; focus: { subject: string; lever?: string } | null };
 
-/** A Focus can start now: the served admission every Focus button follows (ADR 594), and no Focus in flight. */
-export const focusable = (name: QueueStore, held?: Held): boolean =>
-  !held?.focus && store(name).focus.admission.focus_pin.available;
+/** The causes a Focus started from the Pattern `key` may watch, or none when the engine admits no Focus on
+ *  the Pattern: the Focus endpoint's own admission, served on the Focus list (ADR 666). */
+const admittedCauses = (name: QueueStore, key: string): readonly string[] | undefined =>
+  store(name).focus.pinnable_patterns.find((p) => p.key === key)?.levers;
+
+/** A Focus can start now: the served admission every Focus button follows (ADR 594), and no Focus in flight.
+ *  With a Pattern's `subject`, also a Focus the engine admits on that Pattern (ADR 666). */
+export const focusable = (name: QueueStore, held?: Held, subject?: string): boolean =>
+  !held?.focus && store(name).focus.admission.focus_pin.available
+  && (!subject?.startsWith('pattern:') || admittedCauses(name, subject.slice('pattern:'.length)) !== undefined);
 
 const activeFocus = (name: QueueStore, key: string) =>
   store(name).focus.focuses.find((f) => f.status === 'active' && f.pattern_key === key);
@@ -204,7 +211,7 @@ export function causes(name: QueueStore, key: string): CauseData[] {
       uncertain: false,
       pinned: focus?.lever === lever,
       impact: null,
-      pinnable: cause.pinnable,
+      pinnable: admittedCauses(name, key)?.includes(lever) ?? false,
       multiCause: false,
       focusedCause: null,
     };
@@ -377,7 +384,7 @@ export function carbRatioSetting(name: QueueStore): SettingData | null {
 /** The story states the generator found in the served answers, by name. */
 const states = () => answers.states;
 type PatternState = 'traces_episodes' | 'traces_band' | 'traces_gap' | 'pinned' | 'uncertain'
-  | 'drill_down' | 'drill_down_pinned' | 'drill_down_unpinnable' | 'focusable';
+  | 'drill_down' | 'drill_down_pinned' | 'drill_down_unpinnable' | 'drill_down_mixed' | 'focusable';
 type HabitState = 'habit_episodes' | 'habit_band' | 'habit_pinned';
 type SettingState = 'setting' | 'setting_trial';
 

@@ -1295,22 +1295,30 @@ class TrendRouteTest(unittest.TestCase):
         self.assertEqual(bodies[2], bodies[0])
 
     def test_a_settings_read_after_the_last_data_point_does_not_move_the_anchor(self):
-        from ciq_autotune.watched_change import reconcile_follow_up
+        from ciq_autotune.store import Store
+        from ciq_autotune.watched_change import reconcile_ingested_follow_up
 
-        def late_snapshot(store):
+        def synced(store):
             _materialize("c3-trial")(store)
+            reconcile_ingested_follow_up(store)  # as the last sync left it
             anchor = max([e.t for e in store.basal_events()] + [r.t for r in store.cgm_readings()]
                          + [b.t for b in store.bolus_events()])
             self.assertEqual(anchor, datetime(2024, 6, 1, 23, 59, 0))
-            # Unchanged settings, captured past the Trial's 28-day watch horizon.
+
+        path, _copy = _synthetic_store(self, synced)
+        client = self._client(path)
+        # A sync running now: it captures the unchanged settings at its wall
+        # clock, past the Trial's 28-day watch horizon, before its windows land,
+        # and reconciles only once they have. A trend read in between still
+        # reads the Trial from the data's own tail.
+        with Store.open(path) as store:
             store.upsert_settings_snapshot("2024-06-15 00:00:00",
                                            store.settings_snapshots()[-1].settings)
-            with store.follow_up_transaction():
-                reconcile_follow_up(store, now=anchor, recorded_at=anchor)
-
-        path, copy = _synthetic_store(self, late_snapshot)
-        self.assertEqual(self._read(path)["watched_change"], self.C3_TRIAL)
-        self.assertEqual(self._summarized(copy), self.C3_TRIAL)
+            self.assertEqual(store.latest_data_instant(), datetime(2024, 6, 15))
+        response = client.get("/api/outcomes/trend")
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual(response.json()["watched_change"], self.C3_TRIAL)
+        self.assertEqual(self._summarized(path), self.C3_TRIAL)
 
 
 @unittest.skipUnless(_HAS_FASTAPI, "api extra not installed")

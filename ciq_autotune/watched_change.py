@@ -2111,6 +2111,40 @@ def _reconcile_plan(store, record, recorded_at, snapshots):
     store.save_follow_up_record({**plan, "reconciliation": receipt})
 
 
+def frontier_current(store) -> bool:
+    """The frontier was reconciled at the store's current input revision (ADR 667).
+
+    Only a reconcile, or a write that changes nothing a reconcile reads and
+    carries a frontier that was current, writes the frontier at a revision. So
+    the follow-up state is then a reconcile's own result, and reconciling it
+    again changes nothing: its admission is the committed frontier's."""
+    frontier = store.follow_up_frontier()
+    return frontier is not None and frontier["reconciled_input_revision"] == store.input_data_revision()
+
+
+def write_unreconciled_state(store, write):
+    """Run ``write``, which changes only state no reconcile reads (a guidance
+    preference), and keep the frontier as reconciled as it was (ADR 667).
+
+    A frontier current before the write is carried to the revision after it, in
+    the same transaction, as a lifecycle write that does not reconcile carries
+    one (#557); one already behind is reconciled after the write, as before. A
+    write that changes nothing (a restore of a card not set aside) touches
+    nothing else either. Returns what ``write`` returns."""
+    with store.follow_up_transaction():
+        current = frontier_current(store)
+        before = store.input_data_revision()  # under the writer: only this write moves it
+        result = write()
+        changed = store.input_data_revision() != before
+        if current and changed:
+            frontier = store.follow_up_frontier()
+            store.advance_follow_up_frontier(frontier["trial_id"], frontier["detected_at"],
+                                             reconciled_input_revision=store.input_data_revision())
+    if changed and not current:
+        reconcile_ingested_follow_up(store)
+    return result
+
+
 def reconcile_ingested_follow_up(store):
     """Completion adapter shared by standalone ingestion, the fetch loop and the
     guidance preference writes, which advance the input revision the same way.

@@ -29,9 +29,10 @@
 // changes. While it waits for its answers it draws a skeleton per cause it
 // opened with.
 //
-// Every Focus button follows the served admission (`focusable`), and a cause
-// card's its cause's `pinnable`: nothing is drawn, and nothing says why, where
-// the engine would refuse one (ADR 594).
+// Every Focus button follows the served admission (`focusable`), a Pattern's
+// and a cause card's also the Focus list's verdict on that Pattern and cause:
+// nothing is drawn, and nothing says why, where the engine would refuse one
+// (ADR 594, ADR 666).
 // After a snooze the TransientBar sits above the tab bar with Undo. Desktop:
 // the rail, the ranked list on the left (the selected row marked; the Snoozed
 // list drills down inside this pane and the open item stays), and the open
@@ -61,7 +62,8 @@
 // served decision time.
 // A write that fails puts the item back as it was, with "Not saved" and Retry
 // in the bar, which outranks every other bar until Retry saves it or the engine
-// no longer serves its item. Once Retry leaves nothing refused, the bar is the
+// no longer serves its item; a write the engine refused outright, until a later
+// write or a Retry it refuses again (ADR 666). Once Retry leaves nothing refused, the bar is the
 // own bar of the last Done or Focus that Retry saved, as on a first save, and
 // otherwise none. The writes in flight and the refused ones are the
 // live adapter's (`held`, #610), so a tab change keeps both; the screen keeps
@@ -447,7 +449,7 @@ export function QueueScreen({
         ? <p className="ui-queue__empty"><Num value={queuedCount(shown, held)} /> patterns</p>
         : items.map((item) => (layout === 'phone'
           ? <PhoneItem key={item.subject} item={item} open={!closed && item.subject === current?.subject}
-              grows={item.subject === expanded} swiping={item.subject === swiping} focusable={focusable(shown, held)}
+              grows={item.subject === expanded} swiping={item.subject === swiping} focusable={focusable(shown, held, item.subject)}
               onOpen={() => go('causes', item.subject)}
               onSelect={() => { setClosed(false); setSelected(item.subject); setExpanded(item.subject); }}
               onSnooze={() => doSnooze(item.subject)} onCollapse={() => setClosed(true)}
@@ -515,7 +517,7 @@ export function QueueScreen({
             {state === 'loading' && <div className="ui-queue__detail"><PatternCard loading /></div>}
             {ready && current && (
               <div key="detail" className="ui-queue__detail ui-push">
-                <Card item={current} focusable={focusable(shown, held)} onOpen={() => go('causes', current.subject)}
+                <Card item={current} focusable={focusable(shown, held, current.subject)} onOpen={() => go('causes', current.subject)}
                   onSnooze={() => doSnooze()} onDone={() => doDone(current.subject)} actions={actions(current)} />
               </div>
             )}

@@ -391,6 +391,27 @@ test('only a write\'s own Undo cancels its refusal: a Focus refused after a Snoo
     'a Snooze does not undo a Focus, so its refusal shows "Not saved" with Retry');
 });
 
+test('a write the engine refused outright holds "Not saved" only until a later write or a Retry it refuses again (ADR 666)', async () => {
+  const fake = fakeClient();
+  fake.client.pinFocus = () => Promise.reject(refusal(400));
+  const live = createLive({ client: fake.client, glossary: [] });
+  await live.readTab('queue');
+  // Refused outright: shown, with Retry, and a Retry the engine refuses again leaves nothing held.
+  await assert.rejects(live.queueWrites.pin('pattern:p0'));
+  assert.deepEqual(live.queueWrites.held().refused, [{ kind: 'pin', subject: 'pattern:p0' }]);
+  assert.deepEqual(await live.queueWrites.retry(), []);
+  assert.deepEqual(live.queueWrites.held().refused, [], 'Retry cannot save it, so it is not held');
+  // Refused outright again, then a Snooze on another card: the Snooze's own bar and Undo are not hidden.
+  await assert.rejects(live.queueWrites.pin('pattern:p0'));
+  await live.queueWrites.snooze('pattern:p1');
+  assert.deepEqual(live.queueWrites.held().refused, [], 'a later write leaves no outright refusal held');
+  // A conflict is still held across a later write, for Retry to win (ADR 629).
+  fake.client.pinFocus = () => Promise.reject(refusal(409));
+  await assert.rejects(live.queueWrites.pin('pattern:p0'));
+  await live.queueWrites.snooze('pattern:p2');
+  assert.deepEqual(live.queueWrites.held().refused, [{ kind: 'pin', subject: 'pattern:p0' }]);
+});
+
 test('the Undo pairs cancel refusals both ways: a Snooze after a refused Restore is sent, a Done after a refused Undo is not (ADR 629)', async () => {
   const fake = fakeClient();
   const restore = byHand();

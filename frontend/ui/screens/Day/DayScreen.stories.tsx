@@ -1188,7 +1188,8 @@ type LateLog = Late & { send: DayWrites['logCarbs']; reset: () => void };
 const logStory = (layout: 'phone' | 'desktop', late: LateLog, play: Story['play']) => liveStory(layout, {
   store: 'wearer', day: withCarbs, now: () => LOG_CLOCK,
   writes: { ...answering(async () => ({ carbEntryId: null })), logCarbs: late.send },
-}, { unlogged: true }, [late], play);
+  // Its one low answered, the engine serves it answered, so the Lows never draw it again (#677).
+}, { unlogged: true, after: 'wearer-answered' }, [late], play);
 const lateLog = (layout: 'phone' | 'desktop') => {
   const late = answersLate<[number, string | undefined], void>(undefined);
   return logStory(layout, late, lateLogPlay(late));

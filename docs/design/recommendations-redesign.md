@@ -172,7 +172,7 @@ Each row lists a screen's states. Labels only; no state uses prose.
 | Tap an open card's chevron to close it to its row, leaving nothing open; tap the row to open it again (§2.5, 2026-10-23) | Click or ↑/↓ to select; the detail pane always shows the selected item |
 | Swipe a Prompt, by a Queue row's rule: released past half the card's width, or on a flick, it records Not sure and moves to the next, as the Not sure text action beneath its answers does; otherwise it eases back (§2.5, 2026-10-23) | A last button, **Not sure** (a Low's fourth, a Rise's third) |
 | Swipe the Day body: it follows the finger with the adjacent day with data beside it (left the next, right the previous), its skeleton while it loads, across months; released past half the body's width, or on a flick of 48 px, that day slides in, otherwise it eases back; resisted where no further day has data; a press within 24 px of either screen edge stays the platform's (§2.5, 2026-10-23, the Day swipe follows the finger) | The month drop-down, and the selected week's ribbon |
-| Tap the day in the Day header to drop the month down, its weeks as gapless ribbons | The same drop-down, a popover under the day; the selected week stays in view as a ribbon |
+| Tap the day in the Day header to drop the month down, its weeks as gapless ribbons; it ends above the tab bar, leaving scrim to tap, and its weeks scroll inside it under its name and ‹ ›, opening with the selected day's week in view (§2.5, 2026-11-10) | The same drop-down, a popover under the day; the selected week stays in view as a ribbon |
 | Pick a day in the month (it closes); the scrim closes it unchanged | Pick a day in the month or the week in view; Escape closes it unchanged |
 | Bottom sheet for Log carbs, on the system keyboard | Popover anchored to "+ Log carbs" |
 | Tap Undo in the snooze bar | Same bar, clickable; ⌘Z |
@@ -331,7 +331,10 @@ in §2.
 5. **More than one primary action per screen**, or any other accent-filled control.
 6. **Nested scrolling.** No scroll area inside a card, table, row or cell:
    content inside a component never scrolls on its own; only a screen's page
-   (or a desktop pane) scrolls. The story check enforces it.
+   (or a desktop pane) scrolls. The story check enforces it. One exception
+   (§2.5, 2026-11-10, the operator's decision): the phone's Day month drop-down
+   scrolls its weeks inside it, under its name and ‹ ›, so it ends above the tab
+   bar with scrim to tap; nothing else does.
 7. **Content not in the engine's served data.** Every value traces to an
    endpoint field. The checks are `copycheck.py` and the provenance table.
 
@@ -1652,6 +1655,20 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   word has one source; the Glossary lists it to read again. No tab reads the
   engine until Understood. §1.3 and §4.2 follow.
 
+- **2026-11-10 — the phone's Day month scrolls inside itself.** On a short
+  phone (375 × 667, any month), or for a month that spans six weeks (375 × 812,
+  412 × 915), the dropped-down month ran past the bottom of the screen and over
+  the tab bar: its last week was cut off and no scrim was left to tap (#649).
+  Asked "scroll inside it, or shorter week rows?", the operator chose to scroll
+  inside it. The week rows stay as locked. On phone the drop-down ends at
+  least a tap's strip of scrim above the tab bar (and the device's inset under
+  it); its name and ‹ › stay put while its weeks scroll beneath them, and it
+  opens with the selected day's week in view. It is §2.3 ban 6's one exception,
+  deliberate and for this one panel: no other component scrolls on its own,
+  and the story check allows this panel alone. Desktop and tablet are
+  unchanged: the popover never meets a tab bar, and the pane it is drawn in
+  scrolls as the page. §1.4, §2.3 and §4.2 DayRibbon follow.
+
 ### 2.6 Deferred (not cut)
 Not built in the current screens. The engine still serves what each needs, and
 nothing is removed from the engine or the fixtures for them.
@@ -1925,7 +1942,9 @@ unless noted. Loading is a skeleton of the component's own shape.
     - Fields: `day_navigator.days[]`.
     - Day's month is its weeks stacked, with ‹ › stepping to the previous and
       next month (loading, or Unavailable with Retry, while a month is not
-      read); desktop keeps the selected week in view, across months. Selected:
+      read); on phone the weeks scroll inside the drop-down under its name
+      and ‹ ›, which end above the tab bar (§2.5, 2026-11-10); desktop keeps
+      the selected week in view, across months. Selected:
       the whole column takes a `--primary` tint at 18%, 7 px radius, behind the
       trace, and its weekday and date are `--primary`; no bar. (The standalone
       DayTile went with the Overview's recent-days strip, §2.5 2026-10-14.)

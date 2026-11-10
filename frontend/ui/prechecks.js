@@ -8,7 +8,8 @@
 //   (d) at most one primary-filled control
 //   (f) nothing scrolls on its own but a screen's page or a desktop pane,
 //       marked [data-scroll="page"] (§2.3 ban 6): an element with overflow
-//       auto or scroll anywhere else is a nested scroll area
+//       auto or scroll anywhere else is a nested scroll area, but for the one
+//       exception SCROLL_EXEMPT names
 //   (e) every visible number sits in a [data-source] whose fixture field (or
 //       formula over fields, printed in its data-format) it equals. A chart's
 //       scale labels are not served values: axis ticks, and the fixed glucose
@@ -25,6 +26,13 @@ import { formatValue, resolveSource } from './provenance.js';
 // §4.1, one height per role; a list row is a 48 px minimum.
 export const ROLE_HEIGHTS = { primary: 50, secondary: 32, text: 32, icon: 44, segment: 28, nav: 44, answer: 44 };
 export const ROLE_MIN_HEIGHTS = { row: 48 };
+
+/** What may scroll on its own beside a page or pane, and why: (f)'s own allowlist. */
+export const SCROLL_EXEMPT = [
+  { selector: '.ui-dayscreen__month--phone > .ui-dayscreen__weeks',
+    reason: 'the phone\'s Day month, whose weeks scroll under its name and ‹ › so a short phone or a six-week month '
+      + 'ends above the tab bar with scrim to tap: §2.3 ban 6\'s one exception, the operator\'s, 2026-11-10 (#649)' },
+];
 
 const WORD = /[A-Za-z][A-Za-z'’-]*/g;
 const SENTENCE = /[A-Za-z][^.!?]*[.!?](\s|$)/;

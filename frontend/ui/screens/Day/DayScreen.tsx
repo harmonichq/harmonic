@@ -169,6 +169,24 @@ function Month({ layout, month, selected, onSelect, onStep, canStep, read, onRet
 }) {
   // Not modal: the header's day, which closes it, and the page beside it take taps.
   const dialog = useDialogFocus<HTMLElement>(!('data-closing' in exit), { modal: false });
+  // On phone the weeks scroll inside the drop-down, under its name and ‹ ›
+  // (§2.3 ban 6's one exception, 2026-11-10): each month opens at its top, or,
+  // when it holds the selected day, with that day's week in view, read once
+  // the weeks have measured their ribbons, before the frame is drawn.
+  const weeks = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const box = weeks.current;
+    if (!box) return undefined;
+    box.scrollTop = 0;
+    const frame = requestAnimationFrame(() => {
+      const row = [...box.children].find((week) => week.querySelector('[aria-pressed="true"]'));
+      const below = row ? row.getBoundingClientRect().bottom - box.getBoundingClientRect().bottom : 0;
+      if (below > 0) box.scrollTop = below;
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [month, read]);
+  // A month with no day to pick has no stop inside its weeks, and the browser
+  // would make the scrolling weeks a Tab stop of their own; they are not one.
   return (
     <section ref={dialog} className={layout === 'phone' ? 'ui-dayscreen__month ui-dayscreen__month--phone'
       : 'ui-popover ui-dayscreen__month ui-dayscreen__month--desktop'} style={{ left }}
@@ -181,14 +199,16 @@ function Month({ layout, month, selected, onSelect, onStep, canStep, read, onRet
         </span>
       </div>
       {read === 'unavailable' ? (
-        <div className="ui-dayscreen__weeks ui-dayscreen__unavailable">
+        <div ref={weeks} tabIndex={-1} className="ui-dayscreen__weeks ui-dayscreen__unavailable">
           <span>Unavailable</span>
           <Button kind="text" label="Retry" onClick={onRetry} />
         </div>
       ) : read === 'loading' ? (
-        <div className="ui-dayscreen__weeks"><span className="ui-skeleton ui-dayscreen__skeleton" aria-hidden="true" /></div>
+        <div ref={weeks} tabIndex={-1} className="ui-dayscreen__weeks">
+          <span className="ui-skeleton ui-dayscreen__skeleton" aria-hidden="true" />
+        </div>
       ) : (
-        <div className="ui-dayscreen__weeks">
+        <div ref={weeks} tabIndex={-1} className="ui-dayscreen__weeks">
           {monthWeeks(month).map((days) => (
             <DayRibbon key={days[0]} days={days.map(navigatorDay)} selected={selected} onSelect={onSelect} />
           ))}
@@ -620,27 +640,28 @@ function Day({
     return (
       <div ref={root} className="ui-dayscreen ui-dayscreen--phone">
         {dropped.value && <div className="ui-scrim ui-dayscreen__scrim" onClick={() => setMonth(false)} {...dropped.exit} />}
-        <div className="ui-dayscreen__head" data-push={push}>
-          {header}
+        <div className="ui-dayscreen__head" data-push={push}>{header}</div>
+        {/* The room between the header and the tab bar, which the month drops into. */}
+        <div className="ui-dayscreen__room">
           {dropped.value && <Month layout="phone" {...monthProps} exit={dropped.exit} />}
+          <main className="ui-dayscreen__main" data-scroll="page" data-push={push}>
+            <div key={`${view}-body`} {...(swipes ? swipe.bind : {})}
+              className={`ui-dayscreen__body ui-push${view === 'day' ? ' ui-dayscreen__body--steps' : ''}${swipe.dragging ? ' ui-swipe--dragging' : ''}`}>
+              {state !== 'unavailable' && (view === 'prompts' ? prompt() : (
+                // The swipe moves the track, never the body, whose drill-down is its own.
+                <div className="ui-dayscreen__track ui-swipe-settle" style={swipe.style}>
+                  {dayContent(selected)}
+                  {neighbour && (
+                    <div className={`ui-dayscreen__neighbour ui-dayscreen__neighbour--${swipe.peek === 1 ? 'next' : 'previous'}`}
+                      aria-hidden="true" {...{ inert: '' }}>
+                      {dayContent(neighbour)}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </main>
         </div>
-        <main className="ui-dayscreen__main" data-scroll="page" data-push={push}>
-          <div key={`${view}-body`} {...(swipes ? swipe.bind : {})}
-            className={`ui-dayscreen__body ui-push${view === 'day' ? ' ui-dayscreen__body--steps' : ''}${swipe.dragging ? ' ui-swipe--dragging' : ''}`}>
-            {state !== 'unavailable' && (view === 'prompts' ? prompt() : (
-              // The swipe moves the track, never the body, whose drill-down is its own.
-              <div className="ui-dayscreen__track ui-swipe-settle" style={swipe.style}>
-                {dayContent(selected)}
-                {neighbour && (
-                  <div className={`ui-dayscreen__neighbour ui-dayscreen__neighbour--${swipe.peek === 1 ? 'next' : 'previous'}`}
-                    aria-hidden="true" {...{ inert: '' }}>
-                    {dayContent(neighbour)}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </main>
         {bar}
         <NavBar layout="tabbar" selected="day" dayCount={badge} {...nav} />
         {sheet.value && (

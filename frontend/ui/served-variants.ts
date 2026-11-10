@@ -126,10 +126,11 @@ export function WithoutReadings({ children }: { children: ReactNode }) {
 }
 
 /** A month the Day screen can step to, as the engine serves `/api/day-navigator?month=…`: every week
- *  that touches it, Monday first, its days the served May navigator's days in turn (dates changed). */
+ *  that touches it, Monday first, its days the served May navigator's days with readings in turn (dates
+ *  changed), so even a six-week month's last week has a day to pick (#649). */
 function monthOf(month: string) {
   const navigator = clone(fixtures.overview.wearer.day_navigator);
-  const served = navigator.days;
+  const served = navigator.days.filter((day) => day.has_data);
   const first = new Date(`${month}-01T00:00:00Z`);
   const end = new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + 1, 0));
   const lead = (first.getUTCDay() + 6) % 7;

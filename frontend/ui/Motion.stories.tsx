@@ -40,10 +40,16 @@ const snooze = { subject: fixtures.snooze.subject, after: 'wearer-pinned-snoozed
 /** The Day swipe's months: March and April are read as the screen reaches them. */
 const dayMonths = monthReader();
 const dayBody = (stage: HTMLElement) => stage.querySelector<HTMLElement>('.ui-dayscreen__body')!;
-/** `ms`, and at least until the last swipe has come to rest: its neighbour is
- *  drawn until its slide or ease-back has ended, and presses wait until then. */
+/** The frames after a step names its day in which the play finds it at rest. */
+const AT_REST_FRAMES = 6;
+/** `ms`, and at least until the last swipe has come to rest and stayed there
+ *  for the frames the play reads it in: its neighbour is drawn until its slide
+ *  or ease-back has ended, and presses wait until then. */
 async function rested(stage: HTMLElement, ms: number) {
-  const still = async () => { while (stage.querySelector('.ui-dayscreen__neighbour')) await frame(); };
+  const still = async () => {
+    while (stage.querySelector('.ui-dayscreen__neighbour')) await frame();
+    for (let held = 0; held < AT_REST_FRAMES; held += 1) await frame();
+  };
   await Promise.all([pause(ms), still()]);
 }
 
@@ -136,7 +142,7 @@ const MOTIONS = {
       control(stage, 'Next').click();
       await pause(350);
       control(stage, 'Sun 25 May').click();
-      await pause(450);
+      await rested(stage, 450);
       await swipe(dayBody(stage), -200, 16, 'slow');
       await pause(400);
     },
@@ -279,7 +285,8 @@ export const DaySwipe: Story = {
   play: async ({ canvasElement }) => {
     const day = () => canvasElement.querySelector('.ui-header__day')!.textContent;
     // Every frame, the header's day and how far the track sits from rest: once
-    // a step names its day, the day is drawn at rest, never sliding in again.
+    // a step names its day, the day is drawn at rest, never sliding in again,
+    // for the frames the replay holds it there before its next press.
     const frames: { day: string | null; off: number }[] = [];
     let sampling = true;
     const sample = () => {
@@ -299,7 +306,7 @@ export const DaySwipe: Story = {
     await expect(day()).toContain('25 May');
     sampling = false;
     const offRest = frames.flatMap((frame, i) => (i > 0 && frame.day !== frames[i - 1].day
-      ? frames.slice(i, i + 6).filter((after) => Math.abs(after.off) >= 0.5).map((after) => `${after.day} ${after.off}`) : []));
+      ? frames.slice(i, i + AT_REST_FRAMES).filter((after) => Math.abs(after.off) >= 0.5).map((after) => `${after.day} ${after.off}`) : []));
     await expect(offRest).toEqual([]);
   },
 };

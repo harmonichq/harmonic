@@ -38312,7 +38312,8 @@
             "reason": null
           }
         },
-        "focuses": []
+        "focuses": [],
+        "pinnable_patterns": []
       },
       "guidance": {
         "candidates": [
@@ -40738,7 +40739,8 @@
             "reason": null
           }
         },
-        "focuses": []
+        "focuses": [],
+        "pinnable_patterns": []
       },
       "guidance": {
         "candidates": [
@@ -45717,7 +45719,16 @@
             "reason": null
           }
         },
-        "focuses": []
+        "focuses": [],
+        "pinnable_patterns": [
+          {
+            "key": "highs_after_meals",
+            "levers": [
+              "carb_undercount",
+              "late_bolus"
+            ]
+          }
+        ]
       },
       "guidance": {
         "candidates": [
@@ -50704,6 +50715,15 @@
             "status": "active",
             "subject": "pattern:highs_after_meals"
           }
+        ],
+        "pinnable_patterns": [
+          {
+            "key": "highs_after_meals",
+            "levers": [
+              "carb_undercount",
+              "late_bolus"
+            ]
+          }
         ]
       },
       "guidance": {
@@ -51540,7 +51560,8 @@
             "reason": null
           }
         },
-        "focuses": []
+        "focuses": [],
+        "pinnable_patterns": []
       },
       "guidance": {
         "candidates": [
@@ -52396,7 +52417,8 @@
             "status": "active",
             "subject": "habit:missed_meal"
           }
-        ]
+        ],
+        "pinnable_patterns": []
       },
       "guidance": {
         "candidates": [
@@ -63445,7 +63467,34 @@
             "reason": "active_trial"
           }
         },
-        "focuses": []
+        "focuses": [],
+        "pinnable_patterns": [
+          {
+            "key": "highs_after_meals",
+            "levers": [
+              "carb_undercount",
+              "late_bolus"
+            ]
+          },
+          {
+            "key": "lows_after_meals",
+            "levers": [
+              "meal_over_delivery"
+            ]
+          },
+          {
+            "key": "highs_after_treating_lows",
+            "levers": [
+              "over_treated_low"
+            ]
+          },
+          {
+            "key": "lows_after_correcting_highs",
+            "levers": [
+              "correction_on_iob"
+            ]
+          }
+        ]
       },
       "guidance": {
         "candidates": [
@@ -75192,7 +75241,34 @@
             "reason": null
           }
         },
-        "focuses": []
+        "focuses": [],
+        "pinnable_patterns": [
+          {
+            "key": "highs_after_meals",
+            "levers": [
+              "carb_undercount",
+              "late_bolus"
+            ]
+          },
+          {
+            "key": "lows_after_meals",
+            "levers": [
+              "meal_over_delivery"
+            ]
+          },
+          {
+            "key": "highs_after_treating_lows",
+            "levers": [
+              "over_treated_low"
+            ]
+          },
+          {
+            "key": "lows_after_correcting_highs",
+            "levers": [
+              "correction_on_iob"
+            ]
+          }
+        ]
       },
       "guidance": {
         "candidates": [
@@ -86920,7 +86996,34 @@
             "reason": null
           }
         },
-        "focuses": []
+        "focuses": [],
+        "pinnable_patterns": [
+          {
+            "key": "highs_after_meals",
+            "levers": [
+              "carb_undercount",
+              "late_bolus"
+            ]
+          },
+          {
+            "key": "lows_after_meals",
+            "levers": [
+              "meal_over_delivery"
+            ]
+          },
+          {
+            "key": "highs_after_treating_lows",
+            "levers": [
+              "over_treated_low"
+            ]
+          },
+          {
+            "key": "lows_after_correcting_highs",
+            "levers": [
+              "correction_on_iob"
+            ]
+          }
+        ]
       },
       "guidance": {
         "candidates": [
@@ -94007,7 +94110,21 @@
             "reason": "reconciliation_required"
           }
         },
-        "focuses": []
+        "focuses": [],
+        "pinnable_patterns": [
+          {
+            "key": "highs_after_meals",
+            "levers": [
+              "carb_undercount"
+            ]
+          },
+          {
+            "key": "lows_after_meals",
+            "levers": [
+              "meal_over_delivery"
+            ]
+          }
+        ]
       },
       "guidance": {
         "candidates": [
@@ -102983,7 +103100,34 @@
             "reason": null
           }
         },
-        "focuses": []
+        "focuses": [],
+        "pinnable_patterns": [
+          {
+            "key": "highs_after_meals",
+            "levers": [
+              "carb_undercount",
+              "late_bolus"
+            ]
+          },
+          {
+            "key": "lows_after_meals",
+            "levers": [
+              "meal_over_delivery"
+            ]
+          },
+          {
+            "key": "highs_after_treating_lows",
+            "levers": [
+              "over_treated_low"
+            ]
+          },
+          {
+            "key": "lows_after_correcting_highs",
+            "levers": [
+              "correction_on_iob"
+            ]
+          }
+        ]
       },
       "guidance": {
         "candidates": [
@@ -114688,7 +114832,34 @@
             "reason": null
           }
         },
-        "focuses": []
+        "focuses": [],
+        "pinnable_patterns": [
+          {
+            "key": "highs_after_meals",
+            "levers": [
+              "carb_undercount",
+              "late_bolus"
+            ]
+          },
+          {
+            "key": "lows_after_meals",
+            "levers": [
+              "meal_over_delivery"
+            ]
+          },
+          {
+            "key": "highs_after_treating_lows",
+            "levers": [
+              "over_treated_low"
+            ]
+          },
+          {
+            "key": "lows_after_correcting_highs",
+            "levers": [
+              "correction_on_iob"
+            ]
+          }
+        ]
       },
       "guidance": {
         "candidates": [
@@ -126451,6 +126622,33 @@
             "status": "active",
             "subject": "pattern:highs_after_meals"
           }
+        ],
+        "pinnable_patterns": [
+          {
+            "key": "highs_after_meals",
+            "levers": [
+              "carb_undercount",
+              "late_bolus"
+            ]
+          },
+          {
+            "key": "lows_after_meals",
+            "levers": [
+              "meal_over_delivery"
+            ]
+          },
+          {
+            "key": "highs_after_treating_lows",
+            "levers": [
+              "over_treated_low"
+            ]
+          },
+          {
+            "key": "lows_after_correcting_highs",
+            "levers": [
+              "correction_on_iob"
+            ]
+          }
         ]
       },
       "guidance": {
@@ -138187,6 +138385,33 @@
             "status": "active",
             "subject": "pattern:highs_after_meals"
           }
+        ],
+        "pinnable_patterns": [
+          {
+            "key": "highs_after_meals",
+            "levers": [
+              "carb_undercount",
+              "late_bolus"
+            ]
+          },
+          {
+            "key": "lows_after_meals",
+            "levers": [
+              "meal_over_delivery"
+            ]
+          },
+          {
+            "key": "highs_after_treating_lows",
+            "levers": [
+              "over_treated_low"
+            ]
+          },
+          {
+            "key": "lows_after_correcting_highs",
+            "levers": [
+              "correction_on_iob"
+            ]
+          }
         ]
       },
       "guidance": {
@@ -147730,7 +147955,28 @@
             "reason": "active_trial"
           }
         },
-        "focuses": []
+        "focuses": [],
+        "pinnable_patterns": [
+          {
+            "key": "highs_after_meals",
+            "levers": [
+              "carb_undercount",
+              "late_bolus"
+            ]
+          },
+          {
+            "key": "lows_after_meals",
+            "levers": [
+              "meal_over_delivery"
+            ]
+          },
+          {
+            "key": "highs_after_treating_lows",
+            "levers": [
+              "over_treated_low"
+            ]
+          }
+        ]
       },
       "guidance": {
         "candidates": [
@@ -147951,8 +148197,8 @@
       "store": "correction-collapse"
     },
     "focusable": {
-      "pattern": "highs_after_treating_lows",
-      "store": "correction-collapse"
+      "pattern": "lows_after_meals",
+      "store": "wearer-before-done"
     },
     "habit_band": {
       "store": "wearer-habit",

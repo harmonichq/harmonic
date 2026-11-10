@@ -1251,7 +1251,10 @@ def _counter(store: dict, key: str) -> dict:
 def _require_causes(queue: dict) -> None:
     """The drill-down's stores serve what their stories draw (ADR 594)."""
     def causes(name: str, key: str) -> list[tuple[str, bool]]:
-        return [(c["subject"], c["pinnable"]) for c in _counter(queue[name], key).get("cause_counts") or []]
+        admitted = next((p["levers"] for p in queue[name]["focus"]["pinnable_patterns"]
+                         if p["key"] == key), [])
+        return [(c["subject"], c["subject"].removeprefix("habit:") in admitted)
+                for c in _counter(queue[name], key).get("cause_counts") or []]
 
     def available(name: str) -> bool:
         return queue[name]["focus"]["admission"]["focus_pin"]["available"]
@@ -1366,6 +1369,9 @@ def _queue_store(client: TestClient) -> dict:
             # Whether a Focus can start now, which every Focus button follows (ADR 594).
             "admission": {"focus_pin": {field: focus["admission"]["focus_pin"][field]
                                         for field in ("available", "reason")}},
+            # Each Pattern a Focus is admitted on, and the causes one may watch (ADR 666).
+            "pinnable_patterns": [{field: p[field] for field in ("key", "levers")}
+                                  for p in focus["pinnable_patterns"]],
         },
         "cases": _cases(client, [c["subject"] for c in guidance["candidates"]
                                  if c["kind"] == "pattern" and c["admitted"]] + habits),
@@ -1520,19 +1526,24 @@ def states(queue: dict) -> dict:
         for store in sorted(queue):
             if not queue[store]["focus"]["admission"]["focus_pin"]["available"]:
                 continue
+            admitted = {p["key"] for p in queue[store]["focus"]["pinnable_patterns"]}
             for p in _patterns(queue[store]):
-                if len(_counter(queue[store], p["key"]).get("cause_counts") or []) <= 1:
+                if (p["key"] in admitted
+                        and len(_counter(queue[store], p["key"]).get("cause_counts") or []) <= 1):
                     return {"store": store, "pattern": p["key"]}
         return None
 
-    def drill_down(store, rule=lambda causes: True):
+    def drill_down(store, rule=lambda causes, admitted: True):
         """The store's first queued Pattern whose counter serves more than one cause."""
         for candidate in queue[store]["guidance"]["candidates"]:
             key = candidate["subject"].removeprefix("pattern:")
             if candidate["kind"] != "pattern" or not candidate["queued"]:
                 continue
             causes = _counter(queue[store], key).get("cause_counts") or []
-            if len(causes) > 1 and rule(causes):
+            # The causes a Focus from the Pattern may watch (ADR 666).
+            admitted = next((p["levers"] for p in queue[store]["focus"]["pinnable_patterns"]
+                             if p["key"] == key), [])
+            if len(causes) > 1 and rule(causes, admitted):
                 return {"store": store, "pattern": key}
         return None
 
@@ -1557,8 +1568,8 @@ def states(queue: dict) -> dict:
         # Focus, and one the engine will not focus.
         "drill_down": drill_down("meal-two-causes"),
         "drill_down_pinned": drill_down("meal-two-causes-pinned"),
-        "drill_down_unpinnable": drill_down("correction-collapse",
-                                            lambda causes: not all(c["pinnable"] for c in causes)),
+        "drill_down_unpinnable": drill_down("correction-collapse", lambda causes, admitted: not all(
+            c["subject"].removeprefix("habit:") in admitted for c in causes)),
         "focusable": focusable(),
     }
     required = ("traces_episodes", "traces_band", "pinned", "setting", "setting_trial",

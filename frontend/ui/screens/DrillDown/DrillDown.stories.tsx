@@ -225,7 +225,8 @@ export const FocusStarted: Story = started('phone');
 export const FocusStartedDesktop: Story = started('desktop');
 
 /** A cause the engine serves as not focusable keeps its title, count and trace,
- *  with no button and nothing saying why, its head as tall as the others'. */
+ *  with no button and nothing saying why, its head as tall as the others'. On
+ *  this withheld Pattern the engine admits a Focus on no cause (ADR 666). */
 export const Unpinnable: Story = {
   ...opened('drill_down_unpinnable', 'phone'),
   play: async (context) => {
@@ -234,7 +235,6 @@ export const Unpinnable: Story = {
     const offered = cards(canvasElement).map((card) => within(card).queryByRole('button', { name: 'Focus' }) !== null);
     await expect(offered).toEqual(served(args).causes.map((c) => c.pinnable));
     await expect(offered).toContain(false);
-    await expect(offered).toContain(true);
   },
 };
 

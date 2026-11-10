@@ -1,5 +1,4 @@
 import contextlib
-import threading
 import tempfile
 import unittest
 from datetime import datetime, timedelta
@@ -177,6 +176,96 @@ class GuidanceApiTest(unittest.TestCase):
                              (pattern["pattern_key"], response.text))
             if response.status_code == 200:
                 client.post(f"/api/focus/{response.json()['id']}/resolve")
+
+    def test_post_admits_a_cause_exactly_when_get_serves_it_on_its_pattern(self):
+        """ADR 666: the Focus list serves each admitted Pattern with the causes a
+        Focus from it may watch, so a withheld Pattern's causes are offered nowhere."""
+        for case in ("pattern-meal-two-causes", "pattern-correction-collapse"):
+            _tmp, _app, client = self._case_client(case)
+            listed = {row["key"]: row["levers"] for row in client.get(
+                "/api/focus").json()["pinnable_patterns"]}
+            findings = client.get("/api/diagnose/findings").json()
+            # A Pattern's causes, on its row or on the habit row it is served as.
+            counters = {row["served_as"]["subject"] if row.get("served_as") else row["id"]:
+                        (row.get("served_as") or row).get("cause_counts") or []
+                        for row in findings["rows"]}
+            tried = 0
+            for pattern in findings["outcome_patterns"]:
+                causes = counters.get(f"pattern:{pattern['key']}", [])
+                for cause in causes:
+                    lever = cause["subject"].removeprefix("habit:")
+                    response = client.post("/api/focus", json={
+                        "pattern_key": pattern["key"], "lever": lever,
+                        "outcome_window": WHOLE_DAY_OUTCOME_WINDOW,
+                    })
+                    tried += 1
+                    self.assertEqual(response.status_code == 200,
+                                     lever in listed.get(pattern["key"], []),
+                                     (case, pattern["key"], lever, response.text))
+                    if response.status_code == 200:
+                        client.post(f"/api/focus/{response.json()['id']}/resolve")
+            self.assertGreaterEqual(tried, 2, case)
+        self.assertEqual(listed, {})
+
+    def test_follow_up_writes_over_a_reconciled_frontier_read_no_history(self):
+        """ADR 667: a snooze, a restore, a Focus and its End, and a Trial's End
+        each read none of the history when the frontier is already reconciled,
+        so each returns in the same time whatever the history's length, and each
+        leaves the frontier reconciled and its own write served."""
+        from unittest.mock import patch
+        from ciq_autotune import watched_change
+
+        def current(tmp):
+            with Store.open_readonly(tmp.name) as store:
+                return store.follow_up_frontier()["reconciled_input_revision"] == store.input_data_revision()
+
+        def no_history(*args, **kwargs):
+            raise AssertionError("the history was read")
+
+        def reconciled(name):
+            # As a sync leaves a store: its frontier reconciled at its revision.
+            tmp, app, client = self._case_client(name)
+            with Store.open(tmp.name) as store:
+                watched_change.reconcile_ingested_follow_up(store)
+            return tmp, app, client
+
+        tmp, _app, client = reconciled("pattern-meal-two-causes")
+        guidance = client.get("/api/guidance").json()
+        self.assertTrue(current(tmp))
+        subject = "pattern:highs_after_meals"
+        with patch.object(watched_change, "_reviewable_trials", no_history):
+            snoozed = client.put(f"/api/guidance/preferences/{subject}",
+                                 json={"generation": guidance["analysis_generation"]})
+            self.assertEqual(snoozed.status_code, 200, snoozed.text)
+            self.assertTrue(current(tmp))
+            restored = client.delete(f"/api/guidance/preferences/{subject}")
+            self.assertEqual(restored.status_code, 200, restored.text)
+            self.assertTrue(current(tmp))
+            pinned = client.post("/api/focus", json={
+                "pattern_key": "highs_after_meals", "outcome_window": WHOLE_DAY_OUTCOME_WINDOW})
+            self.assertEqual(pinned.status_code, 200, pinned.text)
+            self.assertTrue(current(tmp))
+            ended = client.post(f"/api/focus/{pinned.json()['id']}/resolve")
+            self.assertEqual(ended.status_code, 200, ended.text)
+            self.assertTrue(current(tmp))
+        focuses = client.get("/api/focus").json()
+        self.assertEqual([f["status"] for f in focuses["focuses"]], ["resolved"])
+        self.assertTrue(focuses["admission"]["focus_pin"]["available"])
+        self.assertFalse(client.get("/api/guidance").json()["candidates"][0]
+                         .get("preference", {}).get("set_aside", False))
+
+        tmp, _app, client = reconciled("c3-trial")
+        trials = client.get("/api/verify/trials").json()
+        self.assertTrue(current(tmp))
+        self.assertTrue(trials["admission"]["can_finish_trial"])
+        trial = trials["admission"]["active_id"]
+        with patch.object(watched_change, "_reviewable_trials", no_history):
+            finished = client.post(f"/api/verify/trials/{trial}/finish", json={
+                "request_id": "00000000-0000-4000-8000-000000000667",
+                "input_revision": trials["input_revision"]})
+        self.assertEqual(finished.status_code, 200, finished.text)
+        self.assertTrue(current(tmp))
+        self.assertIsNone(client.get("/api/verify/trials").json()["admission"]["active_kind"])
 
     def test_pattern_pin_rechecks_readiness_on_the_write_source(self):
         import ciq_autotune.guidance as guidance_module
@@ -578,58 +667,29 @@ class GuidanceApiTest(unittest.TestCase):
         current = client.get("/api/guidance", headers=headers).json()
         subject = current["candidates"][0]["subject"]
         real_save = Store.save_guidance_preference
-        real_revision = Store.input_data_revision
-        writer_locked = threading.Event()
-        release_writer = threading.Event()
-        checking = False
-        writer_errors = []
+        real_transaction = Store.follow_up_transaction
+        competed = []
 
-        def competing_write():
-            try:
-                with Store.open(tmp.name) as store:
-                    store.conn.execute("BEGIN IMMEDIATE")
-                    writer_locked.set()
-                    release_writer.wait(0.5)
+        def instrumented_transaction(store, *args, **kwargs):
+            # Another writer commits after the guidance read and before this
+            # write reserves the writer, which then checks the revision under
+            # its own lock (ADR 667), so no write can cross check and insert.
+            if not competed:
+                with Store.open(tmp.name) as other:
                     real_save(
-                        store, "setting:isf", decided_at="2026-01-01 00:00:00",
+                        other, "setting:isf", decided_at="2026-01-01 00:00:00",
                         reason=None, comparison_version="383:1",
                         state={"kind": "setting"},
                     )
-            except Exception as error:  # pragma: no cover - asserted below
-                writer_errors.append(error)
+                competed.append(True)
+            return real_transaction(store, *args, **kwargs)
 
-        writer = threading.Thread(target=competing_write, daemon=True)
-
-        def instrumented_save(store, *args, **kwargs):
-            nonlocal checking
-            writer.start()
-            self.assertTrue(
-                writer_locked.wait(1.0), "competing writer never acquired its lock",
-            )
-            checking = True
-            try:
-                return real_save(store, *args, **kwargs)
-            finally:
-                checking = False
-
-        def crossing_revision(store):
-            revision = real_revision(store)
-            if checking:
-                release_writer.set()
-                writer.join(1.0)
-                self.assertFalse(writer.is_alive(), "competing writer silently hung")
-            return revision
-
-        with patch.object(Store, "save_guidance_preference", instrumented_save), \
-             patch.object(Store, "input_data_revision", crossing_revision):
+        with patch.object(Store, "follow_up_transaction", instrumented_transaction):
             response = client.put(
                 f"/api/guidance/preferences/{subject}", headers=headers,
                 json={"generation": current["analysis_generation"]},
             )
-        release_writer.set()
-        writer.join(1.0)
-        self.assertFalse(writer.is_alive(), "competing writer silently hung")
-        self.assertEqual(writer_errors, [])
+        self.assertEqual(competed, [True])
         self.assertEqual(response.status_code, 409)
         with Store.open(tmp.name) as store:
             self.assertEqual(

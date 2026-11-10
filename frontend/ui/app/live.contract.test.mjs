@@ -150,6 +150,8 @@ const EXPECTED = {
   // unannounced rise.
   'pattern-correction-fold': {
     queue: ['pattern:lows_after_correcting_highs', 'pattern:highs_after_treating_lows'],
+    // Both Patterns are withheld: no Focus is offered on either (ADR 666).
+    offered: [],
     // Each counted low drawn from the correction it followed, against every other
     // lone correction (ADR 523).
     pattern: { key: 'lows_after_correcting_highs', title: 'Lows after correcting highs',
@@ -174,6 +176,8 @@ const EXPECTED = {
   // lows after meals (ADR 530).
   'basal-and-carb-ratio-lower': {
     queue: ['setting:basal_rate', 'pattern:highs_after_meals', 'setting:carb_ratio'],
+    // Highs after meals is withheld, and its one member is the carb ratio: no Focus (ADR 666).
+    offered: [],
     ic: { title: 'I:C', units: 'g/U', start: 0, end: 1440, current: 10, suggested: 9, estimate: 8, lo: 8, hi: 8,
       // The meal runs the estimate counts: the stat row's count and the chart's dots (ADR 523).
       count: { label: 'Meal runs', value: 8 }, dots: 8 },
@@ -186,6 +190,8 @@ const EXPECTED = {
   // a stacked pair of corrections reached as well as that habit's own two.
   'pattern-correction-collapse': {
     queue: ['pattern:lows_after_correcting_highs', 'pattern:highs_after_treating_lows'],
+    // Both Patterns are withheld: no Focus is offered on either (ADR 666).
+    offered: [],
     pattern: { key: 'lows_after_correcting_highs', title: 'Lows after correcting highs',
       magnitude: { count: 3, denominator: 6, noun: 'lows' },
       traces: { anchor: 'correction', window: [0, 240], episodes: 3, patternBins: 49, typicalBins: 0, typical: 1 },
@@ -197,10 +203,11 @@ const EXPECTED = {
       counts: [['habit:correction_on_iob', 'Correction on active insulin', 2, true],
         ['habit:correction_stacking', 'Correction stacking', 1, false]],
       traces: [['habit:correction_on_iob', 2], ['habit:correction_stacking', 1]] },
-    // Served as its habit, it is multi-cause like any Pattern (ADR 594): its
-    // drill-down offers no Focus on Correction stacking.
+    // Served as its habit, it is multi-cause like any Pattern (ADR 594). It is
+    // withheld, so the engine admits a Focus on neither cause, and its drill-down
+    // offers none (ADR 666).
     drillDown: { key: 'lows_after_correcting_highs', focusable: true,
-      causes: [['habit:correction_on_iob', 'Correction on active insulin', 2, 3, 'lows', true, 2],
+      causes: [['habit:correction_on_iob', 'Correction on active insulin', 2, 3, 'lows', false, 2],
         ['habit:correction_stacking', 'Correction stacking', 1, 3, 'lows', false, 1]] },
     change: { kind: 'none' },
     done: null,
@@ -210,6 +217,8 @@ const EXPECTED = {
   // so it leads. Both can be focused, and each is drawn from its own meals.
   'pattern-meal-two-causes': {
     queue: ['pattern:highs_after_meals'],
+    // A ready Pattern with two habits: a Focus is admitted on it (ADR 666).
+    offered: ['pattern:highs_after_meals'],
     pattern: { key: 'highs_after_meals', title: 'Highs after meals',
       magnitude: { count: 7, denominator: 21, noun: 'meals' },
       traces: { anchor: 'bolus', window: [-30, 240], episodes: 7, patternBins: 55, typicalBins: 55, typical: 14 },
@@ -309,6 +318,12 @@ test(`the live adapter serves each tab's model from the ${CASE} store`, async (t
     // The count the empty Queue prints leaves out a queued correction factor,
     // which no Queue row draws (§1.3 "0 patterns"; §2.5, 2026-10-20).
     assert.equal(values(queue.queuedCount('wearer')), expected.queue.length, 'the Queue does not count a correction factor');
+    if (expected.offered) {
+      // The queued Patterns a Focus is offered on: exactly those the engine admits one on (ADR 666).
+      const offered = ranking.filter((item) => item.subject.startsWith('pattern:')
+        && queue.focusable('wearer', undefined, item.subject)).map((item) => item.subject);
+      assert.deepEqual(offered, expected.offered, 'Focus is offered only where the engine admits it');
+    }
     if (expected.basal) {
       const basal = ranking.find((item) => item.subject === 'setting:basal_rate').data;
       for (const [key, value] of Object.entries(expected.basal)) assert.equal(basal[key], value, `basal ${key}`);

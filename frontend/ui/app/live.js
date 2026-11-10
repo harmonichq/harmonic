@@ -638,6 +638,10 @@ export function createLive({ client, glossary, memory = null,
   const madeOn = new Map();
   const kinds = new Map();
   const unsent = new Set();
+  // The refused writes the engine refused outright: a 4xx that is no conflict, which sending it again cannot
+  // save. One is held only until the person makes a later write, or until Retry is refused again (ADR 666).
+  const outright = new WeakSet();
+  const refusedOutright = (error) => error?.status >= 400 && error.status < 500 && error.status !== 409;
   /** The number (`subject n`) of the first write's own Undo the person made after `write`, its `nth`, if any. */
   function undoneBy(write, nth) {
     for (let n = nth + 1; n <= madeOn.get(write.subject); n += 1) {
@@ -675,6 +679,7 @@ export function createLive({ client, glossary, memory = null,
     if (!resent) {
       madeOn.set(write.subject, nth);
       kinds.set(`${write.subject} ${nth}`, write.kind);
+      refused = refused.filter((r) => !outright.has(r));
     }
     if (pin) focusing = held;
     else inFlight.set(write.subject, held);
@@ -687,13 +692,17 @@ export function createLive({ client, glossary, memory = null,
         if (resent || !unsent.delete(`${write.subject} ${nth}`)) await SENDS[write.kind](write.subject, write.lever);
         refused = refused.filter((r) => !same(write)(r));
       } catch (error) {
-        // A refusal is held until it saves, or until Retry finds its subject no longer served. A write whose
-        // own Undo the person made after it is not held; any other later write, a Snooze after a Focus among
-        // them, leaves the refusal held (ADR 629).
+        // A refusal is held until it saves, or until Retry is refused outright, as when its subject is no
+        // longer served (404). A write whose own Undo the person made after it is not held; any other later
+        // write, a Snooze after a Focus among them, leaves a conflict held (ADR 629), and drops a refusal the
+        // engine made outright (ADR 666).
         const undo = undoneBy(write, nth);
         if (undo && write.kind !== 'restore') unsent.add(undo);
-        if (undo || (retried && error?.status === 404)) refused = refused.filter((r) => !same(write)(r));
-        else if (!retried) refused = [...refused, write];
+        if (undo || (retried && refusedOutright(error))) refused = refused.filter((r) => !same(write)(r));
+        else if (!retried) {
+          if (refusedOutright(error)) outright.add(write);
+          refused = [...refused, write];
+        }
         throw error;
       } finally {
         queueWritesAnswered += 1;

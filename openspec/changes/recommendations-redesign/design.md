@@ -2344,3 +2344,93 @@ its own subject too, as the Queue reads it. The generated `wearer-not-on-pump`
 Queue changes in one Pattern's case-file trace. That store is read after a sync
 the app was not told of, and the held preparation from before that sync was
 served as current; it is now the sync's own. No other generated answer changes.
+
+## ADR 653 — The app keeps catching up while a screen is shown, remembers what failed, and gives a read five minutes
+
+**Context.** The 2026-11-09 QA sweep (#651, #652, #653) read the app against a
+copy of a real store on the Mac (timings only) and the synthetic showcase:
+
+- After any recorded-data write, the Overview drew its labelled predecessors
+  (ADR 566, decision 5) and the adapter read them again six times, after pauses
+  of 1 to 30 s, about a minute in all, then stopped for good. Measured by polling
+  after a carb log, the engine's answers were current again only after 110 s
+  (14 d analysis), 162 s (30 d) and 247 s (90 d), the light reads after 19–24 s;
+  about three times that on the home host. The mark then stayed until Retry. It
+  also counted every window's answers, and the Queue's 30 d analysis, though the
+  screen draws one window.
+- The mark was the adapter's `behind` alone, so a failed re-read's mark was wiped
+  by the next read to land (a window's profile), and the earlier answers showed
+  as current with no Retry.
+- A window read that failed went only to a redraw, and the client had no request
+  deadline, so a failed or hung window read left its cards as skeletons forever.
+
+Every poll in those measurements answered at once, with its predecessor: the
+110–250 s is how long the engine takes to be current, not how long a read
+takes. The slowest single request in the same session was a cold 90 d analysis
+waiting behind the other cold reads, 51 s on the Mac; ADR 566 measured the
+thirteen cold Overview reads at 43–52 s, about 150 s on the host.
+
+A read again is not always cheap. While the warm worker runs, a fixed read with
+no current result answers its predecessor and queues a refresh of its key
+(`fixed()`); a refresh whose compute raises is logged and dropped
+(`run_shape`), so the next read queues it again. A key whose compute keeps
+failing is therefore computed once per read again, from every open page.
+
+**Decision.**
+
+1. *The catch-up goes on while its screen is shown.* It keeps ADR 566's pauses
+   (1, 2, 4, 8, 15, 30 s); after them each pause doubles, to a ceiling of five
+   minutes, which then repeats until every answer the tab draws is current. A
+   failing compute is so asked for at most once every five minutes per page,
+   and an answer current after the host's longest measured recompute (about
+   750 s) is seen within one ceiling of it. It reads nothing while the page is
+   hidden or once the person has left the tab; when the page is shown again,
+   or the tab opened again, the tab's mark is settled and the catch-up asked
+   for again. The mark clears by itself once the answers are current.
+2. *The Overview counts what its selected window draws:* every window's outcomes
+   (the window control reads their coverage) and that window's profile, basal
+   estimate, Meal size and insulin cards, with the 30 d analysis only on 30 d. A
+   window switched to is settled again, so its own answers count then. The tab's
+   read and its Retry read the selected window first.
+3. *A failed read is remembered by what failed* in the adapter (`stale`), beside
+   `behind`, never in place of it: a tab's read, or one Overview window's. Only a
+   read of the same thing begun after the failure, or the tab's Retry, that
+   succeeds clears it, so a profile landing never clears the metrics' failure,
+   and a failed window read again on switching back clears its own. The Overview
+   is marked for its selected window's failure, not another's.
+4. *Every read has a deadline of five minutes*, its body included, after which
+   it is cancelled and rejects; a read that rejects is Unavailable with Retry, its
+   earlier answers kept. Five minutes is twice the slowest honest read above on
+   the host. A labelled predecessor answers at once, so only a read with no
+   earlier answer (the first after a deploy, ADR 581) should ever approach it; a
+   Retry of one joins the compute already running for its key. *A write has no
+   deadline.* A Snooze, Done or Focus reads the current findings and never an
+   earlier answer (`serve_stale=False`, ADR 579), so shortly after a sync it can
+   honestly take minutes on the host, and a write given up on by the app may
+   still save, which a Snooze, carrying no request identity, could not retry
+   safely.
+
+**Rejected.** A shorter read deadline sized to a warm read: after a deploy the
+first reads compute cold and would fail where they would have answered. A read
+deadline at ADR 581's ten-minute start-fetch ceiling: that bounds the whole cold
+warm pass, not one read, and leaves a hung read a skeleton twice as long. A
+deadline on writes: a "Not saved" over a write the engine then commits. Repeating
+the 30 s pause without a ceiling: a compute that keeps failing would run every
+30 s per page. Giving up after a fixed number of reads again: the defect this
+decision removes. Re-reading answers the selected window does not draw: they are
+read again when that window is selected. Reordering the server's warm roster:
+not needed once the app keeps catching up, and not changed here.
+
+**Dosing.** No analyzer, staging predicate, cap, floor or served value changes.
+What changes is how long the app keeps asking for a current answer, and that a
+failed read is never drawn as current.
+
+**Consequences.** `frontend/ui/app/live.test.js` covers decisions 1–3 and
+`frontend/data.test.js` decision 4; the app's stories (`App/Reads`) drive the
+app over a fake client and fail when the app stops reading the remembered
+failure, stops marking a failed window, or stops resuming once the page is
+shown. Each failed first. The app takes its live adapter from its entry, so the
+stories pass theirs. The word the title row draws for a labelled predecessor is
+unchanged. A card with no earlier answer whose read failed keeps its skeleton
+under the screen's Unavailable and Retry, as the lock's states table and §4.2
+draw it.

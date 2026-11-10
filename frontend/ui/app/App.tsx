@@ -27,37 +27,22 @@
 // through it, and a Back that leaves it, a phone's edge-swipe among them,
 // returns the Queue to its list. A Back from another tab onto that entry (after
 // "Focus started" → Changes) opens the Queue on that drill-down as it was.
-import { useCallback, useEffect, useState } from 'react';
-import { landRoute, parseRoute, pushDrillDown, subscribeRoute, writeRoute } from '../../tab-routing.js';
+//
+// The live adapter is the app's to read through (`live`): the entry passes the
+// engine's (main.tsx), and the app's stories a fake client's (#653).
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { parseRoute, pushDrillDown, subscribeRoute, writeRoute } from '../../tab-routing.js';
 import type { NavItem } from '../components/NavBar/NavBar';
 import { ChangesScreen } from '../screens/Changes/ChangesScreen';
 import { DayScreen } from '../screens/Day/DayScreen';
 import { OverviewScreen } from '../screens/Overview/OverviewScreen';
 import { QueueScreen, type DrillDown } from '../screens/Queue/QueueScreen';
 import { SettingsScreen } from '../screens/Settings/SettingsScreen';
-import { client, currentToken } from '../../data.js';
-import { glossary } from '../__fixtures__/ui-fixtures.json';
-import { serve, type Answers } from '../answers';
 import { syncFailed } from '../settings-model';
-import { createLive } from './live.js';
-import { createMemory } from './memory.js';
+import type { createLive } from './live.js';
 
 type Tab = 'queue' | 'changes' | 'overview' | 'day' | 'settings';
-
-/** This browser's storage, unless it refuses access (a private window, blocked site data). */
-function browserStorage() {
-  try { return window.localStorage; } catch { return undefined; }
-}
-
-// The built bundle's own address names the build, so a new build reads no
-// answer remembered in an older one's shape.
-const memory = createMemory({ storage: browserStorage(), build: import.meta.url, token: currentToken });
-const live = createLive({ client, glossary, memory });
-const { changesWrites, dayWrites, queueWrites, settingsWrites } = live;
-serve(live.answers as unknown as Answers);
-
-// A reload lands on its tab, never a drill-down: the entry the browser kept is the tab's own.
-landRoute();
+export type Live = ReturnType<typeof createLive>;
 
 /** The router's drill-down entry, which the Queue opens and returns from. */
 const DRILL_DOWN = {
@@ -75,7 +60,7 @@ const READ_TABS: Exclude<Tab, 'settings'>[] = ['queue', 'changes', 'overview', '
 /** Answers already on screen stay there, marked stale, when reading them again fails. */
 const shown = (read?: Read) => read === 'ready' || read === 'stale';
 /** The tabs or parts that draw an earlier visit's answers at once. */
-const remembered = <K extends string>(keys: K[], key: (k: K) => string) =>
+const remembered = <K extends string>(live: Live, keys: K[], key: (k: K) => string) =>
   Object.fromEntries(keys.filter((k) => live.remembered(key(k))).map((k) => [k, 'ready'])) as Partial<Record<K, Read>>;
 /** §2.4: tablet follows desktop's structure; the phone layout is narrower than this. */
 const WIDE = '(min-width: 768px)';
@@ -91,25 +76,30 @@ function useLayout() {
   return wide ? 'desktop' : 'phone';
 }
 
-export function App() {
+export function App({ live }: { live: Live }) {
+  const { changesWrites, dayWrites, queueWrites, settingsWrites } = live;
   const layout = useLayout();
   const [tab, setTab] = useState<Tab>(() => parseRoute(window.location) as Tab);
+  // The tab on screen, which a catch-up stops reading for once it is left (#651).
+  const onScreen = useRef(tab);
+  onScreen.current = tab;
   // The Queue drill-down a Back landed on, which the Queue opens as it was; a
   // reload lands on the Queue itself, a drill-down being unaddressed.
   const [returnTo, setReturnTo] = useState<DrillDown | null>(null);
-  const [reads, setReads] = useState<Partial<Record<Tab, Read>>>(() => remembered(READ_TABS, (t) => t));
+  const [reads, setReads] = useState<Partial<Record<Tab, Read>>>(() => remembered(live, READ_TABS, (t) => t));
   // Bumped when answers land, so the screen draws what was read.
   const [, setVersion] = useState(0);
   const redraw = useCallback(() => setVersion((n) => n + 1), []);
 
   // A tab drawn from an answer the engine served from before its last sync is
-  // marked stale, never shown as current, and read again until it is (#566).
+  // marked stale, never shown as current, and read again until it is (#566),
+  // and so is one whose read failed, until its own read or Retry lands (#652).
   // Only the tab's own read (`landed`) draws it; a later read only re-marks it.
   const settle = useCallback((which: Exclude<Tab, 'settings'>, landed = true) => {
     const mark = () => setReads((now) => (landed || shown(now[which])
-      ? { ...now, [which]: live.behind(which) ? 'stale' : 'ready' } : now));
+      ? { ...now, [which]: live.stale(which) ? 'stale' : 'ready' } : now));
     mark();
-    if (live.behind(which)) live.catchUp(which).then(mark).finally(redraw);
+    if (live.behind(which)) live.catchUp(which, () => onScreen.current === which).then(mark).finally(redraw);
   }, [redraw]);
 
   const read = useCallback((which: Exclude<Tab, 'settings'>, retry = false) => {
@@ -121,7 +111,7 @@ export function App() {
   }, [redraw, settle]);
 
   // Settings' parts, each read on its own so the screen draws what has landed.
-  const [parts, setParts] = useState<Partial<Record<Part, Read>>>(() => remembered(PARTS, (p) => `settings ${p}`));
+  const [parts, setParts] = useState<Partial<Record<Part, Read>>>(() => remembered(live, PARTS, (p) => `settings ${p}`));
   const part = useCallback((which: Part, retry = false) => {
     setParts((now) => (shown(now[which]) ? now : { ...now, [which]: 'loading' }));
     (retry ? live.settings.retry(which) : live.settings.read(which)).then(
@@ -139,6 +129,13 @@ export function App() {
     PARTS.forEach((which) => part(which));
     live.settings.badges().then(redraw, redraw);
   }, [tab, read, part, redraw]);
+  // A catch-up stops while the page is hidden; it goes on once it is shown again (#651).
+  useEffect(() => {
+    if (tab === 'settings') return undefined;
+    const shownAgain = () => { if (document.visibilityState === 'visible') settle(tab, false); };
+    document.addEventListener('visibilitychange', shownAgain);
+    return () => document.removeEventListener('visibilitychange', shownAgain);
+  }, [tab, settle]);
 
   const go = (item: NavItem) => {
     writeRoute(item);
@@ -186,7 +183,11 @@ export function App() {
         writes={{ end: drawn(changesWrites.end) }} />;
     case 'overview':
       return <OverviewScreen key={tab} layout={layout} store="wearer" state={state} nav={nav} onRetry={retry}
-        onWindow={(window) => { live.readWindow(window).then(() => settle('overview', false), redraw); }} />;
+        onWindow={(window) => {
+          // A window that cannot be read marks the screen stale, its earlier answers kept (#653).
+          const settled = () => { settle('overview', false); redraw(); };
+          live.readWindow(window).then(settled, settled);
+        }} />;
     case 'day':
       return <DayScreen key={tab} layout={layout} store="wearer" state={state} nav={nav} onRetry={retry}
         onDay={(iso) => { live.readDay(iso).then(redraw, redraw); }}

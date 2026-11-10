@@ -380,7 +380,26 @@ state and a transient bar SHALL show "Not saved" with Retry.
 - **GIVEN** Overview drew its answers, from this visit or kept from an earlier one
 - **WHEN** reading them again fails
 - **THEN** Overview keeps drawing them, with Unavailable and Retry in its title row
-- **AND** a Retry that succeeds draws the new answers and clears the mark
+- **AND** another of its reads landing, a window's among them, leaves the mark
+- **AND** only a read of what failed begun after the failure, or a Retry, that
+  succeeds draws the new answers and clears the mark (#652)
+
+#### Scenario: A window that cannot be read is Unavailable, never a skeleton for good
+
+- **GIVEN** Overview drew its answers
+- **WHEN** the person selects a window whose read fails, or has no answer within
+  five minutes
+- **THEN** Overview carries Unavailable and Retry in its title row, keeping every
+  earlier answer it holds, and a card with none keeps its skeleton beneath it
+- **AND** its Retry reads the selected window first, and a later read of that
+  window that succeeds clears the mark (#652, #653)
+
+#### Scenario: A write is never given up on
+
+- **GIVEN** a Snooze, Done, Focus or other write the person made
+- **WHEN** the engine takes longer than five minutes to answer it
+- **THEN** the app waits for its answer, and shows "Not saved" only if the engine
+  refuses it (#653)
 
 #### Scenario: A screen drawn from the engine's previous answer is marked until it is current
 
@@ -390,7 +409,11 @@ state and a transient bar SHALL show "Not saved" with Retry.
 - **THEN** Overview carries Unavailable and Retry in its title row, never drawing it
   as current
 - **AND** the app reads only those answers again, after pauses of 1, 2, 4, 8, 15 and
-  30 seconds, and clears the mark once every one is current (#566)
+  30 seconds and then each pause doubled up to five minutes, which repeats, while
+  the page is visible and Overview is the tab on screen, again once it is shown or
+  opened again, and clears the mark once every one is current (#566, #651)
+- **AND** only the answers the selected window draws count: every window's metrics,
+  and that window's profile, basal estimate, Meal size and insulin cards (#651)
 
 #### Scenario: A Queue or Changes drawn while a sync lands is marked until it is current
 

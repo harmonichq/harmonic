@@ -6,6 +6,7 @@ import { expectDirections } from '../../direction-check';
 import { expectMetricsAligned } from '../../metrics-check';
 import { failsOnce } from '../../flaky';
 import { expectTabBarEnds } from '../../tabbar-check';
+import { PHONES, expectClearsInset, expectTappable, homeIndicator, tapCentre } from '../../tap-check';
 import { expectAtPaneTop, expectHeaderEmpty, expectTitlePrinted } from '../../title-check';
 import { CHANGES_UNNAMED } from '../../served-variants';
 import type { ChangesStore } from '../../changes-model';
@@ -248,6 +249,24 @@ export const EndTrialPhone: Story = { ...story('phone', MATURED), play: endPlay 
 export const EndTrialDesktop: Story = { ...story('desktop', MATURED), play: endPlay };
 export const CancelEndPhone: Story = { ...story('phone', DEFAULT), play: cancelPlay };
 export const CancelEndDesktop: Story = { ...story('desktop', DEFAULT), play: cancelPlay };
+
+// The End sheet covers the tab bar: a tap at Cancel's centre is Cancel's, at
+// each phone size, and the sheet's last control clears the home indicator (#648).
+const tapCancelPlay: Story['play'] = async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  await userEvent.click(canvas.getByRole('button', { name: 'End' }));
+  const cancel = within(canvas.getByRole('dialog', { name: 'End' })).getByRole('button', { name: 'Cancel' });
+  await expectTappable(cancel);
+  await expectClearsInset(cancel);
+  await tapCentre(cancel);
+  await expect(canvas.queryByRole('dialog')).toBeNull();
+};
+const tapCancel = (frame: (typeof PHONES)[keyof typeof PHONES]): Story => ({
+  ...story('phone', DEFAULT), parameters: { frame }, play: tapCancelPlay,
+});
+export const TapCancelPhone375x667: Story = tapCancel(PHONES.se);
+export const TapCancelPhone375x812: Story = { ...tapCancel(PHONES.x), decorators: [homeIndicator] };
+export const TapCancelPhone412x915: Story = tapCancel(PHONES.pixel);
 
 // Waiting for pump (#518): the person pressed Done on the basal card and no
 // sync has shown the pump since. One row under the caption, its name and block

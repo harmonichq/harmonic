@@ -1,5 +1,18 @@
 /* Classes more than one Queue component uses. */
 
+/* The device's bottom inset, which the tab bar and a sheet clear: the home
+   indicator's on an iPhone, 0 on a phone without one. Firefox for Android
+   draws no page under the system navigation bar (Mozilla bug 1813454), yet
+   since Firefox 150 it reports that bar's height as the bottom inset while its
+   address bar is at the top (bug 2057232, from bug 1994149). That space is
+   already outside the page, so on Gecko there is no inset (§2.5, 2026-10-19).
+   Only Gecko matches the query: iPhone browsers are WebKit, and keep the home
+   indicator's inset. */
+:root { --ui-device-inset-bottom: env(safe-area-inset-bottom, 0px); }
+@supports selector(::-moz-range-thumb) {
+  :root { --ui-device-inset-bottom: 0px; }
+}
+
 /* The caps caption the lock uses for a value's name: "Range", "Cause". */
 .ui-caption {
   color: var(--wk-ink-meta);
@@ -55,7 +68,8 @@
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  padding: 8px 16px 24px;
+  /* Its last control clears the device's inset, as the tab bar's do (#648). */
+  padding: 8px 16px calc(24px + var(--ui-inset-bottom, var(--ui-device-inset-bottom)));
   border-radius: 12px 12px 0 0;
   background: var(--wk-surface);
   box-shadow: 0 -8px 24px rgb(0 0 0 / .45);

@@ -7,6 +7,7 @@
 import { Icon, type IconName } from '../../icons';
 import type { Sourced } from '../../answers';
 import { Num } from '../../Num';
+import '../../shared.css';
 import './NavBar.css';
 
 export type NavItem = 'queue' | 'changes' | 'overview' | 'day' | 'settings';

@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, within } from 'storybook/test';
 import { expectDirections } from '../../direction-check';
+import { expectHoursApart } from '../../hours-check';
 import { expectTabBarEnds } from '../../tabbar-check';
 import { expectAtPaneTop, expectHeaderEmpty } from '../../title-check';
 import { OverviewScreen, type OverviewScreenProps } from './OverviewScreen';
@@ -12,6 +13,8 @@ import { OverviewScreen, type OverviewScreenProps } from './OverviewScreen';
 //   the 84-day history does not reach: the span alone, no changes.
 // - No data: the unsynced store, which serves every metric as null.
 // - Loading, and Unavailable; Stale, the last answers under Unavailable.
+// - Tablet: the default at 768, 820 and 1180 px, desktop's structure, the
+//   profile's five hours apart.
 // Plays per size: choosing 30 d shows that window's metrics, profile, basal
 // estimate, Meal size and insulin cards; each window's date line and changes
 // name the period before it, or none; and the page scrolls as one, the summary
@@ -72,6 +75,22 @@ export const DefaultDesktop: Story = {
     await expectAtPaneTop(context.canvasElement.querySelector<HTMLElement>('.ui-overview__body')!);
   },
 };
+// A tablet draws desktop's structure, the metrics beside the profile, and
+// the profile draws all five of its hours apart from 768 px up (#650).
+const tablet = (width: number): Story => ({
+  ...story('desktop', { store: 'wearer' }),
+  parameters: { frame: { width, height: 1024, padding: 0 } },
+  play: async ({ canvasElement }) => {
+    const metrics = canvasElement.querySelector('.ui-overview__metrics')!.getBoundingClientRect();
+    const profile = canvasElement.querySelector('.ui-profile')!.getBoundingClientRect();
+    await expect(profile.left).toBeGreaterThan(metrics.right);
+    await expect(profile.top).toBeLessThan(metrics.bottom);
+    await expect(await expectHoursApart(canvasElement)).toHaveLength(5);
+  },
+});
+export const Tablet768 = tablet(768);
+export const Tablet820 = tablet(820);
+export const Tablet1180 = tablet(1180);
 export const Window30Phone: Story = { ...story('phone', { store: 'wearer', window: '30' }), play: comparesWith('30', true) };
 export const Window30Desktop: Story = {
   ...story('desktop', { store: 'wearer', window: '30' }), play: comparesWith('30', true),

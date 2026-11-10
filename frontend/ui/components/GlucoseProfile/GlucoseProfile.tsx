@@ -19,6 +19,7 @@ import type { ProfileBin, ProfileData } from '../../overview-model';
 import { Num, NumSvg } from '../../Num';
 import { formatValue } from '../../provenance.js';
 import { useWidth } from '../../measure';
+import { labelledTicks } from '../Chart/scale';
 import { SEVERE_HIGH, ZoneHatches, glucoseDomain, glucoseFraction, zoneArea, zones as glucoseZones } from '../../glucose-zones';
 import '../../shared.css';
 import './GlucoseProfile.css';
@@ -42,6 +43,12 @@ const TIME_GAP = 46;
 const FOOT = 50;
 const TICK = SEVERE_HIGH;
 const DAY = 1440;
+/** The hours along the bottom; a narrow card keeps the ones that clear each other. */
+const HOURS = [0, 360, 720, 1080, DAY];
+// An hour is five 11 px tabular characters, 31.5 px as drawn; measured, not
+// estimated, so 8 px between two labels is enough to read them apart (#650).
+const HOUR_CHAR = 6.3;
+const HOUR_GAP = 8;
 
 /** Consecutive supported bins, each run closed at midnight when it reaches it. */
 function runs(bins: ProfileBin[]): ProfileBin[][] {
@@ -87,6 +94,12 @@ export function GlucoseProfile({ data, plotHeight = PLOT_HEIGHT }: GlucoseProfil
   const yHigh = y(data.high.value);
   const empty = supported.length === 0;
   const id = `ui-profile-${width}`;
+  const hours = HOURS.map((minute) => formatValue(minute, 'clock'));
+  const labelled = labelledTicks(HOURS.map((minute, i) => {
+    const at = x(minute);
+    const span = hours[i].length * HOUR_CHAR;
+    return i === 0 ? [at, at + span] : i === HOURS.length - 1 ? [at - span, at] : [at - span / 2, at + span / 2];
+  }), HOUR_GAP);
   // The five zones, top down; the band is drawn in each zone it reaches.
   const zones = glucoseZones(data.low.value, data.high.value).reverse().map((zone) => ({
     ...zone,
@@ -179,10 +192,10 @@ export function GlucoseProfile({ data, plotHeight = PLOT_HEIGHT }: GlucoseProfil
           })}
         </g>
         <g data-axis="">
-          {[0, 360, 720, 1080, DAY].map((minute, i, all) => (
+          {HOURS.map((minute, i) => labelled.has(i) && (
             <text key={minute} x={x(minute)} y={TIME_Y} className="ui-profile__scale"
-              textAnchor={i === 0 ? 'start' : i === all.length - 1 ? 'end' : 'middle'}>
-              {formatValue(minute, 'clock')}
+              textAnchor={i === 0 ? 'start' : i === HOURS.length - 1 ? 'end' : 'middle'}>
+              {hours[i]}
             </text>
           ))}
         </g>

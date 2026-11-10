@@ -890,6 +890,10 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         return fixed_response(fixed(("outcomes-trend",), "outcomes-trend-watched-change-v1",
                                     watched, reads_follow_up=True))
 
+    # Held by a Trial, Focus or Plan step from before its writer until its cache is
+    # invalidated, so a roster read made meanwhile answers the step (#665).
+    follow_up_writing = threading.Lock()
+
     @app.get("/api/verify/trials")
     def verify_trials_endpoint(selected: Optional[str] = None, kind: str = "trial",
                                assessment: str = "original",
@@ -916,6 +920,11 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         # predecessor (#579).
         execution = (json.dumps(comparison_execution(), sort_keys=True)
                      if assessment != "original" else None)
+        # A step still being written (an End assessing its Trial) is not yet
+        # committed, so a read made now would draw its change as still active: it
+        # waits for the step, then reads the roster that step left (#665).
+        with follow_up_writing:
+            pass
         try:
             return fixed_response(fixed(("verify-trials", kind, identity, assessment, execution),
                                         "verify-trials-v1", review, while_computing=False,
@@ -1564,7 +1573,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                     return saved
                 ended = terminal(store)
             source = guidance_or_unavailable() if creation and ended is None else None
-            with Store.open(db_path) as store:
+            with follow_up_writing, Store.open(db_path) as store:
                 before = store.input_data_revision()
                 # The reconcile's history is read before the writer is reserved
                 # and stands if nothing commits first (#576). A frontier already
@@ -1618,8 +1627,8 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                         store.save_follow_up_request(payload["request_id"], operation=operation,
                                                      kind=kind, id=record["id"], result=result)
                 changed = store.input_data_revision() != before
-            if changed:
-                follow_up_written()
+                if changed:
+                    follow_up_written()
             return result
         except (FollowUpConflict, FocusAlreadyActive, sqlite3.IntegrityError) as error:
             with Store.open_queryonly(db_path) as store:

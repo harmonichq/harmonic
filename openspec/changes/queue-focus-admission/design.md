@@ -85,3 +85,24 @@ recorded data, or finds the frontier behind, still reconciles in full.
 **Consequences.** On a reconciled store a follow-up write's cost no longer
 grows with the history: it is the write and, for a Trial's End, its ending
 assessment.
+
+## ADR 665 — A roster read waits for a follow-up step being written
+
+**Context.** With ADR 667 a Trial's End no longer reconciles, but it still
+computes its ending assessment inside its write transaction, before the commit
+(1.72 s of a 2.06 s End on the `c3-trial` case store). The ending is
+write-once, so it cannot be committed first and assessed after. A roster read
+made in that window, as a reload is, computes the current roster from the
+committed state, in which the Trial is still active (#665).
+
+**Decision.** Every lifecycle step (a Trial's End, a Focus and its End, a Done
+and its Undo, a late conclusion) holds one in-process lock from before its
+writer until its cache invalidation. `GET /api/verify/trials` waits on it
+before it reads. A reload during an End therefore waits for the End, then reads
+the roster after it, as `while_computing=False` already makes a read after a
+committed write do (ADR 579). A step that starts after the read has passed the
+lock is an ordinary crossed read.
+
+**Not changed.** The write-once ending, what the ending assessment computes,
+and the roster's cache key. The lock is in-process, as the result cache is: a
+second process writing the store is not covered, as it is not for the cache.

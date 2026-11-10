@@ -267,6 +267,51 @@ class GuidanceApiTest(unittest.TestCase):
         self.assertTrue(current(tmp))
         self.assertIsNone(client.get("/api/verify/trials").json()["admission"]["active_kind"])
 
+    def test_a_roster_read_during_an_end_answers_the_ended_trial(self):
+        """#665: a reload while a Trial's End computes its ending assessment, before
+        the End commits, waits for it and never shows the Trial as active again."""
+        import threading
+        from unittest.mock import patch
+        from ciq_autotune import follow_up_comparison, watched_change
+
+        tmp, _app, client = self._case_client("c3-trial")
+        with Store.open(tmp.name) as store:
+            watched_change.reconcile_ingested_follow_up(store)
+        trials = client.get("/api/verify/trials").json()
+        trial = trials["admission"]["active_id"]
+        self.assertEqual(trials["admission"]["active_kind"], "trial")
+        real_compare = follow_up_comparison.compare_follow_up
+        assessing, reloaded = threading.Event(), threading.Event()
+
+        def slow_compare(*args, **kwargs):
+            assessing.set()
+            reloaded.wait(1.0)  # the reload is sent while the End is still assessing
+            return real_compare(*args, **kwargs)
+
+        finished = {}
+
+        def end():
+            finished["response"] = client.post(f"/api/verify/trials/{trial}/finish", json={
+                "request_id": "00000000-0000-4000-8000-000000000665",
+                "input_revision": trials["input_revision"]})
+
+        with patch.object(follow_up_comparison, "compare_follow_up", slow_compare):
+            ending = threading.Thread(target=end)
+            ending.start()
+            self.assertTrue(assessing.wait(30.0), "the End never assessed")
+            reading = threading.Thread(target=lambda: finished.setdefault(
+                "reload", client.get("/api/verify/trials")))
+            reading.start()
+            reading.join(0.5)
+            reloaded.set()
+            ending.join(60.0)
+            reading.join(60.0)
+        self.assertEqual(finished["response"].status_code, 200, finished["response"].text)
+        reload = finished["reload"].json()
+        self.assertIsNone(reload["admission"]["active_kind"])
+        self.assertEqual(next(t for t in reload["trials"] if t["id"] == trial)["ending"]["kind"],
+                         "user_finished")
+
     def test_pattern_pin_rechecks_readiness_on_the_write_source(self):
         import ciq_autotune.guidance as guidance_module
         from ciq_autotune.analyzers.scenario import outcome_patterns

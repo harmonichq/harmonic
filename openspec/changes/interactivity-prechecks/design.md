@@ -47,7 +47,7 @@ rules, and whether the criteria also become the `/ui-craft` standard.
      graphic drawn as an image (`role="img"`) hides no text of its own; a chart
      that draws text is a named group, so its text stays readable, and a chart
      part with no text of its own is hidden rather than named again (Meal size's
-     strips, whose values are its table's). A mark that is the chart's point is
+     strips, whose spread is drawn only). A mark that is the chart's point is
      named with what it marks where the component holds it: Basal's ▲ and ▼ by
      their slot ("▲ 06:00–06:30"), the direction read as its mark, since the
      glossary has no word for it. A tab, and a
@@ -174,6 +174,13 @@ exempt with that reason, pending the operator.
   and the walk reads that in the screen's stories where it is closed.
 - A chart mark's name is judged only for being present; Basal's direction is
   read as its glyph, since the glossary has no word for raise or lower.
+- Meal size's spread (each size's 10–90% and Range) is drawn only and has no
+  text equivalent, as before this change; the table beside it holds the median
+  Climb, Peak at and At 3 h.
+- Emptying one probe's expected lines is not caught when its rule has other
+  probes: the coverage test needs only one probe per rule.
+- A new rule added without extending the hand-kept rule list is not caught by
+  the coverage test, which checks only the rules that list names.
 
 **Alternatives.** axe-core for names and contrast (rejected above). Activating
 every control to discover undeclared dialog triggers: each press needs a fresh

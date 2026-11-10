@@ -62,8 +62,10 @@ const Median = ({ value }: { value: MealSizeRow['median'] }) => (value ? <Num va
 /** One size's strip, over the axis's grid lines: its 10–90% a thin capped
  *  whisker in its colour, its Range a thick line over it, and its median a
  *  short ink tick on top (#570). No meal is drawn on its own.
- *  It carries no text: its values are the table's, so it is hidden, and the
- *  axis beneath, which carries the ticks, is the one group named Meal size. */
+ *  It carries no text, so it is hidden, and the axis beneath, which carries
+ *  the ticks, is the one group named Meal size. Its spread (the 10–90% and
+ *  the Range) is drawn only and has no text equivalent, as before (#582); the
+ *  table holds the median Climb, Peak at and At 3 h. */
 function Strip({ row, scale, index }: { row: MealSizeRow; scale: Scale; index: number }) {
   const [box, width] = useWidth<HTMLDivElement>();
   const x = (value: number) => PAD + (width - 2 * PAD) * ((value - scale.first) / (scale.last - scale.first));

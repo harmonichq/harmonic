@@ -4,9 +4,10 @@
 
 `GET /api/carbs` SHALL serve `now` beside its entries: the server's clock of
 record, the current instant on `TIMEZONE_NAME`'s wall clock, to the second,
-whatever zone the server process runs in. A client that stamps a carb entry's
-time SHALL stamp it from that clock, never from its own zone, so an entry logged
-now is stored at the pump's date and time.
+whatever zone the server process runs in, and SHALL serve it over an empty span
+too. A client that stamps a carb entry's time SHALL stamp it from that clock,
+never from its own zone, so an entry logged now is stored at the pump's date and
+time.
 
 #### Scenario: An entry logged now lands on the pump's date and time
 

@@ -11,8 +11,12 @@ basal minutes.
 
 - The carb log read serves `now`, the server's clock of record: the current
   instant on `TIMEZONE_NAME`'s wall clock.
-- The app stamps a Log carbs entry from that clock: its "now", the day a picked
-  time falls on, and so the day its mark is drawn on.
+- The app reads that clock each time Log carbs opens and stamps the entry from
+  it: its "now", the day a picked time falls on, and so the day its mark is
+  drawn on. Save waits for the clock; when it cannot be read, the entry shows
+  Unavailable with Retry and never falls back to the browser's zone.
+- The retired desk's requirement that the Log carbs header name the reader's
+  local date and time is removed; the locked entry's header is "Log carbs".
 
 ## Impact
 

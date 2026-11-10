@@ -66,6 +66,7 @@ function counted(view: ServedModelView, root: string) {
 export type DayChartData = {
   low: Sourced<number>;
   high: Sourced<number>;
+  /** The day's readings, each with its glucose; none the store withholds. */
   cgm: { minute: number; bg: number }[];
   basal: { minute: number; duration: number; delivered: number; programmed: number }[];
   /** The pump's sleep schedule over this day, in minutes, clipped to it. */
@@ -124,7 +125,9 @@ export function dayChartOf(iso: string, held: readonly HeldCarbs[] = []): DayCha
   const clip = (t: string) => (t < dayStart ? 0 : t.slice(0, 10) > iso ? 1440 : minuteOf(t));
   return {
     ...targetRange(),
-    cgm: timeline.cgm.map((reading) => ({ minute: minuteOf(reading.t), bg: reading.bg })),
+    // A reading the store withholds (ADR 519) is served with no glucose, and is
+    // left out as a missing one is: a gap in the trace, outside the axis.
+    cgm: timeline.cgm.flatMap((reading) => (reading.bg === null ? [] : [{ minute: minuteOf(reading.t), bg: reading.bg }])),
     basal: timeline.basal.map((row) => ({ minute: minuteOf(row.t), duration: row.duration_mins,
       delivered: row.basal_rate, programmed: row.profile_basal_rate })),
     sleep: timeline.sleep_windows.map((w) => ({ from: clip(w.start), to: clip(w.end) })).filter((w) => w.to > w.from),

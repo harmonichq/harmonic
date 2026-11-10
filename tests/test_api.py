@@ -1079,7 +1079,8 @@ class CarbCrudTest(unittest.TestCase):
     def test_list_starts_empty(self):
         r = self.client.get("/api/carbs")
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.json(), {"carb_entries": []})
+        self.assertEqual(r.json()["carb_entries"], [])
+        self.assertEqual(set(r.json()), {"carb_entries", "now"})
 
     def test_create_returns_id_bearing_entry(self):
         r = self.client.post("/api/carbs", json={

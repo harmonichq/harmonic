@@ -29,7 +29,9 @@
 // programmed rate, hatched. Consecutive slots of one difference merge into one
 // bar, so each bar is one held command, and a gap in the rows is left empty.
 // The scale is linear, never narrower than BASAL_FLOOR each side, with
-// headroom, and its two signed ticks are labelled. The axis runs flush with
+// headroom, and its two signed ticks are labelled, each on a heavier halo of
+// the canvas than the glucose band's, as the bars, hatching and profile line can
+// reach under them: the halo clears the glyphs, never the bars around them. The axis runs flush with
 // the text column, its end labels anchored inward.
 //
 // Below, the day's events in time order: the time, the glyph, the kind (with
@@ -292,10 +294,10 @@ export function DayChart({ data, layout = 'phone' }: DayChartProps) {
         )}
         {!empty && (
           <g data-axis="">
-            <text x={0} y={by(upper) - 3} className="ui-daychart__scale">
+            <text x={0} y={by(upper) - 3} className="ui-daychart__scale ui-daychart__scale--basal">
               {signed(upper)}<tspan className="ui-daychart__unit"> U/h</tspan>
             </text>
-            <text x={0} y={by(lower) - 3} className="ui-daychart__scale">{signed(lower)}</text>
+            <text x={0} y={by(lower) - 3} className="ui-daychart__scale ui-daychart__scale--basal">{signed(lower)}</text>
           </g>
         )}
         <g data-axis="">

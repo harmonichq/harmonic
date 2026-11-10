@@ -190,7 +190,7 @@ export function App({ live }: { live: Live }) {
         }} />;
     case 'day':
       return <DayScreen key={tab} layout={layout} store="wearer" state={state} nav={nav} onRetry={retry}
-        onDay={(iso) => { live.readDay(iso).then(redraw, redraw); }}
+        onDay={(iso) => live.readDay(iso).finally(redraw)} readClock={live.readClock}
         readMonth={(month) => live.readMonth(month).finally(redraw)}
         writes={{ answer: answered, grams: drawn(dayWrites.grams), logCarbs: drawn(dayWrites.logCarbs) }} />;
     case 'settings':

@@ -13,7 +13,9 @@
 // phone, the scrim. On desktop the selected day's week also stays in view as
 // one ribbon under the header, following the selected day across months. The day is its DayChart, which carries its own
 // event list; a day without readings is the chart's "No data"; a day whose
-// timeline is not served yet is the chart's skeleton, as it shows while loading.
+// timeline is not served yet is the chart's skeleton, as it shows while loading;
+// a day whose read fails is Unavailable with Retry in the chart's place, no
+// insulin bar, until Retry, or picking that day again, reads it again.
 // Above the Prompts row (on desktop, beside it), the day's insulin as its
 // InsulinBar; none on a day that serves none.
 //
@@ -43,10 +45,14 @@
 //
 // Log carbs: on phone a bottom sheet over the screen (on the system keyboard,
 // which the story does not draw), on desktop a popover under "+ Log carbs".
-// Save is its one primary; it closes the entry at once (§2.5, 2026-10-25). Its
+// The grams field has the focus as the entry opens and takes digits only; Save
+// is its one primary, enabled for an amount above zero, and it closes the entry
+// at once (§2.5, 2026-10-25). Its
 // Time row opens the system time picker, and the time picked is the time the
 // carbs are logged at, today; untouched, it is the clock's when Save is
-// pressed. A save that fails shows "Not saved" with Retry in the Day view's
+// pressed. Live, that clock is the store's, read each time the entry opens;
+// Save waits for it, and when it cannot be read the entry shows Unavailable and
+// Retry in the Time row's place (ADR 658). A save that fails shows "Not saved" with Retry in the Day view's
 // TransientBar, which a Prompt answer leaves up; Retry sends the same grams, on
 // the same date and time, again. Escape, or the scrim on phone, closes it unsaved.
 //
@@ -122,10 +128,15 @@ export type DayScreenProps = {
   notSaved?: boolean;
   /** The live engine's writes; without them the Prompts step through the served stores. */
   writes?: DayWrites;
-  /** The clock Log carbs' Save reads (`YYYY-MM-DD HH:MM`): the browser's, or a story's. */
+  /** A story's clock, which Log carbs' Save reads (`YYYY-MM-DD HH:MM`) without `readClock`; with neither,
+   *  Save stays held: an entry is never stamped from the browser's clock (ADR 658). */
   now?: () => string;
-  /** The day the screen shows, each time it changes: the live app reads it. */
-  onDay?: (iso: string) => void;
+  /** Live: read the store's wall clock as Log carbs opens (#658, ADR 658), resolving with the clock Save
+   *  reads; Save waits for it, and when it rejects the entry shows Unavailable and Retry. */
+  readClock?: () => Promise<() => string>;
+  /** The day the screen shows, each time it changes, and again on its Retry: the live
+   *  app reads it, and rejects when it cannot be read. */
+  onDay?: (iso: string) => Promise<void>;
   /** Read another month's weeks (`YYYY-MM`) into the answers; without it only the served month steps. */
   readMonth?: (month: string) => Promise<void>;
   nav?: NavHooks;
@@ -142,13 +153,6 @@ export type DayWrites = {
   /** Carbs eaten without a bolus, at `at`, the entry's whole time (`YYYY-MM-DD HH:MM`). */
   logCarbs: (grams: number, at: string) => Promise<void>;
 };
-
-const pad = (n: number) => String(n).padStart(2, '0');
-/** The browser's clock, `YYYY-MM-DD HH:MM`. */
-function browserNow() {
-  const d = new Date();
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
 
 /** The week holding a day, when the navigator serves all of it. */
 const week = (iso: string) => weekOf(iso)?.map(navigatorDay) ?? null;
@@ -231,7 +235,7 @@ export function DayScreen(props: DayScreenProps) {
 function Day({
   layout, store, state = 'ready', day, view: initialView = 'day', kind: initialKind = 'low', monthOpen = false,
   logCarbs, timeEdited = false,
-  recorded = false, swiping = false, failing = false, notSaved = false, writes, now = browserNow, onDay, readMonth, nav,
+  recorded = false, swiping = false, failing = false, notSaved = false, writes, now, readClock, onDay, readMonth, nav,
   onRetry,
 }: DayScreenProps) {
   const [selected, setSelected] = useState(day ?? latestDay());
@@ -258,7 +262,13 @@ function Day({
   const headRef = useRef<HTMLDivElement>(null);
   const [anchor, setAnchor] = useState<number>();
   const root = useMotionGate<HTMLDivElement>();
-  useEffect(() => { onDay?.(selected); }, [selected]);
+  // The day whose read failed, Unavailable until it is read again.
+  const [unread, setUnread] = useState<string | null>(null);
+  const readDay = (iso: string) => {
+    setUnread(null);
+    onDay?.(iso).catch(() => setUnread(iso));
+  };
+  useEffect(() => { readDay(selected); }, [selected]);
 
   // Live: the prompts answered while their write is in flight, the Yes card
   // held until Next with the entry its answer creates, the count the Prompts
@@ -295,7 +305,12 @@ function Day({
   const cardKey = writes ? liveCard?.anchorT ?? '' : `${kind} ${cardStore}`;
   const push = view === 'prompts' ? 'forward' : 'back';
 
-  const select = (iso: string) => { setSelected(iso); setMonth(false); };
+  const select = (iso: string) => {
+    // A new day is read as it is selected; the day on screen, only when it failed.
+    if (iso === selected && iso === unread) readDay(iso);
+    setSelected(iso);
+    setMonth(false);
+  };
   const toggleMonth = () => {
     if (!month) {
       setShown(selected.slice(0, 7));
@@ -414,9 +429,27 @@ function Day({
     if (visible.length === 0) setView('day');
   };
 
+  // The clock Save reads: live, the store's, read afresh each time Log carbs
+  // opens, and none while it is read or when it cannot be (ADR 658).
+  const [clock, setClock] = useState<{ now: () => string } | 'loading' | 'unavailable'>(
+    readClock || !now ? 'loading' : { now });
+  const clockRead = useRef(0);
+  const readStoreClock = () => {
+    if (!readClock) return;
+    const read = ++clockRead.current;
+    setClock('loading');
+    readClock().then(
+      (served) => { if (read === clockRead.current) setClock({ now: served }); },
+      () => { if (read === clockRead.current) setClock('unavailable'); },
+    );
+  };
+  const entryOpen = carbs !== null;
+  useEffect(() => { if (entryOpen) readStoreClock(); }, [entryOpen]);
+
   // Save reads the clock once: the entry's day, and its time unless one was picked.
   const save = () => {
-    const at = now();
+    if (typeof clock !== 'object') return;
+    const at = clock.now();
     logEntry({ grams: Number(typed.current), t: `${at.slice(0, 10)} ${chosen ?? at.slice(11, 16)}` });
     setCarbs(null);
   };
@@ -459,11 +492,14 @@ function Day({
     time: timeEdited ? loggedTime() : undefined,
     chosen,
     onTimeChange: setChosen,
+    // The field hands on digits only; Save waits for an amount above zero.
     onGramsChange: (text: string) => {
       typed.current = text;
-      setCarbs(text ? 'filled' : 'empty');
+      setCarbs(Number(text) > 0 ? 'filled' : 'empty');
     },
     onSave: save,
+    clock: typeof clock === 'object' ? undefined : clock,
+    onRetryClock: readStoreClock,
   };
 
   const openPrompts = (opening: PromptKind) => {
@@ -522,7 +558,7 @@ function Day({
     return (
     <>
       <div className={`ui-dayscreen__summary ui-dayscreen__summary--${layout}`}>
-        <InsulinBar data={insulinBar(iso)} loading={state === 'loading' || !chart} />
+        <InsulinBar data={insulinBar(iso)} loading={state === 'loading' || (!chart && iso !== unread)} />
         {badge.value > 0 && (
           <ListGroup>
             {counts.low.value > 0 && (
@@ -536,7 +572,12 @@ function Day({
           </ListGroup>
         )}
       </div>
-      {state === 'loading' || !chart
+      {state !== 'loading' && !chart && iso === unread ? (
+        <div className="ui-dayscreen__day-unavailable">
+          <span>Unavailable</span>
+          <Button kind="text" label="Retry" onClick={() => readDay(iso)} />
+        </div>
+      ) : state === 'loading' || !chart
         ? <span className="ui-skeleton ui-dayscreen__skeleton" aria-hidden="true" />
         : <DayChart data={chart} layout={layout} />}
     </>

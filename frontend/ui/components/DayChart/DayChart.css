@@ -70,6 +70,8 @@
   paint-order: stroke;
 }
 .ui-daychart__unit { fill: var(--wk-ink-meta); }
+/* The basal lane's labels sit among its bars: a heavier halo fills their glyphs' counters and edges. */
+.ui-daychart__scale--basal { stroke-width: 7px; }
 .ui-daychart__empty { fill: var(--wk-ink-meta); font-size: var(--ui-type-label); }
 
 /* The event list: time, mark, kind, then grams and units in aligned columns. */

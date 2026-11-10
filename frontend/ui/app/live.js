@@ -62,6 +62,8 @@ const FIRST_WINDOW = '14';
 const DEFAULT_ANALYSIS = '30';
 /** A Pattern Focus watches the whole day, the window the Queue's findings read. */
 const WHOLE_DAY = { start_min: 0, end_min: 1440 };
+/** An empty span, so the carb log answers with its clock and no entry (#658). */
+const NO_TIME = '2000-01-01T00:00:00';
 const NO_STATUS = { last_attempt_at: null, last_success_at: null, last_error: null, last_error_label: null };
 
 // The analysis and case-file answers, trimmed to what their cards draw (ADR 523), so
@@ -417,10 +419,11 @@ export function createLive({ client, glossary, memory = null,
     return date.toISOString().slice(0, 10);
   };
   /** One day's timeline, the carbs logged by hand on it, and what the engine
-   *  counted on it, read when the day is picked. */
+   *  counted on it, read when the day is picked. The carb log's clock is not
+   *  kept with the day: Log carbs reads it fresh (`readClock`). */
   const day = (iso) => once(`day ${iso}`, async () => {
     const range = { start: `${iso}T00:00:00`, end: `${shift(iso, 1)}T00:00:00` };
-    const [timeline, carbs, modelView] = await Promise.all([
+    const [timeline, { now: _clock, ...carbs }, modelView] = await Promise.all([
       client.fetchTimeline(range), client.fetchCarbs(range), client.fetchModelView(iso)]);
     answers.day.days[iso] = { timeline, carbs, model_view: modelViewMarks(modelView) };
   });
@@ -568,6 +571,8 @@ export function createLive({ client, glossary, memory = null,
   const both = () => Promise.all([queue(), changes()]);
   /** The day the Day screen last read, which a Prompt answer leaves for the app to read again (#610). */
   let onScreen;
+  /** The Day screen's day read in flight, which the next day it asks for waits on (#655). */
+  let dayTail = Promise.resolve();
   /** The days visited, which a carb write changes. */
   const shownDays = () => Object.keys(answers.day.days);
   const rereadDays = () => Promise.all(shownDays().map(day));
@@ -783,10 +788,25 @@ export function createLive({ client, glossary, memory = null,
     readTab,
     retryTab,
     settings,
-    /** One day, which is then the day on screen. */
-    readDay: remembering((iso) => { onScreen = iso; return day(iso); }),
+    /** One day, which is then the day on screen. A day not read yet waits for the one being read, and
+     *  is not read at all once another day is on screen (#655): stepping through days reads the day
+     *  landed on, never every day passed. A day read or being read answers at once. */
+    readDay: remembering((iso) => {
+      onScreen = iso;
+      if (reads.has(`day ${iso}`)) return day(iso);
+      const read = dayTail.then(() => (onScreen === iso ? day(iso) : undefined));
+      dayTail = read.catch(() => undefined);
+      return read;
+    }),
     /** The day on screen: the one `readDay` last read. */
     shownDay: () => onScreen,
+    /** The store's wall clock, read fresh each time Log carbs opens (#658, ADR 658): the carb log over no
+     *  time serves only its `now`. It resolves, as that answer arrives, with the clock Save stamps an entry
+     *  from (`YYYY-MM-DD HH:MM`), running from the served time; it rejects when it cannot be read. */
+    readClock: () => client.fetchCarbs({ start: NO_TIME, end: NO_TIME }).then(({ now }) => {
+      const ahead = Date.parse(`${now.replace(' ', 'T')}Z`) - Date.now();
+      return () => new Date(Date.now() + ahead).toISOString().slice(0, 16).replace('T', ' ');
+    }),
     /** The weeks of one month (`YYYY-MM`), read once; Retry is a second call after a failure. */
     readMonth: remembering(month),
     /** The Overview's profile, basal estimate, Meal size and insulin cards for the window it selected, which

@@ -24,6 +24,16 @@
 .ui-dayscreen__rise { margin-right: 8px; color: var(--glucose-very-high); font-size: var(--ui-type-label); }
 
 .ui-dayscreen__skeleton { height: 320px; }
+/* A day whose read failed: Unavailable and Retry in the chart's place. */
+.ui-dayscreen__day-unavailable {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-top: 1px solid var(--wk-rule);
+  color: var(--wk-ink-meta);
+  font-size: var(--ui-type-label);
+}
 
 /* Phone: the day swipe (ADR 619). The body stays put (its drill-down is its
    own) and the swipe moves the track inside it, which holds the day and, while

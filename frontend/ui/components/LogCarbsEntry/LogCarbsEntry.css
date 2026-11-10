@@ -48,6 +48,8 @@
   opacity: 0;
   pointer-events: none;
 }
+/* The store's clock could not be read: Unavailable and Retry in the row's place. */
+.ui-logcarbs__unavailable { cursor: default; color: var(--wk-ink-meta); font-size: var(--ui-type-label); }
 .ui-logcarbs__value { display: flex; align-items: center; gap: 8px; color: var(--wk-ink-body); }
 .ui-logcarbs__chevron { color: var(--wk-ink-meta); font-size: var(--ui-type-title); line-height: 1; }
 

@@ -261,6 +261,12 @@ TWO_CAUSES_CASE = "pattern-meal-two-causes"
 TWO_CAUSES_PATTERN = "highs_after_meals"
 TWO_CAUSES_PINNED_LEVER = "late_bolus"
 COLLAPSE_CASE = "pattern-correction-collapse"
+# The same case with six more lows that follow no correction, each on its own day
+# and hour (day of May 2024, hour): Lows after correcting highs is then ready, and
+# the engine admits a Focus on Correction on active insulin but not on Correction
+# stacking, whose one stacked pair is too few for the habit (ADR 666).
+COLLAPSE_READY_LOWS = ((2, 2), (3, 6), (4, 10), (5, 15), (6, 18), (7, 22))
+LOW_DIP = (100, 90, 80, 70, 62, 58, 58, 62, 70, 80, 90, 100, 105)
 HABIT_UNBOLUSED = tuple(day for day in range(ui_patient.DAYS - 28, ui_patient.DAYS) if day % 7 < 5)
 # The Meal size card's sizes with no meal (#501): the QA showcase's meals are all 40 g or more.
 MEAL_SIZE_CASE = "showcase"
@@ -572,6 +578,7 @@ def fixtures() -> dict:
             "outcome_window": {"start_min": 0, "end_min": 1440}})
         queue["meal-two-causes-pinned"] = _queue_store(two_causes_client)
         queue["correction-collapse"] = _queue_store(_serve(_case_store(scratch, COLLAPSE_CASE)))
+        queue["correction-collapse-ready"] = _queue_store(_serve(_collapse_ready_store(scratch)))
         _require_causes(queue)
         queue["wearer-habit"] = _queue_store(habitual)
 
@@ -1238,6 +1245,20 @@ def _case_store(scratch: pathlib.Path, name: str) -> pathlib.Path:
     return path
 
 
+def _collapse_ready_store(scratch: pathlib.Path) -> pathlib.Path:
+    """The collapse case with its lows made enough for Lows after correcting highs."""
+    path = scratch / f"{COLLAPSE_CASE}-ready.sqlite"
+    with Store.open(str(path)) as store:
+        qa_e2e_cases.materialize_case(
+            store, next(case for case in qa_e2e_cases.QA_CASES if case.name == COLLAPSE_CASE))
+        store.upsert_cgm([{
+            "EventDateTime": (datetime(2024, 5, day, hour, 5) + timedelta(minutes=5 * i)).strftime("%F %T"),
+            "Readings (CGM / BGM)": float(bg), "Description": "Synthetic EGV",
+        } for day, hour in COLLAPSE_READY_LOWS for i, bg in enumerate(LOW_DIP)])
+        reconcile_ingested_follow_up(store)
+    return path
+
+
 def _counter(store: dict, key: str) -> dict:
     """The row a Pattern's count and causes are served on: its own row, or, for a
     Pattern served as its one habit, that habit row's ``served_as`` (ADR 594)."""
@@ -1271,6 +1292,10 @@ def _require_causes(queue: dict) -> None:
                 if ("habit:correction_stacking", False) in causes("correction-collapse", key)]
     if not collapse:
         raise SystemExit("correction-collapse serves no Pattern with Correction stacking unfocusable")
+    mixed = causes("correction-collapse-ready", "lows_after_correcting_highs")
+    if (not available("correction-collapse-ready")
+            or sorted(mixed) != [("habit:correction_on_iob", True), ("habit:correction_stacking", False)]):
+        raise SystemExit(f"correction-collapse-ready serves {mixed}, not one cause focusable and one not")
 
 
 def _pin(client: TestClient) -> None:
@@ -1570,11 +1595,15 @@ def states(queue: dict) -> dict:
         "drill_down_pinned": drill_down("meal-two-causes-pinned"),
         "drill_down_unpinnable": drill_down("correction-collapse", lambda causes, admitted: not all(
             c["subject"].removeprefix("habit:") in admitted for c in causes)),
+        # A ready Pattern whose Focus the engine admits on one cause and not the other.
+        "drill_down_mixed": drill_down("correction-collapse-ready", lambda causes, admitted: 0 < sum(
+            c["subject"].removeprefix("habit:") in admitted for c in causes) < len(causes)),
         "focusable": focusable(),
     }
     required = ("traces_episodes", "traces_band", "pinned", "setting", "setting_trial",
                 "habit_episodes", "habit_band", "habit_pinned",
-                "drill_down", "drill_down_pinned", "drill_down_unpinnable", "focusable")
+                "drill_down", "drill_down_pinned", "drill_down_unpinnable", "drill_down_mixed",
+                "focusable")
     missing = [name for name in required if found[name] is None]
     if missing:
         raise SystemExit(f"the simulated wearer no longer serves: {', '.join(missing)}")

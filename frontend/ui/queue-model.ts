@@ -384,7 +384,7 @@ export function carbRatioSetting(name: QueueStore): SettingData | null {
 /** The story states the generator found in the served answers, by name. */
 const states = () => answers.states;
 type PatternState = 'traces_episodes' | 'traces_band' | 'traces_gap' | 'pinned' | 'uncertain'
-  | 'drill_down' | 'drill_down_pinned' | 'drill_down_unpinnable' | 'focusable';
+  | 'drill_down' | 'drill_down_pinned' | 'drill_down_unpinnable' | 'drill_down_mixed' | 'focusable';
 type HabitState = 'habit_episodes' | 'habit_band' | 'habit_pinned';
 type SettingState = 'setting' | 'setting_trial';
 

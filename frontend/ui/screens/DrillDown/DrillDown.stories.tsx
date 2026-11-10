@@ -27,6 +27,8 @@ import { heldWrites, LiveQueue } from '../Queue/QueueScreen.stories';
 //   serves after the write: the cause's Focus pill, and no Focus on any card.
 // - Unpinnable: a cause the engine will not focus has no button, and nothing
 //   says why; its head keeps the button's height.
+// - Mixed: on a ready Pattern, Focus on the one cause the engine admits, and
+//   none on the cause it does not.
 // - Back: "‹ Queue" and, on desktop, Escape return with the Pattern open.
 // - Returned to: a Back from another tab opens the drill-down as it was, and
 //   "‹ Queue" then leaves it through the router; returned to while its answers
@@ -44,7 +46,7 @@ const FRAMES = {
   desktop: { width: 1440, height: 900, padding: 0 },
 } as const;
 
-type State = 'drill_down' | 'drill_down_pinned' | 'drill_down_unpinnable';
+type State = 'drill_down' | 'drill_down_pinned' | 'drill_down_unpinnable' | 'drill_down_mixed';
 const opened = (state: State, layout: 'phone' | 'desktop', more: Partial<QueueScreenProps> = {}): Story => {
   const { store, pattern: key } = patternStore(state);
   return {
@@ -235,6 +237,22 @@ export const Unpinnable: Story = {
     const offered = cards(canvasElement).map((card) => within(card).queryByRole('button', { name: 'Focus' }) !== null);
     await expect(offered).toEqual(served(args).causes.map((c) => c.pinnable));
     await expect(offered).toContain(false);
+  },
+};
+
+/** Mixed: a ready Pattern whose Focus the engine admits on one cause and not on
+ *  the other. The cause it admits has Focus; the other keeps its title, count and
+ *  trace with no button, its head as tall (ADR 666). */
+export const Mixed: Story = {
+  ...opened('drill_down_mixed', 'phone'),
+  play: async (context) => {
+    await drawn(context);
+    const { canvasElement, args } = context;
+    await expect(focusable(args.store, undefined, args.open)).toBe(true);
+    const offered = cards(canvasElement).map((card) => within(card).queryByRole('button', { name: 'Focus' }) !== null);
+    await expect(offered).toEqual(served(args).causes.map((c) => c.pinnable));
+    await expect(offered).toContain(false);
+    await expect(offered).toContain(true);
   },
 };
 

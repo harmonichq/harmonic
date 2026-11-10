@@ -179,12 +179,17 @@ export function createLive({ client, glossary, memory = null,
   // One promise per answer: in flight or landed, shared by every reader. A
   // failed read is forgotten, so the next asks again. Each answer's read is kept
   // beside it, so an answer that landed behind the engine can be read again.
+  // A read is handed whether it is still the newest of its key: one forgotten and
+  // begun again while it was in flight lands behind the one after it (#677).
   const reads = new Map();
   const runs = new Map();
+  const begun = new Map();
   const once = (key, run) => {
     runs.set(key, run);
     if (!reads.has(key)) {
-      reads.set(key, run().catch((error) => { reads.delete(key); throw error; }));
+      const n = (begun.get(key) ?? 0) + 1;
+      begun.set(key, n);
+      reads.set(key, run(() => begun.get(key) === n).catch((error) => { reads.delete(key); throw error; }));
     }
     return reads.get(key);
   };
@@ -225,9 +230,12 @@ export function createLive({ client, glossary, memory = null,
   const focus = () => once('focus', async () => served('focus', await client.fetchFocuses()));
   const status = () => once('status', async () => { answers.status.ok = await client.fetchStatus(); });
   /** The Prompts the Day screen draws: its Lows and its Rises (#529), each trimmed to its card. */
-  const prompts = () => once('prompts', async () => {
+  const prompts = () => once('prompts', async (newest) => {
     const asked = answerWrites;
-    answers.prompts = (await client.fetchPrompts()).map(promptMarks);
+    const list = (await client.fetchPrompts()).map(promptMarks);
+    // A read begun before a later one lands behind it: it would serve an answer saved since as unanswered.
+    if (!newest()) return;
+    answers.prompts = list;
     // A saved answer this read began after is now served answered, so it is held no longer (#677).
     answering.forEach((held, id) => { if (held.saved !== null && held.saved <= asked) answering.delete(id); });
   });
@@ -424,10 +432,11 @@ export function createLive({ client, glossary, memory = null,
   /** One day's timeline, the carbs logged by hand on it, and what the engine
    *  counted on it, read when the day is picked. The carb log's clock is not
    *  kept with the day: Log carbs reads it fresh (`readClock`). */
-  const day = (iso) => once(`day ${iso}`, async () => {
+  const day = (iso) => once(`day ${iso}`, async (newest) => {
     const range = { start: `${iso}T00:00:00`, end: `${shift(iso, 1)}T00:00:00` };
     const [timeline, { now: _clock, ...carbs }, modelView] = await Promise.all([
       client.fetchTimeline(range), client.fetchCarbs(range), client.fetchModelView(iso)]);
+    if (!newest()) return;
     answers.day.days[iso] = { timeline, carbs, model_view: modelViewMarks(modelView) };
   });
 

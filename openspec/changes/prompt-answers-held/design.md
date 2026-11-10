@@ -52,7 +52,12 @@ while each answer kept the engine's answer behind; they are bounded, and stay.
    outlives the page.
 5. The Prompts are read again once no answer is in flight, once for every
    answer made meanwhile, and each answer resolves then. The day on screen is
-   read again after them, once, as ADR 610 has it.
+   read again after them, once, as ADR 610 has it. A read forgotten while in
+   flight still lands, and now that an answer saves faster than the Prompts
+   are read, two reads of one answer overlap: only the newest read begun of
+   the Prompts, or of a day, assigns what it serves and releases holds, and
+   an older one landing after it changes nothing, so it never puts back a
+   row from before a save.
 6. Past the last prompt of its kind the Lows or Rises return to Day at once
    (§2.5, 2026-10-14 Rises), a Yes once its Next lets the card go, through
    the router: they are Day's drill-down entry, as ADR 669 gave the other

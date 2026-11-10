@@ -11,7 +11,9 @@ leaving the Prompts or the tab loses none and a saved answer never reads as
 unanswered (ADR 677). An answer SHALL be held by its Prompt's identity, its
 detector and anchor, so that a low and a rise at one anchor are held apart.
 Each answer SHALL be sent as it is made, and the grams typed after a Yes as
-they are entered, so that one sent outlives the page. The Prompts SHALL be read again once no answer is in
+they are entered, so that one sent outlives the page. Only the newest read
+begun of the Prompts, or of a day, SHALL draw what it serves; an older read
+landing after it SHALL change nothing. The Prompts SHALL be read again once no answer is in
 flight, once for every answer made meanwhile, and each of those answers SHALL
 resolve then. Another tab's Day badge SHALL move when the Prompts land. The
 live adapter SHALL hold the day on screen as the day it last read for the Day
@@ -48,6 +50,13 @@ Prompt answer.
 - **WHEN** the engine refuses the second
 - **THEN** its low is back in the count, and Day's bar reads "Not saved" with
   Retry, which sends it again
+
+#### Scenario: Two reads of the Prompts land out of order
+
+- **GIVEN** two lows answered one after the other, each saved while the
+  Prompts read after the one before is in flight
+- **WHEN** the later read lands first, then the earlier one
+- **THEN** both lows stay answered, and neither is asked again
 
 ## ADDED Requirements
 

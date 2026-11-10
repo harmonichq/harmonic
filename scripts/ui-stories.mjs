@@ -19,7 +19,8 @@
 //   (c) every button declares its role and is that role's §4.1 height
 //   (d) at most one primary-filled control
 //   (e) every visible number sits in a [data-source] whose fixture field it equals
-//   (f) nothing scrolls but a screen's page or pane ([data-scroll="page"])
+//   (f) nothing scrolls but a screen's page or pane ([data-scroll="page"]), and
+//       the one exception its allowlist names (SCROLL_EXEMPT)
 // and then, walked with the keyboard (#582):
 //   (g) reachable  (h) visible focus  (i) named  (j) order
 //   (k) Escape and return  (l) target size on phone  (m) announced
@@ -48,8 +49,8 @@ import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  CONTRAST_PAIRS, INTERACTION_EXEMPT, STATUS_SELECTOR, STATUS_TEXTS, TARGET, contrastProblems, interactionProblems,
-  precheckProblems,
+  CONTRAST_PAIRS, INTERACTION_EXEMPT, SCROLL_EXEMPT, STATUS_SELECTOR, STATUS_TEXTS, TARGET, contrastProblems,
+  interactionProblems, precheckProblems,
 } from '../frontend/ui/prechecks.js';
 
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
@@ -70,7 +71,7 @@ const GATE_PROBES = ['sentence', 'word-not-allowed', 'wrong-height', 'two-primar
   'positive-tabindex', 'reversed-row', 'under-target', 'hit-area-over-bar', 'buttons-under-bar', 'status-not-live',
   'bar-label-not-live', 'dialog-keeps-no-focus', 'dialog-undeclared', 'reads-open-draws-nothing',
   'modal-beside-a-control', 'popover-lets-tab-out', 'modal-lets-tab-out', 'covers-but-not-modal',
-  'trigger-gone-at-close'].map((name) => `gate-probes--${name}`);
+  'trigger-gone-at-close', 'nested-scroll-beside-month'].map((name) => `gate-probes--${name}`);
 const PROBED_RULES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm'];
 
 const mode = process.argv[2];
@@ -113,7 +114,7 @@ function serve() {
 // rests: anything still moving in (a popover a play has just opened, growing
 // out of its arrow) is first finished where it will settle. The skeleton's
 // endless shimmer has no end to finish at, and moves nothing it is measured by.
-function inspect() {
+function inspect(scrollExempt) {
   for (const animation of document.getAnimations()) {
     if (Number.isFinite(animation.effect?.getComputedTiming().endTime)) animation.finish();
   }
@@ -145,9 +146,10 @@ function inspect() {
   const controls = [...shot.querySelectorAll('button, a, input, select, [role="button"]')];
   const primaries = controls.filter((control) => control.dataset.role === 'primary'
     || getComputedStyle(control).backgroundColor === primary).length;
-  // §2.3 ban 6: only a screen's page or a desktop pane may scroll.
+  // §2.3 ban 6: only a screen's page or a desktop pane may scroll, and the one
+  // exception (f)'s allowlist names.
   const scrolls = [...shot.querySelectorAll('*')]
-    .filter((element) => !element.matches('[data-scroll="page"]'))
+    .filter((element) => !element.matches('[data-scroll="page"]') && !scrollExempt.some((selector) => element.matches(selector)))
     .filter((element) => {
       const style = getComputedStyle(element);
       return /auto|scroll/.test(style.overflowX) || /auto|scroll/.test(style.overflowY);
@@ -735,7 +737,7 @@ if (mode === 'check') {
           queue: { ...variants.queue, ...FIXTURES.queue },
           day: { ...FIXTURES.day, days: { ...variants.days, ...FIXTURES.day.days }, months },
         } : FIXTURES;
-        const problems = precheckProblems(await page.evaluate(inspect), { fixtures, allowed: ALLOWED });
+        const problems = precheckProblems(await page.evaluate(inspect, SCROLL_EXEMPT.map(({ selector }) => selector)), { fixtures, allowed: ALLOWED });
         // A gate probe names the rules it probes and what the walk must find there.
         const gate = await page.evaluate(() => window.__STORYBOOK_PREVIEW__?.currentRender?.story?.parameters?.gate ?? null);
         // A screen owns what Escape means; a component story has no Escape to walk.

@@ -2,7 +2,7 @@
 // passes. Synthetic inputs only.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { contrastProblems, contrastRatio, interactionProblems, precheckProblems } from './prechecks.js';
+import { SCROLL_EXEMPT, contrastProblems, contrastRatio, interactionProblems, precheckProblems } from './prechecks.js';
 
 const sources = {
   fixtures: { outcomes: { 14: { window_days: 14 } }, prompts: [{ answer: null }, { answer: 'yes' }],
@@ -51,6 +51,11 @@ test('the Glossary list may hold a sentence, words and numbers; nothing outside 
 
 test('(f) a scroll area anywhere but a screen page or pane fails', () => {
   assert.deepEqual(run({ scrolls: ['div.ui-row__cell'] }), ['(f) a nested scroll area: div.ui-row__cell']);
+});
+
+test('(f) allows exactly one scroller beside a page: the phone Day month\'s weeks (#649)', () => {
+  assert.deepEqual(SCROLL_EXEMPT.map(({ selector }) => selector), ['.ui-dayscreen__month--phone > .ui-dayscreen__weeks']);
+  for (const { reason } of SCROLL_EXEMPT) assert.match(reason, /2026-11-10/);
 });
 
 test('(d) two primary-filled controls fail', () => {

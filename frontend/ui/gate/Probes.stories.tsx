@@ -36,6 +36,17 @@ export const NumberUnsourced = probe({ rules: ['e'], expect: ['(e) "42" names no
   () => <span>42</span>);
 export const NestedScroll = probe({ rules: ['f'], expect: ['(f) a nested scroll area: div.gate-scroll'] },
   () => <div className="gate-scroll" style={{ height: 40, overflow: 'auto' }}><div style={{ height: 80 }} /></div>);
+/** The phone's Day month is (f)'s one allowed scroller (§2.3 ban 6, 2026-11-10): its weeks pass, and the
+ *  same weeks scrolling anywhere else still fail. */
+export const NestedScrollBesideMonth = probe({ rules: ['f'], expect: ['(f) a nested scroll area: div.ui-dayscreen__weeks'] },
+  () => (
+    <>
+      <section className="ui-dayscreen__month--phone">
+        <div className="ui-dayscreen__weeks" style={{ height: 40, overflow: 'auto' }}><div style={{ height: 80 }} /></div>
+      </section>
+      <div className="ui-dayscreen__weeks" style={{ height: 40, overflow: 'auto' }}><div style={{ height: 80 }} /></div>
+    </>
+  ));
 
 // (g) reachable.
 export const TapWithNoRole = probe({ rules: ['g'], expect: ['(g) "Pin" responds to a tap but has no role'] },

@@ -4,6 +4,7 @@
    the tab bar, fixed below. */
 .ui-dayscreen--phone { display: flex; flex-direction: column; height: 100%; }
 .ui-dayscreen__head { position: relative; z-index: 2; flex: none; padding: 8px 16px 0; background: var(--wk-canvas); }
+.ui-dayscreen__room { position: relative; display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; }
 .ui-dayscreen__main { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 0 16px 16px; }
 .ui-dayscreen__body { display: flex; flex-direction: column; gap: 16px; margin-top: 8px; }
 .ui-dayscreen--phone .ui-dayscreen__bar { padding: 0 16px 8px; }
@@ -61,11 +62,19 @@
 .ui-dayscreen__scrim { position: absolute; inset: 0; z-index: 1; background: rgb(0 0 0 / .5); }
 .ui-dayscreen__scrim--sheet { z-index: 3; display: flex; flex-direction: column; justify-content: flex-end; }
 .ui-dayscreen__month { display: flex; flex-direction: column; gap: 4px; }
+/* On phone it fills the room under the header, ending at least a 48 px strip
+   of scrim above the tab bar (and the device's inset under it), and its weeks
+   scroll inside it under its name and ‹ › (§2.3 ban 6's one exception,
+   2026-11-10). Over the scrim, which is drawn before it at the same level, and
+   under the header, whose controls keep their taps along its edge. */
 .ui-dayscreen__month--phone {
   position: absolute;
-  top: 100%;
+  top: 0;
   left: 0;
   right: 0;
+  z-index: 1;
+  box-sizing: border-box;
+  max-height: calc(100% - 48px);
   padding: 0 16px 12px;
   border-bottom: 1px solid var(--wk-rule);
   background: var(--wk-surface);
@@ -97,6 +106,8 @@
 .ui-dayscreen__steps { display: flex; gap: 4px; }
 .ui-dayscreen__weeks { display: flex; flex-direction: column; border-top: 1px solid var(--wk-rule); }
 .ui-dayscreen__weeks > * + * { border-top: 1px solid var(--wk-rule); }
+.ui-dayscreen__month--phone > .ui-dayscreen__month-head { flex: none; }
+.ui-dayscreen__month--phone > .ui-dayscreen__weeks { min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
 
 /* Desktop: the rail and one pane. */
 .ui-dayscreen--desktop { display: grid; grid-template-columns: auto 1fr; height: 100%; }

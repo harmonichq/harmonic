@@ -361,6 +361,93 @@ export const StepMonthDesktop: Story = { ...steppable('desktop'), play: stepPlay
 export const MonthUnavailablePhone: Story = { ...steppable('phone', ['2025-04']), play: unavailablePlay };
 export const MonthUnavailableDesktop: Story = { ...steppable('desktop', ['2025-04']), play: unavailablePlay };
 
+// On a short phone, or for a six-week month, the month ends above the tab bar
+// with a strip of scrim a tap can find, and its weeks scroll inside it under
+// its name and ‹ ›, which stay put (§2.3 ban 6's one exception, 2026-11-10,
+// #649). It opens with the selected day's week in view; the strip closes it
+// unchanged; every week scrolls into view, and a day in the last week of
+// March, six weeks long, opens that day.
+const STRIP = 44;
+const monthEndsAbove = async (canvasElement: HTMLElement, month: HTMLElement) => {
+  await motionEnded();
+  // A frame taller than the browser's window is scrolled to its end, as a whole (expectTappable).
+  const nav = canvasElement.querySelector<HTMLElement>('.ui-nav')!;
+  window.scrollBy(0, Math.max(0, nav.getBoundingClientRect().bottom - window.innerHeight));
+  const bar = nav.getBoundingClientRect();
+  const panel = month.getBoundingClientRect();
+  await expect(bar.top - panel.bottom).toBeGreaterThanOrEqual(STRIP);
+  return { bar, panel };
+};
+const scrollsUnderItsName = async (month: HTMLElement) => {
+  const weeks = month.querySelector<HTMLElement>('.ui-dayscreen__weeks')!;
+  const name = within(month).getByRole('heading', { level: 2 });
+  const at = name.getBoundingClientRect().top;
+  weeks.scrollTop = weeks.scrollHeight;
+  await new Promise(requestAnimationFrame);
+  await expect(name.getBoundingClientRect().top).toBe(at);
+  const [box, last] = [weeks.getBoundingClientRect(), weeks.lastElementChild!.getBoundingClientRect()];
+  await expect(last.top).toBeGreaterThanOrEqual(box.top);
+  await expect(last.bottom).toBeLessThanOrEqual(box.bottom + 0.5);
+};
+const monthScrollsPlay: Story['play'] = async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  await openMonth(canvas);
+  const may = canvas.getByRole('dialog', { name: 'May' });
+  const { bar, panel } = await monthEndsAbove(canvasElement, may);
+  const weeks = may.querySelector('.ui-dayscreen__weeks')!.getBoundingClientRect();
+  const selected = within(may).getByRole('button', { name: named(latest), pressed: true }).getBoundingClientRect();
+  await expect(selected.top).toBeGreaterThanOrEqual(weeks.top);
+  await expect(selected.bottom).toBeLessThanOrEqual(weeks.bottom + 0.5);
+  await scrollsUnderItsName(may);
+  const strip = document.elementFromPoint(panel.left + panel.width / 2, (panel.bottom + bar.top) / 2)!;
+  await expect(strip.matches('.ui-dayscreen__scrim')).toBe(true);
+  await userEvent.click(strip);
+  await expect(canvas.queryByRole('dialog')).toBeNull();
+  await expect(headerDay(canvas)).toHaveTextContent(printed(latest));
+  await userEvent.click((await openMonth(canvas)).getByRole('button', { name: 'Previous' }));
+  await userEvent.click(within(await canvas.findByRole('dialog', { name: 'Apr' })).getByRole('button', { name: 'Previous' }));
+  const march = await canvas.findByRole('dialog', { name: 'Mar' });
+  const last = await within(march).findByRole('button', { name: named('2025-03-31') });
+  await monthEndsAbove(canvasElement, march);
+  await expect(march.querySelectorAll('.ui-dayscreen__weeks > *')).toHaveLength(6);
+  await scrollsUnderItsName(march);
+  await tapCentre(last);
+  await expect(canvas.queryByRole('dialog')).toBeNull();
+  await expect(headerDay(canvas)).toHaveTextContent(printed('2025-03-31'));
+};
+const monthScrolls = (frame: (typeof PHONES)[keyof typeof PHONES]): Story => ({
+  ...steppable('phone'), parameters: { frame }, play: monthScrollsPlay,
+});
+export const MonthScrollsPhone375x667: Story = monthScrolls(PHONES.se);
+export const MonthScrollsPhone375x812: Story = { ...monthScrolls(PHONES.x), decorators: [homeIndicator] };
+export const MonthScrollsPhone412x915: Story = monthScrolls(PHONES.pixel);
+
+// By keys, the scrolling weeks are no stop of their own: Tab goes from ‹ › to
+// the days, each scrolled into view as it takes focus, and Escape closes the
+// month and gives focus back to the header's day.
+export const MonthKeysPhone375x667: Story = {
+  ...story('phone', DEFAULT), parameters: { frame: PHONES.se },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const may = await openMonth(canvas);
+    const weeks = canvasElement.querySelector<HTMLElement>('.ui-dayscreen__weeks')!;
+    await motionEnded();
+    weeks.scrollTop = 0;
+    const day = may.getByRole('button', { name: named(latest) });
+    for (let tab = 0; tab < 40 && document.activeElement !== day; tab += 1) {
+      await userEvent.tab();
+      await expect(document.activeElement).not.toBe(weeks);
+    }
+    await expect(day).toHaveFocus();
+    const [box, at] = [weeks.getBoundingClientRect(), day.getBoundingClientRect()];
+    await expect(at.top).toBeGreaterThanOrEqual(box.top);
+    await expect(at.bottom).toBeLessThanOrEqual(box.bottom + 0.5);
+    await userEvent.keyboard('{Escape}');
+    await expect(canvas.queryByRole('dialog')).toBeNull();
+    await expect(canvas.getByRole('button', { name: named(latest), expanded: false })).toHaveFocus();
+  },
+};
+
 const typed = formatValue(loggedGrams().value, loggedGrams().format);
 const openCarbs = async (canvas: ReturnType<typeof within>) => {
   await userEvent.click(canvas.getByRole('button', { name: '+ Log carbs' }));

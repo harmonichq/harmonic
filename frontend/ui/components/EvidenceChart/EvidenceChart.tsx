@@ -103,7 +103,8 @@ export function EvidenceChart({ dots, roster, field, current, estimate, lo, hi, 
 
   return (
     <div ref={box} className="ui-chart">
-    {width > 0 && <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="ui-chart__svg">
+    {width > 0 && <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="ui-chart__svg"
+      role="group" aria-label="Estimate">
       {lo.value !== hi.value && (
         <rect x={x(lo.value)} y={PLOT_TOP} width={x(hi.value) - x(lo.value)} height={axisY - PLOT_TOP}
           className="ui-chart__band" />

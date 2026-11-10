@@ -30,7 +30,7 @@ export type ListRowProps = {
   /** Opens a screen: the row is a button with a ›. */
   onOpen?: () => void;
   /** One compact secondary action at the row's end. */
-  action?: { label: string; onAction?: () => void };
+  action?: { label: string; onAction?: () => void; dialog?: { open: boolean } };
   /** Glossary: the term's definition, beneath it. */
   definition?: string;
   /** A served detail beneath the label, wrapped at any width: a failed sync's raw error. */
@@ -77,7 +77,7 @@ export function ListRow({ label, value, alert = false, onOpen, action, definitio
         {detail && <span className="ui-row__detail">{detail}</span>}
       </span>
       <Value value={value} alert={alert} />
-      {action && <Button kind="secondary" label={action.label} onClick={action.onAction} />}
+      {action && <Button kind="secondary" label={action.label} dialog={action.dialog} onClick={action.onAction} />}
     </div>
   );
 }

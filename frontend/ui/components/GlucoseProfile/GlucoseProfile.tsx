@@ -143,7 +143,8 @@ export function GlucoseProfile({ data, plotHeight = PLOT_HEIGHT }: GlucoseProfil
         </div>
       )}
       <div ref={box} className="ui-chart">
-      {width > 0 && <svg width={width} height={HEIGHT} viewBox={`0 0 ${width} ${HEIGHT}`} className="ui-profile__chart">
+      {width > 0 && <svg width={width} height={HEIGHT} viewBox={`0 0 ${width} ${HEIGHT}`} className="ui-profile__chart"
+        role="group" aria-label="Glucose profile">
         <defs>
           {zones.map((zone) => (
             <clipPath key={zone.tone} id={`${id}-clip-${zone.tone}`}>

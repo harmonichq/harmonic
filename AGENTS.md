@@ -72,6 +72,17 @@ type-checks `frontend/ui`, builds its Storybook and renders every story in
 Chromium, after its play, against the prechecks in `frontend/ui/prechecks.js`:
 no sentence, only allowed words, one size per control role, one primary, every
 number traced to the served field it prints, and nothing scrolling but a page.
+It then walks each story with the keyboard (#582, ADR 582): every tap target
+reached by Tab with a role and a name, a visible focus, Tab in reading order,
+each sheet or popover taking focus, holding Tab inside it while open (marked
+modal only when nothing beside it takes a tap), closing on Escape and returning
+focus to its trigger, a 44 px phone target, a pinned bar keeping
+its own taps, and a status in a live region; and checks the colour tokens'
+contrast once. An exemption lives in that file's allowlists, with its reason.
+The gate probes under `frontend/ui/gate/` draw each defect on purpose and
+fail if the walk stops finding it; a new walk rule ships with its probe, and a
+new probe joins the runner's list (`GATE_PROBES`), which fails the run when a
+listed probe is not built.
 Its Playwright comes from `PLAYWRIGHT_MODULE`, or, unset, from
 `scripts/ensure_browser_gate_env.py`, which provisions one cached copy. A missing
 driver or build fails closed, naming what is missing.

@@ -226,13 +226,19 @@ export const StalePhone = story('phone', { store: 'wearer', state: 'stale' });
 export const StaleDesktop = story('desktop', { store: 'wearer', state: 'stale' });
 export const StalePreviousPhone = story('phone', { ...PREVIOUS, view: 'previous', state: 'stale' });
 
+// By the keyboard: Enter on End, Enter on the confirming End. The End that
+// opened it is gone with the Trial, so focus goes to the screen's heading,
+// never to the page (#582).
 const endPlay: Story['play'] = async ({ canvasElement }) => {
   const canvas = within(canvasElement);
   await expect(canvas.queryByRole('button', { name: /Previous/ })).toBeNull();
-  await userEvent.click(canvas.getByRole('button', { name: 'End' }));
-  const dialog = within(canvas.getByRole('dialog', { name: 'End' }));
-  await userEvent.click(dialog.getByRole('button', { name: 'End' }));
-  await expect(canvas.queryByRole('dialog')).toBeNull();
+  canvas.getByRole('button', { name: 'End' }).focus();
+  await userEvent.keyboard('{Enter}');
+  const dialog = within(await canvas.findByRole('dialog', { name: 'End' }));
+  dialog.getByRole('button', { name: 'End' }).focus();
+  await userEvent.keyboard('{Enter}');
+  await waitFor(() => expect(canvas.queryByRole('dialog')).toBeNull());
+  await waitFor(() => expect(document.activeElement).toBe(canvas.getByRole('heading', { level: 1, name: 'Changes' })));
   await expect(canvas.getByText('No active change')).toBeInTheDocument();
   // The ended Trial is now a previous change.
   await expect(canvas.getByRole('button', { name: /Previous\s*1/ })).toBeInTheDocument();

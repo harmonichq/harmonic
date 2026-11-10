@@ -48,7 +48,7 @@ export const YesFlow: Story = {
     await userEvent.click(yes);
     await expect(args.onAnswer).toHaveBeenCalledWith('carbs');
     await expect(yes).toHaveAttribute('aria-pressed', 'true');
-    await expect(within(yes).getByText('Recorded')).toBeInTheDocument();
+    await expect(canvas.getByRole('status')).toHaveTextContent('Recorded');
     const grams = formatValue(loggedGrams().value, loggedGrams().format);
     await userEvent.type(canvas.getByRole('textbox', { name: 'Carbs' }), grams);
     await userEvent.click(canvas.getByRole('button', { name: 'Next' }));

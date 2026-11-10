@@ -12,6 +12,8 @@ type Common = {
   label: string;
   disabled?: boolean;
   busy?: boolean;
+  /** It opens a sheet or popover: announced as opening one, and whether it is open. */
+  dialog?: { open: boolean };
   onClick?: () => void;
 };
 
@@ -20,7 +22,7 @@ export type ButtonProps =
   | (Common & { kind: 'icon'; icon: IconName });
 
 export function Button(props: ButtonProps) {
-  const { kind, label, disabled = false, busy = false, onClick } = props;
+  const { kind, label, disabled = false, busy = false, dialog, onClick } = props;
   return (
     <button
       type="button"
@@ -29,7 +31,9 @@ export function Button(props: ButtonProps) {
       disabled={disabled}
       aria-disabled={busy || undefined}
       aria-busy={busy || undefined}
-      aria-label={kind === 'icon' ? label : undefined}
+      aria-label={kind === 'icon' || busy ? label : undefined}
+      aria-haspopup={dialog && 'dialog'}
+      aria-expanded={dialog?.open}
       onClick={busy ? undefined : onClick}
     >
       <span className="ui-button__face">

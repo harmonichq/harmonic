@@ -39,6 +39,8 @@
 .ui-header__back,
 .ui-header__day { transition: background-color var(--ui-motion-fast) var(--ui-ease-standard); }
 .ui-header__back:active { background: var(--wk-surface); transition-duration: 0s; }
+/* Its whole 44 px target over the title row it touches (#582). */
+.ui-header__back { position: relative; }
 .ui-header__back:focus { outline: none; }
 .ui-header__back:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
 .ui-header__title {
@@ -71,6 +73,18 @@
   -webkit-tap-highlight-color: transparent;
 }
 .ui-header__day svg { width: 18px; height: 18px; }
+/* A tap lands 44 px across (#582): the 32 px control and an unpainted hit area,
+   over the edge of the month it drops (which holds no control under it). */
+.ui-header__day { position: relative; z-index: 1; }
+/* The bar's own buttons too ("+ Log carbs"), in the one header that drops a
+   month: their hit area is over the month's edge, never under it. Raised only
+   there, so no other header's buttons stack over a sheet's scrim. */
+.ui-header__bar:has(.ui-header__day) .ui-button { z-index: 1; }
+.ui-header__day::after {
+  content: '';
+  position: absolute;
+  inset: calc((var(--ui-size-text) - var(--ui-size-icon)) / 2) 0;
+}
 .ui-header__day[aria-expanded='true'] { background: var(--wk-surface); }
 .ui-header__day:focus { outline: none; }
 .ui-header__day:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }

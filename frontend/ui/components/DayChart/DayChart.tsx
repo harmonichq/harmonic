@@ -230,7 +230,8 @@ export function DayChart({ data, layout = 'phone' }: DayChartProps) {
         </div>
       )}
       <div ref={box} className="ui-chart">
-      {width > 0 && <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="ui-daychart__chart">
+      {width > 0 && <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="ui-daychart__chart"
+        role="group" aria-label="Glucose">
         <defs>
           <pattern id={`${id}-suspend`} width={4} height={4} patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
             <rect width={1.6} height={4} className="ui-daychart__suspend-stripe" />

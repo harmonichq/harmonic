@@ -103,15 +103,13 @@ export const Pinned: Story = {
 };
 
 /** Multi-cause: no Focus, though one could start; the chart opens the drill-down.
- *  The chart is named by the card's title, as the phone's chevron is, so it is
- *  reached by its element. */
+ *  The chart is named in words, the card's title and "Glucose" (#582). */
 const multiCause: Story['play'] = async ({ args, canvasElement }) => {
   const canvas = within(canvasElement);
   await expect(focusable(patternStore('drill_down').store)).toBe(true);
   await expect(canvas.queryByRole('button', { name: 'Focus' })).toBeNull();
   const chart = canvasElement.querySelector<HTMLElement>('.ui-pcard__open')!;
-  await expect(chart).toBe(canvas.getAllByRole('button', { name: patternState('drill_down').title })
-    .find((button) => !button.hasAttribute('aria-expanded')));
+  await expect(chart).toBe(canvas.getByRole('button', { name: `${patternState('drill_down').title} · Glucose` }));
   await expect(chart.textContent!.endsWith('›')).toBe(true);
   await userEvent.click(chart);
   await expect((args as unknown as { onOpen: ReturnType<typeof fn> }).onOpen).toHaveBeenCalledOnce();

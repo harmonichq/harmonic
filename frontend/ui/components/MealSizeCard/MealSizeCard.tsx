@@ -61,7 +61,11 @@ const Median = ({ value }: { value: MealSizeRow['median'] }) => (value ? <Num va
 
 /** One size's strip, over the axis's grid lines: its 10–90% a thin capped
  *  whisker in its colour, its Range a thick line over it, and its median a
- *  short ink tick on top (#570). No meal is drawn on its own. */
+ *  short ink tick on top (#570). No meal is drawn on its own.
+ *  It carries no text, so it is hidden, and the axis beneath, which carries
+ *  the ticks, is the one group named Meal size. Its spread (the 10–90% and
+ *  the Range) is drawn only and has no text equivalent, as before (#582); the
+ *  table holds the median Climb, Peak at and At 3 h. */
 function Strip({ row, scale, index }: { row: MealSizeRow; scale: Scale; index: number }) {
   const [box, width] = useWidth<HTMLDivElement>();
   const x = (value: number) => PAD + (width - 2 * PAD) * ((value - scale.first) / (scale.last - scale.first));
@@ -70,7 +74,8 @@ function Strip({ row, scale, index }: { row: MealSizeRow; scale: Scale; index: n
   return (
     <div ref={box} className="ui-meal-size__strip" data-size={index}>
       {width > 0 && (
-        <svg width={width} height={STRIP} viewBox={`0 0 ${width} ${STRIP}`} className="ui-chart__svg">
+        <svg width={width} height={STRIP} viewBox={`0 0 ${width} ${STRIP}`} className="ui-chart__svg"
+          aria-hidden="true">
           {scale.values.map((value) => (
             <line key={value} x1={x(value)} x2={x(value)} y1={0} y2={STRIP}
               className={value === 0 ? 'ui-chart__zero' : 'ui-chart__grid'} />
@@ -106,7 +111,8 @@ function Axis({ scale }: { scale: Scale }) {
   return (
     <div ref={box} className="ui-meal-size__axis">
       {width > 0 && (
-        <svg width={width} height={18} viewBox={`0 0 ${width} 18`} className="ui-chart__svg">
+        <svg width={width} height={18} viewBox={`0 0 ${width} 18`} className="ui-chart__svg"
+          role="group" aria-label="Meal size">
           <g data-axis="">
             {scale.values.map((value, i) => labelled.has(i) && (
               <text key={value} x={x(value)} y={13} className="ui-chart__tick"

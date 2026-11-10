@@ -24,6 +24,7 @@ const AXIS = TOP + PLOT;
 const HEIGHT = AXIS + 20;
 const HOURS = [0, 360, 720, 1080, 1440];
 const clock = (minute: number) => `${String(minute / 60).padStart(2, '0')}:00`;
+const at = (minute: number) => `${String(Math.floor(minute / 60)).padStart(2, '0')}:${String(minute % 60).padStart(2, '0')}`;
 
 function BasalDayChart({ data }: { data: BasalDayData }) {
   const [box, width] = useWidth<HTMLDivElement>();
@@ -38,7 +39,8 @@ function BasalDayChart({ data }: { data: BasalDayData }) {
   return (
     <div ref={box} className="ui-chart">
       {width > 0 && (
-        <svg width={width} height={HEIGHT} viewBox={`0 0 ${width} ${HEIGHT}`} className="ui-chart__svg">
+        <svg width={width} height={HEIGHT} viewBox={`0 0 ${width} ${HEIGHT}`} className="ui-chart__svg"
+          role="group" aria-label="Basal">
           <g data-axis="">
             {scale.values.map((v, i) => (
               <g key={v}>
@@ -66,7 +68,9 @@ function BasalDayChart({ data }: { data: BasalDayData }) {
           <path d={programmed} className="ui-chart__current" />
           {slots.filter((s) => s.move).map((s) => (
             <text key={s.start} x={(x(s.start) + x(s.end)) / 2} textAnchor="middle" className="ui-chart__move"
-              y={Math.min(y(s.estimate?.hi ?? s.current), y(s.current)) - 4} data-move={s.move}>
+              y={Math.min(y(s.estimate?.hi ?? s.current), y(s.current)) - 4} data-move={s.move}
+              // Read with its slot; the glossary has no word for the direction, which its mark is.
+              role="img" aria-label={`${s.move === 'raise' ? '▲' : '▼'} ${at(s.start)}–${at(s.end)}`}>
               {s.move === 'raise' ? '▲' : '▼'}
             </text>
           ))}

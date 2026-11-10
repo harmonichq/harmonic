@@ -37,7 +37,9 @@ export type ScreenHeaderProps = {
   day?: { weekday: string; date: Sourced<string>; open?: boolean; onToggle?: () => void };
 } & (
   | { trailing?: undefined }
-  | { trailing: 'action'; label: string; onAction?: () => void }
+  | { trailing: 'action'; label: string; onAction?: () => void;
+      /** The action opens a sheet: whether it is open. */
+      dialog?: { open: boolean } }
   | { trailing: 'control'; control: ReactNode }
   | { trailing: 'unavailable'; onRetry?: () => void }
   | { trailing: 'count'; count: Sourced<number>; total: Sourced<number> }
@@ -46,7 +48,7 @@ export type ScreenHeaderProps = {
 function Slot(props: ScreenHeaderProps) {
   switch (props.trailing) {
     case 'action':
-      return <Button kind="secondary" label={props.label} onClick={props.onAction} />;
+      return <Button kind="secondary" label={props.label} dialog={props.dialog} onClick={props.onAction} />;
     case 'control':
       return <div className="ui-header__control">{props.control}</div>;
     case 'count':
@@ -81,7 +83,8 @@ export function ScreenHeader(props: ScreenHeaderProps) {
           <span className="ui-header__titles">
             {title}
             {props.day && (
-              <button type="button" className="ui-header__day" data-role="text" aria-expanded={props.day.open ?? false}
+              <button type="button" className="ui-header__day" data-role="text" aria-haspopup="dialog"
+                aria-expanded={props.day.open ?? false}
                 onClick={props.day.onToggle}>
                 {props.day.weekday} <Num value={props.day.date} />
                 <Icon name={props.day.open ? 'collapse' : 'expand'} />

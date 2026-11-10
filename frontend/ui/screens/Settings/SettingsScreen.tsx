@@ -53,6 +53,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { KeyboardEvent as KeyEvent, ReactNode } from 'react';
 import { answers, sourced } from '../../answers';
 import { saveToken } from '../../../data.js';
+import { useDialogFocus } from '../../dialog';
 import { useMotionGate, usePresence } from '../../motion';
 import { Num } from '../../Num';
 import {
@@ -219,8 +220,8 @@ function Root({ sync, pump, read, onOpen, onToken }: {
   );
 }
 
-function TandemSource({ sync, account, read, form, onUpdate }: {
-  sync: SyncState | null; account: AccountState; read: Read; form: ReactNode; onUpdate: () => void;
+function TandemSource({ sync, account, read, form, formOpen, onUpdate }: {
+  sync: SyncState | null; account: AccountState; read: Read; form: ReactNode; formOpen: boolean; onUpdate: () => void;
 }) {
   const source = tandemSource(sync, account);
   return (
@@ -245,7 +246,7 @@ function TandemSource({ sync, account, read, form, onUpdate }: {
           {source.account.region && <ListRow label="Region" value={source.account.region} />}
           <div className="ui-settings__anchor">
             <ListRow label="Password" value={source.account.configured ? 'Set' : 'Not set'}
-              action={{ label: 'Update', onAction: onUpdate }} />
+              action={{ label: 'Update', onAction: onUpdate, dialog: { open: formOpen } }} />
             {form}
           </div>
         </ListGroup>
@@ -383,8 +384,13 @@ function Settings({
 
   // The account form stays while it closes, as it last showed.
   const formShown = usePresence(form);
+  const formOpen = Boolean(formShown.value) && !formShown.closing;
+  // The Not saved bar over the open form is in its Tab cycle (on phone it is
+  // inside the sheet's scrim; on desktop it is pinned to the pane).
+  const barRef = useRef<HTMLDivElement>(null);
+  const formRef = useDialogFocus<HTMLElement>(formOpen, { modal: layout === 'phone', part: barRef });
   const popover = layout === 'desktop' && formShown.value && (
-    <section className="ui-popover ui-popover--end ui-settings__form ui-settings__form--desktop" role="dialog"
+    <section ref={formRef} className="ui-popover ui-popover--end ui-settings__form ui-settings__form--desktop" role="dialog"
       aria-label="Tandem Source" {...formShown.exit}>
       <AccountForm saving={formShown.value === 'saving'} onSave={save} />
     </section>
@@ -393,7 +399,7 @@ function Settings({
   const content = {
     root: <Root sync={sync} pump={pump} read={parts.pump} onOpen={open} onToken={onToken} />,
     tandem: <TandemSource sync={sync} account={shownAccount} read={parts.account} form={popover}
-      onUpdate={() => setForm('open')} />,
+      formOpen={formOpen} onUpdate={() => setForm('open')} />,
     profile: <PumpProfile pump={pump} read={parts.pump} />,
     glossary: <Glossary />,
   }[view];
@@ -401,7 +407,7 @@ function Settings({
   const barShown = usePresence(notSaved);
   // Over the open form, so the failure and its Retry stay in view (#661): on phone above the sheet.
   const bar = barShown.value && (
-    <div className="ui-settings__bar" onClick={(event) => event.stopPropagation()} {...barShown.exit}>
+    <div ref={barRef} className="ui-settings__bar" {...barShown.exit}>
       <TransientBar kind="not_saved" onRetry={barShown.value.retry} layout={layout} />
     </div>
   );
@@ -417,14 +423,17 @@ function Settings({
         {!sheet && bar}
         <NavBar layout="tabbar" selected="settings" dayCount={dayCount()} {...nav} syncFailed={failed} />
         {sheet && (
-          <div className="ui-scrim ui-settings__scrim" onClick={close} {...formShown.exit}>
+          // The scrim is the dialog (#582): what it shows over the screen, the
+          // Not saved bar and its Retry with the sheet, is inside its Tab cycle.
+          <section ref={formRef} className="ui-scrim ui-settings__scrim" role="dialog"
+            aria-label="Tandem Source" onClick={(event) => { if (event.target === event.currentTarget) close(); }}
+            {...formShown.exit}>
             {bar}
-            <section className="ui-sheet ui-settings__form" role="dialog" aria-label="Tandem Source"
-              onClick={(event) => event.stopPropagation()}>
+            <section className="ui-sheet ui-settings__form">
               <span className="ui-sheet__grabber" aria-hidden="true" />
               <AccountForm saving={formShown.value === 'saving'} onSave={save} />
             </section>
-          </div>
+          </section>
         )}
       </div>
     );

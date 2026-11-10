@@ -4,6 +4,7 @@
 // and nothing to press. The tab bar has none. One badge system, top-right of the icon (§1.1):
 // Day's count of unanswered Prompts, and Settings' "!" when the last sync
 // failed.
+import { useId } from 'react';
 import { Icon, type IconName } from '../../icons';
 import type { Sourced } from '../../answers';
 import { Num } from '../../Num';
@@ -38,6 +39,8 @@ export type NavBarProps = {
 export type NavHooks = Pick<NavBarProps, 'onSelect' | 'syncFailed'>;
 
 export function NavBar({ layout, selected, dayCount, syncFailed = false, onSelect }: NavBarProps) {
+  // An item is named by its label; its badge, the count or the alert, is its description (#582).
+  const badge = useId();
   return (
     <nav className={`ui-nav ui-nav--${layout}`}>
       {layout === 'rail' && (
@@ -53,17 +56,20 @@ export function NavBar({ layout, selected, dayCount, syncFailed = false, onSelec
           className="ui-nav__item"
           data-role="nav"
           aria-current={id === selected ? 'page' : undefined}
+          aria-label={label}
+          aria-describedby={(id === 'day' && dayCount && dayCount.value > 0) || (id === 'settings' && syncFailed)
+            ? `${badge}-${id}` : undefined}
           onClick={() => onSelect?.(id)}
         >
           <span className="ui-nav__icon">
             <Icon name={id satisfies IconName} size={NAV_GLYPH} />
             {id === 'day' && dayCount && dayCount.value > 0 && (
-              <span className="ui-badge ui-badge--count">
+              <span className="ui-badge ui-badge--count" id={`${badge}-${id}`}>
                 <Num value={dayCount} />
               </span>
             )}
             {id === 'settings' && syncFailed && (
-              <span className="ui-badge ui-badge--alert">!</span>
+              <span className="ui-badge ui-badge--alert" id={`${badge}-${id}`}>!</span>
             )}
           </span>
           <span>{label}</span>

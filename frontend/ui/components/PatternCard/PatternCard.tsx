@@ -133,7 +133,7 @@ export function PatternCard(props: PatternCardProps) {
       {chart && (data.multiCause
         ? (
           <button type="button" className="ui-pcard__chart ui-pcard__open" data-role="row"
-            aria-labelledby={titleId} onClick={onOpen}>
+            aria-label={`${data.title} · Glucose`} onClick={onOpen}>
             {chart}
             <span className="ui-pcard__more" aria-hidden="true">›</span>
           </button>

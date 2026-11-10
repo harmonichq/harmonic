@@ -7,6 +7,10 @@
   font-family: var(--ui-font);
 }
 .ui-grams--focused { border-bottom-color: var(--primary); }
+/* A tap lands 44 px across (#582): an unpainted hit area past the label's top edge,
+   behind the input. */
+.ui-grams { position: relative; isolation: isolate; }
+.ui-grams::before { content: ''; position: absolute; z-index: -1; inset: -4px 0 0; }
 .ui-grams__input {
   box-sizing: content-box;
   width: 3ch;

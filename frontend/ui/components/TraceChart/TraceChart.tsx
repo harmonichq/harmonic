@@ -70,7 +70,8 @@ export function TraceChart({ data, own = 'Pattern' }: {
     <div className="ui-chart">
       <div ref={box}>
         {width > 0 && (
-          <svg width={width} height={HEIGHT} viewBox={`0 0 ${width} ${HEIGHT}`} className="ui-chart__svg">
+          <svg width={width} height={HEIGHT} viewBox={`0 0 ${width} ${HEIGHT}`} className="ui-chart__svg"
+            role="group" aria-label="Glucose">
             <g data-axis="">
               {yTicks.map((v) => (
                 <g key={v}>

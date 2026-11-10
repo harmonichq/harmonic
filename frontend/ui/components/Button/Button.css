@@ -45,6 +45,21 @@
   border-color: var(--wk-rule-strong);
 }
 
+/* A tap lands 44 px across (#582): the secondary and text buttons keep their
+   32 px drawn height, and an unpainted hit area reaches out to 44 px, inset
+   from inside the 1 px border. The button is its own stacking context, so
+   its hit area stacks where it does: a bar pinned over the button (a desktop
+   screen's bottom bar) is over its hit area too. */
+.ui-button--secondary,
+.ui-button--text { z-index: 0; }
+.ui-button--secondary::after,
+.ui-button--text::after {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  inset: calc((var(--ui-size-secondary) - var(--ui-size-icon)) / 2 - 1px) min(0px, calc(50% - var(--ui-size-icon) / 2));
+}
+
 /* Pressed. The .sb-pressed hook lets a story hold the state still. The press
    lands at once and lets go over the fast duration. */
 .ui-button { transition: background-color var(--ui-motion-fast) var(--ui-ease-standard); }

@@ -29,6 +29,14 @@
   font-weight: var(--ui-weight-strong);
 }
 
+/* A tap lands 44 px across (#582): the 28 px segment and an unpainted hit area. */
+.ui-segmented__segment { position: relative; }
+.ui-segmented__segment::after {
+  content: '';
+  position: absolute;
+  inset: calc((var(--ui-size-segment) - var(--ui-size-icon)) / 2) 0;
+}
+
 .ui-segmented__segment:focus { outline: none; }
 .ui-segmented__segment:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
 

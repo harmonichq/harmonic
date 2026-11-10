@@ -22,6 +22,7 @@
 // it, and at a header's trailing edge both align to that edge.
 import { useRef, type RefObject } from 'react';
 import type { Sourced } from '../../answers';
+import { useDialogFocus } from '../../dialog';
 import { Num } from '../../Num';
 import { GramsField } from '../../GramsField';
 import { Button } from '../Button/Button';
@@ -42,7 +43,8 @@ export type LogCarbsEntryProps = {
   /** The person picked a time in the system picker, `HH:MM`. */
   onTimeChange?: (time: string) => void;
   layout?: 'phone' | 'desktop';
-  /** Desktop: the popover is open (its trigger always shows). */
+  /** Desktop: the popover is open (its trigger always shows). Phone: the sheet
+   *  is open, not closing. */
   open?: boolean;
   /** Desktop: the trigger was pressed. */
   onToggle?: () => void;
@@ -108,9 +110,10 @@ export function LogCarbsEntry({ layout = 'phone', open = true, onToggle, align =
   const shown = usePresence(open);
   const held = useRef(entry);
   if (open) held.current = entry;
+  const dialog = useDialogFocus<HTMLElement>(open, { modal: layout === 'phone' });
   if (layout === 'phone') {
     return (
-      <section className="ui-sheet ui-logcarbs" role="dialog" aria-label="Log carbs">
+      <section ref={dialog} className="ui-sheet ui-logcarbs" role="dialog" aria-label="Log carbs">
         <span className="ui-sheet__grabber" aria-hidden="true" />
         <Entry {...entry} />
       </section>
@@ -118,9 +121,9 @@ export function LogCarbsEntry({ layout = 'phone', open = true, onToggle, align =
   }
   return (
     <div className={`ui-logcarbs-anchor ui-logcarbs-anchor--${align}`}>
-      <Button kind="secondary" label="+ Log carbs" onClick={onToggle} />
+      <Button kind="secondary" label="+ Log carbs" dialog={{ open }} onClick={onToggle} />
       {shown.value && (
-        <section className={`ui-popover ui-logcarbs${align === 'end' ? ' ui-popover--end' : ''}`} role="dialog"
+        <section ref={dialog} className={`ui-popover ui-logcarbs${align === 'end' ? ' ui-popover--end' : ''}`} role="dialog"
           aria-label="Log carbs" {...shown.exit}>
           <Entry {...held.current} />
         </section>

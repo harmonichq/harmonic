@@ -62,6 +62,8 @@ const FIRST_WINDOW = '14';
 const DEFAULT_ANALYSIS = '30';
 /** A Pattern Focus watches the whole day, the window the Queue's findings read. */
 const WHOLE_DAY = { start_min: 0, end_min: 1440 };
+/** An empty span, so the carb log answers with its clock and no entry (#658). */
+const NO_TIME = '2000-01-01T00:00:00';
 const NO_STATUS = { last_attempt_at: null, last_success_at: null, last_error: null, last_error_label: null };
 
 // The analysis and case-file answers, trimmed to what their cards draw (ADR 523), so
@@ -416,16 +418,13 @@ export function createLive({ client, glossary, memory = null,
     date.setUTCDate(date.getUTCDate() + days);
     return date.toISOString().slice(0, 10);
   };
-  /** How far the store's wall clock runs ahead of UTC, as the carbs read with a day last served it
-   *  (#658, ADR 658); this browser's own zone's until a day lands. */
-  let wallClock = -new Date().getTimezoneOffset() * 60000;
   /** One day's timeline, the carbs logged by hand on it, and what the engine
-   *  counted on it, read when the day is picked. */
+   *  counted on it, read when the day is picked. The carb log's clock is not
+   *  kept with the day: Log carbs reads it fresh (`readClock`). */
   const day = (iso) => once(`day ${iso}`, async () => {
     const range = { start: `${iso}T00:00:00`, end: `${shift(iso, 1)}T00:00:00` };
-    const [timeline, { now: served, ...carbs }, modelView] = await Promise.all([
+    const [timeline, { now: _clock, ...carbs }, modelView] = await Promise.all([
       client.fetchTimeline(range), client.fetchCarbs(range), client.fetchModelView(iso)]);
-    wallClock = Date.parse(`${served.replace(' ', 'T')}Z`) - Date.now();
     answers.day.days[iso] = { timeline, carbs, model_view: modelViewMarks(modelView) };
   });
 
@@ -801,8 +800,13 @@ export function createLive({ client, glossary, memory = null,
     }),
     /** The day on screen: the one `readDay` last read. */
     shownDay: () => onScreen,
-    /** Now on the store's wall clock (`YYYY-MM-DD HH:MM`), which Log carbs stamps an entry on (#658). */
-    dayNow: () => new Date(Date.now() + wallClock).toISOString().slice(0, 16).replace('T', ' '),
+    /** The store's wall clock, read fresh each time Log carbs opens (#658, ADR 658): the carb log over no
+     *  time serves only its `now`. It resolves, as that answer arrives, with the clock Save stamps an entry
+     *  from (`YYYY-MM-DD HH:MM`), running from the served time; it rejects when it cannot be read. */
+    readClock: () => client.fetchCarbs({ start: NO_TIME, end: NO_TIME }).then(({ now }) => {
+      const ahead = Date.parse(`${now.replace(' ', 'T')}Z`) - Date.now();
+      return () => new Date(Date.now() + ahead).toISOString().slice(0, 16).replace('T', ' ');
+    }),
     /** The weeks of one month (`YYYY-MM`), read once; Retry is a second call after a failure. */
     readMonth: remembering(month),
     /** The Overview's profile, basal estimate, Meal size and insulin cards for the window it selected, which

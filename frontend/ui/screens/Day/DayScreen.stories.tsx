@@ -61,8 +61,10 @@ const FRAMES = {
   desktop: { width: 1440, height: 900, padding: 0 },
 } as const;
 
+/** The stories' clock, on no day they draw, unless a story sets its own; live, the store's (ADR 658). */
+const STORY_CLOCK = () => '2000-01-01 12:00';
 const story = (layout: 'phone' | 'desktop', args: Omit<DayScreenProps, 'layout'>): Story => ({
-  args: { ...args, layout },
+  args: { now: STORY_CLOCK, ...args, layout },
   parameters: { frame: FRAMES[layout] },
 });
 
@@ -166,6 +168,33 @@ const dayUnavailable = (layout: 'phone' | 'desktop'): Story => ({
 });
 export const DayUnavailablePhone = dayUnavailable('phone');
 export const DayUnavailableDesktop = dayUnavailable('desktop');
+
+// A day whose read fails after the person has moved to another day is read
+// once when picked again, not twice.
+const lateRefusal: Story['play'] = async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  await userEvent.click(canvas.getByRole('button', { name: named(UNREAD), expanded: false }));
+  await userEvent.click(within(canvas.getByRole('dialog', { name: 'May' })).getByRole('button', { name: named(latest) }));
+  await waitFor(() => expect(dayReads.filter((iso) => iso === UNREAD)).toHaveLength(1));
+  await new Promise((done) => { setTimeout(done, REFUSED_AFTER + 100); });
+  await userEvent.click(canvas.getByRole('button', { name: named(latest), expanded: false }));
+  await userEvent.click(within(canvas.getByRole('dialog', { name: 'May' })).getByRole('button', { name: named(UNREAD) }));
+  await waitFor(() => expect(canvas.getByText('Unavailable')).toBeInTheDocument());
+  await expect(dayReads.filter((iso) => iso === UNREAD)).toHaveLength(2);
+};
+const REFUSED_AFTER = 600;
+const repickedDay = (layout: 'phone' | 'desktop'): Story => ({
+  ...story(layout, { ...DEFAULT, day: UNREAD, onDay: async (iso) => {
+    dayReads.push(iso);
+    if (iso !== UNREAD) return;
+    await new Promise((done) => { setTimeout(done, REFUSED_AFTER); });
+    throw new Error('unavailable');
+  } }),
+  beforeEach: () => { dayReads.length = 0; },
+  play: lateRefusal,
+});
+export const DayRepickedPhone = repickedDay('phone');
+export const DayRepickedDesktop = repickedDay('desktop');
 
 // Stale (§2.5, 2026-10-14): the last answers, kept on screen under Unavailable
 // and Retry, when reading them again failed.
@@ -1020,6 +1049,58 @@ const timeEditedPlay: Story['play'] = async ({ canvasElement }) => {
 const TIME_EDITED = { store: 'wearer', writes: liveLog(), now: () => LOG_CLOCK } as const;
 export const LiveTimeEditedPhone: Story = { ...story('phone', TIME_EDITED), play: timeEditedPlay };
 export const LiveTimeEditedDesktop: Story = { ...story('desktop', TIME_EDITED), play: timeEditedPlay };
+
+// Live, Log carbs stamps on the store's clock, read as the entry opens (#658,
+// ADR 658): Save waits while it is read, then logs at the served time, never
+// the browser's; a clock that cannot be read shows Unavailable and Retry in the
+// Time row's place, with Save held, and Retry reads it again. The clock is read
+// afresh on every opening.
+const STORE_CLOCK = `${LOG_CLOCK.slice(0, 10)} 09:30`;
+const clockReads: ((served: boolean) => void)[] = [];
+const clockOpened = { count: 0 };
+const readStoreClock = () => new Promise<() => string>((resolve, reject) => {
+  clockOpened.count += 1;
+  clockReads.push((served) => (served ? resolve(() => STORE_CLOCK) : reject(new Error('unavailable'))));
+});
+const clockStory = (layout: 'phone' | 'desktop', play: Story['play']): Story => ({
+  ...story(layout, { store: 'wearer', writes: liveLog(), readClock: readStoreClock }),
+  beforeEach: () => { clockReads.length = 0; clockOpened.count = 0; logged.length = 0; },
+  play,
+});
+const answerClock = async (served: boolean) => {
+  await waitFor(() => expect(clockReads.length).toBeGreaterThan(0));
+  clockReads.shift()!(served);
+};
+const clockPlay: Story['play'] = async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  const entry = await openCarbs(canvas);
+  await userEvent.type(entry.getByRole('textbox', { name: 'Carbs' }), '30');
+  await expect(entry.getByRole('button', { name: 'Save' })).toBeDisabled();
+  await answerClock(true);
+  await waitFor(() => expect(entry.getByRole('button', { name: 'Save' })).toBeEnabled());
+  await userEvent.click(entry.getByRole('button', { name: 'Save' }));
+  await expect(logged).toEqual([[30, STORE_CLOCK]]);
+  await openCarbs(canvas);
+  await expect(clockOpened.count).toBe(2);
+  await answerClock(true);
+};
+const clockUnavailablePlay: Story['play'] = async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  const entry = await openCarbs(canvas);
+  await userEvent.type(entry.getByRole('textbox', { name: 'Carbs' }), '30');
+  await answerClock(false);
+  await waitFor(() => expect(entry.getByText('Unavailable')).toBeInTheDocument());
+  await expect(entry.getByRole('button', { name: 'Save' })).toBeDisabled();
+  await userEvent.click(entry.getByRole('button', { name: 'Retry' }));
+  await answerClock(true);
+  await waitFor(() => expect(entry.getByRole('button', { name: 'Save' })).toBeEnabled());
+  await userEvent.click(entry.getByRole('button', { name: 'Save' }));
+  await expect(logged).toEqual([[30, STORE_CLOCK]]);
+};
+export const LogCarbsClockPhone = clockStory('phone', clockPlay);
+export const LogCarbsClockDesktop = clockStory('desktop', clockPlay);
+export const LogCarbsClockUnavailablePhone = clockStory('phone', clockUnavailablePlay);
+export const LogCarbsClockUnavailableDesktop = clockStory('desktop', clockUnavailablePlay);
 
 // Before the first sync the navigator serves no day with readings: Day opens
 // on the served month's last day up to today (its timeline, not served here,

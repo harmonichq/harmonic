@@ -29,8 +29,9 @@
 // programmed rate, hatched. Consecutive slots of one difference merge into one
 // bar, so each bar is one held command, and a gap in the rows is left empty.
 // The scale is linear, never narrower than BASAL_FLOOR each side, with
-// headroom, and its two signed ticks are labelled, each on a plate of the
-// canvas, as the bars and hatching can reach under them. The axis runs flush with
+// headroom, and its two signed ticks are labelled, each on a heavier halo of
+// the canvas than the glucose band's, as the bars, hatching and profile line can
+// reach under them: the halo clears the glyphs, never the bars around them. The axis runs flush with
 // the text column, its end labels anchored inward.
 //
 // Below, the day's events in time order: the time, the glyph, the kind (with
@@ -234,11 +235,6 @@ export function DayChart({ data, layout = 'phone' }: DayChartProps) {
           <pattern id={`${id}-suspend`} width={4} height={4} patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
             <rect width={1.6} height={4} className="ui-daychart__suspend-stripe" />
           </pattern>
-          {/* The basal scale's plate: the canvas under a label's whole box, so no bar, hatch or profile line shows through it. */}
-          <filter id={`${id}-plate`} x={0} y={0} width={1} height={1}>
-            <feFlood className="ui-daychart__plate" />
-            <feComposite in="SourceGraphic" operator="over" />
-          </filter>
           {zones(data.low.value, data.high.value).map((zone) => (
             <clipPath key={zone.tone} id={`${id}-${zone.tone}`}>
               <rect x={-4} width={width + 8}
@@ -298,10 +294,10 @@ export function DayChart({ data, layout = 'phone' }: DayChartProps) {
         )}
         {!empty && (
           <g data-axis="">
-            <text x={0} y={by(upper) - 3} className="ui-daychart__scale" filter={`url(#${id}-plate)`}>
+            <text x={0} y={by(upper) - 3} className="ui-daychart__scale ui-daychart__scale--basal">
               {signed(upper)}<tspan className="ui-daychart__unit"> U/h</tspan>
             </text>
-            <text x={0} y={by(lower) - 3} className="ui-daychart__scale" filter={`url(#${id}-plate)`}>{signed(lower)}</text>
+            <text x={0} y={by(lower) - 3} className="ui-daychart__scale ui-daychart__scale--basal">{signed(lower)}</text>
           </g>
         )}
         <g data-axis="">

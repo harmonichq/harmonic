@@ -50,7 +50,9 @@
 // at once (§2.5, 2026-10-25). Its
 // Time row opens the system time picker, and the time picked is the time the
 // carbs are logged at, today; untouched, it is the clock's when Save is
-// pressed. A save that fails shows "Not saved" with Retry in the Day view's
+// pressed. Live, that clock is the store's, read each time the entry opens;
+// Save waits for it, and when it cannot be read the entry shows Unavailable and
+// Retry in the Time row's place (ADR 658). A save that fails shows "Not saved" with Retry in the Day view's
 // TransientBar, which a Prompt answer leaves up; Retry sends the same grams, on
 // the same date and time, again. Escape, or the scrim on phone, closes it unsaved.
 //
@@ -126,9 +128,12 @@ export type DayScreenProps = {
   notSaved?: boolean;
   /** The live engine's writes; without them the Prompts step through the served stores. */
   writes?: DayWrites;
-  /** The clock Log carbs' Save reads (`YYYY-MM-DD HH:MM`): live, the store's wall clock (#658);
-   *  otherwise the browser's, or a story's. */
+  /** A story's clock, which Log carbs' Save reads (`YYYY-MM-DD HH:MM`) without `readClock`; with neither,
+   *  Save stays held: an entry is never stamped from the browser's clock (ADR 658). */
   now?: () => string;
+  /** Live: read the store's wall clock as Log carbs opens (#658, ADR 658), resolving with the clock Save
+   *  reads; Save waits for it, and when it rejects the entry shows Unavailable and Retry. */
+  readClock?: () => Promise<() => string>;
   /** The day the screen shows, each time it changes, and again on its Retry: the live
    *  app reads it, and rejects when it cannot be read. */
   onDay?: (iso: string) => Promise<void>;
@@ -148,13 +153,6 @@ export type DayWrites = {
   /** Carbs eaten without a bolus, at `at`, the entry's whole time (`YYYY-MM-DD HH:MM`). */
   logCarbs: (grams: number, at: string) => Promise<void>;
 };
-
-const pad = (n: number) => String(n).padStart(2, '0');
-/** The browser's clock, `YYYY-MM-DD HH:MM`. */
-function browserNow() {
-  const d = new Date();
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
 
 /** The week holding a day, when the navigator serves all of it. */
 const week = (iso: string) => weekOf(iso)?.map(navigatorDay) ?? null;
@@ -237,7 +235,7 @@ export function DayScreen(props: DayScreenProps) {
 function Day({
   layout, store, state = 'ready', day, view: initialView = 'day', kind: initialKind = 'low', monthOpen = false,
   logCarbs, timeEdited = false,
-  recorded = false, swiping = false, failing = false, notSaved = false, writes, now = browserNow, onDay, readMonth, nav,
+  recorded = false, swiping = false, failing = false, notSaved = false, writes, now, readClock, onDay, readMonth, nav,
   onRetry,
 }: DayScreenProps) {
   const [selected, setSelected] = useState(day ?? latestDay());
@@ -308,7 +306,8 @@ function Day({
   const push = view === 'prompts' ? 'forward' : 'back';
 
   const select = (iso: string) => {
-    if (iso === unread) readDay(iso);
+    // A new day is read as it is selected; the day on screen, only when it failed.
+    if (iso === selected && iso === unread) readDay(iso);
     setSelected(iso);
     setMonth(false);
   };
@@ -430,9 +429,27 @@ function Day({
     if (visible.length === 0) setView('day');
   };
 
+  // The clock Save reads: live, the store's, read afresh each time Log carbs
+  // opens, and none while it is read or when it cannot be (ADR 658).
+  const [clock, setClock] = useState<{ now: () => string } | 'loading' | 'unavailable'>(
+    readClock || !now ? 'loading' : { now });
+  const clockRead = useRef(0);
+  const readStoreClock = () => {
+    if (!readClock) return;
+    const read = ++clockRead.current;
+    setClock('loading');
+    readClock().then(
+      (served) => { if (read === clockRead.current) setClock({ now: served }); },
+      () => { if (read === clockRead.current) setClock('unavailable'); },
+    );
+  };
+  const entryOpen = carbs !== null;
+  useEffect(() => { if (entryOpen) readStoreClock(); }, [entryOpen]);
+
   // Save reads the clock once: the entry's day, and its time unless one was picked.
   const save = () => {
-    const at = now();
+    if (typeof clock !== 'object') return;
+    const at = clock.now();
     logEntry({ grams: Number(typed.current), t: `${at.slice(0, 10)} ${chosen ?? at.slice(11, 16)}` });
     setCarbs(null);
   };
@@ -481,6 +498,8 @@ function Day({
       setCarbs(Number(text) > 0 ? 'filled' : 'empty');
     },
     onSave: save,
+    clock: typeof clock === 'object' ? undefined : clock,
+    onRetryClock: readStoreClock,
   };
 
   const openPrompts = (opening: PromptKind) => {

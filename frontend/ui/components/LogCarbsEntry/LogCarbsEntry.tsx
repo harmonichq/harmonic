@@ -12,6 +12,10 @@
 // opens the system's own time picker (a native time input beside it), on phone
 // and in the desktop popover alike.
 //
+// Live, the entry stamps on the store's clock, read as it opens (ADR 658):
+// Save waits while it is read, and when it cannot be, the Time row gives way to
+// Unavailable and Retry, and Save stays held.
+//
 // Phone: a bottom sheet (12 px top radius, grabber) on the system keyboard,
 // which the story does not draw. Desktop: a popover anchored under its
 // "+ Log carbs" trigger, its arrow on the trigger; the trigger opens and closes
@@ -47,10 +51,14 @@ export type LogCarbsEntryProps = {
   /** The typed digits, on each change. */
   onGramsChange?: (text: string) => void;
   onSave?: () => void;
+  /** The store's clock while it is read, or when it could not be; unset once it is known. */
+  clock?: 'loading' | 'unavailable';
+  /** Read the clock again, after it could not be. */
+  onRetryClock?: () => void;
 };
 
 type EntryProps = Pick<LogCarbsEntryProps,
-  'state' | 'grams' | 'time' | 'chosen' | 'onTimeChange' | 'onGramsChange' | 'onSave'>;
+  'state' | 'grams' | 'time' | 'chosen' | 'onTimeChange' | 'onGramsChange' | 'onSave' | 'clock' | 'onRetryClock'>;
 
 /** Open the system time picker; where showPicker is missing, focus the input. */
 function pick(input: RefObject<HTMLInputElement | null>) {
@@ -63,7 +71,7 @@ function pick(input: RefObject<HTMLInputElement | null>) {
   }
 }
 
-function Entry({ state, grams, time, chosen, onTimeChange, onGramsChange, onSave }: EntryProps) {
+function Entry({ state, grams, time, chosen, onTimeChange, onGramsChange, onSave, clock, onRetryClock }: EntryProps) {
   const picker = useRef<HTMLInputElement>(null);
   return (
     <>
@@ -71,7 +79,12 @@ function Entry({ state, grams, time, chosen, onTimeChange, onGramsChange, onSave
       <div className="ui-logcarbs__field">
         <GramsField value={state === 'empty' ? null : grams} focused onChange={onGramsChange} />
       </div>
-      <div className="ui-logcarbs__time-row">
+      {clock === 'unavailable' ? (
+        <div className="ui-logcarbs__time ui-logcarbs__unavailable">
+          <span>Unavailable</span>
+          <Button kind="text" label="Retry" onClick={onRetryClock} />
+        </div>
+      ) : <div className="ui-logcarbs__time-row">
         <button type="button" className="ui-logcarbs__time" data-role="row" onClick={() => pick(picker)}>
           <span>Time</span>
           <span className="ui-logcarbs__value">
@@ -82,9 +95,9 @@ function Entry({ state, grams, time, chosen, onTimeChange, onGramsChange, onSave
         <input ref={picker} className="ui-logcarbs__picker" type="time" aria-label="Time" tabIndex={-1}
           value={chosen ?? ''}
           onChange={(event) => { if (event.currentTarget.value) onTimeChange?.(event.currentTarget.value); }} />
-      </div>
+      </div>}
       <div className="ui-logcarbs__foot">
-        <Button kind="primary" label="Save" disabled={state === 'empty'} onClick={onSave} />
+        <Button kind="primary" label="Save" disabled={state === 'empty' || clock !== undefined} onClick={onSave} />
       </div>
     </>
   );

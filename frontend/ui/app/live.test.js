@@ -995,15 +995,48 @@ test('a day that cannot be read rejects, and is read again when it is asked for 
   assert.ok(live.answers.day.days['2026-01-05']);
 });
 
-test('Log carbs\' clock is the store\'s wall clock, as the carbs read with a day serves it (#658)', async () => {
+// Log carbs' clock (#658, ADR 658): the store's wall clock, read fresh each time
+// Log carbs opens, never the browser's zone. `ahead` hours past UTC: fourteen and
+// a half is a zone no browser running these tests is in.
+const servedClock = (ahead) => new Date(Date.now() + ahead * 3600000).toISOString().slice(0, 19).replace('T', ' ');
+/** Whether `clock` reads `ahead` hours past UTC, to the minute. */
+const reads = (clock, ahead) => Math.abs(Date.parse(`${clock()}:00Z`) - Date.parse(`${servedClock(ahead)}Z`)) < 61000;
+
+test('Log carbs reads the store\'s clock with no day read at all, as when no day can be read (#658)', async () => {
   const fake = fakeClient();
-  // Fourteen hours and a half ahead of UTC: a zone no browser running this test is in.
-  const wall = new Date(Date.now() + 14.5 * 3600000).toISOString().slice(0, 19).replace('T', ' ');
-  fake.client.fetchCarbs = () => Promise.resolve({ carb_entries: [], now: wall });
+  fake.client.fetchCarbs = () => Promise.resolve({ carb_entries: [], now: servedClock(14.5) });
   const live = createLive({ client: fake.client, glossary: [] });
+  assert.ok(reads(await live.readClock(), 14.5));
+});
+
+test('Log carbs reads the store\'s clock fresh after a reload, though the days drawn are remembered (#658)', async () => {
+  const fake = fakeClient();
+  let clocks = 0;
+  fake.client.fetchCarbs = () => { clocks += 1; return Promise.resolve({ carb_entries: [], now: servedClock(14.5) }); };
+  const memory = { load: () => ({ tabs: ['day'], answers: { day: { states: {}, days: { '2026-01-05': {} }, prompts: {}, months: {} } } }),
+    save: () => undefined };
+  const live = createLive({ client: fake.client, glossary: [], memory });
+  assert.ok(live.answers.day.days['2026-01-05'], 'the remembered day draws');
+  assert.ok(reads(await live.readClock(), 14.5));
+  assert.equal(clocks, 1);
+});
+
+test('each opening reads the clock again, so a page left open follows the store across a clock change (#658)', async () => {
+  const fake = fakeClient();
+  let ahead = 14.5;
+  fake.client.fetchCarbs = () => Promise.resolve({ carb_entries: [], now: servedClock(ahead) });
+  const live = createLive({ client: fake.client, glossary: [] });
+  assert.ok(reads(await live.readClock(), 14.5));
+  ahead = 13.5;
   await live.readDay('2026-01-05');
-  assert.ok(Math.abs(Date.parse(`${live.dayNow()}:00Z`) - Date.parse(`${wall}Z`)) < 61000, `${live.dayNow()} is not ${wall}`);
+  assert.ok(reads(await live.readClock(), 13.5));
   assert.deepEqual(Object.keys(live.answers.day.days['2026-01-05'].carbs), ['carb_entries'], 'the clock is not kept as the day');
+});
+
+test('a clock the engine cannot serve rejects; nothing is guessed (#658)', async () => {
+  const fake = fakeClient();
+  fake.client.fetchCarbs = () => Promise.reject(new Error('unavailable'));
+  await assert.rejects(createLive({ client: fake.client, glossary: [] }).readClock());
 });
 
 test('Log carbs posts the whole time it is given, on that date', async () => {

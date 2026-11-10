@@ -104,3 +104,33 @@ export const CatchUpResumesWhenShown: Story = {
     await waitFor(() => expect(unavailable(canvasElement)).toBeNull(), { timeout: 3000 });
   },
 };
+
+// #658: Log carbs stamps on the clock the adapter reads from the store as it
+// opens, never the browser's: the store's clock here is hours and years from
+// the browser's, and the day itself is never read, so nothing but that read
+// could put its hour on the entry.
+const STORE_NOW = '2031-03-04 05:06:00';
+const created: { t: string }[] = [];
+const storeClock = createLive({
+  client: client({
+    fetchDayNavigator: async () => ({}),
+    fetchCarbs: async () => ({ carb_entries: [], now: STORE_NOW }),
+    createCarb: async (entry) => { created.push(entry as unknown as { t: string }); return {}; },
+  }),
+  glossary: [],
+}) as Live;
+export const LogCarbsOnTheStoreClock: Story = {
+  args: { live: storeClock },
+  beforeEach: () => { created.length = 0; },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole('button', { name: /Day/ }));
+    await userEvent.click(await canvas.findByRole('button', { name: '+ Log carbs' }));
+    const entry = within(canvas.getByRole('dialog', { name: 'Log carbs' }));
+    await userEvent.type(entry.getByRole('textbox', { name: 'Carbs' }), '30');
+    await waitFor(() => expect(entry.getByRole('button', { name: 'Save' })).toBeEnabled());
+    await userEvent.click(entry.getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(created).toHaveLength(1));
+    await expect(created[0].t.slice(0, 13), 'the entry carries the store clock\'s hour').toBe(STORE_NOW.slice(0, 13));
+  },
+};

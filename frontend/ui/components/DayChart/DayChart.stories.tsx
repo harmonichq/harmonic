@@ -33,13 +33,18 @@ export const Default: Story = {
     const canvas = within(canvasElement);
     for (const key of ['Pattern', 'Basal', 'Pump profile', 'Suspend']) await expect(canvas.getByText(key)).toBeVisible();
     await expect(rows(canvasElement).filter((row) => row.includes('Meal · Carb undercount'))).toHaveLength(3);
-    // The basal scale's two labels each sit on the canvas, so no bar, hatch or profile line crosses them.
+    // The basal scale's two labels each ride a heavier halo of the canvas than
+    // the glucose band's, so no bar, hatch or profile line crosses their glyphs,
+    // and nothing but that halo covers the bars around them.
     const canvasFill = getComputedStyle(canvasElement.querySelector('.ui-daychart__halo')!).fill;
-    const labels = [...canvasElement.querySelectorAll('[data-axis] .ui-daychart__scale')].filter((label) => /^[+−]/.test(label.textContent ?? ''));
+    const scales = [...canvasElement.querySelectorAll<SVGTextElement>('.ui-daychart__scale')];
+    const band = scales.find((label) => !label.closest('[data-axis]'))!;
+    const labels = scales.filter((label) => label.closest('[data-axis]') && /^[+−]/.test(label.textContent ?? ''));
     await expect(labels).toHaveLength(2);
     for (const label of labels) {
-      const plate = canvasElement.querySelector(`${label.getAttribute('filter')?.slice(4, -1)} feFlood`);
-      await expect(plate && getComputedStyle(plate).floodColor).toBe(canvasFill);
+      await expect(getComputedStyle(label).stroke).toBe(canvasFill);
+      await expect(parseFloat(getComputedStyle(label).strokeWidth)).toBeGreaterThan(parseFloat(getComputedStyle(band).strokeWidth));
+      await expect(label.hasAttribute('filter')).toBe(false);
     }
   },
 };
@@ -68,10 +73,13 @@ export const Withheld: Story = {
     const svg = canvasElement.querySelector<SVGSVGElement>('.ui-daychart__chart')!;
     const x = (minute: number) => svg.width.baseVal.value * (minute / 1440);
     const [from, to] = [x(Math.min(...withheld)), x(Math.max(...withheld))];
-    const vertices = [...svg.querySelectorAll('.ui-daychart__trace--in-range')]
-      .flatMap((line) => (line.getAttribute('points') ?? '').split(' ').map((point) => Number(point.split(',')[0])));
-    await expect(vertices.filter((at) => at >= from - 0.1 && at <= to + 0.1)).toEqual([]);
-    await expect(vertices.some((at) => at < from) && vertices.some((at) => at > to)).toBe(true);
+    // Each run of readings is one line: the trace breaks at the withheld span,
+    // so no line reaches across it, and one run ends before it and another starts after.
+    const lines = [...svg.querySelectorAll('.ui-daychart__trace--in-range')]
+      .map((line) => (line.getAttribute('points') ?? '').split(' ').map((point) => Number(point.split(',')[0])));
+    const spans = lines.map((at) => [Math.min(...at), Math.max(...at)]);
+    await expect(spans.filter(([start, end]) => start <= to + 0.1 && end >= from - 0.1)).toEqual([]);
+    await expect(spans.some(([, end]) => end < from) && spans.some(([start]) => start > to)).toBe(true);
   },
 };
 export const NoData: Story = {

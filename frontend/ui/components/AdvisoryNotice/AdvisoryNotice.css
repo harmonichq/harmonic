@@ -1,12 +1,9 @@
-/* AdvisoryNotice (§4.2): the canvas ground, one column centred in the viewport.
-   It is its own page: on a screen too short for it, it scrolls, never the
-   document (#682). */
+/* AdvisoryNotice (§4.2): the canvas ground, one column centred in the viewport. */
 .ui-advisory {
   box-sizing: border-box;
   display: grid;
   place-items: center;
-  height: 100dvh;
-  overflow-y: auto;
+  min-height: 100dvh;
   padding: 16px;
   background: var(--wk-canvas);
   font-family: var(--ui-font);

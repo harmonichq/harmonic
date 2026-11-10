@@ -13,7 +13,7 @@ export type AdvisoryNoticeProps = {
 
 export function AdvisoryNotice({ term, meaning, onUnderstood }: AdvisoryNoticeProps) {
   return (
-    <main className="ui-advisory" data-scroll="page">
+    <main className="ui-advisory">
       <div className="ui-advisory__body">
         <div className="glossary">
           <h1 className="ui-advisory__term">{term}</h1>

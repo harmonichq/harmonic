@@ -2,9 +2,12 @@
    screen filling the viewport; each screen scrolls its own page or panes. */
 html, body { height: 100%; margin: 0; }
 body { background: var(--wk-canvas); color-scheme: dark; }
-/* The screen's box is the viewport, and nothing in it makes the document
-   scroll (§2.3 ban 6, #682): a sheet rising from below it, a hit area at its
-   edge. A focus moved into a rising sheet once scrolled the document to reach
-   it, and Firefox for Android carried the tab bar off with it. Clip, not
-   hidden, so the box is no scroll container that a focus could scroll. */
-#app { height: 100dvh; overflow: clip; }
+#app { height: 100dvh; }
+/* Under the tab bar, nothing in the screen makes the document scroll (§2.3
+   ban 6, #682): a sheet rising from below it, a hit area at its edge. A focus
+   moved into a rising sheet once scrolled the document to reach it, and
+   Firefox for Android carried the tab bar off with it. Clip, not hidden, so
+   the box is no scroll container that a focus could scroll. The rail layout
+   is not clipped: on a screen shorter than the rail, the document's scroll is
+   what brings the rail's last item and a pane's end into reach (ADR 682). */
+#app:has(.ui-nav--tabbar) { overflow: clip; }

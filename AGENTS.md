@@ -117,8 +117,9 @@ generator emits instead of the showcase.
   opens each of its five tabs once at 1440×900, and each draws its primary
   content with no skeleton and no Unavailable. Its context sends
   `Connection: close` (#507). It also holds the one check of the app's own
-  shell, which no story loads: on a 390×844 phone, Log carbs rises without the
-  document ever scrolling (ADR 682). It is not where behaviour is tested; the
+  shell, which no story loads: on a 390×844 phone, Log carbs and the Settings
+  password sheet rise without the document ever scrolling, and at 844×340 the
+  rail's last item and a pane's end can still be brought on screen (ADR 682). It is not where behaviour is tested; the
   Storybook suite and the contract tests are.
 
 Both run in CI's `app` job, hand-listed. They fail closed without a serve, and

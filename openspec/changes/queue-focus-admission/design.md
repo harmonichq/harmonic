@@ -27,8 +27,14 @@ served cause is `pinnable`" now reads the Focus list's verdict. On
 `pattern-correction-collapse` no cause card has a button, Correction on active
 insulin's included, because its Pattern is withheld; the contract expectation
 that pinned it focusable is corrected, and its drill-down story no longer
-expects a focusable cause there. A standalone habit's card still follows
-the global admission alone, as its pin does (ADR 528).
+expects a focusable cause there. The mixed state, one cause focusable and one
+not, comes from the same case with six more lows that follow no correction,
+which the fixture generator adds: Lows after correcting highs is then ready,
+and the pin admits Correction on active insulin but not Correction stacking,
+whose one stacked pair is too few for the habit. (Correction stacking is not
+unpinnable as such: on `pattern-correction-fold` made ready the same way, both
+causes are admitted.) A standalone habit's card still follows the global
+admission alone, as its pin does (ADR 528).
 
 ## ADR 666 — A write the engine refused outright is held only until a later write or a refused Retry
 
@@ -62,12 +68,21 @@ showed the state before the write, and an ended Trial as active again (#665).
 
 **Decision.**
 
-1. `watched_change.frontier_current(store)`: the frontier is reconciled at the
-   store's current input revision. Only a reconcile, or a write that changes
-   nothing a reconcile reads and carries a current frontier (#557), writes the
-   frontier at a revision, so the follow-up state is then a reconcile's own
-   result. On that copy a second reconcile changed no record and no frontier,
-   advanced no revision, and returned the committed frontier's admission.
+1. `watched_change.frontier_current(store)`: the frontier is recorded at the
+   store's current input revision. The frontier is written at a revision by a
+   reconcile, by a write that changes nothing a reconcile reads and carries a
+   current frontier (#557), and by every lifecycle step: a Focus, its End, a
+   Trial's End, a Done and its Undo each advance it past their own mutation.
+   So a current frontier is not by construction a reconcile's own result. A
+   Done writes the Plan history, which the reconcile's reviewable Trials read,
+   and a Focus or an End writes the records the reconcile reads. The claim
+   this ADR rests on is the observed one: after each such step over a
+   reconciled frontier, a reconcile changes no record and no frontier,
+   advances no revision, and returns the committed frontier's admission. It
+   held on that copy for a second reconcile, and on the QA case stores after
+   a snooze, a restore, a Done, its Undo, a Focus, its End and a Trial's End;
+   a test pins those steps. A step whose mutation a later reconcile would
+   undo or extend breaks it, and that test fails for it.
 2. `lifecycle` reads no history when the frontier is current before its writer,
    and inside the writer takes the admission from `follow_up_admission` when it
    is still current; otherwise it reconciles as before. It still advances the
@@ -75,7 +90,21 @@ showed the state before the write, and an ended Trial as active again (#665).
 3. A guidance preference changes nothing a reconcile reads. Its set and restore
    run in one follow-up transaction (`write_unreconciled_state`) that carries a
    current frontier to the revision after the write; one already behind is
-   reconciled after the write, as before.
+   reconciled after the write, as before. A preference write that changes
+   nothing (a restore of a card not set aside) carries, reconciles and
+   advances nothing, whatever another write committed meanwhile.
+4. The observed claim depends on the build's reconcile rule, and the frontier
+   records the revision it was reconciled at, not the build that reconciled
+   it. After a deploy whose rule differs (a reversal detector that now finds a
+   Trial reverted) a frontier current at its revision would admit an End that
+   the new build's reconcile refuses. So every start reconciles a recorded
+   frontier in full before the app serves a request, as it already did for a
+   frontier behind: a write takes the fast path only over a frontier this build
+   reconciled or carried forward. Over an unchanged build that reconcile
+   changes nothing. A frontier stamp with the source fingerprint, as the derived
+   results carry, would reconcile only after a deploy, but needs a column and
+   a migration on the store for what is one reconcile per start; this is the
+   smaller change.
 
 **Not changed.** What a reconcile computes, what a Trial's ending assessment
 computes, every write's cache invalidation (`follow_up_written()`), the two
@@ -84,7 +113,8 @@ recorded data, or finds the frontier behind, still reconciles in full.
 
 **Consequences.** On a reconciled store a follow-up write's cost no longer
 grows with the history: it is the write and, for a Trial's End, its ending
-assessment.
+assessment. A start pays one reconcile before it serves: about 45 s on that
+copy, once, where each write paid it before; 0.1 s on a QA case store.
 
 ## ADR 665 — A roster read waits for a follow-up step being written
 
@@ -97,11 +127,14 @@ committed state, in which the Trial is still active (#665).
 
 **Decision.** Every lifecycle step (a Trial's End, a Focus and its End, a Done
 and its Undo, a late conclusion) holds one in-process lock from before its
-writer until its cache invalidation. `GET /api/verify/trials` waits on it
-before it reads. A reload during an End therefore waits for the End, then reads
-the roster after it, as `while_computing=False` already makes a read after a
-committed write do (ADR 579). A step that starts after the read has passed the
-lock is an ordinary crossed read.
+writer until its cache invalidation. The history a step reconciles from, when
+its frontier is behind (after every hourly sync, 18 to 45 s on that copy), is
+read before the lock, so the lock spans only the write. `GET /api/verify/trials`
+waits on it before it reads. A reload during an End therefore waits for the
+End's write, then reads the roster after it, as `while_computing=False` already
+makes a read after a committed write do (ADR 579), and is never held behind a
+history read. A step that starts after the read has passed the lock is an
+ordinary crossed read.
 
 **Not changed.** The write-once ending, what the ending assessment computes,
 and the roster's cache key. The lock is in-process, as the result cache is: a

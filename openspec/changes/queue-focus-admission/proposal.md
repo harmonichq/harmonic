@@ -16,6 +16,10 @@ Undo bar of every later write.
 - Every Pattern card's and cause card's Focus button is drawn from that verdict.
 - A write the engine refused outright (a refusal that is not a conflict) is
   held only until a later write is made or Retry is refused again.
+- A follow-up write over a frontier this build reconciled reads no history,
+  and every start reconciles a recorded frontier before it serves (ADR 667).
+- A reload during a Trial's End waits for the End's write, not its history
+  read (ADR 665).
 
 ## Impact
 

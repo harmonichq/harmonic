@@ -22,7 +22,7 @@
 // Saving a token in Settings reads the app again under it: Settings' parts and
 // badges at once, and every other tab when it next opens.
 //
-// A drill-down on the Queue, Changes or Settings takes one history entry from
+// A drill-down on the Queue, Changes, Day or Settings takes one history entry from
 // the router at the same address, marked with which drill-down it is (ADR 594):
 // "‹ Parent" goes Back through it, and a Back that leaves it, a phone's
 // edge-swipe among them, returns the tab to its own screen; a Forward onto it
@@ -35,7 +35,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { drillDownRouter, parseRoute, subscribeRoute, writeRoute } from '../../tab-routing.js';
 import type { NavItem } from '../components/NavBar/NavBar';
 import { ChangesScreen, type ChangesDrillDown } from '../screens/Changes/ChangesScreen';
-import { DayScreen } from '../screens/Day/DayScreen';
+import { DayScreen, type DayDrillDown } from '../screens/Day/DayScreen';
 import { OverviewScreen } from '../screens/Overview/OverviewScreen';
 import { QueueScreen, type DrillDown } from '../screens/Queue/QueueScreen';
 import { SettingsScreen, type SettingsDrillDown } from '../screens/Settings/SettingsScreen';
@@ -47,10 +47,11 @@ export type Live = ReturnType<typeof createLive>;
 
 /** The router's drill-down entries, one router per tab that has drill-downs. */
 const DRILL_DOWN = {
-  queue: drillDownRouter('queue'), changes: drillDownRouter('changes'), settings: drillDownRouter('settings'),
+  queue: drillDownRouter('queue'), changes: drillDownRouter('changes'), day: drillDownRouter('day'),
+  settings: drillDownRouter('settings'),
 };
 /** The drill-down an entry marks; its tab's screen is the one that reads it. */
-type Entry = DrillDown | ChangesDrillDown | SettingsDrillDown;
+type Entry = DrillDown | ChangesDrillDown | DayDrillDown | SettingsDrillDown;
 
 type Read = 'loading' | 'ready' | 'stale' | 'unavailable';
 type Part = 'status' | 'account' | 'pump';
@@ -152,7 +153,8 @@ export function App({ live }: { live: Live }) {
     redraw();
     return written.finally(redraw);
   };
-  /** A Prompt answer, drawn once the Prompts land; the day on screen is read again behind it. */
+  /** A Prompt answer, which the adapter holds (#677): drawn once the Prompts land after every answer made
+   *  with it; the day on screen is read again behind them, once for them all. */
   const answered: typeof dayWrites.answer = (prompt, answer) => dayWrites.answer(prompt, answer).finally(() => {
     redraw();
     live.readDay(live.shownDay()).then(redraw, redraw);
@@ -189,10 +191,11 @@ export function App({ live }: { live: Live }) {
           live.readWindow(window).then(settled, settled);
         }} />;
     case 'day':
-      return <DayScreen key={tab} layout={layout} store="wearer" state={state} nav={nav} onRetry={retry}
+      return <DayScreen key={tab} layout={layout} store="wearer" state={state} nav={{ ...nav, drillDown: DRILL_DOWN.day }}
+        returnTo={(returnTo as DayDrillDown | null) ?? undefined} onRetry={retry}
         onDay={(iso) => live.readDay(iso).finally(redraw)} readClock={live.readClock}
         readMonth={(month) => live.readMonth(month).finally(redraw)}
-        writes={{ answer: answered, grams: drawn(dayWrites.grams), logCarbs: drawn(dayWrites.logCarbs) }} />;
+        writes={{ answer: answered, held: dayWrites.held, grams: drawn(dayWrites.grams), logCarbs: drawn(dayWrites.logCarbs) }} />;
     case 'settings':
       return <SettingsScreen key={tab} layout={layout} sync={null} state={state} onRetry={retry} onToken={reread}
         account={live.accountState()} nav={{ ...nav, drillDown: DRILL_DOWN.settings }}

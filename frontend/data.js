@@ -94,9 +94,10 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch, deadline = READ_DEA
     }
   }
 
-  const send = (url, method, body) => api(url, body === undefined ? { method } : {
+  /** A write; `keepalive` lets one already sent outlive the page, a reload or a Back out of the app among them. */
+  const send = (url, method, body, { keepalive = false } = {}) => api(url, Object.assign(body === undefined ? { method } : {
     method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
-  });
+  }, keepalive ? { keepalive } : {}));
 
   // --- Settings: credentials, sync status, the pump profile ----------------
 
@@ -244,11 +245,12 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch, deadline = READ_DEA
 
   /**
    * PATCH /api/carbs/<id> — merge fields into one logged entry (a Prompt's
-   * grams, typed after its Yes).
+   * grams, typed after its Yes). Sent with keepalive, as the answer is, so
+   * grams typed just before the page goes are still saved (#677).
    * @param {number} entryId
    * @param {{ grams: number, certainty: string }} fields
    */
-  const updateCarb = (entryId, fields) => send('/api/carbs/' + encodeURIComponent(entryId), 'PATCH', fields);
+  const updateCarb = (entryId, fields) => send('/api/carbs/' + encodeURIComponent(entryId), 'PATCH', fields, { keepalive: true });
 
   /**
    * GET /api/model-view?date=YYYY-MM-DD — every moment the engine weighed on
@@ -261,11 +263,12 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch, deadline = READ_DEA
 
   /**
    * POST /api/prompts/answer — answer one Prompt. `carbs` (Yes) creates the
-   * carb entry and the answer together and returns `carb_entry_id`.
+   * carb entry and the answer together and returns `carb_entry_id`. Sent with
+   * keepalive, so an answer given just before the page goes is still saved (#677).
    * @param {{ detector: string, anchor_t: string, answer: string,
    *           entry?: { grams: ?number, certainty: string } }} body
    */
-  const answerPrompt = (body) => send('/api/prompts/answer', 'POST', body);
+  const answerPrompt = (body) => send('/api/prompts/answer', 'POST', body, { keepalive: true });
 
   return {
     fetchCredentials, saveCredentials, fetchStatus, fetchPumpSettings,

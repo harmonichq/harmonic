@@ -208,7 +208,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         import asyncio
         import contextlib
 
-        from fastapi import Body, Depends, FastAPI, Header, HTTPException, Request
+        from fastapi import BackgroundTasks, Body, Depends, FastAPI, Header, HTTPException, Request
         from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
         from fastapi.staticfiles import StaticFiles
     except ImportError as e:  # pragma: no cover - depends on the optional extra
@@ -220,8 +220,10 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     configuration = resolve_runtime_configuration(DEFAULT_DB, credentials.DEFAULT_KEY_PATH)
     # ``from __future__ import annotations`` defers local FastAPI imports.  Publish
     # Request for FastAPI's signature resolver so these raw-query routes cannot
-    # degrade into a default 422 validation error.
+    # degrade into a default 422 validation error, and BackgroundTasks for the
+    # carb and Prompt writes, which reconcile after their response (ADR 677).
     globals()["Request"] = Request
+    globals()["BackgroundTasks"] = BackgroundTasks
     db_path = db_path or configuration.db_path
     token = token if token is not None else configuration.api_token
     key_path = key_path or configuration.secret_key_path
@@ -1314,10 +1316,42 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         except (KeyError, TypeError, ValueError) as e:
             raise HTTPException(status_code=400, detail=f"invalid carb entry: {e}")
 
-    def reconcile_carb_write(store) -> None:
-        """Finish a carb/prompt write against the current Follow-up frontier."""
+    # A carb or Prompt write reconciles the follow-up after its response, never
+    # inside its request and never two at once (ADR 677): a burst of Prompt answers
+    # pays one whole-history reconcile, plus one more for each pass a later write
+    # crosses.
+    reconcile_owed = threading.Event()
+    reconciling = threading.Lock()
+
+    def reconcile_carb_writes() -> None:
+        """Finish the committed carb and Prompt writes against the current Follow-up
+        frontier. Each write's background task owes one; a task that finds one
+        running leaves its write to it, which reconciles again once it is done."""
         from .watched_change import reconcile_ingested_follow_up
-        reconcile_ingested_follow_up(store)
+        reconcile_owed.set()
+        while reconcile_owed.is_set() and reconciling.acquire(blocking=False):
+            try:
+                while reconcile_owed.is_set():
+                    reconcile_owed.clear()
+                    try:
+                        with Store.open(db_path) as store:
+                            reconcile_ingested_follow_up(store)
+                    except Exception:
+                        # The frontier stays behind, which grants no End and no Focus
+                        # until the next reconcile (#557): the start's, or a write's.
+                        logger.exception("The follow-up reconcile after a carb write failed")
+                    # The frontier it advanced is follow-up state the cached roster
+                    # and guidance read (ADR 538), as a lifecycle step's is.
+                    follow_up_written()
+            finally:
+                reconciling.release()
+
+    def carb_written(background: BackgroundTasks) -> None:
+        """After a committed carb or Prompt write: an answered prompt changes the
+        carb-exclusion set (#267), so the cache is invalidated at once, and the
+        follow-up reconcile runs once the response is sent (ADR 677)."""
+        invalidate()
+        background.add_task(reconcile_carb_writes)
 
     @app.get("/api/carbs")
     def list_carbs_endpoint(start: Optional[datetime] = None,
@@ -1332,7 +1366,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             return {"carb_entries": store.list_carb_entries(s, e), "now": wall_clock_now().strftime(fmt)}
 
     @app.post("/api/carbs")
-    def create_carb_endpoint(payload: dict = Body(...),
+    def create_carb_endpoint(background: BackgroundTasks, payload: dict = Body(...),
                              _: None = Depends(require_token)) -> dict:
         entry = _carb_entry_from_payload(payload)
         committed = False
@@ -1340,15 +1374,14 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             with Store.open(db_path) as store:
                 new_id = store.upsert_carb_entry(entry)
                 committed = True
-                reconcile_carb_write(store)
                 result = store.get_carb_entry(new_id)
         finally:
             if committed:
-                invalidate()  # a committed write stays invalidated if reconcile fails
+                carb_written(background)
         return result
 
     @app.patch("/api/carbs/{entry_id}")
-    def update_carb_endpoint(entry_id: int, payload: dict = Body(...),
+    def update_carb_endpoint(entry_id: int, background: BackgroundTasks, payload: dict = Body(...),
                              _: None = Depends(require_token)) -> dict:
         committed = False
         try:
@@ -1361,15 +1394,14 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 entry = _carb_entry_from_payload({**existing, **payload})
                 store.upsert_carb_entry(entry, id=entry_id)
                 committed = True
-                reconcile_carb_write(store)
                 result = store.get_carb_entry(entry_id)
         finally:
             if committed:
-                invalidate()
+                carb_written(background)
         return result
 
     @app.delete("/api/carbs/{entry_id}")
-    def delete_carb_endpoint(entry_id: int,
+    def delete_carb_endpoint(entry_id: int, background: BackgroundTasks,
                              _: None = Depends(require_token)) -> dict:
         # Deleting a prompt-sourced entry cascades its prompt_responses row away
         # (the #125 store rule) so the sourcing prompt resurrects.
@@ -1378,11 +1410,9 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             with Store.open(db_path) as store:
                 n = store.delete_carb_entry(entry_id)
                 committed = bool(n)
-                if n:
-                    reconcile_carb_write(store)
         finally:
             if committed:
-                invalidate()
+                carb_written(background)
         if n == 0:
             raise HTTPException(status_code=404, detail="carb entry not found")
         return {"deleted": n}
@@ -1411,7 +1441,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         return [p.to_dict() for p in prompts]
 
     @app.post("/api/prompts/answer")
-    def answer_prompt_endpoint(payload: dict = Body(...),
+    def answer_prompt_endpoint(background: BackgroundTasks, payload: dict = Body(...),
                                _: None = Depends(require_token)) -> dict:
         from .pending_prompts import SOURCE_BY_DETECTOR
         detector = payload.get("detector")
@@ -1448,14 +1478,13 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                         detector=detector, anchor_t=anchor_t, answer=answer)
                     result = {"answer": answer, "prompt_response_id": resp_id}
                 committed = True
-                reconcile_carb_write(store)
         finally:
             if committed:
-                invalidate()  # an answered prompt changes the carb-exclusion set (#267)
+                carb_written(background)
         return result
 
     @app.delete("/api/prompts/answer")
-    def clear_prompt_endpoint(payload: dict = Body(...),
+    def clear_prompt_endpoint(background: BackgroundTasks, payload: dict = Body(...),
                               _: None = Depends(require_token)) -> dict:
         """Clear a prompt's answer so it resurrects (delete-resurrects, #128).
 
@@ -1474,11 +1503,9 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             with Store.open(db_path) as store:
                 n = store.clear_prompt_response(detector=detector, anchor_t=anchor_t)
                 committed = bool(n)
-                if n:
-                    reconcile_carb_write(store)
         finally:
             if committed:
-                invalidate()
+                carb_written(background)
         return {"cleared": n}
 
     @app.get("/api/report")

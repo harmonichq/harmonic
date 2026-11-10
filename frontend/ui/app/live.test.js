@@ -642,6 +642,130 @@ test('a Prompt answer resolves once the Prompts land, and reads no day (#610)', 
   assert.equal(fake.count('model-view'), views + 2, 'another visited day is read again when next shown');
 });
 
+test('a burst of Prompt answers reads the Prompts again once, and the adapter holds each until it is served (#677)', async () => {
+  const fake = fakeClient();
+  const pending = [];
+  fake.client.answerPrompt = (body) => {
+    fake.calls.push({ name: 'answer', args: [body] });
+    return new Promise((resolve, reject) => { pending.push({ resolve, reject }); });
+  };
+  const live = createLive({ client: fake.client, glossary: [] });
+  await live.readTab('day');
+  const lows = ['01:00', '02:00', '03:00'].map((at) => ({ detector: 'low', anchorT: `2026-01-05 ${at}:00` }));
+  // Answered row after row, each before the one before it is answered; the screen that made them may be gone.
+  const made = lows.map((low) => live.dayWrites.answer(low, 'not-sure').then(() => 'saved', () => 'refused'));
+  assert.equal(fake.count('answer'), 3, 'each answer is sent as it is made');
+  const held = () => lows.map((low) => live.dayWrites.held().answering(low));
+  assert.deepEqual(held(), [true, true, true], 'and held by the adapter');
+  pending[0].resolve({});
+  await landed();
+  assert.equal(fake.count('prompts'), 1, 'no Prompts read while answers are in flight');
+  assert.deepEqual(held(), [true, true, true], 'a saved answer the engine has not yet served answered stays held');
+  pending[1].reject(refusal(500));
+  pending[2].resolve({});
+  assert.deepEqual(await Promise.all(made), ['saved', 'refused', 'saved']);
+  assert.equal(fake.count('prompts'), 2, 'one Prompts read for the three answers');
+  assert.deepEqual(held(), [false, false, false]);
+  assert.deepEqual(live.dayWrites.held().refused, [{ prompt: lows[1], answer: 'not-sure' }],
+    'the refused answer is held, with its prompt, until it is sent again');
+  const again = live.dayWrites.answer(lows[1], 'not-sure');
+  assert.deepEqual(live.dayWrites.held().refused, [], 'sending it again holds it in flight instead');
+  pending[3].resolve({});
+  await again;
+  assert.equal(fake.count('prompts'), 3);
+  assert.deepEqual(held(), [false, false, false]);
+  assert.deepEqual(live.dayWrites.held().refused, []);
+});
+
+test('a low and a rise at one anchor are two Prompts, each held apart (#677)', async () => {
+  const fake = fakeClient();
+  const pending = [];
+  fake.client.answerPrompt = (body) => {
+    fake.calls.push({ name: 'answer', args: [body] });
+    return new Promise((resolve, reject) => { pending.push({ resolve, reject }); });
+  };
+  const live = createLive({ client: fake.client, glossary: [] });
+  await live.readTab('day');
+  const anchorT = '2026-01-05 03:00:00';
+  const low = { detector: 'low', anchorT };
+  const rise = { detector: 'missed-meal', anchorT };
+  const refused = live.dayWrites.answer(rise, 'no').catch(() => 'refused');
+  pending[0].reject(refusal(500));
+  assert.equal(await refused, 'refused');
+  const made = live.dayWrites.answer(low, 'not-sure');
+  assert.deepEqual(live.dayWrites.held().refused, [{ prompt: rise, answer: 'no' }],
+    'answering the low leaves the refused rise at its anchor held');
+  assert.equal(live.dayWrites.held().answering(low), true);
+  assert.equal(live.dayWrites.held().answering(rise), false, 'the rise is not held in flight by the low');
+  pending[1].resolve({});
+  await made;
+  assert.equal(live.dayWrites.held().answering(low), false);
+  assert.deepEqual(live.dayWrites.held().refused, [{ prompt: rise, answer: 'no' }]);
+});
+
+test('a Prompts read that lands behind a later one changes nothing, so a saved answer stays answered (#677)', async () => {
+  const fake = fakeClient();
+  const low = (at) => ({ detector: 'low', anchor_t: `2026-01-05 ${at}:00`, answer: null });
+  let served = [low('01:00'), low('02:00')];
+  const reads = [];
+  // Each read serves the Prompts as they stand when it is asked, and lands when the test says.
+  fake.client.fetchPrompts = () => {
+    const asked = served.map((p) => ({ ...p }));
+    return new Promise((resolve) => { reads.push(() => resolve(asked)); });
+  };
+  fake.client.answerPrompt = async (body) => {
+    served = served.map((p) => (p.anchor_t === body.anchor_t ? { ...p, answer: body.answer } : p));
+    return {};
+  };
+  const live = createLive({ client: fake.client, glossary: [] });
+  const tab = live.readTab('day');
+  await landed();
+  reads.shift()();
+  await tab;
+  const [a, b] = ['01:00', '02:00'].map((at) => ({ detector: 'low', anchorT: `2026-01-05 ${at}:00` }));
+  const unanswered = () => live.answers.prompts.filter((p) => p.answer === null).map((p) => p.anchor_t);
+  const madeA = live.dayWrites.answer(a, 'not-sure');
+  await landed();
+  // b is saved while the read after a is in flight, so the Prompts are read again after b too.
+  const madeB = live.dayWrites.answer(b, 'not-sure');
+  await landed();
+  const [afterA, afterB] = reads;
+  assert.equal(reads.length, 2, 'a read after each answer, both in flight');
+  afterB();
+  await landed();
+  assert.deepEqual(unanswered(), [], 'the newer read serves both answered');
+  assert.equal(live.dayWrites.held().answering(b), false, 'and releases b, saved before it began');
+  afterA();
+  await landed();
+  assert.deepEqual(unanswered(), [], 'the older read, landing last, puts back no answered row');
+  await Promise.all([madeA, madeB]);
+});
+
+test('a day read that lands behind a later read of it changes nothing (#677)', async () => {
+  const fake = fakeClient();
+  const iso = '2026-01-05';
+  const reads = [];
+  fake.client.fetchTimeline = () => {
+    const n = reads.length + 1;
+    return new Promise((resolve) => { reads.push(() => resolve({ read: n })); });
+  };
+  const live = createLive({ client: fake.client, glossary: [] });
+  await live.readTab('day');
+  // The day picked, its read in flight, and Log carbs saved on it meanwhile: the write reads it again.
+  const picked = live.readDay(iso);
+  await landed();
+  const logged = live.dayWrites.logCarbs(20, `${iso} 12:00`);
+  await landed();
+  const [first, second] = reads;
+  assert.equal(reads.length, 2, 'both reads of the day in flight');
+  second();
+  await logged;
+  assert.deepEqual(live.answers.day.days[iso].timeline, { read: 2 }, 'the read after the write is drawn');
+  first();
+  await picked;
+  assert.deepEqual(live.answers.day.days[iso].timeline, { read: 2 }, 'the read before it, landing last, is not');
+});
+
 test('Done records the card\'s subject from the read it was made on, and a waiting Setting leaves the Queue for Changes', async () => {
   const basal = { subject: 'setting:basal_rate', kind: 'setting', parameter: 'basal_rate', title: 'Basal', units: 'U/h',
     priority: 99, admitted: true, preference: { set_aside: false }, decision: null, acknowledgment: null };

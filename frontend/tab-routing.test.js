@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { TABS, landRoute, parseRoute, pushDrillDown, resolveTab, serializeRoute, subscribeRoute, writeRoute } from './tab-routing.js';
+import { TABS, drillDownRouter, landRoute, parseRoute, pushDrillDown, resolveTab, serializeRoute, subscribeRoute, writeRoute } from './tab-routing.js';
 
 test('the five tabs, in the order the nav draws them', () => {
   assert.deepEqual(TABS, ['queue', 'changes', 'overview', 'day', 'settings']);
@@ -47,18 +47,28 @@ test('Back and Forward report the tab they land on until unsubscribed', () => {
 });
 
 // A fake browser whose history keeps each entry's address and state, and whose
-// back() lands on the entry before, as popstate does.
+// back() lands on the entry before and forward() on the one after, as popstate does.
 function browserAt(pathname) {
   const entries = [{ address: pathname, state: null }];
+  const ahead = [];
   const listeners = new Set();
   const browser = {
     location: { pathname, search: '', hash: '' },
     history: {
       get state() { return entries.at(-1).state; },
-      pushState: (state, _title, address) => { entries.push({ address, state }); browser.location.pathname = address; },
+      pushState: (state, _title, address) => {
+        entries.push({ address, state });
+        ahead.length = 0;
+        browser.location.pathname = address;
+      },
       replaceState: (state, _title, address) => { entries[entries.length - 1] = { address, state }; },
       back: () => {
-        entries.pop();
+        ahead.push(entries.pop());
+        browser.location.pathname = entries.at(-1).address;
+        for (const fn of listeners) fn();
+      },
+      forward: () => {
+        entries.push(ahead.pop());
         browser.location.pathname = entries.at(-1).address;
         for (const fn of listeners) fn();
       },
@@ -108,4 +118,30 @@ test('a reload on a drill-down lands on its tab, and the next drill-down\'s Back
   pushDrillDown({ view: 'causes', subject: 'pattern:p1' }, browser);
   browser.history.back();
   assert.deepEqual(seen, [['queue', null]], 'one Back leaves the drill-down');
+});
+
+test('a tab\'s drill-down router: Back closes the drill-down and Forward reopens it (#669)', () => {
+  const { browser } = browserAt('/settings');
+  const router = drillDownRouter('settings', browser);
+  const seen = [];
+  router.onReturn(() => seen.push('return'));
+  const stop = router.onEnter((drillDown) => seen.push(drillDown));
+  router.open({ view: 'glossary' });
+  router.close();
+  browser.history.forward();
+  assert.deepEqual(seen, ['return', { view: 'glossary' }], 'Back returns to the tab, Forward reopens the drill-down');
+  stop();
+  router.close();
+  browser.history.forward();
+  assert.deepEqual(seen, ['return', { view: 'glossary' }, 'return'], 'unsubscribed, nothing more is entered');
+});
+
+test('a drill-down router enters only its own tab\'s marked entries (#669)', () => {
+  const { browser } = browserAt('/');
+  const entered = [];
+  drillDownRouter('changes', browser).onEnter((drillDown) => entered.push(drillDown));
+  drillDownRouter('queue', browser).open({ view: 'snoozed' });
+  writeRoute('changes', browser);
+  browser.history.back();
+  assert.deepEqual(entered, [], 'the Queue\'s drill-down is not the Changes\' to open');
 });

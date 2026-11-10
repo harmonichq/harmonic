@@ -22,36 +22,35 @@
 // Saving a token in Settings reads the app again under it: Settings' parts and
 // badges at once, and every other tab when it next opens.
 //
-// A Queue drill-down takes one history entry from the router at the same
-// address, marked with which drill-down it is (ADR 594): "‹ Queue" goes Back
-// through it, and a Back that leaves it, a phone's edge-swipe among them,
-// returns the Queue to its list. A Back from another tab onto that entry (after
-// "Focus started" → Changes) opens the Queue on that drill-down as it was.
+// A drill-down on the Queue, Changes or Settings takes one history entry from
+// the router at the same address, marked with which drill-down it is (ADR 594):
+// "‹ Parent" goes Back through it, and a Back that leaves it, a phone's
+// edge-swipe among them, returns the tab to its own screen; a Forward onto it
+// reopens it (#669). A Back from another tab onto that entry (after "Focus
+// started" → Changes) opens the tab on that drill-down as it was.
 //
 // The live adapter is the app's to read through (`live`): the entry passes the
 // engine's (main.tsx), and the app's stories a fake client's (#653).
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { parseRoute, pushDrillDown, subscribeRoute, writeRoute } from '../../tab-routing.js';
+import { drillDownRouter, parseRoute, subscribeRoute, writeRoute } from '../../tab-routing.js';
 import type { NavItem } from '../components/NavBar/NavBar';
-import { ChangesScreen } from '../screens/Changes/ChangesScreen';
+import { ChangesScreen, type ChangesDrillDown } from '../screens/Changes/ChangesScreen';
 import { DayScreen } from '../screens/Day/DayScreen';
 import { OverviewScreen } from '../screens/Overview/OverviewScreen';
 import { QueueScreen, type DrillDown } from '../screens/Queue/QueueScreen';
-import { SettingsScreen } from '../screens/Settings/SettingsScreen';
+import { SettingsScreen, type SettingsDrillDown } from '../screens/Settings/SettingsScreen';
 import { syncFailed } from '../settings-model';
 import type { createLive } from './live.js';
 
 type Tab = 'queue' | 'changes' | 'overview' | 'day' | 'settings';
 export type Live = ReturnType<typeof createLive>;
 
-/** The router's drill-down entry, which the Queue opens and returns from. */
+/** The router's drill-down entries, one router per tab that has drill-downs. */
 const DRILL_DOWN = {
-  open: (drillDown: DrillDown) => pushDrillDown(drillDown),
-  close: () => window.history.back(),
-  onReturn: (listener: () => void) => subscribeRoute((_tab: string, { drillDown }: { drillDown: DrillDown | null }) => {
-    if (!drillDown) listener();
-  }),
+  queue: drillDownRouter('queue'), changes: drillDownRouter('changes'), settings: drillDownRouter('settings'),
 };
+/** The drill-down an entry marks; its tab's screen is the one that reads it. */
+type Entry = DrillDown | ChangesDrillDown | SettingsDrillDown;
 
 type Read = 'loading' | 'ready' | 'stale' | 'unavailable';
 type Part = 'status' | 'account' | 'pump';
@@ -83,9 +82,9 @@ export function App({ live }: { live: Live }) {
   // The tab on screen, which a catch-up stops reading for once it is left (#651).
   const onScreen = useRef(tab);
   onScreen.current = tab;
-  // The Queue drill-down a Back landed on, which the Queue opens as it was; a
-  // reload lands on the Queue itself, a drill-down being unaddressed.
-  const [returnTo, setReturnTo] = useState<DrillDown | null>(null);
+  // The drill-down a Back landed on, which its tab opens as it was; a reload
+  // lands on the tab itself, a drill-down being unaddressed.
+  const [returnTo, setReturnTo] = useState<Entry | null>(null);
   const [reads, setReads] = useState<Partial<Record<Tab, Read>>>(() => remembered(live, READ_TABS, (t) => t));
   // Bumped when answers land, so the screen draws what was read.
   const [, setVersion] = useState(0);
@@ -120,7 +119,7 @@ export function App({ live }: { live: Live }) {
     ).finally(redraw);
   }, [redraw]);
 
-  useEffect(() => subscribeRoute((next: string, { drillDown }: { drillDown: DrillDown | null }) => {
+  useEffect(() => subscribeRoute((next: string, { drillDown }: { drillDown: Entry | null }) => {
     setTab(next as Tab);
     setReturnTo(drillDown);
   }), []);
@@ -173,13 +172,14 @@ export function App({ live }: { live: Live }) {
 
   switch (tab) {
     case 'queue':
-      return <QueueScreen key={tab} layout={layout} store="wearer" state={state} nav={{ ...nav, drillDown: DRILL_DOWN }}
-        returnTo={returnTo ?? undefined} onRetry={retry}
+      return <QueueScreen key={tab} layout={layout} store="wearer" state={state} nav={{ ...nav, drillDown: DRILL_DOWN.queue }}
+        returnTo={(returnTo as DrillDown | null) ?? undefined} onRetry={retry}
         writes={{ snooze: queued(queueWrites.snooze), restore: queued(queueWrites.restore), pin: queued(queueWrites.pin),
           done: queued(queueWrites.done), undoDone: queued(queueWrites.undoDone), held: queueWrites.held,
           retry: queued(queueWrites.retry) }} />;
     case 'changes':
-      return <ChangesScreen key={tab} layout={layout} store="wearer" state={state} nav={nav} onRetry={retry}
+      return <ChangesScreen key={tab} layout={layout} store="wearer" state={state} onRetry={retry}
+        nav={{ ...nav, drillDown: DRILL_DOWN.changes }} returnTo={(returnTo as ChangesDrillDown | null) ?? undefined}
         writes={{ end: drawn(changesWrites.end) }} />;
     case 'overview':
       return <OverviewScreen key={tab} layout={layout} store="wearer" state={state} nav={nav} onRetry={retry}
@@ -195,7 +195,8 @@ export function App({ live }: { live: Live }) {
         writes={{ answer: answered, grams: drawn(dayWrites.grams), logCarbs: drawn(dayWrites.logCarbs) }} />;
     case 'settings':
       return <SettingsScreen key={tab} layout={layout} sync={null} state={state} onRetry={retry} onToken={reread}
-        account={live.accountState()} nav={nav}
+        account={live.accountState()} nav={{ ...nav, drillDown: DRILL_DOWN.settings }}
+        returnTo={(returnTo as SettingsDrillDown | null) ?? undefined}
         parts={{ account: parts.account ?? 'loading', pump: parts.pump ?? 'loading',
           onRetry: (which) => part(which, true) }}
         writes={{ saveCredentials: drawn(settingsWrites.saveCredentials) }} />;

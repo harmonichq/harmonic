@@ -52,3 +52,18 @@ export function subscribeRoute(listener, browser = window) {
   browser.addEventListener('popstate', notify);
   return () => browser.removeEventListener('popstate', notify);
 }
+
+/** One tab's drill-downs through history (ADR 594): `open` pushes a drill-down's entry, `close`
+ *  goes Back through it, `onReturn` calls back on a Back or Forward onto an entry that marks
+ *  none, and `onEnter` with the drill-down a Back or Forward onto one of this tab's own marked
+ *  entries names, so a Forward reopens what a Back closed (#669). Each returns the unsubscribe. */
+export function drillDownRouter(tab, browser = window) {
+  return {
+    open: (drillDown) => pushDrillDown(drillDown, browser),
+    close: () => browser.history.back(),
+    onReturn: (listener) => subscribeRoute((_tab, { drillDown }) => { if (!drillDown) listener(); }, browser),
+    onEnter: (listener) => subscribeRoute((at, { drillDown }) => {
+      if (drillDown && at === tab) listener(drillDown);
+    }, browser),
+  };
+}

@@ -113,6 +113,22 @@ class CredentialsTest(unittest.TestCase):
         self.assertNotIn("hunter2", message)
         self.assertNotIn(stored.decode("utf-8"), message)
 
+    def test_reading_with_the_key_missing_creates_no_key(self):
+        # A read never writes key material (#663): with the key file gone the
+        # stored row is unreadable, reported as a replaced key's row is.
+        self.creds_mod.save_credentials(self.store, "me@example.com", "hunter2", "US",
+                                        key_path=self.key_path)
+        Path(self.key_path).unlink()
+
+        with self.assertLogs("ciq_autotune.credentials", level="WARNING") as logged:
+            creds = self.creds_mod.load_credentials(self.store, key_path=self.key_path)
+
+        self.assertIsNone(creds)
+        self.assertFalse(Path(self.key_path).exists())
+        self.assertEqual(len(logged.records), 1)
+        self.assertIn(self.key_path, logged.records[0].getMessage())
+        self.assertIsNotNone(self.store.get_credentials())
+
     def test_undecryptable_row_is_not_reseeded_from_env(self):
         # The .env fallback is conditioned on an empty table, and an unreadable
         # row is not one: falling through would let a stale .env overwrite what

@@ -131,10 +131,12 @@ export type DrillDown = { view: Exclude<View, 'queue'>; subject?: string; title?
  *  entry, marked with which drill-down it is, `close` goes Back through it, and
  *  `onReturn` calls back on a Back that left it, returning the unsubscribe.
  *  Without them a drill-down closes itself. */
-export type DrillDownHooks = {
-  open: (drillDown: DrillDown) => void;
+export type DrillDownHooks<D = DrillDown> = {
+  open: (drillDown: D) => void;
   close: () => void;
   onReturn: (listener: () => void) => () => void;
+  /** Calls back with the drill-down a Forward (or Back) onto its entry names, to reopen it (#669). */
+  onEnter: (listener: (drillDown: D) => void) => () => void;
 };
 
 /** A refused Queue write, held until it saves (#610). */
@@ -275,6 +277,12 @@ export function QueueScreen({
   const leave = () => (router ? router.close() : setView('queue'));
   const returned = useRef(() => setView('queue'));
   useEffect(() => router?.onReturn(() => returned.current()), [router]);
+  // A Forward onto a drill-down's entry reopens it as it was (#669).
+  const entered = useRef((to: DrillDown) => {
+    if (to.view === 'causes') setDrill({ subject: to.subject!, title: to.title ?? '', causes: to.causes ?? 0 });
+    setView(to.view);
+  });
+  useEffect(() => router?.onEnter((to) => entered.current(to)), [router]);
   const push = view === 'queue' ? 'back' : 'forward';
   const [liveBar, setLiveBar] = useState<Bar | null>(null);
   const items = ready ? ranking(shown, held) : [];

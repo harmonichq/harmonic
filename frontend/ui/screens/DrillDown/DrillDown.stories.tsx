@@ -2,8 +2,9 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { causes, focusable, pattern, patternStore } from '../../queue-model';
 import { ServedAfter } from '../../served-variants';
+import { historyRouter } from '../../history-router';
 import { expectTitlePrinted } from '../../title-check';
-import { QueueScreen, type QueueScreenProps } from '../Queue/QueueScreen';
+import { QueueScreen, type DrillDown, type QueueScreenProps } from '../Queue/QueueScreen';
 import { heldWrites, LiveQueue } from '../Queue/QueueScreen.stories';
 
 // The drill-down (drill-down.md, ADR 594): the shipped Queue screen opened on a
@@ -257,19 +258,29 @@ const backPlay = (layout: 'phone' | 'desktop'): Story['play'] => async ({ canvas
 export const Back: Story = { ...opened('drill_down', 'phone'), play: backPlay('phone') };
 export const BackDesktop: Story = { ...opened('drill_down', 'desktop'), play: backPlay('desktop') };
 
-/** A router whose Back reports the return, as the app's does (tab-routing.js). */
-const router = () => {
-  const listeners: (() => void)[] = [];
-  return {
-    open: fn(),
-    close: fn(() => listeners.forEach((listener) => listener())),
-    onReturn: (listener: () => void) => {
-      listeners.push(listener);
-      return () => { listeners.splice(listeners.indexOf(listener), 1); };
-    },
-  };
-};
+const router = historyRouter<DrillDown>;
 const RETURN = patternStore('drill_down');
+
+/** Forward (#669): after "‹ Queue" leaves the drill-down, Forward onto its
+ *  history entry opens it again as it was. */
+export const Forward: Story = {
+  args: {
+    layout: 'phone', store: RETURN.store,
+    returnTo: { view: 'causes', subject: `pattern:${RETURN.pattern}` },
+    nav: { drillDown: router({ view: 'causes', subject: `pattern:${RETURN.pattern}` }) },
+  },
+  parameters: { frame: FRAMES.phone },
+  play: async ({ canvasElement, args }) => {
+    const { title, causes: expected } = served({ ...args, open: args.returnTo!.subject });
+    const header = within(canvasElement).getByRole('heading', { level: 1, name: title }).closest('header') as HTMLElement;
+    await userEvent.click(within(header).getByRole('button', { name: 'Queue' }));
+    await waitFor(() => expect(cards(canvasElement)).toHaveLength(0));
+    (args.nav!.drillDown as ReturnType<typeof router>).forward();
+    await within(canvasElement).findByRole('heading', { level: 1, name: title });
+    await expectTitlePrinted(canvasElement, title);
+    await waitFor(() => expect(cards(canvasElement)).toHaveLength(expected.length));
+  },
+};
 
 /** Returned to: a Back from Changes onto the drill-down's history entry opens
  *  it as it was; "‹ Queue" then goes Back through the router, whose return

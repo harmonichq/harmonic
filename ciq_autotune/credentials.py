@@ -3,7 +3,7 @@ page (frontend phase 2) sits on (frontend phase 1).
 
 Credentials live in the store's ``credentials`` table, the password encrypted
 with Fernet (the ``api``/``sync`` extras' ``cryptography`` dependency). The
-encryption key is generated on first use and written to a file *outside* the
+encryption key is generated on the first save and written to a file *outside* the
 DB (``tconnect-data/secret.key`` by default, gitignored alongside ``ciq.db``)
 rather than a required env var, so there's no key to lose and get locked out
 by. Lose or replace the key and the stored row simply stops being readable:
@@ -47,23 +47,29 @@ class Credentials:
     region: str
 
 
-def _fernet(key_path: str):
+def _fernet(key_path: str, create: bool):
+    """The Fernet for the key at ``key_path``, or ``None`` when there is none.
+
+    Only a save passes ``create=True``: a read never writes key material (#663).
+    """
     from cryptography.fernet import Fernet
 
     path = Path(key_path)
     if path.exists():
         key = path.read_bytes()
-    else:
+    elif create:
         path.parent.mkdir(parents=True, exist_ok=True)
         key = Fernet.generate_key()
         path.write_bytes(key)
+    else:
+        return None
     return Fernet(key)
 
 
 def save_credentials(store: Store, email: str, password: str, region: str,
                       key_path: str = DEFAULT_KEY_PATH) -> None:
     """Encrypt and persist credentials, replacing any previously stored row."""
-    encrypted = _fernet(key_path).encrypt(password.encode("utf-8"))
+    encrypted = _fernet(key_path, create=True).encrypt(password.encode("utf-8"))
     store.set_credentials(
         email=email, password_encrypted=encrypted, region=region,
         updated_at=wall_clock_now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -88,9 +94,16 @@ def load_credentials(store: Store, key_path: str = DEFAULT_KEY_PATH) -> Optional
         # stays importable without the api/sync extras.
         from cryptography.fernet import InvalidToken
 
-        try:
-            password = _fernet(key_path).decrypt(row["password_encrypted"]).decode("utf-8")
-        except InvalidToken:
+        # A missing key opens nothing: the same unreadable row as a replaced
+        # key, and the read must not mint a new one (#663).
+        fernet = _fernet(key_path, create=False)
+        password = None
+        if fernet is not None:
+            try:
+                password = fernet.decrypt(row["password_encrypted"]).decode("utf-8")
+            except InvalidToken:
+                pass
+        if password is None:
             logger.warning(
                 "Stored credentials cannot be decrypted with the key at %s "
                 "(lost or replaced); reading as not configured. Re-enter them "
